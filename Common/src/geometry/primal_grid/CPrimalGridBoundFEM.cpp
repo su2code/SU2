@@ -41,7 +41,8 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
   nDOFsGrid = val_nDOFsGrid;
 
   boundElemIDGlobal = val_elemGlobalID;
-  DomainElement     = val_domainElementID;
+  GlobalIndex_DomainElement     = val_domainElementID;
+  gi = false;
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy them from val_nodes.                        ---*/

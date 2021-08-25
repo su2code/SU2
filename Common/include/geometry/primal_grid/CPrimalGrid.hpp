@@ -47,13 +47,15 @@
 class CPrimalGrid {
 protected:
   vector<unsigned long> Nodes;         /*!< \brief Global node indices of the element. */
-  unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
+  /*! If this is a domain element, store the global index.
+   * If this is a boundary element, store the index of the incident domain element. */
+  unsigned long GlobalIndex_DomainElement;
+  bool gi;
   vector<long> Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
   vector<short> PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
                                             A -1 indicates no periodic transformation to the neighbor. */
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
-  unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which
-                                               correspond with a boundary element is stored. */
+
   su2double Volume;                /*!< \brief Volume of the element. */
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
@@ -245,25 +247,24 @@ public:
    * \brief Get the element global index in a parallel computation.
    * \return Global index of the element in a parallel computation.
    */
-  inline unsigned long GetGlobalIndex(void) const { return GlobalIndex; }
+  inline unsigned long GetGlobalIndex() const { if(gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
 
   /*!
    * \brief Set the global index for an element in a parallel computation.
    * \return Global index of an element in a parallel computation.
    */
-  inline void SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
+  inline void SetGlobalIndex(unsigned long val_globalindex) { gi=true; GlobalIndex_DomainElement = val_globalindex; }
 
   /*!
-   * \brief A virtual member.
-   * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.
+   * \brief Set the index of the domain element of which this boundary element is a face.
+   * \param[in] val_domainelement - Value to set.
    */
-  inline virtual void SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
+  inline void SetDomainElement(unsigned long val_domainelement) { gi=false; GlobalIndex_DomainElement = val_domainelement; }
 
   /*!
-   * \brief A virtual member.
-   * \return Relate the boundary element which a face of a domain element.
+   * \brief Get the index of the domain element of which this boundary element is a face.
    */
-  inline virtual unsigned long GetDomainElement(void) const{ return DomainElement; }
+  inline unsigned long GetDomainElement() const{ if(!gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
 
   /*!
    * \brief A pure virtual member.

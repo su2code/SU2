@@ -29,7 +29,8 @@
 
 CPrimalGrid::CPrimalGrid(bool FEM) : FEM(FEM) {
 
-  GlobalIndex = 0;
+  GlobalIndex_DomainElement = 0;
+  gi =true;
 
 }
 
