@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,6 +25,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
+using namespace std;
 
 template <class Tenum, class TField>
 class COptionEnum final : public COptionBase {
@@ -1736,13 +1738,13 @@ class COptionWallFunction : public COptionBase {
   string name; // identifier for the option
   unsigned short &nMarkers;
   string* &markers;
-  unsigned short*  &walltype;
+  WALL_FUNCTIONS*  &walltype;
   unsigned short** &intInfo;
   su2double**      &doubleInfo;
 
 public:
   COptionWallFunction(const string name, unsigned short &nMarker_WF,
-                      string* &Marker_WF, unsigned short* &type_WF,
+                      string* &Marker_WF, WALL_FUNCTIONS* &type_WF,
                       unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
   nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
   intInfo(intInfo_WF), doubleInfo(doubleInfo_WF) {
@@ -1774,14 +1776,16 @@ public:
          If not, create an error message and return. */
       ++counter;
       const unsigned short indWallType = counter;
-      unsigned short typeWF = NO_WALL_FUNCTION;
+      auto typeWF = WALL_FUNCTIONS::NONE;
       bool validWF = true;
       if (counter == totalSize) validWF = false;
       else {
-        map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+        map<string, WALL_FUNCTIONS>::const_iterator it;
         it = Wall_Functions_Map.find(option_value[counter]);
-        if(it == Wall_Functions_Map.end()) validWF = false;
-        else                               typeWF  = it->second;
+        if(it == Wall_Functions_Map.end())
+          validWF = false;
+        else
+          typeWF  = it->second;
       }
 
       if (!validWF ) {
@@ -1801,9 +1805,9 @@ public:
             must be specified. Hence the counter must be updated
             accordingly. ---*/
       switch( typeWF ) {
-        case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
-        case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
-        case LOGARITHMIC_WALL_MODEL: counter += 3; break;
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL:    counter += 3; break;
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: counter += 2; break;
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: counter += 3; break;
         default: break;
       }
 
@@ -1824,7 +1828,7 @@ public:
     /* Allocate the memory to store the data for the wall function markers. */
     this->nMarkers   = nVals;
     this->markers    = new string[nVals];
-    this->walltype   = new unsigned short[nVals];
+    this->walltype   = new WALL_FUNCTIONS[nVals];
     this->intInfo    = new unsigned short*[nVals];
     this->doubleInfo = new su2double*[nVals];
 
@@ -1843,7 +1847,7 @@ public:
 
       /* Determine the wall function type. As their validaties have
          already been tested, there is no need to do so again. */
-      map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+      map<string, WALL_FUNCTIONS>::const_iterator it;
       it = Wall_Functions_Map.find(option_value[counter++]);
 
       this->walltype[i] = it->second;
@@ -1852,7 +1856,7 @@ public:
             is needed, which is extracted from option_value. ---*/
       switch( this->walltype[i] ) {
 
-        case EQUILIBRIUM_WALL_MODEL: {
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
 
           /* LES equilibrium wall model. The exchange distance, stretching
              factor and number of points in the wall model must be specified. */
@@ -1877,7 +1881,7 @@ public:
           break;
         }
 
-        case NONEQUILIBRIUM_WALL_MODEL: {
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: {
 
           /* LES non-equilibrium model. The RANS turbulence model and
              the exchange distance need to be specified. */
@@ -1910,7 +1914,7 @@ public:
 
           break;
         }
-        case LOGARITHMIC_WALL_MODEL: {
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
 
           /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
            factor and number of points in the wall model must be specified. */

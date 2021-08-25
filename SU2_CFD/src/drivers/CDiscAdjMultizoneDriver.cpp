@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -879,6 +879,12 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 }
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
+
+#if defined(CODI_INDEX_TAPE) || defined(HAVE_OPDI)
+  if (nZone > 1 && rank == MASTER_NODE) {
+    std::cout << "WARNING: Index AD types do not support multiple zones." << std::endl;
+  }
+#endif
 
   AD::ClearAdjoints();
 

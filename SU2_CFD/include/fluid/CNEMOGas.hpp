@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,8 +48,8 @@ protected:
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
   nEl,                                   /*!< \brief Number of electrons in gas */
   nDim,                                  /*!< \brief Number of dimensions. */
-  nEnergyEq = 2,                         /*!< \brief Number of energy equations for the 2T model. */
-  Kind_TransCoeffModel;                  /*!< \brief Transport coefficients model for NEMO solver. */
+  nEnergyEq = 2;                         /*!< \brief Number of energy equations for the 2T model. */
+  TRANSCOEFFMODEL Kind_TransCoeffModel;  /*!< \brief Transport coefficients model for NEMO solver. */
 
   unsigned iSpecies,                     /*!< \brief Common iteration counter for species */
   jSpecies,                              /*!< \brief Common iteration counter for species */
@@ -134,7 +134,7 @@ public:
   /*!
    * \brief Compute vector of species V-E energy.
    */
-  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
+  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) = 0;
 
   /*!
    * \brief Compute species enthalpies.

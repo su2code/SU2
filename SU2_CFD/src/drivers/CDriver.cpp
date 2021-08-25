@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -640,10 +640,9 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   geometry[MESH_0]->SetPositive_ZArea(config);
 
-  /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
+  /*--- Set the actuator disk boundary conditions, if necessary. ---*/
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    geometry[iMesh]->MatchNearField(config);
     geometry[iMesh]->MatchActuator_Disk(config);
   }
 
@@ -1932,8 +1931,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
-      numerics[iMGlevel][HEAT_SOL][visc_term] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
-      numerics[iMGlevel][HEAT_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
+      numerics[iMGlevel][HEAT_SOL][visc_term] = new CAvgGrad_Heat(nDim, nVar_Heat, config, true);
+      numerics[iMGlevel][HEAT_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, nVar_Heat, config, false);
 
       switch (config->GetKind_ConvNumScheme_Heat()) {
 

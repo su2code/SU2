@@ -2,7 +2,7 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,12 +42,15 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
   /*--- Define transport model ---*/
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     transport_model = "Wilke";
-  else if (Kind_TransCoeffModel == GUPTAYOS)
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     transport_model = "Gupta-Yos";
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
+    transport_model = "Chapmann-Enskog_LDLT";
 
   opt.setStateModel("ChemNonEqTTv");
+  if (frozen) opt.setMechanism("none");
   opt.setViscosityAlgorithm(transport_model);
   opt.setThermalConductivityAlgorithm(transport_model);
 
@@ -118,7 +121,7 @@ vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){
   return energies;
 }
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   SetTDStateRhosTTv(rhos, T, val_T);
 

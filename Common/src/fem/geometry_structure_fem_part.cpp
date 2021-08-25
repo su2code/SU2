@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3355,7 +3355,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -3500,7 +3500,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* Retrieve the floating point information for this boundary marker.
              The exchange location is the first element of this array. */
@@ -3952,7 +3952,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
         case ISOTHERMAL:
         case HEAT_FLUX: {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
             for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l)
               bound[iMarker][l]->RemoveMultipleDonorsWallFunctions();
@@ -4825,7 +4825,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* Retrieve the integer information for this boundary marker.
              The number of points in normal direction for the wall function

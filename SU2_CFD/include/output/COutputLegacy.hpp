@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure_legacy.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -126,15 +126,6 @@ public:
    * \brief Destructor of the class.
    */
   ~COutputLegacy(void);
-
-  /*!
-   * \brief Writes equivalent area.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
 
   /*!
    * \brief Writes inverse design.

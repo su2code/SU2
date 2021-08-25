@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,7 @@ private:
    */
   void AddDynamicGridResidualContribution(unsigned long iPoint,
                                           unsigned long Point_Normal,
-                                          CGeometry* geometry,
+                                          const CGeometry* geometry,
                                           const su2double* UnitNormal,
                                           su2double Area,
                                           const su2double* GridVel,
@@ -95,6 +95,14 @@ private:
                                   CConfig *config,
                                   unsigned short val_marker,
                                   bool cht_mode = false);
+
+  /*!
+   * \brief Generic implementation of the heatflux and heat-transfer/convection walls.
+   */
+  void BC_HeatFlux_Wall_Generic(const CGeometry *geometry,
+                                const CConfig *config,
+                                unsigned short val_marker,
+                                unsigned short kind_boundary);
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.
@@ -186,6 +194,16 @@ public:
                         unsigned short val_marker) override;
 
   /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                            const CConfig *config,
+                            const unsigned short val_marker) override;
+
+  /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -232,5 +250,4 @@ public:
   inline su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) const override {
     return Buffet_Sensor[val_marker][val_vertex];
   }
-
 };

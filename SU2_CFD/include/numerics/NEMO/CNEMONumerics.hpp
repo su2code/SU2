@@ -2,7 +2,7 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,9 @@
 #pragma once
 
 #include "../CNumerics.hpp"
+#include "../../fluid/CNEMOGas.hpp"
+#include "../../fluid/CMutationTCLib.hpp"
+#include "../../fluid/CSU2TCLib.hpp"
 
 /*!
  * \class CNEMONumerics

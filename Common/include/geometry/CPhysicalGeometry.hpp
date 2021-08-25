@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -444,12 +444,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void VisualizeControlVolume(const CConfig *config) const override;
-
-  /*!
-   * \brief Mach the near field boundary condition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void MatchNearField(CConfig *config) override;
 
   /*!
    * \brief Mach the near field boundary condition.

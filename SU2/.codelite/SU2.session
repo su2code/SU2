@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Session Name="/home/flo/Dev/su2code/SU2/SU2/SU2.workspace">
+  <int Value="0" Name="m_selectedTab"/>
+  <wxString Value="/home/flo/Dev/su2code/SU2/SU2/SU2.workspace" Name="m_workspaceName"/>
+  <TabInfoArray Name="TabInfoArray"/>
+  <SerializedObject Name="m_breakpoints">
+    <long Value="0" Name="Count"/>
+  </SerializedObject>
+  <wxString Value="*.c;*.cpp;*.cxx;*.cc;*.h;*.hpp;*.inc;*.mm;*.m;*.xrc;*.xml;*.json;*.sql;*.txt;*.plist;CMakeLists.txt;*.rc;*.iss,*.py" Name="m_findInFilesMask"/>
+</Session>

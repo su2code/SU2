@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes to compute convective
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -74,7 +74,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];
 
-  q_ij = 0.0;
+  su2double q_ij = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];

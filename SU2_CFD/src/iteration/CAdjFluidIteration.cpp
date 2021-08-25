@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,13 +118,6 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 
       solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone]);
-
-      /*--- Set the internal boundary condition on nearfield surfaces ---*/
-
-      if ((config[val_iZone]->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-          (config[val_iZone]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
-        solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(
-            geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone]);
     }
 
     if (rank == MASTER_NODE && val_iZone == ZONE_0) cout << "End direct solver, begin adjoint problem." << endl;

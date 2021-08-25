@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 
 #include "CVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CNEMOEulerVariable
@@ -64,6 +65,10 @@ protected:
   /*--- New solution container for Classical RK4 ---*/
   MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */
 
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+
   /*--- Other Necessary Variable Definition ---*/
   MatrixType dPdU;   /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
   MatrixType dTdU;   /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
@@ -80,6 +85,7 @@ protected:
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
+  const bool implicit;      /*!< \brief Implicit flag. */
 
 public:
 
@@ -255,7 +261,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief Subtract <i>value</i> to the gradient of the primitive variables.
@@ -281,7 +287,9 @@ public:
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double **GetGradient_Primitive(unsigned long iPoint) final { return Gradient_Primitive[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
+    return Gradient_Primitive(iPoint,iVar);
+  }
 
   /*!
    * \brief Get the primitive variable gradients for all points.
@@ -531,6 +539,19 @@ public:
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Solution(iPoint, nSpecies+iDim) = Primitive(iPoint,RHO_INDEX) * val_vector[iDim];
   }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
 
   /*!
    * \brief Set the momentum part of the truncation error to zero.

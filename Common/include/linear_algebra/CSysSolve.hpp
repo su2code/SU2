@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -256,6 +256,7 @@ private:
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
 
     /*--- Reset the pointers. ---*/
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
@@ -276,6 +277,7 @@ private:
     LinSysSol.PassiveCopy(LinSysSol_tmp);
 
     /*--- Reset the pointers. ---*/
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;

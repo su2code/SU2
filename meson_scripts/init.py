@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -44,11 +44,11 @@ def init_submodules(method = 'auto'):
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = '6a67202a3887c8da490fdfde82bc46507de68692'
+  sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_opdi = 'e56f79cada202d21e7425f5d5cfd5b1153f2465e'
+  sha_version_opdi = '2735b503f60163e8d64e1ac56cce46173a9fd4a9'
   github_repo_opdi = 'https://github.com/SciCompKL/OpDiLib'
   sha_version_meson = '29ef4478df6d3aaca40c7993f125b29409be1de2'
   github_repo_meson = 'https://github.com/mesonbuild/meson'

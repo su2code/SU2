@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -42,6 +42,7 @@ def main():
     ### RUN TUTORIAL CASES             ###
     ######################################
 
+    ### CHT
 
     # CHT incompressible unsteady
     cht_incompressible_unsteady           = TestCase('cht_incompressible_unsteady')
@@ -55,6 +56,18 @@ def main():
     cht_incompressible_unsteady.unsteady  = True
     cht_incompressible_unsteady.tol       = 0.00001
     test_list.append(cht_incompressible_unsteady)
+
+    # CHT incompressible, 2D, 3 pins in crossflow
+    cht_incompressible           = TestCase('cht_incompressible')
+    cht_incompressible.cfg_dir   = "../Tutorials/multiphysics/steady_cht"
+    cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
+    cht_incompressible.test_iter = 10
+    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
+    cht_incompressible.su2_exec  = "SU2_CFD"
+    cht_incompressible.timeout   = 1600
+    cht_incompressible.multizone = True
+    cht_incompressible.tol       = 0.00001
+    test_list.append(cht_incompressible)
 
     ### Incompressible Flow
 

@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,8 +51,6 @@ private:
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
-  MatrixType Vorticity;         /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;         /*!< \brief Magnitude of rate of strain tensor. */
   VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
@@ -155,12 +153,4 @@ public:
   inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
     Primitive(iPoint,T_INDEX) = temperature_wall;
   }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
-
-
 };

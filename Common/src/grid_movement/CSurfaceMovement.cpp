@@ -2,7 +2,7 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
+#include "../../include/toolboxes/C1DInterpolation.hpp"
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
@@ -3784,15 +3785,13 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   yp1 = (Xcoord[1]-Xcoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Xcoord[n_Airfoil-1]-Xcoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Xcoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
+  CCubicSpline splineX(Svalue, Xcoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   n_Airfoil = Svalue.size();
   yp1 = (Ycoord[1]-Ycoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Ycoord[n_Airfoil-1]-Ycoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Ycoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
+  CCubicSpline splineY(Svalue, Ycoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3833,8 +3832,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
           Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i))/TotalArch;
         }
 
-        NewXCoord = boundary->GetSpline(Svalue, Xcoord, Xcoord2, n_Airfoil, Arch);
-        NewYCoord = boundary->GetSpline(Svalue, Ycoord, Ycoord2, n_Airfoil, Arch);
+        NewXCoord = splineX(Arch);
+        NewYCoord = splineY(Arch);
 
         /*--- Store the delta change in the x & y coordinates ---*/
 
