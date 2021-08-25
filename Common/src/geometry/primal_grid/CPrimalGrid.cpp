@@ -47,10 +47,10 @@ void CPrimalGrid::GetAllNeighbor_Elements() const {
 
 void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {
 
-  /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
+  /*--- Allocate the memory for Neighbor_Elements and
         initialize the arrays to -1 to indicate that no neighbor is present and
         that no periodic transformation is needed to the neighbor. ---*/
   Neighbor_Elements.resize(val_nFaces,-1);
-  PeriodIndexNeighbors.resize(val_nFaces,-1);
+  for(size_t i=0; i<val_nFaces; i++) PeriodIndexNeighbors[i] = -1;
   ElementOwnsFace.reset();
 }

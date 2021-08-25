@@ -52,12 +52,12 @@ protected:
   unsigned long GlobalIndex_DomainElement;
   bool gi;
   vector<long> Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
-  vector<short> PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
-                                            A -1 indicates no periodic transformation to the neighbor. */
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
 
   su2double Volume;                /*!< \brief Volume of the element. */
   su2double LenScale;       /*!< \brief Length scale of the element. */
+  short PeriodIndexNeighbors[N_FACES_MAXIMUM];  /*!< \brief Vector to store the periodic index of a neighbor.
+    A -1 indicates no periodic transformation to the neighbor. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
   /*! \brief Whether or not the Jacobian of the faces can be considered
    * constant in the transformation to the standard element. */
