@@ -113,22 +113,22 @@ def main():
     comm.barrier()
 
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
-  if myid == rootProcess:
-    print("\n")
-    print(" Initializing solid solver ".center(80,"*"))
-    if CSD_Solver == 'AEROELASTIC':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
-    elif CSD_Solver == 'IMPOSED':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
-    elif CSD_Solver == 'MAPPING':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
+  # Serial solvers
+  if CSD_SOLVER in ["NATIVE"]:
+    if myid == rootProcess:
+      print("\n")
+      print(" Initializing solid solver ".center(80,"*"))
+      if CSD_Solver == 'NATIVE':
+        from SU2_Nastran import pysu2_nastran
+        if FSI_config["IMPOSED_MOTION"] == "NO"
+          SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
+        else
+          SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
     else:
-      print("\n Invalid solid solver option")
+      SolidSolver = None
+  # Parallel solvers
   else:
-    SolidSolver = None
+    print("\n Invalid solid solver option")
 
   if have_MPI:
     comm.barrier()
@@ -158,7 +158,7 @@ def main():
   if have_MPI:
     comm.barrier()
 
-  if CSD_Solver != "MAPPING":
+  if FSI_config["MAPPING_MODES"] == "NO":
     # --- Launch a steady or unsteady FSI computation --- #
     if FSI_config['TIME_MARCHING'] == "YES":
       try:
