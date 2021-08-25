@@ -278,6 +278,11 @@ passivedouble CDriver::GetUnsteady_TimeStep() const {
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
+string CDriver::GetSurfaceFileName() const {
+
+  return config_container[ZONE_0]->GetSurfCoeff_FileName();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /* Functions related to CHT solver                                           */
 ///////////////////////////////////////////////////////////////////////////////
