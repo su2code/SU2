@@ -150,7 +150,9 @@ protected:
 
     su2double FirstQuotient = abs(Krylov_Criterion_Quotients[0]);
 
-//    cout << " current criterion value: " << FirstQuotient << endl;
+    int rank = MASTER_NODE;
+    rank = SU2_MPI::GetRank();
+    if(rank == MASTER_NODE) cout << " current criterion value: " << FirstQuotient << ", basis size: " << iBasis << endl;
     if (FirstQuotient > KrylovCriterionValue) {
 
       cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
