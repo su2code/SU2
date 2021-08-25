@@ -250,7 +250,7 @@ public:
    * \brief Get the element global index in a parallel computation.
    * \return Global index of the element in a parallel computation.
    */
-  inline unsigned long GetGlobalIndex() const { if(gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
+  inline unsigned long GetGlobalIndex() const { if(!gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
 
   /*!
    * \brief Set the global index for an element in a parallel computation.
@@ -267,7 +267,7 @@ public:
   /*!
    * \brief Get the index of the domain element of which this boundary element is a face.
    */
-  inline unsigned long GetDomainElement() const{ if(!gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
+  inline unsigned long GetDomainElement() const{ if(gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
 
   /*!
    * \brief A pure virtual member.
