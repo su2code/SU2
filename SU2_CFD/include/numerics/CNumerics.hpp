@@ -130,8 +130,8 @@ protected:
   *Psi_i,    /*!< \brief Vector of adjoint variables at point i. */
   *Psi_j;    /*!< \brief Vector of adjoint variables at point j. */
   const su2double
-  *TurbVar_i,   /*!< \brief Vector of turbulent variables at point i. */
-  *TurbVar_j;   /*!< \brief Vector of turbulent variables at point j. */
+  *ScalarVar_i,   /*!< \brief Vector of turbulent variables at point i. */
+  *ScalarVar_j;   /*!< \brief Vector of turbulent variables at point j. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -352,8 +352,8 @@ public:
    * \param[in] val_scalarvar_j - Value of the scalar variable at point j.
    */
   inline void SetScalarVar(const su2double *val_scalarvar_i, const su2double *val_scalarvar_j) {
-    TurbVar_i = val_scalarvar_i;
-    TurbVar_j = val_scalarvar_j;
+    ScalarVar_i = val_scalarvar_i;
+    ScalarVar_j = val_scalarvar_j;
   }
 
   /*!

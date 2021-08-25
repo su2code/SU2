@@ -40,7 +40,7 @@ void CUpwSca_TurbSA::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
+  Flux[0] = a0*ScalarVar_i[0]+a1*ScalarVar_j[0];
 
   if (implicit) {
     Jacobian_i[0][0] = a0;
@@ -60,8 +60,8 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
-  Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
+  Flux[0] = a0*Density_i*ScalarVar_i[0]+a1*Density_j*ScalarVar_j[0];
+  Flux[1] = a0*Density_i*ScalarVar_i[1]+a1*Density_j*ScalarVar_j[1];
 
   if (implicit) {
     Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;

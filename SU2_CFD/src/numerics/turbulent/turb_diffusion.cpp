@@ -41,7 +41,7 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
 
   su2double nu_i = Laminar_Viscosity_i/Density_i;
   su2double nu_j = Laminar_Viscosity_j/Density_j;
-  su2double nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
+  su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
 
   Flux[0] = nu_e*Proj_Mean_GradTurbVar[0]/sigma;
 
@@ -70,7 +70,7 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
   su2double nu_j = Laminar_Viscosity_j/Density_j;
 
   su2double nu_ij = 0.5*(nu_i+nu_j);
-  su2double nu_tilde_ij = 0.5*(TurbVar_i[0]+TurbVar_j[0]);
+  su2double nu_tilde_ij = 0.5*(ScalarVar_i[0]+ScalarVar_j[0]);
 
   su2double nu_e;
 

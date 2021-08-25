@@ -270,7 +270,7 @@ void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2doub
   //    /*--- Compute mean effective viscosity ---*/
   //    nu_i = Laminar_Viscosity_i/U_i[0];
   //    nu_j = Laminar_Viscosity_j/U_j[0];
-  //    nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
+  //    nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
   //
   //    /*--- Compute vector going from iPoint to jPoint ---*/
   //    dist_ij_2 = 0; proj_vector_ij = 0;
@@ -293,7 +293,7 @@ void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2doub
   //      }
   //      Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
   //      Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-  //          (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+  //          (ScalarVar_j[iVar]-ScalarVar_i[iVar])*proj_vector_ij;
   //    }
   //
   //    val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;

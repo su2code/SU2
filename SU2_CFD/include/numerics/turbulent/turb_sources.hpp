@@ -346,8 +346,8 @@ private:
 
     yinv = 1.0/Coord_i[1];
     rhov = Density_i*V_i[2];
-    k = TurbVar_i[0];
-    w = TurbVar_i[1];
+    k = ScalarVar_i[0];
+    w = ScalarVar_i[1];
 
     /*--- Compute blended constants ---*/
     sigma_k_i = F1_i*sigma_k_1+(1.0-F1_i)*sigma_k_2;

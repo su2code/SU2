@@ -73,7 +73,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   if (correct_gradient) {
-    AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
+    AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j ,nVar);
   }
   ExtraADPreaccIn();
 
@@ -93,7 +93,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   }
 
   proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, TurbVar_Grad_i,
-                                            TurbVar_Grad_j, correct_gradient, TurbVar_i, TurbVar_j,
+                                            TurbVar_Grad_j, correct_gradient, ScalarVar_i, ScalarVar_j,
                                             Proj_Mean_GradTurbVar_Normal, Proj_Mean_GradTurbVar);
   FinishResidualCalc(config);
 
