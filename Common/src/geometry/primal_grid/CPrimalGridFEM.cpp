@@ -30,7 +30,7 @@
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   istringstream  &elem_line) : CPrimalGrid(true)
+                               unsigned long  val_offDOfsSol,   istringstream  &elem_line) : CPrimalGrid(true, val_nDOFsGrid)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -44,9 +44,8 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
   elemIDGlobal        = val_elemGlobalID;
   offsetDOFsSolGlobal = val_offDOfsSol;
 
-  /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and read them from elem_line.                        ---*/
-  Nodes.resize(nDOFsGrid);
+  /*--- Read face structure of the element from elem_line. ---*/
+
   for(unsigned short i=0; i<nDOFsGrid; i++)
     elem_line >> Nodes[i];
 
@@ -76,7 +75,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid): CPrimalGrid(true)
+                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid): CPrimalGrid(true, val_nDOFsGrid)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -90,9 +89,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
   elemIDGlobal        = val_elemGlobalID;
   offsetDOFsSolGlobal = val_offDOfsSol;
 
-  /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and copy the data from connGrid. ---*/
-  Nodes.resize(nDOFsGrid);
+  /*--- Copy face structure of the element from connGrid. ---*/
   for(unsigned short i=0; i<nDOFsGrid; i++)
     Nodes[i] = connGrid[i];
 }

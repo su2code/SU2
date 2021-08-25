@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <limits>
 #include <bitset>
+#include <memory>
 
 #include "../../CConfig.hpp"
 
@@ -46,7 +47,7 @@
  */
 class CPrimalGrid {
 protected:
-  vector<unsigned long> Nodes;         /*!< \brief Global node indices of the element. */
+  unique_ptr<unsigned long[]> Nodes;         /*!< \brief Global node indices of the element. */
   /*! If this is a domain element, store the global index.
    * If this is a boundary element, store the index of the incident domain element. */
   unsigned long GlobalIndex_DomainElement;
@@ -70,8 +71,9 @@ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] FEM - Whether this is a FEM element.
+   * \param[in] nNodes - Number of nodes.
    */
-  CPrimalGrid(bool FEM);
+  CPrimalGrid(bool FEM, unsigned short nNodes);
 
   /*!
    * \brief Destructor of the class.
@@ -461,7 +463,7 @@ template<typename Connectivity>
 class CPrimalGridWithConnectivity : public CPrimalGrid {
 public:
 
-  CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM) {}
+  CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM, Connectivity::nNodes) {}
 
   inline unsigned short GetnNodes() const final {
     return Connectivity::nNodes;

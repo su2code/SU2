@@ -40,8 +40,7 @@ CVertexMPI::CVertexMPI(unsigned long val_point):
   CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false)
 {
 
-  /*--- Allocate and define face structure of the element ---*/
-  Nodes.resize(GetnNodes());
+  /*--- Define face structure of the element ---*/
   Nodes[0] = val_point;
 
   /*--- By default, no rotation in the solution ---*/

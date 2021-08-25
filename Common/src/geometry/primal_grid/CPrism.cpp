@@ -43,8 +43,7 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
   CPrimalGridWithConnectivity<CPrismConnectivity>(false)
 {
 
-  /*--- Allocate and define face structure of the element ---*/
-  Nodes.resize(GetnNodes());
+  /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;

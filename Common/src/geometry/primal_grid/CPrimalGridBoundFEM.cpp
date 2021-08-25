@@ -32,7 +32,7 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
                                          unsigned short        val_VTK_Type,
                                          unsigned short        val_nPolyGrid,
                                          unsigned short        val_nDOFsGrid,
-                                         vector<unsigned long> &val_nodes): CPrimalGrid(true)
+                                         vector<unsigned long> &val_nodes): CPrimalGrid(true, val_nDOFsGrid)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -44,10 +44,8 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
   GlobalIndex_DomainElement     = val_domainElementID;
   gi = false;
 
-  /*--- Allocate the memory for the global nodes of the element to define
-        the geometry and copy them from val_nodes.                        ---*/
+  /*--- Copy face structure of the element from val_nodes. ---*/
 
-  Nodes.resize(nDOFsGrid);
   for(unsigned short i=0; i<nDOFsGrid; i++)
     Nodes[i] = val_nodes[i];
 

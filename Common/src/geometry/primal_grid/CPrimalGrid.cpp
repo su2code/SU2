@@ -27,7 +27,7 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
 
-CPrimalGrid::CPrimalGrid(bool FEM) : FEM(FEM) {
+CPrimalGrid::CPrimalGrid(bool FEM, unsigned short nNodes) : FEM(FEM), Nodes(new unsigned long[nNodes]) {
 
   GlobalIndex_DomainElement = 0;
   gi =true;
