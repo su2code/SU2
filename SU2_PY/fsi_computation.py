@@ -114,7 +114,7 @@ def main():
 
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
   # Serial solvers
-  if CSD_SOLVER in ["NATIVE"]:
+  if CSD_Solver in ["NATIVE"]:
     if myid == rootProcess:
       print("\n")
       print(" Initializing solid solver ".center(80,"*"))
