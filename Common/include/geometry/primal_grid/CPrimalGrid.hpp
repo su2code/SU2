@@ -34,7 +34,6 @@
 #include <limits>
 #include <memory>
 
-#include "../../parallelization/mpi_structure.hpp"
 #include "../../option_structure.hpp"
 
 /*!

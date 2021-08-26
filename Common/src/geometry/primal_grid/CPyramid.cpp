@@ -28,14 +28,10 @@
 #include "../../../include/geometry/primal_grid/CPyramid.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CPyramidConnectivity::nNodes;
-constexpr unsigned short CPyramidConnectivity::nFaces;
 constexpr unsigned short CPyramidConnectivity::nNodesFace[5];
-constexpr unsigned short CPyramidConnectivity::maxNodesFace;
 constexpr unsigned short CPyramidConnectivity::Faces[5][4];
 constexpr unsigned short CPyramidConnectivity::nNeighbor_Nodes[5];
 constexpr unsigned short CPyramidConnectivity::Neighbor_Nodes[5][4];
-constexpr unsigned short CPyramidConnectivity::VTK_Type;
 
 CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_2, unsigned long val_point_3,

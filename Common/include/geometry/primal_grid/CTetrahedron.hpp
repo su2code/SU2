@@ -35,14 +35,14 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CTetrahedronConnectivity {
-  static constexpr unsigned short nNodes = N_POINTS_TETRAHEDRON;
-  static constexpr unsigned short nFaces = N_FACES_TETRAHEDRON;
+  enum { nNodes = N_POINTS_TETRAHEDRON };
+  enum { nFaces = N_FACES_TETRAHEDRON };
+  enum { maxNodesFace = N_POINTS_TRIANGLE };
+  enum { VTK_Type = TETRAHEDRON };
   static constexpr unsigned short nNodesFace[4]={3,3,3,3};
-  static constexpr unsigned short maxNodesFace = 3;
   static constexpr unsigned short Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
   static constexpr unsigned short nNeighbor_Nodes[4]={3,3,3,3};
   static constexpr unsigned short Neighbor_Nodes[4][3]={{1,2,3},{0,2,3},{0,1,3},{0,1,2}};
-  static constexpr unsigned short VTK_Type = 10;
 };
 
 /*!

@@ -28,14 +28,10 @@
 #include "../../../include/geometry/primal_grid/CTetrahedron.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CTetrahedronConnectivity::nNodes;
-constexpr unsigned short CTetrahedronConnectivity::nFaces;
 constexpr unsigned short CTetrahedronConnectivity::nNodesFace[4];
-constexpr unsigned short CTetrahedronConnectivity::maxNodesFace;
 constexpr unsigned short CTetrahedronConnectivity::Faces[4][3];
 constexpr unsigned short CTetrahedronConnectivity::nNeighbor_Nodes[4];
 constexpr unsigned short CTetrahedronConnectivity::Neighbor_Nodes[4][3];
-constexpr unsigned short CTetrahedronConnectivity::VTK_Type;
 
 CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
                unsigned long val_point_2, unsigned long val_point_3):

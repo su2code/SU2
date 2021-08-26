@@ -28,14 +28,10 @@
 #include "../../../include/geometry/primal_grid/CQuadrilateral.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CQuadrilateralConnectivity::nNodes;
-constexpr unsigned short CQuadrilateralConnectivity::nFaces;
 constexpr unsigned short CQuadrilateralConnectivity::nNodesFace[4];
-constexpr unsigned short CQuadrilateralConnectivity::maxNodesFace;
 constexpr unsigned short CQuadrilateralConnectivity::Faces[4][2];
 constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Nodes[4];
 constexpr unsigned short CQuadrilateralConnectivity::Neighbor_Nodes[4][2];
-constexpr unsigned short CQuadrilateralConnectivity::VTK_Type;
 
 CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3):
