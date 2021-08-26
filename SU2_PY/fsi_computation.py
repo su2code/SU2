@@ -120,9 +120,9 @@ def main():
       print(" Initializing solid solver ".center(80,"*"))
       if CSD_Solver == 'NATIVE':
         from SU2_Nastran import pysu2_nastran
-        if FSI_config["IMPOSED_MOTION"] == "NO"
+        if FSI_config["IMPOSED_MOTION"] == "NO":
           SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
-        else
+        else:
           SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
     else:
       SolidSolver = None

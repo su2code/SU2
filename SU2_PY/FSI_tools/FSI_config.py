@@ -142,4 +142,5 @@ class FSIConfig:
                 self._ConfigContent["TIME_TRESHOLD"] = -1
 
         if self._ConfigContent["MAPPING_MODES"] == "YES" and self._ConfigContent["CSD_SOLVER"]!="NATIVE":
+            self._ConfigContent["CSD_SOLVER"]="NATIVE"
             print("WARNING: It has been requested to map modes, but the native solver was not selected. It is being selected automatically")
