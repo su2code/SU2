@@ -430,6 +430,8 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
 void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
   // nijso: TODO: we also still have an underrelaxation factor as config option
   ComputeUnderRelaxationFactor(config);
 
@@ -442,14 +444,15 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
+      const su2double density = flowNodes->GetDensity(iPoint);
+
       // nijso: check difference between conservative and regular solution
       // nijso: conservative solution is for transport of rho*Y, 
       // nijso: check underrelaxation
       for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
-        //nodes->AddSolution(iPoint,iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         // FIXME dan: Underrelaxation is turned off here beacuse problems.
           //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
-        nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), lowerlimit[iVar], upperlimit[iVar]);
+        nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), density, lowerlimit[iVar], upperlimit[iVar]);
       }
     }
     END_SU2_OMP_FOR
