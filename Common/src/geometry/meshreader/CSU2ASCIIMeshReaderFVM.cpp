@@ -75,45 +75,67 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig *val_config,
 
 void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
 
-  bool harmonic_balance = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
-  bool multizone_file = config->GetMultizone_Mesh();
+  su2double AoA_Offset = 0.0;
+  su2double AoS_Offset = 0.0;
+
+  auto BcastValues = [&]() {
+    SU2_MPI::Bcast(&numberOfGlobalElements, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&numberOfGlobalPoints, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&numberOfMarkers, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&dimension, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
+
+    SU2_MPI::Bcast(&AoA_Offset, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    const su2double AoA_Current = config->GetAoA() + AoA_Offset;
+    config->SetAoA_Offset(AoA_Offset);
+    config->SetAoA(AoA_Current);
+
+    SU2_MPI::Bcast(&AoS_Offset, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    const su2double AoS_Current = config->GetAoS() + AoS_Offset;
+    config->SetAoS_Offset(AoS_Offset);
+    config->SetAoS(AoS_Current);
+  };
+
+  /*--- Only the master needs to read the metadata, others wait here for it. ---*/
+  if (rank != MASTER_NODE) {
+    BcastValues();
+    return;
+  }
+
+  const bool harmonic_balance = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
+  const bool multizone_file = config->GetMultizone_Mesh();
 
   /*--- Open grid file ---*/
 
   mesh_file.open(meshFilename);
   if (mesh_file.fail()) {
-    SU2_MPI::Error(string("Error opening SU2 ASCII grid.") +
-                   string(" \n Check that the file exists."), CURRENT_FUNCTION);
+    SU2_MPI::Error("Error opening SU2 ASCII grid.\n"
+                   "Check that the file exists.", CURRENT_FUNCTION);
   }
 
   /*--- If more than one, find the curent zone in the mesh file. ---*/
 
   string text_line;
-  string::size_type position;
   if ((nZones > 1 && multizone_file) || harmonic_balance) {
     if (harmonic_balance) {
-      if (rank == MASTER_NODE)
-        cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
-    } else {
+      cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
+    }
+    else {
       bool foundZone = false;
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
-        position = text_line.find ("IZONE=",0);
-        if (position != string::npos) {
+        if (text_line.find ("IZONE=",0) != string::npos) {
           text_line.erase (0,6);
           unsigned short jZone = atoi(text_line.c_str());
           if (jZone == myZone+1) {
-            if (rank == MASTER_NODE)
-              cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
+            cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
             foundZone = true;
             break;
           }
         }
       }
       if (!foundZone) {
-        SU2_MPI::Error(string("Could not find the IZONE= keyword or the zone contents.") +
-                       string(" \n Check the SU2 ASCII file format."),
-                       CURRENT_FUNCTION);
+        SU2_MPI::Error("Could not find the IZONE= keyword or the zone contents.\n"
+                       "Check the SU2 ASCII file format.", CURRENT_FUNCTION);
       }
     }
   }
@@ -129,8 +151,7 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
 
     /*--- Read the dimension of the problem ---*/
 
-    position = text_line.find ("NDIME=",0);
-    if (position != string::npos) {
+    if (text_line.find ("NDIME=",0) != string::npos) {
       text_line.erase (0,6);
       dimension = atoi(text_line.c_str());
       foundNDIME = true;
@@ -138,60 +159,50 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
 
     /*--- The AoA and AoS offset values are optional. ---*/
 
-    position = text_line.find ("AOA_OFFSET=",0);
-    if (position != string::npos) {
-      su2double AoA_Offset = 0.0;
+    if (text_line.find ("AOA_OFFSET=",0) != string::npos) {
       text_line.erase (0,11);
       AoA_Offset = atof(text_line.c_str());
 
       /*--- The offset is in deg ---*/
-
-      su2double AoA_Current = config->GetAoA() + AoA_Offset;
+      const su2double AoA_Current = config->GetAoA() + AoA_Offset;
 
       if (config->GetDiscard_InFiles() == false) {
-        if ((rank == MASTER_NODE) && (AoA_Offset != 0.0))  {
+        if (AoA_Offset != 0.0)  {
           cout.precision(6);
           cout << fixed <<"WARNING: AoA in the config file (" << config->GetAoA() << " deg.) +" << endl;
           cout << "         AoA offset in mesh file (" << AoA_Offset << " deg.) = " << AoA_Current << " deg." << endl;
         }
-        config->SetAoA_Offset(AoA_Offset);
-        config->SetAoA(AoA_Current);
       }
       else {
-        if ((rank == MASTER_NODE) && (AoA_Offset != 0.0))
+        if (AoA_Offset != 0.0)
           cout <<"WARNING: Discarding the AoA offset in the geometry file." << endl;
       }
-
     }
 
-    position = text_line.find ("AOS_OFFSET=",0);
-    if (position != string::npos) {
-      su2double AoS_Offset = 0.0;
+    if (text_line.find ("AOS_OFFSET=",0) != string::npos) {
       text_line.erase (0,11);
       AoS_Offset = atof(text_line.c_str());
 
       /*--- The offset is in deg ---*/
-
-      su2double AoS_Current = config->GetAoS() + AoS_Offset;
+      const su2double AoS_Current = config->GetAoS() + AoS_Offset;
 
       if (config->GetDiscard_InFiles() == false) {
-        if ((rank == MASTER_NODE) && (AoS_Offset != 0.0))  {
+        if (AoS_Offset != 0.0)  {
           cout.precision(6);
           cout << fixed <<"WARNING: AoS in the config file (" << config->GetAoS() << " deg.) +" << endl;
           cout << "         AoS offset in mesh file (" << AoS_Offset << " deg.) = " << AoS_Current << " deg." << endl;
         }
-        config->SetAoS_Offset(AoS_Offset);
-        config->SetAoS(AoS_Current);
       }
       else {
-        if ((rank == MASTER_NODE) && (AoS_Offset != 0.0))
+        if (AoS_Offset != 0.0)
           cout <<"WARNING: Discarding the AoS offset in the geometry file." << endl;
       }
-
     }
 
-    position = text_line.find ("NPOIN=",0);
-    if (position != string::npos) {
+    /// TODO: If this were the order (points, elements, markers), we could read the file in one pass.
+    /// Currently we need 2, or to linear-partition elements instead of points (more difficult).
+
+    if (text_line.find ("NPOIN=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfGlobalPoints = atoi(text_line.c_str());
       for (unsigned long iPoint = 0; iPoint < numberOfGlobalPoints; iPoint++)
@@ -199,8 +210,7 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
       foundNPOIN = true;
     }
 
-    position = text_line.find ("NELEM=",0);
-    if (position != string::npos) {
+    if (text_line.find ("NELEM=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfGlobalElements = atoi(text_line.c_str());
       for (unsigned long iElem = 0; iElem < numberOfGlobalElements; iElem++)
@@ -208,43 +218,39 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
       foundNELEM = true;
     }
 
-    position = text_line.find ("NMARK=",0);
-    if (position != string::npos) {
+    if (text_line.find ("NMARK=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfMarkers = atoi(text_line.c_str());
       foundNMARK = true;
     }
 
     /* Stop before we reach the next zone then check for errors below. */
-    position = text_line.find ("IZONE=",0);
-    if (position != string::npos) {
+    if (text_line.find ("IZONE=",0) != string::npos) {
       break;
     }
   }
 
-  /* Close the mesh file. */
   mesh_file.close();
+
+  /* Communicate the values read by the master rank. */
+  BcastValues();
 
   /* Throw an error if any of the keywords was not found. */
   if (!foundNDIME) {
-    SU2_MPI::Error(string("Could not find NDIME= keyword.") +
-                   string(" \n Check the SU2 ASCII file format."),
-                   CURRENT_FUNCTION);
+    SU2_MPI::Error("Could not find the keyword \"NDIME=\".\n"
+                   "Check the SU2 ASCII file format.", CURRENT_FUNCTION);
   }
   if (!foundNPOIN) {
-    SU2_MPI::Error(string("Could not find NPOIN= keyword.") +
-                   string(" \n Check the SU2 ASCII file format."),
-                   CURRENT_FUNCTION);
+    SU2_MPI::Error("Could not find the keyword \"NPOIN=\".\n"
+                   "Check the SU2 ASCII file format.", CURRENT_FUNCTION);
   }
   if (!foundNELEM) {
-    SU2_MPI::Error(string("Could not find NELEM= keyword.") +
-                   string(" \n Check the SU2 ASCII file format."),
-                   CURRENT_FUNCTION);
+    SU2_MPI::Error("Could not find the keyword \"NELEM=\".\n"
+                   "Check the SU2 ASCII file format.", CURRENT_FUNCTION);
   }
   if (!foundNMARK) {
-    SU2_MPI::Error(string("Could not find NMARK= keyword.") +
-                   string(" \n Check the SU2 ASCII file format."),
-                   CURRENT_FUNCTION);
+    SU2_MPI::Error("Could not find the keyword \"NMARK=\".\n"
+                   "Check the SU2 ASCII file format.", CURRENT_FUNCTION);
   }
 
 }
@@ -985,6 +991,8 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
     break;
   }
 
+  if (rank != MASTER_NODE) return;
+
   /*--- Final error check for deprecated periodic BC format. ---*/
 
   while (getline (mesh_file, text_line)) {
@@ -996,7 +1004,7 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
       /*--- Read and store the number of transformations. ---*/
       text_line.erase(0,10);
       unsigned short nPeriodic = atoi(text_line.c_str());
-      if (rank == MASTER_NODE && nPeriodic - 1 != 0) {
+      if (nPeriodic - 1 != 0) {
         SU2_MPI::Error("Mesh file contains deprecated periodic format!\n\n"
                        "For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n"
                        "is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n"
