@@ -151,10 +151,11 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
 
     /*--- Read the dimension of the problem ---*/
 
-    if (text_line.find ("NDIME=",0) != string::npos) {
+    if (!foundNDIME && text_line.find ("NDIME=",0) != string::npos) {
       text_line.erase (0,6);
       dimension = atoi(text_line.c_str());
       foundNDIME = true;
+      continue;
     }
 
     /*--- The AoA and AoS offset values are optional. ---*/
@@ -177,6 +178,7 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
         if (AoA_Offset != 0.0)
           cout <<"WARNING: Discarding the AoA offset in the geometry file." << endl;
       }
+      continue;
     }
 
     if (text_line.find ("AOS_OFFSET=",0) != string::npos) {
@@ -197,31 +199,37 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
         if (AoS_Offset != 0.0)
           cout <<"WARNING: Discarding the AoS offset in the geometry file." << endl;
       }
+      continue;
     }
 
     /// TODO: If this were the order (points, elements, markers), we could read the file in one pass.
-    /// Currently we need 2, or to linear-partition elements instead of points (more difficult).
+    /// Currently we need 2 (first just to read metadata!), we could also linear-partition elements
+    /// instead of points (more difficult).
+    /// In either case we would then be able to also make a single pass over a multizone mesh.
 
-    if (text_line.find ("NPOIN=",0) != string::npos) {
+    if (!foundNPOIN && text_line.find ("NPOIN=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfGlobalPoints = atoi(text_line.c_str());
       for (unsigned long iPoint = 0; iPoint < numberOfGlobalPoints; iPoint++)
         getline (mesh_file, text_line);
       foundNPOIN = true;
+      continue;
     }
 
-    if (text_line.find ("NELEM=",0) != string::npos) {
+    if (!foundNELEM && text_line.find ("NELEM=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfGlobalElements = atoi(text_line.c_str());
       for (unsigned long iElem = 0; iElem < numberOfGlobalElements; iElem++)
         getline (mesh_file, text_line);
       foundNELEM = true;
+      continue;
     }
 
-    if (text_line.find ("NMARK=",0) != string::npos) {
+    if (!foundNMARK && text_line.find ("NMARK=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfMarkers = atoi(text_line.c_str());
       foundNMARK = true;
+      continue;
     }
 
     /* Stop before we reach the next zone then check for errors below. */
