@@ -128,7 +128,7 @@ def main():
       SolidSolver = None
   # Parallel solvers
   else:
-    print("\n Invalid solid solver option")
+    raise Exception('\n Invalid solid solver option')
 
   if have_MPI:
     comm.barrier()
