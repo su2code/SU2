@@ -52,7 +52,6 @@ struct CQuadrilateralConnectivity {
  */
 class CQuadrilateral final: public CPrimalGridWithConnectivity<CQuadrilateralConnectivity> {
 public:
-
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -64,13 +63,7 @@ public:
                  unsigned long val_point_2, unsigned long val_point_3);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CQuadrilateral(void) override;
-
-  /*!
    * \brief Change the orientation of an element.
    */
-  void Change_Orientation(void) override;
-
+  void Change_Orientation() override;
 };

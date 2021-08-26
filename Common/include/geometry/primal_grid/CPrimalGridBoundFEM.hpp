@@ -37,23 +37,18 @@
  */
 class CPrimalGridBoundFEM final: public CPrimalGrid {
 private:
+  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
+
+  std::vector<unsigned long> donorElementsWallFunctions; /*!< \brief The global ID's of the donor elements
+                                                                for the wall function treatment. */
+
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
 
-  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
   bool JacobianConsideredConstant;    /*!< \brief Whether or not the Jacobian of the transformation to
                                                   is (almost) constant. */
-
-  vector<unsigned long> donorElementsWallFunctions; /*!< \brief The global ID's of the donor elements
-                                                                for the wall function treatment. */
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CPrimalGridBoundFEM(void);
-
   /*!
    * \brief Constructor using data to initialize the boundary element.
    * \param[in] val_elemGlobalID    - Global boundary element ID of this element.
@@ -68,12 +63,7 @@ public:
                       unsigned short        val_VTK_Type,
                       unsigned short        val_nPolyGrid,
                       unsigned short        val_nDOFsGrid,
-                      vector<unsigned long> &val_nodes);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CPrimalGridBoundFEM(void) override;
+                      std::vector<unsigned long> &val_nodes);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.
@@ -213,7 +203,7 @@ public:
    * \brief Set the global ID's of the donor elements for the wall function treatment.
    * \param[in] donorElements - Vector, which contain the donor elements.
    */
-  inline void SetDonorsWallFunctions(const vector<unsigned long> &donorElements) override {donorElementsWallFunctions = donorElements;}
+  inline void SetDonorsWallFunctions(const std::vector<unsigned long> &donorElements) override {donorElementsWallFunctions = donorElements;}
 
   /*!
    * \brief Function to remove the multiple donors for the wall function treatment.

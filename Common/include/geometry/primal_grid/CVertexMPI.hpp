@@ -35,7 +35,7 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CVertexMPIConnectivity {
-  // some of the index directions would actually have 0 elements,
+  // some of the index directions (e.g. Faces) would actually have 0 elements,
   // but we cannot declare arrays of length 0
   static constexpr unsigned short nNodes = 1;
   static constexpr unsigned short nFaces = 0;
@@ -59,17 +59,11 @@ private:
   unsigned short Rotation_Type;
 
 public:
-
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point - Index of the 1st triangle point read from the grid file.
    */
   CVertexMPI(unsigned long val_point);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CVertexMPI(void) override;
 
   /*!
    * \brief Get the type of rotation/traslation that must be applied.
@@ -83,10 +77,5 @@ public:
    */
   inline void SetRotation_Type(unsigned short val_rotation_type) override { Rotation_Type = val_rotation_type; }
 
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void Change_Orientation(void) override;
-
+  inline void Change_Orientation() override {}
 };

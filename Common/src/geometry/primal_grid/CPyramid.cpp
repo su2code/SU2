@@ -50,8 +50,6 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[4] = val_point_4;
 }
 
-CPyramid::~CPyramid() {}
-
-void CPyramid::Change_Orientation(void) {
-  swap(Nodes[1],Nodes[3]);
+void CPyramid::Change_Orientation() {
+  std::swap(Nodes[1],Nodes[3]);
 }

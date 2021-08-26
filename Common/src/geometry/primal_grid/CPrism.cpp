@@ -52,9 +52,7 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[5] = val_point_5;
 }
 
-CPrism::~CPrism() {}
-
 void CPrism::Change_Orientation(void) {
-  swap(Nodes[0], Nodes[1]);
-  swap(Nodes[3], Nodes[4]);
+  std::swap(Nodes[0], Nodes[1]);
+  std::swap(Nodes[3], Nodes[4]);
 }

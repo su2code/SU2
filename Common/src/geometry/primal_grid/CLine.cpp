@@ -45,5 +45,3 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1):
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
 }
-
-CLine::~CLine() {}

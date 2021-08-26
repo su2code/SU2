@@ -48,8 +48,6 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
   Nodes[3] = val_point_3;
 }
 
-CQuadrilateral::~CQuadrilateral() {}
-
-void CQuadrilateral::Change_Orientation(void) {
-  swap(Nodes[1], Nodes[3]);
+void CQuadrilateral::Change_Orientation() {
+  std::swap(Nodes[1], Nodes[3]);
 }

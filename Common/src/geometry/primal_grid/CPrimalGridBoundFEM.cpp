@@ -32,7 +32,7 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
                                          unsigned short        val_VTK_Type,
                                          unsigned short        val_nPolyGrid,
                                          unsigned short        val_nDOFsGrid,
-                                         vector<unsigned long> &val_nodes): CPrimalGrid(true, val_nDOFsGrid, 1)
+                                         std::vector<unsigned long> &val_nodes): CPrimalGrid(true, val_nDOFsGrid, 1)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -51,10 +51,8 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
   /*--- For a linear quadrilateral the two last node numbers must be swapped,
         such that the element numbering is consistent with the FEM solver.    ---*/
 
-  if(nPolyGrid == 1 && VTK_Type == QUADRILATERAL) swap(Nodes[2], Nodes[3]);
+  if(nPolyGrid == 1 && VTK_Type == QUADRILATERAL) std::swap(Nodes[2], Nodes[3]);
 }
-
-CPrimalGridBoundFEM::~CPrimalGridBoundFEM(){}
 
 void CPrimalGridBoundFEM::GetLocalCornerPointsFace(unsigned short elementType,
                                                    unsigned short nPoly,
@@ -110,9 +108,8 @@ void CPrimalGridBoundFEM::RemoveMultipleDonorsWallFunctions(void) {
 
   /* Sort donorElementsWallFunctions in increasing order and remove the
      the double entities. */
-  sort(donorElementsWallFunctions.begin(), donorElementsWallFunctions.end());
-  vector<unsigned long>::iterator lastEntry;
-  lastEntry = unique(donorElementsWallFunctions.begin(),
-                     donorElementsWallFunctions.end());
+  std::sort(donorElementsWallFunctions.begin(), donorElementsWallFunctions.end());
+  auto lastEntry = std::unique(donorElementsWallFunctions.begin(),
+                               donorElementsWallFunctions.end());
   donorElementsWallFunctions.erase(lastEntry, donorElementsWallFunctions.end());
 }

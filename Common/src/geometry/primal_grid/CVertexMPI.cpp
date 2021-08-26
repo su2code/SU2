@@ -39,15 +39,9 @@ constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
 CVertexMPI::CVertexMPI(unsigned long val_point):
   CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false)
 {
-
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point;
 
   /*--- By default, no rotation in the solution ---*/
   Rotation_Type = 0;
-
 }
-
-CVertexMPI::~CVertexMPI() {}
-
-void CVertexMPI::Change_Orientation(void) { }

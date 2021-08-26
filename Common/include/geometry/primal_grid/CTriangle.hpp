@@ -52,7 +52,6 @@ struct CTriangleConnectivity {
  */
 class CTriangle final: public CPrimalGridWithConnectivity<CTriangleConnectivity> {
 public:
-
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
@@ -63,14 +62,9 @@ public:
             unsigned long val_point_2);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CTriangle(void) override;
-
-  /*!
    * \brief Change the orientation of an element.
    */
-  inline void Change_Orientation(void) override {
-    swap(Nodes[0], Nodes[2]);
+  inline void Change_Orientation() override {
+    std::swap(Nodes[0], Nodes[2]);
   }
 };

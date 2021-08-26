@@ -38,6 +38,10 @@
  */
 class CPrimalGridFEM final: public CPrimalGrid {
 private:
+  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
+  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
+  unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
+
   unsigned short VTK_Type;      /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;     /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short nPolySol;      /*!< \brief Polynomial degree for the solution of the element. */
@@ -45,20 +49,10 @@ private:
   unsigned short nDOFsSol;      /*!< \brief Number of DOFs for the solution of the element. */
   unsigned short nFaces;        /*!< \brief Number of faces of the element. */
 
-  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
-  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
-  unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
-
   bool JacobianConsideredConstant;   /*!< \brief Whether or not the Jacobian of the transformation to
                                                  is (almost) constant. */
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CPrimalGridFEM() = delete;
-
   /*!
    * \brief Constructor using data to initialize the element.
    * \param[in] val_elemGlobalID - Global element ID of this element.
@@ -73,7 +67,7 @@ public:
   CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                  unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                  unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                 unsigned long  val_offDOfsSol,   istringstream  &elem_line);
+                 unsigned long  val_offDOfsSol,   std::istringstream  &elem_line);
 
   /*!
    * \brief Constructor using data to initialize the element.
@@ -90,11 +84,6 @@ public:
                  unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                  unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
                  unsigned long  val_offDOfsSol,   const unsigned long *connGrid);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CPrimalGridFEM(void) override;
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.
@@ -202,25 +191,7 @@ public:
   void GetCornerPointsAllFaces(unsigned short &numFaces,
                                unsigned short nPointsPerFace[],
                                unsigned long  faceConn[6][4]) const override;
-private:
-  /*!
-   * \brief Get the number of faces of the element.
-   * \param[in] elementType - element type
-   * \return number of faces
-   */
-  static inline unsigned short nFacesOfElementType(unsigned short elementType) {
-    switch (elementType) {
-      case TRIANGLE: return N_FACES_TRIANGLE;
-      case QUADRILATERAL: return N_FACES_QUADRILATERAL;
-      case TETRAHEDRON: return N_FACES_TETRAHEDRON;
-      case PYRAMID: return N_FACES_PYRAMID;
-      case PRISM: return N_FACES_PRISM;
-      case HEXAHEDRON: return N_FACES_HEXAHEDRON;
-      default: SU2_MPI::Error("Invalid elementType.", CURRENT_FUNCTION); return 0;
-    }
-  }
 
-public:
   /*!
    * \brief Static member function to get the local the corner points of all the faces
            of this element. It must be made sure that the numbering of the faces is

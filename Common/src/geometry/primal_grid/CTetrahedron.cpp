@@ -48,8 +48,6 @@ CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[3] = val_point_3;
 }
 
-CTetrahedron::~CTetrahedron() {}
-
-void CTetrahedron::Change_Orientation(void) {
-  swap(Nodes[0],Nodes[1]);
+void CTetrahedron::Change_Orientation() {
+  std::swap(Nodes[0],Nodes[1]);
 }

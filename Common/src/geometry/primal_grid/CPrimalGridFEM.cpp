@@ -30,7 +30,8 @@
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   istringstream  &elem_line) : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type))
+                               unsigned long  val_offDOfsSol,   std::istringstream  &elem_line)
+  : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type))
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -57,16 +58,16 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
     switch( VTK_Type ) {
 
       case QUADRILATERAL:
-        swap(Nodes[2], Nodes[3]);
+        std::swap(Nodes[2], Nodes[3]);
         break;
 
       case HEXAHEDRON:
-        swap(Nodes[2], Nodes[3]);
-        swap(Nodes[6], Nodes[7]);
+        std::swap(Nodes[2], Nodes[3]);
+        std::swap(Nodes[6], Nodes[7]);
         break;
 
       case PYRAMID:
-        swap(Nodes[2], Nodes[3]);
+        std::swap(Nodes[2], Nodes[3]);
         break;
     }
   }
@@ -75,7 +76,8 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid): CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type))
+                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid)
+  : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type))
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -93,8 +95,6 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
   for(unsigned short i=0; i<nDOFsGrid; i++)
     Nodes[i] = connGrid[i];
 }
-
-CPrimalGridFEM::~CPrimalGridFEM(){}
 
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
                                                   unsigned short nPoly,

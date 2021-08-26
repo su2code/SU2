@@ -51,9 +51,7 @@ struct CLineConnectivity {
  * \author F. Palacios
  */
 class CLine final : public CPrimalGridWithConnectivity<CLineConnectivity> {
-
 public:
-
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
@@ -62,14 +60,9 @@ public:
   CLine(unsigned long val_point_0, unsigned long val_point_1);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CLine(void) override;
-
-  /*!
    * \brief Change the orientation of an element.
    */
-  inline void Change_Orientation(void) override {
-    swap(Nodes[0], Nodes[1]);
+  inline void Change_Orientation() override {
+    std::swap(Nodes[0], Nodes[1]);
   }
 };
