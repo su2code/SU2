@@ -45,13 +45,12 @@
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
 class CUpwScalar : public CNumerics {
-protected:
-  su2double
-  a0 = 0.0,                    /*!< \brief The maximum of the face-normal velocity and 0 */
-  a1 = 0.0,                    /*!< \brief The minimum of the face-normal velocity and 0 */
-  *Flux = nullptr,             /*!< \brief Final result, diffusive flux/residual. */
-  **Jacobian_i = nullptr,      /*!< \brief Flux Jacobian w.r.t. node i. */
-  **Jacobian_j = nullptr;      /*!< \brief Flux Jacobian w.r.t. node j. */
+ protected:
+  su2double a0 = 0.0,                     /*!< \brief The maximum of the face-normal velocity and 0 */
+      a1 = 0.0,                           /*!< \brief The minimum of the face-normal velocity and 0 */
+          *Flux = nullptr,                /*!< \brief Final result, diffusive flux/residual. */
+              **Jacobian_i = nullptr,     /*!< \brief Flux Jacobian w.r.t. node i. */
+                  **Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
@@ -67,7 +66,7 @@ protected:
    */
   virtual void FinishResidualCalc(const CConfig* config) = 0;
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -87,5 +86,4 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-
 };

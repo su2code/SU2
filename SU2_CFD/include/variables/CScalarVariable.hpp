@@ -36,13 +36,15 @@
  * \author A. Bueno.
  */
 class CScalarVariable : public CVariable {
-protected:
+ protected:
   MatrixType HB_Source; /*!< \brief Harmonic Balance source term. */
 
-  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL
+                                               reconstruction for the convective term */
+  CVectorOfMatrix
+      Gradient_Aux; /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -50,7 +52,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -62,7 +64,9 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final {
+    return Gradient_Reconstruction[iPoint];
+  }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
@@ -70,5 +74,4 @@ public:
    */
   inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
   inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
-
 };

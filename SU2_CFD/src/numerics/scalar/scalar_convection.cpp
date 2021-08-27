@@ -28,68 +28,64 @@
 
 #include "../../../include/numerics/scalar/scalar_convection.hpp"
 
-CUpwScalar::CUpwScalar(unsigned short val_nDim,
-                       unsigned short val_nVar,
-                       const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config),
-  implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
-  dynamic_grid(config->GetDynamic_Grid())
-{
-  Flux = new su2double [nVar];
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
+CUpwScalar::CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+    : CNumerics(val_nDim, val_nVar, config),
+      implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
+      incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
+      dynamic_grid(config->GetDynamic_Grid()) {
+  Flux = new su2double[nVar];
+  Jacobian_i = new su2double*[nVar];
+  Jacobian_j = new su2double*[nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double[nVar];
+    Jacobian_j[iVar] = new su2double[nVar];
   }
 }
 
 CUpwScalar::~CUpwScalar(void) {
-
-  delete [] Flux;
+  delete[] Flux;
   if (Jacobian_i != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      delete [] Jacobian_i[iVar];
-      delete [] Jacobian_j[iVar];
+      delete[] Jacobian_i[iVar];
+      delete[] Jacobian_j[iVar];
     }
-    delete [] Jacobian_i;
-    delete [] Jacobian_j;
+    delete[] Jacobian_i;
+    delete[] Jacobian_j;
   }
 }
 
 CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
-
   unsigned short iDim;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(ScalarVar_i, nVar);  AD::SetPreaccIn(ScalarVar_j, nVar);
+  AD::SetPreaccIn(ScalarVar_i, nVar);
+  AD::SetPreaccIn(ScalarVar_j, nVar);
   if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+    AD::SetPreaccIn(GridVel_i, nDim);
+    AD::SetPreaccIn(GridVel_j, nDim);
   }
 
   ExtraADPreaccIn();
 
-  Density_i = V_i[nDim+2];
-  Density_j = V_j[nDim+2];
+  Density_i = V_i[nDim + 2];
+  Density_j = V_j[nDim + 2];
 
   su2double q_ij = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
-      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
+      su2double Velocity_i = V_i[iDim + 1] - GridVel_i[iDim];
+      su2double Velocity_j = V_j[iDim + 1] - GridVel_j[iDim];
+      q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
     }
-  }
-  else {
+  } else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+      q_ij += 0.5 * (V_i[iDim + 1] + V_j[iDim + 1]) * Normal[iDim];
     }
   }
 
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
+  a0 = 0.5 * (q_ij + fabs(q_ij));
+  a1 = 0.5 * (q_ij - fabs(q_ij));
 
   FinishResidualCalc(config);
 
@@ -97,5 +93,4 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   AD::EndPreacc();
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-
 }

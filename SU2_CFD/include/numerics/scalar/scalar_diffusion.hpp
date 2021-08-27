@@ -45,14 +45,13 @@
  * \author C. Pederson, A. Bueno, and F. Palacios
  */
 class CAvgGrad_Scalar : public CNumerics {
-protected:
-  su2double
-  *Proj_Mean_GradScalarVar_Normal = nullptr,  /*!< \brief Mean_gradScalarVar DOT normal. */
-  *Proj_Mean_GradScalarVar = nullptr,         /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
-  proj_vector_ij = 0.0,                     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */
-  **Jacobian_i = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node i. */
-  **Jacobian_j = nullptr;                   /*!< \brief Flux Jacobian w.r.t. node j. */
+ protected:
+  su2double *Proj_Mean_GradScalarVar_Normal = nullptr, /*!< \brief Mean_gradScalarVar DOT normal. */
+      *Proj_Mean_GradScalarVar = nullptr, /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
+      proj_vector_ij = 0.0,               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+          *Flux = nullptr,                /*!< \brief Final result, diffusive flux/residual. */
+              **Jacobian_i = nullptr,     /*!< \brief Flux Jacobian w.r.t. node i. */
+                  **Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
 
   const bool correct_gradient = false, implicit = false, incompressible = false;
 
@@ -68,7 +67,7 @@ protected:
    */
   virtual void FinishResidualCalc(const CConfig* config) = 0;
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -76,8 +75,7 @@ public:
    * \param[in] correct_gradient - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_gradient, const CConfig* config);
+  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar, bool correct_gradient, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -90,5 +88,4 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-
 };

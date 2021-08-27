@@ -27,9 +27,9 @@
 
 #pragma once
 
-#include "CSolver.hpp"
-#include "../variables/CScalarVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../variables/CScalarVariable.hpp"
+#include "CSolver.hpp"
 
 /*!
  * \class CScalarSolver
@@ -38,29 +38,28 @@
  * \author A. Bueno.
  */
 class CScalarSolver : public CSolver {
-protected:
-  enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t {MAXNVAR = 2};         /*!< \brief Max number of variables, used in some static arrays. */
-  enum : size_t {MAXNVARFLOW = 12};    /*!< \brief Max number of flow variables, used in some static arrays. */
+ protected:
+  enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
+  enum : size_t { MAXNVAR = 2 };      /*!< \brief Max number of variables, used in some static arrays. */
+  enum : size_t { MAXNVARFLOW = 12 }; /*!< \brief Max number of flow variables, used in some static arrays. */
 
-  enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
-  enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */
+  enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
+  enum : size_t { OMP_MIN_SIZE = 32 };  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double
-  lowerlimit[MAXNVAR] = {0.0},  /*!< \brief contains lower limits for turbulence variables. */
-  upperlimit[MAXNVAR] = {0.0};  /*!< \brief contains upper limits for turbulence variables. */
+  su2double lowerlimit[MAXNVAR] = {0.0}, /*!< \brief contains lower limits for turbulence variables. */
+      upperlimit[MAXNVAR] = {0.0};       /*!< \brief contains upper limits for turbulence variables. */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP
-  vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
-  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
+  vector<GridColor<> > EdgeColoring; /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;      /*!< \brief If the reducer strategy is in use. */
 #else
-  array<DummyGridColor<>,1> EdgeColoring;
+  array<DummyGridColor<>, 1> EdgeColoring;
   /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
   static constexpr bool ReducerStrategy = false;
 #endif
@@ -78,8 +77,7 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
-private: //changed from private in CTurbSolver.hpp
-
+ private:  // changed from private in CTurbSolver.hpp
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -88,11 +86,8 @@ private: //changed from private in CTurbSolver.hpp
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Viscous_Residual(unsigned long iEdge,
-                        CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics *numerics,
-                        CConfig *config);
+  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                        CConfig* config);
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
@@ -106,10 +101,9 @@ private: //changed from private in CTurbSolver.hpp
    * a nonlinear iteration for stability. Default value 1.0 set in ctor of CScalarVariable.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig *config) { }
+  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {}
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -125,7 +119,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig *config);
+  CScalarSolver(CGeometry* geometry, CConfig* config);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -135,10 +129,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
 
   /*!
@@ -150,13 +141,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline void BC_Sym_Plane(CGeometry      *geometry,
-                           CSolver        **solver_container,
-                           CNumerics      *conv_numerics,
-                           CNumerics      *visc_numerics,
-                           CConfig        *config,
-                           unsigned short val_marker) override {
-    /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
+  inline void BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override{
+      /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
   };
 
   /*!
@@ -168,13 +155,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline void BC_Euler_Wall(CGeometry      *geometry,
-                            CSolver        **solver_container,
-                            CNumerics      *conv_numerics,
-                            CNumerics      *visc_numerics,
-                            CConfig        *config,
-                            unsigned short val_marker) override {
-    /*--- Convective fluxes across euler wall are equal to zero. ---*/
+  inline void BC_Euler_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override{
+      /*--- Convective fluxes across euler wall are equal to zero. ---*/
   };
 
   /*!
@@ -184,18 +167,15 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Periodic(CGeometry *geometry,
-                   CSolver **solver_container,
-                   CNumerics *numerics,
-                   CConfig *config) final;
+  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(const CConfig *config) final {
+  inline void SetFreeStream_Solution(const CConfig* config) final {
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       nodes->SetSolution(iPoint, Solution_Inf);
     }
     END_SU2_OMP_FOR
@@ -207,7 +187,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+  void PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
    * \brief Complete an implicit iteration.
@@ -215,7 +195,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+  void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
    * \brief Update the solution using an implicit solver.
@@ -223,9 +203,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) override;
+  void ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -236,12 +214,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config,
-                            unsigned short iRKStep,
-                            unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) final;
+  void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) final;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -251,15 +225,10 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry,
-                   CSolver ***solver,
-                   CConfig *config,
-                   int val_iter,
-                   bool val_update_geo) final;
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
   /*!
    * \brief SA and SST support OpenMP+MPI.
    */
   inline bool GetHasHybridParallel() const override { return true; }
-
 };
