@@ -103,10 +103,10 @@ private: //changed from private in CTurbSolver.hpp
 
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
-   * a nonlinear iteration for stability.
+   * a nonlinear iteration for stability. Default value 1.0 set in ctor of CScalarVariable.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(const CConfig *config);
+  virtual void ComputeUnderRelaxationFactor(const CConfig *config) { }
 
 public:
 

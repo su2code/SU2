@@ -1588,3 +1588,47 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
   }
 
 }
+
+void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  /* Apply the turbulent under-relaxation to the SA variants. The
+   SA_NEG model is more robust due to allowing for negative nu_tilde,
+   so the under-relaxation is not applied to that variant. */
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  su2double localUnderRelaxation =  1.00;
+  const su2double allowableRatio =  0.99;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    localUnderRelaxation = 1.0;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+
+      /* We impose a limit on the maximum percentage that the
+        turbulence variables can change over a nonlinear iteration. */
+
+      const unsigned long index = iPoint * nVar + iVar;
+      su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      }
+
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
+  }
+  END_SU2_OMP_FOR
+
+}

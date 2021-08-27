@@ -497,57 +497,6 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
 }
 
-void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
-
-  /* Only apply the turbulent under-relaxation to the SA variants. The
-   SA_NEG model is more robust due to allowing for negative nu_tilde,
-   so the under-relaxation is not applied to that variant. */
-
-  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
-                   (config->GetKind_Turb_Model() == SA_E)      ||
-                   (config->GetKind_Turb_Model() == SA_COMP)   ||
-                   (config->GetKind_Turb_Model() == SA_E_COMP));
-
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-
-  su2double localUnderRelaxation =  1.00;
-  const su2double allowableRatio =  0.99;
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    localUnderRelaxation = 1.0;
-    if (sa_model) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-        /* We impose a limit on the maximum percentage that the
-         turbulence variables can change over a nonlinear iteration. */
-
-        const unsigned long index = iPoint * nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-        if (ratio > allowableRatio) {
-          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-        }
-
-      }
-    }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
-  }
-  END_SU2_OMP_FOR
-
-}
-
 void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
