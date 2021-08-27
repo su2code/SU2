@@ -1,9 +1,9 @@
 /*!
  * \file turb_convection.cpp
  * \brief Implementation of numerics classes to compute convective
- *        fluxes in turbulence problems.
+ *        fluxes in scalar problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
