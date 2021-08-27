@@ -1595,6 +1595,11 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    SA_NEG model is more robust due to allowing for negative nu_tilde,
    so the under-relaxation is not applied to that variant. */
 
+  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
+                   (config->GetKind_Turb_Model() == SA_E)      ||
+                   (config->GetKind_Turb_Model() == SA_COMP)   ||
+                   (config->GetKind_Turb_Model() == SA_E_COMP));
+
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -1605,17 +1610,19 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     localUnderRelaxation = 1.0;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    if (sa_model) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
-      /* We impose a limit on the maximum percentage that the
-        turbulence variables can change over a nonlinear iteration. */
+        /* We impose a limit on the maximum percentage that the
+          turbulence variables can change over a nonlinear iteration. */
 
-      const unsigned long index = iPoint * nVar + iVar;
-      su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-      if (ratio > allowableRatio) {
-        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+        const unsigned long index = iPoint * nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+        }
+
       }
-
     }
 
     /* Threshold the relaxation factor in the event that there is
