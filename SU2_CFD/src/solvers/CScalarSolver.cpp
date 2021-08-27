@@ -785,7 +785,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
           /*--- This is temporary and only valid for constant-density problems:
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
-          nor updated with the solution at the end of each iteration. */ //TK:: Then we should prohibit that use?
+          nor updated with the solution at the end of each iteration. */
           Density_nM1 = flowNodes->GetDensity(iPoint);
           Density_n   = flowNodes->GetDensity(iPoint);
           Density_nP1 = flowNodes->GetDensity(iPoint);
@@ -857,7 +857,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
   unsigned short skipVars = 0;
 
-  if (nDim == 2) skipVars += 6; //TK:: Which order to load write, i.e. mean_flow, turb, scalar1, scalar2, ...
+  if (nDim == 2) skipVars += 6;
   if (nDim == 3) skipVars += 8;
 
   /*--- Adjust the number of solution variables in the incompressible
@@ -874,7 +874,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  unsigned long counter = 0, iPoint_Global = 0;//TK::why ouside, not used outside loop...
+  unsigned long counter = 0, iPoint_Global = 0;
   for (; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
 
