@@ -106,7 +106,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_convection.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
-  //TK:: add necessary files here in the end when it is clear what will all be added
+  ../src/numerics/scalar/scalar_convection.cpp \
+  ../src/numerics/scalar/scalar_diffusion.cpp \
+  ../src/numerics/scalar/scalar_sources.cpp \
   ../src/numerics/turbulent/turb_convection.cpp \
   ../src/numerics/turbulent/turb_diffusion.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
@@ -177,6 +179,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \
+  ../src/solvers/CScalarSolver.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
@@ -206,6 +209,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
+  ../src/variables/CScalarVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CNEMOEulerVariable.cpp \
