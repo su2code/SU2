@@ -145,7 +145,7 @@ class Interface:
         self.aitkenParam = FSI_config['AITKEN_PARAM']			#relaxation parameter for the BGS method
         self.FSIIter = 0				#current FSI iteration
         self.unsteady = False				#flag for steady or unsteady simulation (default is steady)
-        if FSI_config['CSD_SOLVER']=='IMPOSED':
+        if FSI_config['IMPOSED_MOTION']=='YES':
           self.ImposedMotion = True
         else:
           self.ImposedMotion = False
