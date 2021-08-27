@@ -228,7 +228,7 @@ class CScalarSolver : public CSolver {
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
   /*!
-   * \brief SA and SST support OpenMP+MPI.
+   * \brief Scalar solvers support OpenMP+MPI.
    */
   inline bool GetHasHybridParallel() const override { return true; }
 };

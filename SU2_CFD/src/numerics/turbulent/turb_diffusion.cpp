@@ -134,7 +134,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
   Flux[1] = diff_omega*Proj_Mean_GradScalarVar[1];
 
-  /*--- For Jacobians -> Use of TSL (Thin Shear Layer?) approx. to compute derivatives of the gradients ---*/
+  /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
   if (implicit) {
     su2double proj_on_rho = proj_vector_ij/Density_i;
 
