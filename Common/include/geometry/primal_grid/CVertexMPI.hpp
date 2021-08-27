@@ -35,8 +35,7 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CVertexMPIConnectivity {
-  // some of the index directions (e.g. Faces) would actually have 0 elements,
-  // but we cannot declare arrays of length 0
+  // All the index directions should actually have 0 elements, but we cannot declare arrays of length 0.
   enum { nNodes = 1 };
   enum { nFaces = 0 };
   enum { maxNodesFace = 0 };
