@@ -37,8 +37,7 @@
  */
 class CTurbVariable : public CScalarVariable {
 protected:
-  VectorType muT;         /*!< \brief Eddy viscosity. */
-  MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
+  VectorType muT; /*!< \brief Eddy viscosity. */
 
 public:
   /*!

@@ -37,6 +37,7 @@
  */
 class CScalarVariable : public CVariable {
 protected:
+  MatrixType HB_Source; /*!< \brief Harmonic Balance source term. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */

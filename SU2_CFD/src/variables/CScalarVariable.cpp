@@ -44,7 +44,7 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
-  /*--- Always allocate the slope limiter, and the auxiliar
+  /*--- Always allocate the slope limiter, and the auxiliary
    variables (check the logic - JST with 2nd order Turb model) ---*/
 
   Limiter.resize(nPoint,nVar) = su2double(0.0);
@@ -56,5 +56,10 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
+
+  /*--- Allocate space for the harmonic balance source terms ---*/
+  if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
+    HB_Source.resize(nPoint,nVar) = su2double(0.0);
+  }
 
 }
