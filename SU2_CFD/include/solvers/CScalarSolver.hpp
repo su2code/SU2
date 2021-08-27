@@ -150,12 +150,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry      *geometry,
-                    CSolver        **solver_container,
-                    CNumerics      *conv_numerics,
-                    CNumerics      *visc_numerics,
-                    CConfig        *config,
-                    unsigned short val_marker) override;
+  inline void BC_Sym_Plane(CGeometry      *geometry,
+                           CSolver        **solver_container,
+                           CNumerics      *conv_numerics,
+                           CNumerics      *visc_numerics,
+                           CConfig        *config,
+                           unsigned short val_marker) override {
+    /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
+  };
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -166,12 +168,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry      *geometry,
-                     CSolver        **solver_container,
-                     CNumerics      *conv_numerics,
-                     CNumerics      *visc_numerics,
-                     CConfig        *config,
-                     unsigned short val_marker) override;
+  inline void BC_Euler_Wall(CGeometry      *geometry,
+                            CSolver        **solver_container,
+                            CNumerics      *conv_numerics,
+                            CNumerics      *visc_numerics,
+                            CConfig        *config,
+                            unsigned short val_marker) override {
+    /*--- Convective fluxes across euler wall are equal to zero. ---*/
+  };
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.

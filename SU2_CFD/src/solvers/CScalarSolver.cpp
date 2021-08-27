@@ -313,28 +313,6 @@ void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CScalarSolver::BC_Sym_Plane(CGeometry      *geometry,
-                               CSolver        **solver_container,
-                               CNumerics      *conv_numerics,
-                               CNumerics      *visc_numerics,
-                               CConfig        *config,
-                               unsigned short val_marker) {
-
-  /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
-
-}
-
-void CScalarSolver::BC_Euler_Wall(CGeometry      *geometry,
-                                CSolver        **solver_container,
-                                CNumerics      *conv_numerics,
-                                CNumerics      *visc_numerics,
-                                CConfig        *config,
-                                unsigned short val_marker) {
-
-  /*--- Convective fluxes across euler wall are equal to zero. ---*/
-
-}
-
 void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics *numerics, CConfig *config) {
 
