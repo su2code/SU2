@@ -32,7 +32,10 @@
 CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig *val_config,
                                                unsigned short val_iZone,
                                                unsigned short val_nZone)
-: CMeshReaderFVM(val_config, val_iZone, val_nZone) {
+: CMeshReaderFVM(val_config, val_iZone, val_nZone),
+  myZone(val_iZone),
+  nZones(val_nZone),
+  meshFilename(config->GetMesh_FileName()) {
 
   actuator_disk  = (((config->GetnMarker_ActDiskInlet() != 0) ||
                      (config->GetnMarker_ActDiskOutlet() != 0)) &&
@@ -40,18 +43,14 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig *val_config,
                      ((config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) &&
                       (config->GetActDisk_SU2_DEF()))));
   if (config->GetActDisk_DoubleSurface()) actuator_disk = false;
-  ActDiskNewPoints = 0;
-  Xloc = 0.0; Yloc = 0.0; Zloc = 0.0;
-
-  /* Store the current zone to be read and the total number of zones. */
-  myZone = val_iZone;
-  nZones = val_nZone;
-
-  /* Store the mesh filename since we will open/close multiple times. */
-  meshFilename = config->GetMesh_FileName();
 
   /* Read the basic metadata and perform some basic error checks. */
-  ReadMetadata(val_config);
+  const auto try_single_pass = !actuator_disk;
+
+  if (ReadMetadata(try_single_pass, val_config)) {
+    /* The file contents were read together with the metadata. */
+    return;
+  }
 
   /* If the mesh contains an actuator disk as a single surface,
    we need to first split the surface into repeated points and update
@@ -66,40 +65,23 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig *val_config,
   mesh_file.open(meshFilename);
   FastForwardToMyZone();
 
-  ReadVolumeElementConnectivity();
-  ReadPointCoordinates();
-  ReadSurfaceElementConnectivity();
-
+  for (auto section : SectionOrder) {
+    switch (section) {
+    case FileSection::ELEMENTS:
+      ReadVolumeElementConnectivity();
+      break;
+    case FileSection::POINTS:
+      ReadPointCoordinates();
+      break;
+    case FileSection::MARKERS:
+      ReadSurfaceElementConnectivity();
+      break;
+    }
+  }
   mesh_file.close();
 }
 
-void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
-
-  su2double AoA_Offset = 0.0;
-  su2double AoS_Offset = 0.0;
-
-  auto BcastValues = [&]() {
-    SU2_MPI::Bcast(&numberOfGlobalElements, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&numberOfGlobalPoints, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&numberOfMarkers, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-    SU2_MPI::Bcast(&dimension, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
-
-    SU2_MPI::Bcast(&AoA_Offset, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-    const su2double AoA_Current = config->GetAoA() + AoA_Offset;
-    config->SetAoA_Offset(AoA_Offset);
-    config->SetAoA(AoA_Current);
-
-    SU2_MPI::Bcast(&AoS_Offset, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-    const su2double AoS_Current = config->GetAoS() + AoS_Offset;
-    config->SetAoS_Offset(AoS_Offset);
-    config->SetAoS(AoS_Current);
-  };
-
-  /*--- Only the master needs to read the metadata, others wait here for it. ---*/
-  if (rank != MASTER_NODE) {
-    BcastValues();
-    return;
-  }
+bool CSU2ASCIIMeshReaderFVM::ReadMetadata(const bool single_pass, CConfig *config) {
 
   const bool harmonic_balance = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
   const bool multizone_file = config->GetMultizone_Mesh();
@@ -147,6 +129,9 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
   bool foundNDIME = false, foundNPOIN = false;
   bool foundNELEM = false, foundNMARK = false;
 
+  int current_section_idx = 0;
+  bool single_pass_active = false;
+
   while (getline (mesh_file, text_line)) {
 
     /*--- Read the dimension of the problem ---*/
@@ -162,56 +147,60 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
 
     if (text_line.find ("AOA_OFFSET=",0) != string::npos) {
       text_line.erase (0,11);
-      AoA_Offset = atof(text_line.c_str());
+      su2double AoA_Offset = atof(text_line.c_str());
 
       /*--- The offset is in deg ---*/
       const su2double AoA_Current = config->GetAoA() + AoA_Offset;
+      config->SetAoA_Offset(AoA_Offset);
+      config->SetAoA(AoA_Current);
 
-      if (config->GetDiscard_InFiles() == false) {
-        if (AoA_Offset != 0.0)  {
-          cout.precision(6);
-          cout << fixed <<"WARNING: AoA in the config file (" << config->GetAoA() << " deg.) +" << endl;
+      if (AoA_Offset != 0.0) {
+        if (!config->GetDiscard_InFiles()) {
+          cout << "WARNING: AoA in the config file (" << config->GetAoA() << " deg.) +\n";
           cout << "         AoA offset in mesh file (" << AoA_Offset << " deg.) = " << AoA_Current << " deg." << endl;
         }
-      }
-      else {
-        if (AoA_Offset != 0.0)
-          cout <<"WARNING: Discarding the AoA offset in the geometry file." << endl;
+        else {
+          cout << "WARNING: Discarding the AoA offset in the mesh file." << endl;
+        }
       }
       continue;
     }
 
     if (text_line.find ("AOS_OFFSET=",0) != string::npos) {
       text_line.erase (0,11);
-      AoS_Offset = atof(text_line.c_str());
+      su2double AoS_Offset = atof(text_line.c_str());
 
       /*--- The offset is in deg ---*/
       const su2double AoS_Current = config->GetAoS() + AoS_Offset;
+      config->SetAoS_Offset(AoS_Offset);
+      config->SetAoS(AoS_Current);
 
-      if (config->GetDiscard_InFiles() == false) {
-        if (AoS_Offset != 0.0)  {
-          cout.precision(6);
-          cout << fixed <<"WARNING: AoS in the config file (" << config->GetAoS() << " deg.) +" << endl;
+      if (AoS_Offset != 0.0) {
+        if (!config->GetDiscard_InFiles()) {
+          cout << "WARNING: AoS in the config file (" << config->GetAoS() << " deg.) +\n";
           cout << "         AoS offset in mesh file (" << AoS_Offset << " deg.) = " << AoS_Current << " deg." << endl;
         }
-      }
-      else {
-        if (AoS_Offset != 0.0)
-          cout <<"WARNING: Discarding the AoS offset in the geometry file." << endl;
+        else {
+          cout << "WARNING: Discarding the AoS offset in the mesh file." << endl;
+        }
       }
       continue;
     }
 
-    /// TODO: If this were the order (points, elements, markers), we could read the file in one pass.
-    /// Currently we need 2 (first just to read metadata!), we could also linear-partition elements
-    /// instead of points (more difficult).
-    /// In either case we would then be able to also make a single pass over a multizone mesh.
-
     if (!foundNPOIN && text_line.find ("NPOIN=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfGlobalPoints = atoi(text_line.c_str());
-      for (unsigned long iPoint = 0; iPoint < numberOfGlobalPoints; iPoint++)
-        getline (mesh_file, text_line);
+
+      /* If the points were found first, read them, otherwise just consume the lines. */
+      if (single_pass && foundNDIME && current_section_idx == 0) {
+        single_pass_active = true;
+        ReadPointCoordinates(true);
+      }
+      else {
+        for (auto iPoint = 0ul; iPoint < numberOfGlobalPoints; iPoint++)
+          getline (mesh_file, text_line);
+      }
+      SectionOrder[current_section_idx++] = FileSection::POINTS;
       foundNPOIN = true;
       continue;
     }
@@ -219,8 +208,15 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
     if (!foundNELEM && text_line.find ("NELEM=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfGlobalElements = atoi(text_line.c_str());
-      for (unsigned long iElem = 0; iElem < numberOfGlobalElements; iElem++)
-        getline (mesh_file, text_line);
+
+      if (single_pass_active) {
+        ReadVolumeElementConnectivity(true);
+      }
+      else {
+        for (auto iElem = 0ul; iElem < numberOfGlobalElements; iElem++)
+          getline (mesh_file, text_line);
+      }
+      SectionOrder[current_section_idx++] = FileSection::ELEMENTS;
       foundNELEM = true;
       continue;
     }
@@ -228,6 +224,14 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
     if (!foundNMARK && text_line.find ("NMARK=",0) != string::npos) {
       text_line.erase (0,6);
       numberOfMarkers = atoi(text_line.c_str());
+
+      if (current_section_idx != 2) {
+        SU2_MPI::Error("Markers must be listed after points and elements in the SU2 mesh file.", CURRENT_FUNCTION);
+      }
+
+      if (single_pass_active) ReadSurfaceElementConnectivity(true);
+
+      SectionOrder[current_section_idx++] = FileSection::MARKERS;
       foundNMARK = true;
       continue;
     }
@@ -239,9 +243,6 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
   }
 
   mesh_file.close();
-
-  /* Communicate the values read by the master rank. */
-  BcastValues();
 
   /* Throw an error if any of the keywords was not found. */
   if (!foundNDIME) {
@@ -261,6 +262,7 @@ void CSU2ASCIIMeshReaderFVM::ReadMetadata(CConfig *config) {
                    "Check the SU2 ASCII file format.", CURRENT_FUNCTION);
   }
 
+  return single_pass_active;
 }
 
 void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
@@ -734,7 +736,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
 }
 
-void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates() {
+void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates(const bool single_pass) {
 
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
@@ -749,10 +751,12 @@ void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates() {
 
   /*--- Read the point coordinates into our data structure. ---*/
 
-  string text_line;
-  while (getline (mesh_file, text_line)) {
-
-    if (text_line.find("NPOIN=",0) == string::npos) continue;
+  while (true) {
+    string text_line;
+    if (!single_pass) {
+      getline(mesh_file, text_line);
+      if (text_line.find("NPOIN=",0) == string::npos) continue;
+    }
 
     for (unsigned long GlobalIndex = 0; GlobalIndex < numberOfGlobalPoints; ++GlobalIndex) {
 
@@ -802,7 +806,7 @@ void CSU2ASCIIMeshReaderFVM::ReadPointCoordinates() {
   }
 }
 
-void CSU2ASCIIMeshReaderFVM::ReadVolumeElementConnectivity() {
+void CSU2ASCIIMeshReaderFVM::ReadVolumeElementConnectivity(const bool single_pass) {
 
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
@@ -812,12 +816,12 @@ void CSU2ASCIIMeshReaderFVM::ReadVolumeElementConnectivity() {
   numberOfLocalElements  = 0;
   array<unsigned long, N_POINTS_HEXAHEDRON> connectivity{};
 
-  string text_line;
-  while (getline (mesh_file, text_line)) {
-
-    /*--- Find the section containing the interior elements. ---*/
-
-    if (text_line.find("NELEM=",0) == string::npos) continue;
+  while (true) {
+    string text_line;
+    if (!single_pass) {
+      if (!getline(mesh_file, text_line)) break;
+      if (text_line.find("NELEM=",0) == string::npos) continue;
+    }
 
     /*--- Loop over all the volumetric elements and store any element that
      contains at least one of an owned node for this rank (i.e., there will
@@ -893,7 +897,7 @@ void CSU2ASCIIMeshReaderFVM::ReadVolumeElementConnectivity() {
   }
 }
 
-void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
+void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity(const bool single_pass) {
 
   /* We already read in the number of markers with the metadata. */
   surfaceElementConnectivity.resize(numberOfMarkers);
@@ -905,12 +909,12 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
    however, the surface connectivity is still handled by the
    master node (and eventually distributed by the master as well). ---*/
 
-  string text_line;
-  while (getline (mesh_file, text_line)) {
-
-    /*--- Jump to the section containing the markers. ---*/
-
-    if (text_line.find("NMARK=",0) == string::npos) continue;
+  while (true) {
+    string text_line;
+    if (!single_pass) {
+      if (!getline(mesh_file, text_line)) break;
+      if (text_line.find("NMARK=",0) == string::npos) continue;
+    }
 
     for (unsigned short iMarker = 0; iMarker < numberOfMarkers; ++iMarker) {
       getline (mesh_file, text_line);
@@ -1003,6 +1007,7 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity() {
 
   /*--- Final error check for deprecated periodic BC format. ---*/
 
+  string text_line;
   while (getline (mesh_file, text_line)) {
 
     /*--- Find any periodic transformation information. ---*/
