@@ -57,7 +57,7 @@ def main():
   (options, args)=parser.parse_args()
 
   if options.with_MPI:
-    from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
+    from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++
     comm = MPI.COMM_WORLD
     myid = comm.Get_rank()
     numberPart = comm.Get_size()
@@ -112,7 +112,7 @@ def main():
   if have_MPI:
     comm.barrier()
 
-  # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
+  # --- Initialize the solid solver --- #
   # Serial solvers
   if CSD_Solver in ["NATIVE"]:
     if myid == rootProcess:
@@ -127,6 +127,7 @@ def main():
     else:
       SolidSolver = None
   # Parallel solvers
+  # For now we are only using serial solvers
   else:
     raise Exception('\n Invalid solid solver option')
 
