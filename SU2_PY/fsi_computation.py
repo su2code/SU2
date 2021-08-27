@@ -57,7 +57,7 @@ def main():
   (options, args)=parser.parse_args()
 
   if options.with_MPI:
-    from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
+    from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++
     comm = MPI.COMM_WORLD
     myid = comm.Get_rank()
     numberPart = comm.Get_size()
@@ -112,23 +112,24 @@ def main():
   if have_MPI:
     comm.barrier()
 
-  # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
-  if myid == rootProcess:
-    print("\n")
-    print(" Initializing solid solver ".center(80,"*"))
-    if CSD_Solver == 'AEROELASTIC':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
-    elif CSD_Solver == 'IMPOSED':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
-    elif CSD_Solver == 'MAPPING':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
+  # --- Initialize the solid solver --- #
+  # Serial solvers
+  if CSD_Solver in ["NATIVE"]:
+    if myid == rootProcess:
+      print("\n")
+      print(" Initializing solid solver ".center(80,"*"))
+      if CSD_Solver == 'NATIVE':
+        from SU2_Nastran import pysu2_nastran
+        if FSI_config["IMPOSED_MOTION"] == "NO":
+          SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
+        else:
+          SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
     else:
-      print("\n Invalid solid solver option")
+      SolidSolver = None
+  # Parallel solvers
+  # For now we are only using serial solvers
   else:
-    SolidSolver = None
+    raise Exception('\n Invalid solid solver option')
 
   if have_MPI:
     comm.barrier()
@@ -158,7 +159,7 @@ def main():
   if have_MPI:
     comm.barrier()
 
-  if CSD_Solver != "MAPPING":
+  if FSI_config["MAPPING_MODES"] == "NO":
     # --- Launch a steady or unsteady FSI computation --- #
     if FSI_config['TIME_MARCHING'] == "YES":
       try:
