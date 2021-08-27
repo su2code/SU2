@@ -48,7 +48,7 @@ TEST_CASE("Center of gravity computation", "[Primal Grid]") {
   coordinates[7][0] = 8.213597801418000e-01; coordinates[7][1] = 1.326371537826000e-01; coordinates[7][2] = -2.916814216089000e-03;
 
 #define REQUIRE_CG(name, x, y, z) \
-  name.SetCoord_CG(coordinates);   \
+  name.SetCoord_CG(nDim, coordinates);   \
   REQUIRE(name.GetCG(0) == Approx(x)); \
   REQUIRE(name.GetCG(1) == Approx(y)); \
   REQUIRE(name.GetCG(2) == Approx(z)); 
