@@ -836,18 +836,10 @@ void CSU2ASCIIMeshReaderFVM::ReadVolumeElementConnectivity(const bool single_pas
 
       /*--- Decide whether this rank needs each element. ---*/
 
-      unsigned short VTK_Type, nPointsElem = 0;
+      unsigned short VTK_Type;
       elem_line >> VTK_Type;
 
-      /// TODO: Use a function.
-      switch (VTK_Type) {
-        case TRIANGLE: nPointsElem = N_POINTS_TRIANGLE; break;
-        case QUADRILATERAL: nPointsElem = N_POINTS_QUADRILATERAL; break;
-        case TETRAHEDRON: nPointsElem = N_POINTS_TETRAHEDRON; break;
-        case HEXAHEDRON: nPointsElem = N_POINTS_HEXAHEDRON; break;
-        case PYRAMID: nPointsElem = N_POINTS_PYRAMID; break;
-        case PRISM: nPointsElem = N_POINTS_PRISM; break;
-      }
+      const auto nPointsElem = nPointsOfElementType(VTK_Type);
 
       for (unsigned short  i = 0; i < nPointsElem; i++) {
         elem_line >> connectivity[i];
@@ -959,15 +951,10 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity(const bool single_pa
         getline(mesh_file, text_line);
         istringstream bound_line(text_line);
 
-        unsigned short VTK_Type, nPointsElem = 0;
+        unsigned short VTK_Type;
         bound_line >> VTK_Type;
 
-        /// TODO: Use a function.
-        switch (VTK_Type) {
-          case LINE: nPointsElem = N_POINTS_LINE; break;
-          case TRIANGLE: nPointsElem = N_POINTS_TRIANGLE; break;
-          case QUADRILATERAL: nPointsElem = N_POINTS_QUADRILATERAL; break;
-        }
+        const auto nPointsElem = nPointsOfElementType(VTK_Type);
 
         if (dimension == 3 && VTK_Type == LINE) {
           SU2_MPI::Error("Line boundary conditions are not possible for 3D calculations.\n"
