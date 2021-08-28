@@ -269,7 +269,6 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
   /*--- Actuator disk preprocesing ---*/
 
-  string Marker_Tag_Duplicate;
   bool InElem, Perimeter;
   unsigned long Counter = 0;
   Xloc = 0.0; Yloc = 0.0; Zloc = 0.0;
@@ -295,6 +294,11 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
                    string(" \n Remove disks or re-export your mesh with double surfaces (repeated points)."),
                    CURRENT_FUNCTION);
   }
+
+  /*--- Open grid file ---*/
+
+  mesh_file.open(meshFilename);
+  FastForwardToMyZone();
 
   /*--- Read grid file with format SU2 ---*/
 
@@ -530,6 +534,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
   /* Open the mesh file again to read the coordinates of the new points. */
 
   mesh_file.open(meshFilename);
+  FastForwardToMyZone();
 
   while (getline (mesh_file, text_line)) {
 
@@ -699,6 +704,8 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
    points that touch the actuator disk ---*/
 
   mesh_file.open(meshFilename);
+  FastForwardToMyZone();
+
   while (getline (mesh_file, text_line)) {
     position = text_line.find ("NPOIN=",0);
     if (position != string::npos) {
@@ -724,6 +731,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
         }
       }
     }
+    break;
   }
 
   /* Lastly, increment the total number of points in order to add the
@@ -921,10 +929,9 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity(const bool single_pa
         position = text_line.find( "\n", 0 );
         if (position != string::npos) text_line.erase (position,1);
       }
-      markerNames[iMarker] = text_line.c_str();
+      markerNames[iMarker] = text_line;
 
       bool duplicate = false;
-      string Marker_Tag_Duplicate;
       if ((actuator_disk) &&
           (markerNames[iMarker] == config->GetMarker_ActDiskInlet_TagBound(0))) {
         duplicate = true;
@@ -972,20 +979,20 @@ void CSU2ASCIIMeshReaderFVM::ReadSurfaceElementConnectivity(const bool single_pa
         }
 
         if (duplicate) {
-          /*--- Increment our counter if we stored a duplicate. ---*/
-          ++iMarker;
           for (unsigned short i = 0; i < nPointsElem; i++) {
             if (ActDisk_Bool[connectivity[i]]) {
               connectivity[i] = ActDiskPoint_Back[connectivity[i]];
             }
           }
-          surfaceElementConnectivity[iMarker].push_back(0);
-          surfaceElementConnectivity[iMarker].push_back(VTK_Type);
+          surfaceElementConnectivity[iMarker + 1].push_back(0);
+          surfaceElementConnectivity[iMarker + 1].push_back(VTK_Type);
           for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-            surfaceElementConnectivity[iMarker].push_back(connectivity[i]);
+            surfaceElementConnectivity[iMarker + 1].push_back(connectivity[i]);
           }
         }
       }
+      /*--- Increment the counter an extra time if we stored a duplicate. ---*/
+      iMarker += duplicate;
     }
     break;
   }
