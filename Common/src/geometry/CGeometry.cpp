@@ -39,7 +39,7 @@ CGeometry::CGeometry(void) :
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iFace, iVertex;
+  unsigned long iElem, iElem_Bound, iVertex;
   unsigned short iMarker;
 
   if (elem != nullptr) {
@@ -56,12 +56,6 @@ CGeometry::~CGeometry(void) {
       delete [] bound[iMarker];
     }
     delete [] bound;
-  }
-
-  if (face != nullptr) {
-    for (iFace = 0; iFace < nFace; iFace ++)
-      delete face[iFace];
-    delete[] face;
   }
 
   delete nodes;
