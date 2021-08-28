@@ -316,6 +316,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case MIXTURE_FLUID_MODEL:
       n_scalars = config->GetNScalarsInit();
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight(n_scalars)/1000.0));
+      // Note: Density_FreeStream = INC_DENSITY_INT and Temperature_FreeStream = INC_TEMPERATURE_INIT.
+      // Mixture density is computed based on the MeanMolecularWeight in CFluidScalar.cpp 
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
       dummy_scalar = new su2double[n_scalars]();

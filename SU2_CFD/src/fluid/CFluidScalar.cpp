@@ -36,7 +36,7 @@ CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_opera
   wilke = false;
   davidson = true;
 
-  Pressure = value_pressure_operating;
+  Pressure_Thermodynamic = value_pressure_operating;
   Gas_Constant = config->GetGas_Constant();
   Gamma = 1.0;
 
@@ -232,7 +232,7 @@ unsigned long CFluidScalar::SetTDState_T(const su2double val_temperature, su2dou
   Cp = CpAir300Kelvin;
   Cv = Cp/RatioSpecificHeatsAir;
   Temperature = val_temperature;
-  Density = Pressure / ((Temperature * UNIVERSAL_GAS_CONSTANT) / MeanMolecularWeight);
+  Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT) / MeanMolecularWeight);
 
   massToMoleFractions(val_scalars);
 

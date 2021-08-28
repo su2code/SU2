@@ -251,8 +251,8 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
 
     CFluidModel * fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
-    for(int i_scalar = 0; i_scalar < nVar; i_scalar++){
-      scalars[i_scalar] = nodes->GetSolution(i_point, i_scalar);
+    for(int iVar = 0; iVar < nVar; iVar++){
+      scalars[iVar] = nodes->GetSolution(i_point, iVar);
     }
 
     su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
@@ -267,12 +267,12 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
     su2double Lewis = 1;
     su2double mass_diffusivity = thermal_conductivity / (Lewis * density * cp);
 
-    for(auto i_scalar = 0u; i_scalar < nVar; ++i_scalar){
-      nodes->SetDiffusivity(i_point, mass_diffusivity, i_scalar);
+    for(auto iVar = 0u; iVar < nVar; iVar++){
+      nodes->SetDiffusivity(i_point, mass_diffusivity, iVar);
     }
 
-    // for(auto i_scalar = 0u; i_scalar < nVar; ++i_scalar){
-    //   nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(), i_scalar);
+    // for(auto iVar = 0u; iVar < nVar; iVar++){
+    //   nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(), iVar);
     // }
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
@@ -339,8 +339,8 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
         for (unsigned long i_var = 0; i_var < nVar; i_var++)
           Solution[i_var] = 0.0;
 
-        for(int i_scalar = 0;i_scalar < nVar;i_scalar++){
-          scalar_init[i_scalar] = config->GetScalar_Init(i_scalar);
+        for(int iVar = 0; iVar < nVar; iVar++){
+          scalar_init[iVar] = config->GetScalar_Init(iVar);
         }
 
         solver_container[i_mesh][SCALAR_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
