@@ -28,14 +28,10 @@
 #include "../../../include/geometry/primal_grid/CHexahedron.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CHexahedronConnectivity::nNodes;
-constexpr unsigned short CHexahedronConnectivity::nFaces;
 constexpr unsigned short CHexahedronConnectivity::nNodesFace[6];
-constexpr unsigned short CHexahedronConnectivity::maxNodesFace;
 constexpr unsigned short CHexahedronConnectivity::Faces[6][4];
 constexpr unsigned short CHexahedronConnectivity::nNeighbor_Nodes[8];
 constexpr unsigned short CHexahedronConnectivity::Neighbor_Nodes[8][3];
-constexpr unsigned short CHexahedronConnectivity::VTK_Type;
 
 CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3,
