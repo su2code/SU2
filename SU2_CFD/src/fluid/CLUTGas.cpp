@@ -74,118 +74,25 @@ su2double CLUTGas::rootFunc(su2double x0, function<su2double(su2double)>func) co
     return x;
 }
 
-
 //---state variables from interpolation of rho-e table--- 
-// todo: make one generic function x_rhoe with pointer arg to table
-
-su2double CLUTGas::P_rhoe(su2double rhoi, su2double ei) const
+su2double CLUTGas::z_rhoe(su2double rhoi, su2double ei, const su2double z_TABLE[Nx*Ny]) const
 {
     su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,P_rhoDe);
+    return interpolateTable(rhoi,Dei,Rho,De,z_TABLE);
 }
-
-su2double CLUTGas::T_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,T_rhoDe);
-}
-
-su2double CLUTGas::h_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,h_rhoDe);
-}
-
-su2double CLUTGas::s_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,s_rhoDe);
-}
-
-su2double CLUTGas::cv_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,cv_rhoDe);
-}
-
-su2double CLUTGas::cp_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,cp_rhoDe);
-}
-
-su2double CLUTGas::a2_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,a2_rhoDe);
-}
-
-su2double CLUTGas::dPdrho_e_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,dPdrho_e_rhoDe);
-}
-
-su2double CLUTGas::dPde_rho_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,dPde_rho_rhoDe);
-}
-
-su2double CLUTGas::dTdrho_e_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,dTdrho_e_rhoDe);
-}
-
-su2double CLUTGas::dTde_rho_rhoe(su2double rhoi, su2double ei) const
-{
-    su2double Dei = ei - esat_rho(rhoi);
-    return interpolateTable(rhoi,Dei,Rho,De,dTde_rho_rhoDe);
-}
-
 
 //---state variables from root finding of interpolation of rho-e table-- 
-// todo: make one generic function e_rhox with pointer arg to table
-
-su2double CLUTGas::e_rhoP(su2double rhoi, su2double Pi) const
+su2double CLUTGas::e_rhoz(su2double rhoi, su2double zi, const su2double z_TABLE[Nx*Ny]) const
 {
     su2double ei0 = esat_rho(rhoi) + De[0];
-    return rootFunc(ei0,[this,rhoi,Pi](su2double x){return P_rhoe(rhoi,x)-Pi;});
+    return rootFunc(ei0,[this,rhoi,zi,z_TABLE](su2double x){return z_rhoe(rhoi,x,z_TABLE)-zi;});
 }
-
-su2double CLUTGas::e_rhoT(su2double rhoi, su2double Ti) const
-{
-    su2double ei0 = esat_rho(rhoi) + De[0];
-    return rootFunc(ei0,[this,rhoi,Ti](su2double x){return T_rhoe(rhoi,x)-Ti;});
-}
-
-su2double CLUTGas::e_rhoh(su2double rhoi, su2double hi) const
-{
-    su2double ei0 = esat_rho(rhoi) + De[0];
-    return rootFunc(ei0,[this,rhoi,hi](su2double x){return h_rhoe(rhoi,x)-hi;});
-}
-
 
 //---state variables from root finding of root finding of interpolation of rho-e table--- 
-// todo: make one generic function rho_xx with pointer arg to table
-
-su2double CLUTGas::rho_PT(su2double Pi, su2double Ti) const
+su2double CLUTGas::rho_zz(su2double z1i, su2double z2i, const su2double z1_TABLE[Nx*Ny], const su2double z2_TABLE[Nx*Ny]) const
 {
     su2double rhoi0 = Rho[0];
-    return rootFunc(rhoi0,[this,Pi,Ti](su2double x){return T_rhoe(x,e_rhoP(x,Pi))-Ti;});
-}
-
-su2double CLUTGas::rho_Ps(su2double Pi, su2double si) const
-{
-    su2double rhoi0 = Rho[0];
-    return rootFunc(rhoi0,[this,Pi,si](su2double x){return s_rhoe(x,e_rhoP(x,Pi))-si;});
-}
-
-su2double CLUTGas::rho_hs(su2double hi, su2double si) const
-{
-    su2double rhoi0 = Rho[0];
-    return rootFunc(rhoi0,[this,hi,si](su2double x){return s_rhoe(x,e_rhoh(x,hi))-si;});
+    return rootFunc(rhoi0,[this,z1i,z2i,z1_TABLE,z2_TABLE](su2double x){return z_rhoe(x,e_rhoz(x,z1i,z1_TABLE),z2_TABLE)-z2i;});
 }
 
 
@@ -195,20 +102,20 @@ void CLUTGas::SetTDState_rhoe(su2double rho, su2double e)
 {
     Density = rho;
     StaticEnergy = e;
-    Pressure = P_rhoe(rho,e);
-    Temperature = T_rhoe(rho,e);
+    Pressure = z_rhoe(rho,e,P_TABLE);
+    Temperature = z_rhoe(rho,e,T_TABLE);
     //StaticEnthalpy = h_rhoe(rho,e);
 
-    SoundSpeed2 = a2_rhoe(rho,e);
-    dPdrho_e = dPdrho_e_rhoe(rho,e);
-    dPde_rho = dPde_rho_rhoe(rho,e);
-    dTdrho_e = dTdrho_e_rhoe(rho,e);
-    dTde_rho = dTde_rho_rhoe(rho,e);
+    SoundSpeed2 = z_rhoe(rho,e,a2_TABLE);
+    dPdrho_e = z_rhoe(rho,e,dPdrho_e_TABLE);
+    dPde_rho = z_rhoe(rho,e,dPde_rho_TABLE);
+    dTdrho_e = z_rhoe(rho,e,dTdrho_e_TABLE);
+    dTde_rho = z_rhoe(rho,e,dTde_rho_TABLE);
 
-    Cv = cv_rhoe(rho,e);
-    Cp = cp_rhoe(rho,e);
+    Cv = z_rhoe(rho,e,cv_TABLE);
+    Cp = z_rhoe(rho,e,cp_TABLE);
 
-    if (ComputeEntropy) Entropy = s_rhoe(rho,e);
+    if (ComputeEntropy) Entropy = z_rhoe(rho,e,s_TABLE);
 }
 
 
@@ -216,22 +123,22 @@ void CLUTGas::SetTDState_rhoe(su2double rho, su2double e)
 
 void CLUTGas::SetEnergy_Prho(su2double P, su2double rho)
 {
-    StaticEnergy = e_rhoP(rho,P);
+    StaticEnergy = e_rhoz(rho,P,P_TABLE);
 }
 
 void CLUTGas::SetTDState_Prho(su2double P, su2double rho)
 {
-    SetTDState_rhoe(rho,e_rhoP(rho,P));
+    SetTDState_rhoe(rho,e_rhoz(rho,P,P_TABLE));
 }
 
 void CLUTGas::SetTDState_rhoT(su2double rho, su2double T)
 {   
-    SetTDState_rhoe(rho,e_rhoT(rho,T));
+    SetTDState_rhoe(rho,e_rhoz(rho,T,T_TABLE));
 }
 
 void CLUTGas::SetTDState_rhoh(su2double rho, su2double h)
 {   
-    SetTDState_rhoe(rho,e_rhoh(rho,h));
+    SetTDState_rhoe(rho,e_rhoz(rho,h,h_TABLE));
 }
 
 
@@ -239,15 +146,15 @@ void CLUTGas::SetTDState_rhoh(su2double rho, su2double h)
 
 void CLUTGas::SetTDState_PT(su2double P, su2double T)
 {
-    SetTDState_Prho(P,rho_PT(P,T));   
+    SetTDState_Prho(P,rho_zz(P,T,P_TABLE,T_TABLE));   
 }
 
 void CLUTGas::SetTDState_Ps(su2double P, su2double s)
 {
-    SetTDState_Prho(P,rho_Ps(P,s));    
+    SetTDState_Prho(P,rho_zz(P,s,P_TABLE,s_TABLE));    
 }
 
 void CLUTGas::SetTDState_hs(su2double h, su2double s)
 {
-    SetTDState_rhoh(rho_hs(h,s),h);    
+    SetTDState_rhoh(rho_zz(h,s,h_TABLE,s_TABLE),h);    
 }
