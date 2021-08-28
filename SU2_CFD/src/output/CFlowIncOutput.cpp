@@ -725,15 +725,18 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   // Solution data
   su2double *scalars;
   unsigned long table_misses;
+  std::vector<su2double> molar_masses(config->GetNScalarsInit() + 1);
+  for (unsigned int iVar = 0; iVar < molar_masses.size(); iVar++) {
+    molar_masses.at(iVar) = config->GetMolecular_Weight(iVar);
+  }
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DIFFUSIVITY"   , iPoint, Node_Scalar->GetDiffusivity(iPoint, 0));
-      // SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
-      SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, 2224.43 * Node_Scalar->GetSolution(iPoint)[0] + 1009.39 * (1- Node_Scalar->GetSolution(iPoint)[0]));
+      SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
+      // SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, 2224.43 * Node_Scalar->GetSolution(iPoint)[0] + 1009.39 * (1- Node_Scalar->GetSolution(iPoint)[0]));
       SetVolumeOutputValue("CONDUCTIVITY"   , iPoint, Node_Flow->GetThermalConductivity(iPoint));
-      // SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetMeanMolecularWeight());
-      SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, 1/(Node_Scalar->GetSolution(iPoint)[0]/(16.043/1000) + (1-Node_Scalar->GetSolution(iPoint)[0])/(28.965/1000)));
+      SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, solver[FLOW_SOL]->GetFluidModel()->ComputeMeanMolecularWeight(molar_masses, Node_Scalar->GetSolution(iPoint)));
       break;
     case PROGRESS_VARIABLE:
       SetVolumeOutputValue("PROGRESS_VARIABLE", iPoint, Node_Scalar->GetSolution(iPoint, I_PROG_VAR));
