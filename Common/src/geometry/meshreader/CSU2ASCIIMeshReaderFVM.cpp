@@ -520,6 +520,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
         }
       }
+      break;
     }
   }
 
@@ -664,7 +665,6 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
         }
       }
     }
-
   }
 
   mesh_file.close();
@@ -730,8 +730,8 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
           }
         }
       }
+      break;
     }
-    break;
   }
 
   /* Lastly, increment the total number of points in order to add the
