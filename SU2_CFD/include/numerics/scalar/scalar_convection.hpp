@@ -46,11 +46,11 @@
  */
 class CUpwScalar : public CNumerics {
  protected:
-  su2double a0 = 0.0,                     /*!< \brief The maximum of the face-normal velocity and 0 */
-      a1 = 0.0,                           /*!< \brief The minimum of the face-normal velocity and 0 */
-          *Flux = nullptr,                /*!< \brief Final result, diffusive flux/residual. */
-              **Jacobian_i = nullptr,     /*!< \brief Flux Jacobian w.r.t. node i. */
-                  **Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0 */
+  su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0 */
+  su2double* Flux = nullptr;        /*!< \brief Final result, diffusive flux/residual. */
+  su2double** Jacobian_i = nullptr; /*!< \brief Flux Jacobian w.r.t. node i. */
+  su2double** Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 

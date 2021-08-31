@@ -46,12 +46,12 @@
  */
 class CAvgGrad_Scalar : public CNumerics {
  protected:
-  su2double *Proj_Mean_GradScalarVar_Normal = nullptr, /*!< \brief Mean_gradScalarVar DOT normal. */
-      *Proj_Mean_GradScalarVar = nullptr, /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
-      proj_vector_ij = 0.0,               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-          *Flux = nullptr,                /*!< \brief Final result, diffusive flux/residual. */
-              **Jacobian_i = nullptr,     /*!< \brief Flux Jacobian w.r.t. node i. */
-                  **Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double* Proj_Mean_GradScalarVar_Normal = nullptr; /*!< \brief Mean_gradScalarVar DOT normal. */
+  su2double* Proj_Mean_GradScalarVar = nullptr; /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
+  su2double proj_vector_ij = 0.0;               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  su2double* Flux = nullptr;                    /*!< \brief Final result, diffusive flux/residual. */
+  su2double** Jacobian_i = nullptr;             /*!< \brief Flux Jacobian w.r.t. node i. */
+  su2double** Jacobian_j = nullptr;             /*!< \brief Flux Jacobian w.r.t. node j. */
 
   const bool correct_gradient = false, implicit = false, incompressible = false;
 

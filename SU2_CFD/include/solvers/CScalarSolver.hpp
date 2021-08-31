@@ -48,8 +48,8 @@ class CScalarSolver : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double lowerlimit[MAXNVAR] = {0.0}, /*!< \brief contains lower limits for turbulence variables. */
-      upperlimit[MAXNVAR] = {0.0};       /*!< \brief contains upper limits for turbulence variables. */
+  su2double lowerlimit[MAXNVAR] = {0.0}; /*!< \brief contains lower limits for turbulence variables. */
+  su2double upperlimit[MAXNVAR] = {0.0};       /*!< \brief contains upper limits for turbulence variables. */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
 
