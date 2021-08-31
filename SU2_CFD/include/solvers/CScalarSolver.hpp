@@ -48,10 +48,12 @@ class CScalarSolver : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double lowerlimit[MAXNVAR] = {0.0}; /*!< \brief contains lower limits for turbulence variables. */
-  su2double upperlimit[MAXNVAR] = {0.0};       /*!< \brief contains upper limits for turbulence variables. */
+  su2double lowerlimit[MAXNVAR] = {std::numeric_limits<su2double>::min()}; /*!< \brief contains lower limits for turbulence variables. */
+  su2double upperlimit[MAXNVAR] = {std::numeric_limits<su2double>::max()}; /*!< \brief contains upper limits for turbulence variables. */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
+
+  const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -107,19 +109,19 @@ class CScalarSolver : public CSolver {
   /*!
    * \brief Constructor of the class.
    */
-  CScalarSolver(void);
+  CScalarSolver(bool conservative);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CScalarSolver(void) override;
+  ~CScalarSolver() override;
 
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config);
+  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.

@@ -30,9 +30,10 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CScalarSolver::CScalarSolver(void) : CSolver() {}
+CScalarSolver::CScalarSolver(bool conservative) : CSolver(), Conservative(conservative) {}
 
-CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig* config) : CSolver() {
+CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
+    : CSolver(), Conservative(conservative) {
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
@@ -374,38 +375,20 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry* geometry, CSolver** sol
   if (!adjoint) {
     /*--- Update the turbulent solution. Only SST variants are clipped. ---*/
 
-    switch (config->GetKind_Turb_Model()) {
-      case SA:
-      case SA_E:
-      case SA_COMP:
-      case SA_E_COMP:
-      case SA_NEG:
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
+      su2double density = Conservative ? flowNodes->GetDensity(iPoint) : 1;
+      su2double density_old = Conservative ? density : 1;
 
-        SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint) * LinSysSol[iPoint]);
-        }
-        END_SU2_OMP_FOR
-        break;
+      if (compressible) density_old = Conservative ? flowNodes->GetSolution_Old(iPoint, 0) : 1;
 
-      case SST:
-      case SST_SUST:
-
-        SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          su2double density = flowNodes->GetDensity(iPoint);
-          su2double density_old = density;
-
-          if (compressible) density_old = flowNodes->GetSolution_Old(iPoint, 0);
-
-          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-            nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
-                                           density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-          }
-        }
-        END_SU2_OMP_FOR
-        break;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
+                                       density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+      }
     }
+    END_SU2_OMP_FOR
   }
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {

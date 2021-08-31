@@ -31,10 +31,10 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() { }
+CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver(true) { }
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-    : CTurbSolver(geometry, config) {
+    : CTurbSolver(geometry, config, true) {
   unsigned short nLineLets;
   unsigned long iPoint;
   ifstream restart_file;

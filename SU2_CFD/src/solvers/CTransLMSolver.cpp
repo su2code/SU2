@@ -34,9 +34,9 @@
        The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 
        DOI: https://doi.org/10.2514/1.42362 ---*/
        
-CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
+CTransLMSolver::CTransLMSolver(void) : CTurbSolver(true) {} ///Note: TransLM seems to rho*gamma, rho*Re_sigma as Solution variables
 
-CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver(true) {
   unsigned short iVar, nLineLets;
   unsigned long iPoint, index;
   su2double tu_Inf, dull_val, rey;

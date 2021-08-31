@@ -53,19 +53,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSolver(void);
+  CTurbSolver(bool conservative);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSolver(void) override;
+  ~CTurbSolver() override;
 
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config);
+  CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
