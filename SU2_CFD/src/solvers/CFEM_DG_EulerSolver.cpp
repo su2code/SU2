@@ -148,10 +148,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
       matchingInternalFaces[i].AllocateResiduals(config, nVar);
     }
 
-    /*--- Loop over the boundaries. ---*/
+    /*--- Loop over the physical boundaries. ---*/
     for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); iMarker++) {
-      for(unsigned long i=0; i<boundaries[iMarker].surfElem.size(); ++i)
-        boundaries[iMarker].surfElem[i].AllocateResiduals(config, nVar);
+      if(config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
+        for(unsigned long i=0; i<boundaries[iMarker].surfElem.size(); ++i)
+          boundaries[iMarker].surfElem[i].AllocateResiduals(config, nVar);
+      }
     }
 
     END_SU2_OMP_FOR

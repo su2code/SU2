@@ -1143,8 +1143,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     /*----------------------------------------------------------------------*/
     /*--- Step 1: Compute the sum of the inviscid, viscous and penalty   ---*/
-    /*---         fluxes in the integration points of the faces,         ---*/
-    /*---         multiplied by the integration weights.                 ---*/
+    /*---         fluxes in the integration points of the faces.         ---*/
     /*----------------------------------------------------------------------*/
 
     /*--- Compute the primitive variables of the left and right state
@@ -1160,208 +1159,125 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     vector<ColMajorMatrix<su2double> > &gradSolIntLeft  = matchingInternalFaces[l].ComputeGradSolSide0IntPoints(volElem);
     vector<ColMajorMatrix<su2double> > &gradSolIntRight = matchingInternalFaces[l].ComputeGradSolSide1IntPoints(volElem);
 
+    /*--- The gradients computed above are the gradients w.r.t. the
+          parametric coordinates. Convert them to gradients w.r.t.
+          Cartesian coordinates and average them afterwards. Make
+          a distinction between two and three space dimensions
+          in order to have the most efficient code. ---*/
+    switch( nDim ) {
+      case 2: {
+
+        /*--- Two dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx0 =  matchingInternalFaces[l].metricCoorDerivFace0[0];
+        ColMajorMatrix<su2double> &dParDy0 =  matchingInternalFaces[l].metricCoorDerivFace0[1];
+
+        ColMajorMatrix<su2double> &dParDx1 =  matchingInternalFaces[l].metricCoorDerivFace1[0];
+        ColMajorMatrix<su2double> &dParDy1 =  matchingInternalFaces[l].metricCoorDerivFace1[1];
+
+        /*--- Loop over the number of variables and padded number of integration points. ---*/
+        for(unsigned short l=0; l<nVar; ++l) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            /*--- Left state. Store the gradients w.r.t. the parametric coordinates. ---*/
+            su2double dvdr = gradSolIntLeft[0](i,l);
+            su2double dvds = gradSolIntLeft[1](i,l);
+
+            /*--- Compute the Cartesian gradients of the left state. ---*/
+            gradSolIntLeft[0](i,l) = dvdr*dParDx0(i,0) + dvds*dParDx0(i,1);
+            gradSolIntLeft[1](i,l) = dvdr*dParDy0(i,0) + dvds*dParDy0(i,1);
+
+            /*--- Right state. Store the gradients w.r.t. the parametric coordinates. ---*/
+            dvdr = gradSolIntRight[0](i,l);
+            dvds = gradSolIntRight[1](i,l);
+
+            /*--- Compute the Cartesian gradients of the right state. ---*/
+            gradSolIntRight[0](i,l) = dvdr*dParDx1(i,0) + dvds*dParDx1(i,1);
+            gradSolIntRight[1](i,l) = dvdr*dParDy1(i,0) + dvds*dParDy1(i,1);
+
+            /*--- Store the averaged gradients in gradSolIntLeft. ---*/
+            gradSolIntLeft[0](i,l) = 0.5*(gradSolIntLeft[0](i,l) + gradSolIntRight[0](i,l));
+            gradSolIntLeft[1](i,l) = 0.5*(gradSolIntLeft[1](i,l) + gradSolIntRight[1](i,l));
+          }
+        }
+
+        break;
+      }
+
+      case 3: {
+
+        /*--- Three dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx0 =  matchingInternalFaces[l].metricCoorDerivFace0[0];
+        ColMajorMatrix<su2double> &dParDy0 =  matchingInternalFaces[l].metricCoorDerivFace0[1];
+        ColMajorMatrix<su2double> &dParDz0 =  matchingInternalFaces[l].metricCoorDerivFace0[2];
+
+        ColMajorMatrix<su2double> &dParDx1 =  matchingInternalFaces[l].metricCoorDerivFace1[0];
+        ColMajorMatrix<su2double> &dParDy1 =  matchingInternalFaces[l].metricCoorDerivFace1[1];
+        ColMajorMatrix<su2double> &dParDz1 =  matchingInternalFaces[l].metricCoorDerivFace1[2];
+
+        /*--- Loop over the number of variables and padded number of integration points. ---*/
+        for(unsigned short l=0; l<nVar; ++l) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            /*--- Left state. Store the gradients w.r.t. the parametric coordinates. ---*/
+            su2double dvdr = gradSolIntLeft[0](i,l);
+            su2double dvds = gradSolIntLeft[1](i,l);
+            su2double dvdt = gradSolIntLeft[2](i,l);
+
+            /*--- Compute the Cartesian gradients of the left state. ---*/
+            gradSolIntLeft[0](i,l) = dvdr*dParDx0(i,0) + dvds*dParDx0(i,1) + dvdt*dParDx0(i,2);
+            gradSolIntLeft[1](i,l) = dvdr*dParDy0(i,0) + dvds*dParDy0(i,1) + dvdt*dParDy0(i,2);
+            gradSolIntLeft[2](i,l) = dvdr*dParDz0(i,0) + dvds*dParDz0(i,1) + dvdt*dParDz0(i,2);
+
+            /*--- Right state. Store the gradients w.r.t. the parametric coordinates. ---*/
+            dvdr = gradSolIntRight[0](i,l);
+            dvds = gradSolIntRight[1](i,l);
+            dvdt = gradSolIntRight[2](i,l);
+
+            /*--- Compute the Cartesian gradients of the right state. ---*/
+            gradSolIntRight[0](i,l) = dvdr*dParDx1(i,0) + dvds*dParDx1(i,1) + dvdt*dParDx1(i,2);
+            gradSolIntRight[1](i,l) = dvdr*dParDy1(i,0) + dvds*dParDy1(i,1) + dvdt*dParDy1(i,2);
+            gradSolIntRight[2](i,l) = dvdr*dParDz1(i,0) + dvds*dParDz1(i,1) + dvdt*dParDz1(i,2);
+
+            /*--- Store the averaged gradients in gradSolIntLeft. ---*/
+            gradSolIntLeft[0](i,l) = 0.5*(gradSolIntLeft[0](i,l) + gradSolIntRight[0](i,l));
+            gradSolIntLeft[1](i,l) = 0.5*(gradSolIntLeft[1](i,l) + gradSolIntRight[1](i,l));
+            gradSolIntLeft[2](i,l) = 0.5*(gradSolIntLeft[2](i,l) + gradSolIntRight[2](i,l));
+          }
+        }
+
+        break;
+      }
+    }
+    
     /*--- Compute the invisid fluxes in the integration points of the face. ---*/
     const unsigned int indFlux = omp_get_num_threads() + omp_get_thread_num();
     ColMajorMatrix<su2double> &fluxes = matchingInternalFaces[l].standardElemFlow->elem0->workSolInt[indFlux];
     ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].JacobiansFace,
                               matchingInternalFaces[l].metricNormalsFace,
                               matchingInternalFaces[l].gridVelocities, numerics, fluxes);
+
+    /*--- Compute the viscous fluxes and the symmetrizing fluxes in the
+          integration points of the face. ---*/
+  
+
+    /*----------------------------------------------------------------------*/
+    /*--- Step 2: Create the final form of the symmetrizing fluxes and   ---*/
+    /*---         multiply all fluxes by the integration weights.        ---*/
+    /*----------------------------------------------------------------------*/
+
+    /*--- The symmetrizing fluxes are multiplied by the gradients of the basis
+          functions for the residual. These must be the Cartesian gradients,
+          but for the standard element the gradients w.r.t. the parametric
+          coordinates are stored. To account for this, the Cartesian symmetrizing
+          fluxes are converted parametric fluxes. Note that this conversion is
+          usually different for the left and the right element. Therefore the final
+          symmetrizing fluxes for the left element are stored in gradSolIntLeft
+          and for the right element in gradSolIntRight. ---*/
   }
   END_SU2_OMP_FOR
 
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM_DG *adjVolElem,
-                                             const unsigned short       indFaceChunk,
-                                             const unsigned short       nInt,
-                                             const unsigned short       NPad,
-                                             const su2double            Wall_HeatFlux,
-                                             const bool                 HeatFlux_Prescribed,
-                                             const su2double            *solInt,
-                                             const su2double            *gradSolInt,
-                                             const su2double            *metricCoorDerivFace,
-                                             const su2double            *metricNormalsFace,
-                                             const su2double            *wallDistanceInt,
-                                                   su2double            *viscNormFluxes,
-                                                   su2double            *viscosityInt,
-                                                   su2double            *kOverCvInt) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol,
-                                                            const su2double solGradCart[4][2],
-                                                            const su2double *normal,
-                                                            const su2double HeatFlux,
-                                                            const su2double factHeatFlux,
-                                                            const su2double wallDist,
-                                                            const su2double lenScale_LES,
-                                                                  su2double &Viscosity,
-                                                                  su2double &kOverCv,
-                                                                  su2double *normalFlux) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol,
-                                                            const su2double solGradCart[5][3],
-                                                            const su2double *normal,
-                                                            const su2double HeatFlux,
-                                                            const su2double factHeatFlux,
-                                                            const su2double wallDist,
-                                                            const su2double lenScale_LES,
-                                                                  su2double &Viscosity,
-                                                                  su2double &kOverCv,
-                                                                  su2double *normalFlux) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
-                                            const unsigned short nInt,
-                                            const unsigned short NPad,
-                                            const su2double      *solInt0,
-                                            const su2double      *solInt1,
-                                            const su2double      *viscosityInt0,
-                                            const su2double      *viscosityInt1,
-                                            const su2double      *kOverCvInt0,
-                                            const su2double      *kOverCvInt1,
-                                            const su2double      ConstPenFace,
-                                            const su2double      lenScale0,
-                                            const su2double      lenScale1,
-                                            const su2double      *metricNormalsFace,
-                                                  su2double      *penaltyFluxes) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short indFaceChunk,
-                                              const unsigned short nInt,
-                                              const unsigned short NPad,
-                                              const su2double      *solInt0,
-                                              const su2double      *solInt1,
-                                              const su2double      *viscosityInt0,
-                                              const su2double      *viscosityInt1,
-                                              const su2double      *kOverCvInt0,
-                                              const su2double      *kOverCvInt1,
-                                              const su2double      *metricNormalsFace,
-                                                    su2double      *symmFluxes) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceChunk,
-                                                   const unsigned short nInt,
-                                                   const unsigned short NPad,
-                                                   const su2double      halfTheta,
-                                                   const su2double      *symmFluxes,
-                                                   const su2double      *weights,
-                                                   const su2double      *metricCoorFace,
-                                                         su2double      *paramFluxes) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1627,153 +1543,6 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig             *config,
                                  const unsigned long surfElemEnd,
                                  CSurfaceElementFEM  *surfElem,
                                  CNumerics           *conv_numerics) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
-                                       CConfig                  *config,
-                                       CNumerics                *conv_numerics,
-                                       const unsigned short     nFaceSimul,
-                                       const unsigned short     NPad,
-                                       const su2double          Wall_HeatFlux,
-                                       const bool               HeatFlux_Prescribed,
-                                       const su2double          Wall_Temperature,
-                                       const bool               Temperature_Prescribed,
-                                       const CSurfaceElementFEM *surfElem,
-                                       const su2double          *solIntL,
-                                       const su2double          *solIntR,
-                                             su2double          *workArray,
-                                             su2double          *resFaces,
-                                             unsigned long      &indResFaces,
-                                             CWallModel         *wallModel) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
-                                       CConfig                  *config,
-                                       const unsigned short     nFaceSimul,
-                                       const unsigned short     NPad,
-                                       const unsigned short     nInt,
-                                       const unsigned short     nDOFsElem,
-                                       const su2double          Wall_HeatFlux,
-                                       const bool               HeatFlux_Prescribed,
-                                       const su2double          *derBasisElem,
-                                       const CSurfaceElementFEM *surfElem,
-                                       const su2double          *solIntL,
-                                             su2double          *solElem,
-                                             su2double          *gradSolInt,
-                                             su2double          *viscFluxes,
-                                             su2double          *viscosityInt,
-                                             su2double          *kOverCvInt) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
-                                  CConfig                  *config,
-                                  const unsigned short     nFaceSimul,
-                                  const unsigned short     NPad,
-                                  const unsigned short     nInt,
-                                  const su2double          Wall_HeatFlux,
-                                  const bool               HeatFlux_Prescribed,
-                                  const su2double          Wall_Temperature,
-                                  const bool               Temperature_Prescribed,
-                                  const CSurfaceElementFEM *surfElem,
-                                  const su2double          *solIntL,
-                                        su2double          *workArray,
-                                        su2double          *viscFluxes,
-                                        su2double          *viscosityInt,
-                                        su2double          *kOverCvInt,
-                                        CWallModel         *wallModel) {
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
-                                      CConfig                  *config,
-                                      CNumerics                *conv_numerics,
-                                      const unsigned short     nFaceSimul,
-                                      const unsigned short     NPad,
-                                      const CSurfaceElementFEM *surfElem,
-                                      const su2double          *solInt0,
-                                      const su2double          *solInt1,
-                                      su2double                *paramFluxes,
-                                      su2double                *fluxes,
-                                      su2double                *viscFluxes,
-                                      const su2double          *viscosityInt,
-                                      const su2double          *kOverCvInt,
-                                      su2double                *resFaces,
-                                      unsigned long            &indResFaces) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
