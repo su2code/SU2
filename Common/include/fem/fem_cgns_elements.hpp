@@ -45,9 +45,7 @@ class CBoundaryFace;
 
 /*!
  * \class CCGNSElementType
- * \brief Class which stores the CGNS element type info for a connectivity
-          section.
- * \version 7.2.0 "Blackbird"
+ * \brief Class which stores the CGNS element type info for a connectivity section.
  */
 
 class CCGNSElementType {
@@ -59,7 +57,7 @@ public:
   cgsize_t      indEnd;      /*!< \brief Index of the last element in the CGNS connectivity. */
   cgsize_t      nElem;       /*!< \brief Number of elements present for this element type. */
 
-  string connName;           /*!< \brief Name of this connectivity. */
+  std::string connName;      /*!< \brief Name of this connectivity. */
 
   bool volumeConn;           /*!< \brief Whether or not this is a volume connectivity. */
   bool surfaceConn;          /*!< \brief Whether or not this is a surface connectivity. */
@@ -85,7 +83,7 @@ public:
                                      const unsigned long   nBoundElemRank,
                                      const unsigned long   startingBoundElemIDRank,
                                      unsigned long         &locBoundElemCount,
-                                     vector<CBoundaryFace> &boundElems);
+                                     std::vector<CBoundaryFace> &boundElems);
 
   /*--- Member function, which reads the required connectivity range. ---*/
   void ReadConnectivityRange(const int           fn,
@@ -104,7 +102,7 @@ private:
                              unsigned short         &VTK_Type,
                              unsigned short         &nPoly,
                              unsigned short         &nDOFs,
-                             vector<unsigned short> &SU2ToCGNS);
+                             std::vector<unsigned short> &SU2ToCGNS);
 
   /*--- Member function, which determines the element dimension, i.e. the
         number of parametric coordinates. ---*/
@@ -122,158 +120,158 @@ private:
         given element in the stored types. If not present, a new index
         is created. ---*/
   unsigned short IndexInStoredTypes(const ElementType_t             typeElem,
-                                    vector<ElementType_t>           &CGNS_Type,
-                                    vector<unsigned short>          &VTK_Type,
-                                    vector<unsigned short>          &nPoly,
-                                    vector<unsigned short>          &nDOFs,
-                                    vector<vector<unsigned short> > &SU2ToCGNS);
+                                    std::vector<ElementType_t>           &CGNS_Type,
+                                    std::vector<unsigned short>          &VTK_Type,
+                                    std::vector<unsigned short>          &nPoly,
+                                    std::vector<unsigned short>          &nDOFs,
+                                    std::vector<std::vector<unsigned short> > &SU2ToCGNS);
 
   /*--- Functions to create the conversion data from CGNS format to SU2 format
         for all the supported CGNS elements. ---*/
   void CreateDataNODE(unsigned short         &VTK_Type,
                       unsigned short         &nPoly,
                       unsigned short         &nDOFs,
-                      vector<unsigned short> &SU2ToCGNS);
+                      std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataBAR_2(unsigned short         &VTK_Type,
                        unsigned short         &nPoly,
                        unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+                       std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataBAR_3(unsigned short         &VTK_Type,
                        unsigned short         &nPoly,
                        unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+                       std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataBAR_4(unsigned short         &VTK_Type,
                        unsigned short         &nPoly,
                        unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+                       std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataBAR_5(unsigned short         &VTK_Type,
                        unsigned short         &nPoly,
                        unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+                       std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTRI_3(unsigned short         &VTK_Type,
                        unsigned short         &nPoly,
                        unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+                       std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTRI_6(unsigned short         &VTK_Type,
                        unsigned short         &nPoly,
                        unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+                       std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTRI_10(unsigned short         &VTK_Type,
                         unsigned short         &nPoly,
                         unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+                        std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTRI_15(unsigned short         &VTK_Type,
                         unsigned short         &nPoly,
                         unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+                        std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataQUAD_4(unsigned short         &VTK_Type,
                         unsigned short         &nPoly,
                         unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+                        std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataQUAD_9(unsigned short         &VTK_Type,
                         unsigned short         &nPoly,
                         unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+                        std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataQUAD_16(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataQUAD_25(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTETRA_4(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTETRA_10(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTETRA_20(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataTETRA_35(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPYRA_5(unsigned short         &VTK_Type,
                         unsigned short         &nPoly,
                         unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+                        std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPYRA_14(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPYRA_30(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPYRA_55(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPENTA_6(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPENTA_18(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPENTA_40(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataPENTA_75(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataHEXA_8(unsigned short         &VTK_Type,
                         unsigned short         &nPoly,
                         unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+                        std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataHEXA_27(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataHEXA_64(unsigned short         &VTK_Type,
                          unsigned short         &nPoly,
                          unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+                         std::vector<unsigned short> &SU2ToCGNS);
 
   void CreateDataHEXA_125(unsigned short         &VTK_Type,
                           unsigned short         &nPoly,
                           unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+                          std::vector<unsigned short> &SU2ToCGNS);
 };
 #endif
 #endif
