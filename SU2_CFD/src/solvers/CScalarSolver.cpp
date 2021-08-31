@@ -373,15 +373,19 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry* geometry, CSolver** sol
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
+
+    su2double density = 1.0;
+    su2double density_old = 1.0;
+
     /*--- Update the turbulent solution. Only SST variants are clipped. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
       /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
-      su2double density = Conservative ? flowNodes->GetDensity(iPoint) : 1;
-      su2double density_old = Conservative ? density : 1;
-
-      if (compressible) density_old = Conservative ? flowNodes->GetSolution_Old(iPoint, 0) : 1;
+      if (Conservative) {
+        density = flowNodes->GetDensity(iPoint);
+        density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
+      }
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
