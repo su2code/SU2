@@ -47,7 +47,7 @@ CNEMOTurbVariable::CNEMOTurbVariable(unsigned long npoint, unsigned long ndim, u
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetTime_Marching() == HARMONIC_BALANCE) {
+  if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
   }
 

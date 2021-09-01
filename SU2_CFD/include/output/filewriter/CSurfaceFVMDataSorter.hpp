@@ -31,7 +31,7 @@
 
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
 
-  CFVMDataSorter* volumeSorter;                    //!< Pointer to the volume sorter instance
+  const CFVMDataSorter* volumeSorter;               //!< Pointer to the volume sorter instance
   map<unsigned long,unsigned long> Renumber2Global; //! Structure to map the local sorted point ID to the global point ID
 public:
 
@@ -41,12 +41,7 @@ public:
    * \param[in] geometry - Pointer to the current geometry
    * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, CFVMDataSorter* valVolumeSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CSurfaceFVMDataSorter() override;
+  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, const CFVMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.

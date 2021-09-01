@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #endif
 
+#include <cstring>
+
 #include <cassert>
 
 namespace MemoryAllocation
@@ -55,9 +57,10 @@ inline constexpr size_t round_up(size_t multiple, size_t x)
  * \brief Aligned memory allocation compatible across platforms.
  * \param[in] alignment, in bytes, of the memory being allocated.
  * \param[in] size, also in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
  * \return Pointer to memory, always use su2::aligned_free to deallocate.
  */
-template<class T>
+template<class T, bool ZeroInit = false>
 inline T* aligned_alloc(size_t alignment, size_t size) noexcept
 {
   assert(is_power_of_two(alignment));
@@ -78,6 +81,7 @@ inline T* aligned_alloc(size_t alignment, size_t size) noexcept
 #else
   ptr = ::aligned_alloc(alignment, size);
 #endif
+  if (ZeroInit) memset(ptr, 0, size);
   return static_cast<T*>(ptr);
 }
 

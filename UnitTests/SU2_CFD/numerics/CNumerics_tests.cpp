@@ -39,7 +39,7 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   
   /*--- Setup ---*/
 
-  CConfig* config = new CConfig(config_options, SU2_CFD, false);
+  CConfig* config = new CConfig(config_options, SU2_COMPONENT::SU2_CFD, false);
 
   const su2double dissipation_i = 0;
   const su2double dissipation_j = 0;

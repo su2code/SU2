@@ -36,6 +36,10 @@ int main(int argc, char *argv[]) {
 
   char config_file_name[MAX_STRING_SIZE];
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   /*--- MPI initialization, and buffer setting ---*/
 
 #if defined(HAVE_OMP) && defined(HAVE_MPI)
@@ -48,6 +52,11 @@ int main(int argc, char *argv[]) {
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
+
+  /*--- AD initialization ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().initialize();
+#endif
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -69,7 +78,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = nullptr;
-  config = new CConfig(config_file_name, SU2_DOT);
+  config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DOT);
 
   const auto nZone = config->GetnZone();
 
@@ -88,7 +97,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DOT, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -105,10 +114,10 @@ int main(int argc, char *argv[]) {
 
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
@@ -406,8 +415,16 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
 
-  /*--- Finalize MPI parallelization ---*/
+  /*--- Finalize AD, if necessary. ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().finalize();
+#endif
+
+  /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 
@@ -671,17 +688,15 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
 
-  su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
+  su2double *VarCoord = nullptr, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
+  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV;
   unsigned long iVertex, nVertex, iPoint;
 
-  int rank = SU2_MPI::GetRank();
+  const int rank = SU2_MPI::GetRank();
 
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
-
-  VarCoord = nullptr;
 
   /*--- Discrete adjoint gradient computation ---*/
 
@@ -695,21 +710,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
 
-
-
   for (iDV = 0; iDV < nDV; iDV++){
 
-    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      config->SetDV_Value(iDV, iDV_Value, 0.0);
 
-      /*--- Initilization with su2double resets the index ---*/
-
-      DV_Value = 0.0;
-
-      AD::RegisterInput(DV_Value);
-
-      config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      AD::RegisterInput(config->GetDV_Value(iDV, iDV_Value));
     }
   }
 
@@ -725,10 +732,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
    * We need that to make sure to set the sensitivity of surface points only once
    *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
 
-  bool* visited = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-    visited[iPoint] = false;
-  }
+  vector<bool> visited(geometry->GetnPoint(), false);
 
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
@@ -762,18 +766,16 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     }
   }
 
-  delete [] visited;
-
   /*--- Compute derivatives and extract gradient ---*/
 
   AD::ComputeAdjoint();
 
   for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
+
+      my_Gradient = SU2_TYPE::GetDerivative(config->GetDV_Value(iDV, iDV_Value));
+
       SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
       /*--- Angle of Attack design variable (this is different,

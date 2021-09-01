@@ -31,20 +31,20 @@ namespace AD {
 #ifdef CODI_REVERSE_TYPE
   /*--- Initialization of the global variables ---*/
 
-  int adjointVectorPosition = 0;
-
-  std::vector<su2double::GradientData> inputValues;
-  std::vector<su2double::GradientData> localInputValues;
-  std::vector<su2double*> localOutputValues;
-
-  su2double::TapeType& globalTape = su2double::getGlobalTape();
-  su2double::TapeType::Position StartPosition, EndPosition;
-  std::vector<su2double::TapeType::Position> TapePositions;
+  TapePosition StartPosition, EndPosition;
+  std::vector<TapePosition> TapePositions;
 
   bool PreaccActive = false;
+#ifdef HAVE_OPDI
+  SU2_OMP(threadprivate(PreaccActive))
+#endif
+
   bool PreaccEnabled = true;
 
   codi::PreaccumulationHelper<su2double> PreaccHelper;
+#ifdef HAVE_OPDI
+  SU2_OMP(threadprivate(PreaccHelper))
+#endif
 
   ExtFuncHelper* FuncHelper;
 

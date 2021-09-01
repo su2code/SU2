@@ -25,25 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CDiscAdjVariable.hpp"
 
+CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim,
+                                   unsigned long nvar, CConfig *config) :
+  CVariable(npoint, ndim, nvar, config, true) {
 
-CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config) {
-
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
-
-  bool fsi = config->GetFSI_Simulation();
-
-  if (dual_time) {
+  if (config->GetTime_Domain())
     DualTime_Derivative.resize(nPoint,nVar) = su2double(0.0);
-    DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
 
-    Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
-    Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
-  }
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
 
   Solution_Direct.resize(nPoint,nVar);
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
@@ -51,18 +43,9 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
-
-  if (fsi) {
-    Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);
-    Solution_Geometry.resize(nPoint,nDim) = su2double(1e-16);
-    Solution_Geometry_Old.resize(nPoint,nDim) = su2double(0.0);
-
-    Solution_Geometry_BGS_k.resize(nPoint,nDim) = su2double(0.0);
-  }
-
-  if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint()) {
-    External.resize(nPoint,nVar) = su2double(0.0);
-  }
 }
 
-void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }
+void CDiscAdjVariable::Set_External_To_DualTimeDer() {
+  assert(External.size() == DualTime_Derivative.size());
+  parallelCopy(External.size(), DualTime_Derivative.data(), External.data());
+}

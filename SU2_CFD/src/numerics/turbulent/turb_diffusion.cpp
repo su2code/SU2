@@ -35,10 +35,9 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
 {
   Proj_Mean_GradTurbVar_Normal = new su2double [nVar] ();
-  Proj_Mean_GradTurbVar_Edge = new su2double [nVar] ();
   Proj_Mean_GradTurbVar = new su2double [nVar] ();
 
   Flux = new su2double [nVar] ();
@@ -53,7 +52,6 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
 CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
   delete [] Proj_Mean_GradTurbVar_Normal;
-  delete [] Proj_Mean_GradTurbVar_Edge;
   delete [] Proj_Mean_GradTurbVar;
 
   delete [] Flux;
@@ -68,8 +66,6 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 }
 
 CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config) {
-
-  unsigned short iVar, iDim;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
@@ -96,37 +92,9 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
 
-  /*--- Compute vector going from iPoint to jPoint ---*/
-
-  dist_ij_2 = 0; proj_vector_ij = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-  }
-  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-  else proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-  /*--- Mean gradient approximation ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
-    Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Mean_GradTurbVar = 0.5*(TurbVar_Grad_i[iVar][iDim] +
-                                        TurbVar_Grad_j[iVar][iDim]);
-
-      Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar * Normal[iDim];
-
-      if (correct_gradient)
-        Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar * Edge_Vector[iDim];
-    }
-    Proj_Mean_GradTurbVar[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
-    if (correct_gradient) {
-      Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-      (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
-    }
-  }
-
+  proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, TurbVar_Grad_i,
+                                            TurbVar_Grad_j, correct_gradient, TurbVar_i, TurbVar_j,
+                                            Proj_Mean_GradTurbVar_Normal, Proj_Mean_GradTurbVar);
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);

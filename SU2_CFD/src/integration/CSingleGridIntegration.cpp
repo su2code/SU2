@@ -79,6 +79,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
     SU2_OMP_MASTER
     solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -105,8 +106,8 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
   }
 
-  } // end SU2_OMP_PARALLEL
-
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
@@ -141,6 +142,7 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
     sol_coarse->GetNodes()->SetSolution(Point_Coarse,Solution);
 
   }
+  END_SU2_OMP_FOR
 
   delete [] Solution;
 
@@ -177,6 +179,7 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
     sol_coarse->GetNodes()->SetmuT(Point_Coarse,EddyVisc);
 
   }
+  END_SU2_OMP_FOR
 
   /*--- Update solution at the no slip wall boundary, only the first
    variable (nu_tilde -in SA and SA_NEG- and k -in SST-), to guarantee that the eddy viscoisty
@@ -189,6 +192,7 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->GetNodes()->SetmuT(Point_Coarse,0.0);
       }
+      END_SU2_OMP_FOR
     }
   }
 

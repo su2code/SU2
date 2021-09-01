@@ -962,8 +962,6 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
       }
     }
   }
-  //for (unsigned short iVar=0;iVar<nVar;iVar++){
-  //  cout <<"delete me flux....."<<Flux[iVar]<<endl;
-  //}
+
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

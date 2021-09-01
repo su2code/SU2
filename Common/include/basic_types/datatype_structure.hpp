@@ -30,86 +30,9 @@
 #include <iostream>
 #include <complex>
 #include <cstdio>
-#include <type_traits>
 
-#if defined(_MSC_VER)
-#define FORCEINLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-#define FORCEINLINE inline __attribute__((always_inline))
-#else
-#define FORCEINLINE inline
-#endif
-
-#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-#define NEVERINLINE inline __attribute__((noinline))
-#else
-#define NEVERINLINE inline
-#endif
-
-#if defined(__INTEL_COMPILER)
-/*--- Disable warnings related to inline attributes. ---*/
-#pragma warning disable 2196
-#pragma warning disable 3415
-/*--- Disable warnings related to overloaded virtual. ---*/
-#pragma warning disable 654
-#pragma warning disable 1125
-#if defined(CODI_FORWARD_TYPE) || defined(CODI_REVERSE_TYPE)
-#pragma warning disable 1875
-#endif
-#endif
-
-/*--- Convenience SFINAE typedef to conditionally
- * enable/disable function template overloads. ---*/
-template<bool condition>
-using su2enable_if = typename std::enable_if<condition,bool>::type;
-
-/*--- Depending on the datatype defined during the configuration,
- * include the correct definition, and create the main typedef. ---*/
-
-#if defined(CODI_REVERSE_TYPE) // reverse mode AD
-#include "codi.hpp"
-#include "codi/tools/dataStore.hpp"
-
-#ifndef CODI_INDEX_TAPE
-#define CODI_INDEX_TAPE 0
-#endif
-#ifndef CODI_PRIMAL_TAPE
-#define CODI_PRIMAL_TAPE 0
-#endif
-#ifndef CODI_PRIMAL_INDEX_TAPE
-#define CODI_PRIMAL_INDEX_TAPE 0
-#endif
-
-#if CODI_INDEX_TAPE
-using su2double = codi::RealReverseIndex;
-#elif CODI_PRIMAL_TAPE
-using su2double = codi::RealReversePrimal;
-#elif CODI_PRIMAL_INDEX_TAPE
-using su2double = codi::RealReversePrimalIndex;
-#else
-using su2double = codi::RealReverse;
-#endif
-
-#elif defined(CODI_FORWARD_TYPE) // forward mode AD
-#include "codi.hpp"
-using su2double = codi::RealForward;
-
-#else // primal / direct / no AD
-using su2double = double;
-#endif
-
+#include "../code_config.hpp"
 #include "ad_structure.hpp"
-
-/*--- This type can be used for (rare) compatiblity cases or for
- * computations that are intended to be (always) passive. ---*/
-using passivedouble = double;
-
-/*--- Define a type for potentially lower precision operations. ---*/
-#ifdef USE_MIXED_PRECISION
-using su2mixedfloat = float;
-#else
-using su2mixedfloat = passivedouble;
-#endif
 
 /*!
  * \namespace SU2_TYPE
@@ -172,19 +95,9 @@ namespace SU2_TYPE {
 
   FORCEINLINE void SetDerivative(su2double& data, const passivedouble &val) {data.setGradient(val);}
 
-#ifdef CODI_REVERSE_TYPE
-  FORCEINLINE passivedouble GetSecondary(const su2double& data) {
-    return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);
-  }
-
-  FORCEINLINE passivedouble GetDerivative(const su2double& data) {
-    return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);
-  }
-#else // forward
   FORCEINLINE passivedouble GetSecondary(const su2double& data) {return data.getGradient();}
 
   FORCEINLINE passivedouble GetDerivative(const su2double& data) {return data.getGradient();}
-#endif
 
 #else // passive type, no AD
 

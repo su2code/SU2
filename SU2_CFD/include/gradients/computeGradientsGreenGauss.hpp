@@ -76,7 +76,8 @@ void computeGradientsGreenGauss(CSolver* solver,
   {
     auto nodes = geometry.nodes;
 
-    AD::StartPreacc();
+    /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+    if (omp_get_num_threads() == 1) AD::StartPreacc();
     AD::SetPreaccIn(nodes->GetVolume(iPoint));
     AD::SetPreaccIn(nodes->GetPeriodicVolume(iPoint));
 
@@ -127,12 +128,14 @@ void computeGradientsGreenGauss(CSolver* solver,
 
     AD::EndPreacc();
   }
+  END_SU2_OMP_FOR
 
   /*--- Add boundary fluxes. ---*/
 
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
   {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
     {
       /*--- Work is shared in inner loop as two markers
@@ -160,6 +163,7 @@ void computeGradientsGreenGauss(CSolver* solver,
             gradient(iPoint, iVar, iDim) -= flux * area[iDim];
         }
       }
+      END_SU2_OMP_FOR
     }
   }
 

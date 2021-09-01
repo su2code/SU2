@@ -39,7 +39,7 @@
 
 class CNEMOTurbSASolver final : public CNEMOTurbSolver {
 private:
-  su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
+  su2double nu_tilde_Engine, nu_tilde_ActDisk;
 
   /*!
    * \brief A virtual member.
@@ -286,34 +286,6 @@ public:
                          CNumerics *visc_numerics,
                          CConfig *config,
                          unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) override;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.

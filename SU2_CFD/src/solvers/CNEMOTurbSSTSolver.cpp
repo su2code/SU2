@@ -273,6 +273,7 @@ void CNEMOTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
     nodes->SetmuT(iPoint,muT);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -347,6 +348,8 @@ void CNEMOTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
+
 
 }
 
@@ -361,9 +364,19 @@ void CNEMOTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
 
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  unsigned short WallType; su2double Roughness_Height;
+  WALL_TYPE WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == ROUGH ) rough_wall = true;
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
+
+  if (config->GetWall_Functions()) {
+    SU2_OMP_MASTER
+    //SetTurbVars_WF(geometry, solver_container, config, val_marker);
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+    return;
+  }
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -372,7 +385,6 @@ void CNEMOTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
-
 
       if (rough_wall) {
 
@@ -410,7 +422,7 @@ void CNEMOTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
         nodes->SetSolution_Old(iPoint,solution);
         nodes->SetSolution(iPoint,solution);
         LinSysRes.SetBlock_Zero(iPoint);
-      } else {
+      } else { // smooth wall
         /*--- distance to closest neighbor ---*/
         const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -423,7 +435,7 @@ void CNEMOTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
         su2double beta_1 = constants[4];
-        su2double solution[2];
+        su2double solution[MAXNVAR];
         solution[0] = 0.0;
         solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance2);
 
@@ -440,6 +452,7 @@ void CNEMOTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CNEMOTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -500,6 +513,7 @@ void CNEMOTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -593,6 +607,7 @@ void CNEMOTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
     }
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -683,6 +698,7 @@ void CNEMOTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -774,6 +790,7 @@ void CNEMOTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **sol
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -884,6 +901,7 @@ void CNEMOTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_co
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }

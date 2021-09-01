@@ -129,6 +129,11 @@ public:
    */
   bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
+  /*!
+   * \brief Check if simulation converged and return appropriate boolean.
+   * \param[in] TimeIter - Current time iteration.
+   * \return Boolean that indicates to stop the iteration loop.
+   */
   bool Monitor(unsigned long TimeIter) override;
 
   /*!

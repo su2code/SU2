@@ -1,5 +1,5 @@
 /*!
- * \file output_adj_flow_comp.cpp
+ * \file CAdjFlowCompOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
  * \version 7.2.0 "Blackbird"
@@ -26,7 +26,7 @@
  */
 
 
-#include "../../include/output/CAdjFlowOutput.hpp"
+#include "../../include/output/CAdjFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
@@ -460,17 +460,9 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 }
 
 
-bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
+bool CAdjFlowCompOutput::SetInit_Residuals(const CConfig *config){
 
-  return ((config->GetTime_Marching() != STEADY) && (curInnerIter == 0)) ||
-         ((config->GetTime_Marching() == STEADY) && (curInnerIter < 2));
-
-}
-
-bool CAdjFlowCompOutput::SetUpdate_Averages(CConfig *config){
-  return false;
-
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && (curInnerIter == 0)) ||
+         ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));
 
 }
-

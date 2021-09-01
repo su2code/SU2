@@ -97,7 +97,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
     e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
   }
-  
+
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -363,8 +363,6 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 //      }
 //    }
 //  }
-  //for (unsigned short iVar=0; iVar<nVar;iVar++){
-  //   cout <<"delete me flux...."<<Flux[iVar]<<endl;
-  //}
+
   return ResidualType<>(Flux, nullptr, nullptr);
 }

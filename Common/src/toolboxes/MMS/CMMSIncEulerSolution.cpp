@@ -61,7 +61,7 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
   epsilon = 0.001;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 

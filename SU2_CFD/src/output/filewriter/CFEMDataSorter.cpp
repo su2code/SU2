@@ -66,24 +66,13 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create a linear partition --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
   PrepareSendBuffers(globalID);
 
 }
-
-CFEMDataSorter::~CFEMDataSorter(){
-
-        delete [] Index;
-       delete [] idSend;
-  delete linearPartitioner;
-
-}
-
-
-
 
 void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 

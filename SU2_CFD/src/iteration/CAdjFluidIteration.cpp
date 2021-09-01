@@ -33,16 +33,16 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned short iMesh;
-  bool harmonic_balance = (config[ZONE_0]->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config[ZONE_0]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool dynamic_mesh = config[ZONE_0]->GetGrid_Movement();
   unsigned long InnerIter = 0;
   unsigned long TimeIter = config[ZONE_0]->GetTimeIter();
 
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
 
-  if (((dynamic_mesh && TimeIter == 0) || config[val_iZone]->GetTime_Marching()) && !harmonic_balance) {
+  if (((dynamic_mesh && TimeIter == 0) || (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)) && !harmonic_balance) {
     int Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 1;
-    if (rank == MASTER_NODE && val_iZone == ZONE_0 && config[val_iZone]->GetTime_Marching())
+    if (rank == MASTER_NODE && val_iZone == ZONE_0 && (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY))
       cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->LoadRestart(
         geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
@@ -50,7 +50,7 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 
   /*--- Continuous adjoint Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
 
-  if ((InnerIter == 0) || config[val_iZone]->GetTime_Marching()) {
+  if ((InnerIter == 0) || (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)) {
     if (config[val_iZone]->GetKind_Solver() == ADJ_EULER)
       config[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_FLOW_SYS);
     if (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)
@@ -118,13 +118,6 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 
       solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone]);
-
-      /*--- Set the internal boundary condition on nearfield surfaces ---*/
-
-      if ((config[val_iZone]->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-          (config[val_iZone]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
-        solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(
-            geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone]);
     }
 
     if (rank == MASTER_NODE && val_iZone == ZONE_0) cout << "End direct solver, begin adjoint problem." << endl;
@@ -173,8 +166,8 @@ void CAdjFluidIteration::Update(COutput* output, CIntegration**** integration, C
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver ---*/
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {

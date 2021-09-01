@@ -43,10 +43,6 @@ PrintingToolbox::CTablePrinter::CTablePrinter(std::ostream * output, const std::
   precision_ = 6;
 }
 
-PrintingToolbox::CTablePrinter::~CTablePrinter(){
-
-}
-
 int PrintingToolbox::CTablePrinter::GetNumColumns() const {
   return (int)column_headers_.size();
 }
@@ -102,8 +98,6 @@ void PrintingToolbox::CTablePrinter::PrintHorizontalLine() {
 
 void PrintingToolbox::CTablePrinter::PrintHeader(){
 
-
-
   if (print_header_top_line_) PrintHorizontalLine();
   *out_stream_ << separator_;
   int indent = 0;
@@ -140,4 +134,3 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
 void PrintingToolbox::CTablePrinter::PrintFooter(){
   PrintHorizontalLine();
 }
-

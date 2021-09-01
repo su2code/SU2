@@ -261,6 +261,7 @@ public:
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       nodes->SetSolution(iPoint, Solution_Inf);
     }
+    END_SU2_OMP_FOR
   }
 
   /*!

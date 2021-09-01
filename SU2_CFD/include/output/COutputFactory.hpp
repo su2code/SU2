@@ -1,5 +1,5 @@
 /*!
- * \file COutput.hpp
+ * \file COutputFactory.hpp
  * \brief Headers of the output class.
  * \author T.Albring
  * \version 7.2.0 "Blackbird"

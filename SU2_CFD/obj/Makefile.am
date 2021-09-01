@@ -109,9 +109,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/turbulent/turb_convection.cpp \
   ../src/numerics/turbulent/turb_diffusion.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
-  ../src/numerics/turbulent/nemo_turb_convection.cpp \
-  ../src/numerics/turbulent/nemo_turb_diffusion.cpp \
-  ../src/numerics/turbulent/nemo_turb_sources.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
@@ -139,6 +136,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/output_physics.cpp \
   ../src/output/CMeshOutput.cpp \
   ../src/output/CElasticityOutput.cpp \
+  ../src/output/CFVMOutput.cpp \
   ../src/output/CFlowOutput.cpp \
   ../src/output/CFlowCompOutput.cpp \
   ../src/output/CFlowCompFEMOutput.cpp \
@@ -181,9 +179,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
-  ../src/solvers/CNEMOTurbSolver.cpp \
-  ../src/solvers/CNEMOTurbSASolver.cpp \
-  ../src/solvers/CNEMOTurbSSTSolver.cpp \
   ../src/solvers/CSolverFactory.cpp \
   ../src/limiters/CLimiterDetails.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
@@ -206,20 +201,16 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
-  ../src/variables/CNEMOTurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \
-  ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
-  ../src/variables/CNEMOTurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CNEMOEulerVariable.cpp \
   ../src/variables/CNEMONSVariable.cpp \
   ../src/variables/CBaselineVariable.cpp \
   ../src/variables/CTurbSAVariable.cpp \
-  ../src/variables/CNEMOTurbSAVaraible.cpp \
   ../src/variables/CFEAVariable.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \

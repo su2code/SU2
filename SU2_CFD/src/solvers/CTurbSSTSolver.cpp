@@ -244,6 +244,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     SetSolution_Gradient_LS(geometry, config);
   }
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -273,7 +275,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     nodes->SetmuT(iPoint,muT);
 
   }
+  END_SU2_OMP_FOR
 
+  AD::EndNoSharedReading();
 }
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -289,6 +293,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Loop over all points. ---*/
+
+  AD::StartNoSharedReading();
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -347,6 +353,9 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
 }
 
@@ -361,19 +370,27 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  unsigned short WallType; su2double Roughness_Height;
+  WALL_TYPE WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == ROUGH ) rough_wall = true;
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
+
+  if (config->GetWall_Functions()) {
+    SU2_OMP_MASTER
+    SetTurbVars_WF(geometry, solver_container, config, val_marker);
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+    return;
+  }
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
-
 
       if (rough_wall) {
 
@@ -411,7 +428,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         nodes->SetSolution_Old(iPoint,solution);
         nodes->SetSolution(iPoint,solution);
         LinSysRes.SetBlock_Zero(iPoint);
-      } else {
+
+      } else { // smooth wall
+
         /*--- distance to closest neighbor ---*/
         const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -424,7 +443,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
         su2double beta_1 = constants[4];
-        su2double solution[2];
+        su2double solution[MAXNVAR];
         solution[0] = 0.0;
         solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance2);
 
@@ -439,6 +458,65 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         Jacobian.DeleteValsRowi(iPoint*nVar);
         Jacobian.DeleteValsRowi(iPoint*nVar+1);
       }
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
+
+void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
+                                    const CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  /*--- von Karman constant from boundary layer theory ---*/
+  const su2double kappa = config->GetwallModelKappa();
+
+  /*--- relaxation factor for k-omega values ---*/
+  const su2double relax = 0.5;
+
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+    su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
+    su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+
+    /*--- Do not use wall model at the ipoint when y+ < 5.0, use zero flux (Neumann) conditions. ---*/
+
+    if (Y_Plus < 5.0) continue;
+
+    su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
+    su2double k = nodes->GetSolution(iPoint_Neighbor,0);
+    su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
+    su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
+    su2double y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
+
+    su2double omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19
+    su2double omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20
+    su2double omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
+    su2double k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson
+                                           // (is this the correct density? paper says rho and not rho_w)
+
+    /*--- put some relaxation factor on the k-omega values ---*/
+    k += relax*(k_new - k);
+    omega += relax*(omega_new - omega);
+
+    su2double solution[MAXNVAR] = {k, omega};
+
+    nodes->SetSolution_Old(iPoint_Neighbor,solution);
+    nodes->SetSolution(iPoint,solution);
+
+    LinSysRes.SetBlock_Zero(iPoint_Neighbor);
+
+    if (implicit) {
+      /*--- includes 1 in the diagonal ---*/
+      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar);
+      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar+1);
     }
   }
 }
@@ -501,6 +579,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -594,6 +673,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
     }
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -684,6 +764,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -775,6 +856,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -885,6 +967,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }

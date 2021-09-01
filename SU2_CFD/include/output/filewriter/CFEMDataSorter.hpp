@@ -42,11 +42,6 @@ public:
   CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames);
 
   /*!
-   * \brief Destructor
-   */
-  ~CFEMDataSorter() override;
-
-  /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -60,7 +55,7 @@ public:
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
-    return linearPartitioner->GetFirstIndexOnRank(rank) + iPoint;
+    return linearPartitioner.GetFirstIndexOnRank(rank) + iPoint;
   }
 
 private:

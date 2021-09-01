@@ -36,7 +36,7 @@ CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned
                                                CNEMONumerics(val_nDim, val_nVar, val_nVar_NEMO,
                                                              val_nPrimVar, val_nPrimVarGrad,
                                                              config),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   rotating_frame(config->GetRotating_Frame())
 {
   /*--- Spalart-Allmaras closure constants ---*/
@@ -756,7 +756,7 @@ CNEMOSourcePieceWise_TurbSST::CNEMOSourcePieceWise_TurbSST(unsigned short val_nD
                                                                          val_nPrimVar, val_nPrimVarGrad,
                                                                          config) {
 
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
   axisymmetric = config->GetAxisymmetric();
 

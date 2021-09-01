@@ -115,6 +115,7 @@ void computeLimiters_impl(CSolver* solver,
     for (size_t iPoint = 0; iPoint < nPoint; ++iPoint)
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
         fieldMax(iPoint,iVar) = fieldMin(iPoint,iVar) = field(iPoint,iVar);
+    END_SU2_OMP_FOR
 
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
@@ -131,7 +132,8 @@ void computeLimiters_impl(CSolver* solver,
     auto nodes = geometry.nodes;
     const auto coord_i = nodes->GetCoord(iPoint);
 
-    AD::StartPreacc();
+    /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+    if (omp_get_num_threads() == 1) AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -215,6 +217,7 @@ void computeLimiters_impl(CSolver* solver,
 
     AD::EndPreacc();
   }
+  END_SU2_OMP_FOR
 
   /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
   if (periodic)

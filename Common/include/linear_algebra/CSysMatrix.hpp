@@ -36,8 +36,6 @@
 #include <vector>
 #include <cassert>
 
-using namespace std;
-
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
@@ -108,7 +106,7 @@ struct CSysMatrixComms {
 template<class ScalarType>
 class CSysMatrix {
 private:
-  friend class CSysMatrixComms;
+  friend struct CSysMatrixComms;
 
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */

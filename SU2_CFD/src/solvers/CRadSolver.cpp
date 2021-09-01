@@ -104,7 +104,7 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   if (nDim == 2) skipVars += 6;
   if (nDim == 3) skipVars += 8;
 
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 

@@ -67,7 +67,7 @@ struct UnitQuadTestCase {
   void InitConfig() {
     cout.rdbuf(nullptr);
     stringstream ss(config_options);
-    config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_CFD, false));
+    config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_COMPONENT::SU2_CFD, false));
     cout.rdbuf(orig_buf);
   }
 

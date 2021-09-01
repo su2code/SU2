@@ -150,6 +150,35 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
 }
 
 /*!
+ * \brief Scale the stress tensor according to the target (from a
+ *        wall function) magnitute in the tangential direction.
+ */
+template<class Container, size_t nDim>
+FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
+                            const Container& tauWall,
+                            const VectorDbl<nDim>& unitNormal,
+                            MatrixDbl<nDim>& tau) {
+
+  Double tauWall_i = max(gatherVariables(iPoint, tauWall), 0.0);
+  Double tauWall_j = max(gatherVariables(jPoint, tauWall), 0.0);
+
+  Double isWall_i = tauWall_i > 0.0;
+  Double isWall_j = tauWall_j > 0.0;
+  /*--- Arithmetic xor. ---*/
+  Double isNormalEdge = isWall_i+isWall_j - 2*isWall_i*isWall_j;
+
+  /*--- Tau wall is 0 for edges that are not normal to walls. ---*/
+  Double tauWall_ij = (tauWall_i+tauWall_j) * isNormalEdge;
+
+  /*--- Scale is 1 for those edges, i.e. tau is not changed. ---*/
+  Double scale = tauWall_ij / norm(tangentProjection(tau,unitNormal)) + (1.0-isNormalEdge);
+
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    for (size_t jDim = 0; jDim < nDim; ++jDim)
+      tau(iDim,jDim) *= scale;
+}
+
+/*!
  * \brief Jacobian of the stress tensor (compressible flow).
  */
 template<size_t nVar, size_t nDim, class PrimitiveType>

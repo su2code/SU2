@@ -29,13 +29,13 @@
 
 #include "CVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CNEMOEulerVariable
  * \brief Main class for defining the variables of the NEMO Euler's solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.2.0
  */
 class CNEMOEulerVariable : public CVariable {
 public:
@@ -65,6 +65,10 @@ protected:
   /*--- New solution container for Classical RK4 ---*/
   MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */
 
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+
   /*--- Other Necessary Variable Definition ---*/
   MatrixType dPdU;   /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
   MatrixType dTdU;   /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
@@ -75,16 +79,13 @@ protected:
 
   CNEMOGas *fluidmodel;
 
-  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
-  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
-
   /*!< \brief Index definition for NEMO pritimive variables. */
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
+  const bool implicit;      /*!< \brief Implicit flag. */
 
 public:
 
@@ -145,7 +146,7 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
-  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) override { Primitive(iPoint,iVar) = val_prim; }
+  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -161,7 +162,8 @@ public:
    * \brief Get the primitive variables limiter.
    * \return Primitive variables limiter for the entire domain.
    */
-  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+  inline MatrixType& GetLimiter_Primitive() final {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive() const final {return Limiter_Primitive; }
 
   /*!
    * \brief Set the gradient of the primitive variables.
@@ -176,15 +178,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double value) final {
-    Limiter_Primitive(iPoint,iVar) = value;
-  }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -230,7 +223,7 @@ public:
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+  inline const MatrixType& GetPrimitive() const final { return Primitive; }
 
    /*!
    * \brief Get the primitive variables for all points.
@@ -260,51 +253,15 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \return Value of the reconstruction variables gradient at a node.
-   */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
-   * \brief Set to zero the gradient of the primitive variables.
-   */
-  void SetGradient_PrimitiveZero();
-
-  /*!
-   * \brief Add <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the gradient of the primitive variables.
-   */
-  inline void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) += value;
-  }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief Subtract <i>value</i> to the gradient of the primitive variables.
@@ -327,52 +284,31 @@ public:
   }
 
   /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double **GetGradient_Primitive(unsigned long iPoint) final { return Gradient_Primitive[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
+    return Gradient_Primitive(iPoint,iVar);
+  }
 
   /*!
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive() final { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive() const final { return Gradient_Primitive; }
 
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke,  CFluidModel *FluidModel);
 
    /*!
   * \brief Set all the primitive and secondary variables from the conserved vector.
   */
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                    su2double *val_Cvves);
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
-
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
-  inline su2activevector& GetStrainMag() { return StrainMag; }
-
+                    su2double *val_Cvves, su2double turb_ke);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/
@@ -382,7 +318,7 @@ public:
    * \brief Set the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
    */
-  void SetVelocity2(unsigned long iPoint) override;
+  void SetVelocity2(unsigned long iPoint) final;
 
   /*!
    * \brief Get the norm 2 of the velocity.
@@ -477,28 +413,28 @@ public:
    * \brief A virtual member.
    * \return Value of the vibrational-electronic temperature.
    */
-  inline su2double GetTemperature_ve(unsigned long iPoint) const override
+  inline su2double GetTemperature_ve(unsigned long iPoint) const final
                                     { return Primitive(iPoint,TVE_INDEX); }
 
   /*!
    * \brief Sets the vibrational electronic temperature of the flow.
    * \return Value of the temperature of the flow.
    */
-  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) override
+  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) final
                                { Primitive(iPoint,TVE_INDEX) = val_Tve; return false; }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (trans.-rot.).
    * \return \f$\rho C^{t-r}_{v} \f$
    */
-  inline su2double GetRhoCv_tr(unsigned long iPoint) const override
+  inline su2double GetRhoCv_tr(unsigned long iPoint) const final
                               { return Primitive(iPoint,RHOCVTR_INDEX); }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (vib.-el.).
    * \return \f$\rho C^{v-e}_{v} \f$
    */
-  inline su2double GetRhoCv_ve(unsigned long iPoint) const override
+  inline su2double GetRhoCv_ve(unsigned long iPoint) const final
                               { return Primitive(iPoint,RHOCVVE_INDEX); }
 
   /*!
@@ -514,24 +450,24 @@ public:
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  inline su2double *GetdPdU(unsigned long iPoint) override { return dPdU[iPoint]; }
+  inline su2double *GetdPdU(unsigned long iPoint) final { return dPdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial T}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTdU(unsigned long iPoint) override { return dTdU[iPoint]; }
+  inline su2double *GetdTdU(unsigned long iPoint) final { return dTdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial T^{V-E}}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTvedU(unsigned long iPoint) override { return dTvedU[iPoint]; }
+  inline su2double *GetdTvedU(unsigned long iPoint) final { return dTvedU[iPoint]; }
 
   /*!
    * \brief Get the mass fraction \f$\rho_s / \rho \f$ of species s.
    * \param[in] val_Species - Index of species s.
    * \return Value of the mass fraction of species s.
    */
-  inline su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const override {
+  inline su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const final {
     return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
   }
 
@@ -593,5 +529,36 @@ public:
    * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
+
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Solution(iPoint, nSpecies+iDim) = Primitive(iPoint,RHO_INDEX) * val_vector[iDim];
+  }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,nSpecies+iDim) = 0.0;
+  }
 
 };

@@ -31,7 +31,7 @@
 
 class CSurfaceFEMDataSorter final: public CParallelDataSorter{
 
-  CFEMDataSorter* volumeSorter;                  //!< Pointer to the volume sorter instance
+  const CFEMDataSorter* volumeSorter;            //!< Pointer to the volume sorter instance
   vector<unsigned long> globalSurfaceDOFIDs;     //!< Structure to map the local sorted point ID to the global point ID
   vector<unsigned long> nSurfaceDOFsRanks;       //!< Number of points on each rank
 
@@ -43,12 +43,7 @@ public:
    * \param[in] geometry - Pointer to the current geometry
    * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CSurfaceFEMDataSorter() override;
+  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, const CFEMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.

@@ -33,7 +33,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
   Flux = new su2double [nVar];
@@ -74,7 +74,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];
 
-  q_ij = 0.0;
+  su2double q_ij = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
@@ -90,7 +90,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
-
 
   FinishResidualCalc(config);
 

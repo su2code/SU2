@@ -35,7 +35,7 @@ CNEMOUpwScalar::CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar,
                                CNEMONumerics(val_nDim, val_nVar, val_nVar_NEMO,
                                              val_nPrimVar, val_nPrimVarGrad, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
   Flux = new su2double [nVar];
@@ -75,7 +75,7 @@ CNumerics::ResidualType<> CNEMOUpwScalar::ComputeResidual(const CConfig* config)
   Density_i = V_i[RHO_INDEX];
   Density_j = V_j[RHO_INDEX];
 
-  q_ij = 0.0;
+  su2double q_ij = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[VEL_INDEX+iDim] - GridVel_i[iDim];

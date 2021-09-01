@@ -231,7 +231,8 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
         }
       }
 
-    } // end target loop
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free the heap allocations. ---*/
     for (auto ptr : GlobalIndex) if (ptr != sendGlobalIndex.data()) delete [] ptr;

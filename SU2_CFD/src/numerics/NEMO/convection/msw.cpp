@@ -198,7 +198,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
                                                       epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  CreateBasis(UnitNormal);
+  su2double l[MAXNDIM], m[MAXNDIM];
+  CreateBasis(UnitNormal,l,m);
   GetPMatrix(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, invP_Tensor);
 
@@ -232,7 +233,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
                                                       epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  CreateBasis(UnitNormal);
+  CreateBasis(UnitNormal,l,m);
   GetPMatrix(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, invP_Tensor);
 

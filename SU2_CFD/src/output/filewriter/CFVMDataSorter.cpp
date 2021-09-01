@@ -39,7 +39,7 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
   nGlobalPointBeforeSort = geometry->GetGlobal_nPointDomain();
   nLocalPointsBeforeSort  = geometry->GetnPointDomain();
 
-  Local_Halo = new int[geometry->GetnPoint()]();
+  Local_Halo.resize(geometry->GetnPoint());
 
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 
@@ -60,21 +60,11 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
   PrepareSendBuffers(globalID);
-
-}
-
-CFVMDataSorter::~CFVMDataSorter(){
-
-  delete [] Local_Halo;
-
-        delete [] Index;
-       delete [] idSend;
-  delete linearPartitioner;
 
 }
 
@@ -106,9 +96,6 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
     }
   }
 }
-
-
-
 
 void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 
@@ -218,7 +205,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
 
         if (val_sort) {
-          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+          iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -262,14 +249,11 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = nullptr;
-  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
+  auto connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
 
   /*--- Allocate arrays for storing halo flags. ---*/
 
-  unsigned short *haloSend = new unsigned short[nElem_Send[size]]();
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    haloSend[ii] = false;
+  auto haloSend = new unsigned short[nElem_Send[size]]();
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
@@ -308,7 +292,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
 
         if (val_sort) {
-          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+          iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -356,10 +340,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = nullptr;
-  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
+  auto connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
 
-  unsigned short *haloRecv = new unsigned short[nElem_Cum[size]]();
+  auto haloRecv = new unsigned short[nElem_Cum[size]]();
 
 #ifdef HAVE_MPI
 

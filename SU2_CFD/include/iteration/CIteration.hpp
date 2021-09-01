@@ -98,7 +98,7 @@ class CIteration {
    * \param[in] kind_recording - Current kind of recording.
    */
   void SetMesh_Deformation(CGeometry** geometry, CSolver** solver_container, CNumerics*** numerics_container,
-                           CConfig* config_container, unsigned short kind_recording);
+                           CConfig* config_container, RECORDING kind_recording);
 
   /*!
    * \brief A virtual member.
@@ -137,6 +137,18 @@ class CIteration {
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                        unsigned short val_iInst){}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
+   */
+  virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                              unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {}
 
   /*!
    * \brief A virtual member.
@@ -272,20 +284,14 @@ class CIteration {
                                  unsigned short iInst) {}
 
   virtual void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                             unsigned short iInst, unsigned short kind_recording) {}
+                             unsigned short iInst, RECORDING kind_recording) {}
 
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                               unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {}
+                               unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
-  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
 
-  virtual void LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                     unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
-  virtual void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                    unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
   virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                            unsigned short val_iInst, unsigned short kind_recording) {}
+                            unsigned short val_iInst, RECORDING kind_recording) {}
 };

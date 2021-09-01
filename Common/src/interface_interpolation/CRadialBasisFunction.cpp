@@ -64,30 +64,30 @@ void CRadialBasisFunction::PrintStatistics() const {
   cout.unsetf(ios::floatfield);
 }
 
-su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
+su2double CRadialBasisFunction::Get_RadialBasisValue(RADIAL_BASIS type, const su2double radius, const su2double dist)
 {
   su2double rbf = dist/radius;
 
   switch (type) {
 
-    case WENDLAND_C2:
+    case RADIAL_BASIS::WENDLAND_C2:
       if(rbf < 1) rbf = pow(pow((1-rbf),2),2)*(4*rbf+1); // double use of pow(x,2) for optimization
       else        rbf = 0.0;
       break;
 
-    case GAUSSIAN:
+    case RADIAL_BASIS::GAUSSIAN:
       rbf = exp(-rbf*rbf);
       break;
 
-    case THIN_PLATE_SPLINE:
+    case RADIAL_BASIS::THIN_PLATE_SPLINE:
       if(rbf < numeric_limits<float>::min()) rbf = 0.0;
       else rbf *= rbf*log(rbf);
       break;
 
-    case MULTI_QUADRIC:
-    case INV_MULTI_QUADRIC:
+    case RADIAL_BASIS::MULTI_QUADRIC:
+    case RADIAL_BASIS::INV_MULTI_QUADRIC:
       rbf = sqrt(1.0+rbf*rbf);
-      if(type == INV_MULTI_QUADRIC) rbf = 1.0/rbf;
+      if(type == RADIAL_BASIS::INV_MULTI_QUADRIC) rbf = 1.0/rbf;
       break;
   }
 
@@ -97,7 +97,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, cons
 void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- RBF options. ---*/
-  const auto kindRBF = static_cast<ENUM_RADIALBASIS>(config[donorZone]->GetKindRadialBasisFunction());
+  const auto kindRBF = config[donorZone]->GetKindRadialBasisFunction();
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
   const su2double paramRBF = config[donorZone]->GetRadialBasisFunctionParameter();
   const su2double pruneTol = config[donorZone]->GetRadialBasisFunctionPruneTol();
@@ -143,10 +143,10 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                                     Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
     /*--- Gather coordinates and global point indices. ---*/
-    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
+    Buffer_Send_GlobalPoint.resize(MaxLocalVertex_Donor);
+    Buffer_Receive_Coord.resize(nProcessor * MaxLocalVertex_Donor, nDim);
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
 
@@ -163,18 +163,13 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       auto offset = iProcessor * MaxLocalVertex_Donor;
       for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
         for (int iDim = 0; iDim < nDim; ++iDim)
-          donorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord(offset+iVertex, iDim);
         donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
         donorProc[iCount] = iProcessor;
         ++iCount;
       }
     }
     assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_GlobalPoint;
 
     /*--- Give an MPI-independent order to the points (required due to high condition
      *    number of the RBF matrix, avoids diff results with diff number of ranks. ---*/
@@ -218,6 +213,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                              keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
@@ -381,7 +377,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         }
       }
     } // end target vertex loop
-
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalDonorPoints += totalDonors;
@@ -390,7 +386,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       AvgCorrection += sumCorr;
       MaxCorrection = max(MaxCorrection, maxCorr);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free global data that will no longer be used. ---*/
     donorCoord.resize(0,0);
@@ -431,7 +429,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
 }
 
-void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial,
+void CRadialBasisFunction::ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePolynomial,
                            su2double radius, const su2activematrix& coords, int& nPolynomial,
                            vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc) {
 
@@ -449,7 +447,8 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
                                    GeometryToolbox::Distance(nDim, coords[iVertex], coords[jVertex])));
 
   /*--- Invert M matrix (operation is in-place). ---*/
-  const bool kernelIsSPD = (type==WENDLAND_C2) || (type==GAUSSIAN) || (type==INV_MULTI_QUADRIC);
+  const bool kernelIsSPD = (type==RADIAL_BASIS::WENDLAND_C2) || (type==RADIAL_BASIS::GAUSSIAN) ||
+                           (type==RADIAL_BASIS::INV_MULTI_QUADRIC);
   global_M.Invert(kernelIsSPD);
 
   /*--- Compute C_inv_trunc. ---*/

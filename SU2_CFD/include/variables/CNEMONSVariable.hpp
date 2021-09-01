@@ -31,13 +31,18 @@
 
 /*!
  * \class CNEMONSVariable
- * \brief Class for defining the variables of the NEMO Navier-Stokes' solver.
+ * \brief Main class for defining the variables of the NEMO Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author C. Garbacz, W. Maier, S.R. Copeland.
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
-  su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
+  su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
+
+  VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
+  VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
+  VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 
   VectorType Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
   VectorType Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
@@ -51,10 +56,7 @@ private:
   vector<su2double> thermalconductivities;
   vector<su2double> Ds;
 
-  VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
-  VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
-  VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
-  VectorType Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+
 
 public:
 
@@ -93,7 +95,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNEMONSVariable() override = default;
+  ~CNEMONSVariable() = default;
 
     /*!
    * \brief Get the primitive variables for all points.
@@ -102,19 +104,15 @@ public:
   inline const MatrixType& GetPrimitive_Aux(void) const { return Primitive_Aux; }
 
   /*!
-   * \brief Set the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  /* Works as a dummy function for consistency since no reconstruction is needed for primitive variables*/
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override { }
-
-  /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
+  using CVariable::SetPrimVar;
+
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity(void);
 
   /*!
    * \overload
@@ -158,5 +156,4 @@ public:
   inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
     Primitive(iPoint,T_INDEX) = temperature_wall;
   }
-
 };

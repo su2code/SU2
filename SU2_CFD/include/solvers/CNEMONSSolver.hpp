@@ -64,6 +64,14 @@ private:
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
 
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+
 public:
 
   /*!
@@ -82,6 +90,17 @@ public:
    * \brief Destructor of the class.
    */
   ~CNEMONSSolver() = default;
+
+  /*!
+   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_GG(CGeometry *geometry,
+                                const CConfig *config,
+                                bool reconstruction = false) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -196,5 +215,4 @@ public:
                                CNumerics *visc_numerics,
                                CConfig *config,
                                unsigned short val_marker) override;
-
 };
