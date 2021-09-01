@@ -373,7 +373,6 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry* geometry, CSolver** sol
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
-
     su2double density = 1.0;
     su2double density_old = 1.0;
 
@@ -431,7 +430,6 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solve
 void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                          unsigned short iRKStep, unsigned short iMesh,
                                          unsigned short RunTime_EqSystem) {
-  const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -450,11 +448,16 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
   unsigned short iVar, iMarker, iDim, iNeigh;
   unsigned long iPoint, jPoint, iVertex, iEdge;
 
-  const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
+  su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
+  su2double Density_nM1 = 1.0, Density_n = 1.0, Density_nP1 = 1.0;
   su2double Volume_nM1, Volume_nP1;
-  su2double Density_nM1, Density_n, Density_nP1;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
   su2double Residual_GCL;
+
+  const int nvar = nVar;
+  auto FactorTimesVector = [nvar](su2double factor, su2double* vec) {
+    for (int iVar = 0; iVar < nvar; iVar++) vec[iVar] = factor * vec[iVar];
+  };
 
   /*--- Compute the dual time-stepping source term for static meshes ---*/
 
@@ -465,25 +468,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
-
-      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n = nodes->GetSolution_time_n(iPoint);
-      U_time_nP1 = nodes->GetSolution(iPoint);
-
-      /*--- CV volume at time n+1. As we are on a static mesh, the volume
-       of the CV will remained fixed for all time steps. ---*/
-
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-
-      /*--- Compute the dual time-stepping source term based on the chosen
-       time discretization scheme (1st- or 2nd-order).---*/
-
-      if (sst_model) {
-        /*--- If this is the SST model, we need to multiply by the density
-         in order to get the conservative variables ---*/
+      if (Conservative) {
         if (incompressible) {
           /*--- This is temporary and only valid for constant-density problems:
           density could also be temperature dependent, but as it is not a part
@@ -497,24 +482,35 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
           Density_nP1 = flowNodes->GetSolution(iPoint, 0);
         }
+      }
 
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (first_order)
-            LinSysRes(iPoint, iVar) +=
-                (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * Volume_nP1 / TimeStep;
-          if (second_order)
-            LinSysRes(iPoint, iVar) += (3.0 * Density_nP1 * U_time_nP1[iVar] - 4.0 * Density_n * U_time_n[iVar] +
-                                        1.0 * Density_nM1 * U_time_nM1[iVar]) *
-                                       Volume_nP1 / (2.0 * TimeStep);
-        }
+      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+       previous solutions that are stored in memory. ---*/
 
-      } else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (first_order) LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * Volume_nP1 / TimeStep;
-          if (second_order)
-            LinSysRes(iPoint, iVar) += (3.0 * U_time_nP1[iVar] - 4.0 * U_time_n[iVar] + 1.0 * U_time_nM1[iVar]) *
-                                       Volume_nP1 / (2.0 * TimeStep);
-        }
+      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+      U_time_n = nodes->GetSolution_time_n(iPoint);
+      U_time_nP1 = nodes->GetSolution(iPoint);
+
+      /*--- Multiply with Density, if necessary. ---*/
+
+      FactorTimesVector(Density_nM1, U_time_nM1);
+      FactorTimesVector(Density_n, U_time_n);
+      FactorTimesVector(Density_nP1, U_time_nP1);
+
+      /*--- CV volume at time n+1. As we are on a static mesh, the volume
+       of the CV will remained fixed for all time steps. ---*/
+
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Compute the dual time-stepping source term based on the chosen
+       time discretization scheme (1st- or 2nd-order).---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        if (first_order) LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * Volume_nP1 / TimeStep;
+        if (second_order)
+          LinSysRes(iPoint, iVar) +=
+              (3.0 * U_time_nP1[iVar] - 4.0 * U_time_n[iVar] + 1.0 * U_time_nM1[iVar]) * Volume_nP1 / (2.0 * TimeStep);
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
@@ -542,7 +538,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
       U_time_n = nodes->GetSolution_time_n(iPoint);
       Density_n = 1.0;
 
-      if (sst_model) {
+      if (Conservative) {
         if (incompressible)
           Density_n = flowNodes->GetDensity(iPoint);  // Temporary fix
         else
@@ -598,7 +594,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
 
           /*--- Multiply by density at node i for the SST model ---*/
 
-          if (sst_model) {
+          if (Conservative) {
             if (incompressible)
               Density_n = flowNodes->GetDensity(iPoint);  // Temporary fix
             else
@@ -639,7 +635,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
 
-      if (sst_model) {
+      if (Conservative) {
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
         if (incompressible) {
