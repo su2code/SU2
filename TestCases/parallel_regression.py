@@ -389,7 +389,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-6.278454, -0.744813, -2.243285, 2.312481]
+    axi_rans_air_nozzle.test_vals = [-12.098340, -6.651791, -8.877009, -2.393286]
     axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
