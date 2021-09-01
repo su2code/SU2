@@ -242,7 +242,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       U[iSpecies]            = 1E-20;
       V[RHOS_INDEX+iSpecies] = 1E-20;
       rhos[iSpecies]         = 1E-20;
-      //nonPhys                = true;
+    //nonPhys                = true;
     } else {
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
       rhos[iSpecies]         = U[iSpecies];

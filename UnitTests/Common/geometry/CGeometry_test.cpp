@@ -90,7 +90,7 @@ TEST_CASE("Set elem connectivity", "[Geometry]"){
 
   TestCase->geometry->SetElement_Connectivity();
 
-  CHECK(TestCase->geometry->elem[14]->GetnNeighbor_Elements() == 6);
+  CHECK(TestCase->geometry->elem[14]->GetnFaces() == 6);
   CHECK(TestCase->geometry->elem[14]->GetNeighbor_Elements(1) == 15);
 
 }

@@ -113,9 +113,6 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
-
-  /*--- Compute vorticity and strain mag. ---*/
-
   const long unsigned int offset=(nSpecies+2);
   ComputeVorticityAndStrainMag(*config, iMesh, offset);
 
@@ -704,6 +701,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     //                             (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
     Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
     Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dist_ij;
+
     /*--- Calculate Jacobian for implicit time stepping ---*/
     //if (implicit) {
     //

@@ -56,8 +56,6 @@ private:
   vector<su2double> thermalconductivities;
   vector<su2double> Ds;
 
-
-
 public:
 
   /*!

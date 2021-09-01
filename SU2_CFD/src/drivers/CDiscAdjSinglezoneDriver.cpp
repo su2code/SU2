@@ -347,7 +347,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
   case DISC_ADJ_NEMO_EULER:      case DISC_ADJ_NEMO_NAVIER_STOKES:     case DISC_ADJ_NEMO_RANS:
 
-
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
     /*--- Surface based obj. function ---*/

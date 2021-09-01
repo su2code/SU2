@@ -112,13 +112,16 @@ class FSIConfig:
                  (this_param == "MESH_INTERP_METHOD") or \
                  (this_param == "DISP_PRED") or \
                  (this_param == "AITKEN_RELAX") or \
-                 (this_param == "TIME_MARCHING") :
+                 (this_param == "TIME_MARCHING") or \
+                 (this_param == "IMPOSED_MOTION") or \
+                 (this_param == "MAPPING_MODES"):
                 self._ConfigContent[this_param] = this_value
 
             else :
                 print(this_param + " is an invalid option !")
 
     def applyDefaults(self):
+<<<<<<< HEAD
         if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
             if self._ConfigContent["AITKEN_RELAX"] != "STATIC" or self._ConfigContent["AITKEN_PARAM"] != 1.0:
                 print("WARNING: Setting the Aitken parameter as static and equal to 1 for IMPOSED solver")
@@ -129,3 +132,24 @@ class FSIConfig:
             if self._ConfigContent["TIME_TRESHOLD"] != -1:
                 print("WARNING: Setting the time threshold to -1 for immediate coupling when using restart")
                 self._ConfigContent["TIME_TRESHOLD"] = -1
+=======
+
+        if "MAPPING_MODES" not in self._ConfigContent:
+            self._ConfigContent["MAPPING_MODES"] = "NO"
+            print("MAPPING_MODES keyword was not found in the configuration file of the interface, setting to NO")
+
+        if "IMPOSED_MOTION" not in self._ConfigContent:
+            self._ConfigContent["IMPOSED_MOTION"] = "NO"
+            print("IMPOSED_MOTION keyword was not found in the configuration file of the interface, setting to NO")
+
+        if self._ConfigContent["IMPOSED_MOTION"] == "YES":
+            if self._ConfigContent["AITKEN_RELAX"] != "STATIC" or self._ConfigContent["AITKEN_PARAM"] != 1.0:
+                raise Exception("When imposing motion, the Aitken parameter must be static and equal to 1")
+
+        if self._ConfigContent["RESTART_SOL"] == "YES":
+            if self._ConfigContent["TIME_TRESHOLD"] != -1:
+                raise Exception("When restarting a simulation, the time threshold must be -1 for immediate coupling")
+
+        if self._ConfigContent["MAPPING_MODES"] == "YES" and self._ConfigContent["CSD_SOLVER"]!="NATIVE":
+            raise Exception("Mapping modes only works with the native solver")
+>>>>>>> origin/develop
