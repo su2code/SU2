@@ -66,6 +66,12 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig* config, bool conserva
 #else
   EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
 #endif
+
+  /*--- Initialize lower and upper limits for solution clipping. Solvers might overwrite these values. ---*/
+  for (int iVar = 0; iVar < nVar; iVar++) {
+    lowerlimit[iVar] = std::numeric_limits<su2double>::lowest();
+    upperlimit[iVar] = std::numeric_limits<su2double>::max();
+  }
 }
 
 CScalarSolver::~CScalarSolver() { delete nodes; }
