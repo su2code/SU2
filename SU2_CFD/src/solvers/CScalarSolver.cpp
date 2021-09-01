@@ -466,11 +466,6 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
   su2double Residual_GCL;
 
-  const int nvar = nVar;
-  auto FactorTimesVector = [nvar](su2double factor, su2double* vec) {
-    for (int iVar = 0; iVar < nvar; iVar++) vec[iVar] = factor * vec[iVar];
-  };
-
   /*--- Compute the dual time-stepping source term for static meshes ---*/
 
   if (!dynamic_grid) {
@@ -504,12 +499,6 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
       U_time_n = nodes->GetSolution_time_n(iPoint);
       U_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Multiply with Density, if necessary. ---*/
-
-      FactorTimesVector(Density_nM1, U_time_nM1);
-      FactorTimesVector(Density_n, U_time_n);
-      FactorTimesVector(Density_nP1, U_time_nP1);
-
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
 
@@ -519,10 +508,13 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
        time discretization scheme (1st- or 2nd-order).---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (first_order) LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * Volume_nP1 / TimeStep;
-        if (second_order)
+        if (first_order)
           LinSysRes(iPoint, iVar) +=
-              (3.0 * U_time_nP1[iVar] - 4.0 * U_time_n[iVar] + 1.0 * U_time_nM1[iVar]) * Volume_nP1 / (2.0 * TimeStep);
+              (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * Volume_nP1 / TimeStep;
+        if (second_order)
+          LinSysRes(iPoint, iVar) += (3.0 * Density_nP1 * U_time_nP1[iVar] - 4.0 * Density_n * U_time_n[iVar] +
+                                      1.0 * Density_nM1 * U_time_nM1[iVar]) *
+                                     Volume_nP1 / (2.0 * TimeStep);
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
