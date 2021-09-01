@@ -68,7 +68,7 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig* config, bool conserva
 #endif
 
   /*--- Initialize lower and upper limits for solution clipping. Solvers might overwrite these values. ---*/
-  for (int iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned int iVar = 0; iVar < MAXNVAR; iVar++) {
     lowerlimit[iVar] = std::numeric_limits<su2double>::lowest();
     upperlimit[iVar] = std::numeric_limits<su2double>::max();
   }
