@@ -379,25 +379,31 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry* geometry, CSolver** sol
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
-    su2double density = 1.0;
-    su2double density_old = 1.0;
+    /*--- Update the scalar solution. For transport equations, where Solution is not equivalent with the transported
+     * quantity, multiply the respective factor.  ---*/
+    if (Conservative) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
+        const su2double density = flowNodes->GetDensity(iPoint);
+        const su2double density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
 
-    /*--- Update the turbulent solution. Only SST variants are clipped. ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
-      if (Conservative) {
-        density = flowNodes->GetDensity(iPoint);
-        density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
+                                    lowerlimit[iVar], upperlimit[iVar], density, density_old);
+        }
       }
-
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        nodes->AddConservativeSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
-                                       density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+      END_SU2_OMP_FOR
+    } else {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
+                                    lowerlimit[iVar], upperlimit[iVar]);
+        }
       }
+      END_SU2_OMP_FOR
     }
-    END_SU2_OMP_FOR
   }
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
