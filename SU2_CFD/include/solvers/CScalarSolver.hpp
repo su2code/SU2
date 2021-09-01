@@ -48,7 +48,7 @@ class CScalarSolver : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double lowerlimit[MAXNVAR] = {std::numeric_limits<su2double>::min()}; /*!< \brief contains lower limits for turbulence variables. */
+  su2double lowerlimit[MAXNVAR] = {std::numeric_limits<su2double>::lowest()}; /*!< \brief contains lower limits for turbulence variables. Note that ::min() returns the smallest positive value for floats. */
   su2double upperlimit[MAXNVAR] = {std::numeric_limits<su2double>::max()}; /*!< \brief contains upper limits for turbulence variables. */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
