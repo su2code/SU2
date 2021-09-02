@@ -191,7 +191,6 @@ public:
   /*--- Main geometric elements of the grid. ---*/
 
   CPrimalGrid** elem{nullptr};           /*!< \brief Element vector (primal grid information). */
-  CPrimalGrid** face{nullptr};           /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound{nullptr};         /*!< \brief Boundary vector (primal grid information). */
   CPoint* nodes{nullptr};                /*!< \brief Node vector (dual grid information). */
   CEdge* edges{nullptr};                 /*!< \brief Edge vector (dual grid information). */

@@ -46,17 +46,20 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  unsigned short iMarker, nLineLets;
-  unsigned short nZone = geometry->GetnZone();
-  su2double *Mvec_Inf, Alpha, Beta;
-  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  unsigned short direct_diff = config->GetDirectDiff();
+  const auto nZone = geometry->GetnZone();
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const auto direct_diff = config->GetDirectDiff();
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
+  const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+
   int Unst_RestartIter = 0;
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
-  bool adjoint = config->GetDiscrete_Adjoint();
-  string filename_ = "flow";
+  unsigned short iMarker, nLineLets;
+  su2double *Mvec_Inf, Alpha, Beta;
+
+  /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -79,6 +82,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
+    string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata ---*/
@@ -246,18 +250,24 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
 
   /*--- Set the primitive variables ---*/
-  ErrorCounter  = 0;
+  ompMasterAssignBarrier(ErrorCounter,0);
+  SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+  SU2_OMP_BARRIER
 
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
+    if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
       
       if ((rank == MASTER_NODE) && (ErrorCounter != 0))
         cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
+    }
   }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Artificial dissipation ---*/
 
@@ -983,7 +993,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, sqvel                       = 0.0,
   Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
   soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
-  Density_FreeStreamND   = 0.0;
+  Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0;
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
@@ -1150,6 +1160,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
   Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
   Force_Ref         = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref; config->SetForce_Ref(Force_Ref);
+  Heat_Flux_Ref     = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref;           config->SetHeat_Flux_Ref(Heat_Flux_Ref);
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
@@ -1641,6 +1652,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iVar, iDim, iSpecies, nSpecies,
       RHO_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, H_INDEX, A_INDEX, P_INDEX,
       RHOCVTR_INDEX, RHOCVVE_INDEX;
+
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
   Temperature_ve, Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
