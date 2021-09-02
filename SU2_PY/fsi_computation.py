@@ -112,21 +112,6 @@ def main():
   if have_MPI:
     comm.barrier()
 
-<<<<<<< HEAD
-  # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
-  if myid == rootProcess:
-    print("\n")
-    print(" Initializing solid solver ".center(80,"*"))
-    if CSD_Solver == 'AEROELASTIC':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
-    elif CSD_Solver == 'IMPOSED':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
-    elif CSD_Solver == 'MAPPING':
-      from SU2_Nastran import pysu2_nastran
-      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
-=======
   # --- Initialize the solid solver --- #
   # Serial solvers
   if CSD_Solver in ["NATIVE"]:
@@ -139,7 +124,6 @@ def main():
           SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
         else:
           SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
->>>>>>> origin/develop
     else:
       SolidSolver = None
   # Parallel solvers
@@ -175,11 +159,7 @@ def main():
   if have_MPI:
     comm.barrier()
 
-<<<<<<< HEAD
-  if CSD_Solver != "MAPPING":
-=======
   if FSI_config["MAPPING_MODES"] == "NO":
->>>>>>> origin/develop
     # --- Launch a steady or unsteady FSI computation --- #
     if FSI_config['TIME_MARCHING'] == "YES":
       try:

@@ -121,18 +121,6 @@ class FSIConfig:
                 print(this_param + " is an invalid option !")
 
     def applyDefaults(self):
-<<<<<<< HEAD
-        if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
-            if self._ConfigContent["AITKEN_RELAX"] != "STATIC" or self._ConfigContent["AITKEN_PARAM"] != 1.0:
-                print("WARNING: Setting the Aitken parameter as static and equal to 1 for IMPOSED solver")
-                self._ConfigContent["AITKEN_RELAX"] = "STATIC"
-                self._ConfigContent["AITKEN_PARAM"] = 1.0
-
-        if self._ConfigContent["RESTART_SOL"] == "YES":
-            if self._ConfigContent["TIME_TRESHOLD"] != -1:
-                print("WARNING: Setting the time threshold to -1 for immediate coupling when using restart")
-                self._ConfigContent["TIME_TRESHOLD"] = -1
-=======
 
         if "MAPPING_MODES" not in self._ConfigContent:
             self._ConfigContent["MAPPING_MODES"] = "NO"
@@ -152,4 +140,3 @@ class FSIConfig:
 
         if self._ConfigContent["MAPPING_MODES"] == "YES" and self._ConfigContent["CSD_SOLVER"]!="NATIVE":
             raise Exception("Mapping modes only works with the native solver")
->>>>>>> origin/develop

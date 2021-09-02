@@ -45,13 +45,7 @@ class CBoundaryFace;
 
 /*!
  * \class CCGNSElementType
-<<<<<<< HEAD
- * \brief Class which stores the CGNS element type info for a connectivity
-          section.
- * \version 7.2.0 "Blackbird"
-=======
  * \brief Class which stores the CGNS element type info for a connectivity section.
->>>>>>> origin/develop
  */
 
 class CCGNSElementType {
