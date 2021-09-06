@@ -748,6 +748,11 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
       }
+      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_TRANSFER) {
+        const su2double Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
+        const su2double Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+        q_w = Transfer_Coefficient * (Tinfinity - T_Wall);
+      }
     
       /*--- incompressible formulation ---*/
       su2double Density_Wall = nodes->GetDensity(iPoint);
