@@ -29,7 +29,7 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
 
-CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
+CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(const CConfig *val_config,
                                                      unsigned short val_iZone,
                                                      unsigned short val_nZone)
 : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
@@ -63,8 +63,6 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
   ComputeRectangularSurfaceConnectivity();
 
 }
-
-CRectangularMeshReaderFVM::~CRectangularMeshReaderFVM(void) { }
 
 void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
 
