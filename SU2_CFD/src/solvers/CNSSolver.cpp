@@ -793,10 +793,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  const unsigned short max_iter = config->GetwallModelMaxIter() ;  /*--- maximum number of iterations for the Newton Solver---*/
-  const su2double tol = 1e-12;                          /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
-  const su2double relax = config->GetwallModelRelFac(); /*--- relaxation factor for the Newton solver ---*/
-  
+  const su2double tol = 1e-12;  /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+  const unsigned short max_iter = config->GetwallModelMaxIter();
+  const su2double relax = config->GetwallModelRelFac();
   /*--- Compute the recovery factor ---*/
   // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
@@ -876,7 +875,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       /*--- initial value for wall temperature ---*/
   
-      su2double T_Wall = nodes->GetTemperature(iPoint);
 
       su2double q_w = 0.0;
 
@@ -889,6 +887,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       /*--- compressible formulation ---*/
 
+  su2double T_Wall = nodes->GetTemperature(iPoint);
       su2double P_Wall = P_Normal;
       su2double Density_Wall = P_Wall/(Gas_Constant*T_Wall);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
@@ -920,7 +919,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
-      /*--- Automatic switch off when y+ < 5.0 according to Nichols & Nelson (2004) ---*/
+      /*--- Automatic switch off when y+ < "limit" according to Nichols & Nelson (2004) ---*/
 
       if (Y_Plus_Start < config->GetwallModelMinYPlus() ) {
         skipCounter++;
@@ -942,7 +941,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
           su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-          if (denum>EPS){ 
+          if (denum > EPS){ 
             T_Wall = T_Normal / denum;
             nodes->SetTemperature(iPoint,T_Wall);
           } 
@@ -960,7 +959,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
- 
         su2double kUp = kappa*U_Plus;
         Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 

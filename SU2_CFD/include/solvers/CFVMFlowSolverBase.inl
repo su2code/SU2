@@ -2536,8 +2536,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
       if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
         const su2double Tau_Wall = nodes->GetTauWall(iPoint); 
-        for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = (Tau_Wall/WallShearStress[iMarker][iVertex])*TauTangent[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) TauElem[iDim] = (Tau_Wall/WallShearStress[iMarker][iVertex])*TauElem[iDim];
+        const su2double scale = Tau_Wall / WallShearStress[iMarker][iVertex];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          TauTangent[iDim] *= scale;
+          TauElem[iDim] *= scale;
+        }
         WallShearStress[iMarker][iVertex] = Tau_Wall;
       }
 
@@ -2545,10 +2548,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
 
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       /*--- Compute non-dimensional velocity and y+ ---*/
 

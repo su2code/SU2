@@ -548,9 +548,42 @@ def main():
     inc_turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(inc_turb_naca0012_sst_sust)
 
-    # FLAT PLATE, WALL FUNCTIONS
-    inc_turb_wallfunction_flatplate_sa           = TestCase('inc_turb_wallfunction_flatplate')
-    inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate"
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
+    turb_wallfunction_flatplate_sst           = TestCase('turb_sst_wallfunction_flatplate')
+    turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
+    turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
+    turb_wallfunction_flatplate_sst.test_iter = 10
+    turb_wallfunction_flatplate_sst.test_vals = [-3.070676, -5.386050, 0.057197, 0.005347] #last 4 columns
+    turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
+    turb_wallfunction_flatplate_sst.timeout   = 1600
+    turb_wallfunction_flatplate_sst.tol       = 0.00001
+    test_list.append(turb_wallfunction_flatplate_sst)
+
+    # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
+    inc_turb_wallfunction_flatplate_sst           = TestCase('inc_turb_sst_wallfunction_flatplate')
+    inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
+    inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
+    inc_turb_wallfunction_flatplate_sst.test_iter = 10
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-3.070676, -5.386050, 0.057197, 0.005347] #last 4 columns
+    inc_turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
+    inc_turb_wallfunction_flatplate_sst.timeout   = 1600
+    inc_turb_wallfunction_flatplate_sst.tol       = 0.00001
+    test_list.append(inc_turb_wallfunction_flatplate_sst)
+
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
+    turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
+    turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
+    turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
+    turb_wallfunction_flatplate_sa.test_iter = 10
+    turb_wallfunction_flatplate_sa.test_vals = [-3.070676, -5.386050, 0.057197, 0.005347] #last 4 columns
+    turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
+    turb_wallfunction_flatplate_sa.timeout   = 1600
+    turb_wallfunction_flatplate_sa.tol       = 0.00001
+    test_list.append(turb_wallfunction_flatplate_sa)
+
+    # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SA
+    inc_turb_wallfunction_flatplate_sa           = TestCase('inc_turb_sa_wallfunction_flatplate')
+    inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
     inc_turb_wallfunction_flatplate_sa.test_vals = [-3.070676, -5.386050, 0.057197, 0.005347] #last 4 columns
