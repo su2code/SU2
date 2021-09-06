@@ -774,7 +774,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       unsigned long counter = 0;
       su2double diff = 1.0;
       su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
-      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // clipping value
+      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // use clipping value as minimum
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 

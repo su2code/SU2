@@ -942,9 +942,12 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
           su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-          if (abs(denum)>EPS){ 
+          if (denum>EPS){ 
             T_Wall = T_Normal / denum;
             nodes->SetTemperature(iPoint,T_Wall);
+          } 
+          else {
+            cout << "Warning: T_Wall < 0 " << endl;
           }
        }
 
