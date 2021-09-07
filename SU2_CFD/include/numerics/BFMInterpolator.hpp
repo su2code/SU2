@@ -44,7 +44,7 @@ class BFMInterpolator
     * \param [in] reader - Pointer to input file reader class.
     * \param [in] solver_container - Pointer to solver container class. 
     */
-    void Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput *reader, CSolver*solver_container);
+    void Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput * const reader, CSolver *const solver_container);
 
     /*!
     * \brief Ray-cast inclusion algorithm which checks for query point inclusion whithin cell.
@@ -122,11 +122,17 @@ class BFMInterpolator
 
     public:
     BFMInterpolator();
-    BFMInterpolator(ReadBFMInput *reader, CSolver *solver_container, CGeometry *geometry, CConfig *config);
+    BFMInterpolator(ReadBFMInput *const reader, CSolver *const solver_container, CGeometry *const geometry, CConfig *const config);
 
-    void Interpolate(ReadBFMInput *reader, CSolver *solver_container, CGeometry *geometry);
+    /*! 
+    * \brief Interpolates the blade shape parameters onto the mesh nodes.
+    * \param[in] reader - pointer to BFM input file reader class.
+    * \param[in] solver_container - pointer to BFM solver class.
+    * \param[in] geometry - pointer to geometry class.
+    */
+    void Interpolate(ReadBFMInput * reader, CSolver *const solver_container, CGeometry * geometry);
 
-    ~BFMInterpolator();
+    //~BFMInterpolator();
 
 
 };

@@ -2092,8 +2092,7 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
-  PERIODIC_AUX_GG,
-  PERIODIC_AUX_LS,
+  PERIODIC_AUX_GG,       /*!< \brief Auxilary variable gradient communication for Green-Gauss (periodic only).*/
 };
 
 /*!
@@ -2243,29 +2242,29 @@ static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
 };
 enum ENUM_BODY_FORCE_TYPE {
-    CONSTANT_BF = 0,			/*!< \brief Constant body force over domain using vector. */
-    VARIABLE_BF = 1,				/*!< \brief Body force model that is spatially varying. */
+  CONSTANT_BF,			/*!< \brief Constant body force over domain using vector. */
+  VARIABLE_BF,				/*!< \brief Body force model that is spatially varying. */
 };
 
 static const MapType<std::string, ENUM_BODY_FORCE_TYPE> Body_Force_Map = {
-        MakePair("CONSTANT_BF", CONSTANT_BF)
-        MakePair("VARIABLE_BF", VARIABLE_BF)
+  MakePair("CONSTANT_BF", CONSTANT_BF)
+  MakePair("VARIABLE_BF", VARIABLE_BF)
 };
 
 enum ENUM_BODY_FORCE_PARAMETERS {
-  I_AXIAL_COORDINATE = 0,
-  I_RADIAL_COORDINATE = 1,
-  I_TANGENTIAL_ANGLE = 2,
-  I_ROTATION_FACTOR = 3,
-  I_BLOCKAGE_FACTOR = 4,
-  I_CAMBER_NORMAL_AXIAL = 5,
-  I_CAMBER_NORMAL_TANGENTIAL = 6,
-  I_CAMBER_NORMAL_RADIAL = 7,
-  I_LEADING_EDGE_AXIAL = 8,
-  I_AXIAL_CHORD = 9,
-  I_BLADE_COUNT = 10,
-  I_BODY_FORCE_FACTOR = 11,
-  N_BFM_PARAMS = 12,
+  I_AXIAL_COORDINATE,
+  I_RADIAL_COORDINATE,
+  I_TANGENTIAL_ANGLE,
+  I_ROTATION_FACTOR,
+  I_BLOCKAGE_FACTOR,
+  I_CAMBER_NORMAL_AXIAL,
+  I_CAMBER_NORMAL_TANGENTIAL,
+  I_CAMBER_NORMAL_RADIAL,
+  I_LEADING_EDGE_AXIAL,
+  I_AXIAL_CHORD,
+  I_BLADE_COUNT,
+  I_BODY_FORCE_FACTOR,
+  N_BFM_PARAMS,
 };
 
 enum ENUM_BODY_FORCE_MODEL_FORMULATION {

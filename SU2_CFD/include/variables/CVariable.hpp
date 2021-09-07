@@ -1417,6 +1417,12 @@ public:
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
 
   inline virtual su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return 12;}
+
+  inline virtual void SetBodyForce(unsigned long iPoint, unsigned short iDim, su2double value) {}
+  
+  inline virtual su2double GetBodyForce(unsigned long iPoint, unsigned short iDim){return 0;}
+
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_velocity - Value of the velocity.

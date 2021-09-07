@@ -28,11 +28,8 @@
 #include "../../include/numerics/BFMInterpolator.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-BFMInterpolator::BFMInterpolator()
-{
 
-}
-BFMInterpolator::BFMInterpolator(ReadBFMInput *reader, CSolver*solver_container, CGeometry *geometry, CConfig *config)
+BFMInterpolator::BFMInterpolator(ReadBFMInput *const reader, CSolver *const solver_container, CGeometry *const geometry, CConfig *const config)
 {
     unsigned long nPoint = geometry->GetnPoint();
     unsigned short nRows = reader->GetNBladeRows();
@@ -48,7 +45,7 @@ BFMInterpolator::BFMInterpolator(ReadBFMInput *reader, CSolver*solver_container,
 
 }
 
-void BFMInterpolator::Interpolate(ReadBFMInput *reader, CSolver *solver_container, CGeometry *geometry){
+void BFMInterpolator::Interpolate(ReadBFMInput * reader, CSolver *const solver_container, CGeometry *geometry){
 
     su2double *Coord_Cart, *Coord_Cyl;
     su2double ax, rad, tang;
@@ -61,18 +58,21 @@ void BFMInterpolator::Interpolate(ReadBFMInput *reader, CSolver *solver_containe
 
     int barwidth = 70;
     su2double progress{0};
-    
-    for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint){
-        progress = su2double(iPoint) / geometry->GetnPoint();
-        int pos = barwidth * progress;
-        cout << "[";
-        for(int iBar=0; iBar<barwidth; ++iBar){
-            if(iBar < pos) cout << "=";
-            else cout << " ";
-        }
-        cout << "] "<< int(100*progress) << " %\r";
-        cout.flush();
+    auto rank = SU2_MPI::GetRank();
+    auto size = SU2_MPI::GetSize();
 
+    for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint){
+        if(rank == MASTER_NODE){
+            progress = su2double(iPoint) / geometry->GetnPoint();
+            int pos = barwidth * progress;
+            cout << "[";
+            for(int iBar=0; iBar<barwidth; ++iBar){
+                if(iBar < pos) cout << "=";
+                else cout << " ";
+            }
+            cout << "] "<< int(100*progress) << " %\r";
+            cout.flush();
+        }
         Coord_Cart = geometry->nodes->GetCoord(iPoint);
         ax = Vector_Dot_Product(Coord_Cart, axial_direction);
         
@@ -99,10 +99,10 @@ void BFMInterpolator::Interpolate(ReadBFMInput *reader, CSolver *solver_containe
         
         
     }
-    cout << endl;
+    if(rank == MASTER_NODE) cout << endl;
 }
 
-void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput *reader, CSolver*solver_container){
+void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput * reader, CSolver * const solver_container){
     unsigned short iRow{0};
     unsigned long iTang{0};
     unsigned long iRad{0};
@@ -204,8 +204,4 @@ su2double BFMInterpolator::DW_average(su2double axis, su2double radius, vector<s
         denomintor += (1/distance);
     }
     return enumerator/denomintor;
-}
-BFMInterpolator::~BFMInterpolator()
-{
-    
 }

@@ -2323,11 +2323,15 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
             numerics->SetBFM_source(iDim, BFM_sources.at(iDim));
       }
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 0, BFM_sources.at(1));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 1, BFM_sources.at(2));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 2, BFM_sources.at(3));
+      
       /*--- Compute the BFM source residual ---*/
       auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(iPoint, residual);
 
     }
     END_SU2_OMP_FOR

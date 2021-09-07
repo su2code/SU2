@@ -50,7 +50,7 @@ ReadBFMInput::ReadBFMInput(CConfig *config, string file_inputname)
 }
 
 void ReadBFMInput::ReadInputFile(string input_file)
-{
+{  
     ifstream file_stream;
     string line, word;
     int ixColon;
@@ -175,15 +175,17 @@ void ReadBFMInput::ReadInputFile(string input_file)
     }
 
     TranslateVariables();
-    // Displaying read blade geometry information
-    cout << "Number of blade rows: " << GetNBladeRows() << endl;
-    cout << "Number of spanwise sections: "<< n_axial_points.at(0) << endl;
-    cout << "Variables: ";
-    for(size_t i=0; i<variable_names.size(); ++i){
-        cout << variable_names.at(i) << " ";
+    auto rank = SU2_MPI::GetRank();
+    if(rank == MASTER_NODE){
+        // Displaying read blade geometry information
+        cout << "Number of blade rows: " << GetNBladeRows() << endl;
+        cout << "Number of spanwise sections: "<< n_axial_points.at(0) << endl;
+        cout << "Variables: ";
+        for(size_t i=0; i<variable_names.size(); ++i){
+            cout << variable_names.at(i) << " ";
+        }
+        cout << endl;
     }
-    cout << endl;
-
     // Allocating memory according to specified number of data entries
     AllocateMemory();
     

@@ -442,7 +442,7 @@ CNumerics::ResidualType<> CSourceBFM::ComputeResidual(const CConfig* config){
   su2double Force_Ref = config->GetForce_Ref();
   su2double residual[nDim + 2];
   for(unsigned short iDim=0; iDim<nDim + 2; ++iDim){
-    residual[iDim] = -Volume * BFM_sources.at(iDim) / Force_Ref;
+    residual[iDim] = Volume * BFM_sources.at(iDim) / Force_Ref;
   }
   return ResidualType<>(residual, nullptr, nullptr);
 }

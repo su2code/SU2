@@ -38,12 +38,14 @@ CBFMSolver::CBFMSolver(void) : CSolver() { }
 CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
     /* This function initalizes the BFM solver */
 
-    cout << "Initiating BFM solver" << endl;
+    
+    rank = SU2_MPI::GetRank();
+    if(rank == MASTER_NODE)
+        cout << "Initiating BFM solver" << endl;
     nPoint = geometry->GetnPoint();
     nDim = geometry->GetnDim();
     nVar = N_BFM_PARAMS;
-    Omega = config->GetBFM_Rotation();
-
+    Omega = config->GetBFM_Rotation() * PI_NUMBER / 30;
     // Defining BFM variable class
     nodes = new CBFMVariable(nPoint, nDim, N_BFM_PARAMS);
     SetBaseClassPointerToNodes();
@@ -53,20 +55,21 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
 
     
     BFM_formulation = config->GetBFM_Formulation();
-    switch (BFM_formulation)
-    {
-    case HALL:
-        cout << "Body-Force Model selection: Hall" << endl;
-        break;
-    case THOLLET:
-        cout << "Body-Force Model selection: Thollet" << endl;
-        break;
-    default:
-        SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
-                CURRENT_FUNCTION);
-        break;
+    if(rank == MASTER_NODE){
+        switch (BFM_formulation)
+        {
+        case HALL:
+            cout << "Body-Force Model selection: Hall" << endl;
+            break;
+        case THOLLET:
+            cout << "Body-Force Model selection: Thollet" << endl;
+            break;
+        default:
+            SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
+                    CURRENT_FUNCTION);
+            break;
+        }
     }
-
     // Filling in the blade geometry parameter names
     BFM_Parameter_Names.resize(N_BFM_PARAMS);
     BFM_Parameter_Names.at(I_AXIAL_CHORD) = "axial_coordinate";
@@ -78,10 +81,11 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     BFM_Parameter_Names.at(I_LEADING_EDGE_AXIAL) = "ax_LE";
 
     // Commencing blade geometry interpolation
-    cout << "Interpolating blade geometry parameters to nodes" << endl;
+    if(rank == MASTER_NODE)
+        cout << "Interpolating blade geometry parameters to nodes" << endl;
     Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
     Interpolator->Interpolate(BFM_File_Reader, this, geometry);
-    
+    SU2_OMP_BARRIER
     // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
     for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
         nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
@@ -162,7 +166,7 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
     */
 
     su2double F[nDim]; // body-force vector(Cartesian)
-    su2double Rotation_rate = Omega * PI_NUMBER / 30; // Blade rotation rate [rad s^-1]
+    su2double Rotation_rate = Omega; // Blade rotation rate [rad s^-1]
     su2double Nx, Nt, Nr, rotFac, blade_count; // axial, tangential, radial camber normal vector components[-], rotation factor[-], blade count[-]
     su2double W_ax, W_th, W_r, // axial, tangential, radial relative velocity [m s^-1]
      WdotN, // Dot product between camber normal vector and relative velocity vector [m s^-1]
@@ -244,7 +248,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     */
 
     su2double F[nDim];  // body-force vector(Cartesian)
-    su2double Rotation_rate = Omega * PI_NUMBER / 30;  // Blade rotation rate [rad s^-1]
+    su2double Rotation_rate = Omega;  // Blade rotation rate [rad s^-1]
     su2double b, // Metal blockage factor [-]
      Nx, Nt, Nr, // axial, tangential, radial camber normal vector components[-]
      rotFac, // Rotation factor [-]
@@ -291,8 +295,9 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     // Relative velocity magnitude
     W_mag = sqrt(W_ax * W_ax + W_th * W_th + W_r * W_r);
     // Calculating the deviation angle
-    delta = asin(WdotN / (W_mag + 1e-6));
-
+    delta = asin(WdotN / W_mag);
+    if(isinf(delta)) cout << "infinite angle of attack" << endl;
+    if(isnan(delta)) cout << "NaN angle of attack" << endl;
     // Computing the compressiblity correction factor for the normal body force
     K_mach = ComputeKMach(solver_container, iPoint, W_cyl);
 
@@ -330,7 +335,6 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
                           + F_th*(nodes->GetTangentialProjection(iPoint, iDim))
                           + F_r*(nodes->GetRadialProjection(iPoint, iDim)));
     }
-
     
     // Appending source term values to the body-force source term vector
     BFM_sources.at(0) = 0.0;	// empty density component
@@ -344,6 +348,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
 
     // Computing source terms due to metal blockage
     ComputeBlockageSources(solver_container, iPoint, BFM_sources);
+    
 }
 
 void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources){
@@ -424,7 +429,7 @@ void CBFMSolver::ComputeCylProjections(CGeometry *geometry, CConfig *config)
        
         
 		for(int iDim = 0; iDim < nDim; iDim ++){
-			axial_vector[iDim] = (rot_dot_x/rot_dot_rot)*(config->GetBFM_Axis(iDim)); // Parallel projection of coordinate vector onto rotation axis
+			axial_vector[iDim] = config->GetBFM_Axis(iDim)*Coord[iDim]; // Parallel projection of coordinate vector onto rotation axis
 			radial_vector[iDim] = Coord[iDim] - axial_vector[iDim];	// Orthogonal projection of coordinate vector onto rotation axis
 			ax += axial_vector[iDim]*axial_vector[iDim];	
 			radius += radial_vector[iDim]*radial_vector[iDim];
@@ -450,10 +455,7 @@ void CBFMSolver::ComputeCylProjections(CGeometry *geometry, CConfig *config)
 			// Computing tangential unit vector components through cross product of radial and axial vectors
 			i_left = (iDim + 1) % nDim;
 			i_right = (iDim + 2) % nDim;
-            su2double tang = ((nodes->GetAxialProjection(iPoint, i_left))*radial_vector[i_right]
-            - (nodes->GetAxialProjection(iPoint, i_right))*radial_vector[i_left])/radius;
-            nodes->SetTangentialProjection(iPoint, iDim, ((nodes->GetAxialProjection(iPoint, i_left))*radial_vector[i_right]
-            - (nodes->GetAxialProjection(iPoint, i_right))*radial_vector[i_left])/radius);
+            nodes->SetTangentialProjection(iPoint, iDim, (config->GetBFM_Axis(i_left)*radial_vector[i_right] - config->GetBFM_Axis(i_right)*radial_vector[i_left])/radius);
 			//Radial projection unit vector is normalized radial coordinate vector
             nodes->SetRadialProjection(iPoint, iDim, radial_vector[iDim]/radius);
 		}
@@ -464,7 +466,7 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 {
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
-    su2double Rotation_rate = Omega * PI_NUMBER / 30;
+    su2double Rotation_rate = Omega;
 
 	for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); iPoint++){
 
@@ -503,7 +505,7 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 void CBFMSolver::ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*> &W_cyl){
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
-    su2double Rotation_rate = Omega * PI_NUMBER / 30;
+    su2double Rotation_rate = Omega;
 
     // Obtaining solution flow variables
     
@@ -537,56 +539,6 @@ void CBFMSolver::ComputeRelativeVelocity(CSolver **solver_container, unsigned lo
 	
 }
 
-void CBFMSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
-
-void CBFMSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
-
-void CBFMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                        CConfig *config, unsigned short iMesh) { }
-
-void CBFMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) 
-{   
-
-}
-
-void CBFMSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                                 CConfig *config, unsigned short iMesh) { }
-
-void CBFMSolver::BC_Euler_Wall(CGeometry      *geometry,
-                                    CSolver        **solver_container,
-                                    CNumerics      *conv_numerics,
-                                    CNumerics      *visc_numerics,
-                                    CConfig        *config,
-                                    unsigned short val_marker) { }
-
-void CBFMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-void CBFMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                     unsigned short val_marker) { }
-
-void CBFMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                 unsigned short val_marker) { }
-
-void CBFMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                  unsigned short val_marker) { }
-
-void CBFMSolver::BC_Sym_Plane(CGeometry      *geometry,
-                                   CSolver        **solver_container,
-                                   CNumerics      *conv_numerics,
-                                   CNumerics      *visc_numerics,
-                                   CConfig        *config,
-                                   unsigned short val_marker) { }
-
-void CBFMSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
-
-void CBFMSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                             CConfig *config, unsigned short iRKStep) { }
-
-void CBFMSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
-void CBFMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 su2double CBFMSolver::ComputeKMach(CSolver **solver_container, unsigned long iPoint, vector<su2double*>W_cyl){
     su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
@@ -597,9 +549,12 @@ su2double CBFMSolver::ComputeKMach(CSolver **solver_container, unsigned long iPo
     }
     W_mag = sqrt(W_mag);
     su2double M_rel = W_mag / SoS;
-
+    if(M_rel == 1.0){
+        M_rel -= 1e-6;
+    }
     su2double K_prime = M_rel < 1 ? 1/sqrt(1 - M_rel * M_rel) : 2 / (PI_NUMBER * sqrt(M_rel*M_rel - 1));
     su2double K_Mach = K_prime <= 3 ? K_prime : 3;
+    if (isnan(K_Mach)) K_Mach = 3;
 
     return K_Mach;
 }

@@ -244,7 +244,7 @@ public:
   * \param [in] iDim - Solution variable index.
   * \param [in] value - Solution variable BFM source term.
   */
-  inline virtual void SetBFM_source(unsigned short iDim, su2double value) final {
+  inline void SetBFM_source(unsigned short iDim, su2double value) final {
     BFM_sources.at(iDim) = value;
   }
 
