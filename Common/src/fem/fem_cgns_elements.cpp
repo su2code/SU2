@@ -34,6 +34,8 @@
 #include <climits>
 #include <algorithm>
 
+using namespace std;
+
 #if CGNS_VERSION >= 3300
 
 void CCGNSElementType::DetermineMetaData(const unsigned short nDim,
