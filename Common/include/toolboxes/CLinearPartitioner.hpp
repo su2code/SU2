@@ -116,4 +116,14 @@ public:
     return cumulativeSizeBeforeRank[rank];
   }
 
+  /*!
+   * \brief Checks if an index belongs to a rank.
+   * \param[in] index - Current index.
+   * \param[in] rank - MPI rank identifier.
+   * \returns True if index is owned by rank.
+   */
+  bool IndexBelongsToRank(unsigned long index, int rank) const {
+    return index >= cumulativeSizeBeforeRank[rank] && index < cumulativeSizeBeforeRank[rank+1];
+  }
+
 };
