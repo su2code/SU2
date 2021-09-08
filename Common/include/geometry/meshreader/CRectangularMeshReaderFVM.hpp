@@ -71,13 +71,8 @@ public:
   /*!
    * \brief Constructor of the CRectangularMeshReaderFVM class.
    */
-  CRectangularMeshReaderFVM(CConfig        *val_config,
+  CRectangularMeshReaderFVM(const CConfig *val_config,
                             unsigned short val_iZone,
                             unsigned short val_nZone);
-
-  /*!
-   * \brief Destructor of the CRectangularMeshReaderFVM class.
-   */
-  ~CRectangularMeshReaderFVM(void);
 
 };
