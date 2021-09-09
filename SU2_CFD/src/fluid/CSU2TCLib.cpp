@@ -49,6 +49,9 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   Omega11.resize(nSpecies,nSpecies,4,0.0);
   RxnConstantTable.resize(6,5) = su2double(0.0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
+  taus.resize(nSpecies,0.0);
+  eve_eq.resize(nSpecies,0.0);
+  eve.resize(nSpecies,0.0);
 
   if(viscous){
     MolarFracWBE.resize(nSpecies,0.0);
@@ -887,6 +890,9 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
   unsigned short nEve = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
 
+  su2double T_min   = 800.0;
+  su2double epsilon = 80;
+    
   /*--- Initializing derivative variables ---*/
   dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
   dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
@@ -1062,13 +1068,11 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
 
-  su2double A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus;
-  vector<su2double> MolarFrac, eve_eq, eve;
+  su2double A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW;
+  vector<su2double> MolarFrac;
   su2activematrix mu;
 
   MolarFrac.resize(nSpecies,0.0);
-  eve_eq.resize(nSpecies,0.0);
-  eve.resize(nSpecies,0.0);
   mu.resize(nSpecies,nSpecies)=su2double(0.0);
 
   su2double omegaVT = 0.0;
@@ -1113,11 +1117,11 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauP = 1/(sig_s*Cs*N);
 
     /*--- Species relaxation time ---*/
-    taus = tauMW + tauP;
+    taus[iSpecies] = tauMW + tauP;
 
     /*--- Add species contribution to residual ---*/
     omegaVT += rhos[iSpecies] * (eve_eq[iSpecies] -
-                                 eve[iSpecies]) / taus;
+                                 eve[iSpecies]) / taus[iSpecies];
   }
 
   /*--- Vibrational energy change due to chemical reactions ---*/
@@ -1134,7 +1138,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
 void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
 
-  unsigned short iVar;	
+  unsigned short iVar;
   unsigned short nEv  = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
 
@@ -1145,16 +1149,13 @@ void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2
   /*--- Loop through species ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
-    for (iVar = 0; iVar < nVar; iVar++) { 
-
-      val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar] -
-                                                                cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
+    for (iVar = 0; iVar < nVar; iVar++) {
+        val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar]-cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
     }
   }
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
-
+      val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 }
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 

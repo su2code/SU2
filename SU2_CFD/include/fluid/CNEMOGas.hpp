@@ -145,7 +145,7 @@ public:
   /*!
    * \brief Compute vibration enery source term jacobian.
    */
-  virtual void GetEveSourceTermJacobian(const su2double *V,su2double *eve, su2double *cvve,
+  virtual void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
                                         su2double *dTdU, su2double* dTvedU,
                                         su2double **val_jacobian){};
 

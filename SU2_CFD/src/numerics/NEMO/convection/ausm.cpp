@@ -267,6 +267,19 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
         Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
       }
     }
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        delete [] P_Tensor[iVar];
+        delete [] invP_Tensor[iVar];
+      }
+      
+      delete [] RoeU;
+      delete [] RoeV;
+      delete [] RoedPdU;
+      delete [] Lambda;
+      delete [] Epsilon;
+      delete [] P_Tensor;
+      delete [] invP_Tensor;
   }
   /*********************************************************/
 
