@@ -225,8 +225,8 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   /*--- Store the initial CFL number for all grid points. ---*/
  
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Scalar();
-  for (auto i_point = 0u; i_point < nPoint; i_point++) {
-    nodes->SetLocalCFL(i_point, CFL);
+  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
   }
   Min_CFL_Local = CFL;
   Max_CFL_Local = CFL;
@@ -249,7 +249,7 @@ void CFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   unsigned long global_table_misses = 0;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl    =  config->GetMUSCL_Scalar();
+  const bool muscl    = config->GetMUSCL_Scalar();
   const bool limiter  = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER) &&
                         (config->GetInnerIter() <= config->GetLimiterIter());
 
@@ -314,7 +314,6 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
                                           CSolver ***solver_container,
                                           CConfig *config,
                                           unsigned long ExtIter) {
-  su2double *coords;
   bool Restart   = (config->GetRestart() || config->GetRestart_Flow());
   
   
@@ -365,18 +364,19 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
       /*--- the burnt value of the progress variable is set to a value slightly below the maximum value ---*/
 
       prog_burnt = 0.95*fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
-      for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
+      for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPointDomain(); i_point++) {
         
         for (unsigned long i_var = 0; i_var < nVar; i_var++)
           Solution[i_var] = 0.0;
         
-        coords = geometry[i_mesh]->nodes->GetCoord(i_point);
+        auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         /* determine if our location is above or below the plane, assuming the normal 
            is pointing towards the burned region*/ 
-        point_loc = flame_normal[0]*(coords[0]-flame_offset[0]) 
-                  + flame_normal[1]*(coords[1]-flame_offset[1]) 
-                  + flame_normal[2]*(coords[2]-flame_offset[2]);
+        point_loc = 0.0;
+        for (unsigned short i_dim =0; i_dim < geometry[i_mesh]->GetnDim(); i_dim++) {
+          point_loc +=  flame_normal[i_dim]*(coords[i_dim]-flame_offset[i_dim]); 
+        }
 
         /* compute the exact distance from point to plane */          
         point_loc = point_loc/flamenorm;
@@ -535,31 +535,34 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
   CFluidModel *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+  for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
 
     /*--- Set primitive variables w/o reconstruction ---*/
 
-    first_numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(i_point), nullptr);
+    first_numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
 
     /*--- Set scalar variables w/o reconstruction ---*/
 
-    first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
+    first_numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+    /*--- gradients for axisymmetric cases---*/
+    first_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
-    first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
+    first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
 
     /*--- Set volume of the dual cell. ---*/
 
-    first_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
+    first_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
     /*--- Update scalar sources in the fluidmodel ---*/
 
     /*--- Axisymmetry source term for the scalar equation. ---*/
+
     if (axisymmetric){
       /*--- Set y coordinate ---*/
-      first_numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
+      first_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
-    fluid_model_local->SetScalarSources(nodes->GetSolution(i_point));
+    fluid_model_local->SetScalarSources(nodes->GetSolution(iPoint));
 
     /*--- Retrieve scalar sources from fluidmodel and update numerics class data. ---*/
     //first_numerics->SetSourcePV(fluid_model_local->GetScalarSources()[0]);
@@ -570,12 +573,12 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Add Residual ---*/
     
-    LinSysRes.SubtractBlock(i_point, residual);
+    LinSysRes.SubtractBlock(iPoint, residual);
     
     /*--- Implicit part ---*/
     
-    if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
-    
+    if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
   }
   END_SU2_OMP_FOR
 }
@@ -645,24 +648,24 @@ void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     if (geometry->nodes->GetDomain(iPoint)) {
       
-        /*--- Allocate the value at the outlet ---*/
-        auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); 
+      /*--- Allocate the value at the outlet ---*/
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); 
           
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
-        nodes->SetSolution_Old(iPoint, Solution);
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
+      nodes->SetSolution_Old(iPoint, Solution);
     
-        LinSysRes.SetBlock_Zero(iPoint);
+      LinSysRes.SetBlock_Zero(iPoint);
 
-        for (auto iVar = 0u; iVar < nVar; iVar++){
-          nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
-        }
+      for (auto iVar = 0u; iVar < nVar; iVar++){
+        nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
+      }
 
-        /*--- Includes 1 in the diagonal ---*/
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          auto total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
+      /*--- Includes 1 in the diagonal ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        auto total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -711,11 +714,11 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
       condition (Dirichlet) and remove any
       contribution to the residual at this node. ---*/
 
-      nodes->SetSolution(iPoint, I_ENTHALPY, enth_wall);
+      //nodes->SetSolution(iPoint, I_ENTHALPY, enth_wall);
       nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);
 
-      //LinSysRes(iPoint, I_ENTHALPY) = 0.0;
-      LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
+      LinSysRes(iPoint, I_ENTHALPY) = 0.0;
+      //LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
 
       nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTHALPY);
 

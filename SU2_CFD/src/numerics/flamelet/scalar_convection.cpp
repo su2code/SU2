@@ -122,19 +122,15 @@ void CUpwSca_transportedScalar_general::FinishResidualCalc(const CConfig* config
     if (implicit) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
         if (iVar == jVar) {
-          // note that for transported scalar we multiply by density
-          Jacobian_i[iVar][jVar] = a0*Density_i;
-          Jacobian_j[iVar][jVar] = a1*Density_j;
+          Jacobian_i[iVar][jVar] = a0;
+          Jacobian_j[iVar][jVar] = a1;
         } else {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;
         }
       }
     }
-    //Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
-    //Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
-    //Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
-    //Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
+
   }
 
 }

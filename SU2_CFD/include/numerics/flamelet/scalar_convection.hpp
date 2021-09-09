@@ -1,5 +1,5 @@
 ﻿/*!
- * \file turb_convection.hpp
+ * \file scalar_convection.hpp
  * \brief Delarations of numerics classes for discretization of
  *        convective fluxes in turbulence problems.
  * \author F. Palacios, T. Economon

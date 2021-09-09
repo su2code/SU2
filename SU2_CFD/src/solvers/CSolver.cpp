@@ -3635,7 +3635,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       case NO_SCALAR_MODEL:
       break;
       case PASSIVE_SCALAR:
-        for (unsigned int iVar=0; iVar<nVar_Scalar; iVar++){
+        for (auto iVar=0u; iVar<nVar_Scalar; iVar++){
           columnName << "SCALAR_"<< iVar << setw(24);
           columnValue << config->GetInlet_ScalarVal(Marker_Tag)[iVar] <<"\t";
         }
@@ -3651,7 +3651,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     }
 
-    columnNames.push_back(columnName.str());   
+    columnNames.push_back(columnName.str());
     columnValues.push_back(columnValue.str());
 
   }

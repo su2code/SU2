@@ -38,6 +38,9 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   viscous = config->GetViscous();
   implicit = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
   flame  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+  inc_rans = (config->GetKind_Solver() == INC_RANS);
+
+  Sc_t = config->GetSchmidt_Turb();
 
   Residual       = new su2double [nVar];
   scalar_sources = new su2double [nVar];
@@ -106,12 +109,7 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
    /*--- Contribution due to 2D axisymmetric formulation ---*/
    if (axisymmetric) ResidualAxisymmetric();
 
-   /*--- Implicit part ---*/
 
-   //Jacobian_i[0][0] =0.0;// -beta_star*ScalarVar_i[1]*Volume;
-   //Jacobian_i[0][1] = 0.0;//-beta_star*ScalarVar_i[0]*Volume;
-   //Jacobian_i[1][0] = 0.0;
-   //Jacobian_i[1][1] = 0.0;//-2.0*beta_blended*ScalarVar_i[1]*Volume;
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();

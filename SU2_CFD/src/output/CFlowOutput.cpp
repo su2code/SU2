@@ -2058,6 +2058,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           break;
 
         case VISCOSITYMODEL::FLAMELET:
+          file << "Viscosity Model: FLAMELET  \n";
           break;
       }
 
@@ -2091,6 +2092,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             break;
 
           case CONDUCTIVITYMODEL::FLAMELET:
+            file << "Conductivity Model: FLAMELET "<< endl;
             break;
         }
 

@@ -497,7 +497,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
 
   vector<su2double*> look_up_data;
 
-  for (long unsigned int i_var=0; i_var < val_vars.size(); ++i_var) {
+  for (auto i_var=0u; i_var < val_vars.size(); ++i_var) {
     look_up_data.push_back(&val_vars[i_var]);
   }
 

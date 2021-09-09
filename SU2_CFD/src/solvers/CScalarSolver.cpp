@@ -395,9 +395,14 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
+    /*--- Multigrid contribution to residual. ---*/
+    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
+
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+   
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = -LinSysRes[total_index];
+      LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
 
       su2double Res = fabs(LinSysRes[total_index]);
@@ -430,6 +435,10 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
 void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
   // nijso: TODO: we also still have an underrelaxation factor as config option
   ComputeUnderRelaxationFactor(config);
 
@@ -442,14 +451,15 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      // nijso: check difference between conservative and regular solution
-      // nijso: conservative solution is for transport of rho*Y, 
+      su2double density = flowNodes->GetDensity(iPoint);
+      su2double density_old = density;
+
+      if (compressible)
+        density_old = flowNodes->GetSolution_Old(iPoint,0);
+
       // nijso: check underrelaxation
       for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
-        //nodes->AddSolution(iPoint,iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-        // FIXME dan: Underrelaxation is turned off here beacuse problems.
-          //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
-        nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), lowerlimit[iVar], upperlimit[iVar]);
+        nodes->AddClippedSolution(iPoint,iVar, LinSysSol(iPoint,iVar), density,density_old,lowerlimit[iVar],upperlimit[iVar]);
       }
     }
     END_SU2_OMP_FOR
@@ -645,12 +655,8 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
       U_time_n  = nodes->GetSolution_time_n(iPoint);
       Density_n = 1.0;
 
-      //if (sst_model) {
-        if (incompressible)
-          Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
-      //  else
-      //    Density_n = flowNodes->GetSolution_time_n(iPoint,0);
-      //}
+      if (incompressible)
+        Density_n = flowNodes->GetDensity(iPoint); 
 
       for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
 
@@ -706,19 +712,13 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 
           /*--- Multiply by density at node i for the SST model ---*/
 
-          //if (sst_model) {
-            if (incompressible)
-              Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
-            else
-              Density_n = flowNodes->GetSolution_time_n(iPoint,0);
+          if (incompressible)
+            Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
+          else
+            Density_n = flowNodes->GetSolution_time_n(iPoint,0);
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
-          //}
-          //else {
-          //  for (iVar = 0; iVar < nVar; iVar++)
-          //    LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
-          //}
+          for (iVar = 0; iVar < nVar; iVar++)
+            LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
 
         }
         END_SU2_OMP_FOR
@@ -819,11 +819,8 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
-  bool turbulent = ((config->GetKind_Solver() == RANS) ||
-                    (config->GetKind_Solver() == INC_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS));
-  
+  const bool turbulent = (config->GetKind_Turb_Model() != NONE);
+
   unsigned short turbSkip = 0;
   if (turbulent) turbSkip = solver[MESH_0][TURB_SOL]->GetnVar();
 

@@ -622,8 +622,6 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Skip coordinates ---*/
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
-  // nijso: daniel, we have to add progvar here?
-
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_TURB_SYS) {
     skipVars += nDim + 2;
@@ -636,8 +634,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   }
 
   if (KindDirect_Solver== RUNTIME_SCALAR_SYS) {
-    // x,y,u,v,p,t 
-    skipVars = 2*nDim+2 ;
+    skipVars += nDim+2 ;
     if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 

@@ -38,12 +38,11 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
                                            unsigned short iMesh)
 : CScalarSolver(geometry, config) {
   unsigned short nLineLets;
-
   const bool turbulent = ((config->GetKind_Solver() == RANS) ||
                          (config->GetKind_Solver() == DISC_ADJ_RANS));
   const bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   const bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
-  bool multizone = config->GetMultizone_Problem();
+  const bool multizone = config->GetMultizone_Problem();
 
   /*--- Dimension of the problem --> passive scalar will only ever
    have a single equation. Other child classes of CScalarSolver
@@ -67,12 +66,12 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   FluidModel = nullptr;
   
-
   /*--- Single grid simulation ---*/
 
   /*--- Define some auxiliary vector related with the solution ---*/
-  Solution = new su2double[nVar];
-  Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+  Solution   = new su2double[nVar];
+  Solution_i = new su2double[nVar];
+  Solution_j = new su2double[nVar];
 
   /*--- do not see a reason to use only single grid ---*/
   //if (iMesh == MESH_0) {
@@ -185,7 +184,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   /*-- Allocation of inlets has to happen in derived classes
    (not CScalarSolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
-  
+  // [x,y],T,[U,V],
   Inlet_Position = nDim*2+2;
   if (turbulent) {
     if (turb_SA) Inlet_Position += 1;
@@ -267,7 +266,6 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
     SetSolution_Gradient_LS(geometry, config);
 
   if (limiter && muscl) SetSolution_Limiter(geometry, config);
-
 }
 
 void CPassiveScalarSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -287,7 +285,8 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE){
       cout << "Initializing passive scalar (initial condition)." << endl;
-      cout << "initialization = " << nVar << " " << config->GetScalar_Init(0)<<endl;
+      for (auto iVar=0u; iVar<nVar; iVar++)
+        cout << "initial value of scalar " << iVar << " = " << config->GetScalar_Init(iVar)<<endl;
     }  
 
     su2double* scalar_init = new su2double[nVar];
@@ -383,20 +382,20 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
         
         total_index = iPoint*nVar+iVar;
         
-        su2double c = nodes->GetSolution(iPoint,iVar);
+        su2double scalar = nodes->GetSolution(iPoint,iVar);
         
         /*--- Compute the lag terms for the decoupled linear system from
          the mean flow equations and add to the residual for the scalar.
          In short, we are effectively making these terms explicit. ---*/
         
-        su2double artcompc1 = SolP * c/(Density*BetaInc2);
-        su2double artcompc2 = SolT * dRhodT * c/(Density);
+        su2double artcompc1 = SolP * scalar/(Density*BetaInc2);
+        su2double artcompc2 = SolT * dRhodT * scalar/(Density);
         
         LinSysRes[total_index] += artcompc1 + artcompc2;
         
         /*--- Add the extra Jacobian term to the scalar system. ---*/
         
-        su2double Jaccomp = c * dRhodC + Density; //This is Gamma
+        su2double Jaccomp = scalar * dRhodC + Density; //This is Gamma
         su2double JacTerm = Jaccomp*Delta;
         
         Jacobian.AddVal2Diag(iPoint, JacTerm);
@@ -429,9 +428,9 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
   /*--- Loop over all points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Conservative variables w/o reconstruction ---*/
+    /*--- Set primitive variables w/o reconstruction ---*/
 
     numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), nullptr);
 
@@ -482,6 +481,7 @@ void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
                                     unsigned short val_marker) {
 
   su2double *inlet_scalar = new su2double[nVar]{};
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   //bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -493,26 +493,23 @@ void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      nodes->SetSolution_Old(iPoint, inlet_scalar);
+    nodes->SetSolution_Old(iPoint, inlet_scalar);
 
-      LinSysRes.SetBlock_Zero(iPoint);
+    LinSysRes.SetBlock_Zero(iPoint);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
-      }
-
-      /*--- Includes 1 in the diagonal ---*/
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
     }
+
+    /*--- Includes 1 in the diagonal ---*/
+    if (implicit) Jacobian.DeleteValsRowi(iPoint);
+
   }
   END_SU2_OMP_FOR
 
