@@ -461,6 +461,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
   unsigned long iPoint, jPoint, iVertex, iEdge;
 
   su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
+  /*--- For non-Conservative scalars (e.g. SA), multiply the Primitives with 1.0 instead of Density. ---*/
   su2double Density_nM1 = 1.0, Density_n = 1.0, Density_nP1 = 1.0;
   su2double Volume_nM1, Volume_nP1;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
@@ -540,7 +541,6 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
     for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
       U_time_n = nodes->GetSolution_time_n(iPoint);
-      Density_n = 1.0;
 
       if (Conservative) {
         if (incompressible)
@@ -603,11 +603,10 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
               Density_n = flowNodes->GetDensity(iPoint);  // Temporary fix
             else
               Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
-
-            for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += Density_n * U_time_n[iVar] * Residual_GCL;
-          } else {
-            for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += U_time_n[iVar] * Residual_GCL;
           }
+
+          for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += Density_n * U_time_n[iVar] * Residual_GCL;
+
         }
         END_SU2_OMP_FOR
       }
@@ -655,24 +654,16 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
           Density_nP1 = flowNodes->GetSolution(iPoint, 0);
         }
+      }
 
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (first_order)
-            LinSysRes(iPoint, iVar) +=
-                (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nP1 / TimeStep);
-          if (second_order)
-            LinSysRes(iPoint, iVar) +=
-                (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
-                (Density_nM1 * U_time_nM1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
-        }
-
-      } else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (first_order) LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * (Volume_nP1 / TimeStep);
-          if (second_order)
-            LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
-                                       (U_time_nM1[iVar] - U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
-        }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        if (first_order)
+          LinSysRes(iPoint, iVar) +=
+              (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nP1 / TimeStep);
+        if (second_order)
+          LinSysRes(iPoint, iVar) +=
+              (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
+              (Density_nM1 * U_time_nM1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
