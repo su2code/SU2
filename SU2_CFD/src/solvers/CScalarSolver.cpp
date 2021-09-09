@@ -711,10 +711,7 @@ void CScalarSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig
 
     /*--- Skip flow variables ---*/
 
-    unsigned short skipVars = 0;
-
-    if (nDim == 2) skipVars += 6;
-    if (nDim == 3) skipVars += 8;
+    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
 
     /*--- Adjust the number of solution variables in the incompressible
      restart. We always carry a space in nVar for the energy equation in the
