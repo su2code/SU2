@@ -87,7 +87,7 @@ private:
         for (auto iVar=0u; iVar < nVar; iVar++) {
           for (auto jVar=0u; jVar < nVar; jVar++) {
             if (iVar == jVar) Jacobian_i[iVar][jVar] = -Velocity_i[1];
-            Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i; 
+            Jacobian_i[iVar][jVar] *= yinv*Volume;
           }
         }
       }
