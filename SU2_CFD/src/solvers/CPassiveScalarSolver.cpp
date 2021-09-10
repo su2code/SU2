@@ -155,9 +155,11 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   nodes = new CPassiveScalarVariable(Scalar_Inf, nPoint, nDim, nVar, config);
 
 
+  //TODO MH: for MIXTURE_FLUID_MODEL a nan is created due to all inputs of SetDiffusivity being zero 
   /*--- initialize the mass diffusivity ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++){
     auto M = FluidModel->GetMassDiffusivity(); // returns a su2double, note that for more species this should be a vector
+    // auto M = config->GetDiffusivity_Constant(); // Right now DIFFUSIVITY_CONSTANT needs to be specified next to UNITY_LEWIS in order to initialise su2double M
     // loop over all points and set diffusivity
     // why construct the entire diffusivity matrix?
    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
@@ -238,8 +240,6 @@ CPassiveScalarSolver::~CPassiveScalarSolver(void) {
 void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long n_not_in_domain     = 0;
-
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl    =  config->GetMUSCL_Scalar();
   const bool limiter  = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER) &&
@@ -249,19 +249,23 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
 
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
 
-    CFluidModel * fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+    // Still needed later on to access GetMassDiffusivity()
+    // CFluidModel * fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
     for(int iVar = 0; iVar < nVar; iVar++){
       scalars[iVar] = nodes->GetSolution(i_point, iVar);
     }
 
-    su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
-
-    n_not_in_domain += fluid_model_local->SetTDState_T(Temperature, scalars); /*--- first argument (temperature) is not used ---*/
-
     // Temporary solution: compute mass diffusivity here with variable Cp.
-    su2double cp = 2224.43 * scalars[0] + 1009.39 * (1- scalars[0]);
-    // su2double cp = 2224.43 * scalars[0] + 14310.0 * scalars[1] + 1009.39 * (1- scalars[0] - scalars[1]);
+    std::vector<su2double> SpecificHeatCp;
+    unsigned short n_species_mixture = nVar + 1;
+    SpecificHeatCp.resize(n_species_mixture);
+
+    for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+      SpecificHeatCp.at(iVar) = config->GetSpecific_Heat_Cp(iVar);
+    }
+  
+    su2double cp = SpecificHeatCp[0] * scalars[0] + SpecificHeatCp[1] * (1- scalars[0]);
     su2double density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(i_point);
     su2double thermal_conductivity     = solver_container[FLOW_SOL]->GetNodes()->GetThermalConductivity(i_point);
     su2double Lewis = 1;
@@ -399,14 +403,11 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
     }
 
     std::vector<su2double> MolecularWeight;
-    std::vector<su2double> SpecificHeatCp;
     unsigned short n_species_mixture = nVar + 1;
     MolecularWeight.resize(n_species_mixture);
-    SpecificHeatCp.resize(n_species_mixture);
 
     for (int iVar = 0; iVar < n_species_mixture; iVar++) {
       MolecularWeight.at(iVar) = config->GetMolecular_Weight(iVar);
-      SpecificHeatCp.at(iVar) = config->GetSpecific_Heat_Cp(iVar);
     }
 
     /*--- Modify matrix diagonal with term including volume and time step. ---*/
@@ -432,8 +433,6 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
 
         su2double c = nodes->GetSolution(iPoint,iVar);
         dRhodC = -Density*((MolecularWeight[1]-MolecularWeight[0])/(MolecularWeight[0]+(MolecularWeight[1]-MolecularWeight[0])*c));
-
-        // su2double dCpdC = SpecificHeatCp[0] - SpecificHeatCp[1];
 
         /*--- Compute the lag terms for the decoupled linear system from
          the mean flow equations and add to the residual for the scalar.
