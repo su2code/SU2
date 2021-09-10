@@ -92,8 +92,8 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                               su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
   /*!

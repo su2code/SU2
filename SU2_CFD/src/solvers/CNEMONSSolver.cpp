@@ -345,7 +345,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       //TODO
       /*--- Enforce the no-slip boundary condition in a strong way ---*/
       for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-        su2double total_index = iPoint*nVar+iVar;
+        unsigned long total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
     }

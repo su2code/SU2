@@ -788,9 +788,9 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
   return eves;
 }
 
-vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                                        su2double* cvve, su2double* dTdU, su2double* dTvedU,
-							su2double **val_jacobian){
+vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                                        const su2double* cvve, const su2double* dTdU, const su2double* dTvdU,
+                                                        su2double **val_jacobian){
 
   /*---                          ---*/
   /*--- Nonequilibrium chemistry ---*/
@@ -882,8 +882,8 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
 }
 
 void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, 
-                                  su2double* eve, su2double *cvve,
-                                  su2double* dTdU, su2double* dTvedU,
+                                  const su2double* eve, const su2double *cvve,
+                                  const su2double* dTdU, const su2double* dTvedU,
                                   su2double **val_jacobian) {
 
   unsigned short ii, iVar, jVar, iSpecies;

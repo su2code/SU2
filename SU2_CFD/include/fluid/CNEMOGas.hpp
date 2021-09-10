@@ -126,15 +126,15 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                                       su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                                       const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                        su2double **val_jacobian) = 0;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
-                                 su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
+                                 const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                  su2double **val_jacobian){};
 
   /*!

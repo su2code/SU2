@@ -1736,14 +1736,11 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Store primitives and set some variables for clarity. ---*/
         //TODO NEED TO RECOMPUTE GAS_CONSTANT?
-        Density = V_domain[RHO_INDEX];
-        Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = V_domain[VEL_INDEX+iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
-        Energy      = U_domain[nVar-2]/Density;
-        Pressure    = V_domain[P_INDEX];
+        Density   = V_domain[RHO_INDEX];
+        Velocity2 = GeometryToolbox::SquaredNorm(nDim, &V_domain[VEL_INDEX]);
+
+	Energy      = U_domain[nVar-2]/Density;
+	Pressure    = V_domain[P_INDEX];
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;
 
@@ -2069,7 +2066,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
 
-        /*--- Primitive variables, using the derived quantities ---*/
+	/*--- Primitive variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
           V_outlet[iSpecies] = Ys[iSpecies]*Density;
           rhos[iSpecies]     = V_outlet[iSpecies];
