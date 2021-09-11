@@ -170,6 +170,24 @@ inline unsigned short nFacesOfElementType(unsigned short elementType) {
   }
 }
 
+/*!
+ * \brief Get the number of points of the element.
+ * \param[in] elementType - element type
+ * \return number of points
+ */
+inline unsigned short nPointsOfElementType(unsigned short elementType) {
+  switch (elementType) {
+    case LINE: return N_POINTS_LINE;
+    case TRIANGLE: return N_POINTS_TRIANGLE;
+    case QUADRILATERAL: return N_POINTS_QUADRILATERAL;
+    case TETRAHEDRON: return N_POINTS_TETRAHEDRON;
+    case HEXAHEDRON: return N_POINTS_HEXAHEDRON;
+    case PYRAMID: return N_POINTS_PYRAMID;
+    case PRISM: return N_POINTS_PRISM;
+    default: assert(false && "Invalid element type."); return 0;
+  }
+}
+
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */

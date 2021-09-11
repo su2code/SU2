@@ -69,17 +69,6 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
-   turbulence solver, and post) only temperature and velocity are needed ---*/
-
-  const auto nPrimVarGrad_bak = nPrimVarGrad;
-  if (Output) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    nPrimVarGrad = 2+nDim;
-    SU2_OMP_BARRIER
-  }
-
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
   if (config->GetReconstructionGradientRequired() && muscl && !center) {
@@ -102,17 +91,14 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  if (Output) {
-    SU2_OMP_MASTER
-    nPrimVarGrad = nPrimVarGrad_bak;
-    SU2_OMP_BARRIER
-  }
-
   /*--- Compute the limiters ---*/
 
   if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
+
+  /*--- Compute vorticity and strain mag. ---*/
+
   const long unsigned int offset=(nSpecies+2);
   ComputeVorticityAndStrainMag(*config, iMesh, offset);
 
@@ -141,7 +127,6 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
