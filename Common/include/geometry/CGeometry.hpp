@@ -834,9 +834,9 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the child grid (for multigrid).
    */
-  inline virtual void SetPoint_Connectivity(CGeometry *geometry) {}
+  inline virtual void SetPoint_Connectivity(const CGeometry *fine_grid) {}
 
   /*!
    * \brief A virtual member.

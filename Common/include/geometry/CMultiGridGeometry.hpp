@@ -90,9 +90,9 @@ public:
 
   /*!
    * \brief Set points which surround a point.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the child grid.
    */
-  void SetPoint_Connectivity(CGeometry *geometry) override;
+  void SetPoint_Connectivity(const CGeometry *fine_grid) override;
 
   /*!
    * \brief Set the edge structure of the agglomerated control volume.

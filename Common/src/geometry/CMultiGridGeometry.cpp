@@ -367,35 +367,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   }
 
   nPointDomain = Index_CoarseCV;
+  nPoint = nPointDomain;
 
-  /*--- Check that there are no hanging nodes ---*/
+  /*--- Check that there are no hanging nodes. Detect isolated points
+   (only 1 neighbor), and merge their children CV's with the neighbor. ---*/
 
-  /*--- Find the coarse neighbors of each coarse point. ---*/
-  {
-    /*--- Temporary, CPoint (nodes) then compresses this structure. ---*/
-    vector<vector<unsigned long> > points(fine_grid->GetnPoint());
-
-    for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
-      /*--- For each child CV (of the fine grid), ---*/
-      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-        /*--- loop over the parent CVs (coarse grid) of its (fine) neighbors. ---*/
-        for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
-          const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
-          /*--- If it is not the target coarse point, it is a coarse neighbor. ---*/
-          if (iParent != iCoarsePoint) {
-            /*--- Avoid duplicates. ---*/
-            auto End = points[iCoarsePoint].end();
-            if (find(points[iCoarsePoint].begin(), End, iParent) == End)
-              points[iCoarsePoint].push_back(iParent);
-          }
-        }
-      }
-    }
-    nodes->SetPoints(points);
-  }
-
-  /*--- Detect isolated points and merge them with their correct neighbor. ---*/
+  SetPoint_Connectivity(fine_grid);
 
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
 
@@ -515,9 +492,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 
         /*--- Be careful, it is possible that a node changes the agglomeration configuration,
          the priority is always when receiving the information. ---*/
-
-        assert(!fine_grid->nodes->GetDomain(iPoint_Fine) && "Not a halo.");
-        assert(!fine_grid->nodes->GetAgglomerate(iPoint_Fine) && "Already agglomerated.");
 
         fine_grid->nodes->SetParent_CV(iPoint_Fine, iPoint_Coarse);
         nodes->SetChildren_CV(iPoint_Coarse, nChildren_MPI[iPoint_Coarse], iPoint_Fine);
@@ -794,35 +768,34 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
 
 }
 
-void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
+void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry *fine_grid) {
 
-  unsigned long iFinePoint, iParent, iCoarsePoint;
-  unsigned short iChildren;
-
-  /*--- Set the point surrounding a point ---*/
-
+  /*--- Temporary, CPoint (nodes) then compresses this structure. ---*/
   vector<vector<unsigned long> > points(nPoint);
 
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
-    for (iChildren = 0; iChildren <  nodes->GetnChildren_CV(iCoarsePoint); iChildren ++) {
-      iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++) {
+    /*--- For each child CV (of the fine grid), ---*/
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+      /*--- loop over the parent CVs (coarse grid) of its (fine) neighbors. ---*/
       for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
-        iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
+        const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
+        /*--- If it is not the target coarse point, it is a coarse neighbor. ---*/
         if (iParent != iCoarsePoint) {
+          /*--- Avoid duplicates. ---*/
           auto End = points[iCoarsePoint].end();
           if (find(points[iCoarsePoint].begin(), End, iParent) == End)
             points[iCoarsePoint].push_back(iParent);
         }
       }
     }
+
+    /*--- Set the number of neighbors variable, this is
+     important for JST and multigrid in parallel ---*/
+    nodes->SetnNeighbor(iCoarsePoint, points[iCoarsePoint].size());
   }
+
   nodes->SetPoints(points);
-
-  /*--- Set the number of neighbors variable, this is
-   important for JST and multigrid in parallel ---*/
-
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
-    nodes->SetnNeighbor(iCoarsePoint, nodes->GetnPoint(iCoarsePoint));
 
 }
 
