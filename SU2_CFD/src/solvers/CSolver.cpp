@@ -4258,7 +4258,7 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
 
-        for (unsigned long iDim; iDim < nDim; iDim++) {
+        for (unsigned long iDim = 0; iDim < nDim; iDim++) {
           f << Coord[iDim] << ", ";
         }
         f << globalPoint << "\n";
