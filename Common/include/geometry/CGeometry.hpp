@@ -82,7 +82,6 @@ protected:
   unsigned long nPoint{0},        /*!< \brief Number of points of the mesh. */
   nPointDomain{0},                /*!< \brief Number of real points of the mesh. */
   nPointGhost{0},                 /*!< \brief Number of ghost points of the mesh. */
-  nPointNode{0},                  /*!< \brief Size of the node array allocated to hold CPoint objects. */
   Global_nPoint{0},               /*!< \brief Total number of nodes in a simulation across all processors (including halos). */
   Global_nPointDomain{0},         /*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
   nElem{0},                       /*!< \brief Number of elements of the mesh. */

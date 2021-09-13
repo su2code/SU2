@@ -2129,7 +2129,6 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
   nPoint       = nLocal_Point;
   nPointDomain = nLocal_PointDomain;
-  nPointNode   = nPoint;
 
   nodes = new CPoint(nPoint, nDim, MESH_0, config);
 
@@ -3763,7 +3762,6 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
 
   /*--- Initialize point counts and the grid node data structure. ---*/
 
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data

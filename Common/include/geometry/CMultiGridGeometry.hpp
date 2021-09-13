@@ -61,7 +61,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
-  bool SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config);
+  bool SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, const CGeometry *fine_grid, const CConfig *config) const;
 
   /*!
    * \brief Determine if a can be agglomerated using geometrical criteria.
@@ -69,17 +69,17 @@ public:
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  bool GeometricalCheck(unsigned long iPoint, CGeometry *fine_grid, CConfig *config);
+  bool GeometricalCheck(unsigned long iPoint, const CGeometry *fine_grid, const CConfig *config) const;
 
   /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
-   * \param[in] Suitable_Indirect_Neighbors - List of Indirect Neighbours that can be agglomerated.
+   * \param[out] Suitable_Indirect_Neighbors - List of Indirect Neighbours that can be agglomerated.
    * \param[in] iPoint - Seed point.
    * \param[in] Index_CoarseCV - Index of agglomerated point.
    * \param[in] fine_grid - Geometrical definition of the problem.
    */
-  void SetSuitableNeighbors(vector<unsigned long> *Suitable_Indirect_Neighbors, unsigned long iPoint,
-                            unsigned long Index_CoarseCV, CGeometry *fine_grid);
+  void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
+                            unsigned long Index_CoarseCV, const CGeometry *fine_grid) const;
 
   /*!
    * \brief Set boundary vertex.
