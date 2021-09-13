@@ -37,6 +37,51 @@
  */
 class CMultiGridGeometry final : public CGeometry {
 
+  /*!
+   * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   * \param[in] wall_quantity - Object with methods Get(iVertex_fine) and Set(iVertex_coarse, val).
+   */
+  template <class T>
+  void SetMultiGridWallQuantity(const CGeometry *geometry, unsigned short val_marker, T& wall_quantity) {
+
+    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
+      const auto Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+
+      if (!nodes->GetDomain(Point_Coarse)) continue;
+
+      su2double Area_Parent = 0.0;
+
+      /*--- Compute area parent by taking into account only volumes that are on the marker. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex = geometry->nodes->GetDomain(Point_Fine) &&
+                             (geometry->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          Area_Parent += geometry->nodes->GetVolume(Point_Fine);
+        }
+      }
+
+      su2double Quantity_Coarse = 0.0;
+
+      /*--- Loop again to average coarser value. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex = geometry->nodes->GetDomain(Point_Fine) &&
+                             (geometry->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          const auto Vertex_Fine = geometry->nodes->GetVertex(Point_Fine, val_marker);
+          const auto Area_Children = geometry->nodes->GetVolume(Point_Fine);
+          Quantity_Coarse += wall_quantity.Get(Vertex_Fine) * Area_Children / Area_Parent;
+        }
+      }
+
+      /*--- Set the value at the coarse level. ---*/
+      wall_quantity.Set(iVertex, Quantity_Coarse);
+    }
+  }
+
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
@@ -134,14 +179,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_marker - Index of the boundary marker.
    */
-  void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker) override;
+  void SetMultiGridWallHeatFlux(const CGeometry *geometry, unsigned short val_marker) override;
 
   /*!
    * \brief Set a representative wall temperature of the agglomerated control volume on a particular boundary marker.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_marker - Index of the boundary marker.
    */
-  void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker) override;
+  void SetMultiGridWallTemperature(const CGeometry *geometry, unsigned short val_marker) override;
 
   /*!
    * \brief Set the grid velocity at each node in the coarse mesh level based

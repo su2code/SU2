@@ -815,14 +815,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_marker - Index of the boundary marker.
    */
-  inline virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker) {}
+  inline virtual void SetMultiGridWallHeatFlux(const CGeometry *geometry, unsigned short val_marker) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_marker - Index of the boundary marker.
    */
-  inline virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker) {}
+  inline virtual void SetMultiGridWallTemperature(const CGeometry *geometry, unsigned short val_marker) {}
 
   /*!
    * \brief A virtual member.

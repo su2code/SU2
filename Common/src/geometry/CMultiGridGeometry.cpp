@@ -1055,96 +1055,42 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
   END_SU2_OMP_FOR
 }
 
-void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
+void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry *geometry, unsigned short val_marker) {
 
-  unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short iChildren;
-  long Vertex_Fine;
-  su2double Area_Parent, Area_Children;
-  su2double WallHeatFlux_Fine, WallHeatFlux_Coarse;
-  bool isVertex;
-  int numberVertexChildren;
+  struct {
+    const CGeometry* fine_grid;
+    unsigned short marker;
+    su2double* target;
 
-  for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
-    Point_Coarse = vertex[val_marker][iVertex]->GetNode();
-    if (nodes->GetDomain(Point_Coarse)){
-      Area_Parent = 0.0;
-      WallHeatFlux_Coarse = 0.0;
-      numberVertexChildren = 0;
-      /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
-      for(iChildren=0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++){
-        Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        isVertex = (nodes->GetDomain(Point_Fine) && geometry->nodes->GetVertex(Point_Fine, val_marker) != -1);
-        if (isVertex){
-          numberVertexChildren += 1;
-          Area_Parent += geometry->nodes->GetVolume(Point_Fine);
-        }
-      }
+    su2double Get(unsigned long iVertex) { return fine_grid->GetCustomBoundaryHeatFlux(marker, iVertex); }
+    void Set(unsigned long iVertex, const su2double& val) { target[iVertex] = val; }
 
-      /*--- Loop again and propagate values to the coarser level ---*/
-      for(iChildren=0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++){
-        Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        Vertex_Fine = geometry->nodes->GetVertex(Point_Fine, val_marker);
-        isVertex = (nodes->GetDomain(Point_Fine) && Vertex_Fine != -1);
-        if(isVertex){
-          Area_Children = geometry->nodes->GetVolume(Point_Fine);
-          //Get the customized BC values on fine level and compute the values at coarse level
-          WallHeatFlux_Fine = geometry->GetCustomBoundaryHeatFlux(val_marker, Vertex_Fine);
-          WallHeatFlux_Coarse += WallHeatFlux_Fine*Area_Children/Area_Parent;
-        }
+  } wall_heat_flux;
 
-      }
-      //Set the customized BC values at coarse level
-      CustomBoundaryHeatFlux[val_marker][iVertex] = WallHeatFlux_Coarse;
-    }
-  }
+  wall_heat_flux.fine_grid = geometry;
+  wall_heat_flux.marker = val_marker;
+  wall_heat_flux.target = CustomBoundaryHeatFlux[val_marker];
 
+  SetMultiGridWallQuantity(geometry, val_marker, wall_heat_flux);
 }
 
-void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){
+void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry *geometry, unsigned short val_marker){
 
-  unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short iChildren;
-  long Vertex_Fine;
-  su2double Area_Parent, Area_Children;
-  su2double WallTemperature_Fine, WallTemperature_Coarse;
-  bool isVertex;
-  int numberVertexChildren;
+  struct {
+    const CGeometry* fine_grid;
+    unsigned short marker;
+    su2double* target;
 
-  for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
-    Point_Coarse = vertex[val_marker][iVertex]->GetNode();
-    if (nodes->GetDomain(Point_Coarse)){
-      Area_Parent = 0.0;
-      WallTemperature_Coarse = 0.0;
-      numberVertexChildren = 0;
-      /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
-      for(iChildren=0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++){
-        Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        isVertex = (nodes->GetDomain(Point_Fine) && geometry->nodes->GetVertex(Point_Fine, val_marker) != -1);
-        if (isVertex){
-          numberVertexChildren += 1;
-          Area_Parent += geometry->nodes->GetVolume(Point_Fine);
-        }
-      }
+    su2double Get(unsigned long iVertex) { return fine_grid->GetCustomBoundaryTemperature(marker, iVertex); }
+    void Set(unsigned long iVertex, const su2double& val) { target[iVertex] = val; }
 
-      /*--- Loop again and propagate values to the coarser level ---*/
-      for(iChildren=0; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++){
-        Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        Vertex_Fine = geometry->nodes->GetVertex(Point_Fine, val_marker);
-        isVertex = (nodes->GetDomain(Point_Fine) && Vertex_Fine != -1);
-        if(isVertex){
-          Area_Children = geometry->nodes->GetVolume(Point_Fine);
-          //Get the customized BC values on fine level and compute the values at coarse level
-          WallTemperature_Fine = geometry->GetCustomBoundaryTemperature(val_marker, Vertex_Fine);
-          WallTemperature_Coarse += WallTemperature_Fine*Area_Children/Area_Parent;
-        }
+  } wall_temperature;
 
-      }
-      //Set the customized BC values at coarse level
-      CustomBoundaryTemperature[val_marker][iVertex] = WallTemperature_Coarse;
-    }
-  }
+  wall_temperature.fine_grid = geometry;
+  wall_temperature.marker = val_marker;
+  wall_temperature.target = CustomBoundaryTemperature[val_marker];
 
+  SetMultiGridWallQuantity(geometry, val_marker, wall_temperature);
 }
 
 void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {
