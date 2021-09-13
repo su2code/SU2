@@ -80,12 +80,7 @@ unsigned long CLinearPartitioner::GetRankContainingIndex(unsigned long index) co
 
   /*--- Initial guess ---*/
 
-  unsigned long iProcessor = index/sizeOnRank[0];
-
-  /*--- Guard against going over size. ---*/
-
-  if (iProcessor >= (unsigned long)size)
-    iProcessor = (unsigned long)size-1;
+  unsigned long iProcessor = min<unsigned long>(index/sizeOnRank[0], size-1);
 
   /*--- Move up or down until we find the processor. ---*/
 
@@ -97,5 +92,4 @@ unsigned long CLinearPartitioner::GetRankContainingIndex(unsigned long index) co
       iProcessor--;
 
   return iProcessor;
-
 }
