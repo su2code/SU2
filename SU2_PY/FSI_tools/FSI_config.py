@@ -119,7 +119,7 @@ class FSIConfig:
                 self._ConfigContent[this_param] = this_value
 
             else :
-                print(this_param + " is an invalid option !")
+                self.MPIPrint(this_param + " is an invalid option !",False)
 
     def applyDefaults(self):
 
