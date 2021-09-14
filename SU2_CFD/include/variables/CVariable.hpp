@@ -415,11 +415,9 @@ public:
    * \param[in] upperlimit - Upper value.
    */
   inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                 su2double val_density, su2double val_density_old,
                                  su2double lowerlimit, su2double upperlimit) {
 
-    // this is in case we consider rho*y as the transported variable, we have d/dt(rho*y)
-    su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
+    su2double val_new = Solution_Old(iPoint, iVar) + solution;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
   }
 
@@ -1562,12 +1560,6 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   inline virtual void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_temperature - Pointer to the temperature
-   */
-  inline virtual void SetTemperature_Old(unsigned long iPoint, const su2double val_temperature) {}
 
   /*!
    * \brief A virtual member.

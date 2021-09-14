@@ -189,10 +189,8 @@ void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* confi
     if (implicit) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
         if (iVar == jVar) {
-          su2double proj_on_rho = proj_vector_ij/Density_i;
-
-          Jacobian_i[iVar][jVar] = -Mass_Diffusivity*proj_on_rho;
-          Jacobian_j[iVar][jVar] =  Mass_Diffusivity*proj_on_rho;
+          Jacobian_i[iVar][jVar] = -Mass_Diffusivity*proj_vector_ij;
+          Jacobian_j[iVar][jVar] =  Mass_Diffusivity*proj_vector_ij;
         } else {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;

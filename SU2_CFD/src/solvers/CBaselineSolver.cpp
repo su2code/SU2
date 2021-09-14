@@ -426,8 +426,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         } else if (turb_model == SST) {
           index+=2;
         }
-        //nijso asks: is this index (and turbulence index) used? 
-        if (config->GetKind_Scalar_Model() !=NONE) index += solver[MESH_0][SCALAR_SOL]->GetnVar();
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/

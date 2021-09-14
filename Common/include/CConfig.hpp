@@ -585,7 +585,6 @@ private:
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
-  bool Inc_Inlet_StrongBC;         /*!< \brief Flag for using strong boundary conditions for the incompressible solver */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
@@ -4896,12 +4895,6 @@ public:
    * \return <code>FALSE</code> means the prescribed flow direction is used.
    */
   bool GetInc_Inlet_UseNormal(void) const { return Inc_Inlet_UseNormal;}
-
-  /*!
-   * \brief Flag for using strong boundary conditions in the incompressible solver
-   * \return <code>FALSE</code> means the weak BC is used for the primitive variables.
-   */
-  bool GetInc_Inlet_StrongBC(void) const { return Inc_Inlet_StrongBC;}
 
   /*!
    * \brief Get the type of incompressible outlet from the list.

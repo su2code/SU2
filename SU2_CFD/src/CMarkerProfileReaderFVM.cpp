@@ -454,17 +454,12 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
 
       /*--- Access the default data for this marker. ---*/
 
-
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      string Marker_Tag = profileTags[iMarker];
 
       /*--- Header information for this marker. ---*/
 
-
-      int profileMarkerIndex = find(profileTags.begin(),profileTags.end(), Marker_Tag) 
-                               - profileTags.begin();
-
       node_file << "MARKER_TAG= " << Marker_Tag              << endl;
-      node_file << "NROW="        << numberOfRowsInProfile[profileMarkerIndex] << endl;
+      node_file << "NROW="        << numberOfRowsInProfile[iMarker] << endl;
       node_file << "NCOL="        << nColumns          << endl;
 
       /*--- header line (names of the columns) --- */
@@ -475,10 +470,10 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
 
       /*--- Loop over the data structure and write the coords and vars. ---*/
 
-      for (unsigned long iPoint = 0; iPoint < numberOfRowsInProfile[profileMarkerIndex]; iPoint++) {
+      for (unsigned long iPoint = 0; iPoint < numberOfRowsInProfile[iMarker]; iPoint++) {
 
         for (unsigned short iDim = 0; iDim < dimension; iDim++) {
-          node_file << profileCoords[profileMarkerIndex][iDim][iPoint] << "\t";
+          node_file << profileCoords[iMarker][iDim][iPoint] << "\t";
         }
 
         node_file << columnValues[iMarker] << endl;

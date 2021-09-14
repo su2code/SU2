@@ -284,8 +284,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       break;
     case SUB_SOLVER_TYPE::SCALAR:
       genericSolver = CreateScalarSolver(solver, geometry, config, iMGLevel, false);
-      //metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
-      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_SCALAR:
       genericSolver = CreateScalarSolver(solver, geometry, config, iMGLevel, true);

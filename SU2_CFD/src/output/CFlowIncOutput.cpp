@@ -111,7 +111,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if ((heat && !flame) || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
 
@@ -405,17 +405,16 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("TOTAL_HEATFLUX",   flow_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("MAXIMUM_HEATFLUX", flow_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("AVG_TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
-    /* we overwrite temperature, so no Residual information of temperature  needed */
-    if (!flame){
-      if (nDim == 3) SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(4)));
-      else           SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(3)));
-      if (nDim == 3) SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(4)));
-      else           SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(3)));
-      if (multiZone){
-        if (nDim == 3) SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(4)));
-        else           SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(3)));
-      }
+    if (nDim == 3) SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(4)));
+    else           SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(3)));
+
+    if (nDim == 3) SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(4)));
+    else           SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(3)));
+    if (multiZone){
+      if (nDim == 3) SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(4)));
+      else           SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(3)));
     }
+
   }
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
@@ -563,7 +562,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
-  if (config->GetEnergy_Equation() && config->GetKind_Scalar_Model() != PROGRESS_VARIABLE)  
+  if (config->GetEnergy_Equation())
     AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
   switch(config->GetKind_Turb_Model()){
@@ -798,14 +797,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
   SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
   SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
-  if (nDim == 3){
+  if (nDim == 3)
     SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-    if (config->GetEnergy_Equation() && config->GetKind_Scalar_Model() != PROGRESS_VARIABLE)  
-      SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 4));
-  }
-  else if (config->GetEnergy_Equation() && config->GetKind_Scalar_Model() != PROGRESS_VARIABLE)  
-      SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-  
+  if (config->GetEnergy_Equation())
+    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
 
   switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:

@@ -297,7 +297,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition    = (config->GetKind_Trans_Model() == LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
-  const bool axisymmetric = config->GetAxisymmetric();
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -369,11 +368,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     }
 
-    if (axisymmetric){
-      /*--- Set y coordinate ---*/
-      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
-    }
-    
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);

@@ -664,13 +664,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case VISCOSITYMODEL::FLAMELET:
-        ModelTable << "FLAMELET_VISCOSITY";
-        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
-        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-        Unit.str("");
-        NonDimTable.PrintFooter();
         break;
-
       }
 
       switch(config->GetKind_ConductivityModel()){
@@ -704,12 +698,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case CONDUCTIVITYMODEL::FLAMELET:
-        ModelTable << "FLAMELET";
-        Unit << "W/m^2.K";
-        Unit.str("");
-        NonDimTable.PrintFooter();
         break;
-
       }
     } else {
       ModelTable << "-" << "-";
@@ -773,13 +762,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       NonDimTable.PrintFooter();
       break;
 
-    case FLAMELET_FLUID_MODEL:
-        ModelTable << "FLAMELET";
-        Unit << "N.m/kg.K";
-        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();
-        Unit.str("");
-        NonDimTable.PrintFooter();
-        break;
     }
 
 
@@ -2244,11 +2226,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double Normal[MAXNDIM] = {0.0};
 
-  /*--- use strong boundary condition for the inlet ---*/
-  const bool strongBC = config->GetInc_Inlet_StrongBC() ; 
-  su2double strongVel[MAXNDIM] = {0.0};
-
-
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -2417,62 +2394,22 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
+    /*--- Compute the residual using an upwind scheme ---*/
 
-    /*--- use strong boundary conditions for velocity or pressure, and temperature---*/
-    if (strongBC) {
+    auto residual = conv_numerics->ComputeResidual(config);
 
-      /*--- impose velocity in a strong way ---*/
-      /*--- note that for pressure inlet, we also rewrite as a velocity inlet ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        strongVel[iDim] = V_inlet[iDim+1];
+    /*--- Update residual value ---*/
 
-      nodes->SetVelocity_Old(iPoint, strongVel);
+    LinSysRes.AddBlock(iPoint, residual);
 
-      /*--- Dirichlet condition for temperature (if energy is active) ---*/
-      nodes->SetTemperature_Old(iPoint, Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref());
+    /*--- Jacobian contribution for implicit integration ---*/
 
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        LinSysRes(iPoint, iDim+1) = 0.0;
-      LinSysRes(iPoint, nDim+1) = 0.0;
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      nodes->SetVel_ResTruncError_Zero(iPoint);      
+    /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- impose pressure in a weak way ---*/ 
-      LinSysRes(iPoint, 0)   += residual[0];
-      if (implicit){
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-        /*--- delete rows for velocity ---*/
-        for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-          Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
-          
-        /*-- delete rows for temperature ---*/
-        Jacobian.DeleteValsRowi(iPoint*nVar+nDim+1);
-      }
-
-    } 
-    else {
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Update residual value ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-    }
-
-    /*--- Viscous contribution, disable for strong BC ---*/
-
-    if (!viscous || strongBC) continue;
+    if (!viscous) continue;
 
     /*--- Set transport properties at the inlet ---*/
 

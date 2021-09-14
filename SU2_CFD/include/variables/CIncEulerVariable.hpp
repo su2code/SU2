@@ -281,14 +281,6 @@ public:
   }
 
   /*!
-   * \brief Set the velocity vector from the old solution.
-   * \param[in] val_velocity - Pointer to the velocity.
-   */
-  inline void SetTemperature_Old(unsigned long iPoint, const su2double val_temperature) final {
-    Solution_Old(iPoint,nDim+1) = val_temperature;
-  }
-
-  /*!
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */

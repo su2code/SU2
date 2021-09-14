@@ -735,7 +735,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
   bool steady_restart = config->GetSteadyRestart();
   bool turbulent = (config->GetKind_Turb_Model() != NONE);
-  bool scalar = (config->GetKind_Scalar_Model() != NONE);
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", iter);
 
@@ -756,9 +755,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     else turbVars = 1;
   }
 
-  unsigned short scalarVars = 0;
-  if (scalar) scalarVars = solver[MESH_0][SCALAR_SOL]->GetnVar();
-  
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
@@ -820,7 +816,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
         su2double GridVel[MAXNDIM] = {0.0};
         if (!steady_restart) {
           /*--- Move the index forward to get the grid velocities. ---*/
-          index += skipVars + nVar_Restart + turbVars + scalarVars;
+          index += skipVars + nVar_Restart + turbVars;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -888,10 +884,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
    *    after it loads its variables (they are needed to compute flow primitives). ---*/
-
-  // nijso: FIXME: check if indeed this is not necessary for scalar
-
-  if (!turbulent && !scalar) {
+  if (!turbulent) {
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
@@ -917,7 +910,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
-    if (!turbulent && !scalar) {
+    if (!turbulent) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
   }

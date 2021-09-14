@@ -1301,9 +1301,6 @@ void CConfig::SetConfig_Options() {
     /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
   addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
 
-    /*!\brief INC_INLET_STRONGBC \n DESCRIPTION: Use a strong boundary condition for the primitive variables in incompressible flow. \ingroup Config*/
-  addBoolOption("INC_INLET_STRONGBC", Inc_Inlet_StrongBC, false);
-
   /*!\brief SCALAR_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
   //addDoubleOption("SCALAR_INIT", Scalar_Init, 0.0);
 
