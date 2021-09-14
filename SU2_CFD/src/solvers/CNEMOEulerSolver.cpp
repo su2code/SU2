@@ -1013,7 +1013,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   bool viscous            = config->GetViscous();
   bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = false;
+  bool turbulent          = (config->GetKind_Turb_Model() != NONE);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
@@ -1309,6 +1309,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
       case TRANSCOEFFMODEL::CHAPMANN_ENSKOG:
         ModelTable << "CHAPMANN-ENSKOG_LDLT";
+        NonDimTable.PrintFooter();
+        break;
+
+      case TRANSCOEFFMODEL::DEBUG:
+        ModelTable << "Sutherland - Debug";
         NonDimTable.PrintFooter();
         break;
 

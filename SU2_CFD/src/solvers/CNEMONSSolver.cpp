@@ -680,12 +680,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Apply to the linear system ---*/
-    //Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-    //                             (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
-    //Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
-    //                             (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
-    Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
-    Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dist_ij;
+    Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+                                 (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
+    Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
+    
+    //Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
+    //Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dist_ij;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
     //if (implicit) {
