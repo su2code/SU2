@@ -439,59 +439,46 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
 void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
 
-  /*--- Print the residuals of the direct iteration that we just recorded ---*/
-  /*--- This routine should be moved to the output, once the new structure is in place ---*/
+  /*--- Print the residuals of the direct iteration that was just recorded. ---*/
   if ((rank == MASTER_NODE) && (kind_recording == MainVariables)){
 
     const unsigned short fieldWidth = 12;
     PrintingToolbox::CTablePrinter RMSTable(&std::cout);
 
-    // 0. Add colum names, addVals=0=false
-    // 1. Add residuals, addVals=1=true
+    /*--- The CTablePrinter requires two sweeps:
+     *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()
+     *--- 1. Add the RMS-residual values (addVals=1=true) plus CTablePrinter.PrintFooter() ---*/
     for (int addVals = 0; addVals < 2; addVals++) {
-      switch (config->GetKind_Solver()) {
+      if(config->GetFluidProblem() || config->GetFEMSolver()) {
 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-      case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
-        if (!addVals) {
-          RMSTable.AddColumn("log10[U(0)]", fieldWidth);
-          RMSTable.AddColumn("log10[U(1)]", fieldWidth);
-          RMSTable.AddColumn("log10[U(2)]", fieldWidth);
-          RMSTable.AddColumn("log10[U(3)]", fieldWidth);
-          if (nDim == 3)
-            RMSTable.AddColumn("log10[U(4)]", fieldWidth);
+        for (unsigned short iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++) {
+          if (!addVals)
+            RMSTable.AddColumn(string("rms_Flow[") + std::to_string(iVar) + string("]"), fieldWidth);
+          else
+            RMSTable << log10(solver[FLOW_SOL]->GetRes_RMS(iVar));
         }
-        else {
-          RMSTable << log10(solver[FLOW_SOL]->GetRes_RMS(0))
-                    << log10(solver[FLOW_SOL]->GetRes_RMS(1))
-                    << log10(solver[FLOW_SOL]->GetRes_RMS(2))
-                    << log10(solver[FLOW_SOL]->GetRes_RMS(3));
-          if (nDim == 3) RMSTable << log10(solver[FLOW_SOL]->GetRes_RMS(4));
-        }
+
         if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
-          if (!addVals) {
-            RMSTable.AddColumn("log10[Turb(0)]", fieldWidth);
-            if (solver[TURB_SOL]->GetnVar() > 1)
-              RMSTable.AddColumn("log10[Turb(1)]", fieldWidth);
-          }
-          else {
-            RMSTable << log10(solver[TURB_SOL]->GetRes_RMS(0));
-            if (solver[TURB_SOL]->GetnVar() > 1)
-              RMSTable << log10(solver[TURB_SOL]->GetRes_RMS(1));
+          for (unsigned short iVar = 0; iVar < solver[TURB_SOL]->GetnVar(); iVar++) {
+            if (!addVals)
+              RMSTable.AddColumn(string("rms_Turb[") + std::to_string(iVar) + string("]"), fieldWidth);
+            else
+              RMSTable << log10(solver[TURB_SOL]->GetRes_RMS(iVar));
           }
         }
+
         if (config->GetWeakly_Coupled_Heat()){
-          if (!addVals) RMSTable.AddColumn("log10[Heat(0)]", fieldWidth);
+          if (!addVals) RMSTable.AddColumn("rms_Heat[0]", fieldWidth);
           else RMSTable << log10(solver[HEAT_SOL]->GetRes_RMS(0));
         }
+
         if (config->AddRadiation()) {
           if (!addVals) RMSTable.AddColumn("log10[E(0)]", fieldWidth);
           else RMSTable << log10(solver[RAD_SOL]->GetRes_RMS(0));
         }
-        break;
 
-      case DISC_ADJ_FEM:
+      }
+      else if (config->GetStructuralProblem()) {
 
         if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
           if (!addVals) {
@@ -501,8 +488,8 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
           }
           else {
             RMSTable << log10(solver[FEA_SOL]->GetRes_FEM(0))
-                    << log10(solver[FEA_SOL]->GetRes_FEM(1))
-                    << log10(solver[FEA_SOL]->GetRes_FEM(2));
+                     << log10(solver[FEA_SOL]->GetRes_FEM(1))
+                     << log10(solver[FEA_SOL]->GetRes_FEM(2));
           }
         }
         else{
@@ -513,25 +500,25 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
           }
           else {
             RMSTable << log10(solver[FEA_SOL]->GetRes_FEM(0))
-                    << log10(solver[FEA_SOL]->GetRes_FEM(1));
+                     << log10(solver[FEA_SOL]->GetRes_FEM(1));
             if (nDim == 3) RMSTable << log10(solver[FEA_SOL]->GetRes_FEM(2));
           }
         }
 
-      break;
+      }
+      else if (config->GetHeatProblem()) {
 
-      case DISC_ADJ_HEAT:
-        if (!addVals) RMSTable.AddColumn("log10[Cons(0)]", fieldWidth);
+        if (!addVals) RMSTable.AddColumn("rms_Heat[0]", fieldWidth);
         else RMSTable << log10(solver[HEAT_SOL]->GetRes_RMS(0));
         break;
-      } // switch KindSolver
+      } // KindSolver
 
       if (!addVals) RMSTable.PrintHeader();
       else RMSTable.PrintFooter();
 
     } // for addVals
 
-    cout << "-------------------------------------------------------------------------" << endl << endl;
+    cout << endl << "-------------------------------------------------------------------------" << endl << endl;
   }
   else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != RECORDING::CLEAR_INDICES)){
     cout << endl << "Recording the computational graph with respect to the ";
