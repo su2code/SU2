@@ -745,11 +745,6 @@ void CDiscAdjMultizoneDriver::Print_DirectResidual(RECORDING kind_recording) {
             }
           }
 
-          if (configs->GetWeakly_Coupled_Heat()){
-            if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
-            else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
-          }
-
           if (configs->AddRadiation()) {
             if (!addVals) RMSTable.AddColumn("rms_Rad" + iVar_iZone2string(0, iZone), fieldWidth);
             else RMSTable << log10(solvers[RAD_SOL]->GetRes_RMS(0));
