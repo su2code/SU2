@@ -2755,7 +2755,17 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
       else RMSTable.PrintFooter();
 
     } // for addVals
+
+    cout << "\n-------------------------------------------------------------------------\n" << endl;
+
   } // if MainRecording
+  else if ((rank == MASTER_NODE) && ((kind_recording == RECORDING::MESH_COORDS) || (kind_recording == RECORDING::MESH_DEFORM))){
+    cout << endl << "Recording the computational graph with respect to the ";
+    switch (kind_recording){
+      case RECORDING::MESH_COORDS: cout << "mesh coordinates." << endl;    break;
+      default:                     cout << "secondary variables." << endl; break;
+     }
+  }
 }
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) {
