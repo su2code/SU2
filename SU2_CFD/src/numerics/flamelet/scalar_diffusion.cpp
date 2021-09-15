@@ -69,7 +69,7 @@ CAvgGrad_transportedScalar::~CAvgGrad_transportedScalar(void) {
 
 CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CConfig* config) {
 
- const bool inc_rans = (config->GetKind_Solver() == INC_RANS);
+ const bool inc_rans = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
   unsigned short iVar, iDim;
 
@@ -156,7 +156,7 @@ void CAvgGrad_transportedScalar_general::ExtraADPreaccIn() {
 void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* config) {
 
  const su2double Sc_t = config->GetSchmidt_Turb();
- const bool inc_rans = (config->GetKind_Solver() == INC_RANS);
+ const bool inc_rans = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
  const bool flame  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
  su2double Mass_Diffusivity_Lam;
 

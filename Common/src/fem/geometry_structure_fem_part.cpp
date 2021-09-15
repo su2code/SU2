@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3185,9 +3185,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
     elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-    /*--- Initialize the array, which stores whether or not the faces are
-          considered to have a constant Jacobian. ---*/
-    elem[i]->InitializeJacobianConstantFaces(nFaces);
+    /*--- Reset the array, which stores whether or not the faces are
+          considered to have a constant Jacobian, to false. ---*/
+    elem[i]->ResetJacobianConstantFaces();
 
     /*--- Loop over the number of faces of this element. ---*/
     su2double jacFaceMax = 0.0;

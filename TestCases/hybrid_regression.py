@@ -3,7 +3,7 @@
 ## \file hybrid_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -227,7 +227,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-6.348077, -0.827162, -2.241982, 2.313210]
+    axi_rans_air_nozzle.test_vals = [-12.094009, -6.643017, -8.900656, -2.393294]
     test_list.append(axi_rans_air_nozzle)
 
     #################################
@@ -567,7 +567,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620149, 0.505190, 0.415133]
+    channel_3D.test_vals = [2.000000, 0.000000, 0.620171, 0.505178, 0.415313]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
     test_list.append(channel_3D)

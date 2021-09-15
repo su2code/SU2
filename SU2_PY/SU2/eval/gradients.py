@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -272,7 +272,6 @@ def adjoint( func_name, config, state=None ):
 
     # files: target equivarea adjoint weights
     if 'EQUIV_AREA' in special_cases:
-        pull.append(files['WEIGHT_NF'])   
         pull.append(files['TARGET_EA'])
 
     # files: target pressure coefficient

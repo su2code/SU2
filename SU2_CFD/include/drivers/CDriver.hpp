@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -448,6 +448,12 @@ public:
   passivedouble GetUnsteady_TimeStep() const;
 
   /*!
+   * \brief Get the name of the output file for the surface.
+   * \return File name for the surface output.
+   */
+  string GetSurfaceFileName() const;
+
+  /*!
    * \brief Get the global index of a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -520,13 +526,20 @@ public:
   void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) const;
 
   /*!
+   * \brief Get the normal (vector) at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] unitNormal - Bool to normalise the vector.
+   * \return Normal (vector) at the vertex.
+   */
+  vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
+
+  /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    * \return Unit normal (vector) at the vertex.
    */
-  vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
-
   inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
     return GetVertexNormal(iMarker, iVertex, true);
   }
