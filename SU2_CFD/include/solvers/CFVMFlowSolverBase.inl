@@ -865,7 +865,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
       for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
         /*--- Compute the grid velocities on the coarser levels. ---*/
-        if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh-1], config);
+        if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh-1]);
         else {
           geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
           geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);

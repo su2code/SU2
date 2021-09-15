@@ -30,13 +30,7 @@
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
-
-  /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
-   need access to the other zones in the mesh for zone boundaries. ---*/
-
-  CGeometry *fine_grid = geometry[iMesh-1];
-  CConfig *config = config_container;
+CMultiGridGeometry::CMultiGridGeometry(CGeometry *fine_grid, CConfig *config, unsigned short iMesh) : CGeometry() {
 
   nDim = fine_grid->GetnDim(); // Write the number of dimensions of the coarse grid.
 
@@ -799,7 +793,7 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry *fine_grid) {
 
 }
 
-void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
+void CMultiGridGeometry::SetVertex(const CGeometry *fine_grid, const CConfig *config) {
   unsigned long  iVertex, iFinePoint, iCoarsePoint;
   unsigned short iMarker, iMarker_Tag, iChildren;
 
@@ -877,7 +871,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   }
 }
 
-void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
+void CMultiGridGeometry::MatchActuator_Disk(const CConfig *config) {
 
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
@@ -897,7 +891,7 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
 
 }
 
-void CMultiGridGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) {
+void CMultiGridGeometry::MatchPeriodic(const CConfig *config, unsigned short val_periodic) {
 
   unsigned short iMarker, iPeriodic, nPeriodic;
   unsigned long iVertex, iPoint;
@@ -924,7 +918,7 @@ void CMultiGridGeometry::MatchPeriodic(CConfig *config, unsigned short val_perio
 
 }
 
-void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
+void CMultiGridGeometry::SetControlVolume(const CGeometry *fine_grid, unsigned short action) {
 
   SU2_OMP_MASTER {
 
@@ -993,7 +987,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
   SU2_OMP_BARRIER
 }
 
-void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
+void CMultiGridGeometry::SetBoundControlVolume(const CGeometry *fine_grid, unsigned short action) {
 
   SU2_OMP_MASTER {
 
@@ -1037,7 +1031,7 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
   SU2_OMP_BARRIER
 }
 
-void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
+void CMultiGridGeometry::SetCoord(const CGeometry *fine_grid) {
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_max_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < nPoint; Point_Coarse++) {
@@ -1045,8 +1039,8 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
     su2double Coordinates[3] = {0.0};
     for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-      auto Area_Children = geometry->nodes->GetVolume(Point_Fine);
-      auto Coordinates_Fine = geometry->nodes->GetCoord(Point_Fine);
+      auto Area_Children = fine_grid->nodes->GetVolume(Point_Fine);
+      auto Coordinates_Fine = fine_grid->nodes->GetCoord(Point_Fine);
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Coordinates[iDim] += Coordinates_Fine[iDim]*Area_Children/Area_Parent;
     }
@@ -1055,7 +1049,7 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
   END_SU2_OMP_FOR
 }
 
-void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry *geometry, unsigned short val_marker) {
+void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry *fine_grid, unsigned short val_marker) {
 
   struct {
     const CGeometry* fine_grid;
@@ -1067,14 +1061,14 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry *geometry, uns
 
   } wall_heat_flux;
 
-  wall_heat_flux.fine_grid = geometry;
+  wall_heat_flux.fine_grid = fine_grid;
   wall_heat_flux.marker = val_marker;
   wall_heat_flux.target = CustomBoundaryHeatFlux[val_marker];
 
-  SetMultiGridWallQuantity(geometry, val_marker, wall_heat_flux);
+  SetMultiGridWallQuantity(fine_grid, val_marker, wall_heat_flux);
 }
 
-void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry *geometry, unsigned short val_marker){
+void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry *fine_grid, unsigned short val_marker){
 
   struct {
     const CGeometry* fine_grid;
@@ -1086,14 +1080,14 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry *geometry, 
 
   } wall_temperature;
 
-  wall_temperature.fine_grid = geometry;
+  wall_temperature.fine_grid = fine_grid;
   wall_temperature.marker = val_marker;
   wall_temperature.target = CustomBoundaryTemperature[val_marker];
 
-  SetMultiGridWallQuantity(geometry, val_marker, wall_temperature);
+  SetMultiGridWallQuantity(fine_grid, val_marker, wall_temperature);
 }
 
-void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {
+void CMultiGridGeometry::SetRestricted_GridVelocity(const CGeometry *fine_grid) {
 
   /*--- Loop over all coarse mesh points. ---*/
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_max_threads()))
@@ -1107,8 +1101,8 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, const 
      a grid velocity based on the values in the child CVs (fine mesh). ---*/
     for (unsigned short iChild = 0; iChild < nodes->GetnChildren_CV(Point_Coarse); iChild++) {
       unsigned long Point_Fine       = nodes->GetChildren_CV(Point_Coarse, iChild);
-      su2double Area_Child           = fine_mesh->nodes->GetVolume(Point_Fine);
-      const su2double* Grid_Vel_Fine = fine_mesh->nodes->GetGridVel(Point_Fine);
+      su2double Area_Child           = fine_grid->nodes->GetVolume(Point_Fine);
+      const su2double* Grid_Vel_Fine = fine_grid->nodes->GetGridVel(Point_Fine);
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Grid_Vel[iDim] += Grid_Vel_Fine[iDim]*Area_Child/Area_Parent;
     }
@@ -1121,7 +1115,7 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, const 
 }
 
 
-void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
+void CMultiGridGeometry::FindNormal_Neighbor(const CConfig *config) {
 
   unsigned short iMarker, iDim;
   unsigned long iPoint, iVertex;
