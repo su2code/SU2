@@ -518,7 +518,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
 
     } // for addVals
 
-    cout << endl << "-------------------------------------------------------------------------" << endl << endl;
+    cout << "\n-------------------------------------------------------------------------\n" << endl;
   }
   else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != RECORDING::CLEAR_INDICES)){
     cout << endl << "Recording the computational graph with respect to the ";
