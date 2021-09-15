@@ -2684,7 +2684,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
         auto configs = config_container[iZone];
 
         /*--- Note: the FEM-Flow solvers are availalbe for disc. adjoint runs only for SingleZone. ---*/
-        if(configs->GetFluidProblem() || (!multizone && configs->GetFEMSolver())) {
+        if (configs->GetFluidProblem() || configs->GetFEMSolver()) {
 
           for (unsigned short iVar = 0; iVar < solvers[FLOW_SOL]->GetnVar(); iVar++) {
             if (!addVals)
@@ -2706,7 +2706,6 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
             if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
             else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
           }
-
 
           if (configs->AddRadiation()) {
             if (!addVals) RMSTable.AddColumn("rms_Rad" + iVar_iZone2string(0, iZone), fieldWidth);
@@ -2747,7 +2746,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
           if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
           else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
         } else {
-          SU2_MPI::Error("Unvalid KindSolver for CDiscAdj-MultiZone/SingleZone-Driver.", CURRENT_FUNCTION);
+          SU2_MPI::Error("Invalid KindSolver for CDiscAdj-MultiZone/SingleZone-Driver.", CURRENT_FUNCTION);
         }
       } // loop iZone
 
