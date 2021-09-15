@@ -4506,7 +4506,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Get number of desired POD modes ---*/
   unsigned short nModes  = config->GetnPOD_Modes();
   
-  /*--- Read data from the following three files: ---*/
+  /*--- Read data from the following four files: ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
   string ref_filename  = config->GetRef_Snapshot_FileName();
@@ -4535,7 +4535,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       s++;
     }
   }
-  else std::cout << "ERROR: Did not read file for POD matrix (ROM)." << std::endl;
+  else SU2_MPI::Error("Did not read file for POD matrix (ROM)", CURRENT_FUNCTION);
   
   unsigned long nsnaps = TrialBasis[0].size();
   unsigned long iPoint, i, iVar;
@@ -4562,9 +4562,13 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       }
     }
   }
-  else std::cout << "ERROR: Did not read file for reference solution (ROM)." << std::endl;
+  else SU2_MPI::Error("Did not read file for reference solution (ROM)", CURRENT_FUNCTION);
   
   /*--- Initial Solution / Coordinates (read from file) ---*/
+  /* The initial condition is determined by the specific initial solution. */
+  /* 1. If a full solution is given (initial snapshot), the initial reduced coords are computed. */
+  /* 2. If initial reduced coords are given (smaller file size), the initial solution is computed. */
+  /* If both files are given, the default is to use method #1. */
   
   ifstream in_init(init_filename);
   ifstream in_init_coord(init_coord_filename);
@@ -4627,7 +4631,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       }
     }
   }
-  else std::cout << "ERROR: Did not read file for initial solution or coordinates (ROM)." << std::endl;
+  else SU2_MPI::Error("Did not read file for initial solution or coordinates (ROM)", CURRENT_FUNCTION);
 
   delete[] ref_sol;
   delete[] init_sol;
@@ -4779,7 +4783,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  //unsigned long nsnaps = Phi.size();
+  // TODO: Use all modes (since this is "offline") or only use truncated # modes?
   unsigned long nsnaps = 10;
   unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
@@ -4789,6 +4793,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     double norm_phi = 0.0;
     for (iVar = 0; iVar < nVar; iVar++) {
       norm_phi += Phi[0][i*nVar + iVar] * Phi[0][i*nVar + iVar];
+      //norm_phi += Phi[0][i*nVar + iVar] ;
     }
   
     PhiNodes.push_back( sqrt(norm_phi) );

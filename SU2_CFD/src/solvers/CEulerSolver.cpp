@@ -3746,7 +3746,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
       iPoint = Mask[iPoint_mask];
 
     su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
+    
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
