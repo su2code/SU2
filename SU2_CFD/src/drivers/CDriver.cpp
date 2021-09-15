@@ -2723,8 +2723,8 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
           }
           else {
             RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
-                      << log10(solvers[FEA_SOL]->GetRes_FEM(1))
-                      << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+                     << log10(solvers[FEA_SOL]->GetRes_FEM(1))
+                     << log10(solvers[FEA_SOL]->GetRes_FEM(2));
           }
         }
         else{
@@ -2735,7 +2735,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
           }
           else {
             RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
-                      << log10(solvers[FEA_SOL]->GetRes_FEM(1));
+                     << log10(solvers[FEA_SOL]->GetRes_FEM(1));
             if (nDim == 3) RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(2));
           }
         }
