@@ -244,17 +244,23 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
+  if (rank == MASTER_NODE) {
+    cout << "\n-------------------------------------------------------------------------\n";
+    switch(kind_recording) {
+    case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
+    case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
+    case RECORDING::SOLUTION_VARIABLES:
+      cout << "Direct iteration to store the primal computational graph." << endl;
+      cout << "Compute residuals to check the convergence of the direct problem." << endl; break;
+    default: break;
+    }
+  }
+
   /*---Enable recording and register input of the iteration --- */
 
   if (kind_recording != RECORDING::CLEAR_INDICES){
 
     AD::StartRecording();
-
-    if (rank == MASTER_NODE && kind_recording == MainVariables) {
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "Direct iteration to store the primal computational graph." << endl;
-      cout << "Compute residuals to check the convergence of the direct problem." << endl;
-    }
 
     iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
   }
