@@ -251,7 +251,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES:
       cout << "Direct iteration to store the primal computational graph." << endl;
-      cout << "Compute residuals to check the convergence of the direct problem." << endl; break;
+      cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     default: break;
     }
   }
