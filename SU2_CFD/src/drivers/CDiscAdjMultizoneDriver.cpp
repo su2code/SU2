@@ -665,6 +665,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
                                                          config_container, iZone, INST_0);
       AD::Push_TapePosition(); /// leave_zone
     }
+    Print_DirectResidual(kind_recording);
   }
 
   if (kind_recording != RECORDING::CLEAR_INDICES && driver_config->GetWrt_AD_Statistics()) {
@@ -700,58 +701,103 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
+}
+
+void CDiscAdjMultizoneDriver::Print_DirectResidual(RECORDING kind_recording) {
+
+  /*--- Helper lambda func to return lenghty [iVar][iZone] string.  ---*/
+  auto iVar_iZone2string = [](unsigned short ivar, unsigned short izone) {
+    return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
+  };
+
   /*--- Print residuals in the first iteration ---*/
 
   if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES) {
 
-    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    const unsigned short fieldWidth = 15;
+    PrintingToolbox::CTablePrinter RMSTable(&std::cout);
 
-    switch (config_container[iZone]->GetKind_Solver()) {
+    /*--- The CTablePrinter requires two sweeps:
+     *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()
+     *--- 1. Add the RMS-residual values (addVals=1=true) plus CTablePrinter.PrintFooter() ---*/
+    for (int addVals = 0; addVals < 2; addVals++) {
 
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
-        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
-             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
-        if (config_container[iZone]->AddRadiation()) {
+      for (unsigned short iZone = 0; iZone < nZone; iZone++) {
 
-          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
-               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
+        auto solvers = solver_container[iZone][INST_0][MESH_0];
+        auto configs = config_container[iZone];
+
+        if(configs->GetFluidProblem()) {
+
+          for (unsigned short iVar = 0; iVar < solvers[FLOW_SOL]->GetnVar(); iVar++) {
+            if (!addVals)
+              RMSTable.AddColumn("rms_Flow" + iVar_iZone2string(iVar, iZone), fieldWidth);
+            else
+              RMSTable << log10(solvers[FLOW_SOL]->GetRes_RMS(iVar));
+          }
+
+          if (configs->GetKind_Turb_Model() != NONE && !configs->GetFrozen_Visc_Disc()) {
+            for (unsigned short iVar = 0; iVar < solvers[TURB_SOL]->GetnVar(); iVar++) {
+              if (!addVals)
+                RMSTable.AddColumn("rms_Turb" + iVar_iZone2string(iVar, iZone), fieldWidth);
+              else
+                RMSTable << log10(solvers[TURB_SOL]->GetRes_RMS(iVar));
+            }
+          }
+
+          if (configs->GetWeakly_Coupled_Heat()){
+            if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
+            else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
+          }
+
+          if (configs->AddRadiation()) {
+            if (!addVals) RMSTable.AddColumn("rms_Rad" + iVar_iZone2string(0, iZone), fieldWidth);
+            else RMSTable << log10(solvers[RAD_SOL]->GetRes_RMS(0));
+          }
+
         }
-        break;
+        else if (configs->GetStructuralProblem()) {
 
-      case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
-             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
+          if (configs->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
+            if (!addVals) {
+              RMSTable.AddColumn("UTOL-A", fieldWidth);
+              RMSTable.AddColumn("RTOL-A", fieldWidth);
+              RMSTable.AddColumn("ETOL-A", fieldWidth);
+            }
+            else {
+              RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
+                       << log10(solvers[FEA_SOL]->GetRes_FEM(1))
+                       << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+            }
+          }
+          else{
+            if (!addVals) {
+              RMSTable.AddColumn("log10[RMS Ux]", fieldWidth);
+              RMSTable.AddColumn("log10[RMS Uy]", fieldWidth);
+              if (nDim == 3) RMSTable.AddColumn("log10[RMS Uz]", fieldWidth);
+            }
+            else {
+              RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
+                       << log10(solvers[FEA_SOL]->GetRes_FEM(1));
+              if (nDim == 3) RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+            }
+          }
 
-        if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-
-          cout << " Zone " << iZone << " (turbulence) - log10[Turb(0)] : "
-               << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
         }
-        if (config_container[iZone]->AddRadiation()) {
+        else if (configs->GetHeatProblem()) {
 
-          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
-               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
+          if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
+          else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
+        } else {
+          SU2_MPI::Error("Unvalid KindSolver for CDiscAdjMultiZoneDriver.", CURRENT_FUNCTION);
         }
-        break;
+      } // loop iZone
 
-      case DISC_ADJ_HEAT:
-        cout << " Zone " << iZone << " (heat)       - log10[Heat(0)] : "
-             << log10(solvers[HEAT_SOL]->GetRes_RMS(0)) << endl;
-        break;
+      if (!addVals) RMSTable.PrintHeader();
+      else RMSTable.PrintFooter();
 
-      case DISC_ADJ_FEM:
-        cout << " Zone " << iZone << " (structure)  - ";
-        if(config_container[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE)
-          cout << "log10[RTOL-A]  : " << log10(solvers[FEA_SOL]->GetRes_FEM(1)) << endl;
-        else
-          cout << "log10[RMS Ux]  : " << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
-        break;
-
-      default:
-        break;
-    }
-  }
+    } // for addVals
+  } // if MainRecording
 }
 
 void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {

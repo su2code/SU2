@@ -458,7 +458,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
             RMSTable << log10(solver[FLOW_SOL]->GetRes_RMS(iVar));
         }
 
-        if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
+        if (config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
           for (unsigned short iVar = 0; iVar < solver[TURB_SOL]->GetnVar(); iVar++) {
             if (!addVals)
               RMSTable.AddColumn(string("rms_Turb[") + std::to_string(iVar) + string("]"), fieldWidth);
@@ -511,6 +511,8 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
         if (!addVals) RMSTable.AddColumn("rms_Heat[0]", fieldWidth);
         else RMSTable << log10(solver[HEAT_SOL]->GetRes_RMS(0));
         break;
+      } else {
+        SU2_MPI::Error("Unvalid KindSolver for CDiscAdjSingleZoneDriver.", CURRENT_FUNCTION);
       } // KindSolver
 
       if (!addVals) RMSTable.PrintHeader();
