@@ -313,6 +313,12 @@ protected:
    */
   virtual void Update() {}
 
+  /*!
+   * \brief Print out the direct residuals.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   */
+  void Print_DirectResidual(RECORDING kind_recording);
+
 public:
 
   /*!
