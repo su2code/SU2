@@ -84,7 +84,7 @@ class CScalarSolver : public CSolver {
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
-   * \tparam SolverSpecificNumericsFunc - Struct, that implements solver specific contributions to numerics.
+   * \tparam SolverSpecificNumericsFunc - lambda-function, that implements solver specific contributions to numerics.
    * \note The functor has to implement (*geometry, *numerics, *config, *nodes, iPoint, jPoint)
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
@@ -120,7 +120,7 @@ class CScalarSolver : public CSolver {
 
     /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
 
-    SolverSpecificNumerics(*geometry, *numerics, *config, *nodes, iPoint, jPoint);
+    SolverSpecificNumerics(iPoint, jPoint);
 
     /*--- Compute residual, and Jacobians ---*/
 

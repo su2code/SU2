@@ -290,15 +290,11 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
                                      CNumerics* numerics, CConfig* config) {
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
-  struct SolverSpecificNumerics {
-
-    FORCEINLINE void operator() (const CGeometry& geometry, CNumerics& numerics, CConfig& config, const CScalarVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
-      /*--- Roughness heights. ---*/
-      if (config.GetKind_Turb_Model() == SA)
-        numerics.SetRoughness(geometry.nodes->GetRoughnessHeight(iPoint), geometry.nodes->GetRoughnessHeight(jPoint));
-    }
-
-  } SolverSpecificNumerics;
+  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
+    /*--- Roughness heights. ---*/
+    if (config->GetKind_Turb_Model() == SA)
+      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
+  };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
 
