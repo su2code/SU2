@@ -244,17 +244,23 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
+  if (rank == MASTER_NODE) {
+    cout << "\n-------------------------------------------------------------------------\n";
+    switch(kind_recording) {
+    case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
+    case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
+    case RECORDING::SOLUTION_VARIABLES:
+      cout << "Direct iteration to store the primal computational graph." << endl;
+      cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
+    default: break;
+    }
+  }
+
   /*---Enable recording and register input of the iteration --- */
 
   if (kind_recording != RECORDING::CLEAR_INDICES){
 
     AD::StartRecording();
-
-    if (rank == MASTER_NODE && kind_recording == MainVariables) {
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "Direct iteration to store the primal computational graph." << endl;
-      cout << "Compute residuals to check the convergence of the direct problem." << endl;
-    }
 
     iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
   }
@@ -434,75 +440,6 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
   /*--- Print the direct residual to screen ---*/
 
   Print_DirectResidual(kind_recording);
-
-}
-
-void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
-
-  /*--- Print the residuals of the direct iteration that we just recorded ---*/
-  /*--- This routine should be moved to the output, once the new structure is in place ---*/
-  if ((rank == MASTER_NODE) && (kind_recording == MainVariables)){
-
-    switch (config->GetKind_Solver()) {
-
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-    case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
-      cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
-           << ", log10[U(1)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(1))
-           << ", log10[U(2)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(2)) << "." << endl;
-      cout << "log10[U(3)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(3));
-      if (geometry->GetnDim() == 3) cout << ", log10[U(4)]: " << log10(solver[FLOW_SOL]->GetRes_RMS(4));
-      cout << "." << endl;
-      if ( config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()) {
-        cout << "log10[Turb(0)]: "   << log10(solver[TURB_SOL]->GetRes_RMS(0));
-        if (solver[TURB_SOL]->GetnVar() > 1) cout << ", log10[Turb(1)]: " << log10(solver[TURB_SOL]->GetRes_RMS(1));
-        cout << "." << endl;
-      }
-      if (config->GetWeakly_Coupled_Heat()){
-        cout << "log10[Heat(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
-      }
-      if ( config->AddRadiation()) {
-        cout <<"log10[E(rad)]: " << log10(solver[RAD_SOL]->GetRes_RMS(0)) << endl;
-      }
-      break;
-
-    case DISC_ADJ_FEM:
-
-      if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
-        cout << "UTOL-A: "   << log10(solver[FEA_SOL]->GetRes_FEM(0))
-             << ", RTOL-A: " << log10(solver[FEA_SOL]->GetRes_FEM(1))
-             << ", ETOL-A: " << log10(solver[FEA_SOL]->GetRes_FEM(2)) << "." << endl;
-      }
-      else{
-        if (geometry->GetnDim() == 2){
-          cout << "log10[RMS Ux]: "   << log10(solver[FEA_SOL]->GetRes_RMS(0))
-               << ", log10[RMS Uy]: " << log10(solver[FEA_SOL]->GetRes_RMS(1)) << "." << endl;
-        }
-        else{
-          cout << "log10[RMS Ux]: "   << log10(solver[FEA_SOL]->GetRes_RMS(0))
-               << ", log10[RMS Uy]: " << log10(solver[FEA_SOL]->GetRes_RMS(1))
-               << ", log10[RMS Uz]: " << log10(solver[FEA_SOL]->GetRes_RMS(2))<< "." << endl;
-        }
-      }
-
-      break;
-
-    case DISC_ADJ_HEAT:
-      cout << "log10[Cons(0)]: "   << log10(solver[HEAT_SOL]->GetRes_RMS(0)) << "." << endl;
-      break;
-
-    }
-
-    cout << "-------------------------------------------------------------------------" << endl << endl;
-  }
-  else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != RECORDING::CLEAR_INDICES)){
-    cout << endl << "Recording the computational graph with respect to the ";
-    switch (SecondaryVariables){
-      case RECORDING::MESH_COORDS: cout << "mesh coordinates." << endl;    break;
-      default:                     cout << "secondary variables." << endl; break;
-     }
-  }
 
 }
 
