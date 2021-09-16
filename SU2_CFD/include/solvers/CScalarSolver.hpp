@@ -28,6 +28,7 @@
 #pragma once
 
 #include <vector>
+
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../variables/CScalarVariable.hpp"
 #include "CSolver.hpp"
@@ -49,7 +50,8 @@ class CScalarSolver : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double lowerlimit[MAXNVAR] = {0.0}; /*!< \brief contains lower limits for turbulence variables. Note that ::min() returns the smallest positive value for floats. */
+  su2double lowerlimit[MAXNVAR] = {0.0}; /*!< \brief contains lower limits for turbulence variables. Note that ::min()
+                                            returns the smallest positive value for floats. */
   su2double upperlimit[MAXNVAR] = {0.0}; /*!< \brief contains upper limits for turbulence variables. */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
@@ -80,7 +82,61 @@ class CScalarSolver : public CSolver {
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
- private:  // changed from private in CTurbSolver.hpp
+  /*!
+   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \tparam SolverSpecificNumericsFunc - Struct, that implements solver specific contributions to numerics.
+   * \note The functor has to implement (*geometry, *numerics, *config, *nodes, iPoint, jPoint)
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  template <class SolverSpecificNumericsFunc>
+  FORCEINLINE void Viscous_Residual_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, unsigned long iEdge,
+                                         CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                                         CConfig* config) {
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+    /*--- Points in edge ---*/
+
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    /*--- Points coordinates, and normal vector ---*/
+
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+    /*--- Conservative variables w/o reconstruction ---*/
+
+    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+
+    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+
+    /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
+
+    SolverSpecificNumerics(*geometry, *numerics, *config, *nodes, iPoint, jPoint);
+
+    /*--- Compute residual, and Jacobians ---*/
+
+    auto residual = numerics->ComputeResidual(config);
+
+    if (ReducerStrategy) {
+      EdgeFluxes.SubtractBlock(iEdge, residual);
+      if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+    } else {
+      LinSysRes.SubtractBlock(iPoint, residual);
+      LinSysRes.AddBlock(jPoint, residual);
+      if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
+  }
+
+ private:
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -88,9 +144,10 @@ class CScalarSolver : public CSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        CConfig* config);
+  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                       CNumerics* numerics, CConfig* config) {}
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!

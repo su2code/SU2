@@ -236,52 +236,6 @@ void CScalarSolver::Upwind_Residual(CGeometry* geometry, CSolver** solver_contai
   }
 }
 
-void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, CConfig* config) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
-  /*--- Points in edge ---*/
-
-  auto iPoint = geometry->edges->GetNode(iEdge, 0);
-  auto jPoint = geometry->edges->GetNode(iEdge, 1);
-
-  /*--- Points coordinates, and normal vector ---*/
-
-  numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
-  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-  /*--- Conservative variables w/o reconstruction ---*/
-
-  numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
-
-  /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-
-  numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-  numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
-
-  /*--- Menter's first blending function (only SST)---*/
-  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-    numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
-
-  /*--- Roughness heights. ---*/
-  if (config->GetKind_Turb_Model() == SA)
-    numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
-
-  /*--- Compute residual, and Jacobians ---*/
-
-  auto residual = numerics->ComputeResidual(config);
-
-  if (ReducerStrategy) {
-    EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
-  } else {
-    LinSysRes.SubtractBlock(iPoint, residual);
-    LinSysRes.AddBlock(jPoint, residual);
-    if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-  }
-}
-
 void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -606,7 +560,6 @@ void CScalarSolver::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_c
           }
 
           for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += Density_n * U_time_n[iVar] * Residual_GCL;
-
         }
         END_SU2_OMP_FOR
       }

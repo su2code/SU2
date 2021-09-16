@@ -275,6 +275,25 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   AD::EndNoSharedReading();
 }
 
+void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                     CNumerics* numerics, CConfig* config) {
+
+  /*--- Define an object to set solver specific numerics contribution. ---*/
+  struct SolverSpecificNumerics {
+
+    FORCEINLINE void operator() (const CGeometry& geometry, CNumerics& numerics, CConfig& config, const CScalarVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      /*--- Menter's first blending function (only SST)---*/
+      if ((config.GetKind_Turb_Model() == SST) || (config.GetKind_Turb_Model() == SST_SUST))
+        numerics.SetF1blending(nodes.GetF1blending(iPoint), nodes.GetF1blending(jPoint));
+    }
+
+  } SolverSpecificNumerics;
+
+  /*--- Now instantiate the generic implementation with the functor above. ---*/
+
+  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+}
+
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
