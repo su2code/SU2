@@ -147,7 +147,16 @@ class CScalarSolver : public CSolver {
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
   inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, CConfig* config) {}
+                                       CNumerics* numerics, CConfig* config) {
+
+    /*--- Define an empty object for solver specific numerics contribution. In case there are none, this default
+     *--- implementation will be called ---*/
+    auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) { };
+
+    /*--- Now instantiate the generic implementation with the functor above. ---*/
+
+    Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+  }
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
