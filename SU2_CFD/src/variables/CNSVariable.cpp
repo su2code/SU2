@@ -30,7 +30,7 @@
 #include "../../include/fluid/CFluidModel.hpp"
 
 CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
-                         unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
+                         unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
                          CEulerVariable(density,velocity,energy,npoint,ndim,nvar,config) {
 
   inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
@@ -42,17 +42,18 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
+
 }
 
 void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
                                          su2double val_delta,
                                          su2double val_const_DES){
 
-  static const su2double cnu = pow(0.09, 1.5),
-                         ch1 = 3.0,
-                         ch2 = 1.0,
-                         ch3 = 2.0,
-                         sigma_max = 1.0;
+  const su2double cnu = pow(0.09, 1.5),
+                  ch1 = 3.0,
+                  ch2 = 1.0,
+                  ch3 = 2.0,
+                  sigma_max = 1.0;
 
   unsigned long iDim;
   su2double Omega, Omega_2 = 0.0, Baux, Gaux, Lturb, Kaux, Aaux;
@@ -219,4 +220,3 @@ void CNSVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel)
     SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
 
 }
-
