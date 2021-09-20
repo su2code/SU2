@@ -2534,13 +2534,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
 
       /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
+      su2double Tau_Wall, scale;
       if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
-        const su2double Tau_Wall = nodes->GetTauWall(iPoint); 
-        const su2double scale = Tau_Wall / WallShearStress[iMarker][iVertex];
+        Tau_Wall = nodes->GetTauWall(iPoint); 
+        scale = Tau_Wall / WallShearStress[iMarker][iVertex];
         for (iDim = 0; iDim < nDim; iDim++) {
           TauTangent[iDim] *= scale;
           TauElem[iDim] *= scale;
         }
+
         WallShearStress[iMarker][iVertex] = Tau_Wall;
       }
 
@@ -2553,7 +2555,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
-
       YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/

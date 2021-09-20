@@ -38,6 +38,7 @@
  */
 class CIncNSVariable final : public CIncEulerVariable {
 private:
+  VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
 
 public:
@@ -104,6 +105,18 @@ public:
    */
   bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
+
+  /*!
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  inline void SetTauWall(unsigned long iPoint, su2double val_tau_wall) override { Tau_Wall(iPoint) = val_tau_wall; }
+
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  inline const VectorType& GetTauWall() const  { return Tau_Wall; }
 
   /*!
    * \brief Set the DES Length Scale.

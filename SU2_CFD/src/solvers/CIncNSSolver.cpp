@@ -644,8 +644,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
 void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
   /*---
-   The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
-   At this moment, the wall function is only available for adiabatic flows.
+   The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
 
   unsigned long notConvergedCounter = 0;  /*--- counts the number of wall cells that are not converged ---*/
@@ -654,8 +653,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double tol = 1e-12;  /*!< \brief convergence criterium for the Newton solver, note that 1e-10 is too large */
-  const unsigned short max_iter =config->GetwallModelMaxIter();
-  const su2double relax = config->GetwallModelRelFac(); 
+  const unsigned short max_iter = config->GetwallModelMaxIter();
+  const su2double relax = config->GetwallModelRelFac();
 
   /*--- Compute the recovery factor 
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
@@ -677,7 +676,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
     /*--- Jump to another BC if it is not wall function ---*/
 
-    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_FUNCTION) continue;
+    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_FUNCTION)
+      continue;
 
     /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -688,7 +688,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node)
-        and the neighbor is not part of the physical boundary ---*/
+       *    and the neighbor is not part of the physical boundary ---*/
 
       if (!geometry->nodes->GetDomain(iPoint)) continue;
 
@@ -744,17 +744,18 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
         const su2double T_n = nodes->GetTemperature(Point_Normal);
         q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
-      }  
+      }
       else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
       }
     
       /*--- incompressible formulation ---*/
+
       su2double Density_Wall = nodes->GetDensity(iPoint);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
 
       /*--- Compute the shear stress at the wall in the regular fashion
-      by using the stress tensor on the surface ---*/
+       *    by using the stress tensor on the surface ---*/
 
       su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
       su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
@@ -768,8 +769,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
 
       /*--- Calculate the quantities from boundary layer theory and
-       iteratively solve for a new wall shear stress. Use the current wall
-       shear stress as a starting guess for the wall function. ---*/
+       *    iteratively solve for a new wall shear stress. Use the current wall
+       *    shear stress as a starting guess for the wall function. ---*/
 
       unsigned long counter = 0;
       su2double diff = 1.0;
@@ -782,6 +783,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       if (Y_Plus_Start < config->GetwallModelMinYPlus()) {
         smallYPlusCounter++;
+        continue;
       }
       else while (fabs(diff) > tol) {
 
@@ -801,8 +803,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
 
         /*--- Spalding's universal form for the BL velocity with the
-         outer velocity form of White & Christoph above. ---*/
-
+         *    outer velocity form of White & Christoph above. ---*/
         const su2double kUp = kappa*U_Plus;
         Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
@@ -840,15 +841,15 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       }
 
       /*--- Calculate an updated value for the wall shear stress
-       using the y+ value, the definition of y+, and the definition of
-       the friction velocity. ---*/
-
+       *    using the y+ value, the definition of y+, and the definition of
+       *    the friction velocity. ---*/
       YPlus[iMarker][iVertex] = Y_Plus;
       EddyViscWall[iMarker][iVertex] = Eddy_Visc_Wall;
       UTau[iMarker][iVertex] = U_Tau;
 
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
+      /*--- Store this value for the wall shear stress at the node.  ---*/
       nodes->SetTauWall(iPoint, Tau_Wall);
 
     }

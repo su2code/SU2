@@ -1,6 +1,6 @@
 /*!
  * \file CNSSolver.cpp
- * \brief Main subrotuines for solving Finite-Volume Navier-Stokes flow problems.
+ * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
  * \version 7.2.0 "Blackbird"
  *
@@ -789,15 +789,18 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
    The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
 
-  unsigned long notConvergedCounter = 0, skipCounter = 0;
+  unsigned long notConvergedCounter = 0;  /*--- counts the number of wall cells that are not converged ---*/
+  unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
+
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-
-  const su2double tol = 1e-12;  /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+  const su2double tol = 1e-12;  /*!< \brief convergence criterium for the Newton solver, note that 1e-10 is too large */
   const unsigned short max_iter = config->GetwallModelMaxIter();
   const su2double relax = config->GetwallModelRelFac();
-  /*--- Compute the recovery factor ---*/
-  // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
+
+  /*--- Compute the recovery factor 
+   * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
+
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
@@ -827,7 +830,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node)
-       and the neighbor is not part of the physical boundary ---*/
+       *    and the neighbor is not part of the physical boundary ---*/
 
       if (!geometry->nodes->GetDomain(iPoint)) continue;
 
@@ -880,14 +883,14 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
-      } 
+      }
 
       /*--- Extrapolate the pressure from the interior & compute the
        wall density using the equation of state ---*/
 
       /*--- compressible formulation ---*/
 
-  su2double T_Wall = nodes->GetTemperature(iPoint);
+      su2double T_Wall = nodes->GetTemperature(iPoint);
       su2double P_Wall = P_Normal;
       su2double Density_Wall = P_Wall/(Gas_Constant*T_Wall);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
@@ -914,18 +917,20 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       unsigned long counter = 0;
       su2double diff = 1.0;
-      su2double U_Tau = sqrt(WallShearStress/Density_Wall);
-      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // to avoid warning
+      su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
+      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // use clipping value as minimum
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
       /*--- Automatic switch off when y+ < "limit" according to Nichols & Nelson (2004) ---*/
 
-      if (Y_Plus_Start < config->GetwallModelMinYPlus() ) {
-        skipCounter++;
+      if (Y_Plus_Start < config->GetwallModelMinYPlus()) {
+        smallYPlusCounter++;
         continue;
       }
       else while (fabs(diff) > tol) {
+
+        /*--- Friction velocity and u+ ---*/
 
         su2double U_Plus = VelTangMod/U_Tau;
 
@@ -959,14 +964,14 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
-        su2double kUp = kappa*U_Plus;
+        const su2double kUp = kappa*U_Plus;
         Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
         su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
 
         Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                             (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                             - Lam_Visc_Normal/Lam_Visc_Wall);
+                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                                         - Lam_Visc_Normal/Lam_Visc_Wall);
         Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
         /* --- Define function for Newton method to zero --- */
@@ -996,8 +1001,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       }
 
       /*--- Calculate an updated value for the wall shear stress
-        using the y+ value, the definition of y+, and the definition of
-        the friction velocity. ---*/
+       *    using the y+ value, the definition of y+, and the definition of
+       *    the friction velocity. ---*/
 
       YPlus[iMarker][iVertex] = Y_Plus;
       EddyViscWall[iMarker][iVertex] = Eddy_Visc_Wall;
@@ -1010,9 +1015,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       nodes->SetTauWall(iPoint, Tau_Wall);
 
     }
-
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 
   if (config->GetComm_Level() == COMM_FULL) {
     static unsigned long globalCounter1, globalCounter2;
@@ -1023,20 +1027,20 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
     globalCounter1 += notConvergedCounter;
 
     SU2_OMP_ATOMIC
-    globalCounter2 += skipCounter;
+    globalCounter2 += smallYPlusCounter;
 
     SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&globalCounter2, &skipCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
       if (rank == MASTER_NODE) {
         if (notConvergedCounter)
           cout << "Warning: Computation of wall coefficients (y+) did not converge in "
                << notConvergedCounter << " points." << endl;
 
-        if (skipCounter)
-          cout << "Warning: y+ < 5.0 in " << skipCounter
+        if (smallYPlusCounter)
+          cout << "Warning: y+ < 5.0 in " << smallYPlusCounter
                << " points, for which the wall model is not active." << endl;
       }
     }
