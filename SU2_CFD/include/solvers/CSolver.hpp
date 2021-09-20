@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -204,11 +204,11 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   vector<string> fields;
-  
+
 #ifdef HAVE_LIBROM
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
 #endif
-  
+
   /*!
    * \brief Constructor of the class.
    */
@@ -933,34 +933,6 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Interface_Boundary(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics *numerics,
-                                            CConfig *config,
-                                            unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_NearField_Boundary(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics *numerics,
-                                            CConfig *config,
-                                            unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
    */
   inline virtual void BC_Periodic(CGeometry *geometry,
                                   CSolver **solver_container,
@@ -1062,6 +1034,16 @@ public:
                                        CNumerics *visc_numerics,
                                        CConfig *config,
                                        unsigned short val_marker) { }
+
+  /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline virtual void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                                           const CConfig *config,
+                                           const unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1664,16 +1646,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetForceProj_Vector(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetIntBoundary_Jump(CGeometry *geometry,
                                           CSolver **solver_container,
                                           CConfig *config) { }
 
@@ -4406,7 +4378,7 @@ public:
    * \return Struct holding 4 su2doubles.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
-  
+
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.

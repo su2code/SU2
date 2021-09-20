@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -132,7 +132,8 @@ void computeLimiters_impl(CSolver* solver,
     auto nodes = geometry.nodes;
     const auto coord_i = nodes->GetCoord(iPoint);
 
-    AD::StartPreacc();
+    /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+    if (omp_get_num_threads() == 1) AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)

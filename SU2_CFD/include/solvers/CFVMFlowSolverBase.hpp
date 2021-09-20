@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -154,6 +154,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
@@ -413,6 +414,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -632,6 +634,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -1004,8 +1007,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Evaluate the vorticity and strain rate magnitude.
    * \tparam VelocityOffset - Index in the primitive variables where the velocity starts.
    */
-  template<unsigned long VelocityOffset>
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh,
+                                    const size_t VelocityOffset = 1) {
 
     auto& StrainMag = nodes->GetStrainMag();
 
@@ -2092,6 +2095,12 @@ class CFVMFlowSolverBase : public CSolver {
   inline void SetTotal_HeatFluxDiff(su2double val_heat) final { Total_HeatFluxDiff = val_heat; }
 
   /*!
+   * \brief Set the value of the Equivalent Area coefficient.
+   * \param[in] val_equiv - Value of the Equivalent Area coefficient.
+   */
+  inline void SetTotal_CEquivArea(su2double val_equiv) final { Total_CEquivArea = val_equiv; }
+
+  /*!
    * \brief Set the value of the Near-Field pressure oefficient.
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
    */
@@ -2122,6 +2131,12 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+   */
+  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
 
   /*!
    * \brief Set the value of the custom objective function.

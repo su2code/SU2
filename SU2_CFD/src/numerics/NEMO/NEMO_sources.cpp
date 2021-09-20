@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -378,7 +378,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
     residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(GV[nSpecies+3][1]-v*yinv)
                                                              -TWO3*AuxVar_Grad_i[0][1]);
     residual[nSpecies+2] -= Volume*(yinv*(-sumJhs_y + total_viscosity_i*(u*(GV[nSpecies+3][0]+GV[nSpecies+2][1])
-                                                                        +v*TWO3*(2*GV[nSpecies+2][1]-GV[nSpecies+2][0]
+                                                                        +v*TWO3*(2*GV[nSpecies+3][1]-GV[nSpecies+2][0]
                                                                         -v*yinv+rho*turb_ke_i))-qy_t)
                                                                         -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
     residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -191,7 +191,6 @@ public:
   /*--- Main geometric elements of the grid. ---*/
 
   CPrimalGrid** elem{nullptr};           /*!< \brief Element vector (primal grid information). */
-  CPrimalGrid** face{nullptr};           /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound{nullptr};         /*!< \brief Boundary vector (primal grid information). */
   CPoint* nodes{nullptr};                /*!< \brief Node vector (dual grid information). */
   CEdge* edges{nullptr};                 /*!< \brief Edge vector (dual grid information). */
@@ -720,12 +719,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void VisualizeControlVolume(const CConfig *config) const {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void MatchNearField(CConfig *config) {}
 
   /*!
    * \brief A virtual member.

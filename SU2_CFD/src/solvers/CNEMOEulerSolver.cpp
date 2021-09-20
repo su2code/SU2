@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,20 +46,20 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  unsigned long iPoint, counter_local, counter_global = 0;
-  unsigned short iDim, iMarker, iSpecies, nLineLets;
-  unsigned short nZone = geometry->GetnZone();
-  su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
-  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  unsigned short direct_diff = config->GetDirectDiff();
-  int Unst_RestartIter = 0;
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
-  bool adjoint = config->GetDiscrete_Adjoint();
-  string filename_ = "flow";
+  const auto nZone = geometry->GetnZone();
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const auto direct_diff = config->GetDirectDiff();
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
+  const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
-  bool nonPhys;
+  int Unst_RestartIter = 0;
+  unsigned short iMarker, nLineLets;
+  su2double *Mvec_Inf, Alpha, Beta;
+
+  /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -82,6 +82,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
+    string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata ---*/
@@ -216,52 +217,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   node_infty->SetPrimVar(0, FluidModel);
 
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-
-  counter_local = 0;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
-
-    /*--- Set mixture state ---*/
-    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
-
-    /*--- Compute other freestream quantities ---*/
-    Density_Inf    = FluidModel->GetDensity();
-    Soundspeed_Inf = FluidModel->GetSoundSpeed();
-
-    sqvel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++){
-      sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
-    }
-    const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
-
-    /*--- Initialize Solution & Solution_Old vectors ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
-    }
-    Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
-    Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
-    nodes->SetSolution(iPoint,Solution);
-    nodes->SetSolution_Old(iPoint,Solution);
-
-    if(nonPhys)
-      counter_local++;
-  }
-
-  /*--- Warning message about non-physical points ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-
-    if ((rank == MASTER_NODE) && (counter_global != 0))
-      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-  }
-
   /*--- Initial comms. ---*/
 
   CommunicateInitialState(geometry, config);
@@ -295,16 +250,24 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
 
   /*--- Set the primitive variables ---*/
-  ErrorCounter  = 0;
+  ompMasterAssignBarrier(ErrorCounter,0);
+  SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+  SU2_OMP_BARRIER
 
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
+    if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
-
+      
+      if ((rank == MASTER_NODE) && (ErrorCounter != 0))
+        cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
+    }
   }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Artificial dissipation ---*/
 
@@ -840,6 +803,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     ComputeAxisymmetricAuxGradients(geometry,config);
   }
 
+  AD::StartNoSharedReading();
+
   /*--- loop over interior points ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -965,6 +930,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   }
   END_SU2_OMP_FOR
 
+  AD::EndNoSharedReading();
+
   /*--- Checking for NaN ---*/
   unsigned long eAxi_global = eAxi_local;
   unsigned long eChm_global = eChm_local;
@@ -1029,7 +996,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, sqvel                       = 0.0,
   Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
   soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
-  Density_FreeStreamND   = 0.0;
+  Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0;
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
@@ -1196,6 +1163,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
   Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
   Force_Ref         = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref; config->SetForce_Ref(Force_Ref);
+  Heat_Flux_Ref     = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref;           config->SetHeat_Flux_Ref(Heat_Flux_Ref);
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
@@ -1247,7 +1215,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
 
     /* constant thermal conductivity model */
-    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
 
   }
 
@@ -1329,13 +1297,18 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     if (viscous) {
 
       switch(config->GetKind_TransCoeffModel()){
-      case WILKE:
+      case TRANSCOEFFMODEL::WILKE:
         ModelTable << "Wilke-Blottner-Eucken";
         NonDimTable.PrintFooter();
         break;
 
-      case GUPTAYOS:
+      case TRANSCOEFFMODEL::GUPTAYOS:
         ModelTable << "Gupta-Yos";
+        NonDimTable.PrintFooter();
+        break;
+
+      case TRANSCOEFFMODEL::CHAPMANN_ENSKOG:
+        ModelTable << "CHAPMANN-ENSKOG_LDLT";
         NonDimTable.PrintFooter();
         break;
 
@@ -1678,12 +1651,10 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-
-
   SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
 
   unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
+
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
   Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,

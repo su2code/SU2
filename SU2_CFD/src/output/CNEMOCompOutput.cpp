@@ -2,7 +2,7 @@
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -43,7 +43,6 @@
 CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model    = config->GetKind_Turb_Model();
-  gridMovement  = config->GetDynamic_Grid();
   nSpecies      = config->GetnSpecies();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -238,8 +237,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", HistoryFieldType::COEFFICIENT);
   /// END_GROUP

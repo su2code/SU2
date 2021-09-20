@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -104,10 +104,9 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Set the reference values for temperature ---*/
 
-  su2double Temperature_FreeStream = config->GetInc_Temperature_Init();
-  config->SetTemperature_FreeStream(Temperature_FreeStream);
-
+  su2double Temperature_FreeStream = config->GetTemperature_FreeStream();
   su2double Temperature_Ref = 0.0;
+
   if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
     Temperature_Ref = 1.0;
   }
@@ -118,22 +117,19 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     Temperature_Ref = config->GetInc_Temperature_Ref();
   }
   config->SetTemperature_Ref(Temperature_Ref);
+  config->SetTemperature_FreeStreamND(Temperature_FreeStream/Temperature_Ref);
 
   /*--- Set the reference values for heat fluxes. If the heat solver runs stand-alone,
    *    thermal conductivity is read directly from config file ---*/
 
-
   if (heat_equation) {
+    su2double rho_cp = config->GetMaterialDensity(0)*config->GetSpecific_Heat_Cp();
+    config->SetThermalDiffusivity(config->GetThermal_Conductivity_Constant() / rho_cp);
 
-    const su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
-    config->SetThermalDiffusivity_Solid(config->GetThermalConductivity_Solid() / rho_cp);
-
-    config->SetTemperature_FreeStreamND(config->GetTemperature_Initial_Solid()/config->GetTemperature_Ref());
+    /*--- Fluxes are computed via thermal diffusivity (not conductivity), so we have to divide by rho*cp ---*/
     config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);
   }
   else if (flow) {
-
-    config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
     config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
   }
 
@@ -490,8 +486,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
       thermal_diffusivity_j = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_j/Prandtl_Turb);
     }
     else {
-      thermal_diffusivity_i = config->GetThermalDiffusivity_Solid();
-      thermal_diffusivity_j = config->GetThermalDiffusivity_Solid();
+      thermal_diffusivity_i = config->GetThermalDiffusivity();
+      thermal_diffusivity_j = config->GetThermalDiffusivity();
     }
 
     numerics->SetThermalDiffusivity(thermal_diffusivity_i,thermal_diffusivity_j);
@@ -573,7 +569,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
   const su2double laminar_viscosity = config->GetMu_ConstantND();
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity_Solid();
+  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity();
 
   //su2double Prandtl_Turb = config->GetPrandtl_Turb();
   //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
@@ -833,7 +829,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double rho_cp_solid = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
+  const su2double rho_cp_solid = config->GetMaterialDensity(0)*config->GetSpecific_Heat_Cp();
 
   if (flow) {
 
@@ -905,7 +901,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   string Marker_Tag, HeatFlux_Tag;
 
   const su2double thermal_diffusivity = flow ? config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() :
-                                               config->GetThermalDiffusivity_Solid();
+                                               config->GetThermalDiffusivity();
 
   AllBound_HeatFlux = 0.0;
   AllBound_AverageT = 0.0;
@@ -1028,7 +1024,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
 
-  thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+  thermal_diffusivity = config->GetThermalDiffusivity();
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
@@ -1066,7 +1062,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- Viscous contribution ---*/
 
-    thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+    thermal_diffusivity = config->GetThermalDiffusivity();
     if(flow) {
       if(turb) {
         eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
@@ -1106,7 +1102,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
       /*--- Viscous contribution ---*/
 
-      thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+      thermal_diffusivity = config->GetThermalDiffusivity();
       if(flow) {
         if(turb) {
           eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
