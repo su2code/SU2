@@ -74,10 +74,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
   }
 
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-
   /*--- Primitive and secondary variables ---*/
   Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
   Secondary.resize(nPoint,nPrimVar) = su2double(0.0);
@@ -88,9 +84,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Cvves.resize(nPoint, nSpecies) = su2double(0.0);
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   Gamma.resize(nPoint)           = su2double(0.0);
-
-  /*--- Compressible flow, gradients primitive variables ---*/
-  Gradient.resize(nPoint,nVar,nDim,0.0);
 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
