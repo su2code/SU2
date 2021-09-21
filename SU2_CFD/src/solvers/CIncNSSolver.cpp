@@ -790,7 +790,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         smallYPlusCounter++;
         continue;
       }
-      else while (fabs(diff) > tol) {
+      while (fabs(diff) > tol) {
 
         /*--- Friction velocity and u+ ---*/
 
