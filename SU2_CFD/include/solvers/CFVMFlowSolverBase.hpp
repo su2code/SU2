@@ -1104,7 +1104,6 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
    */
   inline void Set_NewSolution() final { nodes->SetSolution_New(); }
 
