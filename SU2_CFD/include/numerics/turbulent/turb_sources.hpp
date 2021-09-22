@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../CNumerics.hpp"
+#include "../scalar/scalar_sources.hpp"
 
 /*!
  * \class CSourcePieceWise_TurbSA
@@ -346,8 +346,8 @@ private:
 
     yinv = 1.0/Coord_i[1];
     rhov = Density_i*V_i[2];
-    k = TurbVar_i[0];
-    w = TurbVar_i[1];
+    k = ScalarVar_i[0];
+    w = ScalarVar_i[1];
 
     /*--- Compute blended constants ---*/
     sigma_k_i = F1_i*sigma_k_1+(1.0-F1_i)*sigma_k_2;
@@ -358,8 +358,8 @@ private:
     pw_axi = alfa_blended*zeta/k*pk_axi;
 
     /*--- Convection-Diffusion ---*/
-    cdk_axi = rhov*k-(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
-    cdw_axi = rhov*w-(Laminar_Viscosity_i+sigma_w_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
+    cdk_axi = rhov*k-(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*ScalarVar_Grad_i[0][1];
+    cdw_axi = rhov*w-(Laminar_Viscosity_i+sigma_w_i*Eddy_Viscosity_i)*ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
     Residual[0] += yinv*Volume*(pk_axi-cdk_axi);
