@@ -34,7 +34,7 @@
 /*!
  * \class CNEMOEulerVariable
  * \brief Main class for defining the variables of the NEMO Euler's solver.
- * \note Primitive variables (rhos_s, T, Tve, ...)
+ * \note Primitive variables (rhos_s, T, Tve, vx, vy, vw, P, rho, h, rhoCvtr, rhoCvve)
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
  */
