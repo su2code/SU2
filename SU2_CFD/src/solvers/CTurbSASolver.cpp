@@ -31,19 +31,16 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
+CTurbSASolver::CTurbSASolver(void) : CTurbSolver(false) { }
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
-             : CTurbSolver(geometry, config) {
+             : CTurbSolver(geometry, config, false) {
 
   unsigned short nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
   bool multizone = config->GetMultizone_Problem();
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
 
@@ -289,6 +286,20 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   AD::EndNoSharedReading();
 }
 
+void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                     CNumerics* numerics, CConfig* config) {
+
+  /*--- Define an object to set solver specific numerics contribution. ---*/
+  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
+    /*--- Roughness heights. ---*/
+    if (config->GetKind_Turb_Model() == SA)
+      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
+  };
+
+  /*--- Now instantiate the generic implementation with the functor above. ---*/
+
+  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+}
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
@@ -332,8 +343,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint), nullptr);
-    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Set volume ---*/
 
@@ -528,7 +539,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -588,7 +599,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
@@ -621,8 +632,8 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -671,7 +682,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
        that the turbulent variable is copied from the interior of the
        domain to the outlet before computing the residual. ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
       /*--- Set Normal (negate for outward convention) ---*/
 
@@ -707,8 +718,8 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -757,7 +768,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
        that the turbulent variable is copied from the interior of the
        domain to the outlet before computing the residual. ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
       /*--- Set Normal (negate for outward convention) ---*/
 
@@ -795,8 +806,8 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -850,7 +861,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde_Engine);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), &nu_tilde_Engine);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
@@ -885,8 +896,8 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //
@@ -999,11 +1010,11 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
 
     if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
       /*--- Inflow analysis (interior extrapolation) ---*/
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
     }
     else {
       /*--- Outflow analysis ---*/
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde_ActDisk);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), &nu_tilde_ActDisk);
     }
 
     /*--- Grid Movement ---*/
@@ -1035,9 +1046,9 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
 //
 //        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//        visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//        visc_numerics->SetScalarVar(Solution_i, Solution_j);
 //
-//        visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//        visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //        /*--- Compute residual, and Jacobians ---*/
 //
@@ -1098,7 +1109,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &extAverageNu);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), &extAverageNu);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
@@ -1128,9 +1139,9 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), &extAverageNu);
+      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), &extAverageNu);
 
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                         nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
@@ -1203,7 +1214,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), &nu_tilde);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -1233,9 +1244,9 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde);
+      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), &nu_tilde);
 
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                         nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
@@ -1589,5 +1600,45 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
   }
+
+}
+
+void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  /* Apply the turbulent under-relaxation to the SA variants. The
+   SA_NEG model is more robust due to allowing for negative nu_tilde,
+   so the under-relaxation is not applied to that variant. */
+
+  if (config->GetKind_Turb_Model() == SA_NEG) return;
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  su2double localUnderRelaxation =  1.00;
+  const su2double allowableRatio =  0.99;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    localUnderRelaxation = 1.0;
+    su2double ratio = fabs(LinSysSol[iPoint]) / (fabs(nodes->GetSolution(iPoint, 0)) + EPS);
+    /* We impose a limit on the maximum percentage that the
+      turbulence variables can change over a nonlinear iteration. */
+    if (ratio > allowableRatio) {
+      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
+  }
+  END_SU2_OMP_FOR
 
 }
