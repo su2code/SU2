@@ -49,7 +49,7 @@ class CFlowVariable : public CVariable {
 
   /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers.
    * ---*/
-  MatrixType Vorticity; /*!< \brief Vorticity of the fluid. */
+  MatrixType Vorticity; /*!< \brief Vorticity of the flow field. */
   VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
 
   /*!
@@ -68,6 +68,7 @@ class CFlowVariable : public CVariable {
  public:
   /*!
    * \brief Get a primitive variable.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variable for the index <i>iVar</i>.
    */
@@ -77,6 +78,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get all the primitive variables of the problem.
+   * \param[in] iPoint - Point index.
    * \return Pointer to the primitive variable vector.
    */
   inline su2double* GetPrimitive(unsigned long iPoint) final { return Primitive[iPoint]; }
@@ -89,8 +91,9 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Set the value of the primitive variables.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
-   * \param[in] iVar - Index of the variable.
+   * \param[in] val_prim - Value of the variable.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
   inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final {
@@ -99,7 +102,8 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Set the value of the primitive variables.
-   * \param[in] val_prim - Primitive variables.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_prim - Values of primitive variables.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
   inline void SetPrimitive(unsigned long iPoint, const su2double* val_prim) final {
@@ -108,12 +112,14 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the squared norm of the velocity.
+   * \param[in] iPoint - Point index.
    * \return Squared norm of the velocity vector.
    */
   inline su2double GetVelocity2(unsigned long iPoint) const final { return Velocity2(iPoint); }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
@@ -124,10 +130,12 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the value of the primitive variables gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVarStart - Offset from which to start reading.
    * \return Value of the primitive variables gradient.
    */
-  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar = 0) final {
-    return Gradient_Primitive(iPoint, iVar);
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVarStart = 0) final {
+    return Gradient_Primitive(iPoint, iVarStart);
   }
 
   /*!
@@ -139,7 +147,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
+   * \param[in] iPoint - Point index.
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final {
@@ -155,6 +163,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the value of the primitive variables gradient.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variables gradient.
    */
@@ -164,6 +173,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the value of the primitive variables gradient.
+   * \param[in] iPoint - Point index.
    * \return Value of the primitive variables gradient.
    */
   inline su2double* GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
@@ -177,6 +187,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the new solution of the problem (Classical RK4).
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \return Pointer to the old solution vector.
    */
@@ -186,8 +197,9 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Add a value to the new solution container for Classical RK4.
-   * \param[in] iVar - Number of the variable.
-   * \param[in] val_solution - Value that we want to add to the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] val_solution - Value that we want to add to the new solution.
    */
   inline void AddSolution_New(unsigned long iPoint, unsigned long iVar, su2double val_solution) final {
     Solution_New(iPoint, iVar) += val_solution;
@@ -200,6 +212,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Get the harmonic balance source term.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \return Value of the harmonic balance source term for the index <i>iVar</i>.
    */
@@ -209,6 +222,7 @@ class CFlowVariable : public CVariable {
 
   /*!
    * \brief Set the harmonic balance source term.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
    */
@@ -217,15 +231,22 @@ class CFlowVariable : public CVariable {
   }
 
   /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
+   * \brief Get the values of the vorticity (3 values also in 2D).
+   * \param[in] iPoint - Point index.
+   * \return Vorticity array.
    */
   inline su2double* GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
 
   /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
+   * \brief Get the magnitude of rate of strain.
+   * \param[in] iPoint - Point index.
+   * \return Value of magnitude.
    */
   inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+
+  /*!
+   * \brief Get the entire vector of the rate of strain magnitude.
+   * \return Vector of magnitudes.
+   */
   inline su2activevector& GetStrainMag() { return StrainMag; }
 };
