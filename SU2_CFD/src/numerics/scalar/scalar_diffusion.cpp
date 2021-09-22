@@ -1,5 +1,5 @@
 /*!
- * \file turb_diffusion.cpp
+ * \file scalar_diffusion.cpp
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in scalar problems.
  * \author F. Palacios, T. Economon

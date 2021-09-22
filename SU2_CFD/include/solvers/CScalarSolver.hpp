@@ -37,7 +37,7 @@
  * \brief Main class for defining a scalar solver.
  * \tparam TVariable - Class of C*Variable of the specific solver
  */
-template<class TVariable>
+template <class TVariable>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
@@ -147,10 +147,9 @@ class CScalarSolver : public CSolver {
    */
   inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                        CNumerics* numerics, CConfig* config) {
-
     /*--- Define an empty object for solver specific numerics contribution. In case there are none, this default
      *--- implementation will be called ---*/
-    auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) { };
+    auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {};
 
     /*--- Now instantiate the generic implementation with the functor above. ---*/
 

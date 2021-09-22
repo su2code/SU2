@@ -1,5 +1,5 @@
 /*!
- * \file turb_convection.cpp
+ * \file scalar_convection.cpp
  * \brief Implementation of numerics classes to compute convective
  *        fluxes in scalar problems.
  * \author F. Palacios, T. Economon

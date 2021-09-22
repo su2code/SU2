@@ -1,8 +1,6 @@
 /*!
- * \file turb_sources.cpp
- * \brief Implementation of numerics classes for integration of
- *        scalar source-terms.
- * \author F. Palacios, T. Economon
+ * \file scalar_sources.cpp
+ * \brief Implementation of numerics classes for integration of scalar source-terms.
  * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

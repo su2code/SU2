@@ -79,7 +79,9 @@ class CScalarVariable : public CVariable {
    * \param[in] iVar - Index of the variable.
    * \param[in] source - Value of the harmonic balance source term. for the index <i>iVar</i>.
    */
-  inline void SetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar, su2double source) final { HB_Source(iPoint,iVar) = source; }
+  inline void SetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar, su2double source) final {
+    HB_Source(iPoint, iVar) = source;
+  }
 
   /*!
    * \brief Get the harmonic balance source term.
@@ -87,5 +89,7 @@ class CScalarVariable : public CVariable {
    * \param[in] iVar - Index of the variable.
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
-  inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const final { return HB_Source(iPoint,iVar); }
+  inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const final {
+    return HB_Source(iPoint, iVar);
+  }
 };
