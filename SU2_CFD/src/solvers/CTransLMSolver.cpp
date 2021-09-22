@@ -25,10 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#include "../../include/solvers/CScalarSolver.inl"
 #include "../../include/solvers/CTransLMSolver.hpp"
 #include "../../include/variables/CTransLMVariable.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
+
+/*--- Explicit instantiation of the parent class of CTurbSolver,
+ *    to spread the compilation over multiple cpp files. ---*/
+template class CScalarSolver<CTurbVariable>;
 
 /*---  This is the implementation of the Langtry-Menter transition model.
        The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 

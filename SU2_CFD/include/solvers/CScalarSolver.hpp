@@ -1,7 +1,6 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \author A. Bueno.
  * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -35,10 +34,10 @@
 
 /*!
  * \class CScalarSolver
- * \brief Main class for defining the turbulence model solver.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \brief Main class for defining a scalar solver.
+ * \tparam TVariable - Class of C*Variable of the specific solver
  */
+template<class TVariable>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
@@ -75,7 +74,7 @@ class CScalarSolver : public CSolver {
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
    */
-  CScalarVariable* nodes = nullptr;
+  TVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -85,7 +84,7 @@ class CScalarSolver : public CSolver {
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \tparam SolverSpecificNumericsFunc - lambda-function, that implements solver specific contributions to numerics.
-   * \note The functor has to implement (*geometry, *numerics, *config, *nodes, iPoint, jPoint)
+   * \note The functor has to implement (iPoint, jPoint)
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

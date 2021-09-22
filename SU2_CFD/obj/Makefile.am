@@ -179,7 +179,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \
-  ../src/solvers/CScalarSolver.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \

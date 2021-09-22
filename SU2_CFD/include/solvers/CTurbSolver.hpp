@@ -37,7 +37,7 @@
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-class CTurbSolver : public CScalarSolver {
+class CTurbSolver : public CScalarSolver<CTurbVariable> {
 protected:
 
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */

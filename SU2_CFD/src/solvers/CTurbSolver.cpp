@@ -30,9 +30,9 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSolver::CTurbSolver(bool conservative) : CScalarSolver(conservative) { }
+CTurbSolver::CTurbSolver(bool conservative) : CScalarSolver<CTurbVariable>(conservative) { }
 
-CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative) : CScalarSolver(geometry, config, conservative) { }
+CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative) : CScalarSolver<CTurbVariable>(geometry, config, conservative) { }
 
 CTurbSolver::~CTurbSolver() {
 
