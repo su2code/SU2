@@ -35,7 +35,7 @@
 /*!
  * \class CScalarSolver
  * \brief Main class for defining a scalar solver.
- * \tparam TVariable - Class of C*Variable of the specific solver
+ * \tparam VariableType - Class of variable used by the solver inheriting from this template.
  */
 template <class TVariable>
 class CScalarSolver : public CSolver {
@@ -74,7 +74,7 @@ class CScalarSolver : public CSolver {
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
    */
-  TVariable* nodes = nullptr;
+  VariableType* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.

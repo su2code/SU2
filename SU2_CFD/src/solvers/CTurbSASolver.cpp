@@ -25,15 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/solvers/CScalarSolver.inl"
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-/*--- Explicit instantiation of the parent class of CTurbSolver,
- *    to spread the compilation over multiple cpp files. ---*/
-template class CScalarSolver<CTurbVariable>;
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver(false) { }
 

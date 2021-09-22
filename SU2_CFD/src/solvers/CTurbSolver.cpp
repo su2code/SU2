@@ -28,7 +28,10 @@
 #include "../../include/solvers/CTurbSolver.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CScalarSolver.inl"
 
+/*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
+template class CScalarSolver<CTurbVariable>;
 
 CTurbSolver::CTurbSolver(bool conservative) : CScalarSolver<CTurbVariable>(conservative) { }
 
