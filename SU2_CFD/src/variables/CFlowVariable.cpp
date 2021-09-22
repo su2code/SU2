@@ -27,56 +27,53 @@
 #include "../../include/variables/CFlowVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                             unsigned long nprimvar, unsigned long nprimvargrad, const CConfig *config)
-  : CVariable(npoint, ndim, nvar, config),
-    Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
-
+CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, unsigned long nprimvar,
+                             unsigned long nprimvargrad, const CConfig* config)
+    : CVariable(npoint, ndim, nvar, config),
+      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
   nPrimVar = nprimvar;
   nPrimVarGrad = nprimvargrad;
 
   /*--- Allocate residual structures for multigrid. ---*/
 
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
+  Res_TruncError.resize(nPoint, nVar) = su2double(0.0);
 
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
-      Residual_Sum.resize(nPoint,nVar);
-      Residual_Old.resize(nPoint,nVar);
+      Residual_Sum.resize(nPoint, nVar);
+      Residual_Old.resize(nPoint, nVar);
       break;
     }
   }
 
   /*--- Primitive variables and gradients (see derived classes for what is stored each column) ---*/
 
-  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
+  Primitive.resize(nPoint, nPrimVar) = su2double(0.0);
 
   if (config->GetMUSCL_Flow() || config->GetViscous()) {
-    Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+    Gradient_Primitive.resize(nPoint, nPrimVarGrad, nDim, 0.0);
   }
 
-  if (config->GetReconstructionGradientRequired() &&
-      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
-    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  if (config->GetReconstructionGradientRequired() && config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
+    Gradient_Aux.resize(nPoint, nPrimVarGrad, nDim, 0.0);
   }
 
   if (config->GetLeastSquaresRequired()) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
+    Rmatrix.resize(nPoint, nDim, nDim, 0.0);
   }
 
   /*--- Allocate undivided laplacian (centered) ---*/
 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    Undivided_Laplacian.resize(nPoint,nVar);
+    Undivided_Laplacian.resize(nPoint, nVar);
   }
 
   /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
-      config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
-    Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-    Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-    Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+    Limiter_Primitive.resize(nPoint, nPrimVarGrad) = su2double(0.0);
+    Solution_Max.resize(nPoint, nPrimVarGrad) = su2double(0.0);
+    Solution_Min.resize(nPoint, nPrimVarGrad) = su2double(0.0);
   }
 
   Velocity2.resize(nPoint) = su2double(0.0);
@@ -98,9 +95,8 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
   }
 
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
-    HB_Source.resize(nPoint,nVar) = su2double(0.0);
+    HB_Source.resize(nPoint, nVar) = su2double(0.0);
   }
-
 }
 
 void CFlowVariable::SetSolution_New() {

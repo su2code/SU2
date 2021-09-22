@@ -37,17 +37,20 @@ class CFlowVariable : public CVariable {
   /*--- Primitive variable definition. ---*/
   MatrixType Primitive;                     /*!< \brief Primitive variables. */
   CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables. */
-  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-  MatrixType Limiter_Primitive;             /*!< \brief Limiter of the primitive variables. */
-  VectorType Velocity2;                     /*!< \brief Squared norm of velocity. */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL
+                                               reconstruction for the convective term */
+  CVectorOfMatrix
+      Gradient_Aux; /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  MatrixType Limiter_Primitive; /*!< \brief Limiter of the primitive variables. */
+  VectorType Velocity2;         /*!< \brief Squared norm of velocity. */
 
-  MatrixType Solution_New;    /*!< \brief New solution container for Classical RK4. */
-  MatrixType HB_Source;       /*!< \brief harmonic balance source term. */
+  MatrixType Solution_New; /*!< \brief New solution container for Classical RK4. */
+  MatrixType HB_Source;    /*!< \brief harmonic balance source term. */
 
-  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
-  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers.
+   * ---*/
+  MatrixType Vorticity; /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
 
   /*!
    * \brief Constructor of the class.
@@ -59,8 +62,8 @@ class CFlowVariable : public CVariable {
    * \param[in] nprimvargrad - Number of primitive variables for which to compute gradients.
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                unsigned long nprimvar, unsigned long nprimvargrad, const CConfig *config);
+  CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, unsigned long nprimvar,
+                unsigned long nprimvargrad, const CConfig* config);
 
  public:
   /*!
@@ -68,13 +71,15 @@ class CFlowVariable : public CVariable {
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variable for the index <i>iVar</i>.
    */
-  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
+  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final {
+    return Primitive(iPoint, iVar);
+  }
 
   /*!
    * \brief Get all the primitive variables of the problem.
    * \return Pointer to the primitive variable vector.
    */
-  inline su2double *GetPrimitive(unsigned long iPoint) final { return Primitive[iPoint]; }
+  inline su2double* GetPrimitive(unsigned long iPoint) final { return Primitive[iPoint]; }
 
   /*!
    * \brief Get the primitive variables for all points.
@@ -89,7 +94,7 @@ class CFlowVariable : public CVariable {
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
   inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final {
-    Primitive(iPoint,iVar) = val_prim;
+    Primitive(iPoint, iVar) = val_prim;
   }
 
   /*!
@@ -97,9 +102,8 @@ class CFlowVariable : public CVariable {
    * \param[in] val_prim - Primitive variables.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
-  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
-    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++)
-      Primitive(iPoint,iVar) = val_prim[iVar];
+  inline void SetPrimitive(unsigned long iPoint, const su2double* val_prim) final {
+    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++) Primitive(iPoint, iVar) = val_prim[iVar];
   }
 
   /*!
@@ -115,15 +119,15 @@ class CFlowVariable : public CVariable {
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Primitive(iPoint,iVar,iDim);
+    return Gradient_Primitive(iPoint, iVar, iDim);
   }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
-    return Gradient_Primitive(iPoint,iVar);
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar = 0) final {
+    return Gradient_Primitive(iPoint, iVar);
   }
 
   /*!
@@ -155,14 +159,14 @@ class CFlowVariable : public CVariable {
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {
-    return Limiter_Primitive(iPoint,iVar);
+    return Limiter_Primitive(iPoint, iVar);
   }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
+  inline su2double* GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
 
   /*!
    * \brief Get the primitive variables limiter.
@@ -176,7 +180,9 @@ class CFlowVariable : public CVariable {
    * \param[in] iVar - Index of the variable.
    * \return Pointer to the old solution vector.
    */
-  inline su2double GetSolution_New(unsigned long iPoint, unsigned long iVar) const final { return Solution_New(iPoint,iVar); }
+  inline su2double GetSolution_New(unsigned long iPoint, unsigned long iVar) const final {
+    return Solution_New(iPoint, iVar);
+  }
 
   /*!
    * \brief Add a value to the new solution container for Classical RK4.
@@ -184,7 +190,7 @@ class CFlowVariable : public CVariable {
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   inline void AddSolution_New(unsigned long iPoint, unsigned long iVar, su2double val_solution) final {
-    Solution_New(iPoint,iVar) += val_solution;
+    Solution_New(iPoint, iVar) += val_solution;
   }
 
   /*!
@@ -198,7 +204,7 @@ class CFlowVariable : public CVariable {
    * \return Value of the harmonic balance source term for the index <i>iVar</i>.
    */
   inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const final {
-    return HB_Source(iPoint,iVar);
+    return HB_Source(iPoint, iVar);
   }
 
   /*!
@@ -207,14 +213,14 @@ class CFlowVariable : public CVariable {
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
    */
   inline void SetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar, su2double val_source) final {
-    HB_Source(iPoint,iVar) = val_source;
+    HB_Source(iPoint, iVar) = val_source;
   }
 
   /*!
    * \brief Get the value of the vorticity.
    * \return Value of the vorticity.
    */
-  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+  inline su2double* GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the value of the magnitude of rate of strain.
@@ -222,5 +228,4 @@ class CFlowVariable : public CVariable {
    */
   inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
   inline su2activevector& GetStrainMag() { return StrainMag; }
-
 };
