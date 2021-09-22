@@ -37,7 +37,7 @@
  * \brief Main class for defining a scalar solver.
  * \tparam VariableType - Class of variable used by the solver inheriting from this template.
  */
-template <class TVariable>
+template <class VariableType>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */

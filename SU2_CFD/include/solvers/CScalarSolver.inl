@@ -28,11 +28,11 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
 
-template <class TVariable>
-CScalarSolver<TVariable>::CScalarSolver(bool conservative) : CSolver(), Conservative(conservative) {}
+template <class VariableType>
+CScalarSolver<VariableType>::CScalarSolver(bool conservative) : CSolver(), Conservative(conservative) {}
 
-template <class TVariable>
-CScalarSolver<TVariable>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
+template <class VariableType>
+CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
     : CSolver(), Conservative(conservative) {
   nMarker = config->GetnMarker_All();
 
@@ -74,13 +74,13 @@ CScalarSolver<TVariable>::CScalarSolver(CGeometry* geometry, CConfig* config, bo
   }
 }
 
-template <class TVariable>
-CScalarSolver<TVariable>::~CScalarSolver() {
+template <class VariableType>
+CScalarSolver<VariableType>::~CScalarSolver() {
   delete nodes;
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
+template <class VariableType>
+void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Turb();
@@ -240,8 +240,8 @@ void CScalarSolver<TVariable>::Upwind_Residual(CGeometry* geometry, CSolver** so
   }
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::SumEdgeFluxes(CGeometry* geometry) {
+template <class VariableType>
+void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     LinSysRes.SetBlock_Zero(iPoint);
@@ -256,8 +256,8 @@ void CScalarSolver<TVariable>::SumEdgeFluxes(CGeometry* geometry) {
   END_SU2_OMP_FOR
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+template <class VariableType>
+void CScalarSolver<VariableType>::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                            CConfig* config) {
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
@@ -271,8 +271,8 @@ void CScalarSolver<TVariable>::BC_Periodic(CGeometry* geometry, CSolver** solver
   }
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
+template <class VariableType>
+void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                         CConfig* config) {
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -332,8 +332,8 @@ void CScalarSolver<TVariable>::PrepareImplicitIteration(CGeometry* geometry, CSo
   SetResidual_RMS(geometry, config);
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container,
+template <class VariableType>
+void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                          CConfig* config) {
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
@@ -380,8 +380,8 @@ void CScalarSolver<TVariable>::CompleteImplicitIteration(CGeometry* geometry, CS
   CompleteComms(geometry, config, SOLUTION_EDDY);
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
+template <class VariableType>
+void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                        CConfig* config) {
   PrepareImplicitIteration(geometry, solver_container, config);
 
@@ -406,8 +406,8 @@ void CScalarSolver<TVariable>::ImplicitEuler_Iteration(CGeometry* geometry, CSol
   CompleteImplicitIteration(geometry, solver_container, config);
 }
 
-template <class TVariable>
-void CScalarSolver<TVariable>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+template <class VariableType>
+void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                                     unsigned short iRKStep, unsigned short iMesh,
                                                     unsigned short RunTime_EqSystem) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
