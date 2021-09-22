@@ -33,7 +33,8 @@
        The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 
        DOI: https://doi.org/10.2514/1.42362 ---*/
        
-CTransLMSolver::CTransLMSolver(void) : CTurbSolver(true) {} ///Note: TransLM seems to rho*gamma, rho*Re_sigma as Solution variables
+// Note: TransLM seems to use rho*gamma, rho*Re_sigma as Solution variables, thus Conservative=true
+CTransLMSolver::CTransLMSolver(void) : CTurbSolver(true) {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver(true) {
   unsigned short iVar, nLineLets;
