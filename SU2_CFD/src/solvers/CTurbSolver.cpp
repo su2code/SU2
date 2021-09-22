@@ -206,6 +206,125 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
+void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                                           bool val_update_geo) {
+  /*--- Restart the solution from file information ---*/
+
+  unsigned short iVar, iMesh;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  su2double Area_Children, Area_Parent;
+  const su2double* Solution_Fine = nullptr;
+
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER {
+    /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+    if (config->GetRead_Binary_Restart()) {
+      Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+    } else {
+      Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+    }
+
+    /*--- Skip flow variables ---*/
+
+    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
+
+    /*--- Adjust the number of solution variables in the incompressible
+     restart. We always carry a space in nVar for the energy equation in the
+     mean flow solver, but we only write it to the restart if it is active.
+     Therefore, we must reduce skipVars here if energy is inactive so that
+     the turbulent variables are read correctly. ---*/
+
+    bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
+    bool energy = config->GetEnergy_Equation();
+    bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+
+    /*--- Load data from the restart into correct containers. ---*/
+
+    unsigned long counter = 0, iPoint_Global = 0;
+    for (; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        index = counter * Restart_Vars[1] + skipVars;
+        for (iVar = 0; iVar < nVar; ++iVar) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
+
+    /*--- Detect a wrong solution file ---*/
+
+    if (counter != nPointDomain) {
+      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                         string("It could be empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
+    }
+
+  }  // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+
+  /*--- MPI solution and compute the eddy viscosity ---*/
+
+  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                          RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double Solution_Coarse[MAXNVAR] = {0.0};
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
+        Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
+        }
+      }
+      solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
+    }
+    END_SU2_OMP_FOR
+
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
+                                           false);
+    solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+  }
+
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER {
+    /*--- Delete the class memory that is used to load the restart. ---*/
+
+    delete[] Restart_Vars;
+    Restart_Vars = nullptr;
+    delete[] Restart_Data;
+    Restart_Data = nullptr;
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+}
+
 void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
 
   /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
