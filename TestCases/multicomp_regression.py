@@ -69,7 +69,7 @@ def main():
     multicompflow_variableprop_venturi_axisymmetric_velocityinlets.cfg_dir   = "incomp_rans/multicomponentflow_variablefluidproperties"
     multicompflow_variableprop_venturi_axisymmetric_velocityinlets.cfg_file  = "C6_pneumatic_venturi_axisymmetric_velocityinlets.cfg"
     multicompflow_variableprop_venturi_axisymmetric_velocityinlets.test_iter = 5
-    multicompflow_variableprop_venturi_axisymmetric_velocityinlets.test_vals = [-5.658917, -4.475284, -4.442651, -5.811396, 20, -1.853076, 4, -3.547922]
+    multicompflow_variableprop_venturi_axisymmetric_velocityinlets.test_vals = [-5.658917, -4.475284, -4.442651, -5.811413, 20, -1.853076, 4, -3.547922]
     multicompflow_variableprop_venturi_axisymmetric_velocityinlets.su2_exec  = "mpirun -n 2 SU2_CFD"
     multicompflow_variableprop_venturi_axisymmetric_velocityinlets.timeout   = 1600
     multicompflow_variableprop_venturi_axisymmetric_velocityinlets.new_output = True
