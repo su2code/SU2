@@ -441,8 +441,8 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
     
     /*--- Scalar variables w/o reconstruction, and its gradient ---*/
     
-    numerics->SetScalarVarLegacy(nodes->GetSolution(iPoint), nullptr);
-    numerics->SetScalarVarLegacyGradient(nodes->GetGradient(iPoint), nullptr);
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Mass diffusivity coefficients. ---*/
     su2double *M;

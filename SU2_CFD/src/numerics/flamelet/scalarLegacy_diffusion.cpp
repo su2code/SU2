@@ -77,13 +77,14 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
   AD::SetPreaccIn(Coord_i, nDim);
   AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(ScalarVarLegacy_Grad_i, nVar, nDim);
-  AD::SetPreaccIn(ScalarVarLegacy_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
   AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
 
   if (correct_gradient) {
-    AD::SetPreaccIn(ScalarVarLegacy_i, nVar); AD::SetPreaccIn(ScalarVarLegacy_j ,nVar);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
+    AD::SetPreaccIn(ScalarVar_j ,nVar);
   }
   ExtraADPreaccIn();
 
@@ -118,8 +119,8 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
     Proj_Mean_GradScalarVar_Normal[iVar] = 0.0;
     Proj_Mean_GradScalarVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Mean_GradScalarVar = 0.5*(ScalarVarLegacy_Grad_i[iVar][iDim] +
-                                        ScalarVarLegacy_Grad_j[iVar][iDim]);
+      su2double Mean_GradScalarVar = 0.5*(ScalarVar_Grad_i[iVar][iDim] +
+                                          ScalarVar_Grad_j[iVar][iDim]);
 
       Proj_Mean_GradScalarVar_Normal[iVar] += Mean_GradScalarVar * Normal[iDim];
 
@@ -129,7 +130,7 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
     Proj_Mean_GradScalarVar[iVar] = Proj_Mean_GradScalarVar_Normal[iVar];
     if (correct_gradient) {
       Proj_Mean_GradScalarVar[iVar] -= Proj_Mean_GradScalarVar_Edge[iVar]*proj_vector_ij -
-      (ScalarVarLegacy_j[iVar]-ScalarVarLegacy_i[iVar])*proj_vector_ij;
+      (ScalarVar_j[iVar]-ScalarVar_i[iVar])*proj_vector_ij;
     }
   }
 

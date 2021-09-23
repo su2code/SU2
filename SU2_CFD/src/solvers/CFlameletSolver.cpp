@@ -543,7 +543,7 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Set scalar variables w/o reconstruction ---*/
 
-    first_numerics->SetScalarVarLegacy(nodes->GetSolution(i_point), nullptr);
+    first_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
 
     first_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nodes->GetDiffusivity(i_point));
 

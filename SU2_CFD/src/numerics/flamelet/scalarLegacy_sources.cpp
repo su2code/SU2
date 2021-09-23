@@ -64,12 +64,12 @@ CSourcePieceWise_transportedScalar_general::~CSourcePieceWise_transportedScalar_
 CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(ScalarVarLegacy_i, nVar);
+  AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(scalar_sources, nVar);
   AD::SetPreaccIn(Volume); 
 
   // FIXME dan: the next two lines crashes when I run SU2_CFD_AD on the asym probe case
-  // AD::SetPreaccIn(ScalarVarLegacy_Grad_i, nVar, nDim);
+  // AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   // AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
 
   //if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE)
@@ -111,10 +111,10 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
 
    /*--- Implicit part ---*/
 
-   //Jacobian_i[0][0] =0.0;// -beta_star*ScalarVarLegacy_i[1]*Volume;
-   //Jacobian_i[0][1] = 0.0;//-beta_star*ScalarVarLegacy_i[0]*Volume;
+   //Jacobian_i[0][0] =0.0;// -beta_star*ScalarVar_i[1]*Volume;
+   //Jacobian_i[0][1] = 0.0;//-beta_star*ScalarVar_i[0]*Volume;
    //Jacobian_i[1][0] = 0.0;
-   //Jacobian_i[1][1] = 0.0;//-2.0*beta_blended*ScalarVarLegacy_i[1]*Volume;
+   //Jacobian_i[1][1] = 0.0;//-2.0*beta_blended*ScalarVar_i[1]*Volume;
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
