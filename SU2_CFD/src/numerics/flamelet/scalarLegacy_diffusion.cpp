@@ -1,5 +1,5 @@
 /*!
- * \file scalar_diffusion.cpp
+ * \file scalarLegacy_diffusion.cpp
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/flamelet/scalar_diffusion.hpp"
+#include "../../../include/numerics/flamelet/scalarLegacy_diffusion.hpp"
 
 CAvgGrad_transportedScalar::CAvgGrad_transportedScalar(unsigned short val_nDim,
                                  unsigned short val_nVar,
@@ -83,7 +83,8 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
   AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
 
   if (correct_gradient) {
-    AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j ,nVar);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
+    AD::SetPreaccIn(ScalarVar_j ,nVar);
   }
   ExtraADPreaccIn();
 
@@ -119,7 +120,7 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
     Proj_Mean_GradScalarVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Mean_GradScalarVar = 0.5*(ScalarVar_Grad_i[iVar][iDim] +
-                                        ScalarVar_Grad_j[iVar][iDim]);
+                                          ScalarVar_Grad_j[iVar][iDim]);
 
       Proj_Mean_GradScalarVar_Normal[iVar] += Mean_GradScalarVar * Normal[iDim];
 

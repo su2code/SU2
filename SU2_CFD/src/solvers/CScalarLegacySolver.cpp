@@ -1,5 +1,5 @@
 /*!
- * \file CScalarSolver.cpp
+ * \file CScalarLegacySolver.cpp
  * \brief Main subroutines for the  transported scalar model.
  * \author D. Mayer, T. Economon
  * \version 7.1.1 "Blackbird"
@@ -25,19 +25,19 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/solvers/CScalarSolver.hpp"
+#include "../../include/solvers/CScalarLegacySolver.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CScalarSolver::CScalarSolver(void) : CSolver() {
+CScalarLegacySolver::CScalarLegacySolver(void) : CSolver() {
 
   lowerlimit       = nullptr;
   upperlimit       = nullptr;
   //Scalar_Inf       = NULL;  
 }
 
-CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
+CScalarLegacySolver::CScalarLegacySolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
  
   lowerlimit       = nullptr;
@@ -82,7 +82,7 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 #endif
 }
 
-CScalarSolver::~CScalarSolver(void) {
+CScalarLegacySolver::~CScalarLegacySolver(void) {
 
   if (lowerlimit != nullptr)    delete [] lowerlimit;
   if (upperlimit != nullptr)    delete [] upperlimit;
@@ -96,7 +96,7 @@ CScalarSolver::~CScalarSolver(void) {
   delete nodes;
 }
 
-void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+void CScalarLegacySolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -251,7 +251,7 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+void CScalarLegacySolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *numerics, CConfig *config) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -300,7 +300,7 @@ void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, C
   }
 }
 
-void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
+void CScalarLegacySolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -318,7 +318,7 @@ void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CScalarSolver::BC_Sym_Plane(CGeometry      *geometry,
+void CScalarLegacySolver::BC_Sym_Plane(CGeometry      *geometry,
                                CSolver        **solver_container,
                                CNumerics      *conv_numerics,
                                CNumerics      *visc_numerics,
@@ -329,7 +329,7 @@ void CScalarSolver::BC_Sym_Plane(CGeometry      *geometry,
 
 }
 
-void CScalarSolver::BC_Euler_Wall(CGeometry      *geometry,
+void CScalarLegacySolver::BC_Euler_Wall(CGeometry      *geometry,
                                 CSolver        **solver_container,
                                 CNumerics      *conv_numerics,
                                 CNumerics      *visc_numerics,
@@ -340,7 +340,7 @@ void CScalarSolver::BC_Euler_Wall(CGeometry      *geometry,
 
 }
 
-void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+void CScalarLegacySolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics *numerics, CConfig *config) {
 
   /*--- Complete residuals for periodic boundary conditions. We loop over
@@ -356,7 +356,7 @@ void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
+void CScalarLegacySolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
 
  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -433,7 +433,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
   SU2_OMP_BARRIER
 }
 
-void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CScalarLegacySolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -457,7 +457,7 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
       for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
         // FIXME dan: Underrelaxation is turned off here beacuse problems.
           //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
-        nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), density, lowerlimit[iVar], upperlimit[iVar]);
+        nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), lowerlimit[iVar], upperlimit[iVar], density, density);
       }
     }
     END_SU2_OMP_FOR
@@ -474,7 +474,7 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
 
 }
 
-void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CScalarLegacySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   PrepareImplicitIteration(geometry, solver_container, config);
 
@@ -499,7 +499,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
 }
 
-void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CScalarLegacySolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
 
   /* Loop over the solution update given by relaxing the linear
@@ -546,7 +546,7 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
 }
 
-void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CScalarLegacySolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -808,7 +808,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 }
 
 
-void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+void CScalarLegacySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
 
@@ -958,7 +958,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   
 }
 
-void CScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry,
+void CScalarLegacySolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CSolver **solver_container,
                                      CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config,
@@ -967,7 +967,7 @@ void CScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   
 }
 
-void CScalarSolver::BC_Far_Field(CGeometry *geometry,
+void CScalarLegacySolver::BC_Far_Field(CGeometry *geometry,
                                  CSolver **solver_container,
                                  CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config,
@@ -1037,7 +1037,7 @@ void CScalarSolver::BC_Far_Field(CGeometry *geometry,
 
 
 
-void CScalarSolver::SetInletAtVertex(const su2double *val_inlet,
+void CScalarLegacySolver::SetInletAtVertex(const su2double *val_inlet,
                                      unsigned short iMarker,
                                      unsigned long iVertex) {
   unsigned short iVar;
@@ -1048,7 +1048,7 @@ void CScalarSolver::SetInletAtVertex(const su2double *val_inlet,
   
 }
 
-su2double CScalarSolver::GetInletAtVertex(su2double       *val_inlet,
+su2double CScalarLegacySolver::GetInletAtVertex(su2double       *val_inlet,
                                           unsigned long    val_inlet_point,
                                           unsigned short   val_kind_marker,
                                           string           val_marker,
@@ -1108,7 +1108,7 @@ su2double CScalarSolver::GetInletAtVertex(su2double       *val_inlet,
   
 }
 
-void CScalarSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+void CScalarLegacySolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     for (unsigned short iVar = 0; iVar < nVar; iVar++)

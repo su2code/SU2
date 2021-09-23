@@ -1,5 +1,5 @@
 /*!
- * \file scalar_sources.cpp
+ * \file scalarLegacy_sources.cpp
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/flamelet/scalar_sources.hpp"
+#include "../../../include/numerics/flamelet/scalarLegacy_sources.hpp"
 
 CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_general(unsigned short val_nDim,
                                                    unsigned short val_nVar,

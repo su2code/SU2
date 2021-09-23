@@ -29,7 +29,7 @@
 #include "../../include/variables/CPassiveScalarVariable.hpp"
 
 CPassiveScalarVariable::CPassiveScalarVariable(su2double *val_scalar_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                                               CConfig *config) : CScalarVariable(npoint, ndim, nvar, config) {
+                                               CConfig *config) : CScalarLegacyVariable(npoint, ndim, nvar, config) {
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {

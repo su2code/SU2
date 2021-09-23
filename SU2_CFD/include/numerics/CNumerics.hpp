@@ -130,11 +130,8 @@ protected:
   *Psi_i,    /*!< \brief Vector of adjoint variables at point i. */
   *Psi_j;    /*!< \brief Vector of adjoint variables at point j. */
   const su2double
-  *TurbVar_i,   /*!< \brief Vector of turbulent variables at point i. */
-  *TurbVar_j;   /*!< \brief Vector of turbulent variables at point j. */
-  const su2double
-  *ScalarVar_i,  /*!< \brief Vector of scalar variables at point i. */
-  *ScalarVar_j;  /*!< \brief Vector of scalar variables at point j. */
+  *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
+  *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -149,16 +146,14 @@ protected:
   PrimVar_Grad_j,  /*!< \brief Gradient of primitive variables at point j. */
   PsiVar_Grad_i,   /*!< \brief Gradient of adjoint variables at point i. */
   PsiVar_Grad_j,   /*!< \brief Gradient of adjoint variables at point j. */
-  TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  TurbVar_Grad_j,  /*!< \brief Gradient of turbulent variables at point j. */
+  ScalarVar_Grad_i,  /*!< \brief Gradient of scalar variables at point i. */
+  ScalarVar_Grad_j,  /*!< \brief Gradient of scalar variables at point j. */
   TransVar_Grad_i, /*!< \brief Gradient of turbulent variables at point i. */
   TransVar_Grad_j, /*!< \brief Gradient of turbulent variables at point j. */
   TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
-  AuxVar_Grad_j,   /*!< \brief Gradient of an auxiliary variable at point i. */
-  ScalarVar_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
-  ScalarVar_Grad_j; 
+  AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -352,23 +347,13 @@ public:
   }
 
   /*!
-   * \brief Set the value of the turbulent variable.
-   * \param[in] val_turbvar_i - Value of the turbulent variable at point i.
-   * \param[in] val_turbvar_j - Value of the turbulent variable at point j.
+   * \brief Set the value of the scalar variable.
+   * \param[in] val_scalarvar_i - Value of the scalar variable at point i.
+   * \param[in] val_scalarvar_j - Value of the scalar variable at point j.
    */
-  inline void SetTurbVar(const su2double *val_turbvar_i, const su2double *val_turbvar_j) {
-    TurbVar_i = val_turbvar_i;
-    TurbVar_j = val_turbvar_j;
-  }
-
-  /*!
-   * \brief Set the values of the transported scalars.
-   * \param[in] val_scalar_i - Value of the scalar at point i.
-   * \param[in] val_scalar_j - Value of the scalar at point j.
-   */
-  inline void SetScalarVar(su2double *val_scalar_i, su2double *val_scalar_j) {
-    ScalarVar_i = val_scalar_i;
-    ScalarVar_j = val_scalar_j;
+  inline void SetScalarVar(const su2double *val_scalarvar_i, const su2double *val_scalarvar_j) {
+    ScalarVar_i = val_scalarvar_i;
+    ScalarVar_j = val_scalarvar_j;
   }
 
   /*!
@@ -390,26 +375,15 @@ public:
   }
 
   /*!
-   * \brief Set the gradient of the turbulent variables.
-   * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
-   * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
+   * \brief Set the gradient of the scalar variables.
+   * \param[in] val_scalarvar_grad_i - Gradient of the scalar variable at point i.
+   * \param[in] val_scalarvar_grad_j - Gradient of the scalar variable at point j.
    */
-  inline void SetTurbVarGradient(CMatrixView<const su2double> val_turbvar_grad_i,
-                                 CMatrixView<const su2double> val_turbvar_grad_j) {
-    TurbVar_Grad_i = val_turbvar_grad_i;
-    TurbVar_Grad_j = val_turbvar_grad_j;
+  inline void SetScalarVarGradient(CMatrixView<const su2double> val_scalarvar_grad_i,
+                                   CMatrixView<const su2double> val_scalarvar_grad_j) {
+    ScalarVar_Grad_i = val_scalarvar_grad_i;
+    ScalarVar_Grad_j = val_scalarvar_grad_j;
   }
-
-  /*!
-   * \brief Set the gradient of the scalar transport variables.
-   * \param[in] val_scalar_grad_i - Gradient of the transported scalarsat point i.
-   * \param[in] val_scalar_grad_j - Gradient of the transported scalarsat point j.
-   */
-  inline void SetScalarVarGradient(CMatrixView<const su2double> val_scalar_grad_i, 
-                                   CMatrixView<const su2double> val_scalar_grad_j) {
-    ScalarVar_Grad_i = val_scalar_grad_i;
-    ScalarVar_Grad_j = val_scalar_grad_j;
-}
 
   /*!
    * \brief Set the gradient of the turbulent variables.

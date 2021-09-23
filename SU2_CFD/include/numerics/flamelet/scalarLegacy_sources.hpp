@@ -1,5 +1,5 @@
 ﻿/*!
- * \file scalar_sources.hpp
+ * \file scalarLegacy_sources.hpp
  * \brief Delarations of numerics classes for integration of source
  *        terms in scalar problems.
  * \author T. Economon, N. Beishuizen
@@ -29,7 +29,7 @@
 #pragma once
 
 #include "../CNumerics.hpp"
-#include "../../solvers/CScalarSolver.hpp"
+#include "../../solvers/CScalarLegacySolver.hpp"
 
 /*!
  * \class CSourcePieceWise_transportedScalar_general

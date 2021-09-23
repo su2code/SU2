@@ -1,5 +1,5 @@
 /*!
- * \file scalar_convection.cpp
+ * \file scalarLegacy_convection.cpp
  * \brief Implementation of numerics classes to compute convective
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/flamelet/scalar_convection.hpp"
+#include "../../../include/numerics/flamelet/scalarLegacy_convection.hpp"
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwtransportedScalar::CUpwtransportedScalar(unsigned short val_nDim,

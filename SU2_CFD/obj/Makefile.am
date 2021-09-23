@@ -111,12 +111,15 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_convection.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
+  ../src/numerics/scalar/scalar_convection.cpp \
+  ../src/numerics/scalar/scalar_diffusion.cpp \
+  ../src/numerics/scalar/scalar_sources.cpp \
   ../src/numerics/turbulent/turb_convection.cpp \
   ../src/numerics/turbulent/turb_diffusion.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
-  ../src/numerics/flamelet/scalar_convection.cpp \
-  ../src/numerics/flamelet/scalar_diffusion.cpp \
-  ../src/numerics/flamelet/scalar_sources.cpp \
+  ../src/numerics/flamelet/scalarLegacy_convection.cpp \
+  ../src/numerics/flamelet/scalarLegacy_diffusion.cpp \
+  ../src/numerics/flamelet/scalarLegacy_sources.cpp \
   ../src/numerics_direct_scalar.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
@@ -191,7 +194,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CSolverFactory.cpp \
   ../src/limiters/CLimiterDetails.cpp \
   ../src/solvers/CFlameletSolver.cpp \
-  ../src/solvers/CScalarSolver.cpp \
+  ../src/solvers/CScalarLegacySolver.cpp \
   ../src/solvers/CPassiveScalarSolver.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
@@ -217,8 +220,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
-  ../src/variables/CTurbVariable.cpp \
   ../src/variables/CScalarVariable.cpp \
+  ../src/variables/CTurbVariable.cpp \
+  ../src/variables/CScalarLegacyVariable.cpp \
   ../src/variables/CPassiveScalarVariable.cpp \
   ../src/variables/CFlameletVariable.cpp \
   ../src/variables/CNSVariable.cpp \

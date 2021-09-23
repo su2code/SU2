@@ -33,12 +33,12 @@
 
 #include <vector>
 
-CPassiveScalarSolver::CPassiveScalarSolver(void) : CScalarSolver() {}
+CPassiveScalarSolver::CPassiveScalarSolver(void) : CScalarLegacySolver() {}
 
 CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
                                            CConfig *config,
                                            unsigned short iMesh)
-: CScalarSolver(geometry, config) {
+: CScalarLegacySolver(geometry, config) {
   unsigned short nLineLets;
 
   const bool turbulent = ((config->GetKind_Solver() == RANS) ||
@@ -48,7 +48,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   bool multizone = config->GetMultizone_Problem();
 
   /*--- Dimension of the problem --> passive scalar will only ever
-   have a single equation. Other child classes of CScalarSolver
+   have a single equation. Other child classes of CScalarLegacySolver
    can have variable numbers of equations. ---*/
 
   nVar = config->GetNScalarsInit();
@@ -187,7 +187,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
 
 
   /*-- Allocation of inlets has to happen in derived classes
-   (not CScalarSolver), due to arbitrary number of scalar variables.
+   (not CScalarLegacySolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
 
   Inlet_Position = nDim*2+2;
@@ -197,7 +197,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   }
 
  /*-- Allocation of inlets has to happen in derived classes
-   (not CScalarSolver), due to arbitrary number of scalar variables.
+   (not CScalarLegacySolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
    * due to arbitrary number of turbulence variables ---*/

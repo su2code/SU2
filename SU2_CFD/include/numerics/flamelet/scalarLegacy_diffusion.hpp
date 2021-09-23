@@ -1,5 +1,5 @@
 ﻿/*!
- * \file scalar_diffusion.hpp
+ * \file scalarLegacy_diffusion.hpp
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in turbulence problems.
  * \author F. Palacios, T. Economon

@@ -31,12 +31,12 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CFlameletSolver::CFlameletSolver(void) : CScalarSolver() {}
+CFlameletSolver::CFlameletSolver(void) : CScalarLegacySolver() {}
 
 CFlameletSolver::CFlameletSolver(CGeometry *geometry,
                                  CConfig *config,
                                  unsigned short iMesh)
-: CScalarSolver(geometry, config) {
+: CScalarLegacySolver(geometry, config) {
   unsigned short nLineLets;
   const bool turbulent = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
@@ -45,7 +45,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   const bool multizone = config->GetMultizone_Problem();
 
   /*--- Dimension of the problem --> passive scalar will only ever
-   have a single equation. Other child classes of CScalarSolver
+   have a single equation. Other child classes of CScalarLegacySolver
    will have variable numbers of equations. ---*/
  
   nVar     = config->GetNScalars();
@@ -198,7 +198,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
 
 
   /*-- Allocation of inlets has to happen in derived classes
-   (not CScalarSolver), due to arbitrary number of scalar variables.
+   (not CScalarLegacySolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
   // [x,y],T,[U,V],
   Inlet_Position = nDim*2+2;

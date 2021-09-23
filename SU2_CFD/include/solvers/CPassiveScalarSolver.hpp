@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CScalarSolver.hpp"
+#include "CScalarLegacySolver.hpp"
 
 /*!
  * \class CPassiveScalarSolver
@@ -35,7 +35,7 @@
  * \ingroup Scalar_Model
  * \author T. Economon
  */
-class CPassiveScalarSolver: public CScalarSolver {
+class CPassiveScalarSolver: public CScalarLegacySolver {
 private:
   CFluidModel *FluidModel;  /*!< \brief Fluid model for the scalar transport problem. */
   
