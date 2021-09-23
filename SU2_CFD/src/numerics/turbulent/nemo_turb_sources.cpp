@@ -141,7 +141,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
       const su2double chi_1 = 0.002;
       const su2double chi_2 = 50.0;
 
-      su2double tu = config->GetTurbulenceIntensity_FreeStream();
+      /*--- turbulence intensity is u'/U so we multiply by 100 to get percentage ---*/
+      su2double tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
 
       su2double nu_t = (TurbVar_i[0]*fv1); //S-A variable
 
@@ -895,7 +896,6 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSST::ComputeResidual(const CC
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
-
   return ResidualType<>(Residual, Jacobian_i, nullptr);
 
 }

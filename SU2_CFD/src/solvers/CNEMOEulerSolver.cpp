@@ -1671,6 +1671,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       Temperature_ve, Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
       alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   const su2double *Flow_Dir;
+  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   bool dynamic_grid         = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
@@ -1823,7 +1824,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Using pressure, density, & velocity, compute the energy ---*/
         Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-        //NEED EVE AS WELL
+        if (tkeNeeded) Energy += GetTke_Inf();
+	//NEED EVE AS WELL
 
         /*--- Conservative variables, using the derived quantities ---*/
         //TODO EVE
@@ -1844,7 +1846,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[VEL_INDEX+iDim] = Velocity[iDim];
         V_inlet[P_INDEX]   = Pressure;
         V_inlet[RHO_INDEX] = Density;
-        V_inlet[H_INDEX] = H_Total;
+        V_inlet[H_INDEX] = Energy+Pressure/Density;
         V_inlet[A_INDEX] = sqrt(SoundSpeed2);
         V_inlet[RHOCVTR_INDEX] = V_domain[RHOCVTR_INDEX];
         V_inlet[RHOCVVE_INDEX] = V_domain[RHOCVVE_INDEX];
@@ -2485,11 +2487,3 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   delete [] Normal;
 
 }
-
-//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  /*--- Call the Euler wall routine ---*/
-//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//}

@@ -478,13 +478,16 @@ void CNEMOTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Allocate the value at the infinity ---*/
 
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_infty = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+      auto U_infty = solver_container[FLOW_SOL]->GetNode_Infty()->GetSolution(0);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto U_domain = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetConservative(U_domain, U_infty);
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
@@ -542,15 +545,18 @@ void CNEMOTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Allocate the value at the inlet ---*/
 
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_inlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+      auto U_inlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetSolution(0);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto U_domain = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
+      conv_numerics->SetConservative(U_domain, U_inlet);
 
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
@@ -629,15 +635,18 @@ void CNEMOTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Allocate the value at the outlet ---*/
 
-      auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_outlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+      auto U_outlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetSolution(0);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto U_domain = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetConservative(U_domain, U_outlet);
 
       /*--- Set the turbulent variables. Here we use a Neumann BC such
        that the turbulent variable is copied from the interior of the

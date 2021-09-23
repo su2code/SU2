@@ -1894,7 +1894,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
             ForceInviscid[iDim] += Force[iDim];
           }
 
-          /*--- Moment with respect to the reference axis ---*/
+	  /*--- Moment with respect to the reference axis ---*/
 
           if (nDim == 3) {
             MomentInviscid[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
@@ -2613,7 +2613,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           MomentDist[iDim] = Coord[iDim] - Origin[iDim];
         }
 
-        /*--- Moment with respect to the reference axis ---*/
+	/*--- Moment with respect to the reference axis ---*/
 
         if (nDim == 3) {
           MomentViscous[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;

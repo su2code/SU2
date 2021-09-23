@@ -649,7 +649,7 @@ void CNEMOTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **s
             nodes->AddConservativeSolution(iPoint, iVar,
                       nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
                       density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-          }
+	  }
         }
         END_SU2_OMP_FOR
         break;
