@@ -452,7 +452,7 @@ void CScalarLegacySolver::CompleteImplicitIteration(CGeometry *geometry, CSolver
       for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
         // FIXME dan: Underrelaxation is turned off here beacuse problems.
           //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
-        nodes->AddClippedSolutionLegacy(iPoint, iVar, LinSysSol(iPoint,iVar), density, lowerlimit[iVar], upperlimit[iVar]);
+        nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), lowerlimit[iVar], upperlimit[iVar], density, density);
       }
     }
     END_SU2_OMP_FOR

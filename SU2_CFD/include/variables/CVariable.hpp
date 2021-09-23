@@ -407,21 +407,6 @@ public:
   }
 
   /*!
-   * \brief Add a value to the solution, clipping the values.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the solution change.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
-   */
-  inline void AddClippedSolutionLegacy(unsigned long iPoint, unsigned long iVar, su2double solution, su2double density,
-                                 su2double lowerlimit, su2double upperlimit) {
-
-    su2double val_new = (Solution_Old(iPoint, iVar)*density + solution)/density;
-    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
-  }
-
-  /*!
    * \brief Update the variables using a conservative format.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
