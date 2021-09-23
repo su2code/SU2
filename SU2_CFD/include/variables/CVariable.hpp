@@ -414,7 +414,7 @@ public:
    * \param[in] lowerlimit - Lower value.
    * \param[in] upperlimit - Upper value.
    */
-  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution, su2double density,
+  inline void AddClippedSolutionLegacy(unsigned long iPoint, unsigned long iVar, su2double solution, su2double density,
                                  su2double lowerlimit, su2double upperlimit) {
 
     su2double val_new = (Solution_Old(iPoint, iVar)*density + solution)/density;
