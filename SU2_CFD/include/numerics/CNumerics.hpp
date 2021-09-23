@@ -133,8 +133,8 @@ protected:
   *TurbVar_i,   /*!< \brief Vector of turbulent variables at point i. */
   *TurbVar_j;   /*!< \brief Vector of turbulent variables at point j. */
   const su2double
-  *ScalarVar_i,  /*!< \brief Vector of scalar variables at point i. */
-  *ScalarVar_j;  /*!< \brief Vector of scalar variables at point j. */
+  *ScalarVarLegacy_i,  /*!< \brief Vector of scalar variables at point i. */
+  *ScalarVarLegacy_j;  /*!< \brief Vector of scalar variables at point j. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -157,8 +157,8 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j,   /*!< \brief Gradient of an auxiliary variable at point i. */
-  ScalarVar_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
-  ScalarVar_Grad_j; 
+  ScalarVarLegacy_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
+  ScalarVarLegacy_Grad_j; 
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -366,9 +366,9 @@ public:
    * \param[in] val_scalar_i - Value of the scalar at point i.
    * \param[in] val_scalar_j - Value of the scalar at point j.
    */
-  inline void SetScalarVar(su2double *val_scalar_i, su2double *val_scalar_j) {
-    ScalarVar_i = val_scalar_i;
-    ScalarVar_j = val_scalar_j;
+  inline void SetScalarVarLegacy(su2double *val_scalar_i, su2double *val_scalar_j) {
+    ScalarVarLegacy_i = val_scalar_i;
+    ScalarVarLegacy_j = val_scalar_j;
   }
 
   /*!
@@ -405,10 +405,10 @@ public:
    * \param[in] val_scalar_grad_i - Gradient of the transported scalarsat point i.
    * \param[in] val_scalar_grad_j - Gradient of the transported scalarsat point j.
    */
-  inline void SetScalarVarGradient(CMatrixView<const su2double> val_scalar_grad_i, 
+  inline void SetScalarVarLegacyGradient(CMatrixView<const su2double> val_scalar_grad_i, 
                                    CMatrixView<const su2double> val_scalar_grad_j) {
-    ScalarVar_Grad_i = val_scalar_grad_i;
-    ScalarVar_Grad_j = val_scalar_grad_j;
+    ScalarVarLegacy_Grad_i = val_scalar_grad_i;
+    ScalarVarLegacy_Grad_j = val_scalar_grad_j;
 }
 
   /*!

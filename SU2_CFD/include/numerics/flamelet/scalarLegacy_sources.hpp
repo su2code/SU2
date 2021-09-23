@@ -78,7 +78,7 @@ private:
       /*--- Inviscid component of the source term. ---*/
     
       for (auto iVar=0u; iVar < nVar; iVar++)
-        Residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
+        Residual[iVar] -= yinv*Volume*Density_i*ScalarVarLegacy_i[iVar]*Velocity_i[1];
 
       if (implicit) {
         for (auto iVar=0u; iVar < nVar; iVar++) {
@@ -102,9 +102,9 @@ private:
       // and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
         for (auto iVar=0u; iVar < nVar; iVar++){
           if (flame)
-            Residual[iVar] += yinv*Volume*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
+            Residual[iVar] += yinv*Volume*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVarLegacy_Grad_i[iVar][1];
           else
-            Residual[iVar] += yinv*Volume*Density_i*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
+            Residual[iVar] += yinv*Volume*Density_i*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVarLegacy_Grad_i[iVar][1];
         } 
       }
 

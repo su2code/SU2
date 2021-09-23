@@ -147,7 +147,7 @@ void CScalarLegacySolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_
 
     const auto Scalar_i = nodes->GetSolution(iPoint);
     const auto Scalar_j = nodes->GetSolution(jPoint);
-    numerics->SetScalarVar(Scalar_i, Scalar_j);
+    numerics->SetScalarVarLegacy(Scalar_i, Scalar_j);
 
     /*--- Grid Movement ---*/
 
@@ -219,7 +219,7 @@ void CScalarLegacySolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_
           solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
         }
 
-        numerics->SetScalarVar(solution_i, solution_j);
+        numerics->SetScalarVarLegacy(solution_i, solution_j);
       }
     }
 
@@ -275,9 +275,9 @@ void CScalarLegacySolver::Viscous_Residual(unsigned long iEdge, CGeometry *geome
     
   /*--- Scalar variables w/o reconstruction, and its gradients ---*/  
 
-  numerics->SetScalarVar(nodes->GetSolution(iPoint),
+  numerics->SetScalarVarLegacy(nodes->GetSolution(iPoint),
                          nodes->GetSolution(jPoint));
-  numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
+  numerics->SetScalarVarLegacyGradient(nodes->GetGradient(iPoint),
                                  nodes->GetGradient(jPoint));
 
   /*--- Mass diffusivity coefficients. ---*/
@@ -1005,7 +1005,7 @@ void CScalarLegacySolver::BC_Far_Field(CGeometry *geometry,
         Solution_i[iVar] = nodes->GetSolution(iPoint,iVar);
         Solution_j[iVar] = Scalar_Inf[iVar];
       }
-      conv_numerics->SetScalarVar(Solution_i, Solution_j);
+      conv_numerics->SetScalarVarLegacy(Solution_i, Solution_j);
       
       /*--- Set Normal (it is necessary to change the sign) ---*/
       
