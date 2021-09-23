@@ -78,9 +78,9 @@
 #include "../../include/numerics/turbulent/turb_convection.hpp"
 #include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
-#include "../../include/numerics/flamelet/scalar_convection.hpp"
-#include "../../include/numerics/flamelet/scalar_diffusion.hpp"
-#include "../../include/numerics/flamelet/scalar_sources.hpp"
+#include "../../include/numerics/flamelet/scalarLegacy_convection.hpp"
+#include "../../include/numerics/flamelet/scalarLegacy_diffusion.hpp"
+#include "../../include/numerics/flamelet/scalarLegacy_sources.hpp"
 
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"

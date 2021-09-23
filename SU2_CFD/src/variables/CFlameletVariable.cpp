@@ -32,7 +32,7 @@ CFlameletVariable::CFlameletVariable(su2double     *val_scalar_inf,
                                      unsigned long ndim,
                                      unsigned long nvar,
                                      CConfig       *config)
-: CScalarVariable(npoint, ndim, nvar, config) {
+: CScalarLegacyVariable(npoint, ndim, nvar, config) {
   
   for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {

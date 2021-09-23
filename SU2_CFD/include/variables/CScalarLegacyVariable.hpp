@@ -1,5 +1,5 @@
 /*!
- * \file CScalarVariable.hpp
+ * \file CScalarLegacyVariable.hpp
  * \brief Main subroutines defining the variables for the  transported scalar model.
  * \author D. Mayer, T. Economon
  * \version 7.1.1 "Blackbird"
@@ -30,12 +30,12 @@
 #include "CVariable.hpp"
 
 /*!
- * \class CScalarVariable
+ * \class CScalarLegacyVariable
  * \brief Main class for defining the variables of scalar transport eqns.
  * \ingroup Scalar_Equations
  * \author T. Economon
  */
-class CScalarVariable : public CVariable {
+class CScalarLegacyVariable : public CVariable {
 protected:
   MatrixType Diffusivity;  /*!< \brief Vector of mass diffusivities for scalar transport. */
 
@@ -50,12 +50,12 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CScalarLegacyVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CScalarVariable() = default;
+  virtual ~CScalarLegacyVariable() = default;
 
   /*!
    * \brief Set the value of the mass diffusivity

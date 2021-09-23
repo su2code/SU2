@@ -1,5 +1,5 @@
 /*!
- * \file CScalarVariable.cpp
+ * \file CScalarLegacyVariable.cpp
  * \brief Definition of the scalar equation variables at each vertex.
  * \author D. Mayer, T. Economon
  * \version 7.1.1 "Blackbird"
@@ -26,9 +26,9 @@
  */
 
 
-#include "../../include/variables/CScalarVariable.hpp"
+#include "../../include/variables/CScalarLegacyVariable.hpp"
 
-CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+CScalarLegacyVariable::CScalarLegacyVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
  /*--- Allocate space for the diffusivity model ---*/

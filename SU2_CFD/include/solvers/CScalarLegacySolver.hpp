@@ -1,5 +1,5 @@
 /*!
- * \file CScalarSolver.hpp
+ * \file CScalarLegacySolver.hpp
  * \brief Main subroutines for the  transported scalar model.
  * \author D. Mayer, T. Economon
  * \version 7.1.1 "Blackbird"
@@ -28,16 +28,16 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "../variables/CScalarVariable.hpp"
+#include "../variables/CScalarLegacyVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
- * \class CScalarSolver
+ * \class CScalaLegacySolver
  * \brief Main class for defining the solver for scalar transport eqns.
  * \ingroup Scalar_Model
  * \author T. Economon
  */
-class CScalarSolver : public CSolver {
+class CScalarLegacySolver : public CSolver {
 protected:
   enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
   // nijso: pv,enthalpy, Y1, Y2, Y3, Y4, Y5, Y6 
@@ -80,7 +80,7 @@ protected:
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
    */
-  CScalarVariable* nodes = nullptr;
+  CScalarLegacyVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -122,19 +122,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CScalarSolver(void);
+  CScalarLegacySolver(void);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CScalarSolver(void) override;
+  ~CScalarLegacySolver(void) override;
 
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig *config);
+  CScalarLegacySolver(CGeometry* geometry, CConfig *config);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.

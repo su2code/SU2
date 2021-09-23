@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CScalarVariable.hpp"
+#include "CScalarLegacyVariable.hpp"
 
 /*!
  * \class CPassiveScalarVariable
@@ -35,7 +35,7 @@
  * \author T. Economon
  */
 
-class CPassiveScalarVariable final : public CScalarVariable {
+class CPassiveScalarVariable final : public CScalarLegacyVariable {
 
 private:
 

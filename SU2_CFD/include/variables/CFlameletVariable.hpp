@@ -27,14 +27,14 @@
 
 #pragma once
 
-#include "CScalarVariable.hpp"
+#include "CScalarLegacyVariable.hpp"
 
 /*!
  * \class CFlameletVariable
  * \brief Main class for defining the variables of the flamelet model.
  * \author D. Mayer, T. Economon
  */
-class CFlameletVariable final : public CScalarVariable {
+class CFlameletVariable final : public CScalarLegacyVariable {
 protected:
   //MatrixType source_prog;            /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType source_scalar;          /*!< \brief Vector of the source terms from the lookup table for each scalar equation */

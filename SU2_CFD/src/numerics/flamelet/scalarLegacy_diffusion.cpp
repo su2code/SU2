@@ -1,5 +1,5 @@
 /*!
- * \file scalar_diffusion.cpp
+ * \file scalarLegacy_diffusion.cpp
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -26,7 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/numerics/flamelet/scalar_diffusion.hpp"
+#include "../../../include/numerics/flamelet/scalarLegacy_diffusion.hpp"
 
 CAvgGrad_transportedScalar::CAvgGrad_transportedScalar(unsigned short val_nDim,
                                  unsigned short val_nVar,

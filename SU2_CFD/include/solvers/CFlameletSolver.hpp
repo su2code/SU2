@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CScalarSolver.hpp"
+#include "CScalarLegacySolver.hpp"
 
 /*!
  * \class CFlameletSolver
@@ -35,7 +35,7 @@
  * \ingroup Scalar_Model
  * \author D. Mayer, T. Economon
  */
-class CFlameletSolver: public CScalarSolver {
+class CFlameletSolver: public CScalarLegacySolver {
 private:
   CFluidModel *FluidModel;     /*!< \brief Fluid model for the scalar transport problem. */
   //vector<su2double> scalar_clipping_max;
