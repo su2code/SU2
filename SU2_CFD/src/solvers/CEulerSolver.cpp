@@ -935,7 +935,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
       Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-      cout <<"dens...."<<ModVel_FreeStream <<endl;
+
       /*--- Compute Reynolds number ---*/
       Reynolds = (Density_FreeStream*Velocity_Reynolds*config->GetLength_Reynolds())/Viscosity_FreeStream;
       config->SetReynolds(Reynolds);
