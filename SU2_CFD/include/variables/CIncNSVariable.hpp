@@ -52,12 +52,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                 unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CIncNSVariable() override = default;
+                 unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
    * \brief Set the laminar viscosity.

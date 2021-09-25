@@ -72,30 +72,12 @@ public:
    * \param[in] val_nPrimVargrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMONSVariable(su2double val_density, const su2double *val_massfrac, su2double *val_velocity,
+  CNEMONSVariable(su2double val_density, const su2double *val_massfrac, const su2double *val_velocity,
                   su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
                   unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
-                  unsigned long val_nPrimVarGrad, CConfig *config, CNEMOGas *fluidmodel);
+                  unsigned long val_nPrimVarGrad, const CConfig *config, CNEMOGas *fluidmodel);
 
   /*!
-   * \brief Constructor of the class.
-   * \param[in] val_solution - Pointer to the flow value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of conserved variables.
-   * \param[in] val_nPrimVar - Number of primitive variables.
-   * \param[in] val_nPrimgVarGrad - Number of primitive gradient variables.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CNEMONSVariable(su2double *val_solution, unsigned long val_nDim, unsigned long val_nVar,
-                  unsigned long val_nPrimVar, unsigned long val_nPrimVarGrad, unsigned long npoint,
-                  CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CNEMONSVariable() = default;
-
-    /*!
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
@@ -105,11 +87,6 @@ public:
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
-
-  /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity(void);
 
   /*!
    * \overload
