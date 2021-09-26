@@ -27,6 +27,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
+#include "../../include/variables/CFlowVariable.hpp"
 
 template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(bool conservative) : CSolver(), Conservative(conservative) {}
@@ -92,10 +93,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const bool limiterFlow =
       (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num() * MAX_TERMS];
+  auto* numerics = numerics_container[CONV_TERM + omp_get_thread_num() * MAX_TERMS];
 
   /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};

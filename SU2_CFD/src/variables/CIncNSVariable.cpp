@@ -29,7 +29,7 @@
 #include "../../include/fluid/CFluidModel.hpp"
 
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                               unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
+                               unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
                                CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
 
   Vorticity.resize(nPoint,3);
@@ -37,14 +37,11 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
 
-  if (config->GetAxisymmetric()) {
-    nAuxVar = 1;
-    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
-    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
-  }
-
-  /*--- Allocate memory for the AuxVar+gradient of eddy viscosity mu_t ---*/
-  if (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE)) {
+  /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
+   * Axisymmetric: total-viscosity * y-vel / y-coord
+   * Streamwise Periodic: eddy viscosity (mu_t) ---*/
+  if (config->GetAxisymmetric() ||
+      (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE))) {
     nAuxVar = 1;
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);

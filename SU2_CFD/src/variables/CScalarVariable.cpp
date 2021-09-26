@@ -27,7 +27,7 @@
 
 #include "../../include/variables/CScalarVariable.hpp"
 
-CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig* config)
+CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CVariable(npoint, ndim, nvar, config),
       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
   /*--- Gradient related fields ---*/

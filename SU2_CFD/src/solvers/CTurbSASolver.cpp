@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
+#include "../../include/variables/CFlowVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -226,11 +227,13 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     /*--- Set the vortex tilting coefficient at every node if required ---*/
 
     if (kind_hybridRANSLES == SA_EDDES){
+      auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-        auto Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-        auto PrimGrad_Flow = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-        auto Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        auto Vorticity = flowNodes->GetVorticity(iPoint);
+        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
         nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
       END_SU2_OMP_FOR
@@ -309,10 +312,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool transition    = (config->GetKind_Trans_Model() == LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+  auto* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
   AD::StartNoSharedReading();
 
@@ -1347,42 +1350,33 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
 
-  unsigned short kindHybridRANSLES = config->GetKind_HybridRANSLES();
-  unsigned long iPoint = 0, jPoint = 0;
-  unsigned short iDim = 0, jDim = 0, iNeigh = 0, nNeigh = 0;
+  const auto kindHybridRANSLES = config->GetKind_HybridRANSLES();
 
-  su2double constDES = config->GetConst_DES();
+  const su2double constDES = config->GetConst_DES();
 
-  su2double density = 0.0, laminarViscosity = 0.0, kinematicViscosity = 0.0,
-      eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
+  const su2double fw_star = 0.424, cv1_3 = pow(7.1, 3), k2 = pow(0.41, 2);
+  const su2double cb1   = 0.1355, ct3 = 1.2, ct4 = 0.5;
+  const su2double sigma = 2./3., cb2 = 0.622, f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
 
-  su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0;
-  su2double deltaDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0}, aux_ln = 0.0, f_kh = 0.0;
-
-  su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
-  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
-  su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
-  su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
-  const su2double *coord_i = nullptr, *coord_j = nullptr, *vorticity = nullptr;
-  su2double delta[3] = {0.0}, ratioOmega[3] = {0.0}, vortexTiltingMeasure = 0.0;
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
 
-    coord_i                 = geometry->nodes->GetCoord(iPoint);
-    nNeigh                  = geometry->nodes->GetnPoint(iPoint);
-    wallDistance            = geometry->nodes->GetWall_Distance(iPoint);
-    const auto primVarGrad  = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-    vorticity               = solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-    density                 = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    laminarViscosity        = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    eddyViscosity           = solver[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-    kinematicViscosity      = laminarViscosity/density;
-    kinematicViscosityTurb  = eddyViscosity/density;
+    const auto coord_i       = geometry->nodes->GetCoord(iPoint);
+    const auto nNeigh        = geometry->nodes->GetnPoint(iPoint);
+    const auto wallDistance  = geometry->nodes->GetWall_Distance(iPoint);
+    const auto primVarGrad   = flowNodes->GetGradient_Primitive(iPoint);
+    const auto vorticity     = flowNodes->GetVorticity(iPoint);
+    const auto density       = flowNodes->GetDensity(iPoint);
+    const auto laminarViscosity = flowNodes->GetLaminarViscosity(iPoint);
+    const auto eddyViscosity    = nodes->GetmuT(iPoint);
+    const su2double kinematicViscosity     = laminarViscosity/density;
+    const su2double kinematicViscosityTurb = eddyViscosity/density;
 
-    uijuij = 0.0;
-    for(iDim = 0; iDim < nDim; iDim++){
-      for(jDim = 0; jDim < nDim; jDim++){
+    su2double uijuij = 0.0;
+    for(auto iDim = 0u; iDim < nDim; iDim++){
+      for(auto jDim = 0u; jDim < nDim; jDim++){
         uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
       }
     }
@@ -1391,137 +1385,141 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
     /*--- Low Reynolds number correction term ---*/
 
-    nu_hat = nodes->GetSolution(iPoint,0);
-    Ji   = nu_hat/kinematicViscosity;
-    Ji_2 = Ji * Ji;
-    Ji_3 = Ji*Ji*Ji;
-    fv1  = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
-    ft2 = ct3*exp(-ct4*Ji_2);
-    cw1 = cb1/k2+(1.0+cb2)/sigma;
+    const su2double nu_hat = nodes->GetSolution(iPoint,0);
+    const su2double Ji   = nu_hat/kinematicViscosity;
+    const su2double Ji_2 = Ji * Ji;
+    const su2double Ji_3 = Ji*Ji*Ji;
+    const su2double fv1  = Ji_3/(Ji_3+cv1_3);
+    const su2double fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+    const su2double ft2 = ct3*exp(-ct4*Ji_2);
+    const su2double cw1 = cb1/k2+(1.0+cb2)/sigma;
 
-    psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
+    su2double psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
     psi_2 = min(100.0,psi_2);
 
+    su2double lengthScale = 0.0;
+
     switch(kindHybridRANSLES){
-      case SA_DES:
+      case SA_DES: {
         /*--- Original Detached Eddy Simulation (DES97)
         Spalart
         1997
         ---*/
 
-        maxDelta = geometry->nodes->GetMaxLength(iPoint);
-        distDES = constDES * maxDelta;
+        const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        const su2double distDES = constDES * maxDelta;
         lengthScale = min(distDES,wallDistance);
 
         break;
-
-      case SA_DDES:
+      }
+      case SA_DDES: {
         /*--- A New Version of Detached-eddy Simulation, Resistant to Ambiguous Grid Densities.
          Spalart et al.
          Theoretical and Computational Fluid Dynamics - 2006
          ---*/
 
-        maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
 
-        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
 
-        distDES = constDES * maxDelta;
+        const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
 
         break;
-      case SA_ZDES:
+      }
+      case SA_ZDES: {
         /*--- Recent improvements in the Zonal Detached Eddy Simulation (ZDES) formulation.
          Deck
          Theoretical and Computational Fluid Dynamics - 2012
          ---*/
 
-        for (iNeigh = 0; iNeigh < nNeigh; iNeigh++){
-            jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-            coord_j = geometry->nodes->GetCoord(jPoint);
-            for ( iDim = 0; iDim < nDim; iDim++){
-              deltaAux = abs(coord_j[iDim] - coord_i[iDim]);
-              delta[iDim] = max(delta[iDim], deltaAux);
-            }
-            deltaDDES = geometry->nodes->GetMaxLength(iPoint);
+        const su2double deltaDDES = geometry->nodes->GetMaxLength(iPoint);
+
+        su2double delta[MAXNDIM] = {}, ratioOmega[MAXNDIM] = {};
+
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+          const auto coord_j = geometry->nodes->GetCoord(jPoint);
+          for (auto iDim = 0u; iDim < nDim; iDim++){
+            const su2double deltaAux = abs(coord_j[iDim] - coord_i[iDim]);
+            delta[iDim] = max(delta[iDim], deltaAux);
+          }
         }
 
-        omega = sqrt(vorticity[0]*vorticity[0] +
-                     vorticity[1]*vorticity[1] +
-                     vorticity[2]*vorticity[2]);
+        const su2double omega = GeometryToolbox::Norm(3, vorticity);
 
-        for (iDim = 0; iDim < 3; iDim++){
+        for (auto iDim = 0u; iDim < 3; iDim++){
           ratioOmega[iDim] = vorticity[iDim]/omega;
         }
 
-        maxDelta = sqrt(pow(ratioOmega[0],2.0)*delta[1]*delta[2] +
-                        pow(ratioOmega[1],2.0)*delta[0]*delta[2] +
-                        pow(ratioOmega[2],2.0)*delta[0]*delta[1]);
+        su2double maxDelta = sqrt(pow(ratioOmega[0], 2)*delta[1]*delta[2] +
+                                  pow(ratioOmega[1], 2)*delta[0]*delta[2] +
+                                  pow(ratioOmega[2], 2)*delta[0]*delta[1]);
 
-        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
 
         if (f_d < 0.99){
           maxDelta = deltaDDES;
         }
 
-        distDES = constDES * maxDelta;
+        const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
 
         break;
-
-      case SA_EDDES:
-
+      }
+      case SA_EDDES: {
         /*--- An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
          Shur et al.
          Flow Turbulence Combust - 2015
          ---*/
 
-        vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
+        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
 
-        omega = sqrt(vorticity[0]*vorticity[0] +
-                     vorticity[1]*vorticity[1] +
-                     vorticity[2]*vorticity[2]);
+        const su2double omega = GeometryToolbox::Norm(3, vorticity);
 
-        for (iDim = 0; iDim < 3; iDim++){
+        su2double ratioOmega[MAXNDIM] = {};
+
+        for (auto iDim = 0; iDim < 3; iDim++){
           ratioOmega[iDim] = vorticity[iDim]/omega;
         }
 
-        ln_max = 0.0;
-        deltaDDES = 0.0;
-        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
-          jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-          coord_j = geometry->nodes->GetCoord(jPoint);
-          for (iDim = 0; iDim < nDim; iDim++){
+        const su2double deltaDDES = geometry->nodes->GetMaxLength(iPoint);
+
+        su2double ln_max = 0.0;
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+          const auto coord_j = geometry->nodes->GetCoord(jPoint);
+          su2double delta[MAXNDIM] = {};
+          for (auto iDim = 0u; iDim < nDim; iDim++){
             delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
           }
-          deltaDDES = geometry->nodes->GetMaxLength(iPoint);
+          su2double ln[3];
           ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
           ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
           ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
-          aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
-          ln_max = max(ln_max,aux_ln);
+          const su2double aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
+          ln_max = max(ln_max, aux_ln);
           vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
         }
+        vortexTiltingMeasure /= (nNeigh + 1);
 
-        vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
+        const su2double f_kh = max(f_min,
+                                   min(f_max,
+                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
 
-        f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
 
-        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        f_d = 1.0-tanh(pow(8.0*r_d,3.0));
-
-        maxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        su2double maxDelta = (ln_max/sqrt(3.0)) * f_kh;
         if (f_d < 0.999){
           maxDelta = deltaDDES;
         }
 
-        distDES = constDES * maxDelta;
-        lengthScale=wallDistance-f_d*max(0.0,(wallDistance-distDES));
+        const su2double distDES = constDES * maxDelta;
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
 
         break;
-
+      }
     }
 
     nodes->SetDES_LengthScale(iPoint, lengthScale);
