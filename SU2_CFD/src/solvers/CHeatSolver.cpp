@@ -159,6 +159,19 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   SetBaseClassPointerToNodes();
 
+  /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers. ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  /*--- Store if implicit scheme is used. This has implications on the Residual and Jacobian handling for periodic
+   * boundaries  ---*/
+  const bool euler_implicit = (config->GetKind_TimeIntScheme_Heat() == EULER_IMPLICIT);
+  SetImplicitPeriodic(euler_implicit);
+
+
   /*--- MPI solution ---*/
 
   InitiateComms(geometry, config, SOLUTION);
@@ -1288,11 +1301,12 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
+    const su2double dt = nodes->GetDelta_Time(iPoint);
+    if (dt != 0.0) {
+      /*--- For nodes on periodic boundaries, add the respective partner volume. ---*/
       // Identical for flow and heat
-      const su2double Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Vol / dt);
 
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -1338,6 +1352,12 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
     }
+  }
+
+  /*--- Synchronize the solution between master and passive periodic nnodes after the linear solve. ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
   /*--- MPI solution ---*/
