@@ -807,7 +807,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, cat_eff, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn, **GradY, **dVdU;
+  dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
@@ -817,8 +817,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   //su2double pcontrol = 0.6;
 
   /*--- Get species mass fractions at the wall ---*/
-  //auto& Yst = FluidModel->GetWall_Catalycity(); Use this one
-  //const auto Yst = config->GetGas_Composition();
+  //auto& Yst = FluidModel->GetWall_Catalycity(); //Use this one
+  const su2double* Yst = config->GetGas_Composition(); //Legacy
 
   cat_eff = config->GetCatalytic_Efficiency();
 
@@ -835,7 +835,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Allocate arrays ---*/
   Yj    = new su2double[nSpecies];
-  Yst   = new su2double[nSpecies];
+  //Yst   = new su2double[nSpecies];
   dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -883,13 +883,13 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         Yj[iSpecies]  = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       
       // Naive Gamma Model
-      if (nSpecies == 5){
-        Yst[0] = (1-cat_eff) * Yj[0];
-        Yst[1] = (1-cat_eff) * Yj[1];
-        Yst[2] = Yj[2];
-        Yst[3] = cat_eff * Yj[0] + Yj[3];
-        Yst[4] = cat_eff * Yj[1] + Yj[4];
-      }
+      //if (nSpecies == 5){
+      //  Yst[0] = (1-cat_eff) * Yj[0];
+      //  Yst[1] = (1-cat_eff) * Yj[1];
+      //  Yst[2] = Yj[2];
+      //  Yst[3] = cat_eff * Yj[0] + Yj[3];
+      //  Yst[4] = cat_eff * Yj[1] + Yj[4];
+     // }
         
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
