@@ -1,7 +1,6 @@
-/*!
- * \file CTurbVariable.cpp
- * \brief Definition of the solution fields.
- * \author F. Palacios, A. Bueno
+﻿/*!
+ * \file scalar_sources.hpp
+ * \brief Delarations of numerics classes for integration of source terms in scalar problems.
  * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,9 +24,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#include "../../include/variables/CTurbVariable.hpp"
-
-
-CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CScalarVariable(npoint, ndim, nvar, config) { }
+#include "../CNumerics.hpp"

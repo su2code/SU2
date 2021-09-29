@@ -665,6 +665,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
                                                          config_container, iZone, INST_0);
       AD::Push_TapePosition(); /// leave_zone
     }
+    Print_DirectResidual(kind_recording);
   }
 
   if (kind_recording != RECORDING::CLEAR_INDICES && driver_config->GetWrt_AD_Statistics()) {
@@ -700,58 +701,6 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-  /*--- Print residuals in the first iteration ---*/
-
-  if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES) {
-
-    auto solvers = solver_container[iZone][INST_0][MESH_0];
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
-        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
-             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
-        if (config_container[iZone]->AddRadiation()) {
-
-          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
-               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
-        }
-        break;
-
-      case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-        cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
-             << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
-
-        if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-
-          cout << " Zone " << iZone << " (turbulence) - log10[Turb(0)] : "
-               << log10(solvers[TURB_SOL]->GetRes_RMS(0)) << endl;
-        }
-        if (config_container[iZone]->AddRadiation()) {
-
-          cout << " Zone " << iZone << " (radiation)  - log10[Rad(0)]  : "
-               << log10(solvers[RAD_SOL]->GetRes_RMS(0)) << endl;
-        }
-        break;
-
-      case DISC_ADJ_HEAT:
-        cout << " Zone " << iZone << " (heat)       - log10[Heat(0)] : "
-             << log10(solvers[HEAT_SOL]->GetRes_RMS(0)) << endl;
-        break;
-
-      case DISC_ADJ_FEM:
-        cout << " Zone " << iZone << " (structure)  - ";
-        if(config_container[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE)
-          cout << "log10[RTOL-A]  : " << log10(solvers[FEA_SOL]->GetRes_FEM(1)) << endl;
-        else
-          cout << "log10[RMS Ux]  : " << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
-        break;
-
-      default:
-        break;
-    }
-  }
 }
 
 void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {

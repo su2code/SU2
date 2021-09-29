@@ -62,22 +62,6 @@ public:
   ~CTurbSAVariable() override = default;
 
   /*!
-   * \brief Set the harmonic balance source term.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] source - Value of the harmonic balance source term. for the index <i>iVar</i>.
-   */
-  inline void SetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar, su2double source) override { HB_Source(iPoint,iVar) = source; }
-
-  /*!
-   * \brief Get the harmonic balance source term.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
-   */
-  inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const override { return HB_Source(iPoint,iVar); }
-
-  /*!
    * \brief Get the intermittency of the BC transition model.
    * \param[in] iPoint - Point index.
    * \return Value of the intermittency of the BC transition model.
