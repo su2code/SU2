@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
+#include "../../include/variables/CFlowVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -241,20 +242,19 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   AD::StartNoSharedReading();
 
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
 
-    su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    su2double rho = flowNodes->GetDensity(iPoint);
+    su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
 
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    const su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-    su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-                                  Vorticity[1]*Vorticity[1] +
-                                  Vorticity[2]*Vorticity[2]);
+    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -296,10 +296,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+  auto* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Loop over all points. ---*/
 

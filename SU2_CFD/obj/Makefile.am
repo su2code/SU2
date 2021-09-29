@@ -234,7 +234,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp
+  ../src/variables/CEulerVariable.cpp \
+  ../src/variables/CFlowVariable.cpp
 
 su2_cfd_sources = \
   ../src/SU2_CFD.cpp

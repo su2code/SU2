@@ -28,46 +28,13 @@
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
-                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
-                                     Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+                                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-  const bool viscous   = config->GetViscous();
-
-  /*--- Allocate and initialize the primitive variables and gradients.
-        Make sure to align the sizes with the constructor of CIncEulerSolver ---*/
-
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-
-  /*--- Allocate residual structures ---*/
-
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
-
-  /*--- Only for residual smoothing (multigrid) ---*/
-
-  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
-      Residual_Sum.resize(nPoint,nVar);
-      Residual_Old.resize(nPoint,nVar);
-      break;
-    }
-  }
-
-  /*--- Allocate undivided laplacian (centered) ---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-    Undivided_Laplacian.resize(nPoint,nVar);
-
-  /*--- Allocate the slope limiter (MUSCL upwind) ---*/
-
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
-      config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
-    Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-    Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-    Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  }
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Solution initialization ---*/
 
@@ -80,6 +47,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Solution_Old = Solution;
 
+  if (classical_rk4) Solution_New = Solution;
+
   /*--- Allocate and initialize solution for dual time strategy ---*/
 
   if (dual_time) {
@@ -87,48 +56,11 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     Solution_time_n1 = Solution;
   }
 
-  /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
-
-  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
-
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta) ---*/
-
-  if (config->GetMUSCL_Flow() || viscous) {
-    Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  }
-
-  if (config->GetReconstructionGradientRequired() &&
-      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
-    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  }
-
-  if (config->GetLeastSquaresRequired()) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
-  }
-
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
-
-  Velocity2.resize(nPoint) = su2double(0.0);
-  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
-  Delta_Time.resize(nPoint) = su2double(0.0);
-  Lambda.resize(nPoint) = su2double(0.0);
-  Sensor.resize(nPoint) = su2double(0.0);
-
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
     Streamwise_Periodic_RecoveredPressure.resize(nPoint) = su2double(0.0);
     if (config->GetStreamwise_Periodic_Temperature())
       Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
   }
-
-  /* Under-relaxation parameter. */
-  UnderRelaxation.resize(nPoint) = su2double(1.0);
-  LocalCFL.resize(nPoint) = su2double(0.0);
-
-  /* Non-physical point (first-order) initialization. */
-  Non_Physical.resize(nPoint) = false;
-  Non_Physical_Counter.resize(nPoint) = 0;
-
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
