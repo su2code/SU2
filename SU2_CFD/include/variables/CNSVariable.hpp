@@ -56,12 +56,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNSVariable(su2double density, const su2double *velocity, su2double energy,
-              unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CNSVariable() override = default;
+              unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
    * \brief Set the laminar viscosity.

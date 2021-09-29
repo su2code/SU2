@@ -685,12 +685,6 @@ public:
                          unsigned short val_marker) final;
 
   /*!
-   * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
-
-  /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
