@@ -234,7 +234,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   su2double rhoEve = U[nSpecies+nDim+1];   // Density * energy_ve [J/m3]
 
   /*--- Scale rhoE with turbulent kinetic energy ---*/
-  rhoEve -= turb_ke;                       // Density * energy - turb_ke [J/m3]
+  rhoE -= turb_ke;                         // Density * energy - turb_ke [J/m3]
 
   /*--- Assign species & mixture density ---*/
   // Note: if any species densities are < 0, these values are re-assigned
