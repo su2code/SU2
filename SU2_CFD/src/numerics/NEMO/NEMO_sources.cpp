@@ -333,5 +333,6 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
     residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));
   }
 
-  return ResidualType<>(residual, nullptr, nullptr);
+  return ResidualType<>(residual, jacobian, nullptr);
 }
+

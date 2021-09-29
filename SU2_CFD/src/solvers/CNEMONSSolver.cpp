@@ -701,6 +701,10 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
+    /*--- Enforce the no-slip boundary condition in a strong way by
+    modifying the velocity-rows of the Jacobian (1 on the diagonal).
+    And add the contributions to the Jacobian due to energy. ---*/
+
     if (implicit) {
       for (auto iVar = 0u; iVar < nVar; iVar++)
         for (auto jVar = 0u; jVar < nVar; jVar++)

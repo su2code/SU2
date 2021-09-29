@@ -106,6 +106,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_convection.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
+  ../src/numerics/scalar/scalar_convection.cpp \
+  ../src/numerics/scalar/scalar_diffusion.cpp \
+  ../src/numerics/scalar/scalar_sources.cpp \
   ../src/numerics/turbulent/turb_convection.cpp \
   ../src/numerics/turbulent/turb_diffusion.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
@@ -205,6 +208,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
+  ../src/variables/CScalarVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CNEMOEulerVariable.cpp \
@@ -215,7 +219,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp
+  ../src/variables/CEulerVariable.cpp \
+  ../src/variables/CFlowVariable.cpp
 
 su2_cfd_sources = \
   ../src/SU2_CFD.cpp

@@ -69,7 +69,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.956173,-1.480936,-16.738781,-17.063703,-17.011887,2.371977,1.732488, 5.399642,0.953492]
+    invwedge.test_vals = [-0.954415, -1.479832, -16.737319, -17.063704, -17.010424, 2.372845, 1.754743, 5.401692, 0.954723]
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -81,7 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.173082, -5.697844, -20.831292, -20.719160, -23.419769, -1.564064, -2.069008, 2.203919, -2.590729]
+    visc_cone.test_vals = [-5.175741, -5.700504, -20.706185, -20.612638, -22.855655, -1.539882, -2.104390, 2.197875, -2.576097]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -395,7 +395,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [ -6.279299, -0.747627, -2.237638, 2.321596]
+    axi_rans_air_nozzle.test_vals = [-12.097563, -6.650115, -8.875944, -2.393285]
     axi_rans_air_nozzle.su2_exec  = "SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
