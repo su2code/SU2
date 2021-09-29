@@ -2605,8 +2605,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         dTn = 0.0; dTven = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          dTn     += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-          dTven   += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
         }
         
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
