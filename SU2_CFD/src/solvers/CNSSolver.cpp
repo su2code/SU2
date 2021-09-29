@@ -882,7 +882,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       su2double q_w = 0.0;
 
       if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-        q_w = config->GetWall_HeatFlux(Marker_Tag);  
+        q_w = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();  
       }
 
       /*--- Extrapolate the pressure from the interior & compute the
