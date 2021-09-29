@@ -47,8 +47,6 @@ private:
   VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
   vector<su2double> thermalconductivities;   /*!< \brief Species thermal conductivities. */
-  vector<su2double> Ds;    /*!< \brief Species diffusion coefficients. */
-  vector<su2double> hs;    /*!< \brief Species enthalpies. */
   MatrixType Enthalpys;    /*!< \brief Species enthalpies of the mixture. */
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
