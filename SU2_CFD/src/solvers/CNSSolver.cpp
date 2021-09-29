@@ -953,7 +953,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
           else {
             cout << "Warning: T_Wall < 0 " << endl;
           }
-       }
+        }
 
         /*--- update of wall density using the wall temperature ---*/
         Density_Wall = P_Wall/(Gas_Constant*T_Wall);
