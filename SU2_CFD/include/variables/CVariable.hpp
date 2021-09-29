@@ -940,6 +940,22 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \param[in] val_Species - Index of species s.
+   * \return Value of the mass fraction of species s.
+   */
+  inline virtual su2double GetEve(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_Species - Index of species s.
+   * \return Value of the mass fraction of species s.
+   */
+  inline virtual su2double* GetEnthalpys(unsigned long iPoint) { return nullptr; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Value of the flow energy.
    */
   inline virtual su2double GetEnergy(unsigned long iPoint) const { return 0.0; }

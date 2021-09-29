@@ -61,6 +61,8 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   LaminarViscosity.resize(nPoint)          = su2double(0.0);
   ThermalCond.resize(nPoint)               = su2double(0.0);
   ThermalCond_ve.resize(nPoint)            = su2double(0.0);
+  Enthalpys.resize(nPoint, nSpecies)       = su2double(0.0);
+
 
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
   inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
@@ -102,6 +104,14 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
 
+  su2double T   =  Primitive(iPoint,nSpecies);
+  su2double Tve =  Primitive(iPoint,nSpecies+1);
+
+  su2double* val_eves = GetEve(iPoint);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eves);
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Enthalpys(iPoint, iSpecies) = hs[iSpecies];
+  
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
   thermalconductivities    = fluidmodel->GetThermalConductivities();

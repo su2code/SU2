@@ -46,8 +46,10 @@ private:
   VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
   VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
-  vector<su2double> thermalconductivities;
-  vector<su2double> Ds;
+  vector<su2double> thermalconductivities;   /*!< \brief Species thermal conductivities. */
+  vector<su2double> Ds;    /*!< \brief Species diffusion coefficients. */
+  vector<su2double> hs;    /*!< \brief Species enthalpies. */
+  MatrixType Enthalpys;    /*!< \brief Species enthalpies of the mixture. */
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
@@ -99,6 +101,12 @@ public:
    * \return Value of the species diffusion coefficient.
    */
   inline su2double* GetDiffusionCoeff(unsigned long iPoint) override { return DiffusionCoeff[iPoint]; }
+
+    /*!
+   * \brief Get the species enthalpy.
+   * \return Value of the species enthalpy.
+   */
+  inline su2double* GetEnthalpys(unsigned long iPoint) override { return Enthalpys[iPoint]; }
 
   /*!
    * \brief Get the laminar viscosity of the flow.

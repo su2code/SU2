@@ -2392,7 +2392,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
+  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0, RHO_INDEX = 0, RHOS_INDEX = 0;
   su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
             GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
@@ -2421,6 +2421,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     T_INDEX       = nSpecies;
     TVE_INDEX     = nSpecies+1;
     VEL_INDEX     = nSpecies+2;
+    RHO_INDEX     = nSpecies+nDim+3;
   }
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
@@ -2581,16 +2582,40 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       } else {
 
+        unsigned short nSpecies = config->GetnSpecies();
+        unsigned short iSpecies, iVar;
+
         const auto thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
         const auto Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+        const auto PrimVar                 = nodes->GetPrimitive(iPoint);
+        const auto Ds                      = nodes->GetDiffusionCoeff(iPoint);
+        const auto hs                      = nodes->GetEnthalpys(iPoint);
+
+        su2double rho                      = PrimVar[RHO_INDEX]; 
+        su2double T                        = PrimVar[nSpecies];
+        su2double Tve                      = PrimVar[nSpecies+1];
+        su2double sumJhs, dYsn;
+
+        /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
+        sumJhs = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            dYsn = Grad_PrimVar[RHOS_INDEX+iSpecies][iDim]/rho*UnitNormal[iDim];
+            sumJhs += rho*Ds[iSpecies]*dYsn*hs[iSpecies];
+          }
+        }
 
         dTn = 0.0; dTven = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+          dTn     += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+          dTven   += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
         }
-        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+        
+        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
+        enthalpy transport due to mass diffusion ---*/ 
+        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven + sumJhs;
+        cout << sumJhs << endl;
       }
 
       /*--- Note that y+, and heat are computed at the
