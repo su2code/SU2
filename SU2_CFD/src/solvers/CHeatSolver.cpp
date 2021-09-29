@@ -1354,7 +1354,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
 
-  /*--- Synchronize the solution between master and passive periodic nnodes after the linear solve. ---*/
+  /*--- Synchronize the solution between master and passive periodic nodes after the linear solve. ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
