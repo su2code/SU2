@@ -70,8 +70,8 @@ def init_submodules(method = 'auto'):
   alt_name_meson =  base_path + 'meson'
   alt_name_ninja =  base_path + 'ninja'
   alt_name_mpp =  cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
-  print(alt_name_opdi)
-  print(alt_name_medi)
+
+
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
   elif method == 'git':

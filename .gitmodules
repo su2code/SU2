@@ -14,7 +14,7 @@
 	url = https://github.com/mesonbuild/meson
 [submodule "subprojects/Mutationpp"]
         path = subprojects/Mutationpp
-	url = https://github.com/mutationpp/Mutationpp.git
+        url = https://github.com/mutationpp/Mutationpp.git	
 [submodule "externals/opdi"]
-        path = externals/opdi
-        url = https://github.com/SciCompKL/OpDiLib
+	path = externals/opdi
+	url = https://github.com/SciCompKL/OpDiLib
