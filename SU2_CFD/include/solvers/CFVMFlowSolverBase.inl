@@ -2582,8 +2582,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       } else {
 
-        unsigned short nSpecies = config->GetnSpecies();
-        unsigned short iSpecies, iVar;
+        unsigned short iSpecies, nSpecies = config->GetnSpecies();
 
         const auto thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
