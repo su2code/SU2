@@ -479,10 +479,10 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- von Karman constant from boundary layer theory ---*/
-  const su2double kappa = config->GetwallModelKappa();
-  const su2double minYPlus = config->GetwallModelMinYPlus();
+  const su2double kappa = config->GetwallModel_Kappa();
+  const su2double minYPlus = config->GetwallModel_MinYPlus();
   /*--- relaxation factor for k-omega values ---*/
-  const su2double relax = config->GetwallModelRelFac();
+  const su2double relax = config->GetwallModel_RelFac();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 

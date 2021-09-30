@@ -1224,15 +1224,15 @@ void CConfig::SetConfig_Options() {
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /*!\brief WALLMODEL_KAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
-  addDoubleOption("WALLMODEL_KAPPA", wallModelKappa, 0.41);
+  addDoubleOption("WALLMODEL_KAPPA", wallModel_Kappa, 0.41);
   /*!\brief WALLMODEL_MAXITER \n DESCRIPTION: Max iterations used for the wall model \n DEFAULT 200 \ingroup Config*/
-  addUnsignedShortOption("WALLMODEL_MAXITER", wallModelMaxIter, 200);
+  addUnsignedShortOption("WALLMODEL_MAXITER", wallModel_MaxIter, 200);
   /*!\brief WALLMODEL_RELFAC \n DESCRIPTION: Relaxation factor used for the wall model \n DEFAULT 0.5 \ingroup Config*/
-  addDoubleOption("WALLMODEL_RELFAC", wallModelRelFac, 0.5);
+  addDoubleOption("WALLMODEL_RELFAC", wallModel_RelFac, 0.5);
   /*!\brief WALLMODEL_MINYPLUS \n DESCRIPTION: lower limit for Y+ used for the wall model \n DEFAULT 5.0 \ingroup Config*/
-  addDoubleOption("WALLMODEL_MINYPLUS", wallModelMinYplus, 5.0);
+  addDoubleOption("WALLMODEL_MINYPLUS", wallModel_MinYplus, 5.0);
   /*!\brief WALLMODEL_B \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.0 \ingroup Config*/
-  addDoubleOption("WALLMODEL_B", wallModelB, 5.5);
+  addDoubleOption("WALLMODEL_B", wallModel_B, 5.5);
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */

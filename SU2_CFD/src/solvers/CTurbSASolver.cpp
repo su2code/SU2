@@ -1273,7 +1273,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
-  const unsigned short max_iter = config->GetwallModelMaxIter();
+  const unsigned short max_iter = config->GetwallModel_MaxIter();
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
@@ -1300,7 +1300,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Do not use wall model at the ipoint when y+ < "limit" ---*/
 
-      if (Y_Plus < config->GetwallModelMinYPlus()) continue;
+      if (Y_Plus < config->GetwallModel_MinYPlus()) continue;
 
       su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
       su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
@@ -1316,7 +1316,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       unsigned short counter = 0;
       su2double diff = 1.0;
-      su2double relax = config->GetwallModelRelFac();
+      su2double relax = config->GetwallModel_RelFac();
       while (diff > tol) {
         // note the error in Nichols and Nelson
         su2double func = pow(nu_til_old,4) - (Eddy_Visc/Density_Normal)*(pow(nu_til_old,3) + pow(Kin_Visc_Normal,3)*cv1_3);

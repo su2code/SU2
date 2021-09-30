@@ -766,7 +766,6 @@ private:
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short
-  wallModelMaxIter,     /*!< \brief maximum number of iterations for the Newton method for the wall model */
   Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;         /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
@@ -822,12 +821,13 @@ private:
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  su2double Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
-  wallModelKappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
-  wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
-  wallModelRelFac,             /*!< \brief relaxation factor for the Newton method used in the wall model */
-  wallModelMinYplus,          /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
+  unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
+  su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
+  wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
+  wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
+  wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
+  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -1674,31 +1674,31 @@ public:
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
    * \return von Karman constant.
    */
-  su2double GetwallModelKappa(void) const { return wallModelKappa; }
+  su2double GetwallModel_Kappa() const { return wallModel_Kappa; }
 
   /*!
    * \brief Get the value of the max. number of Newton iterations for turbulence wall modeling.
-   * \return max number of iterations.
+   * \return Max number of iterations.
    */
-  unsigned short GetwallModelMaxIter() const { return wallModelMaxIter; }
+  unsigned short GetwallModel_MaxIter() const { return wallModel_MaxIter; }
 
   /*!
    * \brief Get the value of the relaxation factor for turbulence wall modeling.
-   * \return relaxation factor.
+   * \return Relaxation factor.
    */
-  su2double GetwallModelRelFac() const { return wallModelRelFac; }
+  su2double GetwallModel_RelFac() const { return wallModel_RelFac; }
 
   /*!
-   * \brief Get the value of the minimum Y+ value below which the wall function is deactivated
-   * \return minimum Y+ value.
+   * \brief Get the value of the minimum Y+ value below which the wall function is deactivated.
+   * \return Minimum Y+ value.
    */
-  su2double GetwallModelMinYPlus() const { return wallModelMinYplus; }
+  su2double GetwallModel_MinYPlus() const { return wallModel_MinYplus; }
 
   /*!
-   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
-   * \return von Karman constant.
+   * \brief Get the value of the wall model constant B for turbulence wall modeling.
+   * \return Wall model constant B.
    */
-  su2double GetwallModelB(void) const { return wallModelB; }
+  su2double GetwallModel_B() const { return wallModel_B; }
 
   /*!
    * \brief Get the value of the thermal diffusivity for solids.

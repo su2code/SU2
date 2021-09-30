@@ -2398,7 +2398,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
-  const su2double minYPlus = config->GetwallModelMinYPlus();
+  const su2double minYPlus = config->GetwallModel_MinYPlus();
 
   string Marker_Tag, Monitoring_Tag;
 

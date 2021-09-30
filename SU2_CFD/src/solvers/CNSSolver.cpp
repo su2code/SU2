@@ -795,8 +795,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double tol = 1e-12;  /*!< \brief convergence criterium for the Newton solver, note that 1e-10 is too large */
-  const unsigned short max_iter = config->GetwallModelMaxIter();
-  const su2double relax = config->GetwallModelRelFac();
+  const unsigned short max_iter = config->GetwallModel_MaxIter();
+  const su2double relax = config->GetwallModel_RelFac();
 
   /*--- Compute the recovery factor 
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
@@ -805,8 +805,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = config->GetwallModelKappa();
-  const su2double B = config->GetwallModelB();
+  const su2double kappa = config->GetwallModel_Kappa();
+  const su2double B = config->GetwallModel_B();
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -918,13 +918,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       unsigned long counter = 0;
       su2double diff = 1.0;
       su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
-      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // use clipping value as minimum
+      su2double Y_Plus = 0.99*config->GetwallModel_MinYPlus(); // use clipping value as minimum
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
       /*--- Automatic switch off when y+ < "limit" according to Nichols & Nelson (2004) ---*/
 
-      if (Y_Plus_Start < config->GetwallModelMinYPlus()) {
+      if (Y_Plus_Start < config->GetwallModel_MinYPlus()) {
         smallYPlusCounter++;
         continue;
       }
