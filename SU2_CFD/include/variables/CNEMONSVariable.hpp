@@ -42,12 +42,11 @@ private:
   VectorType Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
   VectorType Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
   MatrixType DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
-  CVectorOfMatrix Dij;            /*!< \brief Binary diffusion coefficients. */
+  CVectorOfMatrix Dij;          /*!< \brief Binary diffusion coefficients. */
   VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
   VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
-  vector<su2double> thermalconductivities;   /*!< \brief Species thermal conductivities. */
-  MatrixType Enthalpys;    /*!< \brief Species enthalpies of the mixture. */
+  MatrixType Enthalpys;         /*!< \brief Species enthalpies of the mixture. */
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
