@@ -159,7 +159,6 @@ protected:
       addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
                       uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
     }
-
     if(wallFun) addTauWall(iPoint, jPoint, solution.GetTauWall(), unitNormal, tau);
 
     Double cond = derived->thermalConductivity(avgV);
