@@ -71,7 +71,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.956173,-1.480936,-16.738781,-17.063703,-17.011887,2.371977,1.732488,5.399642,0.953492]
+    invwedge.test_vals = [-0.954417, -1.479835, -16.737319, -17.063704, -17.010424, 2.372843, 1.754751, 5.401691, 0.954721]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -83,7 +83,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.173078, -5.697841, -20.831296, -20.719164, -23.419769, -1.564084, -2.069040, 2.203924, -2.590729]
+    visc_cone.test_vals = [-5.175785, -5.700548, -20.705025, -20.592408, -22.851499, -1.540045, -2.104353, 2.197906, -2.576183]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -1257,6 +1257,22 @@ def main():
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
     test_list.append(p1rad)
+
+
+    # #############################
+    # ### Solid Heat Conduction ###
+    # #############################
+
+    # 2D pins, periodically connected
+    solid_periodic_pins           = TestCase('solid_periodic_pins')
+    solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
+    solid_periodic_pins.cfg_file  = "configSolid.cfg"
+    solid_periodic_pins.test_iter = 750
+    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
+    solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
+    solid_periodic_pins.timeout   = 1600
+    solid_periodic_pins.tol       = 0.00001
+    test_list.append(solid_periodic_pins)
 
     # ###############################
     # ### Conjugate heat transfer ###
