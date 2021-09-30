@@ -4489,8 +4489,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
 #endif
 
 
-void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar,
-                               CGeometry *geometry, CConfig *config) {
+void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   // Explanation of certain ROM-specific variables:
   // TrialBasis   ...POD-built reduced basis, Phi
   // GenCoordsY   ...generalized coordinate vector, y
@@ -4784,7 +4783,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   }
   
   // TODO: Use all modes (since this is "offline") or only use truncated # modes?
-  unsigned long nsnaps = 10;
+  unsigned long nsnaps = Phi.size();
+  //unsigned long nsnaps = 10;
   unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
   std::vector<double> PhiNodes;
@@ -4793,7 +4793,6 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     double norm_phi = 0.0;
     for (iVar = 0; iVar < nVar; iVar++) {
       norm_phi += Phi[0][i*nVar + iVar] * Phi[0][i*nVar + iVar];
-      //norm_phi += Phi[0][i*nVar + iVar] ;
     }
   
     PhiNodes.push_back( sqrt(norm_phi) );
@@ -4913,12 +4912,9 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  sort(Mask.begin(),Mask.end());
-  
-  
   if (!read_mask_from_file) {
   ofstream fs;
-  std::string fname = "masked_nodes_airfoil_"+to_string(desired_nodes)+".csv";
+  std::string fname = "masked_nodes_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
@@ -4926,6 +4922,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   fs << "\n";
   fs.close();
   }
+  
+  sort(Mask.begin(),Mask.end());
   
   auto t_end = std::chrono::high_resolution_clock::now();
   double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
@@ -4962,15 +4960,6 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   }
   
   unsigned long desired_nodes = config->GetnHyper_Nodes();
-  ofstream fs;
-  std::string fname = "masked_nodes_neighs_"+to_string(desired_nodes)+".csv";
-  fs.open(fname);
-  set <unsigned long> :: iterator itr;
-  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
-    fs << *itr << "," ;
-  }
-  fs << "\n";
-  fs.close();
   
   /*--- Include neighbors of neighbors for viscous part of residual ---*/
   
@@ -5001,23 +4990,23 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
        
   }
   
-  //ofstream fs;
-  //std::string fname = "masked_nodes_neighs.csv";
+  ofstream fs;
+  std::string fname = "masked_nodes_neighs_allphi_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
-  //set <unsigned long> :: iterator itr;
+  set <unsigned long> :: iterator itr;
   for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
     fs << *itr << "," ;
   }
   fs << "\n";
   fs.close();
   
-  std::string fname2 = "masked_nodes_edges.csv";
-  fs.open(fname2);
-  for (unsigned long i : Edge_masked) {
-    fs << i << "," ;
-  }
-  fs << "\n";
-  fs.close();
+  //std::string fname2 = "masked_nodes_edges.csv";
+  //fs.open(fname2);
+  //for (unsigned long i : Edge_masked) {
+  //  fs << i << "," ;
+  //}
+  //fs << "\n";
+  //fs.close();
   
 }
 
@@ -5032,7 +5021,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   if (InnerIter == 0) {
     RomConverged = false;
     SetResOld_ROM(ReducedRes);
-    SetCoord1_Old(GenCoordsY[0]);
+    SetCoord1_Old(GenCoordsY[1]);
   }
   
   else {
@@ -5040,7 +5029,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
       RomConverged = true;
       return;
     }
-    else if ( abs( (GenCoordsY[0] - Coord1_Old) / Coord1_Old ) < 1e-5 ) {
+    else if ( abs( (GenCoordsY[1] - Coord1_Old) / Coord1_Old ) < 1e-5 ) {
       RomConverged = true;
       return;
     }
@@ -5059,5 +5048,41 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
     }
   }
   SetRes_ROM(ReducedRes);
-  SetCoord1_Old(GenCoordsY[0]);
+  SetCoord1_Old(GenCoordsY[1]);
+}
+
+void CSolver::writeROMfiles(vector<double> &TestBasis, vector<double> &r) {
+  int m = (int)Mask.size() * nVar;
+  int n = (int)TrialBasis[0].size();
+  
+  ofstream fs;
+  std::string fname = "check_testbasis.csv";
+  fs.open(fname);
+  for(int i=0; i < m; i++){
+    for(int j=0; j < n; j++){
+      fs << setprecision(10) << TestBasis[i +j*m] << "," ;
+    }
+    fs << "\n";
+  }
+  fs.close();
+  
+  std::string fname1 = "check_trialbasis.csv";
+  fs.open(fname1);
+  for(int i=0; i < m; i++){
+    for(int j=0; j < n; j++){
+      fs << setprecision(10) << TrialBasis[i][j] << "," ;
+    }
+    fs << "\n";
+  }
+  fs.close();
+  
+  std::string fname2 = "check_residual.csv";
+  fs.open(fname2);
+  for(int i=0; i < m; i++){
+    fs << setprecision(10) << r[i] << "\n" ;
+  }
+  fs.close();
+  
+  
+  
 }

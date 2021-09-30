@@ -366,14 +366,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*---- Initialize ROM specific variables. ----*/
-  bool rom = config->GetReduced_Model();
-  if (rom) {
-    if (rank == MASTER_NODE)
-      cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
-    Mask_Selection(geometry, config);
-    FindMaskedEdges(geometry, config);
-    SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
-  }
+  //bool rom = config->GetReduced_Model();
+  //if (rom) {
+  //  if (rank == MASTER_NODE)
+  //    cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
+  //  Mask_Selection(geometry, config);
+  //  FindMaskedEdges(geometry, config);
+  //  SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
+  //}
 
   /*--- Initial comms. ---*/
 
@@ -3949,34 +3949,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   
   if (true) {
+    writeROMfiles(TestBasis2, r);
+    
     ofstream fs;
-    std::string fname = "check_testbasis.csv";
-    fs.open(fname);
-    for(int i=0; i < m; i++){
-      for(int j=0; j < n; j++){
-        fs << setprecision(10) << TestBasis2[i +j*m] << "," ;
-      }
-      fs << "\n";
-    }
-    fs.close();
-    
-    std::string fname1 = "check_trialbasis.csv";
-    fs.open(fname1);
-    for(int i=0; i < m; i++){
-      for(int j=0; j < n; j++){
-        fs << setprecision(10) << TrialBasis[i][j] << "," ;
-      }
-      fs << "\n";
-    }
-    fs.close();
-    
-    std::string fname2 = "check_residual.csv";
-    fs.open(fname2);
-    for(int i=0; i < m; i++){
-      fs << setprecision(10) << r[i] << "\n" ;
-    }
-    fs.close();
-    
     std::string file_name = "check_coords.csv";
     if (InnerIter == 0) {
       fs.open(file_name);

@@ -1584,13 +1584,9 @@ public:
   /*!
    * \brief Set up ROM-specific variables.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetROM_Variables(unsigned long nPoint,
-                        unsigned long nPointDomain,
-                        unsigned short nVar,
-                        CGeometry *geometry,
+  void SetROM_Variables(CGeometry *geometry,
                         CConfig *config);
   
   /*!
@@ -1668,6 +1664,12 @@ public:
    * \param[in] ReducedRes - Value of the reduced residual.
    */
   void CheckROMConvergence(CConfig *config, double ReducedRes);
+  
+  /*!
+   * \brief Write a set of files for transparancy purposes
+   */
+  void writeROMfiles(vector<double> &TestBasis,
+                     vector<double> &r);
   
   /*!
    * \brief A virtual member.
