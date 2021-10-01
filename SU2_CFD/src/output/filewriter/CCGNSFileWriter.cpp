@@ -65,7 +65,7 @@ void CCGNSFileWriter::Write_Data() {
   InitializeFields();
 
   const vector<string> fieldNames = dataSorter->GetFieldNames();
-  for (int i = nDim; i < fieldNames.size(); ++i) {
+  for (unsigned long i = nDim; i < fieldNames.size(); ++i) {
     WriteField(i, fieldNames[i]);
   }
 
