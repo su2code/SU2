@@ -646,9 +646,6 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
 
-  /*--- Rename for convenience. ---*/
-  Tve = val_T;
-
   /*--- Loop through species ---*/
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
@@ -663,8 +660,8 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
       /*--- Vibrational energy ---*/
       if (CharVibTemp[iSpecies] != 0.0) {
-        thoTve = CharVibTemp[iSpecies]/Tve;
-        exptv = exp(CharVibTemp[iSpecies]/Tve);
+        thoTve = CharVibTemp[iSpecies]/val_T;
+        exptv = exp(CharVibTemp[iSpecies]/val_T);
         Cvvs  = Ru/MolarMass[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
       } else {
         Cvvs = 0.0;
@@ -673,16 +670,16 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
         num = 0.0; num2 = 0.0;
-        denom = ElDegeneracy[iSpecies][0] * exp(-CharElTemp[iSpecies][0]/Tve);
-        num3  = ElDegeneracy[iSpecies][0] * (CharElTemp[iSpecies][0]/(Tve*Tve))*exp(-CharElTemp[iSpecies][0]/Tve);
+        denom = ElDegeneracy[iSpecies][0] * exp(-CharElTemp[iSpecies][0]/val_T);
+        num3  = ElDegeneracy[iSpecies][0] * (CharElTemp[iSpecies][0]/(val_T*val_T))*exp(-CharElTemp[iSpecies][0]/val_T);
         for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-          thoTve = CharElTemp[iSpecies][iEl]/Tve;
-          exptv = exp(-CharElTemp[iSpecies][iEl]/Tve);
+          thoTve = CharElTemp[iSpecies][iEl]/val_T;
+          exptv = exp(-CharElTemp[iSpecies][iEl]/val_T);
 
           num   += ElDegeneracy[iSpecies][iEl] * CharElTemp[iSpecies][iEl] * exptv;
           denom += ElDegeneracy[iSpecies][iEl] * exptv;
           num2  += ElDegeneracy[iSpecies][iEl] * (thoTve*thoTve) * exptv;
-          num3  += ElDegeneracy[iSpecies][iEl] * thoTve/Tve * exptv;
+          num3  += ElDegeneracy[iSpecies][iEl] * thoTve/val_T * exptv;
         }
         Cves = Ru/MolarMass[iSpecies] * (num2/denom - num*num3/(denom*denom));
       } else {
@@ -1136,15 +1133,14 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
 }
 
-void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
+void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve, const su2double *dTdU, const su2double* dTvedU, su2double **val_jacobian){
 
   unsigned short iVar;
   unsigned short nEv  = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
 
   /*--- Compute Cvvs ---*/
-  cvve_eq.resize(nSpecies,0.0);
-  cvve_eq = ComputeSpeciesCvVibEle(T);
+  const auto& cvve_eq = ComputeSpeciesCvVibEle(T);
 
   /*--- Loop through species ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){

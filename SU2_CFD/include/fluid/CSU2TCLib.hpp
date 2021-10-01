@@ -159,8 +159,8 @@ public:
   /*!
    * \brief Compute relaxation source term jacobian.
    */
-  void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
-                                su2double *dTdU, su2double* dTvedU,
+  void GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve,
+                                const su2double *dTdU, const su2double* dTvedU,
                                 su2double **val_jacobian) final;
 
   /*!

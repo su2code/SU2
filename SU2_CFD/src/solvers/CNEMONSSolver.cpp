@@ -176,7 +176,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   bool err;
   unsigned short iVar, jVar;
   unsigned long iPoint, jPoint, iEdge;
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -404,7 +404,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   su2double **GradY;
 
   /*--- Assign booleans ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool catalytic = false;
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -752,7 +752,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
   //su2double pcontrol = 0.6;
