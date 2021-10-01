@@ -33,11 +33,10 @@
 #include <algorithm>
 #include <iterator>
 #include <numeric>
-#include <boost/bind.hpp>
-#include <boost/range/algorithm_ext/for_each.hpp>
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../fluid/CFluidModel.hpp"
+
 
 class CTurbomachineryPrimitiveState {
   private:
@@ -120,19 +119,27 @@ class CTurbomachineryState {
   vector <su2double> GetMach() const { return Mach; }
 
   su2double GetVelocityValue() const {
-    return sqrt(std::inner_product(Velocity.begin(), Velocity.end(), Velocity.begin(), 0.0));
+    return Norm(Velocity);
   }
 
-  su2double GetMachValue() const { 
-    return sqrt(std::inner_product(Mach.begin(), Mach.end(), Mach.begin(), 0.0)); 
+  su2double GetMachValue() const {
+    return Norm(Mach);
   }
 
   su2double GetRelVelocityValue() const {
-    return sqrt(std::inner_product(RelVelocity.begin(), RelVelocity.end(), RelVelocity.begin(), 0.0));
+    return Norm(RelVelocity);
   }
 
   su2double GetRelMachValue() const {
-    return sqrt(std::inner_product(RelMach.begin(), RelMach.end(), RelMach.begin(), 0.0));
+    return Norm(RelMach);
+  }
+
+  su2double Norm(vector<su2double> const& u) const {
+    su2double accum = 0.;
+    for (int i = 0; i < u.size(); ++i) {
+        accum += u[i] * u[i];
+    }
+    return sqrt(accum);
   }
 };
 
@@ -213,7 +220,7 @@ class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
 };
 
 class CTurbomachineryStagePerformance {
-   protected: 
+   protected:
       su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
       CFluidModel &fluidModel;
    public:
