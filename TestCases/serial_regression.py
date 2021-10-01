@@ -321,7 +321,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-1.624124, 1.785764, -2.829997, 0.002593] #last 4 columns
+    turb_wallfunction_flatplate_sst.test_vals = [-4.230000, -1.930543, -1.998684, 1.250334, -1.635534,  1.462491, 10, -2.151894, 0.072872, 0.002514] #last 10 columns
     turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
     turb_wallfunction_flatplate_sst.timeout   = 1600
     turb_wallfunction_flatplate_sst.tol       = 0.00001
@@ -332,7 +332,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-4.436048, -5.393726, 0.069744, 0.002686] #last 4 columns
+    turb_wallfunction_flatplate_sa.test_vals = [-4.436048, -2.044706, -2.114644, 0.979771, -5.393729, 10, -1.589465, 0.069744, 0.002686] #last 9 columns
     turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
     turb_wallfunction_flatplate_sa.timeout   = 1600
     turb_wallfunction_flatplate_sa.tol       = 0.00001
@@ -575,7 +575,7 @@ def main():
     inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
     inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sst.test_iter = 10
-    inc_turb_wallfunction_flatplate_sst.test_vals = [-7.629242, -2.680155, 0.001857, 0.002187] #last 4 columns
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.561293, -5.730190, -6.305916, -4.230297, -7.164083, -2.047256, 10, -2.941818, 0.000974, 0.003195] #last 10 columns
     inc_turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
     inc_turb_wallfunction_flatplate_sst.timeout   = 1600
     inc_turb_wallfunction_flatplate_sst.tol       = 0.00001
@@ -586,7 +586,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [0.055660, -9.556782, 0.002294, 0.001011] #last 4 columns
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.561221, -5.718427, -6.306321, -4.230222, -9.586624, 10, -2.927239, 0.000858, 0.003794 ] #last 9 columns
     inc_turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
     inc_turb_wallfunction_flatplate_sa.timeout   = 1600
     inc_turb_wallfunction_flatplate_sa.tol       = 0.00001
