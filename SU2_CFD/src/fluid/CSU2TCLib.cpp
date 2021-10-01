@@ -786,7 +786,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
 }
 
 vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
-                                                        const su2double* cvve, const su2double* dTdU, const su2double* dTvdU,
+                                                        const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                         su2double **val_jacobian){
 
   /*---                          ---*/
