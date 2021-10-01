@@ -102,7 +102,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (wall_functions) {
     SU2_OMP_MASTER
-    SetTauWall_WF(geometry, solver_container, config);
+    SetTau_Wall_WF(geometry, solver_container, config);
     END_SU2_OMP_MASTER
     // nijso: we have to set this as well??
     // seteddyviscfirstpoint
@@ -642,7 +642,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   END_SU2_OMP_FOR
 }
 
-void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
   /*---
    The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
@@ -855,7 +855,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
-      nodes->SetTauWall(iPoint, Tau_Wall);
+      nodes->SetTau_Wall(iPoint, Tau_Wall);
 
     }
     END_SU2_OMP_FOR

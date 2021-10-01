@@ -121,7 +121,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    SetTauWall_WF(geometry, solver_container, config);
+    SetTau_Wall_WF(geometry, solver_container, config);
   }
 
 }
@@ -784,7 +784,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
-void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
   /*---
    The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
@@ -1012,7 +1012,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 
-      nodes->SetTauWall(iPoint, Tau_Wall);
+      nodes->SetTau_Wall(iPoint, Tau_Wall);
 
     }
     END_SU2_OMP_FOR

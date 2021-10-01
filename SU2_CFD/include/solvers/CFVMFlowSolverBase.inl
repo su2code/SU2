@@ -443,8 +443,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   /*--- Wall shear stress values (wall functions) ---*/
 
-  numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(jPoint));
+  numerics->SetTau_Wall(nodes->GetTau_Wall(iPoint),
+                        nodes->GetTau_Wall(jPoint));
 
   /*--- Compute and update residual ---*/
 
@@ -2536,7 +2536,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
       su2double Tau_Wall, scale;
       if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
-        Tau_Wall = nodes->GetTauWall(iPoint); 
+        Tau_Wall = nodes->GetTau_Wall(iPoint);
         scale = Tau_Wall / WallShearStress[iMarker][iVertex];
         for (iDim = 0; iDim < nDim; iDim++) {
           TauTangent[iDim] *= scale;

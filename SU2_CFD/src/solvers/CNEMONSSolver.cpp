@@ -99,7 +99,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   ComputeVorticityAndStrainMag(*config, iMesh, offset);
 
   if (wall_functions) {
-    SetTauWall_WF(geometry, solver_container, config);
+    SetTau_Wall_WF(geometry, solver_container, config);
   }
 }
 
@@ -1068,6 +1068,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   END_SU2_OMP_FOR
 }
 
-void CNEMONSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+void CNEMONSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
     SU2_MPI::Error("Wall Functions not yet operational in NEMO.", CURRENT_FUNCTION);
 }
