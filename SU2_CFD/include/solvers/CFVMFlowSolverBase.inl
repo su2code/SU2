@@ -545,8 +545,8 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
        density and energy can change over a nonlinear iteration. */
 
       unsigned short tmp = 1; //DELETE ME TODO
-      if (config->GetnSpecies != 0) tmp = 2;
-      if (((iVar == 0) || ((tmp==2) && (iVar < config->GetnSpecies))) || (iVar >= (nVar - tmp))) {
+      if (config->GetnSpecies() != 0) tmp = 2;
+      if (((iVar == 0) || ((tmp==2) && (iVar < config->GetnSpecies()))) || (iVar >= (nVar - tmp))) {
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
