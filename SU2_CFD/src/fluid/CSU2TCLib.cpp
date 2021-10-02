@@ -1580,11 +1580,12 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
   // Execute the root-finding method
   bool Bconvg = false;
+  su2double rhoEve_t = 0.0;
 
   for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
     Tve      = (Tve_o+Tve2)/2.0;
     val_eves = ComputeSpeciesEve(Tve);
-    su2double rhoEve_t = 0.0;
+    rhoEve_t = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
     if (fabs(rhoEve_t - rhoEve) < Btol) {
       Bconvg = true;
