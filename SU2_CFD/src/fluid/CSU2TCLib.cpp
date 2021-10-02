@@ -1358,20 +1358,20 @@ void CSU2TCLib::DiffusionCoeffGY(){
         denom += gam_j/D_ij;
       }
     }
-    if (ionization) {
-      jSpecies = nSpecies-1;
-      su2double Mj       = MolarMass[jSpecies];
-      su2double gam_j    = rhos[iSpecies] / (Density*Mj);
+    //if (ionization) {
+    //  jSpecies = nSpecies-1;
+    //  su2double Mj       = MolarMass[jSpecies];
+    //  su2double gam_j    = rhos[iSpecies] / (Density*Mj);
 
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-      su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-          * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-          + Omega00(iSpecies,jSpecies,1)*log(Tve)
-          + Omega00(iSpecies,jSpecies,2));
+    // su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+    //      * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+    //      + Omega00(iSpecies,jSpecies,1)*log(Tve)
+    //      + Omega00(iSpecies,jSpecies,2));
 
-      /*--- Calculate "delta1_ij" ---*/
-      su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-    }
+    //  /*--- Calculate "delta1_ij" ---*/
+    //  su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+    //}
 
     /*--- Assign species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
@@ -1580,7 +1580,6 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
   // Execute the root-finding method
   bool Bconvg = false;
-  su2double rhoEve_t;
 
   for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
     Tve      = (Tve_o+Tve2)/2.0;

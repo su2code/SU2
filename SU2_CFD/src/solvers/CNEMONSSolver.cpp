@@ -696,7 +696,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
       const auto dTvedU = nodes->GetdTvedU(iPoint);
-      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal) 
+      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal); 
 
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +
