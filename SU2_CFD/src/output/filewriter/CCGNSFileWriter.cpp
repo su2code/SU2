@@ -34,17 +34,15 @@ CCGNSFileWriter::CCGNSFileWriter(string valFileName, CParallelDataSorter* valDat
   isSurface = isSurf;
 }
 
-CCGNSFileWriter::~CCGNSFileWriter() {}
-
 void CCGNSFileWriter::Write_Data() {
 #ifdef HAVE_CGNS
   /*--- Open the CGNS file for writing.  ---*/
-  initializeMeshFile();
+  InitializeMeshFile();
 
   /*--- Write point coordinates. ---*/
-  WriteCoordinate(1, "CoordinateX");
-  WriteCoordinate(2, "CoordinateY");
-  if (nDim == 3) WriteCoordinate(3, "CoordinateZ");
+  WriteField(0, "CoordinateX");
+  WriteField(1, "CoordinateY");
+  if (nDim == 3) WriteField(2, "CoordinateZ");
 
   /*--- Write mesh connectivity. ---*/
   if (nDim == 2) {
@@ -64,7 +62,7 @@ void CCGNSFileWriter::Write_Data() {
   /*--- Initialize and write fields. ---*/
   InitializeFields();
 
-  const vector<string> fieldNames = dataSorter->GetFieldNames();
+  auto& fieldNames = dataSorter->GetFieldNames();
   for (unsigned long i = nDim; i < fieldNames.size(); ++i) {
     WriteField(i, fieldNames[i]);
   }
@@ -76,21 +74,26 @@ void CCGNSFileWriter::Write_Data() {
 }
 
 #ifdef HAVE_CGNS
-void CCGNSFileWriter::initializeMeshFile() {
+void CCGNSFileWriter::InitializeMeshFile() {
   if (!dataSorter->GetConnectivitySorted()) {
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
 
-  int nCell;
-
-  nLocalPoints = static_cast<int>(dataSorter->GetnPoints());
+  nLocalPoints = dataSorter->GetnPoints();
   nDim = dataSorter->GetnDim();
   GlobalElem = static_cast<cgsize_t>(dataSorter->GetnElemGlobal());
   GlobalPoint = static_cast<cgsize_t>(dataSorter->GetnPointsGlobal());
   cumulative = 0;
 
+  if (typeid(dataPrecision) == typeid(float))
+    dataType = RealSingle;
+  else if (typeid(dataPrecision) == typeid(double))
+    dataType = RealDouble;
+  else
+    SU2_MPI::Error("Wrong data type in CGNS output", CURRENT_FUNCTION);
+
   /*--- If surface file cell dimension is decreased. ---*/
-  nCell = nDim - isSurface;
+  auto nCell = static_cast<int>(nDim - isSurface);
 
   if (rank == MASTER_NODE) {
     /*--- Remove the previous file if present. ---*/
@@ -103,7 +106,7 @@ void CCGNSFileWriter::initializeMeshFile() {
     CallCGNS(cg_base_write(cgnsFileID, "Base", nCell, nDim, &cgnsBase));
 
     /*--- Create Zone. ---*/
-    vector<cgsize_t> zoneData(3);
+    array<cgsize_t, 3> zoneData;
 
     zoneData[0] = GlobalPoint;
     zoneData[1] = GlobalElem;
@@ -113,84 +116,82 @@ void CCGNSFileWriter::initializeMeshFile() {
   }
 }
 
-void CCGNSFileWriter::WriteCoordinate(int CoordinateNumber, const string& CoordinateName) {
-  cgsize_t nodeBegin;
-  cgsize_t nodeEnd;
-  vector<float> sendBufferFloat, recvBufferFloat;
+void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
+  /*--- Check if field is coordinate. ---*/
+  bool isCoord = false;
+  if (FieldName == "CoordinateX" || FieldName == "CoordinateY" || FieldName == "CoordinateZ") isCoord = true;
 
   /*--- Create send buffer. ---*/
-  sendBufferFloat.resize(nLocalPoints);
+  sendBufferField.resize(nLocalPoints);
 
-  unsigned short iCoord = CoordinateNumber - 1;
-  for (int iPoint = 0; iPoint < nLocalPoints; iPoint++) {
-    sendBufferFloat[iPoint] = static_cast<float>(dataSorter->GetData(iCoord, iPoint));
+  for (unsigned long iPoint = 0; iPoint < nLocalPoints; iPoint++) {
+    sendBufferField[iPoint] = static_cast<dataPrecision>(dataSorter->GetData(iField, iPoint));
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Request sendReq;
-  if (rank != MASTER_NODE)
-    SU2_MPI::Isend(sendBufferFloat.data(), nLocalPoints, MPI_FLOAT, MASTER_NODE, 0, SU2_MPI::GetComm(), &sendReq);
+  if (rank != MASTER_NODE) {
+    SU2_MPI::Send(sendBufferField.data(), nLocalPoints * sizeof(dataPrecision), MPI_CHAR, MASTER_NODE, 0,
+                  SU2_MPI::GetComm());
+    return;
+  }
 #endif
 
   /*--- Coordinate vector is written in blocks, one for each process. ---*/
-  if (rank == MASTER_NODE) {
-    nodeBegin = 1;
-    nodeEnd = static_cast<cgsize_t>(nLocalPoints);
-    CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, RealSingle, CoordinateName.c_str(), &nodeBegin,
-                                    &nodeEnd, sendBufferFloat.data(), &CoordinateNumber));
+  cgsize_t nodeBegin = 1;
+  cgsize_t nodeEnd = static_cast<cgsize_t>(nLocalPoints);
+
+  if (isCoord) {
+    int CoordinateNumber = iField + 1;
+    CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
+                                    sendBufferField.data(), &CoordinateNumber));
+  } else {
+    int fieldNumber;
+    CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, dataType, FieldName.c_str(), &nodeBegin,
+                                    &nodeEnd, sendBufferField.data(), &fieldNumber));
   }
 
 #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) {
-    for (int i = 1; i < size; ++i) {
-      nodeBegin = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i) + 1);
-      nodeEnd = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i + 1));
+  for (int i = 0; i < size; ++i) {
+    if (i == MASTER_NODE) continue;
+    nodeBegin = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i) + 1);
+    nodeEnd = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i + 1));
 
-      int recvSize = static_cast<int>(nodeEnd - nodeBegin + 1);
-      recvBufferFloat.resize(recvSize);
+    int recvSize = static_cast<int>(nodeEnd - nodeBegin + 1);
+    recvBufferField.resize(recvSize);
 
-      SU2_MPI::Recv(recvBufferFloat.data(), recvSize, MPI_FLOAT, i, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      if (recvSize <= 0) continue;
-      CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, RealSingle, CoordinateName.c_str(), &nodeBegin,
-                                      &nodeEnd, recvBufferFloat.data(), &CoordinateNumber));
+    SU2_MPI::Recv(recvBufferField.data(), recvSize * sizeof(dataPrecision), MPI_CHAR, i, 0, SU2_MPI::GetComm(),
+                  MPI_STATUS_IGNORE);
+    if (recvSize <= 0) continue;
+    if (isCoord) {
+      int CoordinateNumber = iField + 1;
+      CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
+                                      recvBufferField.data(), &CoordinateNumber));
+    } else {
+      int fieldNumber;
+      CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, dataType, FieldName.c_str(),
+                                      &nodeBegin, &nodeEnd, recvBufferField.data(), &fieldNumber));
     }
   }
-
-  if (rank != MASTER_NODE) SU2_MPI::Wait(&sendReq, MPI_STATUS_IGNORE);
 #endif
 }
 
 void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName) {
-  cgsize_t firstElem, endElem;
-
-  unsigned long iElem, iPoint;
-  unsigned long nLocalElem, nTotElem;
-  unsigned short nPointsElem;
-  int cgnsSection;
-
-  ElementType_t elementType;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Request sendReq;
-#endif
-
-  nLocalElem = dataSorter->GetnElem(type);
-  nTotElem = dataSorter->GetnElemGlobal(type);
-
-  nPointsElem = nPointsOfElementType(type);
-
-  elementType = GetCGNSType(type);
-
+  unsigned long nTotElem = dataSorter->GetnElemGlobal(type);
   if (nTotElem > 0) {
-    firstElem = cumulative + 1;
-    endElem = cumulative + static_cast<cgsize_t>(nTotElem);
-
     /*--- Create a new CGNS node to store connectivity. ---*/
+    ElementType_t elementType = GetCGNSType(type);
+
+    cgsize_t firstElem = cumulative + 1;
+    cgsize_t endElem = cumulative + static_cast<cgsize_t>(nTotElem);
+
+    int cgnsSection;
     if (rank == MASTER_NODE)
       CallCGNS(cg_section_partial_write(cgnsFileID, cgnsBase, cgnsZone, SectionName.c_str(), elementType, firstElem,
                                         endElem, 0, &cgnsSection));
 
-      /*--- Retrieve element distribution among processes. ---*/
+    /*--- Retrieve element distribution among processes. ---*/
+    unsigned long nLocalElem = dataSorter->GetnElem(type);
+
 #ifdef HAVE_MPI
     vector<unsigned long> distElem;
     distElem.resize(size);
@@ -199,19 +200,17 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
 
     firstElem = cumulative + 1;
     endElem = cumulative + static_cast<cgsize_t>(distElem[rank]);
-
-    vector<cgsize_t> sendBufferConnectivity, recvBufferConnectivity;
 #else
     firstElem = cumulative + 1;
     endElem = cumulative + static_cast<cgsize_t>(nLocalElem);
-    vector<cgsize_t> sendBufferConnectivity;
 #endif
 
     /*--- Connectivity is stored in send buffer. ---*/
+    unsigned short nPointsElem = nPointsOfElementType(type);
     sendBufferConnectivity.resize(nLocalElem * nPointsElem);
 
-    for (iElem = 0; iElem < nLocalElem; iElem++) {
-      for (iPoint = 0; iPoint < nPointsElem; iPoint++) {
+    for (unsigned long iElem = 0; iElem < nLocalElem; iElem++) {
+      for (unsigned long iPoint = 0; iPoint < nPointsElem; iPoint++) {
         sendBufferConnectivity[iPoint + nPointsElem * iElem] =
             static_cast<cgsize_t>(dataSorter->GetElem_Connectivity(type, iElem, iPoint));
       }
@@ -219,92 +218,39 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
 
 #ifdef HAVE_MPI
     auto bufferSize = static_cast<int>(nLocalElem * nPointsElem * sizeof(cgsize_t));
-    if (rank != MASTER_NODE)
-      SU2_MPI::Isend(sendBufferConnectivity.data(), bufferSize, MPI_CHAR, MASTER_NODE, rank, SU2_MPI::GetComm(),
-                     &sendReq);
+    if (rank != MASTER_NODE) {
+      SU2_MPI::Send(sendBufferConnectivity.data(), bufferSize, MPI_CHAR, MASTER_NODE, 1, SU2_MPI::GetComm());
+      return;
+    }
 #endif
 
     /*--- Connectivity vector is written in blocks, one for each process. ---*/
-    if (rank == MASTER_NODE) {
-      if (nLocalElem > 0)
-        CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
-                                           sendBufferConnectivity.data()));
-    }
+    if (nLocalElem > 0)
+      CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
+                                         sendBufferConnectivity.data()));
+
 #ifdef HAVE_MPI
-    if (rank == MASTER_NODE) {
-      for (int i = 1; i < size; ++i) {
-        firstElem += static_cast<cgsize_t>(distElem[i - 1]);
-        endElem += static_cast<cgsize_t>(distElem[i]);
-        int recvSize = static_cast<int>(endElem - firstElem + 1);
-        recvBufferConnectivity.resize(recvSize * nPointsElem);
+    for (int i = 0; i < size; ++i) {
+      if (i == MASTER_NODE) continue;
+      firstElem += static_cast<cgsize_t>(distElem[i - 1]);
+      endElem += static_cast<cgsize_t>(distElem[i]);
+      int recvSize = static_cast<int>(endElem - firstElem + 1);
+      recvBufferConnectivity.resize(recvSize * nPointsElem);
 
-        auto recvByte = static_cast<int>(recvSize * nPointsElem * sizeof(cgsize_t));
-        SU2_MPI::Recv(recvBufferConnectivity.data(), recvByte, MPI_CHAR, i, i, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      auto recvByte = static_cast<int>(recvBufferConnectivity.size() * sizeof(cgsize_t));
+      SU2_MPI::Recv(recvBufferConnectivity.data(), recvByte, MPI_CHAR, i, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
-        if (!recvBufferConnectivity.empty())
-          CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
-                                             recvBufferConnectivity.data()));
-      }
-      cumulative += static_cast<cgsize_t>(nTotElem);
+      if (!recvBufferConnectivity.empty())
+        CallCGNS(cg_elements_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsSection, firstElem, endElem,
+                                           recvBufferConnectivity.data()));
     }
-
-    if (rank != MASTER_NODE) SU2_MPI::Wait(&sendReq, MPI_STATUS_IGNORE);
 #endif
+    cumulative += static_cast<cgsize_t>(nTotElem);
   }
 }
 
 void CCGNSFileWriter::InitializeFields() {
   /*--- Create "Fields" node to store solution. ---*/
   if (rank == MASTER_NODE) CallCGNS(cg_sol_write(cgnsFileID, cgnsBase, cgnsZone, "Fields", Vertex, &cgnsFields));
-}
-
-void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
-  cgsize_t nodeBegin;
-  cgsize_t nodeEnd;
-  vector<float> sendBufferFloat, recvBufferFloat;
-
-  /*--- Solution is stored in send buffer. ---*/
-  sendBufferFloat.resize(nLocalPoints);
-
-  for (int iPoint = 0; iPoint < nLocalPoints; iPoint++) {
-    sendBufferFloat[iPoint] = static_cast<float>(dataSorter->GetData(iField, iPoint));
-  }
-
-  int fieldNumber;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Request sendReq;
-  if (rank != MASTER_NODE)
-    SU2_MPI::Isend(sendBufferFloat.data(), nLocalPoints, MPI_FLOAT, MASTER_NODE, 0, SU2_MPI::GetComm(), &sendReq);
-#endif
-
-  /*--- Field vector is written in blocks, one for each process. ---*/
-  if (rank == MASTER_NODE) {
-    nodeBegin = 1;
-    nodeEnd = static_cast<cgsize_t>(nLocalPoints);
-
-    CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, RealSingle, FieldName.c_str(),
-                                    &nodeBegin, &nodeEnd, sendBufferFloat.data(), &fieldNumber));
-  }
-
-#ifdef HAVE_MPI
-  if (rank == MASTER_NODE) {
-    for (int i = 1; i < size; ++i) {
-      nodeBegin = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i) + 1);
-      nodeEnd = static_cast<cgsize_t>(dataSorter->GetnPointCumulative(i + 1));
-
-      int recvSize = static_cast<int>(nodeEnd - nodeBegin + 1);
-
-      recvBufferFloat.resize(recvSize);
-
-      SU2_MPI::Recv(recvBufferFloat.data(), recvSize, MPI_FLOAT, i, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      if (recvSize <= 0) continue;
-      CallCGNS(cg_field_partial_write(cgnsFileID, cgnsBase, cgnsZone, cgnsFields, RealSingle, FieldName.c_str(),
-                                      &nodeBegin, &nodeEnd, recvBufferFloat.data(), &fieldNumber));
-    }
-  }
-
-  if (rank != MASTER_NODE) SU2_MPI::Wait(&sendReq, MPI_STATUS_IGNORE);
-#endif
 }
 #endif  // HAVE_CGNS

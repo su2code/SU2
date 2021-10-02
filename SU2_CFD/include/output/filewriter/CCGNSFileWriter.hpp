@@ -31,6 +31,9 @@
 #include "cgnslib.h"
 #endif
 
+/*--- Define data precision of output (float or double). ---*/
+typedef float dataPrecision;
+
 #include "CFileWriter.hpp"
 
 class CCGNSFileWriter final : public CFileWriter {
@@ -46,14 +49,20 @@ class CCGNSFileWriter final : public CFileWriter {
   int nZones;    /*!< \brief Total number of zones in the CGNS file. */
   int nSections; /*!< \brief Total number of sections in the CGNS file. */
 
-  unsigned short nDim; /*!< \brief Problem dimension. */
-  int nLocalPoints;    /*!< \brief Local number of points. */
-  int GlobalPoint;     /*!< \brief Total number of points. */
-  int GlobalElem;      /*!< \brief Total number of elements. */
+  unsigned short nDim;        /*!< \brief Problem dimension. */
+  unsigned long nLocalPoints; /*!< \brief Local number of points. */
+  cgsize_t GlobalPoint;       /*!< \brief Total number of points. */
+  cgsize_t GlobalElem;        /*!< \brief Total number of elements. */
+
+  vector<cgsize_t> sendBufferConnectivity; /*!< \brief Send buffer for connectivity data. */
+  vector<cgsize_t> recvBufferConnectivity; /*!< \brief Receive buffer for connectivity data. */
+  vector<dataPrecision> recvBufferField;   /*!< \brief Send buffer for field data. */
+  vector<dataPrecision> sendBufferField;   /*!< \brief Receive buffer for field data. */
 
   cgsize_t cumulative; /*!< \brief Cumulative number of elements written. */
-#endif
 
+  DataType_t dataType; /*!< \brief Datatype of fields can be RealSingle or RealDouble. */
+#endif
  public:
   /*!
    * \brief File extension
@@ -69,11 +78,6 @@ class CCGNSFileWriter final : public CFileWriter {
   CCGNSFileWriter(string valFileName, CParallelDataSorter* valDataSorter, bool isSurf = false);
 
   /*!
-   * \brief Destructor
-   */
-  ~CCGNSFileWriter() override;
-
-  /*!
    * \brief Write sorted data to file in CGNS file format.
    */
   void Write_Data() override;
@@ -81,14 +85,14 @@ class CCGNSFileWriter final : public CFileWriter {
   /*!
    * \brief Initialize CGNS mesh file.
    */
-  void initializeMeshFile();
+  void InitializeMeshFile();
 
   /*!
    * \brief Write i-th coordinate to file in CGNS file format.
-   * \param[in] CoordinateNumber - Coordinate number according to CGNS.
-   * \param[in] CoordinateName - Coordinate name according to CGNS.
+   * \param[in] iField - the output field ID.
+   * \param[in] FieldName - Field name in the CGNS.
    */
-  void WriteCoordinate(int CoordinateNumber, const string& CoordinateName);
+  void WriteField(int iField, const string& FieldName);
 
   /*!
    * \brief Write connectivity to file for GEO_TYPE in CGNS file format.
@@ -101,13 +105,6 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Initialize flow solution in the CGNS file.
    */
   void InitializeFields();
-
-  /*!
-   * \brief Write i-th coordinate to file in CGNS file format.
-   * \param[in] iField - the output field ID.
-   * \param[in] FieldName - Field name in the CGNS.
-   */
-  void WriteField(int iField, const string& FieldName);
 
   /*!
    * \brief Call a generic CGNS function.
