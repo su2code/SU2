@@ -35,7 +35,7 @@
 
 class CCGNSFileWriter final : public CFileWriter {
  private:
-  bool isSurface; /*!< \brief True if surface file. */
+  const bool isSurface; /*!< \brief True if surface file. */
 
 #ifdef HAVE_CGNS
   int cgnsFileID; /*!< \brief CGNS file identifier. */
