@@ -212,7 +212,7 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
   for (int i = 0; i < size; ++i) {
     if (i == MASTER_NODE) continue;
     /*--- In CGNS numbering starts form 1 and ranges are inclusive ---*/
-    firstElem += static_cast<cgsize_t>(distElem[i - 1]);
+    firstElem = endElem + 1;
     endElem += static_cast<cgsize_t>(distElem[i]);
     const auto recvSize = static_cast<int>(endElem - firstElem + 1);
     recvBufferConnectivity.resize(recvSize * nPointsElem);
