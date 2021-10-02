@@ -1,6 +1,6 @@
 /*!
  * \file CCGNSFileWriter.hpp
- * \brief Headers fo paraview binary file writer class.
+ * \brief Headers for CGNS file writer class.
  * \author G. Baldan
  * \version 7.2.0 "Blackbird"
  *
@@ -31,9 +31,6 @@
 #include "cgnslib.h"
 #endif
 
-/*--- Define data precision of output (float or double). ---*/
-typedef float dataPrecision;
-
 #include "CFileWriter.hpp"
 
 class CCGNSFileWriter final : public CFileWriter {
@@ -54,14 +51,15 @@ class CCGNSFileWriter final : public CFileWriter {
   cgsize_t GlobalPoint;       /*!< \brief Total number of points. */
   cgsize_t GlobalElem;        /*!< \brief Total number of elements. */
 
+  typedef float dataPrecision;            /*!< \brief Define data precision of output (float or double). */
+  const DataType_t dataType = RealSingle; /*!< \brief Datatype of fields can be RealSingle or RealDouble. */
+
   vector<cgsize_t> sendBufferConnectivity; /*!< \brief Send buffer for connectivity data. */
   vector<cgsize_t> recvBufferConnectivity; /*!< \brief Receive buffer for connectivity data. */
   vector<dataPrecision> recvBufferField;   /*!< \brief Send buffer for field data. */
   vector<dataPrecision> sendBufferField;   /*!< \brief Receive buffer for field data. */
 
   cgsize_t cumulative; /*!< \brief Cumulative number of elements written. */
-
-  DataType_t dataType; /*!< \brief Datatype of fields can be RealSingle or RealDouble. */
 #endif
  public:
   /*!
