@@ -1101,6 +1101,75 @@ public:
   }
 };
 
+class COptionInletSpecies : public COptionBase {
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  su2double ** & inletspeciesval;
+
+public:
+  COptionInletSpecies(string option_field_name, unsigned short & nMarker_Inlet_Species, string* & Marker_Inlet_Species, su2double** & option_field) : size(nMarker_Inlet_Species), marker(Marker_Inlet_Species), inletspeciesval(option_field) {
+    this->name = option_field_name;
+  }
+
+  ~COptionInletSpecies() {};
+
+  string SetValue(vector<string> option_value) {
+    COptionBase::SetValue(option_value);
+    unsigned short option_size = option_value.size();
+    if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = NULL;
+      this->inletspeciesval = NULL;
+      return "";
+    }
+
+    // at this point we need to know how many inlets we have. We count the number of strings
+    // in the list. We assume that the name of the inlet does not start with a number
+    unsigned short nVals=0;
+    unsigned short nSpecies=0;
+    for (unsigned long i = 0; i < option_size; i++) {
+      // get the next entry in the inlet list
+      if (isalpha(option_value[i][0])) {
+        nVals++;
+      } else {
+        nSpecies++;
+      }
+    }
+
+    nSpecies = nSpecies/nVals;
+
+    // nVals is the number of inlets
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->inletspeciesval = new su2double*[nVals];
+    for (unsigned long i = 0; i < nVals; i++) {
+
+      this->inletspeciesval[i] = new su2double[nSpecies];
+    }
+
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[(1+nSpecies)*i]);
+
+      for (unsigned long j=0;j<nSpecies;j++){
+        istringstream ss_nd(option_value[(1+nSpecies)*i + 1+j]);
+        if (!(ss_nd >> this->inletspeciesval[i][j])) {
+          return badValue(option_value, "inlet", this->name);
+        }
+      }
+
+    }
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->marker = NULL;
+    this->inletspeciesval = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
+
 template <class Tenum>
 class COptionRiemann : public COptionBase {
 

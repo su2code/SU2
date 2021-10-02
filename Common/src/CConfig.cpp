@@ -476,6 +476,14 @@ void CConfig::addInletOption(const string name, unsigned short & nMarker_Inlet, 
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
+                                    su2double** & inlet_species_val) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionInletSpecies(name, nMarker_Inlet_Species, Marker_Inlet_Species, inlet_species_val);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 template <class Tenum>
 void CConfig::addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                su2double* & var1, su2double* & var2, su2double** & FlowDir) {
@@ -823,7 +831,7 @@ void CConfig::SetPointersNull(void) {
   Marker_SymWall              = nullptr;    Marker_PerBound             = nullptr;
   Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;
   Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr;    Marker_Fluid_Load          = nullptr;
-  Marker_Inlet                = nullptr;    Marker_Outlet               = nullptr;
+  Marker_Inlet                = nullptr;    Marker_Outlet               = nullptr;    Marker_Inlet_Species       = nullptr;
   Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet    = nullptr;    Marker_Smoluchowski_Maxwell= nullptr;
   Marker_Isothermal           = nullptr;    Marker_HeatFlux             = nullptr;    Marker_EngineInflow        = nullptr;
   Marker_Load                 = nullptr;    Marker_Disp_Dir             = nullptr;    Marker_RoughWall           = nullptr;
@@ -937,6 +945,12 @@ void CConfig::SetPointersNull(void) {
   Kind_ObjFunc   = nullptr;
 
   Weight_ObjFunc = nullptr;
+
+  /*--- Species solver pointers. ---*/
+
+  Species_Init           = nullptr;
+  Species_Clipping_Min   = nullptr;
+  Species_Clipping_Max   = nullptr;
 
   /*--- Moving mesh pointers ---*/
 
@@ -1079,6 +1093,9 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
+
+  /*!\brief KIND_SPECIES_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NO_SCALAR_MODEL \ingroup Config*/
+  addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NO_SCALAR_MODEL);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);
@@ -1275,6 +1292,28 @@ void CConfig::SetConfig_Options() {
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
 
+  /*--- Options related to the species solver. ---*/
+
+  /*!\brief SPECIES_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
+  addDoubleListOption("SPECIES_INIT", nSpecies_Init, Species_Init);
+  /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Activate clipping for scalar transport equations \n DEFAULT: false \ingroup Config*/
+  addBoolOption("SPECIES_CLIPPING", Species_Clipping, false); // TODO TK:: require user to set min+max if set to true
+  /*!\brief SPECIES_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
+  addDoubleListOption("SPECIES_CLIPPING_MAX", nSpecies_Clipping_Max, Species_Clipping_Max);
+  /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
+  addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
+
+  /*--- Options related to mass diffusivity and thereby the species solver. ---*/
+
+  /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
+  addEnumOption("DIFFUSIVITY_MODEL", Kind_Diffusivity_Model, Diffusivity_Model_Map, DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY);
+  /*!\brief DIFFUSIVITY_CONSTANT\n DESCRIPTION: mass diffusivity if DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY is chosen \n DEFAULT 0.001 (Air) \ingroup Config*/
+  addDoubleOption("DIFFUSIVITY_CONSTANT", Diffusivity_Constant , 0.001);
+  /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \n DEFAULT 1.0 (~for Gases) \ingroup Config*/
+  addDoubleOption("SCHMIDT_NUMBER_LAMINAR", Schmidt_Number_Laminar, 1.0);
+  /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.70 (more or less experimental value) \ingroup Config*/
+  addDoubleOption("SCHMIDT_NUMBER_TURBULENT", Schmidt_Number_Turbulent, 0.7);
+
   vel_inf[0] = 1.0; vel_inf[1] = 0.0; vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, vel_inf);
@@ -1438,6 +1477,10 @@ void CConfig::SetConfig_Options() {
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
+  /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
+   Inlet Scalar: (inlet_marker, Species1, Species2, ...) */
+   /// NOTE TK:: We need to check that the sum is 0<=sum<=1 to be correct. Also check that multiple species must be specified.
+  addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal);
 
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
@@ -1628,6 +1671,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
+  /*!\brief CFL_REDUCTION_SPECIES \n DESCRIPTION: Reduction factor of the CFL coefficient in the species problem \n DEFAULT: 1.0 */
+  addDoubleOption("CFL_REDUCTION_SPECIES", CFLRedCoeff_Species, 1.0);
   /* DESCRIPTION: External iteration offset due to restart */
   addUnsignedLongOption("EXT_ITER_OFFSET", ExtIter_OffSet, 0);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -1661,6 +1706,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
+  /* DESCRIPTION: Time discretization */
+  addEnumOption("TIME_DISCRE_SPECIES", Kind_TimeIntScheme_Species, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, STRUCT_TIME_INT::NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization for radiation problems*/
@@ -1846,6 +1893,13 @@ void CConfig::SetConfig_Options() {
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
+
+  /*!\brief MUSCL_SPECIES \n DESCRIPTION: Check if the MUSCL scheme should be used \n DEFAULT false \ingroup Config*/
+  addBoolOption("MUSCL_SPECIES", MUSCL_Species, false);
+  /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NO_LIMITER \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, NO_LIMITER);
+  /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method \ingroup Config*/
+  addConvectOption("CONV_NUM_METHOD_SPECIES", Kind_ConvNumScheme_Species, Kind_Centered_Species, Kind_Upwind_Species);
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
@@ -6856,6 +6910,16 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  /// NOTE TK:: of course the situation is not ideal to not incorporate this into the usual inlet bc but let see
+  if (nMarker_Inlet_Species != 0) {
+    BoundaryTable << "Species Inlet boundary";
+    for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Species; iMarker_Inlet++) {
+      BoundaryTable << Marker_Inlet[iMarker_Inlet];
+      if (iMarker_Inlet < nMarker_Inlet_Species-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_Riemann != 0) {
     BoundaryTable << "Riemann boundary";
     for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
@@ -7795,6 +7859,7 @@ CConfig::~CConfig(void) {
           delete[] Marker_Fluid_Load;
       delete[] Marker_Fluid_InterfaceBound;
                delete[] Marker_Inlet;
+  delete[] Marker_Inlet_Species;
     delete[] Marker_Supersonic_Inlet;
     delete[] Marker_Supersonic_Outlet;
               delete[] Marker_Outlet;
@@ -7861,6 +7926,10 @@ CConfig::~CConfig(void) {
   delete [] VolumeOutputFiles;
 
   delete [] ConvField;
+
+  delete [] Species_Clipping_Min;
+  delete [] Species_Clipping_Max;
+  delete [] Species_Init;
 
 }
 
@@ -8060,10 +8129,12 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
+    case RUNTIME_SPECIES_SYS:   return SPECIES_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
+    case RUNTIME_ADJSPECIES_SYS:return ADJSPECIES_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
     case RUNTIME_RADIATION_SYS: return RAD_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
@@ -8111,6 +8182,13 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               MUSCL_Flow, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
+      if (val_system == RUNTIME_SPECIES_SYS) {
+        /// NOTE TK:: Why do we need this. The old impl also has this for Euler ... does that even make sense to have species transport in invicous flow?
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
+                              Kind_Upwind_Species, Kind_SlopeLimit_Species,
+                              MUSCL_Species, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Species);
+      }
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
@@ -8128,6 +8206,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               MUSCL_Turb, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+      }
+      if (val_system == RUNTIME_SPECIES_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
+                              Kind_Upwind_Species, Kind_SlopeLimit_Species,
+                              MUSCL_Species, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Species);
       }
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
@@ -8599,6 +8683,13 @@ const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_MassFrac[iMarker_Supersonic_Inlet];
+}
+
+su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {
+  unsigned short iMarker_Inlet_Species;
+  for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
+    if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
+  return Inlet_SpeciesVal[iMarker_Inlet_Species];
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {
