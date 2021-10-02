@@ -1258,6 +1258,22 @@ def main():
     p1rad.tol       = 0.00001
     test_list.append(p1rad)
 
+
+    # #############################
+    # ### Solid Heat Conduction ###
+    # #############################
+
+    # 2D pins, periodically connected
+    solid_periodic_pins           = TestCase('solid_periodic_pins')
+    solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
+    solid_periodic_pins.cfg_file  = "configSolid.cfg"
+    solid_periodic_pins.test_iter = 750
+    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
+    solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
+    solid_periodic_pins.timeout   = 1600
+    solid_periodic_pins.tol       = 0.00001
+    test_list.append(solid_periodic_pins)
+
     # ###############################
     # ### Conjugate heat transfer ###
     # ###############################

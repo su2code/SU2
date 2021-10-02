@@ -248,6 +248,15 @@ public:
                                   unsigned short val_marker) override;
 
   /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
+
+  /*!
    * \brief Set the conjugate heat variables.
    * \param[in] val_marker        - marker index
    * \param[in] val_vertex        - vertex index
