@@ -128,7 +128,13 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    /// NOTE TK:: currently only 1 equation (or 2 species) possible
+    AddHistoryOutput("RMS_SPECIES",    "rms[rho*Y]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+  }
   /// END_GROUP
+
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the pressure.
@@ -215,6 +221,11 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+  }
+
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
 
@@ -248,6 +259,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   CSolver* flow_solver = solver[FLOW_SOL];
   CSolver* turb_solver = solver[TURB_SOL];
+  CSolver* species_solver = solver[SPECIES_SOL];
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
@@ -265,6 +277,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    SetHistoryOutputValue("RMS_SPECIES", log(species_solver->GetRes_RMS(0)));
   }
 
   if (config->AddRadiation())
@@ -333,6 +349,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    SetHistoryOutputValue("LINSOL_ITER_SPECIES", species_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(species_solver->GetResLinSolver()));
+  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -396,6 +416,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    AddVolumeOutput("SPECIES", "Species", "SOLUTION", "Species mass fraction");
+  }
+
   // Radiation variables
   if (config->AddRadiation())
     AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
@@ -453,6 +477,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     break;
   case NONE:
     break;
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    AddVolumeOutput("RES_SPECIES", "Residual_Species", "RESIDUAL", "Residual of the transported species");
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
@@ -517,6 +545,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Heat = nullptr;
   CVariable* Node_Turb = nullptr;
+  CVariable* Node_Species = nullptr;
   CVariable* Node_Rad = nullptr;
   const auto Node_Geo = geometry->nodes;
 
@@ -525,6 +554,9 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
   if (weakly_coupled_heat){
     Node_Heat = solver[HEAT_SOL]->GetNodes();
+  }
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    Node_Species = solver[SPECIES_SOL]->GetNodes();
   }
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
@@ -549,6 +581,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     break;
   case NONE:
     break;
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    SetVolumeOutputValue("SPECIES", iPoint, Node_Species->GetSolution(iPoint, 0));
   }
 
   // Radiation solver
@@ -603,6 +639,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     break;
   case NONE:
     break;
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+    SetVolumeOutputValue("RES_SPECIES", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
