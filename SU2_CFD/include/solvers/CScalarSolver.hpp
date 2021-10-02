@@ -41,6 +41,7 @@ template <class VariableType>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
+  ///TODO TK:: This value has to be increased according to our needs. And there needs to be a check and helpful message.
   enum : size_t { MAXNVAR = 2 };      /*!< \brief Max number of variables, used in some static arrays. */
   enum : size_t { MAXNVARFLOW = 12 }; /*!< \brief Max number of flow variables, used in some static arrays. */
 

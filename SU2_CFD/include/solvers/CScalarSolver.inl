@@ -81,7 +81,7 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 
 template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
-                                               CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
+                                                  CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
@@ -181,7 +181,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         }
 
         if (muscl) {
-          /*--- Reconstruct turbulence variables. ---*/
+          /*--- Reconstruct scalar variables. ---*/
 
           auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
           auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
