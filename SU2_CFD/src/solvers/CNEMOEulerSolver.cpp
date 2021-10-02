@@ -965,7 +965,7 @@ void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, 
 
 void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
-  CompleteImplicitIteration_impl<false>(geometry, config);
+  CompleteImplicitIteration_impl<true>(geometry, config);
 }
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
