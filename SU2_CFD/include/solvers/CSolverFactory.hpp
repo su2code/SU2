@@ -43,6 +43,7 @@ enum class SUB_SOLVER_TYPE {
   DISC_ADJ_MESH,           /*!< \brief Discrete adjoint mesh solver */
   DISC_ADJ_FLOW,           /*!< \brief Discrete adjoint flow solver */
   DISC_ADJ_TURB,           /*!< \brief Discrete adjoint turbulence solver */
+  DISC_ADJ_SPECIES,        /*!< \brief Discrete adjoint species solver */
   DISC_ADJ_HEAT,           /*!< \brief Discrete adjoint heat solver */
   EULER,                   /*!< \brief Compressible Euler solver */
   NAVIER_STOKES,           /*!< \brief Compressible Navier-Stokes solver */
@@ -58,6 +59,7 @@ enum class SUB_SOLVER_TYPE {
   TURB_SA,                 /*!< \brief SA turbulence model solver */
   TURB_SST,                /*!< \brief SST turbulence model solver */
   TURB,                    /*!< \brief Turbulence model solver */
+  SPECIES,                 /*!< \brief Species model solver */
   MESH,                    /*!< \brief Mesh solver */
   RADIATION,               /*!< \brief Radiation solver */
   DISC_ADJ_RADIATION,      /*!< \brief Discrete adjoint radiation solver */
@@ -100,6 +102,17 @@ private:
    * \return                  - A pointer to the allocated turbulent solver
    */
   static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
+
+  /*!
+   * \brief Create a species solver
+   * \param[in] solver        - The solver container
+   * \param[in] geometry      - The geometry definition
+   * \param[in] config        - The configuration
+   * \param[in] iMGLevel      - The multigrid level
+   * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
+   * \return                  - A pointer to the allocated species solver
+   */
+  static CSolver* CreateSpeciesSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
 
   /*!
    * \brief Create a heat solver
