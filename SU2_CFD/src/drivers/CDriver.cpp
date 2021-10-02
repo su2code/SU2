@@ -81,6 +81,9 @@
 #include "../../include/numerics/turbulent/turb_convection.hpp"
 #include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
+#include "../../include/numerics/species/species_convection.hpp"
+#include "../../include/numerics/species/species_diffusion.hpp"
+#include "../../include/numerics/species/species_sources.hpp"
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEANonlinearElasticity.hpp"
@@ -1076,6 +1079,11 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     if (solver[MESH_0][TURB_SOL]) {
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
     }
+    /// NOTE TK:: currently not working, see SpeciesSolver Constructor
+    if (solver[MESH_0][SPECIES_SOL]) {
+      SU2_MPI::Error("Inlet profiles with species need to be implemented!", CURRENT_FUNCTION);
+      solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
+    }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
 
@@ -1099,6 +1107,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
         if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][SPECIES_SOL]) solver[iMesh][SPECIES_SOL]->SetUniformInlet(config, iMarker);
       }
     }
 
@@ -1211,6 +1220,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   nPrimVarGrad_NEMO     = 0,
   nVar_Trans            = 0,
   nVar_Turb             = 0,
+  nVar_Species          = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
@@ -1235,6 +1245,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   euler = ns = NEMO_euler = NEMO_ns = turbulent = adj_euler = adj_ns = adj_turb = fem_euler = fem_ns = fem_turbulent = false;
   spalart_allmaras = neg_spalart_allmaras = e_spalart_allmaras = comp_spalart_allmaras = e_comp_spalart_allmaras = menter_sst = false;
   fem = heat = transition = template_solver = false;
+  bool species = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -1247,7 +1258,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     case NAVIER_STOKES:
     case DISC_ADJ_NAVIER_STOKES:
-      ns = compressible = true; break;
+      ns = compressible = true;
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL); break;
 
     case NEMO_EULER:
       NEMO_euler = compressible = true; break;
@@ -1258,7 +1270,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case RANS:
     case DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == LM); break;
+      transition = (config->GetKind_Trans_Model() == LM);
+      species = config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL; break;
 
     case INC_EULER:
     case DISC_ADJ_INC_EULER:
@@ -1267,13 +1280,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case INC_NAVIER_STOKES:
     case DISC_ADJ_INC_NAVIER_STOKES:
       ns = incompressible = true;
-      heat = config->GetWeakly_Coupled_Heat(); break;
+      heat = config->GetWeakly_Coupled_Heat();
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL); break;
 
     case INC_RANS:
     case DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == LM); break;
+      transition = (config->GetKind_Trans_Model() == LM);
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL); break;
 
     case FEM_EULER:
     case DISC_ADJ_FEM_EULER:
@@ -1348,6 +1363,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (NEMO_ns)      nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver[MESH_0][TRANS_SOL]->GetnVar();
+  if (species)      nVar_Species = solver[MESH_0][SPECIES_SOL]->GetnVar();
 
   if (fem_euler)    nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
@@ -1927,6 +1943,45 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
     }
   }
+
+  if (species) {
+
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+
+    switch (config->GetKind_ConvNumScheme_Species()) {
+      case NONE :
+        break;
+      case SPACE_UPWIND :
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          numerics[iMGlevel][SPECIES_SOL][CONV_TERM] = new CUpwSca_Species(nDim, nVar_Species, config);        }
+        break;
+      default :
+        SU2_MPI::Error("Convective scheme not implemented (scalar transport).", CURRENT_FUNCTION);
+        break;
+    }
+
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      /// NOTE TK:: understand the "true" input. Correction of the gradient when to apply and when not. True for now as Turb does that as well. Maybe no correction available on boundaries.
+      if (iMGlevel == MESH_0) numerics[iMGlevel][SPECIES_SOL][VISC_TERM] = new CAvgGrad_Species(nDim, nVar_Species, true, config);
+    }
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    /// NOTE TK:: Here we would need to add axissymetric source term instantiation
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourceNothing(nDim, nVar_Species, config);
+      numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+    }
+
+    /*--- Definition of the boundary condition method ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      numerics[iMGlevel][SPECIES_SOL][CONV_BOUND_TERM] = new CUpwSca_Species(nDim, nVar_Species, config);
+      /// NOTE TK:: see above, correct_grad here is false
+      numerics[iMGlevel][SPECIES_SOL][VISC_BOUND_TERM] = new CAvgGrad_Species(nDim, nVar_Species, false, config);
+    }
+  } // if species
 
   /*--- Solver definition of the finite volume heat solver  ---*/
   if (heat) {
@@ -2675,6 +2730,8 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
 
   const unsigned short fieldWidth = 15;
   PrintingToolbox::CTablePrinter RMSTable(&std::cout);
+  // This allows better comparison with history output, which is more exact. Additionally set OUTPUT_PRECISION=12
+  RMSTable.SetPrecision(12);
 
   /*--- The CTablePrinter requires two sweeps:
     *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()
@@ -2702,6 +2759,15 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
               RMSTable.AddColumn("rms_Turb" + iVar_iZone2string(iVar, iZone), fieldWidth);
             else
               RMSTable << log10(solvers[TURB_SOL]->GetRes_RMS(iVar));
+          }
+        }
+
+        if (configs->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+          for (unsigned short iVar = 0; iVar < solvers[SPECIES_SOL]->GetnVar(); iVar++) {
+            if (!addVals)
+              RMSTable.AddColumn("rms_Scal" + iVar_iZone2string(iVar, iZone), fieldWidth);
+            else
+              RMSTable << log10(solvers[SPECIES_SOL]->GetRes_RMS(iVar));
           }
         }
 
@@ -2844,8 +2910,12 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   if(!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]->GetFluidProblem()) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
+          /// NOTE TK:: Check if this is necessary here . Why is this not done for turb or heat for example.
+          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL)
+            solver_container[iZone][iInst][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
+        }
       }
     }
   }

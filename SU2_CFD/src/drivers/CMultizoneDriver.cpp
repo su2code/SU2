@@ -247,6 +247,14 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                               solver_container[iZone][INST_0],
                                                                               config_container[iZone], TimeIter);
     }
+    /// NOTE TK:: check whether this is necessary
+    else if (!fsi && (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL)) {
+      SU2_MPI::Error("Species solver with multizone needs some testing probably!", CURRENT_FUNCTION);
+      /*--- Set the initial condition for species equation ---------------------------------------------*/
+      solver_container[iZone][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+                                                                                solver_container[iZone][INST_0],
+                                                                                config_container[iZone], TimeIter);
+    }
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
