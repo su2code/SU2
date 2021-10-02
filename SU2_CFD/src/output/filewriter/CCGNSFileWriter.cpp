@@ -214,8 +214,8 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
     /*--- In CGNS numbering starts form 1 and ranges are inclusive ---*/
     firstElem = endElem + 1;
     endElem += static_cast<cgsize_t>(distElem[i]);
-    const auto recvSize = static_cast<int>(endElem - firstElem + 1);
-    recvBufferConnectivity.resize(recvSize * nPointsElem);
+    const auto recvSize = static_cast<int>((endElem - firstElem + 1) * nPointsElem);
+    recvBufferConnectivity.resize(recvSize);
 
     const auto recvByte = static_cast<int>(recvBufferConnectivity.size() * sizeof(cgsize_t));
     SU2_MPI::Recv(recvBufferConnectivity.data(), recvByte, MPI_CHAR, i, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
