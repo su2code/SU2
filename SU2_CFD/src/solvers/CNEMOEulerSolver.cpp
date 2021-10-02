@@ -31,6 +31,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CSU2TCLib.hpp"
+#include "../../include/limiters/CLimiterDetails.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -261,7 +262,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
-      
+
       if ((rank == MASTER_NODE) && (ErrorCounter != 0))
         cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
     }
@@ -547,18 +548,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      /*--- Set and extract limiters ---*/
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-      if (limiter){
-        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-      }
-
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        su2double lim_i = 0.0;
-        su2double lim_j = 0.0;
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
 
@@ -567,22 +558,22 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
           Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
-        if (limiter) {
-          if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
-            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
-          }
-          if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
-          if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
-          su2double lim_ij = min(lim_i, lim_j);
+        su2double lim_i = 1.0;
+        su2double lim_j = 1.0;
 
-          Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
-        } else {
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+        if (van_albada) {
+          su2double V_ij = V_j[iVar] - V_i[iVar];
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
         }
+        else if (limiter) {
+          lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
+          lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
+        }
+        su2double lim_ij = min(lim_i, lim_j);
+
+        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
@@ -1600,8 +1591,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetConservative(nodes->GetSolution(iPoint),
                                        node_infty->GetSolution(0) );
-        visc_numerics->SetConsVarGradient(nodes->GetGradient(iPoint),
-                                          node_infty->GetGradient(0) );
         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                                     node_infty->GetPrimitive(0) );
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -2128,8 +2117,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
 //        /*--- Conservative variables, and gradient ---*/
 //        visc_numerics->SetConservative(U_domain, U_outlet);
-//        visc_numerics->SetConsVarGradient(nodes->GetGradient(), node_infty->GetGradient() );
-
 
 //        /*--- Pass supplementary information to CNumerics ---*/
 //        visc_numerics->SetdPdU(nodes->GetdPdU(), node_infty->GetdPdU());

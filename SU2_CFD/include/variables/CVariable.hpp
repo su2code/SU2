@@ -142,7 +142,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CVariable(unsigned long npoint, unsigned long nvar, CConfig *config);
+  CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config);
 
   /*!
    * \overload
@@ -152,7 +152,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] adjoint - True if derived class is an adjoint variable.
    */
-  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint = false);
+  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config, bool adjoint = false);
 
   /*!
    * \brief Destructor of the class.
