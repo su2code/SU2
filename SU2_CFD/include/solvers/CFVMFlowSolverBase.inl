@@ -2393,8 +2393,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0, RHOS_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
-            Density = 0.0, GradTemperature, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, Density = 0.0, GradTemperature,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2527,7 +2526,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux
        * on the wall ---*/
 
-      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
+      su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
@@ -2541,11 +2540,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
       
-      WallDistMod = GeometryToolbox::Norm(nDim, WallDist);
+      su2double WallDistMod = GeometryToolbox::Norm(nDim, WallDist);
 
       /*--- Compute y+ and non-dimensional velocity ---*/
 
-      FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
+      su2double FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
       /* --- in case of wall functions, we have computed YPlus in the turbulence class --- */
       /* --- Note that we do not recompute y+ when y+<5 because y+ can become > 5 again --- */
@@ -2586,8 +2585,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           sumJhs += Ds[iSpecies]*hs[iSpecies]*GeometryToolbox::DotProduct(nDim, Grad_PrimVar[RHOS_INDEX+iSpecies], UnitNormal);
         
-        dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
-        dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
+        su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
+        su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
         
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
         enthalpy transport due to mass diffusion ---*/ 
