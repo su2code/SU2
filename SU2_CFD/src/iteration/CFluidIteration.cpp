@@ -122,7 +122,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     }
   }
 
-  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL){
+  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_SPECIES_SYS);
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_SPECIES_SYS, val_iZone, val_iInst);

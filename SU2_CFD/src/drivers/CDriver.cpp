@@ -1259,7 +1259,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case NAVIER_STOKES:
     case DISC_ADJ_NAVIER_STOKES:
       ns = compressible = true;
-      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL); break;
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case NEMO_EULER:
       NEMO_euler = compressible = true; break;
@@ -1271,7 +1271,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
       transition = (config->GetKind_Trans_Model() == LM);
-      species = config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL; break;
+      species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case INC_EULER:
     case DISC_ADJ_INC_EULER:
@@ -1281,14 +1281,14 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case DISC_ADJ_INC_NAVIER_STOKES:
       ns = incompressible = true;
       heat = config->GetWeakly_Coupled_Heat();
-      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL); break;
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case INC_RANS:
     case DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
       transition = (config->GetKind_Trans_Model() == LM);
-      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL); break;
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case FEM_EULER:
     case DISC_ADJ_FEM_EULER:
@@ -2762,7 +2762,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
           }
         }
 
-        if (configs->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+        if (configs->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
           for (unsigned short iVar = 0; iVar < solvers[SPECIES_SOL]->GetnVar(); iVar++) {
             if (!addVals)
               RMSTable.AddColumn("rms_Scal" + iVar_iZone2string(iVar, iZone), fieldWidth);
@@ -2913,7 +2913,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
           /// NOTE TK:: Check if this is necessary here . Why is this not done for turb or heat for example.
-          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL)
+          if (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)
             solver_container[iZone][iInst][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
         }
       }

@@ -445,12 +445,10 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
-  su2double* inlet_species = new su2double[nVar]{};
-
   // bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   // su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
-  inlet_species = config->GetInlet_SpeciesVal(Marker_Tag);
+  const su2double* inlet_species = config->GetInlet_SpeciesVal(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 

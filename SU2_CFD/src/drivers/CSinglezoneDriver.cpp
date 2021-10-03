@@ -142,7 +142,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                             config_container[ZONE_0], TimeIter);
   }
   /// NOTE TK:: is this necessary. What is my purpose when Turb does not do this.
-  else if (config_container[ZONE_0]->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  else if (config_container[ZONE_0]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     /*--- Set the initial condition for species equation ---------------------------------------------*/
     solver_container[ZONE_0][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                                solver_container[ZONE_0][INST_0],

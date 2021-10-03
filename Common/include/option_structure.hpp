@@ -948,13 +948,13 @@ static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
  * \brief types of species transport models
  */
 enum class SPECIES_MODEL {
-  NO_SCALAR_MODEL,   /*!< \brief No scalar transport model. */
+  NONE,              /*!< \brief No scalar transport model. */
   PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
   PROGRESS_VARIABLE, /*!< \brief Progress variable combustion model. */
   CUSTOM_SCALAR,     /*!< \brief Custom scalar transport model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
-  MakePair("NONE", SPECIES_MODEL::NO_SCALAR_MODEL)
+  MakePair("NONE", SPECIES_MODEL::NONE)
   MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
   MakePair("PROGRESS_VARIABLE", SPECIES_MODEL::PROGRESS_VARIABLE)
   MakePair("CUSTOM_SCALAR", SPECIES_MODEL::CUSTOM_SCALAR)

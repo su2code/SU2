@@ -497,9 +497,9 @@ private:
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
-  Kind_SlopeLimit_AdjFlow;      /*!< \brief Slope limiter for the adjoint equation.*/
-  unsigned short Kind_SlopeLimit_Species; /*!< \brief Slope limiter for the species equation.*/
-  unsigned short Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
+  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Species,      /*!< \brief Slope limiter for the species equation.*/
+  Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,      /*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
   Kind_ADER_Predictor,          /*!< \brief Predictor step of the ADER-DG time integration scheme. */
@@ -551,7 +551,7 @@ private:
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  bool MUSCL_Species;       /*!< \brief MUSCL scheme for the species equations.*/
+  bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
@@ -567,7 +567,7 @@ private:
 
   unsigned short Kind_Turb_Model;   /*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model;  /*!< \brief Transition model definition. */
-  SPECIES_MODEL Kind_Species_Model;/*!< \brief Species model definition. */
+  SPECIES_MODEL Kind_Species_Model; /*!< \brief Species model definition. */
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
@@ -1162,12 +1162,12 @@ private:
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
-  su2double *Species_Clipping_Max; /*!< \brief Maximum value of clipping for scalar transport. */
-  su2double *Species_Clipping_Min; /*!< \brief Minimum value of clipping for scalar transport. */
+  su2double* Species_Clipping_Max; /*!< \brief Maximum value of clipping for scalar transport. */
+  su2double* Species_Clipping_Min; /*!< \brief Minimum value of clipping for scalar transport. */
   unsigned short nSpecies_Clipping_Max, nSpecies_Clipping_Min; /* TK:: nijso: this should be the same as nScalar (or nVar for the scalar)*/
-  su2double *Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
-  unsigned short nSpecies_Init; /* TK:: There should only be one nSpecies / nVar for the whole species solver */
-  unsigned short n_species;       /*!< \brief Number of species equations! Not species itself which would be 1 more. */
+  su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
+  unsigned short nSpecies_Init;    /* TK:: There should only be one nSpecies / nVar for the whole species solver */
+  unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2020,28 +2020,17 @@ public:
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
 
   void SetNSpecies(unsigned short n_species) { this->n_species = n_species; }
-  unsigned short GetNSpecies(void) const { return n_species; }
+  unsigned short GetNSpecies() const { return n_species; }
 
-  unsigned short GetNSpeciesInit(void) const { return nSpecies_Init; }
+  unsigned short GetNSpeciesInit() const { return nSpecies_Init; }
   void SetNSpeciesInit(unsigned short nSpecies_Init) { this->nSpecies_Init = nSpecies_Init; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
    * \return Flag for species clipping.
    */
-  bool GetSpecies_Clipping(void) { return Species_Clipping; }
+  bool GetSpecies_Clipping() { return Species_Clipping; }
 
-  /*!
-   * \brief Get the maximum bound for scalar transport clipping
-   * \return Maximum value for scalar clipping
-   */
-  su2double *GetSpecies_Clipping_Max(void) const { return Species_Clipping_Max; }
-
-  /*!
-   * \brief Get the minimum bound for scalar transport clipping
-   * \return Minimum value for scalar clipping
-   */
-  su2double *GetSpecies_Clipping_Min(void) const { return Species_Clipping_Min; }
   /*!
    * \brief Get the maximum bound for scalar transport clipping
    * \return Maximum value for scalar clipping
@@ -4554,7 +4543,7 @@ public:
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the species equation.
    */
-  unsigned short GetKind_SlopeLimit_Species(void) const { return Kind_SlopeLimit_Species; }
+  unsigned short GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
@@ -4722,7 +4711,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the Species equations.
    */
-  unsigned short GetKind_TimeIntScheme_Species(void) const { return Kind_TimeIntScheme_Species; }
+  unsigned short GetKind_TimeIntScheme_Species() const { return Kind_TimeIntScheme_Species; }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the Species
@@ -4731,7 +4720,7 @@ public:
    *       during the computation.
    * \return Kind of convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_ConvNumScheme_Species(void) const { return Kind_ConvNumScheme_Species; }
+  unsigned short GetKind_ConvNumScheme_Species() const { return Kind_ConvNumScheme_Species; }
 
   /*!
    * \brief Get the kind of center convective numerical scheme for the Species equations.
@@ -4739,7 +4728,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Centered_Species(void) const { return Kind_Centered_Species; }
+  unsigned short GetKind_Centered_Species() const { return Kind_Centered_Species; }
 
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the Species equations.
@@ -4747,7 +4736,7 @@ public:
    *       during the computation.
    * \return Kind of upwind convective numerical scheme for the Species equations.
    */
-  unsigned short GetKind_Upwind_Species(void) const { return Kind_Upwind_Species; }
+  unsigned short GetKind_Upwind_Species() const { return Kind_Upwind_Species; }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the heat equation.
@@ -5210,7 +5199,7 @@ public:
    * \brief Provides the number of species present in the plasma
    * \return: The number of species present in the plasma, read from input file
    */
-  unsigned short GetnSpecies(void) const { return nSpecies; }
+  unsigned short GetnSpecies() const { return nSpecies; }
 
    /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.
@@ -6577,7 +6566,7 @@ public:
    * \return The inlet species values.
    */
   // nijso: TODO we do not need inlet enthalpy, it is computed from temperature!
-  su2double* GetInlet_SpeciesVal(string val_index) const;
+  const su2double* GetInlet_SpeciesVal(string val_index) const;
 
   /*!
    * \brief Get the total pressure at an nacelle boundary.
@@ -6596,7 +6585,7 @@ public:
    * \brief Value of the CFL reduction in species problems.
    * \return Value of the CFL reduction in species problems.
    */
-  su2double GetCFLRedCoeff_Species(void) const { return CFLRedCoeff_Species; }
+  su2double GetCFLRedCoeff_Species() const { return CFLRedCoeff_Species; }
 
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.

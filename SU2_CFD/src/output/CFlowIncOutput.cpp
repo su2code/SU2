@@ -129,7 +129,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   default: break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     /// NOTE TK:: currently only 1 equation (or 2 species) possible
     AddHistoryOutput("RMS_SPECIES",    "rms[rho*Y]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
   }
@@ -221,7 +221,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
   }
@@ -279,7 +279,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetHistoryOutputValue("RMS_SPECIES", log(species_solver->GetRes_RMS(0)));
   }
 
@@ -349,7 +349,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", species_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(species_solver->GetResLinSolver()));
   }
@@ -416,7 +416,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     AddVolumeOutput("SPECIES", "Species", "SOLUTION", "Species mass fraction");
   }
 
@@ -479,7 +479,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     AddVolumeOutput("RES_SPECIES", "Residual_Species", "RESIDUAL", "Residual of the transported species");
   }
 
@@ -555,7 +555,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (weakly_coupled_heat){
     Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     Node_Species = solver[SPECIES_SOL]->GetNodes();
   }
 
@@ -583,7 +583,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetVolumeOutputValue("SPECIES", iPoint, Node_Species->GetSolution(iPoint, 0));
   }
 
@@ -641,7 +641,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NO_SCALAR_MODEL) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetVolumeOutputValue("RES_SPECIES", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
   }
 
