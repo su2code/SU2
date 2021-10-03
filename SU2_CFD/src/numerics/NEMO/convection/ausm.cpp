@@ -83,7 +83,7 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
 CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim, iVar, jVar, iSpecies;
-  su2double rho_i, rho_j, Ru,
+  su2double rho_i, rho_j, 
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
   /*--- Compute geometric quantities ---*/

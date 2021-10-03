@@ -1644,6 +1644,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
 
   const su2double *Flow_Dir;
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   bool dynamic_grid         = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;

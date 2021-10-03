@@ -67,7 +67,6 @@ CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
   delete [] rhos_j;
   delete [] u_i;
   delete [] u_j;
-  unsigned short iVar;
   delete [] Flux;
 }
 

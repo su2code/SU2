@@ -421,7 +421,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                        const CConfig *config) {
 
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
-  su2double rho, rho_i, rho_j, vel[3], T, Tve;
+  su2double rho_i, rho_j, vel[3], T, Tve;
   su2double mu, ktr, kve, *Ds, dij, Ru, RuSI;
   su2double theta, thetax, thetay, thetaz;
   su2double etax, etay, etaz;
@@ -467,7 +467,6 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
   }
 
   /*--- Rename for convenience ---*/
-  rho = val_Mean_PrimVar[RHO_INDEX];
   rho_i = V_i[RHO_INDEX];
   rho_j = V_j[RHO_INDEX];
   T   = val_Mean_PrimVar[T_INDEX];

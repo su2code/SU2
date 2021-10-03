@@ -76,7 +76,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, iVar;
-  unsigned short jSpecies, jVar;
+  unsigned short jVar;
   su2double T, Tve;
   vector<su2double> rhos;
 
@@ -104,16 +104,16 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, eve_i, Cvve_i,
                                              dTdU_i, dTvedU_i, jacobian);
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    residual[iSpecies] = ws[iSpecies] *Volume;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    residual[iSpecies] = ws[iSpecies] *Volume;}
 
-    if (implicit) {
-      for (iVar = 0; iVar<nVar; iVar++) {
-        for (jVar = 0; jVar<nVar; jVar++) {
-        jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume;
-        }
+  if (implicit) {
+    for (iVar = 0; iVar<nVar; iVar++) {
+      for (jVar = 0; jVar<nVar; jVar++) {
+      jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume;
       }
     }
+  }
 
   return ResidualType<>(residual, jacobian, nullptr);
 
@@ -127,7 +127,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
   unsigned short iSpecies, iVar;
-  unsigned short jSpecies, jVar;
+  unsigned short jVar;
   su2double T, Tve;
   su2double VTterm;
   su2double res_min = -1E6;
