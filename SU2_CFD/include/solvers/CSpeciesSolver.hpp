@@ -51,11 +51,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   CSpeciesSolver();
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CSpeciesSolver() override;
-
-  /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
