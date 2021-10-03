@@ -2528,10 +2528,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux
        * on the wall ---*/
 
-      TauNormal = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
 
-      WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
         /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
@@ -2539,15 +2537,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         /* --- We put YPlus to 1.0 so we have to compute skinfriction and the actual y+ in that case as well --- */
         if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < 5.0))
           CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
-
-        WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
-      WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
+      WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(nDim, TauTangent);
 
       for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-      WallDistMod = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim] * WallDist[iDim];
-      WallDistMod = sqrt(WallDistMod);
+      
+      WallDistMod = GeometryToolbox::Norm(nDim, WallDist);
 
       /*--- Compute y+ and non-dimensional velocity ---*/
 
@@ -2563,17 +2558,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /// TODO: Move these ifs to specialized functions.
       if (!nemo){
 
-        GradTemperature = 0.0;
-
         if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+          GradTemperature = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
 
           Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
           thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
         }
         if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
           if (energy)
-            for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+            GradTemperature = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
 
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
@@ -2584,30 +2577,19 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         unsigned short iSpecies, nSpecies = config->GetnSpecies();
 
-        const auto thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
-        const auto thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        const auto Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-        const auto PrimVar                 = nodes->GetPrimitive(iPoint);
-        const auto Ds                      = nodes->GetDiffusionCoeff(iPoint);
-        const auto hs                      = nodes->GetEnthalpys(iPoint);
-
-        su2double rho                      = PrimVar[RHO_INDEX]; 
-        su2double dYsn;
+        const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
+        const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
+        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+        const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
+        const auto& hs                      = nodes->GetEnthalpys(iPoint);
 
         /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
         su2double sumJhs = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-            dYsn = Grad_PrimVar[RHOS_INDEX+iSpecies][iDim]/rho*UnitNormal[iDim];
-            sumJhs += rho*Ds[iSpecies]*dYsn*hs[iSpecies];
-          }
-        }
-
-        dTn = 0.0; dTven = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
-        }
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          sumJhs += Ds[iSpecies]*hs[iSpecies]*GeometryToolbox::DotProduct(nDim, Grad_PrimVar[RHOS_INDEX+iSpecies], UnitNormal);
+        
+        dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
+        dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
         
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
         enthalpy transport due to mass diffusion ---*/ 
