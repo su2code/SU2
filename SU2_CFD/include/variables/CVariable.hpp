@@ -938,10 +938,8 @@ public:
   inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
 
   /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_Species - Index of species s.
-   * \return Value of enthalpy of species s.
+   * \brief Get the species enthalpy.
+   * \return Value of the species enthalpy.
    */
   inline virtual su2double* GetEnthalpys(unsigned long iPoint) { return nullptr; }
 

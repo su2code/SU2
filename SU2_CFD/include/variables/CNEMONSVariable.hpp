@@ -99,7 +99,7 @@ public:
    */
   inline su2double* GetDiffusionCoeff(unsigned long iPoint) override { return DiffusionCoeff[iPoint]; }
 
-    /*!
+  /*!
    * \brief Get the species enthalpy.
    * \return Value of the species enthalpy.
    */
