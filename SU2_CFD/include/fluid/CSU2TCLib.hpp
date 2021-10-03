@@ -78,16 +78,16 @@ private:
   *dPdU, *dTdU, *dTvedU;
 
   su2double fwdRxn, bkwRxn,
-	kf,kfb,kb,
-	coeff, eta, epsilon, T_min,
-	Trxnf, Trxnb,
-	Thf, Thb, dThf, dThb,
-	theta, af, bf, ab, bb;
+  kf,kfb,kb,
+  coeff, eta, epsilon, T_min,
+  Trxnf, Trxnb,
+  Thf, Thb, dThf, dThb,
+  theta, af, bf, ab, bb;
 
   vector<su2double>
   dkf, dkb,
   dRfok, dRbok,
-	eve, eve_eq, cvve, cvve_eq;
+  eve, eve_eq, cvve, cvve_eq;
 
   vector<int>
   alphak, betak;

@@ -2034,7 +2034,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
 
-	/*--- Primitive variables, using the derived quantities ---*/
+        /*--- Primitive variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
           V_outlet[iSpecies] = Ys[iSpecies]*Density;
           rhos[iSpecies]     = V_outlet[iSpecies];

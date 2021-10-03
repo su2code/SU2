@@ -71,7 +71,7 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
   delete [] Flux;
   delete [] daL;
   delete [] daR;
-  
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
