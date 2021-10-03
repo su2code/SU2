@@ -828,7 +828,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
     /*--- Create main agglomeration structure ---*/
 
-    geometry[iMGlevel] = new CMultiGridGeometry(geometry, config, iMGlevel);
+    geometry[iMGlevel] = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
 
     /*--- Compute points surrounding points. ---*/
 
@@ -841,8 +841,8 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
     /*--- Create the control volume structures ---*/
 
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGlevel-1], ALLOCATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest neighbor to a surface point ---*/
@@ -2462,7 +2462,7 @@ void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geomet
         setting the moving wall velocities for the finest mesh. ---*/
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
         iMGfine = iMGlevel-1;
-        geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+        geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine]);
       }
     }
   } else {
