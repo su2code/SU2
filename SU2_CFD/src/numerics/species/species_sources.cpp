@@ -31,14 +31,25 @@
 #include "../../../include/numerics/CNumerics.hpp"
 
 CSourceSpecies::CSourceSpecies(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
-    : CNumerics(val_nDim, val_nVar, config) {}
-
-CNumerics::ResidualType<> CSourceSpecies::ComputeResidual(const CConfig* config) {
-  su2double* residual = nullptr;
-  su2double** jacobian = nullptr;
-
+    : CNumerics(val_nDim, val_nVar, config) {
   residual = new su2double[nVar]();
   jacobian = new su2double*[nVar];
+
+  for (unsigned short iVar = 0; iVar < nVar; ++iVar) jacobian[iVar] = new su2double[nVar]();
+}
+
+CSourceSpecies::~CSourceSpecies() {
+  delete[] residual;
+  if (jacobian) {
+    for (unsigned short iVar = 0; iVar < nVar; ++iVar) delete[] jacobian[iVar];
+    delete[] jacobian;
+  }
+}
+
+CNumerics::ResidualType<> CSourceSpecies::ComputeResidual(const CConfig* config) {
+  residual = new su2double[nVar]();
+  jacobian = new su2double*[nVar];
+
   for (unsigned short iVar = 0; iVar < nVar; ++iVar) jacobian[iVar] = new su2double[nVar]();
 
   return ResidualType<>(residual, jacobian, nullptr);

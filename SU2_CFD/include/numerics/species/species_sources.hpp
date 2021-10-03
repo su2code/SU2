@@ -37,6 +37,10 @@
  * \author T. Kattmann.
  */
 class CSourceSpecies : public CNumerics {
+ protected:
+  su2double* residual = nullptr;
+  su2double** jacobian = nullptr;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -45,6 +49,11 @@ class CSourceSpecies : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceSpecies(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceSpecies();
 
   /*!
    * \brief Residual for source term integration.
