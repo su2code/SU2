@@ -27,8 +27,8 @@
 
 #include "../../include/variables/CSpeciesVariable.hpp"
 
-CSpeciesVariable::CSpeciesVariable(su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                                   CConfig* config)
+CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim,
+                                   unsigned long nvar, const CConfig* config)
     : CScalarVariable(npoint, ndim, nvar, config) {
   /*--- Allocate space for the mass diffusivity. ---*/
   Diffusivity.resize(nPoint, nVar) = su2double(0.0);  /// TK:: more appropriate init here possible?

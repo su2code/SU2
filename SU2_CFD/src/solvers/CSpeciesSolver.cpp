@@ -207,8 +207,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   SolverName = "SPECIES";
 }
 
-CSpeciesSolver::~CSpeciesSolver() {}
-
 void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                  bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
