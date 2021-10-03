@@ -48,13 +48,8 @@ class CSpeciesVariable : public CScalarVariable {
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSpeciesVariable(su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
-                   CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSpeciesVariable() override = default;
+  CSpeciesVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
+                   const CConfig* config);
 
   /*!
    * \brief Set the value of the mass diffusivity
@@ -78,5 +73,5 @@ class CSpeciesVariable : public CScalarVariable {
    * \brief Get the value of the mass diffusivities
    * \return Pointer to the mass diffusivities
    */
-  inline su2double* GetDiffusivity(unsigned long iPoint) { return Diffusivity[iPoint]; }
+  inline const su2double* GetDiffusivity(unsigned long iPoint) const { return Diffusivity[iPoint]; }
 };

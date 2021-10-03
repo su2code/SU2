@@ -1953,7 +1953,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          numerics[iMGlevel][SPECIES_SOL][CONV_TERM] = new CUpwSca_Species(nDim, nVar_Species, config);        }
+          numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species(nDim, nVar_Species, config);
+        }
         break;
       default :
         SU2_MPI::Error("Convective scheme not implemented (scalar transport).", CURRENT_FUNCTION);
@@ -1964,7 +1965,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /// NOTE TK:: understand the "true" input. Correction of the gradient when to apply and when not. True for now as Turb does that as well. Maybe no correction available on boundaries.
-      if (iMGlevel == MESH_0) numerics[iMGlevel][SPECIES_SOL][VISC_TERM] = new CAvgGrad_Species(nDim, nVar_Species, true, config);
+      if (iMGlevel == MESH_0) numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species(nDim, nVar_Species, true, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1977,9 +1978,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the boundary condition method ---*/
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][SPECIES_SOL][CONV_BOUND_TERM] = new CUpwSca_Species(nDim, nVar_Species, config);
+      numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species(nDim, nVar_Species, config);
       /// NOTE TK:: see above, correct_grad here is false
-      numerics[iMGlevel][SPECIES_SOL][VISC_BOUND_TERM] = new CAvgGrad_Species(nDim, nVar_Species, false, config);
+      numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species(nDim, nVar_Species, false, config);
     }
   } // if species
 
