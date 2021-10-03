@@ -2437,11 +2437,3 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   delete [] Normal;
 
 }
-
-//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  /*--- Call the Euler wall routine ---*/
-//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//}
