@@ -44,6 +44,8 @@ public:
   su2double *rhos_j, *u_j;
   su2double a_i, P_i, h_i;
   su2double a_j, P_j, h_j;
+  su2double rho_i, rho_j;
+  su2double e_ve_i, e_ve_j;
   su2double rhoCvtr_i, rhoCvtr_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
