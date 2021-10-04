@@ -54,7 +54,6 @@ Andrew Wendorff
 Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
-baldang
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brendan Tracey
@@ -125,6 +124,7 @@ aaronyicongfu
 aeroamit
 anilvar
 band-a-prend
+baldang
 chamsolli
 costat
 daniel-linton
