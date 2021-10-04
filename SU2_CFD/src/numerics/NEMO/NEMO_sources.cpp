@@ -444,4 +444,3 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   return ResidualType<>(residual, nullptr, nullptr);
 }
-
