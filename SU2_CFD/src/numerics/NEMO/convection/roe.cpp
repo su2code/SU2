@@ -57,7 +57,12 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   ProjFlux_j = new su2double [nVar];
 
   Flux   = new su2double[nVar];
-
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
@@ -81,6 +86,12 @@ CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
   delete [] ProjFlux_i;
   delete [] ProjFlux_j;
   delete [] Flux;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
 CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
@@ -166,10 +177,10 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Calculate inviscid projected Jacobians ---*/
   // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
-  //if (implicit){
-  //  GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
-  //  GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
-  //}
+  if (implicit){
+    GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, Jacobian_j);
+  }
 
   /*--- Difference of conserved variables at iPoint and jPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -186,12 +197,12 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       Flux[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-      //if (implicit){
-      //  val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-      //  val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
-      //}
+      if (implicit){
+        Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+        Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+      }
     }
   }
 
-  return ResidualType<>(Flux, nullptr, nullptr);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

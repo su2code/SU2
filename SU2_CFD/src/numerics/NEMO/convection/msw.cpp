@@ -68,7 +68,13 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   }
 
   Flux   = new su2double[nVar];
-
+  Flux   = new su2double[nVar];
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
@@ -101,7 +107,12 @@ CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
   delete [] P_Tensor;
   delete [] invP_Tensor;
   delete [] Flux;
-
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
 CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
@@ -128,14 +139,14 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
     Fc_i[iVar] = 0.0;
     Fc_j[iVar] = 0.0;
   }
-//  if (implicit) {
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        val_Jacobian_i[iVar][jVar] = 0.0;
-//        val_Jacobian_j[iVar][jVar] = 0.0;
-//      }
-//    }
-//  }
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
+      }
+    }
+  }
 
   /*--- Load variables from nodes i & j ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -212,8 +223,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
       Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
-     // if (implicit)
-     //   val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
+      if (implicit)
+        Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
     }
   }
 
@@ -246,8 +257,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_j += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
       Fc_j[iVar] += Proj_ModJac_Tensor_j*U_j[jVar]*Area;
-      //if (implicit)
-      //  val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
+      if (implicit)
+        Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
     }
   }
 
@@ -256,5 +267,5 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
     Flux[iVar] = Fc_i[iVar]+Fc_j[iVar];
   }
 
-  return ResidualType<>(Flux, nullptr, nullptr);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }
