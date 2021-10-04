@@ -98,7 +98,7 @@ Mickael Philit
 Mladen Banovic
 Nat-1
 Nicola Fonzi
-Nijso
+Nijso Beishuizen
 Ole Burghardt
 Patrick Mischke
 Paul Urbanczyk
@@ -144,7 +144,6 @@ snow54
 sravya91
 srcopela
 tobadavid
-tollennaert
 vfrancesmolla
 ```
 
