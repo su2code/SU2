@@ -149,6 +149,18 @@ class CDiscAdjHeatIteration final : public CIteration {
                       unsigned short iZone, unsigned short iInst) override;
 
   /*!
+   * \brief Record a single iteration of the direct FEM system.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] iInst - Index of the instance.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+  void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                    unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
+
+  /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
    * (e.g. turbulent variables, normals, volumes).
    * \param[in] solver - Container vector with all the solutions.
