@@ -1714,11 +1714,10 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Store primitives and set some variables for clarity. ---*/
         Density = V_domain[RHO_INDEX];
-        Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) 
           Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
+
+        Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
         Energy      = U_domain[nVar-2]/Density;
         Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
@@ -1735,9 +1734,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Dot product of normal and flow direction. This should
            be negative due to outward facing boundary normal convention. ---*/
-        alpha = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          alpha += UnitNormal[iDim]*Flow_Dir[iDim];
+        alpha = GeometryToolbox::DotProduct(nDim, UnitNormal, Flow_Dir);
 
         /*--- Coefficients in the quadratic equation for the velocity ---*/
         aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
@@ -2440,11 +2437,3 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   delete [] Normal;
 
 }
-
-//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  /*--- Call the Euler wall routine ---*/
-//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//}

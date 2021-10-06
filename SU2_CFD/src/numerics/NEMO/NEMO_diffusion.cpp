@@ -233,7 +233,6 @@ CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
 CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iSpecies;
-  su2double dist_ij_2;
 
   /*--- Normalized normal vector ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -242,11 +241,10 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-  dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
+  su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
 
   /*--- Make a local copy of the primitive variables ---*/
   // NOTE: We are transforming the species density terms to species mass fractions
@@ -277,7 +275,6 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
                                           PrimVar_Grad_j[iVar][iDim]);
     }
   }
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
@@ -298,9 +295,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+    Proj_Mean_GradPrimVar_Edge[iVar] = GeometryToolbox::DotProduct(nDim, Mean_GradPrimVar[iVar], Edge_Vector);
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
@@ -322,10 +317,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
-    dist_ij = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-    dist_ij = sqrt(dist_ij);
+    dist_ij = sqrt(dist_ij_2);
 
     //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
     //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
@@ -337,4 +329,3 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   return ResidualType<>(Flux, nullptr, nullptr);
 }
-

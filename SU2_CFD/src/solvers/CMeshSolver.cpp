@@ -614,7 +614,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
     END_SU2_OMP_FOR
 
     for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1], config);
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1]);
   }
   END_SU2_OMP_PARALLEL
 
@@ -653,7 +653,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry **geometry, const CConfig *confi
   END_SU2_OMP_FOR
 
   for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-    geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1], config);
+    geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1]);
 
 }
 
