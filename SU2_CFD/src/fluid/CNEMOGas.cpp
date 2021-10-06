@@ -297,4 +297,3 @@ void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2doubl
   val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
 
 }
-
