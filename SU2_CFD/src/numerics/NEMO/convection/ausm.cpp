@@ -162,9 +162,9 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Populate the AUSM Jacobian, if necessary. ---*/
   if (implicit){
 
-    auto& Ms     = fluidmodel->GetSpeciesMolarMass();
-    auto& Cvtr   = fluidmodel->GetSpeciesCvTraRot();
-    su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+    const auto& Ms     = fluidmodel->GetSpeciesMolarMass();
+    const auto& Cvtr   = fluidmodel->GetSpeciesCvTraRot();
+    const su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
     rhoCvtr_i    = V_i[RHOCVTR_INDEX];
     rhoCvtr_j    = V_j[RHOCVTR_INDEX];
 

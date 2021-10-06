@@ -104,6 +104,15 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
 
+  /*--- Jacobians of the inviscid flux, scale = 0.5 because val_res ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  if (implicit) {
+    GetInviscidProjJac(MeanU, MeanV, MeandPdU, Normal, 0.5, Jacobian_i);
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
+  }
+
   /*--- Compute the local spectral radius and the stretching factor ---*/
   ProjVel_i = 0; ProjVel_j = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -136,11 +145,6 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   }
 
   if (implicit) {
-
-    for (iVar = 0; iVar < nVar; iVar++){
-      for (jVar = 0; jVar < nVar; jVar++){
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0; }}
 
     cte = Epsilon_0*StretchingFactor*MeanLambda;
 
