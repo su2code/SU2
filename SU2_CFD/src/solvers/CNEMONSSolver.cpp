@@ -1071,3 +1071,4 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 void CNEMONSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
     SU2_MPI::Error("Wall Functions not yet operational in NEMO.", CURRENT_FUNCTION);
 }
+

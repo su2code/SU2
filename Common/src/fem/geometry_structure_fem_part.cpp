@@ -583,7 +583,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Open the grid file again and go to the position where
@@ -1146,7 +1145,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Store the global ID's of the nodes in such a way that they can
@@ -1283,7 +1281,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Sequential mode. Create the data for the points. The global
         number of points equals the local number of points. ---*/
   nPoint     = Global_nPoint;
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   for(unsigned long i=0; i<nPoint; ++i) {
