@@ -744,7 +744,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   //su2double pcontrol = 0.6;
 
   /*--- Get species mass fractions at the wall ---*/
-  Yst = config->GetWall_Catalycity();
+  Yst = config->GetGas_Composition();
 
   /*--- Get universal information ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;
