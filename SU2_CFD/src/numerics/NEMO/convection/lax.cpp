@@ -110,7 +110,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
 
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
+        Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
   }
 
   /*--- Compute the local spectral radius and the stretching factor ---*/

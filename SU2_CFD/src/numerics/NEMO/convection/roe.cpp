@@ -46,8 +46,6 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
 
-  roe_eves.resize(nSpecies,0.0);
-
   for (iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar]    = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];
@@ -106,7 +104,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Calculate Roe averaged variables ---*/
-  R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
+  su2double R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
 
   for (iVar = 0; iVar < nVar; iVar++)
     RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
