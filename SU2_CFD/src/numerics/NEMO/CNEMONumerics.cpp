@@ -28,7 +28,7 @@
  */
 
 #include "../../../include/numerics/NEMO/CNEMONumerics.hpp"
-
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad,
