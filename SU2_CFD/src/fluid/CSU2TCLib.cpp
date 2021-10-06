@@ -751,6 +751,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
 
     /*--- Electron species energy ---*/
     if ( ionization && (iSpecies == iElectron)) {
+
       /*--- Calculate formation energy ---*/
       Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
 
@@ -760,11 +761,13 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
     }
     /*--- Heavy particle energy ---*/
     else {
+
       /*--- Calculate vibrational energy (harmonic-oscillator model) ---*/
       if (CharVibTemp[iSpecies] != 0.0)
         Ev = Ru/MolarMass[iSpecies] * CharVibTemp[iSpecies] / (exp(CharVibTemp[iSpecies]/val_T)-1.0);
       else
         Ev = 0.0;
+
       /*--- Calculate electronic energy ---*/
       num = 0.0;
       denom = ElDegeneracy[iSpecies][0] * exp(-CharElTemp[iSpecies][0]/val_T);
@@ -793,6 +796,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
   //       source term.
   su2double T_min   = 800.0;
   su2double epsilon = 80;
+
   /*--- Define preferential dissociation coefficient ---*/
   //alpha = 0.3;
 
@@ -929,7 +933,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   su2double omegaVT = 0.0;
   su2double omegaCV = 0.0;
 
-
   /*--- Calculate mole fractions ---*/
   su2double N    = 0.0;
   su2double conc = 0.0;
@@ -1050,12 +1053,14 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
+
   /*--- Calculate mixture molar mass (kg/mol) ---*/
   // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
   su2double M = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
   M = M*1E-3;
+
   /*---+++                  +++---*/
   /*--- Diffusion coefficients ---*/
   /*---+++                  +++---*/
@@ -1066,6 +1071,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
     Mi = MolarMass[iSpecies]*1E-3;
     for (jSpecies = iSpecies; jSpecies < nSpecies; jSpecies++) {
       Mj = MolarMass[jSpecies]*1E-3;
+
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20/PI_NUMBER * Omega00(iSpecies,jSpecies,3)
           * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
@@ -1075,6 +1081,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
   }
+
   /*--- Calculate species-mixture diffusion coefficient --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     DiffusionCoeff[iSpecies] = 0.0;
@@ -1139,6 +1146,7 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
     ks[iSpecies] = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
     kves[iSpecies] = mus[iSpecies]*Cvves[iSpecies];
   }
+
   /*--- Calculate mixture tr & ve conductivities ---*/
   ThermalCond_tr = 0.0;
   ThermalCond_ve = 0.0;
@@ -1163,10 +1171,13 @@ void CSU2TCLib::DiffusionCoeffGY(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     gam_t += rhos[iSpecies] / (Density*MolarMass[iSpecies]);
   }
+
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+
     /*--- Initialize the species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = 0.0;
+
     /*--- Calculate molar concentration ---*/
     Mi      = MolarMass[iSpecies];
     gam_i   = rhos[iSpecies] / (Density*Mi);
@@ -1175,6 +1186,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
       if (jSpecies != iSpecies) {
         Mj    = MolarMass[jSpecies];
         gam_j = rhos[iSpecies] / (Density*Mj);
+
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
         Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
             * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
@@ -1245,21 +1257,25 @@ void CSU2TCLib::ViscosityGY(){
   su2double pi = PI_NUMBER;
   su2double Na = AVOGAD_CONSTANT;
   Mu = 0.0;
+
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     denom = 0.0;
+
     /*--- Calculate molar concentration ---*/
     Mi    = MolarMass[iSpecies];
     gam_i = rhos[iSpecies] / (Density*Mi);
     for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
       Mj    = MolarMass[jSpecies];
       gam_j = rhos[jSpecies] / (Density*Mj);
+
       /*--- Calculate "delta" quantities ---*/
       Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega11(iSpecies,jSpecies,1)*log(T)
           + Omega11(iSpecies,jSpecies,2));
       d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+
       /*--- Add to denominator of viscosity ---*/
       denom += gam_j*d2_ij;
     }
@@ -1275,24 +1291,28 @@ void CSU2TCLib::ViscosityGY(){
       d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
       denom += gam_j*d2_ij;
     }
+
     /*--- Calculate species laminar viscosity ---*/
     Mu += (Mi/Na * gam_i) / denom;
   }
   if (ionization) {
     iSpecies = nSpecies-1;
     denom = 0.0;
+
     /*--- Calculate molar concentration ---*/
     Mi    = MolarMass[iSpecies];
     gam_i = rhos[iSpecies] / (Density*Mi);
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       Mj    = MolarMass[jSpecies];
       gam_j = rhos[jSpecies] / (Density*Mj);
+
       /*--- Calculate "delta" quantities ---*/
       Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega11(iSpecies,jSpecies,1)*log(Tve)
           + Omega11(iSpecies,jSpecies,2));
       d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+
       /*--- Add to denominator of viscosity ---*/
       denom += gam_j*d2_ij;
     }
@@ -1324,10 +1344,12 @@ void CSU2TCLib::ThermalConductivitiesGY(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     R += Ru * rhos[iSpecies]/Density;
   }
+
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   ThermalCond_tr = 0.0;
   ThermalCond_ve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+
     /*--- Calculate molar concentration ---*/
     Mi      = MolarMass[iSpecies];
     mi      = Mi/Na;
@@ -1339,28 +1361,35 @@ void CSU2TCLib::ThermalConductivitiesGY(){
       mj    = Mj/Na;
       gam_j = rhos[iSpecies] / (Density*Mj);
       a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
+
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega00(iSpecies,jSpecies,1)*log(T)
           + Omega00(iSpecies,jSpecies,2));
+
       /*--- Calculate "delta1_ij" ---*/
       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+
       /*--- Calculate the Omega^(1,1)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega11(iSpecies,jSpecies,1)*log(T)
           + Omega11(iSpecies,jSpecies,2));
+
       /*--- Calculate "delta2_ij" ---*/
       d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
       denom_t += a_ij*gam_j*d2_ij;
       denom_r += gam_j*d1_ij;
     }
+
     /*--- Translational contribution to thermal conductivity ---*/
     ThermalCond_tr    += (15.0/4.0)*kb*gam_i/denom_t;
+
     /*--- Translational contribution to thermal conductivity ---*/
     if (RotationModes[iSpecies] != 0.0)
       ThermalCond_tr  += kb*gam_i/denom_r;
+
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
     ThermalCond_ve += kb*Cvve/R*gam_i / denom_r;
   }
