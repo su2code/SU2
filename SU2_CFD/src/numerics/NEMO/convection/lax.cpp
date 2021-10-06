@@ -78,7 +78,6 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
 
   unsigned short iDim, iVar, iSpecies;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
-  su2double ProjVel_i, ProjVel_j;
 
   /*--- Calculate geometrical quantities ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
