@@ -114,11 +114,9 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   }
 
   /*--- Compute the local spectral radius and the stretching factor ---*/
-  ProjVel_i = 0; ProjVel_j = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVel_i += V_i[VEL_INDEX+iDim]*Normal[iDim];
-    ProjVel_j += V_j[VEL_INDEX+iDim]*Normal[iDim];
-  }
+  su2double ProjVel_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX],Normal);
+  su2double ProjVel_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX],Normal);
+
   Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Dissipation --*/
