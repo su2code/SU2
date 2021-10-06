@@ -41,6 +41,19 @@ class CEulerVariable : public CFlowVariable {
 public:
   static constexpr size_t MAXNVAR = 12;
 
+  struct CSolverIndices{
+    CFlowIndices(nDim){
+      inline unsigned short GetTIndex()        const {return 0;}
+      inline unsigned short GetVelIndex()      const {return 1;}
+      inline unsigned short GetPIndex()        const {return nDim+1;}
+      inline unsigned short GetRhoIndex()      const {return nDim+2;}
+      inline unsigned short GetHIndex()        const {return nDim+3;}
+      inline unsigned short GetAIndex()        const {return nDim+4;}
+      inline unsigned short GetLamViscIndex()  const {return nDim+5;}
+      inline unsigned short GetEddyViscIndex() const {return nDim+6;}
+    }
+  }
+
  protected:
   /*!< \brief Secondary variables (dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho)
    *          in compressible (Euler: 2, NS: 8) flows. */

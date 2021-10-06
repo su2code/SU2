@@ -34,13 +34,30 @@
 /*!
  * \class CNEMOEulerVariable
  * \brief Main class for defining the variables of the NEMO Euler's solver.
- * \note Primitive variables (rhos_s, T, Tve, vx, vy, vw, P, rho, h, rhoCvtr, rhoCvve)
+ * \note Primitive variables (rhos_s, T, Tve, vx, vy, vw, P, rho, h, a, rhoCvtr, rhoCvve)
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
  */
 class CNEMOEulerVariable : public CFlowVariable {
  public:
   static constexpr size_t MAXNVAR = 25;
+
+  struct CSolverIndices{
+    CNEMOIndices(nDim, nSpecies){
+      inline unsigned short GetRhosIndex()     const {return 0;}
+      inline unsigned short GetTIndex()        const {return nSpecies;}
+      inline unsigned short GetTveIndex()      const {return nSpecies+1;}
+      inline unsigned short GetVelIndex()      const {return nSpecies+2}
+      inline unsigned short GetPIndex()        const {return nSpecies+nDim+2;}
+      inline unsigned short GetRhoIndex()      const {return nSpecies+nDim+3;}
+      inline unsigned short GetHIndex()        const {return nSpecies+nDim+4;}
+      inline unsigned short GetAIndex()        const {return nSpecies+nDim+5;}
+      inline unsigned short GetRhoCvtrIndex()  const {return nSpecies+nDim+6;}
+      inline unsigned short GetRhoCvveIndex()  const {return nSpecies+nDim+7;}
+      inline unsigned short GetLamViscIndex()  const {return nSpecies+nDim+8;}
+      inline unsigned short GetEddyViscIndex() const {return nSpecies+nDim+9;}
+    }
+  }
 
  protected:
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */

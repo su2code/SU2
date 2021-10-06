@@ -41,6 +41,21 @@ class CIncEulerVariable : public CFlowVariable {
 public:
   static constexpr size_t MAXNVAR = 12;
 
+  struct CSolverIndices{
+    CIncFlowIndices(nDim){
+      inline unsigned short GetPIndex()        const {return 0;}
+      inline unsigned short GetVelIndex()      const {return 1;}
+      inline unsigned short GetTIndex()        const {return nDim+1;}
+      inline unsigned short GetRhoIndex()      const {return nDim+2;}
+      inline unsigned short GetBetaIndex()     const {return nDim+3;}
+      inline unsigned short GetLamViscIndex()  const {return nDim+4;}
+      inline unsigned short GetEddyViscIndex() const {return nDim+5;}
+      inline unsigned short GetKIndex()        const {return nDim+6;}
+      inline unsigned short GetCpTotalIndex()  const {return nDim+7;}
+      inline unsigned short GetCvTotalIndex()  const {return nDim+8;}
+    }
+  }
+
  protected:
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */

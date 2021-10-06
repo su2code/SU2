@@ -36,7 +36,8 @@
  * \ingroup ConvDiscr
  * \author A. Bueno.
  */
-class CUpwSca_TurbSA final : public CUpwScalar {
+template <class FlowIndices>
+class CUpwSca_TurbSA_generic final : public CUpwScalar<FlowIndices> {
 private:
   /*!
    * \brief Adds any extra variables to AD
@@ -59,6 +60,9 @@ public:
   CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
+using CUpwSca_TurbSA = CUpwSca_TurbSA_generic<CEulerVariable::Indices>;
+using CUpwSca_IncTurbSA = CUpwSca_TurbSA_generic<CIncEulerVariable::Indices>;
+using CUpwSca_NEMOTurbSA = CUpwSca_TurbSA_generic<CNEMOEulerVariable::Indices>;
 
 /*!
  * \class CUpwSca_TurbSST
@@ -66,7 +70,8 @@ public:
  * \ingroup ConvDiscr
  * \author A. Campos.
  */
-class CUpwSca_TurbSST final : public CUpwScalar {
+template <class FlowIndices>
+class CUpwSca_TurbSST_generic final : public CUpwScalar<FlowIndices> {
 private:
   /*!
    * \brief Adds any extra variables to AD
@@ -89,3 +94,6 @@ public:
   CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
+using CUpwSca_TurbSST = CUpwSca_TurbSST_generic<CEulerVariable::Indices>;
+using CUpwSca_IncTurbSST = CUpwSca_TurbSST_generic<CIncEulerVariable::Indices>;
+using CUpwSca_NEMOTurbSST = CUpwSca_TurbSST_generic<CNEMOEulerVariable::Indices>;
