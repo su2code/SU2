@@ -400,7 +400,7 @@ public:
    * \brief Set boundary vertex.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVertex(CConfig *config) override;
+  void SetVertex(const CConfig *config) override;
 
   /*!
    * \brief Set number of span wise level for turbomachinery computation.
@@ -449,14 +449,14 @@ public:
    * \brief Mach the near field boundary condition.
    * \param[in] config - Definition of the particular problem.
    */
-  void MatchActuator_Disk(CConfig *config) override;
+  void MatchActuator_Disk(const CConfig *config) override;
 
   /*!
    * \brief Mach the periodic boundary conditions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_periodic - Index of the first periodic face in a pair.
    */
-  void MatchPeriodic(CConfig *config, unsigned short val_periodic) override;
+  void MatchPeriodic(const CConfig *config, unsigned short val_periodic) override;
 
   /*!
    * \brief Set boundary vertex structure of the control volume.
@@ -580,7 +580,7 @@ public:
    * \brief Find and store the closest neighbor to a vertex.
    * \param[in] config - Definition of the particular problem.
    */
-  void FindNormal_Neighbor(CConfig *config) override;
+  void FindNormal_Neighbor(const CConfig *config) override;
 
   /*!
    * \brief Read the sensitivity from an input file.
