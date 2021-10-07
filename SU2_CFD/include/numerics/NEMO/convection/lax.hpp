@@ -37,7 +37,7 @@
  */
 class CCentLax_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
   su2double *MeanU, *MeanV;
   vector<su2double> mean_eves;
@@ -55,6 +55,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of primitive gradient variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CCentLax_NEMO(unsigned short val_nDim, unsigned short val_nVar,

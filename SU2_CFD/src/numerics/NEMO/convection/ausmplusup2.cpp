@@ -88,7 +88,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   unsigned short iDim, iVar,jVar, iSpecies;
   su2double rho_i, rho_j,
   mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi,
-  e_ve_i, e_ve_j, sq_veli, sq_velj;
+  e_ve_i, e_ve_j;
 
   /*--- Face area ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -106,13 +106,12 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
 
-  sq_veli = 0.0; sq_velj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     u_i[iDim]  = V_i[VEL_INDEX+iDim];
     u_j[iDim]  = V_j[VEL_INDEX+iDim];
-    sq_veli   += u_i[iDim]*u_i[iDim];
-    sq_velj   += u_j[iDim]*u_j[iDim];
   }
+  su2double sq_veli = GeometryToolbox::SquaredNorm(nDim, u_i);
+  su2double sq_velj = GeometryToolbox::SquaredNorm(nDim, u_j);
 
   P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
   h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
@@ -207,7 +206,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
-  /*--- AUSM's Jacobian....requires tiny CFL's (this must be fixed) ---*/
+  /*--- AUSM's Jacobian ---*/
   if (implicit)  {
 
     /*--- Initialize the Jacobians ---*/
@@ -224,7 +223,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
     /*--- Sound speed derivatives: Species density ---*/
     const auto& Cvtrs = fluidmodel -> GetSpeciesCvTraRot();
     const auto& Ms    = fluidmodel -> GetSpeciesMolarMass();
-    su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+    su2double Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
 
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       daL[iSpecies] = 1.0/(2.0*aF) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i

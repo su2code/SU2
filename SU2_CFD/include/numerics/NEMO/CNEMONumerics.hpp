@@ -47,6 +47,7 @@ public:
   su2double rho_i, rho_j;
   su2double e_ve_i, e_ve_j;
   su2double rhoCvtr_i, rhoCvtr_j;
+  su2double rhoCvve_i, rhoCvve_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */

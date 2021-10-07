@@ -41,21 +41,6 @@ private:
   su2double *dmLP, *dmRM, *dpLP, *dpRM;
   su2double *daL, *daR;
   su2double ProjVel_i, ProjVel_j;
-  su2double sq_vel, Proj_ModJac_Tensor_ij;
-
-  /************************************/
-  //DELETE ME TODO: ROE JACOBIAN STUFF
-  /*__________________________________*/
-  su2double *Diff_U;
-  su2double *RoeU, *RoeV;
-  vector<su2double> roe_eves;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double RoeSoundSpeed;
-  su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  su2double R;
-  su2double *RoedPdU;
 
 public:
 
@@ -63,6 +48,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad, CConfig *config);
