@@ -442,6 +442,8 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  const bool use_strong_BC = !config->GetMUSCL_AdjFlow(); // hook to cfg
+
   /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
   // bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -456,7 +458,9 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    if (use_strong_BC) {
       nodes->SetSolution_Old(iPoint, inlet_species);
 
       LinSysRes.SetBlock_Zero(iPoint);
@@ -471,12 +475,85 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
         Jacobian.DeleteValsRowi(total_index);
       }
     }
+    else { // weak BC
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+      conv_numerics->SetNormal(Normal);
+
+      /*--- Allocate the value at the inlet ---*/
+
+      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Set the turbulent variable states. Use free-stream SST
+      values for the turbulent state at the inflow. ---*/
+      /*--- Load the inlet turbulence variables (uniform by default). ---*/
+
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint),
+                                  inlet_species);
+
+      /*--- Set various other quantities in the solver class ---*/
+
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+      //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+      //
+      //      su2double Coord_Reflected[MAXNDIM];
+      //      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+      //                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      //      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      //      visc_numerics->SetNormal(Normal);
+      //
+      //      /*--- Conservative variables w/o reconstruction ---*/
+      //
+      //      visc_numerics->SetPrimitive(V_domain, V_inlet);
+      //
+      //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      //
+      //     visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      //     visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      //
+      //      /*--- Menter's first blending function ---*/
+      //
+      //      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+      //
+      //      /*--- Compute residual, and Jacobians ---*/
+      //
+      //      auto residual = visc_numerics->ComputeResidual(config);
+      //
+      //      /*--- Subtract residual, and update Jacobians ---*/
+      //
+      //      LinSysRes.SubtractBlock(iPoint, residual);
+      //      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    }
   }
   END_SU2_OMP_FOR
 }
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  const bool use_strong_BC = !config->GetMUSCL_AdjFlow(); // hook to cfg
   /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -487,7 +564,9 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    if (use_strong_BC) {
       /*--- Allocate the value at the outlet ---*/
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -505,6 +584,76 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
         auto total_index = iPoint * nVar + iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
+    }
+    else { // weak BC
+      /*--- Allocate the value at the outlet ---*/
+
+      auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetPrimitive(V_domain, V_outlet);
+
+      /*--- Set the turbulent variables. Here we use a Neumann BC such
+       that the turbulent variable is copied from the interior of the
+       domain to the outlet before computing the residual. ---*/
+
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint),
+                                  nodes->GetSolution(iPoint));
+
+      /*--- Set Normal (negate for outward convention) ---*/
+
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+      conv_numerics->SetNormal(Normal);
+
+      if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      su2double Coord_Reflected[MAXNDIM];
+//      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+//                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+//      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_outlet);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Menter's first blending function ---*/
+//
+//      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      auto residual = visc_numerics->ComputeResidual(config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, residual);
+//      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
   END_SU2_OMP_FOR
