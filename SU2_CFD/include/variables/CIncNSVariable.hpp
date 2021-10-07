@@ -104,7 +104,7 @@ public:
   /*!
    * \brief Set the value of the wall shear stress computed by a wall function.
    */
-  inline void SetTau_Wall(unsigned long iPoint, su2double val_tau_wall) override { Tau_Wall(iPoint) = val_tau_wall; }
+  inline void SetTau_Wall(unsigned long iPoint, su2double tau_wall) override { Tau_Wall(iPoint) = tau_wall; }
 
   /*!
    * \brief Get the value of the wall shear stress computed by a wall function.

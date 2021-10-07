@@ -2159,7 +2159,7 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
-  inline virtual void SetTau_Wall(unsigned long iPoint, su2double val_tau_wall) {}
+  inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
   inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }
 

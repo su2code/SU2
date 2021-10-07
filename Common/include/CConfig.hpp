@@ -836,7 +836,7 @@ private:
   Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
   Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
-  Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
+  Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
   Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
   Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
@@ -1774,10 +1774,10 @@ public:
   su2double GetFan_Poly_Eff(void) const { return Fan_Poly_Eff; }
 
   /*!
-   * \brief Get the value of the reference conductivity for non-dimensionalization.
-   * \return Reference conductivity for non-dimensionalization.
+   * \brief Get the value of the reference thermal conductivity for non-dimensionalization.
+   * \return Reference thermal conductivity for non-dimensionalization.
    */
-  su2double GetConductivity_Ref(void) const { return Conductivity_Ref; }
+  su2double GetThermal_Conductivity_Ref(void) const { return Thermal_Conductivity_Ref; }
 
   /*!
    * \brief Get the value of the reference angular velocity for non-dimensionalization.
@@ -2397,7 +2397,7 @@ public:
    * \brief Set the reference conductivity for nondimensionalization.
    * \param[in] val_conductivity_ref - Value of the reference conductivity.
    */
-  void SetConductivity_Ref(su2double val_conductivity_ref) { Conductivity_Ref = val_conductivity_ref; }
+  void SetConductivity_Ref(su2double val_conductivity_ref) { Thermal_Conductivity_Ref = val_conductivity_ref; }
 
   /*!
    * \brief Set the nondimensionalized freestream pressure.

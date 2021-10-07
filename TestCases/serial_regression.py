@@ -1546,7 +1546,6 @@ def main():
     ### RUN TESTS                      ###
     ######################################
 
-
     pass_list = [ test.run_test() for test in test_list ]
 
 

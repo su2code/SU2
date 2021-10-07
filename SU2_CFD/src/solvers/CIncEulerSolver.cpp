@@ -778,7 +778,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Unit.str("");
       if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      NonDimTable << "Conductivity" << "-" << config->GetThermal_Conductivity_Ref() << Unit.str() << "-";
       Unit.str("");
       if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";

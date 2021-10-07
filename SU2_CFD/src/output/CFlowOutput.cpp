@@ -1807,7 +1807,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       file << "Reference viscosity: " << config->GetViscosity_Ref();
       if (si_units) file << " N.s/m^2.\n";
       else file << " lbf.s/ft^2.\n";
-      file << "Reference conductivity: " << config->GetConductivity_Ref();
+      file << "Reference conductivity: " << config->GetThermal_Conductivity_Ref();
       if (si_units) file << " W/m^2.K.\n";
       else file << " lbf/ft.s.R.\n";
     }
