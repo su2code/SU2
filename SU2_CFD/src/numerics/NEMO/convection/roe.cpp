@@ -154,8 +154,8 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
                                      (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
   Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
                                      (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
-  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-                                              ProjVelocity_j-Lambda[iDim] ));
+  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim+1]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[nSpecies+nDim+1] ));
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
       Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
