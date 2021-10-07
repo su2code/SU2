@@ -794,7 +794,6 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  const su2double tol = 1e-12;  /*!< \brief convergence criterium for the Newton solver, note that 1e-10 is too large */
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
@@ -917,6 +916,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       unsigned long counter = 0;
       su2double diff = 1.0;
       su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
+      /*--- Use minimum y+ as defined in the config, in case the routine below for computing y+ does not converge ---*/
       su2double Y_Plus = 0.99*config->GetwallModel_MinYPlus(); // use clipping value as minimum
 
       const su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
@@ -927,7 +927,10 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
         smallYPlusCounter++;
         continue;
       }
-      else while (fabs(diff) > tol) {
+
+      /*--- Convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+      const su2double tol = 1e-12;
+      while (fabs(diff) > tol) {
 
         /*--- Friction velocity and u+ ---*/
 
