@@ -154,9 +154,6 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   P_j = V_j[P_INDEX];
 
   /*--- Calculate velocity quantities ---*/
-  su2double sq_veli = GeometryToolbox::SquaredNorm(nDim, u_j);
-  su2double sq_velj = GeometryToolbox::SquaredNorm(nDim, u_j);
-
   ProjVel_i = GeometryToolbox::DotProduct(nDim, u_i, UnitNormal);
   ProjVel_j = GeometryToolbox::DotProduct(nDim, u_j, UnitNormal);
 
