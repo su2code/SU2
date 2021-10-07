@@ -560,8 +560,8 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
         const unsigned long index = iPoint * nVar + iVar;
         if (iVar < config->GetnSpecies()) {
           num   += fabs(LinSysSol[index]);
-          denom += fabs(nodes->GetSolution(iPoint, iVar);
-          if (iVar == (config ->GetnSpecies()-1))){
+          denom += fabs(nodes->GetSolution(iPoint, iVar));
+          if (iVar == (config ->GetnSpecies()-1)){
             su2double ratio = (num/(denom+EPS));
             if (ratio > allowableRatio) {
               localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
