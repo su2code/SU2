@@ -125,9 +125,9 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   GetPMatrix_inv(RoeU, RoeV, RoedPdU, UnitNormal, l, m, invP_Tensor);
 
   /*--- Compute projected velocities ---*/
-  ProjVelocity   = GeometryToolbox::DotProduct(nDim, &RoeV[VEL_INDEX], UnitNormal);
-  ProjVelocity_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX], UnitNormal);
-  ProjVelocity_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX], UnitNormal);
+  su2double ProjVelocity   = GeometryToolbox::DotProduct(nDim, &RoeV[VEL_INDEX], UnitNormal);
+  su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX], UnitNormal);
+  su2double ProjVelocity_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX], UnitNormal);
  
   su2double RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
                             RoeV[P_INDEX]/RoeV[RHO_INDEX]);
@@ -145,8 +145,8 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-                                         ProjVelocity_j-Lambda[iDim] ));
+    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iSpecies]-ProjVelocity_i,
+                                         ProjVelocity_j-Lambda[iSpecies] ));
   for (unsigned short iDim = 0; iDim < nDim-1; iDim++)
     Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[iDim] ));

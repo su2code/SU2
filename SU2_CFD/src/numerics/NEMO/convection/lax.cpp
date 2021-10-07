@@ -78,7 +78,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Calculate geometrical quantities ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Rename for convenience ---*/
@@ -93,7 +93,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
 
   /*--- Compute NonEq specific variables ---*/
-  const auto& mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
+  auto& mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
   fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
