@@ -25,6 +25,7 @@ if get_option('enable-normal')
                                              'output/filewriter/CSU2MeshFileWriter.cpp',
                                              'output/filewriter/CParaviewXMLFileWriter.cpp',
                                              'output/filewriter/CParaviewVTMFileWriter.cpp',
+                                             'output/filewriter/CCGNSFileWriter.cpp',
                                              'variables/CBaselineVariable.cpp',
                                              'variables/CVariable.cpp',
                                              'limiters/CLimiterDetails.cpp'])
@@ -62,6 +63,7 @@ if get_option('enable-autodiff')
                                                    'output/filewriter/CSU2MeshFileWriter.cpp',
                                                    'output/filewriter/CParaviewXMLFileWriter.cpp',
                                                    'output/filewriter/CParaviewVTMFileWriter.cpp',
+                                                   'output/filewriter/CCGNSFileWriter.cpp',
                                                    'variables/CBaselineVariable.cpp',
                                                    'variables/CVariable.cpp',
                                                    'limiters/CLimiterDetails.cpp'])
