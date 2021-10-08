@@ -3345,6 +3345,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 #endif
 
+  /*--- Check if SU2 was build with CGNS support, as that is required for CGNS output. ---*/
+#ifndef HAVE_CGNS
+  for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
+    if (VolumeOutputFiles[iVolumeFile] == CGNS ||
+        VolumeOutputFiles[iVolumeFile] == SURFACE_CGNS) {
+      SU2_MPI::Error(string("CGNS file requested in option OUTPUT_FILES but SU2 was built without CGNS support.\n"),CURRENT_FUNCTION);
+    }
+  }
+#endif
+
   /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
     if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
