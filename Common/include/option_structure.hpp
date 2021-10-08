@@ -1708,12 +1708,13 @@ enum ENUM_OUTPUT {
   MESH                    = 11, /*!< \brief SU2 mesh format. */
   RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
   RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
-  CGNS                    = 14, /*!< \brief CGNS format. */
-  STL                     = 15, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 16, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
-  PARAVIEW_XML            = 17, /*!< \brief Paraview XML with binary data format */
-  SURFACE_PARAVIEW_XML    = 18, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 19  /*!< \brief Paraview XML Multiblock */
+  STL                     = 14, /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY              = 15, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  PARAVIEW_XML            = 16, /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML    = 17, /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK     = 18, /*!< \brief Paraview XML Multiblock */
+  CGNS                    = 19, /*!< \brief CGNS format. */
+  SURFACE_CGNS            = 20  /*!< \brief CGNS format. */
 };
 static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("TECPLOT_ASCII", TECPLOT)
@@ -1732,6 +1733,7 @@ static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("RESTART_ASCII", RESTART_ASCII)
   MakePair("RESTART", RESTART_BINARY)
   MakePair("CGNS", CGNS)
+  MakePair("SURFACE_CGNS", SURFACE_CGNS)
   MakePair("STL", STL)
   MakePair("STL_BINARY", STL_BINARY)
 };
