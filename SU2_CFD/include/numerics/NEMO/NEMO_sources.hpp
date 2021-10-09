@@ -39,14 +39,11 @@
 class CSource_NEMO : public CNEMONumerics {
 private:
 
-  int    *alphak, *betak;
-  su2double *X; // Mole fraction
-  su2double *Y, **dYdr; // Mass fraction
-  su2double *dkf, *dkb, *dRfok, *dRbok;
-  vector<su2double> Cvvsst, ws;
+  su2double *Y, **dYdr;                  // Mass fraction
+  vector<su2double> ws;
 
-  su2double* residual = nullptr;        /*!< \brief The source residual. */
-
+  su2double*  residual = nullptr;        /*!< \brief The source residual. */
+  su2double** jacobian = nullptr;
 public:
 
   /*!

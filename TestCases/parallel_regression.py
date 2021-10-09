@@ -66,12 +66,12 @@ def main():
     thermalbath_frozen.tol       = 0.00001
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge
+    # Inviscid single wedge, implicit
     invwedge           = TestCase('invwedge')
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.954417, -1.479835, -16.737319, -17.063704, -17.010424, 2.372843, 1.754751, 5.401691, 0.954721]
+    invwedge.test_vals = [-1.011572, -1.537291, -18.301794, -18.629156, -18.575201, 2.304333, 2.009490, 5.353433, 0.906651]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True

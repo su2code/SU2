@@ -43,6 +43,7 @@ private:
     su2double *Fc_i, *Fc_j;
     su2double *Lambda_i, *Lambda_j;
     su2double *rhosst_i, *rhosst_j;
+    su2double ProjVel_i, ProjVel_j;
     su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j;
     vector<su2double> eves_st_i, eves_st_j;
     su2double *dPdUst_i, *dPdUst_j;
