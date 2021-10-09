@@ -79,7 +79,7 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Write sorted data to file in CGNS file format.
    */
   void Write_Data() override;
-  
+
  private:
 #ifdef HAVE_CGNS
   /*!
