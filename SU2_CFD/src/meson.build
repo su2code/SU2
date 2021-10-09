@@ -47,6 +47,7 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/filewriter/CParaviewXMLFileWriter.cpp',
                       'output/filewriter/CParaviewVTMFileWriter.cpp',
                       'output/filewriter/CSU2MeshFileWriter.cpp',
+                      'output/filewriter/CCGNSFileWriter.cpp',  
                       'output/tools/CWindowingTools.cpp'])
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',

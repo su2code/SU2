@@ -28,6 +28,7 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
+#include "../../include/output/filewriter/CCGNSFileWriter.hpp"
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
@@ -676,6 +677,39 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       }
 
       fileWriter = new CSTLFileWriter(fileName, surfaceDataSorter);
+
+      break;
+
+    case CGNS:
+
+      if (fileName.empty()) fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+
+      /*--- Write CGNS ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "CGNS" << fileName + CCGNSFileWriter::fileExt;
+      }
+
+      fileWriter = new CCGNSFileWriter(fileName, volumeDataSorter);
+
+      break;
+
+    case SURFACE_CGNS:
+
+      if (fileName.empty()) fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
+
+      /*--- Write SURFACE_CGNS ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "CGNS surface" << fileName + CCGNSFileWriter::fileExt;
+      }
+
+      fileWriter = new CCGNSFileWriter(fileName, surfaceDataSorter, true);
 
       break;
 
