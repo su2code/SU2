@@ -33,6 +33,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
+#include "../../include/limiters/CLimiterDetails.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -898,15 +899,15 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     config->SetMu_ConstantND(config->GetMu_Constant());
 
+    /*--- Check if there is mesh motion. If yes, use the Mach
+       number relative to the body to initialize the flow. ---*/
+
+    if (dynamic_grid) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
+    else Velocity_Reynolds = ModVel_FreeStream;
+
     /*--- Reynolds based initialization ---*/
 
     if (reynolds_init) {
-
-      /*--- First, check if there is mesh motion. If yes, use the Mach
-         number relative to the body to initialize the flow. ---*/
-
-      if (dynamic_grid) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
-      else Velocity_Reynolds = ModVel_FreeStream;
 
       /*--- For viscous flows, pressure will be computed from a density
             that is found from the Reynolds number. The viscosity is computed
@@ -936,6 +937,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
       Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
 
+      /*--- Compute Reynolds number ---*/
+      Reynolds = (Density_FreeStream*Velocity_Reynolds*config->GetLength_Reynolds())/Viscosity_FreeStream;
+      config->SetReynolds(Reynolds);
     }
 
     /*--- Turbulence kinetic energy ---*/
@@ -1779,8 +1783,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
         if (van_albada) {
           su2double V_ij = V_j[iVar] - V_i[iVar];
-          lim_i = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-          lim_j = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);

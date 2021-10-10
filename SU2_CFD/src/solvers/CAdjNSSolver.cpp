@@ -485,9 +485,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
 
-      numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
+      numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
 
-      numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
+      numerics->SetScalarVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
 
       /*--- Turbulent adjoint variables w/o reconstruction and its gradient ---*/
 
@@ -540,7 +540,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction ---*/
 
-      second_numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint),
+      second_numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint),
                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
 
       /*--- Turbulent adjoint variables w/o reconstruction ---*/

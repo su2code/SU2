@@ -67,6 +67,17 @@ template<class T, class F> struct su2conditional<false, T, F> { using type = F; 
 template<bool B, class T, class F>
 using su2conditional_t = typename su2conditional<B,T,F>::type;
 
+/*! \brief Static cast "In" to "Out", in debug builds a dynamic cast is used. */
+template<class Out, class In>
+FORCEINLINE Out su2staticcast_p(In ptr) {
+  static_assert(std::is_pointer<In>::value, "This expects a pointer");
+#ifndef NDEBUG
+  return static_cast<Out>(ptr);
+#else
+  return dynamic_cast<Out>(ptr);
+#endif
+}
+
 /*--- Detect compilation with OpenMP. ---*/
 #if defined(_OPENMP)
 #define HAVE_OMP

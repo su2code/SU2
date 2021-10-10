@@ -142,7 +142,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CVariable(unsigned long npoint, unsigned long nvar, CConfig *config);
+  CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config);
 
   /*!
    * \overload
@@ -152,7 +152,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] adjoint - True if derived class is an adjoint variable.
    */
-  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint = false);
+  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config, bool adjoint = false);
 
   /*!
    * \brief Destructor of the class.
@@ -407,35 +407,20 @@ public:
   }
 
   /*!
-   * \brief Add a value to the solution, clipping the values.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the solution change.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
-   */
-  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                 su2double lowerlimit, su2double upperlimit) {
-
-    su2double val_new = Solution_Old(iPoint, iVar) + solution;
-    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
-  }
-
-  /*!
    * \brief Update the variables using a conservative format.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \param[in] solution - Value of the solution change.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_density_old - Value of the old density.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
+   * \param[in] lowerlimit - Lower value for Solution clipping.
+   * \param[in] upperlimit - Upper value for Solution clipping.
+   * \param[in] Sol2Conservative - Factor multiplied to Solution to get transported variable.
+   * \param[in] Sol2Conservative_old - Factor multiplied to Solution to get transported variable, of the previous Iteration.
    */
-  inline void AddConservativeSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                      su2double val_density, su2double val_density_old,
-                                      su2double lowerlimit, su2double upperlimit) {
+  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
+                                 su2double lowerlimit, su2double upperlimit,
+                                 su2double Sol2Conservative = 1.0, su2double Sol2Conservative_old = 1.0) {
 
-    su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
+    su2double val_new = (Solution_Old(iPoint,iVar)*Sol2Conservative_old + solution)/Sol2Conservative;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
   }
 
@@ -951,6 +936,12 @@ public:
    * \return Value of the mass fraction of species s.
    */
   inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
+
+  /*!
+   * \brief Get the species enthalpy.
+   * \return Value of the species enthalpy.
+   */
+  inline virtual su2double* GetEnthalpys(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief A virtual member.

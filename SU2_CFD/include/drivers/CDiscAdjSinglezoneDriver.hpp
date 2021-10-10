@@ -113,12 +113,6 @@ public:
   void SetAdj_ObjFunction(void);
 
   /*!
-   * \brief Print out the direct residuals.
-   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
-   */
-  void Print_DirectResidual(RECORDING kind_recording);
-
-  /*!
    * \brief Record the main computational path.
    */
   void MainRecording(void);
