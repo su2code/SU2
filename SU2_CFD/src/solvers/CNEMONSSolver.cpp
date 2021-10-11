@@ -809,8 +809,15 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       dTvedU = nodes->GetdTvedU(iPoint);
 
       /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        if (iSpecies == 0) {
+          dYdn[iSpecies] = (0.999-Yj[iSpecies])/dij;
+        } else if (iSpecies == 1) {
+          dYdn[iSpecies] = (0.001-Yj[iSpecies])/dij;
+        } else {
+          dYdn[iSpecies] = (0-Yj[iSpecies])/dij;
+        }
+      }
 
       /*--- Calculate supplementary quantities ---*/
       SdYdn = 0.0;
