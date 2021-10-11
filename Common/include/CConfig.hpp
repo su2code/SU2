@@ -1143,6 +1143,7 @@ private:
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
 
+  bool iso_strong_bc;
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9320,4 +9321,6 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+
+  bool GetIso_Strong_BC(void) { return iso_strong_bc; }
 };

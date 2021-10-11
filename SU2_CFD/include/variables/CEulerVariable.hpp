@@ -241,6 +241,10 @@ public:
       Solution_Old(iPoint,iDim+1) = val_velocity[iDim]*Solution(iPoint,0);
   }
 
+  inline void SetEnergy_Old(unsigned long iPoint, const su2double val_energy) {
+    Solution_Old(iPoint,nDim+1) = val_energy*Solution(iPoint,0);
+  }
+
   /*!
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.

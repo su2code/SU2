@@ -631,6 +631,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     Twall = config->GetIsothermal_Temperature(Marker_Tag) / Temperature_Ref;
   }
 
+
+//  std::cout<<config->GetIso_Strong_BC()<<" "<< Temperature_Ref <<std::endl;
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != WALL_FUNCTION::NONE) {
 //    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
@@ -687,6 +689,12 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
+
+    su2double Cv = Cp/Gamma; 
+    //nodes->SetEnergy_Old(iPoint,Cv*Twall);
+
+
+
 
     /*--- Get transport coefficients ---*/
 

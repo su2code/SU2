@@ -1509,6 +1509,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
+  addBoolOption("STRONG_ISOTHERMAL_BC", iso_strong_bc, false);
+
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
