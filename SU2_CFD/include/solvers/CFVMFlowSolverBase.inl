@@ -540,41 +540,17 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
 
-    su2double num = 0.0;
-    su2double denom = 0.0;
-
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
 
-      unsigned short tmp = 1; //DELETE ME TODO
-      if (config->GetnSpecies() != 0) tmp = 2;
-      if ((tmp!=2)&&((iVar == 0)  || (iVar >= (nVar - tmp)))) {
+      if ((iVar == 0)  || (iVar >= nVar - 1)) {
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
-      if (tmp==2){
-        const unsigned long index = iPoint * nVar + iVar;
-        if (iVar < config->GetnSpecies()) {
-          num   += fabs(LinSysSol[index]);
-          denom += fabs(nodes->GetSolution(iPoint, iVar));
-          if (iVar == (config ->GetnSpecies()-1)){
-            su2double ratio = (num/(denom+EPS));
-            if (ratio > allowableRatio) {
-              localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-            }
-          }
-        }
-        if (iVar == (nVar-tmp)){
-          su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }  
-        }  
-      } 
     }
 
     /* Threshold the relaxation factor in the event that there is

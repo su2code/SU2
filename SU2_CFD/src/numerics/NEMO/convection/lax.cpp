@@ -139,7 +139,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
 
     cte = Epsilon_0*StretchingFactor*MeanLambda;
 
-    for (unsigned short iVar = 0; iVar < nSpecies+nDim; iVar++) {
+    for (auto iVar = 0u; iVar < nSpecies+nDim; iVar++) {
       Jacobian_i[iVar][iVar] += cte;
       Jacobian_j[iVar][iVar] -= cte;
     }
