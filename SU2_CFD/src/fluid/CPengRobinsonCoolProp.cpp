@@ -900,32 +900,34 @@ HelmholtzDerivatives CPengRobinsonCoolProp::CalcAllHelmholtzIdeal(const su2doubl
 }
 
 void CPengRobinsonCoolProp::Rho_Tp_cubic(su2double T, su2double P, int& Nsolns, su2double& rho0, su2double& rho1, su2double& rho2) {
-  su2double am = am_term(1 / T, 0);
-  su2double bm = bm_term();
-  su2double cm = 0.0;
+	
+  su2double am(0.0), bm(0.0), cm(0.0), d1(0.0), d2(0.0), d3(0.0), crho0(0.0),crho1(0.0),crho2(0.0),crho3(0.0),DELTA(0.0), p(0.0), q(0.0);
+  su2double t0(0.0), t1(0.0), t2(0.0);
+  
+  am = am_term(1 / T, 0);
+  bm = bm_term();
+  cm = 0.0;
 
    /*Introducing new variables to simplify the equation:*/
-  su2double d1 = cm - bm;
-  su2double d2 = cm + Delta_1 * bm;
-  su2double d3 = cm + Delta_2 * bm;
+  d1 = cm - bm;
+  d2 = cm + Delta_1 * bm;
+  d3 = cm + Delta_2 * bm;
 
    /*Cubic coefficients:*/
-  su2double crho0 = -P;
-  su2double crho1 = Ru * T - P * (d1 + d2 + d3);
-  su2double crho2 = Ru * T * (d2 + d3) - P * (d1 * (d2 + d3) + d2 * d3) - am;
-  su2double crho3 = Ru * T * d2 * d3 - P * d1 * d2 * d3 - d1 * am;
+  crho0 = -P;
+  crho1 = Ru * T - P * (d1 + d2 + d3);
+  crho2 = Ru * T * (d2 + d3) - P * (d1 * (d2 + d3) + d2 * d3) - am;
+  crho3 = Ru * T * d2 * d3 - P * d1 * d2 * d3 - d1 * am;
 
   /*Discriminant*/
-  su2double DELTA = 18 * crho3 * crho2 * crho1 * crho0 - 4 * crho2 * crho2 * crho2 * crho0 +
+  DELTA = 18 * crho3 * crho2 * crho1 * crho0 - 4 * crho2 * crho2 * crho2 * crho0 +
                     crho2 * crho2 * crho1 * crho1 - 4 * crho3 * crho1 * crho1 * crho1 -
                     27 * crho3 * crho3 * crho0 * crho0;
    /*Coefficients for the depressed cubic t^3+p*t+q = 0*/
-  su2double p = (3 * crho3 * crho1 - crho2 * crho2) / (3 * crho3 * crho3);
-  su2double q = (2 * crho2 * crho2 * crho2 - 9 * crho3 * crho2 * crho1 + 27 * crho3 * crho3 * crho0) /
+  p = (3 * crho3 * crho1 - crho2 * crho2) / (3 * crho3 * crho3);
+  q = (2 * crho2 * crho2 * crho2 - 9 * crho3 * crho2 * crho1 + 27 * crho3 * crho3 * crho0) /
                 (27 * crho3 * crho3 * crho3);
 
-  su2double t0, t1, t2;
-  su2double M_PI = acos(-1);
   if (DELTA < 0) {
     /* One real root*/
     if (4 * p * p * p + 27 * q * q > 0 && p < 0) {
@@ -940,9 +942,9 @@ void CPengRobinsonCoolProp::Rho_Tp_cubic(su2double T, su2double P, int& Nsolns, 
   } else  /*(DELTA>0)*/
   {
      /*Three real roots*/
-    t0 = 2.0 * sqrt(-p / 3.0) * cos(1.0 / 3.0 * acos(3.0 * q / (2.0 * p) * sqrt(-3.0 / p)) - 0 * 2.0 * M_PI / 3.0);
-    t1 = 2.0 * sqrt(-p / 3.0) * cos(1.0 / 3.0 * acos(3.0 * q / (2.0 * p) * sqrt(-3.0 / p)) - 1 * 2.0 * M_PI / 3.0);
-    t2 = 2.0 * sqrt(-p / 3.0) * cos(1.0 / 3.0 * acos(3.0 * q / (2.0 * p) * sqrt(-3.0 / p)) - 2 * 2.0 * M_PI / 3.0);
+    t0 = 2.0 * sqrt(-p / 3.0) * cos(1.0 / 3.0 * acos(3.0 * q / (2.0 * p) * sqrt(-3.0 / p)) - 0 * 2.0 * PI_NUMBER / 3.0);
+    t1 = 2.0 * sqrt(-p / 3.0) * cos(1.0 / 3.0 * acos(3.0 * q / (2.0 * p) * sqrt(-3.0 / p)) - 1 * 2.0 * PI_NUMBER / 3.0);
+    t2 = 2.0 * sqrt(-p / 3.0) * cos(1.0 / 3.0 * acos(3.0 * q / (2.0 * p) * sqrt(-3.0 / p)) - 2 * 2.0 * PI_NUMBER / 3.0);
 
     Nsolns = 3;
     rho0 = t0 - crho2 / (3 * crho3);

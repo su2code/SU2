@@ -32,6 +32,8 @@
 
 #include "CFluidModel.hpp"
 
+constexpr su2double _HUGE = 9.9e+30;
+
 #define LIST_OF_DERIVATIVE_VARIABLES \
   X(alpha0)                          \
   X(dalpha0_dtau)                    \
