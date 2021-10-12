@@ -110,7 +110,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   if (implicit) {
     for (iVar = 0; iVar<nVar; iVar++) {
       for (jVar = 0; jVar<nVar; jVar++) {
-      jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume;
+        jacobian[iVar][jVar] *= Volume;
       }
     }
   }
@@ -164,13 +164,13 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
     
   residual[nSpecies+nDim+1] = VTterm * Volume;
   
-    if (implicit) {
-      for (iVar = 0; iVar<nVar; iVar++) {
-        for (jVar = 0; jVar<nVar; jVar++) {
-        jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume;
-        }
+  if (implicit) {
+    for (iVar = 0; iVar<nVar; iVar++) {
+      for (jVar = 0; jVar<nVar; jVar++) {
+        jacobian[iVar][jVar] *= Volume;
       }
     }
+  }
 
   /*--- Relax/limit vt transfer ---*/
   if(config->GetVTTransferResidualLimiting()){

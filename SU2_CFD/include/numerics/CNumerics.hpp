@@ -1407,11 +1407,10 @@ public:
    * \param[in] val_residual - residual of the numeric function.
    * \param[out] ERR - Presencse of NaN in vector
    */
-  static bool CheckResidualNaNs(bool implicit, int nVar, ResidualType<>(residual)){
+  static bool CheckResidualNaNs(bool implicit, int nVar, const ResidualType<> residual) {
 
     bool ERR = false;
-    bool jac_j = false;
-    if (residual.jacobian_j != nullptr) jac_j =true;
+    const bool jac_j = residual.jacobian_j != nullptr
 
     for (auto iVar = 0; iVar<nVar; iVar++){
       if (residual[iVar] != residual[iVar]) ERR = true;

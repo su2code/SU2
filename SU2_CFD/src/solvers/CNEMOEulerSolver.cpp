@@ -959,12 +959,12 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
           }
         }
 
-	/*--- Energy ---*/
+        /*--- Energy ---*/
         if (iVar == (nVar-2)){
           su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
           if (ratio > allowableRatio) {
             localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-	  }
+          }
         }
       }
     }

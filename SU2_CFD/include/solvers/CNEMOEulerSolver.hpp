@@ -204,7 +204,7 @@ public:
    * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(const CConfig *config) override;
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
 
   /*!
    * \brief Set the fluid solver nondimensionalization.
