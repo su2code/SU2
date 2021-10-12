@@ -1413,12 +1413,12 @@ public:
     const bool jac_j = residual.jacobian_j != nullptr;
 
     for (auto iVar = 0; iVar<nVar; iVar++){
-      if (residual[iVar] != residual[iVar]) ERR = true;
+      if (std::isnan(SU2_TYPE::GetValue(residual[iVar]))) ERR = true;
 
       if (implicit) {
         for (auto jVar = 0; jVar < nVar; jVar++){
-          if (residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ERR = true;
-          if ((jac_j) && (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar])) ERR = true;
+          if (std::isnan(SU2_TYPE::GetValue(residual.jacobian_i[iVar][jVar]))) ERR = true;
+          if ((jac_j) && (std::isnan(SU2_TYPE::GetValue(residual.jacobian_j[iVar][jVar])))) ERR = true;
         }
       }
     }

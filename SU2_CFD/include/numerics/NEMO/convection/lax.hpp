@@ -40,7 +40,6 @@ private:
 
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
   su2double *MeanU, *MeanV;
-  vector<su2double> mean_eves;
   su2double *MeandPdU;
   su2double *ProjFlux;  /*!< \brief Projected inviscid flux tensor. */
   su2double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */

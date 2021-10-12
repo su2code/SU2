@@ -71,7 +71,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.011572, -1.537291, -18.301794, -18.629156, -18.575201, 2.304333, 2.009490, 5.353433, 0.906651]
+    invwedge.test_vals = [-0.998812, -1.524371, -18.301794, -18.629156, -18.575201, 2.318954, 2.011581,  5.366905, 0.919345]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True

@@ -57,9 +57,6 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   dPdUst_i = new su2double [nVar];
   dPdUst_j = new su2double [nVar];
 
-  eves_st_i.resize(nSpecies,0.0);
-  eves_st_j.resize(nSpecies,0.0);
-
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -174,8 +171,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   su2double ProjVelst_i = onemw*ProjVel_i + w*ProjVel_j;
   su2double ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
 
-  auto& eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
-  auto& eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);
+  const auto& eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
+  const auto& eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);
 
   fluidmodel->ComputedPdU(Vst_i, eves_st_i, dPdUst_i);
   fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
