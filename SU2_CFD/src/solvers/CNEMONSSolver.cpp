@@ -719,7 +719,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
         Jacobian.DeleteValsRowi(total_index);
       }
     }
-
   }
   END_SU2_OMP_FOR
 

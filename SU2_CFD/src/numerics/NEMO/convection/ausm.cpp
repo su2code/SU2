@@ -209,7 +209,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     if (mF >= 0) {
 
       /*--- Jacobian contribution: dFc terms ---*/
-      for (unsigned short iVar = 0; iVar < nSpecies+nDim; iVar++) {
+      for (auto iVar = 0u; iVar < nSpecies+nDim; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] += mF * FcL[iVar]/a_i * daL[jVar];
         }
@@ -292,7 +292,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     if (mF < 0) {
 
       /*--- Jacobian contribution: dFc terms ---*/
-      for (unsigned short iVar = 0; iVar < nSpecies+nDim; iVar++) {
+      for (auto iVar = 0u; iVar < nSpecies+nDim; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_j[iVar][jVar] += mF * FcR[iVar]/a_j * daR[jVar];
         }

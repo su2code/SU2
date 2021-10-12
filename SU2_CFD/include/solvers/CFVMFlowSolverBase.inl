@@ -540,41 +540,17 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
 
-    su2double num = 0.0;
-    su2double denom = 0.0;
-
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
 
-      unsigned short tmp = 1; //DELETE ME TODO
-      if (config->GetnSpecies() != 0) tmp = 2;
-      if ((tmp!=2)&&((iVar == 0)  || (iVar >= (nVar - tmp)))) {
+      if ((iVar == 0) || (iVar == nVar - 1)) {
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
-      if (tmp==2){
-        const unsigned long index = iPoint * nVar + iVar;
-        if (iVar < config->GetnSpecies()) {
-          num   += fabs(LinSysSol[index]);
-          denom += fabs(nodes->GetSolution(iPoint, iVar));
-          if (iVar == (config ->GetnSpecies()-1)){
-            su2double ratio = (num/(denom+EPS));
-            if (ratio > allowableRatio) {
-              localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-            }
-          }
-        }
-        if (iVar == (nVar-tmp)){
-          su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-          if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-          }  
-        }  
-      } 
     }
 
     /* Threshold the relaxation factor in the event that there is
@@ -2416,7 +2392,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0, RHOS_INDEX = 0;
+  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
   su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, Density = 0.0, GradTemperature = 0.0,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
@@ -2596,25 +2572,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       } else {
 
-        unsigned short iSpecies, nSpecies = config->GetnSpecies();
-
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
         const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-        const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
-        const auto& hs                      = nodes->GetEnthalpys(iPoint);
-
-        /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
-        su2double sumJhs = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          sumJhs += Ds[iSpecies]*hs[iSpecies]*GeometryToolbox::DotProduct(nDim, Grad_PrimVar[RHOS_INDEX+iSpecies], UnitNormal);
         
         su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
         su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
         
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
         enthalpy transport due to mass diffusion ---*/ 
-        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven + sumJhs;
+        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
       }
 
       /*--- Note that y+, and heat are computed at the

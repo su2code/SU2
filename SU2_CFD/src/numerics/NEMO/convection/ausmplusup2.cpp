@@ -69,6 +69,8 @@ CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
   delete [] dmRM;
   delete [] dpLP;
   delete [] dpRM;
+  delete [] daL;
+  delete [] daR;
   delete [] rhos_i;
   delete [] rhos_j;
   delete [] u_i;
@@ -254,7 +256,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
     if (mF >= 0) {
 
       /*--- Jacobian contribution: dFc terms ---*/
-      for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
+      for (auto iVar = 0u; iVar < nSpecies+nDim; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] += mF * FcL[iVar]/aF * daL[jVar];
         }
@@ -337,7 +339,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
     if (mF < 0) {
 
       /*--- Jacobian contribution: dFc terms ---*/
-      for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
+      for (auto iVar = 0u; iVar < nSpecies+nDim; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           Jacobian_j[iVar][jVar] += mF * FcR[iVar]/aF * daR[jVar];
         }

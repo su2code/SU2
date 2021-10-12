@@ -93,7 +93,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
 
   /*--- Compute NonEq specific variables ---*/
-  auto& mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
+  const auto& mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
   fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
@@ -139,7 +139,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
 
     cte = Epsilon_0*StretchingFactor*MeanLambda;
 
-    for (unsigned short iVar = 0; iVar < nSpecies+nDim; iVar++) {
+    for (auto iVar = 0u; iVar < nSpecies+nDim; iVar++) {
       Jacobian_i[iVar][iVar] += cte;
       Jacobian_j[iVar][iVar] -= cte;
     }
