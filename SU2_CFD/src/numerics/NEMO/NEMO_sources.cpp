@@ -37,10 +37,8 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 
   unsigned short iSpecies;
 
-  ws.resize(nSpecies,0.0);
-
   /*--- Allocate arrays ---*/
-  Y      = new su2double[nSpecies];
+  Y = new su2double[nSpecies];
   
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -77,9 +75,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short iSpecies, iVar;
   unsigned short jVar;
-  su2double T, Tve;
-  vector<su2double> rhos;
 
+  vector<su2double> rhos;
   rhos.resize(nSpecies,0.0);
 
   /*--- Initialize residual and Jacobian arrays ---*/
@@ -92,8 +89,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
         jacobian[iVar][jVar] = 0.0;
 
   /*--- Rename for convenience ---*/
-  T   = V_i[T_INDEX];
-  Tve = V_i[TVE_INDEX];
+  su2double T   = V_i[T_INDEX];
+  su2double Tve = V_i[TVE_INDEX];
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhos[iSpecies]=V_i[RHOS_INDEX+iSpecies];
 
@@ -101,11 +98,11 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
   /*---Compute Prodcution/destruction terms ---*/
-  ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, eve_i, Cvve_i,
-                                             dTdU_i, dTvedU_i, jacobian);
+  const auto& ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, eve_i, Cvve_i,
+                                                         dTdU_i, dTvedU_i, jacobian);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-    residual[iSpecies] = ws[iSpecies] *Volume;}
+    residual[iSpecies] = ws[iSpecies] * Volume;}
 
   if (implicit) {
     for (iVar = 0; iVar<nVar; iVar++) {
@@ -128,12 +125,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   // Note: Park limiting cross section
   unsigned short iSpecies, iVar;
   unsigned short jVar;
-  su2double T, Tve;
-  su2double VTterm;
   su2double res_min = -1E6;
   su2double res_max = 1E6;
-  vector<su2double> rhos;
 
+  vector<su2double> rhos;
   rhos.resize(nSpecies,0.0);
 
   /*--- Initialize residual and Jacobian arrays ---*/
@@ -147,8 +142,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   }
 
   /*--- Rename for convenience ---*/
-  T   = V_i[T_INDEX];
-  Tve = V_i[TVE_INDEX];
+  su2double T   = V_i[T_INDEX];
+  su2double Tve = V_i[TVE_INDEX];
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhos[iSpecies]=V_i[RHOS_INDEX+iSpecies];
 
@@ -156,7 +151,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
   /*--- Compute residual and jacobians ---*/
-  VTterm = fluidmodel -> ComputeEveSourceTerm();
+  su2double VTterm = fluidmodel -> ComputeEveSourceTerm();
   if (implicit) {
     fluidmodel->GetEveSourceTermJacobian(V_i, eve_i, Cvve_i, dTdU_i,
                                          dTvedU_i, jacobian);
@@ -185,25 +180,23 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   unsigned short iDim, iSpecies, iVar;
   unsigned short jSpecies, jVar;
-  su2double rho, rhov, vel2, H, yinv, T, Tve, Ru, RuSI;
-  su2double ktr, kve;
 
   /*--- Rename for convenience ---*/
   auto Ds = Diffusion_Coeff_i;
-  ktr = Thermal_Conductivity_i;
-  kve = Thermal_Conductivity_ve_i;
-  rho = V_i[RHO_INDEX];
-  T   = V_i[T_INDEX];
-  Tve  = V_i[TVE_INDEX];
-  auto GV  = PrimVar_Grad_i;
-  RuSI= UNIVERSAL_GAS_CONSTANT;
-  Ru  = 1000.0*RuSI;
-
-  auto& Ms = fluidmodel->GetSpeciesMolarMass();
+  auto GV = PrimVar_Grad_i;
+  su2double ktr = Thermal_Conductivity_i;
+  su2double kve = Thermal_Conductivity_ve_i;
+  su2double rho = V_i[RHO_INDEX];
+  su2double RuSI = UNIVERSAL_GAS_CONSTANT;
+  su2double Ru = 1000.0*RuSI;
+  su2double rhou = U_i[nSpecies];
+  su2double rhov = U_i[nSpecies+1];
+  su2double H = V_i[H_INDEX];
+  su2double rhoEve = U_i[nVar-1];
+  const auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
   bool viscous = config->GetViscous();
   bool rans = (config->GetKind_Turb_Model() != NONE);
-  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, eve_i);
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -211,22 +204,18 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   }
 
   /*--- Calculate inverse of y coordinate ---*/
+  su2double yinv = 0.0;
   if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
   else yinv = 0.0;
 
   /*--- Rename for convenience ---*/
-  rho    = V_i[RHO_INDEX];
-  su2double rhou   = U_i[nSpecies];
-  rhov   = U_i[nSpecies+1];
-  H      = V_i[H_INDEX];
-  su2double rhoEve = U_i[nVar-1];
-  vel2   = 0.0;
-
+  su2double vel2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     vel2 += V_i[VEL_INDEX+iDim]*V_i[VEL_INDEX+iDim];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Y[iSpecies] = V_i[RHOS_INDEX+iSpecies] / rho;
 
+  /*--- Compute residual for inviscid axisym flow---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     residual[iSpecies] = yinv*rhov*Y[iSpecies]*Volume;
   residual[nSpecies]   = yinv*rhov*U_i[nSpecies]/rho*Volume;
@@ -234,6 +223,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   residual[nSpecies+2] = yinv*rhov*H*Volume;
   residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
 
+  /*---Compute Jacobian for inviscid axisym flow ---*/
   if (implicit) {
 
     /*--- Initialize ---*/
@@ -292,6 +282,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
         jacobian[iVar][jVar] *= yinv*Volume;
   }
 
+  /*--- Compute residual for viscous portion of axisym flow ---*/
   if (viscous) {
     if (!rans){ turb_ke_i = 0.0; }
 

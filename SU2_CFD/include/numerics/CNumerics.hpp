@@ -1410,7 +1410,7 @@ public:
   static bool CheckResidualNaNs(bool implicit, int nVar, const ResidualType<> residual) {
 
     bool ERR = false;
-    const bool jac_j = residual.jacobian_j != nullptr
+    const bool jac_j = residual.jacobian_j != nullptr;
 
     for (auto iVar = 0; iVar<nVar; iVar++){
       if (residual[iVar] != residual[iVar]) ERR = true;
