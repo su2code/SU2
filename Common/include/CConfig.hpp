@@ -756,7 +756,8 @@ private:
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  PR_CoolPpop_Gas_FluidName;     /*!< \brief Fluid name for the PR_CoolPpop_Gas equation of state */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -9320,4 +9321,9 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+  
+  /*!
+   *  \return Fluid name for the PR_CoolPpop_Gas equation of state
+   */
+  string GetPR_CoolProp_FluidName(void) const { return PR_CoolPpop_Gas_FluidName; }
 };

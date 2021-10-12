@@ -76,6 +76,11 @@ public:
    * \brief Set the specific heat Cp.
    */
   inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override { Primitive(iPoint,nDim+8) = val_Cp; }
+  
+  /*!
+   * \brief Set the specific heat Cv.
+   */
+  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) override { Primitive(iPoint, nDim + 9) = val_Cv; }
 
   /*!
    * \overload
@@ -106,6 +111,12 @@ public:
    * \return Value of the specific heat at constant P  of the flow.
    */
   inline su2double GetSpecificHeatCp(unsigned long iPoint) const override { return Primitive(iPoint,nDim+8); }
+  
+  /*!
+   * \brief Get the specific heat at constant V of the flow.
+   * \return Value of the specific heat at constant V  of the flow.
+   */
+  inline su2double GetSpecificHeatCv(unsigned long iPoint) const override { return Primitive(iPoint, nDim + 9); }
 
   /*!
    * \brief Set the temperature at the wall

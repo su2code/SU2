@@ -194,9 +194,10 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
 
   SetThermalConductivity(iPoint, FluidModel->GetThermalConductivity());
 
-  /*--- Set specific heat ---*/
+  /*--- Set specific heats ---*/
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
+  SetSpecificHeatCv(iPoint, FluidModel->GetCv());
 
   return RightVol;
 }

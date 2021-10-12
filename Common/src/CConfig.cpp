@@ -2788,6 +2788,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
   
+  /*!\brief DESCRIPTION \n DESCRIPTION: Fluid name to input for PR_COOLPROP_GAS \n Default: 'empty' name*/
+  addStringOption("PR_COOLPROP_GAS_FLUIDNAME", PR_CoolPpop_Gas_FluidName, string("empty"));
   /* END_CONFIG_OPTIONS */
 
 }

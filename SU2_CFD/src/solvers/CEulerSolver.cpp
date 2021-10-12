@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CPengRobinsonCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
@@ -849,6 +850,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
 
+	case PR_COOLPROP_GAS:
+
+      auxFluidModel = new CPengRobinsonCoolProp(config->GetPR_CoolProp_FluidName());
+
+      break;
+	  
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
       break;
@@ -1081,6 +1088,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetPressure_Critical() / config->GetPressure_Ref(),
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
+        break;
+	  
+	  case PR_COOLPROP_GAS:
+        FluidModel[thread] = new CPengRobinsonCoolProp(config->GetPR_CoolProp_FluidName());
+
         break;
     }
 
@@ -1633,31 +1645,44 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
     const su2double gamma, prandtlLam, prandtlTurb;
+    unsigned short equationOfStateType;
 
-    LambdaVisc(su2double g, su2double pl, su2double pt) : gamma(g), prandtlLam(pl), prandtlTurb(pt) {}
+    LambdaVisc(su2double g, su2double pl, su2double pt, unsigned short eosType)
+        : gamma(g), prandtlLam(pl), prandtlTurb(pt), equationOfStateType(eosType) {}
 
-    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density) const {
-      su2double Lambda_1 = (4.0/3.0)*(laminarVisc + eddyVisc);
+    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density, su2double gammaEos) const {
+      su2double Lambda_1 = (4.0 / 3.0) * (laminarVisc + eddyVisc);
       /// TODO: (REAL_GAS) removing gamma as it cannot work with FLUIDPROP
-      su2double Lambda_2 = (1.0 + (prandtlLam/prandtlTurb)*(eddyVisc/laminarVisc))*(gamma*laminarVisc/prandtlLam);
+      su2double Lambda_2;
+      if (equationOfStateType != PR_COOLPROP_GAS)
+        Lambda_2 = (1.0 + (prandtlLam / prandtlTurb) * (eddyVisc / laminarVisc)) * (gamma * laminarVisc / prandtlLam);
+      else
+        Lambda_2 = (1.0 + (prandtlLam / prandtlTurb) * (eddyVisc / laminarVisc)) * (gammaEos * laminarVisc / prandtlLam);
       return (Lambda_1 + Lambda_2) / density;
     }
 
-    FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
-      su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
-      su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
-      su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
-      return lambda(laminarVisc, eddyVisc, density);
+    FORCEINLINE su2double operator()(const CEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      su2double laminarVisc = 0.5 * (nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
+      su2double eddyVisc = 0.5 * (nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
+      su2double density = 0.5 * (nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
+      su2double cp = 0.5 * (nodes.GetSpecificHeatCp(iPoint) + nodes.GetSpecificHeatCp(jPoint));
+      su2double cv = 0.5 * (nodes.GetSpecificHeatCv(iPoint) + nodes.GetSpecificHeatCv(jPoint));
+      su2double gammaEoS = cp / cv;
+
+      return lambda(laminarVisc, eddyVisc, density, gammaEoS);
     }
 
-    FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint) const {
+    FORCEINLINE su2double operator()(const CEulerVariable& nodes, unsigned long iPoint) const {
       su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
       su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
       su2double density = nodes.GetDensity(iPoint);
-      return lambda(laminarVisc, eddyVisc, density);
+      su2double cp = nodes.GetSpecificHeatCp(iPoint);
+      su2double cv = nodes.GetSpecificHeatCv(iPoint);
+      su2double gammaEoS = cp / cv;
+      return lambda(laminarVisc, eddyVisc, density, gammaEoS);
     }
 
-  } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb);
+  } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb, config->GetKind_FluidModel());
 
   /*--- Now instantiate the generic implementation with the two functors above. ---*/
 
