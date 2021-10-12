@@ -28,6 +28,9 @@
 #pragma once
 
 #ifdef HAVE_CGNS
+#ifdef __MINGW32__
+#include <basetsd.h>
+#endif
 #include "cgnslib.h"
 #endif
 
