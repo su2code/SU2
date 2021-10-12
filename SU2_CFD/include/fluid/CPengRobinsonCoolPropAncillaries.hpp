@@ -48,13 +48,13 @@ namespace cpjson {
     inline su2double get_double(const rapidjson::Value& v, std::string m) {
       const rapidjson::Value& el = v[m.c_str()];
       return el.GetDouble();
-    };
+    }
 
     /*A convenience function to get a string from a JSON value, including error checking*/
     inline std::string get_string(const rapidjson::Value& v, std::string m) {
       const rapidjson::Value& el = v[m.c_str()];
       return el.GetString();
-    };
+    }
 
     /*A convenience function to get a string array compactly*/
     inline std::vector<std::string> get_string_array(const rapidjson::Value& v) {
@@ -63,14 +63,14 @@ namespace cpjson {
         out.push_back(itr->GetString());
       }
       return out;
-    };
+    }
 
     /*A convenience function to get a string array compactly*/
     inline std::vector<std::string> get_string_array(const rapidjson::Value& v, std::string m) {
       if (v.HasMember(m.c_str())) {
         return get_string_array(v[m.c_str()]);
       }
-    };
+    }
 
     enum schema_validation_code { SCHEMA_VALIDATION_OK = 0, SCHEMA_INVALID_JSON, INPUT_INVALID_JSON, SCHEMA_NOT_VALIDATED };
 
@@ -81,7 +81,7 @@ namespace cpjson {
       rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
       v.Accept(writer);
       return buffer.GetString();
-    };
+    }
 
     /*A convenience function to get a double array compactly*/
     inline std::vector<su2double> get_double_array(const rapidjson::Value& v) {
@@ -92,7 +92,7 @@ namespace cpjson {
         }
       }
       return out;
-    };
+    }
 
     /*A convenience function to get a double array compactly*/
     inline std::vector<su2double> get_double_array(const rapidjson::Value& v, std::string m) {
@@ -110,7 +110,7 @@ namespace cpjson {
         }
       }
       return out;
-    };
+    }
 
     /*A convenience function to get a bool from a JSON value, including error checking*/
     inline bool get_bool(const rapidjson::Value& v, std::string m) {
@@ -118,7 +118,7 @@ namespace cpjson {
       if (el.IsBool()) {
         return el.GetBool();
       }
-    };
+    }
 
     /**
      * Validate a JSON-formatted string against a JSON-formatted schema string

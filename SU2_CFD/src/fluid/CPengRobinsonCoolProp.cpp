@@ -282,8 +282,7 @@ su2double CPengRobinsonCoolProp::GetTemperatureByPRho(su2double P, su2double rho
 
 su2double CPengRobinsonCoolProp::GetTemperatureByRhoUmass(su2double rho, su2double umass) {
   su2double f0, f0Prime, f0left, f0right, temperature, deltax;
-
-  su2double rho_molar = 1.0 / Molar_mass * rho;
+  
   deltax = 0.000001;
 
   /* initial guess of temperature */
@@ -314,17 +313,20 @@ su2double CPengRobinsonCoolProp::GetTemperatureByRhoUmass(su2double rho, su2doub
 
 void CPengRobinsonCoolProp::SetTDState_PT(su2double P, su2double T) {
   Pressure = P;
-
-  su2double rho0 = 0, rho1 = 0, rho2 = 0, rho = -1;
-  su2double rhoV0 = 0, rhoV1 = 0, rhoV2 = 0;
-  int Nsoln = 0, NsolnV = 0;
+ 
+  /*su2double rhoV0(0.0), rhoV1(0.0), rhoV2(0.0);
+  su2double theta(0.0), Ts_est(0.0), RhoV_est(0.0);
+  int NsolnV = 0;*/
+  
+  su2double rho0(0.0), rho1(0.0), rho2(0.0), rho(-1.0);
+  int Nsoln = 0;
 
   Rho_Tp_cubic(T, P, Nsoln, rho0, rho1, rho2); /*  Densities are sorted in increasing order */
 
   std::string msg;
   std::stringstream Ts, Ps;
 
-  su2double theta, Ts_est, RhoV_est;
+  
   if (Nsoln == 1) {
     rho = rho0;
   } else if (Nsoln == 3) {
@@ -635,7 +637,7 @@ su2double CPengRobinsonCoolProp::GetPressureByRhoT(su2double rho, su2double T) {
 }
 
 su2double CPengRobinsonCoolProp::GetUmassByRhoT(su2double rho, su2double T) {
-  su2double tau(0.0), taustar(0.0), da0_dTau(0.0), dar_dTau(0.0), s(0.0), umolar(0.0), umass(0.0), rho_molar(0.0);
+  su2double tau(0.0), taustar(0.0), da0_dTau(0.0), dar_dTau(0.0), umolar(0.0), umass(0.0), rho_molar(0.0);
 
   rho_molar = 1.0 / Molar_mass * rho;
   taustar = Tcrit / T;
@@ -652,7 +654,7 @@ su2double CPengRobinsonCoolProp::GetUmassByRhoT(su2double rho, su2double T) {
 
 su2double CPengRobinsonCoolProp::GetHmassByRhoT(su2double rho, su2double T) {
   su2double tau, rho_molar, taustar;
-  su2double dar_dDelta(0.0), da0_dTau(0.0), dar_dTau(0.0), s(0.0), hmolar, hmass;
+  su2double dar_dDelta(0.0), da0_dTau(0.0), dar_dTau(0.0), hmolar, hmass;
 
   tau = 1.0 / T;
   rho_molar = 1.0 / Molar_mass * rho;
@@ -673,7 +675,7 @@ su2double CPengRobinsonCoolProp::GetHmassByRhoT(su2double rho, su2double T) {
 
 su2double CPengRobinsonCoolProp::GetSmassByRhoT(su2double rho, su2double T) {
   su2double tau, rho_molar, taustar, deltastar;
-  su2double da0_dTau(0.0), dar_dTau(0.0), alpha0(0.0), alphar(0.0), s(0.0), smolar(0.0), smass(0.0);
+  su2double da0_dTau(0.0), dar_dTau(0.0), alpha0(0.0), alphar(0.0), smolar(0.0), smass(0.0);
   su2double psi_plus0;
 
   tau = 1.0 / T;
@@ -715,8 +717,6 @@ su2double CPengRobinsonCoolProp::psi_minus(su2double delta, std::size_t itau, st
       return 2.0 * pow(bmc / bracket, 3.0);
     case 4:
       return 6.0 * pow(bmc / bracket, 4.0);
-    default:
-      throw -1.0;
   }
 }
 su2double CPengRobinsonCoolProp::bm_term() {
@@ -746,8 +746,6 @@ su2double CPengRobinsonCoolProp::psi_plus(su2double delta, std::size_t idelta) {
       /* Term -PI_12(delta,x,0)*PI_12(delta,x,3) in the numerator is zero (and removed) since PI_12(delta,x,3) = 0*/
       return (6.0 * PI_12(delta, 0) * PI_12(delta, 1) * PI_12(delta, 2.0) - 6.0 * pow(PI_12(delta, 1), 3.0)) /
              pow(PI_12(delta, 0), 4.0);
-    default:
-      throw -1.0;
   }
 }
 su2double CPengRobinsonCoolProp::PI_12(su2double delta, std::size_t idelta) {
@@ -765,8 +763,6 @@ su2double CPengRobinsonCoolProp::PI_12(su2double delta, std::size_t idelta) {
       return 0.0;
     case 4:
       return 0.0;
-    default:
-      throw -1.0;
   }
 }
 su2double CPengRobinsonCoolProp::tau_times_a(su2double tau, std::size_t itau) {
@@ -784,7 +780,6 @@ su2double CPengRobinsonCoolProp::am_term(su2double tau, std::size_t itau) {
 }
 su2double CPengRobinsonCoolProp::aij_term(su2double& tau, std::size_t i, std::size_t j, std::size_t& itau) {
   su2double u = u_term(tau, i, j, 0);
-  su2double res(0.0);
   switch (itau) {
     case 0:
       return sqrt(u);
@@ -802,8 +797,6 @@ su2double CPengRobinsonCoolProp::aij_term(su2double& tau, std::size_t i, std::si
                   (4.0 * u_term(tau, i, j, 1) * u_term(tau, i, j, 3) + 3.0 * pow(u_term(tau, i, j, 2), 2.0)) +
               8.0 * pow(u, 3.0) * u_term(tau, i, j, 4) +
               36.0 * u * pow(u_term(tau, i, j, 1), 2.0) * u_term(tau, i, j, 2) - 15.0 * pow(u_term(tau, i, j, 1), 4.0));
-    default:
-      throw -1;
   }
 }
 su2double CPengRobinsonCoolProp::u_term(su2double& tau, std::size_t& i, std::size_t& j, const std::size_t& itau) {
@@ -822,8 +815,6 @@ su2double CPengRobinsonCoolProp::u_term(su2double& tau, std::size_t& i, std::siz
       return (aii * aii_term(tau, j, 4) + 4.0 * aii_term(tau, i, 1) * aii_term(tau, j, 3) +
               6.0 * aii_term(tau, i, 2) * aii_term(tau, j, 2) + 4.0 * aii_term(tau, i, 3) * aii_term(tau, j, 1) +
               ajj * aii_term(tau, i, 4));
-    default:
-      throw -1;
   }
 }
 su2double CPengRobinsonCoolProp::aii_term(su2double& tau, std::size_t& i, const std::size_t& itau) {
@@ -842,8 +833,6 @@ su2double CPengRobinsonCoolProp::aii_term(su2double& tau, std::size_t& i, const 
     case 4:
       return (3.0 / 8.0) * a0 * m *
              (29.0 * m / pow(tau, 5.0) * Tr_over_Tci - 35.0 * B / pow(tau, 9.0 / 2.0) * sqrt_Tr_Tci);
-    default:
-      throw -1;
   }
 }
 

@@ -32,8 +32,6 @@
 
 #include "CFluidModel.hpp"
 
-constexpr su2double _HUGE = 9.9e+30;
-
 #define LIST_OF_DERIVATIVE_VARIABLES \
   X(alpha0)                          \
   X(dalpha0_dtau)                    \
@@ -60,7 +58,7 @@ class IdealHelmholtzLead  {
   bool enabled;
 
  public:
-  IdealHelmholtzLead() : _a1(_HUGE), _a2(_HUGE), enabled(false) {}
+  IdealHelmholtzLead() : _a1(DBL_MAX), _a2(DBL_MAX), enabled(false) {}
 
   IdealHelmholtzLead(su2double a1, su2double a2) : _a1(a1), _a2(a2), enabled(true) {}
 
@@ -95,7 +93,7 @@ class IdealHelmholtzEnthalpyEntropyOffset {
   bool enabled;
 
  public:
-  IdealHelmholtzEnthalpyEntropyOffset() : _a1(_HUGE), _a2(_HUGE), enabled(false) {}
+  IdealHelmholtzEnthalpyEntropyOffset() : _a1(DBL_MAX), _a2(DBL_MAX), enabled(false) {}
 
   IdealHelmholtzEnthalpyEntropyOffset(su2double a1, su2double a2, const std::string& ref)
       : _a1(a1), _a2(a2), reference(ref), enabled(true) {}
@@ -131,7 +129,7 @@ class IdealHelmholtzLogTau {
 
  public:
   
-  IdealHelmholtzLogTau() : _a1(_HUGE), enabled(false) {}
+  IdealHelmholtzLogTau() : _a1(DBL_MAX), enabled(false) {}
 
 
   IdealHelmholtzLogTau(su2double a1) : _a1(a1), enabled(true) {}
@@ -358,7 +356,7 @@ class IdealHelmholtzCP0PolyT {
   bool enabled;
 
  public:
-  IdealHelmholtzCP0PolyT() : Tc(_HUGE), T0(_HUGE), tau0(_HUGE), N(0), enabled(false) {}
+  IdealHelmholtzCP0PolyT() : Tc(DBL_MAX), T0(DBL_MAX), tau0(DBL_MAX), N(0), enabled(false) {}
 
   IdealHelmholtzCP0PolyT(const std::vector<su2double>& c, const std::vector<su2double>& t, su2double Tc, su2double T0)
       : c(c), t(t), Tc(Tc), T0(T0), tau0(Tc / T0), N(c.size()), enabled(true) {}
@@ -482,7 +480,7 @@ class IdealHelmholtzCP0Constant {
 
  public:
   /*  Default constructor */
-  IdealHelmholtzCP0Constant() : cp_over_R(_HUGE), Tc(_HUGE), T0(_HUGE), tau0(_HUGE), enabled(false){};
+  IdealHelmholtzCP0Constant() : cp_over_R(DBL_MAX), Tc(DBL_MAX), T0(DBL_MAX), tau0(DBL_MAX), enabled(false){};
 
   /* Constructor with three double values */
   IdealHelmholtzCP0Constant(su2double cp_over_R, su2double Tc, su2double T0)
@@ -531,7 +529,7 @@ class SaturationLinelPs {
   bool using_tau_r;
 
  public:
-  SaturationLinelPs() : T_r(_HUGE), Tmax(_HUGE), Tmin(_HUGE), reducing_value(_HUGE), N(0), using_tau_r(false) {}
+  SaturationLinelPs() : T_r(DBL_MAX), Tmax(DBL_MAX), Tmin(DBL_MAX), reducing_value(DBL_MAX), N(0), using_tau_r(false) {}
 
   /*  Constructor with std::vectors */
   SaturationLinelPs(const std::vector<su2double>& n, const std::vector<su2double>& t, su2double T_r, su2double Tmax,
