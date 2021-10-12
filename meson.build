@@ -74,6 +74,10 @@ if get_option('enable-cgns')
   su2_cpp_args += '-DHAVE_CGNS'
 endif
 
+# add rapidjson library
+subdir('externals/rapidjson')
+su2_deps     += rapidjson_dep
+
 # check for non-debug build
 if get_option('buildtype')!='debug'
   su2_cpp_args += '-DNDEBUG'
