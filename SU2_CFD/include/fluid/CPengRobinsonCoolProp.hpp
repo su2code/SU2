@@ -51,6 +51,7 @@ struct HelmholtzDerivatives {
 };
 #undef LIST_OF_DERIVATIVE_VARIABLES
 
+const su2double HUGE_DBL = std::numeric_limits<su2double>::max();
 
 class IdealHelmholtzLead  {
  private:
@@ -58,7 +59,7 @@ class IdealHelmholtzLead  {
   bool enabled;
 
  public:
-  IdealHelmholtzLead() : _a1(DBL_MAX), _a2(DBL_MAX), enabled(false) {}
+  IdealHelmholtzLead() : _a1(HUGE_DBL), _a2(HUGE_DBL), enabled(false) {}
 
   IdealHelmholtzLead(su2double a1, su2double a2) : _a1(a1), _a2(a2), enabled(true) {}
 
@@ -93,7 +94,7 @@ class IdealHelmholtzEnthalpyEntropyOffset {
   bool enabled;
 
  public:
-  IdealHelmholtzEnthalpyEntropyOffset() : _a1(DBL_MAX), _a2(DBL_MAX), enabled(false) {}
+  IdealHelmholtzEnthalpyEntropyOffset() : _a1(HUGE_DBL), _a2(HUGE_DBL), enabled(false) {}
 
   IdealHelmholtzEnthalpyEntropyOffset(su2double a1, su2double a2, const std::string& ref)
       : _a1(a1), _a2(a2), reference(ref), enabled(true) {}
@@ -129,7 +130,7 @@ class IdealHelmholtzLogTau {
 
  public:
   
-  IdealHelmholtzLogTau() : _a1(DBL_MAX), enabled(false) {}
+  IdealHelmholtzLogTau() : _a1(HUGE_DBL), enabled(false) {}
 
 
   IdealHelmholtzLogTau(su2double a1) : _a1(a1), enabled(true) {}
@@ -356,7 +357,7 @@ class IdealHelmholtzCP0PolyT {
   bool enabled;
 
  public:
-  IdealHelmholtzCP0PolyT() : Tc(DBL_MAX), T0(DBL_MAX), tau0(DBL_MAX), N(0), enabled(false) {}
+  IdealHelmholtzCP0PolyT() : Tc(HUGE_DBL), T0(HUGE_DBL), tau0(HUGE_DBL), N(0), enabled(false) {}
 
   IdealHelmholtzCP0PolyT(const std::vector<su2double>& c, const std::vector<su2double>& t, su2double Tc, su2double T0)
       : c(c), t(t), Tc(Tc), T0(T0), tau0(Tc / T0), N(c.size()), enabled(true) {}
@@ -480,7 +481,7 @@ class IdealHelmholtzCP0Constant {
 
  public:
   /*  Default constructor */
-  IdealHelmholtzCP0Constant() : cp_over_R(DBL_MAX), Tc(DBL_MAX), T0(DBL_MAX), tau0(DBL_MAX), enabled(false){};
+  IdealHelmholtzCP0Constant() : cp_over_R(HUGE_DBL), Tc(HUGE_DBL), T0(HUGE_DBL), tau0(HUGE_DBL), enabled(false){};
 
   /* Constructor with three double values */
   IdealHelmholtzCP0Constant(su2double cp_over_R, su2double Tc, su2double T0)
@@ -529,7 +530,7 @@ class SaturationLinelPs {
   bool using_tau_r;
 
  public:
-  SaturationLinelPs() : T_r(DBL_MAX), Tmax(DBL_MAX), Tmin(DBL_MAX), reducing_value(DBL_MAX), N(0), using_tau_r(false) {}
+  SaturationLinelPs() : T_r(HUGE_DBL), Tmax(HUGE_DBL), Tmin(HUGE_DBL), reducing_value(HUGE_DBL), N(0), using_tau_r(false) {}
 
   /*  Constructor with std::vectors */
   SaturationLinelPs(const std::vector<su2double>& n, const std::vector<su2double>& t, su2double T_r, su2double Tmax,
