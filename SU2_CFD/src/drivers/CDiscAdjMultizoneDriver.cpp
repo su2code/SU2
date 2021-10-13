@@ -569,13 +569,13 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
   AD::Reset();
 
-  /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+  /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
 
   for(iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && solver->GetAdjoint()) {
-        for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
+      for (unsigned short iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+        auto solver = solver_container[iZone][INST_0][iMesh][iSol];
+        if (solver && solver->GetAdjoint()) {
           solver->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
         }
       }
