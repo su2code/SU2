@@ -240,9 +240,16 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   AD::Reset();
 
-  /*--- Prepare for recording by resetting the solution to the initial converged solution---*/
+  /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
 
-  iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
+  for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+    auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    if (solver && solver->GetAdjoint()) {
+      for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+        solver->SetRecording(geometry_container[ZONE_0][INST_0][iMesh], config_container[ZONE_0]);
+      }
+    }
+  }
 
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";

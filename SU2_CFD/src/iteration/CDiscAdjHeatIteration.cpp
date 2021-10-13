@@ -200,12 +200,6 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
   }
 }
 
-void CDiscAdjHeatIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                         unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-}
-
 void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                             CConfig** config, unsigned short iZone, unsigned short iInst,
                                             RECORDING kind_recording) {
