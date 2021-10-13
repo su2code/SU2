@@ -470,30 +470,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
   END_SU2_OMP_PARALLEL
 }
 
-void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
-
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
-
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-
-  for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
-    solver[iZone][iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[iZone][iInst][iMesh], config[iZone]);
-  }
-  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-  if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-  if (config[iZone]->AddRadiation()) {
-    solver[iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry[iZone][INST_0][MESH_0], config[iZone]);
-  }
-
-  }
-  END_SU2_OMP_PARALLEL
-}
-
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
