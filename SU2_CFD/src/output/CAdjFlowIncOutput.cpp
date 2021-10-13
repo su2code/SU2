@@ -447,7 +447,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   CVariable* Node_AdjRad  = nullptr;
   CPoint*    Node_Geo     = geometry->nodes;
 
-  if (config->GetKind_Turb_Model() != NONE && !frozen_visc){
+  if (turb_model && !frozen_visc){
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
   }
   if (weakly_coupled_heat){
