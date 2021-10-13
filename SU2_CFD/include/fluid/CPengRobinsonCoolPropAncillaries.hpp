@@ -65,11 +65,15 @@ namespace cpjson {
       return out;
     }
 
-    /*A convenience function to get a string array compactly*/
-    inline std::vector<std::string> get_string_array(const rapidjson::Value& v, std::string m) {
-      if (v.HasMember(m.c_str())) {
-        return get_string_array(v[m.c_str()]);
-      }
+    /*  A convenience function to get a string array compactly */
+    inline std::vector<std::string> get_string_array(const rapidjson::Value& v, std::string m)
+    {
+        if (!v.HasMember(m.c_str())) {
+            SU2_MPI::Error(string("Does not have member: ") + m.c_str(), CURRENT_FUNCTION);
+        }
+        else {
+            return get_string_array(v[m.c_str()]);
+        }
     }
 
     enum schema_validation_code { SCHEMA_VALIDATION_OK = 0, SCHEMA_INVALID_JSON, INPUT_INVALID_JSON, SCHEMA_NOT_VALIDATED };
@@ -94,12 +98,17 @@ namespace cpjson {
       return out;
     }
 
-    /*A convenience function to get a double array compactly*/
-    inline std::vector<su2double> get_double_array(const rapidjson::Value& v, std::string m) {
-      if (v.HasMember(m.c_str())) {
-        return get_double_array(v[m.c_str()]);
-      }
-    };
+    /*  A convenience function to get a double array compactly */
+    inline std::vector<su2double> get_double_array(const rapidjson::Value& v, std::string m)
+    {
+        if (!v.HasMember(m.c_str())) 
+        { 
+            SU2_MPI::Error(string("Does not have member: ") + m.c_str(), CURRENT_FUNCTION);
+        }
+        else {
+            return get_double_array(v[m.c_str()]);
+        }
+    }
 
     /*A convenience function to get a long double array compactly*/
     inline std::vector<su2double> get_long_double_array(const rapidjson::Value& v) {
@@ -112,12 +121,18 @@ namespace cpjson {
       return out;
     }
 
-    /*A convenience function to get a bool from a JSON value, including error checking*/
-    inline bool get_bool(const rapidjson::Value& v, std::string m) {
-      const rapidjson::Value& el = v[m.c_str()];
-      if (el.IsBool()) {
-        return el.GetBool();
-      }
+	/* A convenience function to get a bool from a JSON value, including error checking */
+    inline bool get_bool(const rapidjson::Value& v, std::string m)
+    {
+        if (!v.HasMember(m.c_str())) { 
+            SU2_MPI::Error(string("Does not have member: ") + m.c_str(), CURRENT_FUNCTION);
+        }
+        const rapidjson::Value& el = v[m.c_str()];
+        if (!el.IsBool()) { SU2_MPI::Error(string("Member [%s] is not a boolean: ") + m.c_str(), CURRENT_FUNCTION); }
+        else
+        {
+            return el.GetBool();
+        }
     }
 
     /**

@@ -325,7 +325,6 @@ void CPengRobinsonCoolProp::SetTDState_PT(su2double P, su2double T) {
 
   std::string msg;
   std::stringstream Ts, Ps;
-
   
   if (Nsoln == 1) {
     rho = rho0;
@@ -717,6 +716,8 @@ su2double CPengRobinsonCoolProp::psi_minus(su2double delta, std::size_t itau, st
       return 2.0 * pow(bmc / bracket, 3.0);
     case 4:
       return 6.0 * pow(bmc / bracket, 4.0);
+	default:
+      SU2_MPI::Error("case argument exception", CURRENT_FUNCTION);
   }
 }
 su2double CPengRobinsonCoolProp::bm_term() {
@@ -746,6 +747,8 @@ su2double CPengRobinsonCoolProp::psi_plus(su2double delta, std::size_t idelta) {
       /* Term -PI_12(delta,x,0)*PI_12(delta,x,3) in the numerator is zero (and removed) since PI_12(delta,x,3) = 0*/
       return (6.0 * PI_12(delta, 0) * PI_12(delta, 1) * PI_12(delta, 2.0) - 6.0 * pow(PI_12(delta, 1), 3.0)) /
              pow(PI_12(delta, 0), 4.0);
+	default:
+      SU2_MPI::Error("case argument exception", CURRENT_FUNCTION);
   }
 }
 su2double CPengRobinsonCoolProp::PI_12(su2double delta, std::size_t idelta) {
@@ -763,6 +766,8 @@ su2double CPengRobinsonCoolProp::PI_12(su2double delta, std::size_t idelta) {
       return 0.0;
     case 4:
       return 0.0;
+	default:
+      SU2_MPI::Error("case argument exception", CURRENT_FUNCTION);
   }
 }
 su2double CPengRobinsonCoolProp::tau_times_a(su2double tau, std::size_t itau) {
@@ -797,6 +802,8 @@ su2double CPengRobinsonCoolProp::aij_term(su2double& tau, std::size_t i, std::si
                   (4.0 * u_term(tau, i, j, 1) * u_term(tau, i, j, 3) + 3.0 * pow(u_term(tau, i, j, 2), 2.0)) +
               8.0 * pow(u, 3.0) * u_term(tau, i, j, 4) +
               36.0 * u * pow(u_term(tau, i, j, 1), 2.0) * u_term(tau, i, j, 2) - 15.0 * pow(u_term(tau, i, j, 1), 4.0));
+	default:
+      SU2_MPI::Error("case argument exception", CURRENT_FUNCTION);
   }
 }
 su2double CPengRobinsonCoolProp::u_term(su2double& tau, std::size_t& i, std::size_t& j, const std::size_t& itau) {
@@ -815,6 +822,8 @@ su2double CPengRobinsonCoolProp::u_term(su2double& tau, std::size_t& i, std::siz
       return (aii * aii_term(tau, j, 4) + 4.0 * aii_term(tau, i, 1) * aii_term(tau, j, 3) +
               6.0 * aii_term(tau, i, 2) * aii_term(tau, j, 2) + 4.0 * aii_term(tau, i, 3) * aii_term(tau, j, 1) +
               ajj * aii_term(tau, i, 4));
+	default:
+      SU2_MPI::Error("case argument exception", CURRENT_FUNCTION);
   }
 }
 su2double CPengRobinsonCoolProp::aii_term(su2double& tau, std::size_t& i, const std::size_t& itau) {
@@ -833,6 +842,8 @@ su2double CPengRobinsonCoolProp::aii_term(su2double& tau, std::size_t& i, const 
     case 4:
       return (3.0 / 8.0) * a0 * m *
              (29.0 * m / pow(tau, 5.0) * Tr_over_Tci - 35.0 * B / pow(tau, 9.0 / 2.0) * sqrt_Tr_Tci);
+	default:
+      SU2_MPI::Error("case argument exception", CURRENT_FUNCTION);
   }
 }
 
