@@ -170,18 +170,6 @@ class CDiscAdjFEAIteration final : public CIteration {
                          unsigned short iInst) override;
 
   /*!
-   * \brief Record a single iteration of the direct FEM system.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, RECORDING kind_recording) override;
-
-  /*!
    * \brief Compute necessary variables that depend on the variables in the numerics (E, Nu...)
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.

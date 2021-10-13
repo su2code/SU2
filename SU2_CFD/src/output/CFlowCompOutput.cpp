@@ -223,6 +223,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  if (turb_model) {
+    AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
+  }
 
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
@@ -753,6 +757,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
+  if (turb_model) {
+    SetHistoryOutputValue("LINSOL_ITER_TURB", turb_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(turb_solver->GetResLinSolver()));
+  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
