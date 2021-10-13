@@ -150,14 +150,6 @@ void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** s
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
-void CDiscAdjFEAIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                        unsigned short iZone, unsigned short iInst,
-                                        RECORDING kind_recording) {
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-}
-
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
   if (kind_recording != RECORDING::MESH_COORDS) {

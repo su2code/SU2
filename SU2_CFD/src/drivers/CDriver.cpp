@@ -2731,8 +2731,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
 
   const unsigned short fieldWidth = 15;
   PrintingToolbox::CTablePrinter RMSTable(&std::cout);
-  // This allows better comparison with history output, which is more exact. Additionally set OUTPUT_PRECISION=12
-  RMSTable.SetPrecision(12);
+  RMSTable.SetPrecision(config_container[ZONE_0]->GetOutput_Precision());
 
   /*--- The CTablePrinter requires two sweeps:
     *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()

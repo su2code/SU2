@@ -70,6 +70,7 @@ Ethan Alan Hereth
 Florian Dittmann
 Francisco D. Palacios
 Gaurav Bansal
+Giacomo Baldan
 Giulio Gori
 Guillaume Bâty
 Harichand M V
@@ -77,6 +78,7 @@ HL Kline
 IndianaStokes
 J. Sinsay
 JSmith36
+Jacob Needels
 Jairo Paes Cavalcante Filho
 Jason Howison
 Jayant Mukhopadhaya
@@ -124,7 +126,6 @@ aaronyicongfu
 aeroamit
 anilvar
 band-a-prend
-baldang
 chamsolli
 costat
 daniel-linton
@@ -134,7 +135,6 @@ erangit
 flo
 fmpmorgado
 garcgutierrez
-jtneedels
 juliendm
 jvanoostrom
 mcolonno

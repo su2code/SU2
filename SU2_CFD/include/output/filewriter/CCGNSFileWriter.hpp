@@ -28,6 +28,9 @@
 #pragma once
 
 #ifdef HAVE_CGNS
+#ifdef __MINGW32__
+#include <basetsd.h>
+#endif
 #include "cgnslib.h"
 #endif
 
@@ -79,7 +82,7 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Write sorted data to file in CGNS file format.
    */
   void Write_Data() override;
-  
+
  private:
 #ifdef HAVE_CGNS
   /*!
