@@ -243,9 +243,9 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-    auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint()) {
-      for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+      auto solver = solver_container[ZONE_0][INST_0][iMesh][iSol];
+      if (solver && solver->GetAdjoint()) {
         solver->SetRecording(geometry_container[ZONE_0][INST_0][iMesh], config_container[ZONE_0]);
       }
     }
