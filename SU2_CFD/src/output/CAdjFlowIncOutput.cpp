@@ -211,6 +211,11 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
+  if (turb_model) {
+    AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence.");
+    AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence.");
+  }
+
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
@@ -319,6 +324,11 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
 
   SetHistoryOutputValue("LINSOL_ITER", adjflow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjflow_solver->GetResLinSolver()));
+
+  if (turb_model) {
+    SetHistoryOutputValue("LINSOL_ITER_TURB", adjturb_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(adjturb_solver->GetResLinSolver()));
+  }
 
   if (config->GetDeform_Mesh()) {
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->System.GetIterations());
