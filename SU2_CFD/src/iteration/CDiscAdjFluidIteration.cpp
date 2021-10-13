@@ -532,34 +532,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
   END_SU2_OMP_PARALLEL
 }
 
-void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
-
-  bool scalar = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
-
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-
-  for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
-    solver[iZone][iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[iZone][iInst][iMesh], config[iZone]);
-  }
-  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
-    solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-  if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-  if (config[iZone]->AddRadiation()) {
-    solver[iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry[iZone][INST_0][MESH_0], config[iZone]);
-  }
-  if (scalar) {
-    solver[iZone][INST_0][MESH_0][ADJSCALAR_SOL]->SetRecording(geometry[iZone][INST_0][MESH_0], config[iZone]);
-  }
-
-  }
-  END_SU2_OMP_PARALLEL
-}
-
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
@@ -569,7 +541,6 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   if ((kind_recording == RECORDING::MESH_COORDS) ||
       (kind_recording == RECORDING::CLEAR_INDICES) ||
       (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
-
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);

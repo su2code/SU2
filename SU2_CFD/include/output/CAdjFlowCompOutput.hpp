@@ -38,6 +38,7 @@ class CAdjFlowCompOutput final: public COutput {
 private:
 
   bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
+  bool frozen_visc;          /*!< \brief Boolean indicating whether frozen viscosity/turbulence is used. */
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/
 
 public:
