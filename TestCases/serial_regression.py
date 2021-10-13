@@ -333,7 +333,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.133933, -14.498178, 1.064330, 0.019756, 20, -1.898609, 20, -2.719825]
+    turb_naca0012_sa.test_vals = [-11.133933, -14.498178, 1.064330, 0.019756]
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.new_output = True
     turb_naca0012_sa.timeout   = 3200
