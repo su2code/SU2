@@ -141,9 +141,10 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   /// NOTE TK:: This should use a MassDiff model!
   /*--- initialize the mass diffusivity ---*/
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    const auto massDiffusivity = config->GetDiffusivity_Constant();
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetDiffusivity(iPoint, massDiffusivity, iVar);
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      const auto massDiffusivity = config->GetDiffusivity_Constant(); // TK this should be ND
+      nodes->SetDiffusivity(iPoint, massDiffusivity, iVar);
   }
 
   /*--- MPI solution ---*/
