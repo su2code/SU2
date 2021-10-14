@@ -131,7 +131,9 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     /// NOTE TK:: currently only 1 equation (or 2 species) possible
-    AddHistoryOutput("RMS_SPECIES",    "rms[rho*Y]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_SPECIES",    "rms[rho*Y]",    ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+    if (config->GetNSpeciesInit() > 1)
+      AddHistoryOutput("RMS_SPECIES_1",  "rms[rho*Y_1]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
   }
   /// END_GROUP
 
@@ -284,6 +286,8 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetHistoryOutputValue("RMS_SPECIES", log(species_solver->GetRes_RMS(0)));
+    if (species_solver->GetnVar() > 1)
+      SetHistoryOutputValue("RMS_SPECIES_1", log(species_solver->GetRes_RMS(1)));
   }
 
   if (config->AddRadiation())
@@ -424,7 +428,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddVolumeOutput("SPECIES", "Species", "SOLUTION", "Species mass fraction");
+    AddVolumeOutput("SPECIES",   "Species", "SOLUTION", "Species mass fraction");
+    if (config->GetNSpeciesInit() > 1)
+      AddVolumeOutput("SPECIES_1", "Species1", "SOLUTION", "Species mass fraction");
   }
 
   // Radiation variables
@@ -487,7 +493,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddVolumeOutput("RES_SPECIES", "Residual_Species", "RESIDUAL", "Residual of the transported species");
+    AddVolumeOutput("RES_SPECIES",   "Residual_Species1", "RESIDUAL", "Residual of the transported species");
+    if (config->GetNSpeciesInit() > 1)
+      AddVolumeOutput("RES_SPECIES_1", "Residual_Species", "RESIDUAL", "Residual of the transported species");
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
@@ -592,6 +600,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetVolumeOutputValue("SPECIES", iPoint, Node_Species->GetSolution(iPoint, 0));
+    if (solver[SPECIES_SOL]->GetnVar() > 1)
+      SetVolumeOutputValue("SPECIES_1", iPoint, Node_Species->GetSolution(iPoint, 1));
   }
 
   // Radiation solver
@@ -650,6 +660,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     SetVolumeOutputValue("RES_SPECIES", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
+    if (solver[SPECIES_SOL]->GetnVar() > 1)
+      SetVolumeOutputValue("RES_SPECIES_1", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 1));
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
