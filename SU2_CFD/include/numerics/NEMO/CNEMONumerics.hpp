@@ -63,7 +63,6 @@ public:
   su2double Gamma_i, Gamma_j;
   su2double **dFdVi, **dFdVj;
   su2double **dVdUi, **dVdUj;
-  su2double *sumdFdYjh, *sumdFdYjeve;
   su2double **dFdYi, **dFdYj;
   su2double **dJdr_i,**dJdr_j;
 

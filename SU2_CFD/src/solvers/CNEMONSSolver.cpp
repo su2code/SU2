@@ -173,18 +173,14 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
 
-  bool err;
-  unsigned short iVar, jVar;
-  unsigned long iPoint, jPoint, iEdge;
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
   CNumerics* numerics = numerics_container[VISC_TERM];
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points, coordinates and normal vector in edge ---*/
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                        geometry->nodes->GetCoord(jPoint) );
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
@@ -228,15 +224,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (residual[iVar] != residual[iVar]) err = true;
-    if (implicit)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
-              (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar]))
-            err = true;
+    bool err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {

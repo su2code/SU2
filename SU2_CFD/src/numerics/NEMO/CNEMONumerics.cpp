@@ -55,23 +55,17 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
-    implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-    sumdFdYjeve = new su2double[nSpecies];
+    implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
     Ys   = new su2double[nSpecies];
     Ys_i = new su2double[nSpecies];
     Ys_j = new su2double[nSpecies];
 
-    dJdr_i = new su2double*[nSpecies];
-    dJdr_j = new su2double*[nSpecies];
-    dFdYi = new su2double *[nSpecies];
-    dFdYj = new su2double *[nSpecies];
+    dJdr_i = new su2double* [nSpecies];
+    dJdr_j = new su2double* [nSpecies];
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       dJdr_i[iSpecies] = new su2double[nSpecies];
       dJdr_j[iSpecies] = new su2double[nSpecies];
-      dFdYi[iSpecies] = new su2double[nSpecies];
-      dFdYj[iSpecies] = new su2double[nSpecies];
     }
 
     dFdVi = new su2double*[nVar];
@@ -137,17 +131,6 @@ CNEMONumerics::~CNEMONumerics(void) {
       delete [] dJdr_j[iSpecies];
     delete [] dJdr_j;
   }
-    if (dFdYi != NULL) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete dFdYi[iSpecies];
-    delete [] dFdYi;
-  }
-  if (dFdYj != NULL) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete dFdYj[iSpecies];
-    delete [] dFdYj;
-  }
-  delete [] sumdFdYjeve;
   delete [] Ys;
   delete [] Ys_i;
   delete [] Ys_j;
@@ -444,12 +427,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
   /*--- Initialize storage vectors & matrices ---*/
   for (iVar = 0; iVar < nSpecies; iVar++) {
-    //sumdFdYjh[iVar]   = 0.0;
-    //sumdFdYjeve[iVar] = 0.0;
-    //TODO DELETE
     for (jVar = 0; jVar < nSpecies; jVar++) {
-      dFdYi[iVar][jVar] = 0.0;
-      dFdYj[iVar][jVar] = 0.0;
       dJdr_i[iVar][jVar] = 0.0;
       dJdr_j[iVar][jVar] = 0.0;
     }
