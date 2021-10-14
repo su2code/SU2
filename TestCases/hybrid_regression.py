@@ -183,7 +183,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.531271, -14.899968, 1.064330, 0.019756]
+    turb_naca0012_sa.test_vals = [-11.531271, -14.899968, 1.064330, 0.019756, 20, -1.825644, 0, -12.818150]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
