@@ -255,6 +255,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+    if (VorticityMag == 0) VorticityMag = 1e-6; // safety against division by zero
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 

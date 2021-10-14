@@ -399,7 +399,8 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 
   SU2_OMP_MASTER {
     SetIterLinSolver(iter);
-    SetResLinSolver(System.GetResidual());
+    if (System.GetResidual() == 0) SetResLinSolver(1.0); // TODo TK:: safety against taking a log10(0) for the Residual history output
+    else SetResLinSolver(System.GetResidual());
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
