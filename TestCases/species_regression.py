@@ -42,6 +42,30 @@ def main():
     ## Species solver ###
     #####################
 
+    # 2 species (1 eq) primitive venturi mixing
+    species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
+    species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi.cfg_file  = "species2_primitiveVenturi.cfg"
+    species2_primitiveVenturi.test_iter = 50
+    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -13.921433, 5, -0.808614, 5 , -2.351161, 5, -0.247992]
+    species2_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi.timeout   = 1600
+    species2_primitiveVenturi.new_output = True
+    species2_primitiveVenturi.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi)
+
+    # 3 species (2 eq) primitive venturi mixing
+    species3_primitiveVenturi           = TestCase('species3_primitiveVenturi')
+    species3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
+    species3_primitiveVenturi.test_iter = 50
+    species3_primitiveVenturi.test_vals = [-5.957517,   -5.187476,   -5.037298,   -5.851420,   -1.511976,  -14.376397,  -14.647066,           5,   -0.808614,           5,   -2.351161,           5,   -0.288302]
+    species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species3_primitiveVenturi.timeout   = 1600
+    species3_primitiveVenturi.new_output = True
+    species3_primitiveVenturi.tol       = 0.00001
+    test_list.append(species3_primitiveVenturi)
+
     # rectangle passive transport validation
     species_passive_val           = TestCase('species_passive_val')
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
