@@ -1112,7 +1112,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInletSpecies() {};
+  ~COptionInletSpecies() override {};
 
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
@@ -1144,7 +1144,6 @@ public:
     this->marker = new string[nVals];
     this->inletspeciesval = new su2double*[nVals];
     for (unsigned long i = 0; i < nVals; i++) {
-
       this->inletspeciesval[i] = new su2double[nSpecies];
     }
 
@@ -1164,8 +1163,8 @@ public:
   }
 
   void SetDefault() {
-    this->marker = NULL;
-    this->inletspeciesval = NULL;
+    this->marker = nullptr;
+    this->inletspeciesval = nullptr;
     this->size = 0; // There is no default value for list
   }
 };
