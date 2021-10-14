@@ -384,7 +384,7 @@ void CPengRobinsonCoolProp::SetInnerTDState_rhoT(su2double rho, su2double T, boo
 
   su2double dOf_dT, dOf_drho, dPdRho_Tconst, dPdT_Rhoconst, dUdRho_Tconst, DpDd_T, DpDT_d, DeDd_T;
   su2double umolar(0.0), umass(0.0), smolar(0.0), smass(0.0), cpmolar(0.0), cpmass(0.0), cvmolar(0.0), cvmass(0.0);
-  su2double s(0.0), da0_dTau(0.0), dar_dTau(0.0), dar_dDelta(0.0), d2a0_dTau2(0.0), d2ar_dTau2(0.0),
+  su2double da0_dTau(0.0), dar_dTau(0.0), dar_dDelta(0.0), d2a0_dTau2(0.0), d2ar_dTau2(0.0),
       d2ar_dDelta_dTau(0.0), d2ar_dDelta2(0.0), alphar(0.0), alpha0(0.0);
 
   Density = rho;
@@ -490,7 +490,7 @@ void CPengRobinsonCoolProp::SetEnergy_Prho(su2double P, su2double rho) {
 
   su2double T;
   su2double rho_molar, taustar, tau;
-  su2double da0_dTau(0.0), dar_dTau(0.0), s(0.0), umolar(0.0), umass(0.0);
+  su2double da0_dTau(0.0), dar_dTau(0.0), umolar(0.0), umass(0.0);
 
   AD::StartPreacc();
   AD::SetPreaccIn(P);
@@ -624,11 +624,10 @@ void CPengRobinsonCoolProp::SetTDState_hs(su2double h, su2double s) {
 }
 
 su2double CPengRobinsonCoolProp::GetPressureByRhoT(su2double rho, su2double T) {
-  su2double pressure, tau, rho_molar, taustar, dar_dDelta(0.0);
+  su2double pressure, tau, rho_molar, dar_dDelta(0.0);
 
   tau = 1.0 / T;
   rho_molar = 1.0 / Molar_mass * rho;
-  taustar = Tcrit / T;
 
   dar_dDelta = psi_minus(rho_molar, 0, 1) - tau_times_a(tau, 0) / Ru * psi_plus(rho_molar, 1);
   pressure = rho_molar * Ru * T * (1.0 + rho_molar * dar_dDelta);

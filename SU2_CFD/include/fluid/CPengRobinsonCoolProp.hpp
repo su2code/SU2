@@ -530,19 +530,19 @@ class SaturationLinelPs {
   bool using_tau_r;
 
  public:
-  SaturationLinelPs() : T_r(HUGE_DBL), Tmax(HUGE_DBL), Tmin(HUGE_DBL), reducing_value(HUGE_DBL), N(0), using_tau_r(false) {}
+  SaturationLinelPs() : reducing_value(HUGE_DBL), T_r(HUGE_DBL), Tmax(HUGE_DBL), Tmin(HUGE_DBL), N(0), using_tau_r(false) {}
 
   /*  Constructor with std::vectors */
-  SaturationLinelPs(const std::vector<su2double>& n, const std::vector<su2double>& t, su2double T_r, su2double Tmax,
-                    su2double Tmin, su2double reducing_value, bool using_tau_r)
+  SaturationLinelPs(const std::vector<su2double>& n, const std::vector<su2double>& t, su2double reducing_value, su2double T_r,
+                    su2double Tmax, su2double Tmin, bool using_tau_r)
       : n(n),
         t(t),
-        T_r(T_r),
-        Tmax(Tmax),
-        Tmin(Tmin),
         reducing_value(reducing_value),
-        N(n.size()),
-        using_tau_r(using_tau_r) {}
+		T_r(T_r),        
+		Tmax(Tmax),
+        Tmin(Tmin),        
+        using_tau_r(using_tau_r),
+        N(n.size())		{}
 
   inline su2double Evaluate(su2double T) {
     su2double theta, summ{0.0};

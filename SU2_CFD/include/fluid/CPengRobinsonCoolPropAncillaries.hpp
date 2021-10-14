@@ -108,6 +108,7 @@ namespace cpjson {
         else {
             return get_double_array(v[m.c_str()]);
         }
+		 assert(false); /*this code in never reachable*/
     }
 
     /*A convenience function to get a long double array compactly*/
