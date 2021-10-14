@@ -32,11 +32,13 @@ CAvgGrad_Species::CAvgGrad_Species(unsigned short val_nDim, unsigned short val_n
                                    const CConfig* config)
     : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {}
 
-void CAvgGrad_Species::ExtraADPreaccIn() {}
+void CAvgGrad_Species::ExtraADPreaccIn() {
+  // TODO TK:: add diffusion coeff
+}
 
 void CAvgGrad_Species::FinishResidualCalc(const CConfig* config) {
   const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
-  const bool inc_rans = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  const bool turbulence = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS); // TODO TK:: this should be general for inc and comp
   // const bool flame = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
   const bool flame = false;
   su2double Mass_Diffusivity_Lam;
@@ -49,16 +51,18 @@ void CAvgGrad_Species::FinishResidualCalc(const CConfig* config) {
        with D_{i,m} the mass diffusion coefficient of species i into the mixture m
      */
 
-    if (flame)
+    if (flame) {
       /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D---
        */
       Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
-    else
+    }
+    else {
       /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
       Mass_Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+    }
 
     su2double Mass_Diffusivity_Tur = 0.0;
-    if (inc_rans) Mass_Diffusivity_Tur = 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t);
+    if (turbulence) Mass_Diffusivity_Tur = 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t);
 
     su2double Mass_Diffusivity = Mass_Diffusivity_Lam + Mass_Diffusivity_Tur;
 
