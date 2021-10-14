@@ -33,9 +33,9 @@
 class BFMInterpolator
 {
     private:
-    vector<su2double> Rotation_Axis;   // BFM rotation axis (Cartesian)
-    vector<su2double> axial_direction; // Axial direction unit vector (Cartesian)
-
+    su2double *Rotation_Axis;   // BFM rotation axis (Cartesian)
+    su2double *axial_direction; // Axial direction unit vector (Cartesian)
+    su2double BFM_radius;
     /*! 
     * \brief 2D interpolation of blade geometric parameters onto mesh nodes.
     * \param [in] axis - Axial coordinate of mesh node.
@@ -44,7 +44,7 @@ class BFMInterpolator
     * \param [in] reader - Pointer to input file reader class.
     * \param [in] solver_container - Pointer to solver container class. 
     */
-    void Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput * const reader, CSolver *const solver_container);
+    void Interp2D(su2double axis, su2double radius, unsigned long iPoint, const ReadBFMInput * reader, CSolver * solver_container);
 
     /*!
     * \brief Ray-cast inclusion algorithm which checks for query point inclusion whithin cell.
@@ -121,8 +121,7 @@ class BFMInterpolator
     };
 
     public:
-    BFMInterpolator();
-    BFMInterpolator(ReadBFMInput *const reader, CSolver *const solver_container, CGeometry *const geometry, CConfig *const config);
+    BFMInterpolator(const ReadBFMInput *reader, const CSolver * solver_container, const CGeometry * geometry, const CConfig * config);
 
     /*! 
     * \brief Interpolates the blade shape parameters onto the mesh nodes.
@@ -130,9 +129,9 @@ class BFMInterpolator
     * \param[in] solver_container - pointer to BFM solver class.
     * \param[in] geometry - pointer to geometry class.
     */
-    void Interpolate(ReadBFMInput * reader, CSolver *const solver_container, CGeometry * geometry);
+    void Interpolate(const ReadBFMInput * reader, CSolver * solver_container, const CGeometry * geometry);
 
-    //~BFMInterpolator();
+    ~BFMInterpolator() {delete [] axial_direction; delete [] Rotation_Axis;};
 
 
 };

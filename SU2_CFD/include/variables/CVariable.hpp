@@ -1416,7 +1416,7 @@ public:
    */
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
 
-  inline virtual su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return 12;}
+  inline virtual su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return 0;}
 
   inline virtual void SetBodyForce(unsigned long iPoint, unsigned short iDim, su2double value) {}
   

@@ -192,7 +192,6 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
   if(config->GetBFM()){
     solver[BFM_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::BFM, solver, geometry, config, iMGLevel);
     solver[BFM_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    //solver[BFM_SOL] = new CBFMSolver(geometry, config, iMGLevel);
   }
   return solver;
 

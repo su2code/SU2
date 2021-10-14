@@ -1289,6 +1289,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool rotating_frame = config->GetRotating_Frame();
   const bool axisymmetric   = config->GetAxisymmetric();
   const bool body_force     = config->GetBody_Force();
+  const bool BFM            = config->GetBFM();
   const bool boussinesq     = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
@@ -1327,6 +1328,22 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       LinSysRes.AddBlock(iPoint, residual);
 
+    }
+    END_SU2_OMP_FOR
+  }
+
+  if(BFM) {
+    vector<su2double> BFM_sources(nDim + 2);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      solver_container[BFM_SOL]->ComputeBFMSources(solver_container, iPoint, BFM_sources);
+      for(unsigned short iDim=0; iDim < nDim+2; ++iDim){
+        LinSysRes(iPoint, iDim) -= geometry->nodes->GetVolume(iPoint) * BFM_sources[iDim];
+      }
+      solver_container[BFM_SOL]->GetNodes()->SetBodyForce(iPoint, 0, BFM_sources[1]);
+      solver_container[BFM_SOL]->GetNodes()->SetBodyForce(iPoint, 1, BFM_sources[2]);
+      solver_container[BFM_SOL]->GetNodes()->SetBodyForce(iPoint, 2, BFM_sources[3]);
+      
     }
     END_SU2_OMP_FOR
   }

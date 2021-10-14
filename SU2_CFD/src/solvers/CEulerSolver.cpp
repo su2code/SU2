@@ -2142,7 +2142,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     }
 
     /*--- Compute the residual ---*/
-
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
@@ -2314,24 +2313,17 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Load the volume of the dual mesh cell ---*/
-      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
       /*--- Compute body-force model source terms ---*/
       BFM_solver->ComputeBFMSources(solver_container, iPoint, BFM_sources);
-      /*--- Transferring source terms to numerics container ---*/
-      for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
-            numerics->SetBFM_source(iDim, BFM_sources.at(iDim));
-      }
-      BFM_solver->GetNodes()->SetBodyForce(iPoint, 0, BFM_sources.at(1));
-      BFM_solver->GetNodes()->SetBodyForce(iPoint, 1, BFM_sources.at(2));
-      BFM_solver->GetNodes()->SetBodyForce(iPoint, 2, BFM_sources.at(3));
-      
-      /*--- Compute the BFM source residual ---*/
-      auto residual = numerics->ComputeResidual(config);
 
-      /*--- Add the source residual to the total ---*/
-      LinSysRes.SubtractBlock(iPoint, residual);
+      /*--- Subtracting BFM source terms from residual ---*/
+      for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
+            LinSysRes(iPoint, iDim) -= geometry->nodes->GetVolume(iPoint) * BFM_sources[iDim];
+      }
+      /*--- Storing Cartesian body-forces ---*/
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 0, BFM_solver->GetBody_Force(0));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 1, BFM_solver->GetBody_Force(1));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 2, BFM_solver->GetBody_Force(2));
 
     }
     END_SU2_OMP_FOR

@@ -97,3 +97,6 @@ ninja
 
 # Ignore vscode folder
 .vscode/
+run_config.sh
+.gitignore
+SU2_GitHub.code-workspace

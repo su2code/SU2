@@ -232,7 +232,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       JCOUNT           = nDim;
       break;
     case PERIODIC_AUX_GG:
-      COUNT_PER_POINT  = (base_nodes->GetnAuxVar())*nDim;
+      COUNT_PER_POINT  = base_nodes->GetnAuxVar()*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = base_nodes->GetnAuxVar();
       JCOUNT           = nDim;
@@ -1211,17 +1211,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               break;
 
 
-            case PERIODIC_AUX_GG:
-
-              /*--- For G-G, we accumulate partial gradients then compute
-               the final value using the entire volume of the periodic cell. ---*/
-
-              for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++)
-                for (iDim = 0; iDim < nDim; iDim++)
-                  base_nodes->AddAuxVarGradient(iPoint, iVar, iDim,
-                                          bufDRecv[buf_offset+iVar*nDim+iDim]);
-
-              break;
+            
             case PERIODIC_SOL_GG:
             case PERIODIC_SOL_GG_R:
             case PERIODIC_PRIM_GG:
@@ -1235,7 +1225,17 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                   gradient(iPoint, iVar, iDim) += bufDRecv[buf_offset+iVar*nDim+iDim];
 
               break;
+            case PERIODIC_AUX_GG:
 
+              /*--- For G-G, we accumulate partial gradients then compute
+                the final value using the entire volume of the periodic cell. ---*/
+
+              for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++)
+                for (iDim = 0; iDim < nDim; iDim++)
+                  base_nodes->AddAuxVarGradient(iPoint, iVar, iDim,
+                                          bufDRecv[buf_offset+iVar*nDim+iDim]);
+
+              break;
             case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
             case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
             case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:

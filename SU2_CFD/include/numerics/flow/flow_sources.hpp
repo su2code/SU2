@@ -245,7 +245,7 @@ public:
   * \param [in] value - Solution variable BFM source term.
   */
   inline void SetBFM_source(unsigned short iDim, su2double value) final {
-    BFM_sources.at(iDim) = value;
+    BFM_sources[iDim] = value;
   }
 
 };

@@ -904,7 +904,8 @@ private:
   nRough_Wall;                    /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
 
-  su2double Omega_BFM;            /*!< \brief Rotation rate around BFM axis (in rounds per minute). */
+  su2double Omega_BFM,            /*!< \brief Rotation rate around BFM axis (in rounds per minute). */
+            Radius_BFM;           /*!< \brief Rotation radius around BFM axis (in meters) */
 
   unsigned short
   nOmega_HB,                      /*!< \brief Number of frequencies in Harmonic Balance Operator. */
@@ -5596,12 +5597,18 @@ public:
    */
   su2double GetBFM_Axis(unsigned short iDim) const { return BFM_Rotation_Axis[iDim];}
 
+
   /*!
    * \brief Get the rotation rate of the BFM problem
    * \return BFM rotation rate (rpm)
    */
   su2double GetBFM_Rotation() const { return Omega_BFM;}
 
+  /*!
+   * \brief Get the rotation radius of the BFM problem
+   * \return BFM rotation radius (meters)
+   */
+  su2double GetBFM_Radius() const { return Radius_BFM;}
 
   /*!
    * \brief Get the rotation rate of the marker.

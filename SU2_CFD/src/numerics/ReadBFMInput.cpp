@@ -27,7 +27,7 @@
 
 #include "../../include/numerics/ReadBFMInput.hpp"
 
-ReadBFMInput::ReadBFMInput(CConfig *config, string file_inputname) 
+ReadBFMInput::ReadBFMInput(const CConfig *config, string file_inputname) 
 {
     /*--- Description ---*/
     // This class reads the geometric blade parameter file used for 
@@ -35,15 +35,15 @@ ReadBFMInput::ReadBFMInput(CConfig *config, string file_inputname)
     
     // Setting variable names for geometric blade parameters
     translated_names.resize(N_BFM_PARAMS);
-    translated_names.at(I_AXIAL_COORDINATE) = "axial_coordinate";
-    translated_names.at(I_RADIAL_COORDINATE) = "radial_coordinate";
-    translated_names.at(I_BLOCKAGE_FACTOR) = "blockage_factor";
-    translated_names.at(I_CAMBER_NORMAL_AXIAL) = "n_ax";
-    translated_names.at(I_CAMBER_NORMAL_TANGENTIAL) = "n_tang";
-    translated_names.at(I_CAMBER_NORMAL_RADIAL) = "n_rad";
-    translated_names.at(I_LEADING_EDGE_AXIAL) = "x_LE";
-    translated_names.at(I_ROTATION_FACTOR) = "rotation_factor";
-    translated_names.at(I_BLADE_COUNT) = "blade_count";
+    translated_names[I_AXIAL_COORDINATE] = "axial_coordinate";
+    translated_names[I_RADIAL_COORDINATE] = "radial_coordinate";
+    translated_names[I_BLOCKAGE_FACTOR] = "blockage_factor";
+    translated_names[I_CAMBER_NORMAL_AXIAL] = "n_ax";
+    translated_names[I_CAMBER_NORMAL_TANGENTIAL] = "n_tang";
+    translated_names[I_CAMBER_NORMAL_RADIAL] = "n_rad";
+    translated_names[I_LEADING_EDGE_AXIAL] = "x_LE";
+    translated_names[I_ROTATION_FACTOR] = "rotation_factor";
+    translated_names[I_BLADE_COUNT] = "blade_count";
 
     // Reading the geometric blade parameter file
     ReadInputFile(file_inputname);
@@ -70,7 +70,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
     }
 
     /* Read header */
-    line = SkipToFlag(&file_stream, "<header>");
+    line = SkipToFlag(file_stream, "<header>");
 
     while (getline(file_stream, line) && !eoHeader) {
         // Checking input file version
@@ -179,10 +179,10 @@ void ReadBFMInput::ReadInputFile(string input_file)
     if(rank == MASTER_NODE){
         // Displaying read blade geometry information
         cout << "Number of blade rows: " << GetNBladeRows() << endl;
-        cout << "Number of spanwise sections: "<< n_axial_points.at(0) << endl;
+        cout << "Number of spanwise sections: "<< n_axial_points[0] << endl;
         cout << "Variables: ";
         for(size_t i=0; i<variable_names.size(); ++i){
-            cout << variable_names.at(i) << " ";
+            cout << variable_names[i] << " ";
         }
         cout << endl;
     }
@@ -190,7 +190,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
     AllocateMemory();
     
     /* Read data block */
-    line = SkipToFlag(&file_stream, "<data>");
+    line = SkipToFlag(file_stream, "<data>");
 
     unsigned short rowCounter{0}; // Current blade row index
     unsigned long tangCounter{0}; // Current tangential section index
@@ -248,10 +248,10 @@ void ReadBFMInput::ReadInputFile(string input_file)
                     temp = stod(word);
                     for(unsigned short iName=0; iName < translated_names.size(); ++iName){
                         // Skip rotation factor and blade count, as these are provided in the header
-                        if((translated_names.at(iName).compare(variable_names.at(iVar)) == 0)
-                         && (translated_names.at(I_ROTATION_FACTOR).compare(variable_names.at(iVar)) != 0)
-                         && (translated_names.at(I_BLADE_COUNT).compare(variable_names.at(iVar)) != 0)){
-                            Geometric_Parameters->at(rowCounter).at(iName)(tangCounter, radCounter, pointCounter) = temp;
+                        if((translated_names[iName].compare(variable_names[iVar]) == 0)
+                         && (translated_names[I_ROTATION_FACTOR].compare(variable_names[iVar]) != 0)
+                         && (translated_names[I_BLADE_COUNT].compare(variable_names[iVar]) != 0)){
+                            Geometric_Parameters[rowCounter][iName](tangCounter, radCounter, pointCounter) = temp;
                         }
                     }
                 }
@@ -265,61 +265,49 @@ void ReadBFMInput::ReadInputFile(string input_file)
 void ReadBFMInput::TranslateVariables(){
     name_translation.resize(variable_names.size());
     for(unsigned short iVar=0; iVar<variable_names.size(); ++iVar){
-        if(variable_names.at(iVar) == "axial_coordinate"){
-            name_translation.at(iVar) = make_pair(iVar, I_AXIAL_COORDINATE);
+        if(variable_names[iVar] == "axial_coordinate"){
+            name_translation[iVar] = make_pair(iVar, I_AXIAL_COORDINATE);
         }
-        if(variable_names.at(iVar) == "radial coordinte"){
-            name_translation.at(iVar) = make_pair(iVar, I_RADIAL_COORDINATE);
+        if(variable_names[iVar] == "radial coordinte"){
+            name_translation[iVar] = make_pair(iVar, I_RADIAL_COORDINATE);
         }
-        if(variable_names.at(iVar) == "blockage_factor"){
-            name_translation.at(iVar) = make_pair(iVar, I_BLOCKAGE_FACTOR);
+        if(variable_names[iVar] == "blockage_factor"){
+            name_translation[iVar] = make_pair(iVar, I_BLOCKAGE_FACTOR);
         }
-        if(variable_names.at(iVar) == "n_ax"){
-            name_translation.at(iVar) = make_pair(iVar, I_CAMBER_NORMAL_AXIAL);
+        if(variable_names[iVar] == "n_ax"){
+            name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_AXIAL);
         }
-        if(variable_names.at(iVar) == "n_tang"){
-            name_translation.at(iVar) = make_pair(iVar, I_CAMBER_NORMAL_TANGENTIAL);
+        if(variable_names[iVar] == "n_tang"){
+            name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_TANGENTIAL);
         }
-        if(variable_names.at(iVar) == "n_rad"){
-            name_translation.at(iVar) = make_pair(iVar, I_CAMBER_NORMAL_RADIAL);
+        if(variable_names[iVar] == "n_rad"){
+            name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_RADIAL);
         }
-        if(variable_names.at(iVar) == "x_LE"){
-            name_translation.at(iVar) = make_pair(iVar, I_LEADING_EDGE_AXIAL);
+        if(variable_names[iVar] == "x_LE"){
+            name_translation[iVar] = make_pair(iVar, I_LEADING_EDGE_AXIAL);
         }
-        if(variable_names.at(iVar) == "rotation_factor"){
-            name_translation.at(iVar) = make_pair(iVar, I_ROTATION_FACTOR);
+        if(variable_names[iVar] == "rotation_factor"){
+            name_translation[iVar] = make_pair(iVar, I_ROTATION_FACTOR);
         }
-        if(variable_names.at(iVar) == "blade_count"){
-            name_translation.at(iVar) = make_pair(iVar, I_BLADE_COUNT);
+        if(variable_names[iVar] == "blade_count"){
+            name_translation[iVar] = make_pair(iVar, I_BLADE_COUNT);
         }
         
         
     }
 }
-string ReadBFMInput::SkipToFlag(ifstream *file_stream, string flag) {
+string ReadBFMInput::SkipToFlag(ifstream &file_stream, string flag) {
   string line;
-  getline(*file_stream, line);
+  getline(file_stream, line);
 
-  while (line.compare(flag) != 0 && !(*file_stream).eof()) {
-    getline(*file_stream, line);
+  while (line.compare(flag) != 0 && !(file_stream).eof()) {
+    getline(file_stream, line);
   }
 
-  if ((*file_stream).eof())
+  if ((file_stream).eof())
     SU2_MPI::Error("Flag not found in file", CURRENT_FUNCTION);
 
   return line;
 }
 
-ReadBFMInput::~ReadBFMInput(void) 
-{
-    if(Geometric_Parameters != NULL){
-        delete Geometric_Parameters;
-    }
-    // if(axial_coordinate != NULL){
-    //     delete axial_coordinate;
-    //     delete radial_coordinate;
-    //     delete tangential_angle;
-    //     delete Geometric_Parameters;
-    // }
-}
 

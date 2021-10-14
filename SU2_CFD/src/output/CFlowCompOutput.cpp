@@ -448,10 +448,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   CVariable* Node_Turb = nullptr;
   const auto Node_Geo  = geometry->nodes;
 
-  if (config->GetKind_Turb_Model() != NONE){
-    Node_Turb = solver[TURB_SOL]->GetNodes();
-  }
-
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
   CVariable* Node_BFM = nullptr;
   if (config->GetKind_Turb_Model() != NONE){

@@ -47,20 +47,15 @@ private:
   vector<string> BFM_Parameter_Names{};  /*! \brief Vector containing the names of the blade geometric paremeters. */
   vector<unsigned short> BFM_Parameter_Indices{};
   su2double Omega{}; /*! \brief Rotation rate of the rotor blades in the BFM problem. */
-  
+  bool constant_viscosity{false};
+  su2double mu_constant;
+  su2double *Body_Force_Cart;
+
   unsigned short BFM_formulation{HALL}; /*! \brief BFM formulation used for analysis. Set to Hall as default. */
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-
-  /*!
-   * \brief Computes the relative flow velocity with respect to the local blade for all points.
-   * \param[in] geometry - pointer to geometry class.
-   * \param[in] solver_container - pointer to solver container.
-   * \param[in] config - pointer to config class. 
-  */
-  void ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Computes the relative flow velocity with respect to the local blade at iPoint.
@@ -70,20 +65,13 @@ private:
   */
   void ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*>&W_cyl);
 
-  /*!
-   * \brief Computes the relative flow velocity with respect to the local blade at iPoint.
-   * \param[in] U - pointer to velocity vector.
-   * \param[in] iPoint - node index.
-   * \param[in] W_cyl - Vector containing relative velocity component pointers.
-  */
-  void ComputeRelativeVelocity(su2double * U, unsigned long iPoint, vector<su2double*>&W_cyl);
 
   /*!
    * \brief Computes the cylindrical projections of cartesian node coordinates.
    * \param[in] geometry - pointer to geometry class.
    * \param[in] config - pointer to config class. 
   */
-  void ComputeCylProjections(CGeometry *geometry, CConfig *config);
+  void ComputeCylProjections(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Computes the flow source terms according to Halls body-force model at node iPoint
@@ -94,6 +82,13 @@ private:
   */
   void ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>&W_cyl);
 
+  su2double ComputeNormalForce_Thollet(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl);
+
+  su2double ComputeNormalForce_Hall(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl);
+
+  su2double ComputeParallelForce_Thollet(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl);
+
+  void ComputeBFM_Sources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>&W_cyl);
   /*!
    * \brief Computes the flow source terms according to Thollets body-force model at node iPoint
    * \param[in] solver_container - pointer to solver container.
@@ -119,6 +114,7 @@ private:
   */
   su2double ComputeKMach(CSolver **solver_container, unsigned long iPoint,  vector<su2double*>W_cyl);
 
+  su2double ComputeKMach(CSolver **solver_container, unsigned long iPoint,  su2double * W_cyl);
 public:
 
   /*!
@@ -146,25 +142,7 @@ public:
   */
   inline void ComputeBFMSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources) override;
 
- //void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) final;
-  /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry,
-                     CSolver **solver_container,
-                     CConfig *config,
-                     unsigned short iMesh,
-                     unsigned short iRKStep,
-                     unsigned short RunTime_EqSystem,
-                     bool Output) override;
-
-  
-
+  inline su2double GetBody_Force(unsigned short iDim){
+    return Body_Force_Cart[iDim];
+  }
 };

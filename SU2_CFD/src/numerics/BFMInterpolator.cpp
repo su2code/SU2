@@ -27,41 +27,48 @@
 
 #include "../../include/numerics/BFMInterpolator.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-
-BFMInterpolator::BFMInterpolator(ReadBFMInput *const reader, CSolver *const solver_container, CGeometry *const geometry, CConfig *const config)
+BFMInterpolator::BFMInterpolator(const ReadBFMInput * reader, const CSolver * solver_container, const CGeometry * geometry, const CConfig * config)
 {
     unsigned long nPoint = geometry->GetnPoint();
     unsigned short nRows = reader->GetNBladeRows();
-    Rotation_Axis.resize(geometry->GetnDim());
-    axial_direction.resize(geometry->GetnDim());
-    su2double rotation_rate{0};
-    for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
-        Rotation_Axis.at(iDim) = config->GetBFM_Axis(iDim);
+    Rotation_Axis = new su2double[geometry->GetnDim()];
+    axial_direction = new su2double[geometry->GetnDim()];
+    if(geometry->GetnDim() == 2){
+        BFM_radius = config->GetBFM_Radius();
     }
     for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
-        axial_direction.at(iDim) = Rotation_Axis.at(iDim);
+        Rotation_Axis[iDim] = config->GetBFM_Axis(iDim);
+    }
+    for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
+        axial_direction[iDim] = Rotation_Axis[iDim];
     }
 
 }
 
-void BFMInterpolator::Interpolate(ReadBFMInput * reader, CSolver *const solver_container, CGeometry *geometry){
+void BFMInterpolator::Interpolate(const ReadBFMInput * reader, CSolver * solver_container, const CGeometry *geometry){
+    /*
+    This function interpolates the BFM blade parameters to the mesh nodes. The BFM parameters listed in the reader
+    are defined on a different grid than the SU2 mesh. Therefore, interpolation is required. Currently, ray-casting 
+    is used to check for cell inclusion and distance-weighted averaging is used to interpolate the BFM parameters 
+    from the reader mesh nodes. This works well for blade rows with repeating blades (all blades in the crown having
+    the same geometry), but this might have to be changed to a more efficient lookup method in the future.
+    */
+    su2double *Coord_Cart, *Coord_Cyl;       // Cartesian, cylindrical cell coordinates
+    su2double ax, rad, tang;                 // Axial, radial, and tangential coordinates
+    su2double radial[geometry->GetnDim()];   // Radial projection vector      
 
-    su2double *Coord_Cart, *Coord_Cyl;
-    su2double ax, rad, tang;
-    vector<su2double> axial_vector{}, Coord_Cart_v{};
-    vector<su2double> radial_vector{};
+    int barwidth = 70;              // Progress bar width
+    su2double progress{0};          // Interpolation progress
 
-    axial_vector.resize(geometry->GetnDim());
-    radial_vector.resize(geometry->GetnDim());
-    Coord_Cart_v.resize(geometry->GetnDim());
-
-    int barwidth = 70;
-    su2double progress{0};
     auto rank = SU2_MPI::GetRank();
     auto size = SU2_MPI::GetSize();
 
+    // Looping over the solver mesh nodes and interpolating BFM parameters
     for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint){
+
+        // Updating the interpolation progress bar
         if(rank == MASTER_NODE){
             progress = su2double(iPoint) / geometry->GetnPoint();
             int pos = barwidth * progress;
@@ -73,27 +80,31 @@ void BFMInterpolator::Interpolate(ReadBFMInput * reader, CSolver *const solver_c
             cout << "] "<< int(100*progress) << " %\r";
             cout.flush();
         }
+
+        // Getting solver mesh Cartesian coordinates
         Coord_Cart = geometry->nodes->GetCoord(iPoint);
-        ax = Vector_Dot_Product(Coord_Cart, axial_direction);
+
+        // Computing axial projection of solver mesh coordinates
+        ax = GeometryToolbox::DotProduct(geometry->GetnDim(), Coord_Cart, axial_direction);
         
-        for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
-            axial_vector.at(iDim) = ax*axial_direction.at(iDim);
-            Coord_Cart_v.at(iDim) = Coord_Cart[iDim];
-            radial_vector.at(iDim) = Coord_Cart_v.at(iDim) - axial_vector.at(iDim);
-        }
-        //radial_vector = Vector_Cross_Product(axial_vector, Coord_Cart_v);
-        
-        rad = 0;
-        if(radial_vector.size() == 1){
-            rad = radial_vector.at(0);
-            tang = 0;
+        if(geometry->GetnDim() == 2){
+            rad = BFM_radius;
         }else{
+            // Computing radial projection of solver mesh coordinates
             for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
-                rad += pow(radial_vector.at(iDim), 2);
+                radial[iDim] = Coord_Cart[iDim] - ax*axial_direction[iDim];
             }
-            rad = sqrt(rad);
-            tang = 0;
+            
+            // Computing radius of solver mesh coordinates
+            rad = GeometryToolbox::Norm(geometry->GetnDim(), radial);
         }
+
+        // rad = 0;
+        // for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
+        //     rad += pow(radial[iDim], 2);
+        // }
+        // rad = sqrt(rad);
+        tang = 0;
         
         Interp2D(ax, rad, iPoint, reader, solver_container);
         
@@ -102,7 +113,7 @@ void BFMInterpolator::Interpolate(ReadBFMInput * reader, CSolver *const solver_c
     if(rank == MASTER_NODE) cout << endl;
 }
 
-void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput * reader, CSolver * const solver_container){
+void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long iPoint, const ReadBFMInput * reader, CSolver * solver_container){
     unsigned short iRow{0};
     unsigned long iTang{0};
     unsigned long iRad{0};
@@ -196,7 +207,10 @@ su2double BFMInterpolator::DW_average(su2double axis, su2double radius, vector<s
     su2double denomintor{0};
     su2double distance{0};
     for(size_t i_node=0; i_node<ax_cell.size(); ++i_node){
-        distance = sqrt(pow((axis - ax_cell.at(i_node)), 2) + pow((radius - rad_cell.at(i_node)), 2));
+        su2double cell_coords[2] = {axis, radius};
+        su2double node_coords[2] = {ax_cell.at(i_node), rad_cell.at(i_node)};
+        distance = GeometryToolbox::Distance(2, cell_coords, node_coords);
+        //distance = sqrt(pow((axis - ax_cell.at(i_node)), 2) + pow((radius - rad_cell.at(i_node)), 2));
         if(distance == 0){
             return val_cell.at(i_node);
         }
