@@ -47,12 +47,15 @@ void CAvgGrad_Species::FinishResidualCalc(const CConfig* config) {
     }
     /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
     const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+    su2double Diffusivity_Turb = 0.0;
 
     const bool turbulence =
         (config->GetKind_Solver() == INC_RANS) ||
         (config->GetKind_Solver() == DISC_ADJ_INC_RANS);  // TODO TK:: this should be general for inc and comp
-    const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
-    const su2double Diffusivity_Turb = turbulence ? 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t) : 0.0;
+    if (turbulence) {
+      const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
+      Diffusivity_Turb = 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t);
+    }
 
     const su2double Diffusivity = Diffusivity_Lam + Diffusivity_Turb;
 
