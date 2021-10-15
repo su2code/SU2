@@ -33,55 +33,39 @@ CAvgGrad_Species::CAvgGrad_Species(unsigned short val_nDim, unsigned short val_n
     : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {}
 
 void CAvgGrad_Species::ExtraADPreaccIn() {
-  // TODO TK:: add diffusion coeff
+  AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+  AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
 }
 
 void CAvgGrad_Species::FinishResidualCalc(const CConfig* config) {
-  const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
-  const bool turbulence = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS); // TODO TK:: this should be general for inc and comp
-  // const bool flame = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
-  const bool flame = false;
-  su2double Mass_Diffusivity_Lam;
-
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    /*--- Compute the viscous residual. ---*/
-
-    /* the general diffusion term for species transport is given by:
-       (rho * D_{i,m} + mu_t/Sc_t ) * grad(Y_i))
-       with D_{i,m} the mass diffusion coefficient of species i into the mixture m
-     */
-
+    const bool flame = false;  // const bool flame = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
     if (flame) {
-      /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D---
-       */
-      Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+      /*--- For combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D ---*/
+      Density_i = 1.0;
+      Density_j = 1.0;
     }
-    else {
-      /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
-      Mass_Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
-    }
+    /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
+    const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
-    su2double Mass_Diffusivity_Tur = 0.0;
-    if (turbulence) Mass_Diffusivity_Tur = 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t);
+    const bool turbulence =
+        (config->GetKind_Solver() == INC_RANS) ||
+        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);  // TODO TK:: this should be general for inc and comp
+    const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
+    const su2double Diffusivity_Turb = turbulence ? 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t) : 0.0;
 
-    su2double Mass_Diffusivity = Mass_Diffusivity_Lam + Mass_Diffusivity_Tur;
+    const su2double Diffusivity = Diffusivity_Lam + Diffusivity_Turb;
 
-    Flux[iVar] = Mass_Diffusivity * Proj_Mean_GradScalarVar[iVar];
+    Flux[iVar] = Diffusivity * Proj_Mean_GradScalarVar[iVar];
 
     /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
-    if (implicit) {
-      for (auto jVar = 0u; jVar < nVar; jVar++) {
-        if (iVar == jVar) {
-          su2double proj_on_rho = proj_vector_ij / Density_i;
-          Jacobian_i[iVar][jVar] = -Mass_Diffusivity * proj_on_rho;
-          proj_on_rho = proj_vector_ij / Density_j;
-          Jacobian_j[iVar][jVar] = Mass_Diffusivity * proj_on_rho;
-        } else {
-          Jacobian_i[iVar][jVar] = 0.0;
-          Jacobian_j[iVar][jVar] = 0.0;
-        }
-      }
-    }
-  }
+    /*--- Off-diagonal entries are all zero. ---*/
+    const su2double proj_on_rhoi = proj_vector_ij / Density_i;
+    Jacobian_i[iVar][iVar] = -Diffusivity * proj_on_rhoi;
+
+    const su2double proj_on_rhoj = proj_vector_ij / Density_j;
+    Jacobian_j[iVar][iVar] = Diffusivity * proj_on_rhoj;
+
+  }  // iVar
 }
