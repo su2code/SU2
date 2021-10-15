@@ -40,17 +40,9 @@ void CUpwSca_Species::FinishResidualCalc(const CConfig* config) {
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     Flux[iVar] = a0 * Density_i * ScalarVar_i[iVar] + a1 * Density_j * ScalarVar_j[iVar];
 
-    if (implicit) {
-      for (auto jVar = 0u; jVar < nVar; jVar++) {
-        if (iVar == jVar) {
-          // note that Jacobians are taken wrt rho*Y not Y alone.
-          Jacobian_i[iVar][jVar] = a0;
-          Jacobian_j[iVar][jVar] = a1;
-        } else {
-          Jacobian_i[iVar][jVar] = 0.0;
-          Jacobian_j[iVar][jVar] = 0.0;
-        }
-      }  // jVar
-    }
+    /*--- Jacobians are taken wrt rho*Y not Y alone in the species solver. ---*/
+    /*--- Off-diagonal entries are zero. ---*/
+    Jacobian_i[iVar][iVar] = a0;
+    Jacobian_j[iVar][iVar] = a1;
   }  // iVar
 }
