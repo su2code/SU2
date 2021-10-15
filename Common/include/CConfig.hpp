@@ -977,11 +977,12 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
-  su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
-  WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
-  unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
-  unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
+  bool DiscreteAdjoint;                    /*!< \brief AD-based discrete adjoint mode. */
+  ENUM_DISC_ADJ_TYPE Kind_DiscreteAdjoint; /*!< \brief AD-based discrete adjoint formulation. */
+  su2double Const_DES;                     /*!< \brief Detached Eddy Simulation Constant. */
+  WINDOW_FUNCTION Kind_WindowFct;          /*!< \brief Type of window (weight) function for objective functional. */
+  unsigned short Kind_HybridRANSLES;       /*!< \brief Kind of Hybrid RANS/LES. */
+  unsigned short Kind_RoeLowDiss;          /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -2270,14 +2271,14 @@ public:
   void SetFroude(su2double val_froude) { Froude = val_froude; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the Mach number.
+   * \return Value of the Mach number.
    */
   void SetMach(su2double val_mach) { Mach = val_mach; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the Reynolds number.
+   * \return Value of the Reynolds number.
    */
   void SetReynolds(su2double val_reynolds) { Reynolds = val_reynolds; }
 
@@ -8345,6 +8346,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
+
+  /*!
+   * \brief Get the kind of discrete adjoint solver formulation.
+   * \return the discrete adjoint indicator.
+   */
+  ENUM_DISC_ADJ_TYPE GetKind_DiscreteAdjoint(void) const { return Kind_DiscreteAdjoint; }
 
   /*!
    * \brief Get the number of subiterations while a ramp is applied.

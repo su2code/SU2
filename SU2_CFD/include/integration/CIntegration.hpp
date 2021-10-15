@@ -174,4 +174,16 @@ public:
                                     CNumerics ******numerics_container, CConfig **config,
                                     unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] EqSystem - System of equations which is going to be solved.
+   * \param[in] iZone - Zone index.
+   * \param[in] iInst - Inst index.
+   */
+  virtual void ComputeResiduals(CGeometry ****geometry_container, CSolver *****solvers_container, CNumerics ******numerics_container,
+                                CConfig **config_container, unsigned short EqSystem, unsigned short iZone, unsigned short iInst);
 };

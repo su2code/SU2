@@ -66,6 +66,33 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
+  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
+
+  if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+      Partial_Prod_dAdq.resize(nPoint, nVar) = su2double(0.0);
+      Partial_Sens_dIdq.resize(nPoint, nVar) = su2double(0.0);
+      Partial_Prod_dfadq.resize(nPoint, nVar) = su2double(0.0);
+
+      Partial_Prod_dAdua.resize(nMarker);
+      Partial_Sens_dIdua.resize(nMarker);
+      Partial_Prod_dfadxv.resize(nMarker);
+      for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
+          const auto nVertex = geometry->nVertex[iMarker];
+
+          Partial_Prod_dAdua[iMarker].resize(nVertex, 0.0);
+          Partial_Sens_dIdua[iMarker].resize(nVertex, 0.0);
+      }
+
+      Partial_Prod_dAdxv.resize(nPoint, nDim) = su2double(0.0);
+      Partial_Sens_dIdxv.resize(nPoint, nDim) = su2double(0.0);
+      Partial_Prod_dfadxv.resize(nPoint, nDim) = su2double(0.0);
+
+      Partial_Prod_dAdxt.resize(MAXNINP) = su2double(0.0);
+      Partial_Sens_dIdxt.resize(MAXNINP) = su2double(0.0);
+
+      AD_ResidualIndex.resize(nPoint, nVar) = -1;
+  }
+
   /*--- Sensitivity definition and coefficient in all the markers ---*/
 
   CSensitivity.resize(nMarker);
@@ -205,6 +232,10 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
+    //  TODO:   The following is not necessary if modifying Mach and Alpha of solver, rather than config
+    //    OR:   Alternatively, the config values could be registered instead of the solver values
+    config->SetAoA(Alpha*180.0/PI_NUMBER);
+    config->SetMach(Mach);
 
     config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
@@ -294,7 +325,20 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
 
-  direct_solver->GetNodes()->RegisterSolution(false);
+  if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+      SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+          for(unsigned long iVar = 0; iVar < nVar; ++iVar) {
+              AD::RegisterOutput(direct_solver->LinSysRes(iPoint,iVar));
+
+              AD::SetIndex(AD_ResidualIndex(iPoint,iVar), direct_solver->LinSysRes(iPoint,iVar));
+          }
+      }
+      END_SU2_OMP_FOR
+  }
+  else {
+      direct_solver->GetNodes()->RegisterSolution(false);
+  }
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
@@ -387,6 +431,24 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
 }
 
+void CDiscAdjSolver::ExtractAdjoint_Solution_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable) {
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        if (variable == ENUM_VARIABLE::OBJECTIVE) {
+            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Sens_dIdq[iPoint]);
+        }
+        else if (variable == ENUM_VARIABLE::RESIDUALS) {
+            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dAdq[iPoint]);
+        }
+        else if (variable == ENUM_VARIABLE::TRACTIONS) {
+            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dfadq[iPoint]);
+        }
+        else {
+            SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
+        }
+    }
+}
+
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
 
   SU2_OMP_MASTER {
@@ -443,15 +505,143 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
     /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
     Total_Sens_Temp = Total_Sens_Temp_Rad;
-
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
-
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
+
+void CDiscAdjSolver::ExtractAdjoint_Variables_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable) {
+
+    SU2_OMP_MASTER {
+
+    /*--- Extract the adjoint values of the farfield values ---*/
+
+    if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+        su2double Local_Sens_AoA, Local_Sens_Mach;
+
+        Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
+        Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
+
+        SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    }
+    else {
+        SU2_MPI::Error("The residual-based discrete adjoint solver is currently implemented for compressible flows only.\n", CURRENT_FUNCTION);
+    }
+
+    if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+        if (variable == ENUM_VARIABLE::OBJECTIVE) {
+            Partial_Sens_dIdxt[0] = Total_Sens_Mach;
+            Partial_Sens_dIdxt[1] = Total_Sens_AoA;
+        }
+        else if (variable == ENUM_VARIABLE::RESIDUALS) {
+            Partial_Prod_dAdxt[0] = Total_Sens_Mach;
+            Partial_Prod_dAdxt[1] = Total_Sens_AoA;
+        }
+        else {
+            SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
+        }
+    }
+
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+}
+
+void CDiscAdjSolver::ExtractAdjoint_Geometry_Residual(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) {
+
+    SU2_OMP_PARALLEL {
+
+        const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
+        const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
+
+        /*--- Extract the sensitivities ---*/
+        if (mesh_solver) {
+            mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
+
+            /*--- Extract the adjoint variables: sensitivities of the boundary displacements ---*/
+            mesh_solver->ExtractAdjoint_Variables(geometry, config);
+        }
+
+        /*--- Store the sensitivities in the flow adjoint container ---*/
+
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+
+            /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+            su2double limiter = 1.0;
+            if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
+                limiter = 0.0;
+            }
+
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+                su2double Sensitivity;
+
+                if (mesh_solver) {
+                    /*--- The sensitivity was extracted using ExtractAdjoint_Solution ---*/
+                    Sensitivity = limiter * mesh_solver->GetNodes()->GetSolution(iPoint, iDim);
+                }
+                else {
+                    Sensitivity = limiter * geometry->nodes->GetAdjointSolution(iPoint, iDim);
+
+                    auto Coord = geometry->nodes->GetCoord(iPoint, iDim);
+                    AD::ResetInput(Coord);
+                }
+
+                /*--- Store the sensitivities ---*/
+                if (variable == ENUM_VARIABLE::OBJECTIVE) {
+                    Partial_Sens_dIdxv(iPoint, iDim) = Sensitivity;
+                }
+                else if (variable == ENUM_VARIABLE::RESIDUALS) {
+                    Partial_Prod_dAdxv(iPoint, iDim) = Sensitivity;
+                }
+                else if (variable == ENUM_VARIABLE::TRACTIONS) {
+                    Partial_Prod_dfadxv(iPoint, iDim) = Sensitivity;
+                }
+                else {
+                    SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
+                }
+            }
+        }
+        END_SU2_OMP_FOR
+
+        /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
+
+        for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
+
+            if (!config->GetSolid_Wall(iMarker)) continue;
+
+            /*--- Sensitivities w.r.t aerodynamic boundary displacements ---*/
+
+            SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+            for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+                /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
+
+                const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+                su2double Residuals_Sens_Vertex = 0.0;
+                su2double Objective_Sens_Vertex = 0.0;
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                    Residuals_Sens_Vertex += Normal[iDim] * Partial_Prod_dAdxv(iPoint, iDim);
+                    Objective_Sens_Vertex += Normal[iDim] * Partial_Sens_dIdxv(iPoint, iDim);
+                }
+                Residuals_Sens_Vertex /= GeometryToolbox::Norm(nDim, Normal);
+                Objective_Sens_Vertex /= GeometryToolbox::Norm(nDim, Normal);
+
+                Partial_Prod_dAdua[iMarker][iVertex] = -Residuals_Sens_Vertex;
+                Partial_Sens_dIdua[iMarker][iVertex] = -Objective_Sens_Vertex;
+            }
+            END_SU2_OMP_FOR
+        }
+    }
+    END_SU2_OMP_PARALLEL
+}
+
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
@@ -465,21 +655,30 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-    /*--- Get and store the adjoint solution of a point. ---*/
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      Solution[iVar] = nodes->GetSolution(iPoint,iVar);
-    }
-
-    /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
-    if (dual_time && !multizone) {
+      /*--- Get and store the adjoint solution of a point. ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
+          Solution[iVar] = nodes->GetSolution(iPoint, iVar);
       }
-    }
 
-    /*--- Set the adjoint values of the primal solution. ---*/
+      /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
+      if (dual_time && !multizone) {
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+              Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint, iVar);
+          }
+      }
 
-    direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
+      /*--- Set the adjoint values of the primal solution. ---*/
+
+      if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+          /*--- Set the adjoint values of the primal solution. ---*/
+          std::cout << "Setting residual derivative for " << iPoint << std::endl;
+
+          for (unsigned long iVar = 0; iVar < nVar; iVar++)
+              AD::SetDerivative(AD_ResidualIndex(iPoint, iVar), SU2_TYPE::GetValue(Solution[iVar]));
+
+      } else {
+          direct_solver->GetNodes()->SetAdjointSolution(iPoint, Solution);
+      }
   }
   END_SU2_OMP_FOR
 }
@@ -507,9 +706,9 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
         Sensitivity = 0.0;
       }
       if (!time_stepping) {
-        nodes->SetSensitivity(iPoint,iDim, Sensitivity);
+        nodes->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
-        nodes->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim) + Sensitivity);
+        nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim) + Sensitivity);
       }
     }
   }
@@ -583,6 +782,46 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   SU2_OMP_BARRIER
 
 }
+
+su2double CDiscAdjSolver::GetDerivative_dIdq(unsigned long iPoint, unsigned long iVar) const {
+    return Partial_Sens_dIdq(iPoint, iVar);
+};
+
+su2double CDiscAdjSolver::GetDerivative_dIdxv(unsigned long iPoint, unsigned long iDim) const {
+    return Partial_Sens_dIdxv(iPoint, iDim);
+};
+
+su2double CDiscAdjSolver::GetDerivative_dIdxt(unsigned long iVar) const {
+    return Partial_Sens_dIdxt(iVar);
+};
+
+vector<su2double> CDiscAdjSolver::GetDerivative_dIdua(unsigned short iMarker) const {
+    return Partial_Sens_dIdua[iMarker];
+};
+
+su2double CDiscAdjSolver::GetDerivative_dAdq(unsigned long iPoint, unsigned long iVar) const {
+    return Partial_Prod_dAdq(iPoint, iVar);
+};
+
+su2double CDiscAdjSolver::GetDerivative_dAdxv(unsigned long iPoint, unsigned long iDim) const {
+    return Partial_Prod_dAdxv(iPoint, iDim);
+};
+
+su2double CDiscAdjSolver::GetDerivative_dAdxt(unsigned long iVar) const {
+    return Partial_Prod_dAdxt(iVar);
+};
+
+vector<su2double> CDiscAdjSolver::GetDerivative_dAdua(unsigned short iMarker) const {
+    return Partial_Prod_dAdua[iMarker];
+};
+
+su2double CDiscAdjSolver::GetDerivative_dfadq(unsigned long iPoint, unsigned long iVar) const {
+    return Partial_Prod_dfadq(iPoint, iVar);
+};
+
+su2double CDiscAdjSolver::GetDerivative_dfadxv(unsigned long iPoint, unsigned long iDim) const {
+    return Partial_Prod_dfadxv(iPoint, iDim);
+};
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                    unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {

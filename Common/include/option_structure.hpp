@@ -1459,8 +1459,8 @@ enum ENUM_OBJECTIVE {
   SURFACE_SECONDARY = 53,       /*!< \brief Secondary flow strength objective function definition. */
   SURFACE_MOM_DISTORTION = 54,  /*!< \brief Momentum distortion objective function definition. */
   SURFACE_SECOND_OVER_UNIFORM = 55, /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
-  SURFACE_PRESSURE_DROP = 56, 	/*!< \brief Pressure drop objective function definition. */
-  CUSTOM_OBJFUNC = 31, 	        /*!< \brief Custom objective function definition. */
+  SURFACE_PRESSURE_DROP = 56,   /*!< \brief Pressure drop objective function definition. */
+  CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
   AVG_NORMAL_VEL = 32,          /*!< \brief Mass-averaged normal velocity. */
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
@@ -2218,6 +2218,25 @@ static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map =
   MakePair("PRESSURE_DROP", ENUM_STREAMWISE_PERIODIC::PRESSURE_DROP)
   MakePair("MASSFLOW",      ENUM_STREAMWISE_PERIODIC::MASSFLOW)
 };
+
+/*!
+ * \brief Types of discrete adjoint solver formulations.
+ */
+enum ENUM_DISC_ADJ_TYPE {
+    FIXED_POINT = 0,  /*!< \brief Fixed-point discrete-adjoint formulation. */
+    RESIDUALS   = 1   /*!< \brief Residual-based discrete-adjoint formulation. */
+};
+static const MapType<string, ENUM_DISC_ADJ_TYPE> DiscreteAdjoint_Map = {
+        MakePair("FIXED_POINT", ENUM_DISC_ADJ_TYPE::FIXED_POINT)
+        MakePair("RESIDUALS",   ENUM_DISC_ADJ_TYPE::RESIDUALS)
+};
+
+enum class ENUM_VARIABLE {
+    RESIDUALS,
+    OBJECTIVE,
+    TRACTIONS
+};
+
 
 /*!
  * \brief Container to hold Variables for streamwise Periodic flow as they are often used together in places.

@@ -25,6 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define ENABLE_MAPS
+#include "../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
+
 #include "../../include/drivers/CDiscAdjDeformationDriver.hpp"
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"

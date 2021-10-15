@@ -148,6 +148,15 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjSinglezoneDriver::Run() {
 
+    if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+        Run_Residual();
+    } else {
+        Run_FixedPoint();
+    }
+}
+
+void CDiscAdjSinglezoneDriver::Run_FixedPoint() {
+
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
     fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
@@ -206,8 +215,70 @@ void CDiscAdjSinglezoneDriver::Run() {
       GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
       SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
     }
-
   }
+}
+
+void CDiscAdjSinglezoneDriver::Run_Residual() {
+
+    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+     *--- of the previous iteration. The values are passed to the AD tool.
+     *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
+
+    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the residuals and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        solver[ADJFLOW_SOL]->ExtractAdjoint_Solution_Residual(geometry, config, ENUM_VARIABLE::RESIDUALS);
+
+        solver[ADJFLOW_SOL]->ExtractAdjoint_Variables_Residual(geometry, config, ENUM_VARIABLE::RESIDUALS);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+    SetAdj_ObjFunction();
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the objective function and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        solver[ADJFLOW_SOL]->ExtractAdjoint_Solution_Residual(geometry, config, ENUM_VARIABLE::OBJECTIVE);
+
+        solver[ADJFLOW_SOL]->ExtractAdjoint_Variables_Residual(geometry, config, ENUM_VARIABLE::OBJECTIVE);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Initialize the adjoint of the vertex tractions with the corresponding adjoint vector. ---*/
+
+    solver[FLOW_SOL]->SetVertexTractionsAdjoint(geometry, config);
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the vertex tractions and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        solver[ADJFLOW_SOL]->ExtractAdjoint_Solution_Residual(geometry, config, ENUM_VARIABLE::TRACTIONS);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
 
 }
 
@@ -221,12 +292,25 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
+
+      if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+          SecondaryRun_Residual();
+      } else {
+          SecondaryRun_FixedPoint();
+      }
+
       break;
 
     case DISC_ADJ_FEM :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
+
+      if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+          SecondaryRun_Residual();
+      } else {
+          SecondaryRun_FixedPoint();
+      }
 
       iteration->Postprocess(output_container[ZONE_0], integration_container, geometry_container,
                              solver_container, numerics_container, config_container,
@@ -266,7 +350,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Do one iteration of the direct solver ---*/
 
-  DirectRun(kind_recording);
+  if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+      DirectRun_Residual(kind_recording);
+  }
+  else {
+      DirectRun_FixedPoint(kind_recording);
+  }
 
   /*--- Store the recording state ---*/
 
@@ -413,7 +502,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 }
 
-void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
+void CDiscAdjSinglezoneDriver::DirectRun_FixedPoint(RECORDING kind_recording) {
 
   /*--- Mesh movement ---*/
 
@@ -435,6 +524,21 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   Print_DirectResidual(kind_recording);
 
+}
+
+void CDiscAdjSinglezoneDriver::DirectRun_Residual(RECORDING kind_recording) {
+
+    /*--- Mesh movement ---*/
+
+    direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+
+    /*--- Residuals calculation ---*/
+
+    Update_DirectSolution();
+
+    /*--- Print the direct residual to screen ---*/
+
+    Print_DirectResidual(kind_recording);
 }
 
 void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
@@ -519,17 +623,20 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 
 }
 
-void CDiscAdjSinglezoneDriver::SecondaryRecording(){
+void CDiscAdjSinglezoneDriver::SecondaryRecording() {
 
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   *    as argument ensures that all information from a previous recording is removed. ---*/
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+     *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::CLEAR_INDICES);
+    SetRecording(RECORDING::CLEAR_INDICES);
 
-  /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+    /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
 
-  SetRecording(SecondaryVariables);
+    SetRecording(SecondaryVariables);
 
+}
+
+void CDiscAdjSinglezoneDriver::SecondaryRun_FixedPoint() {
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
 
@@ -555,5 +662,123 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
   AD::ClearAdjoints();
+
+}
+
+void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
+    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+     *--- of the previous iteration. The values are passed to the AD tool.
+     *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
+
+    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the residuals and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        if (SecondaryVariables == RECORDING::MESH_COORDS) {
+            solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, nullptr, ENUM_VARIABLE::RESIDUALS);
+        }
+        else { // MESH_DEFORM
+            solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJMESH_SOL], ENUM_VARIABLE::RESIDUALS);
+        }
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+    SetAdj_ObjFunction();
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the objective function and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        if (SecondaryVariables == RECORDING::MESH_COORDS) {
+            solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, nullptr, ENUM_VARIABLE::OBJECTIVE);
+        }
+        else { // MESH_DEFORM
+            solver[ADJMESH_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJFLOW_SOL], ENUM_VARIABLE::OBJECTIVE);
+        }
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Initialize the adjoint of the vertex tractions with the corresponding adjoint vector. ---*/
+
+    solver[FLOW_SOL]->SetVertexTractionsAdjoint(geometry, config);
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the vertex tractions and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        if (SecondaryVariables == RECORDING::MESH_COORDS) {
+            solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, nullptr, ENUM_VARIABLE::TRACTIONS);
+        }
+        else { // MESH_DEFORM
+            solver[ADJMESH_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJFLOW_SOL], ENUM_VARIABLE::TRACTIONS);
+        }
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+}
+
+void CDiscAdjSinglezoneDriver::Update_DirectSolution() {
+
+    //  TODO:   Update/set Far-field conditions here instead of in the setter for AoA and Mach
+    su2double Velocity_Ref = config->GetVelocity_Ref();
+    su2double Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
+    su2double Beta                   = config->GetAoS()*PI_NUMBER/180.0;
+    su2double Mach                   = config->GetMach();
+    su2double Temperature            = config->GetTemperature_FreeStream();
+    su2double Gas_Constant           = config->GetGas_Constant();
+    su2double Gamma                  = config->GetGamma();
+    su2double SoundSpeed             = sqrt(Gamma*Gas_Constant*Temperature);
+
+    if (nDim == 2) {
+        config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+        config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+    }
+    if (nDim == 3) {
+        config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+        config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
+        config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+    }
+
+    /*--- Update the dual grid (without multigrid). ---*/
+    geometry->InitiateComms(geometry, config, COORDINATES);
+    geometry->CompleteComms(geometry, config, COORDINATES);
+
+    geometry->SetControlVolume(config, UPDATE);
+    geometry->SetBoundControlVolume(config, UPDATE);
+    geometry->SetMaxLength(config);
+
+    /*--- Flow and turbulent conservative state variables ---*/
+
+    direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+    /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+
+    integration[FLOW_SOL]->ComputeResiduals(geometry_container, solver_container, numerics_container, config_container, FLOW_SOL, ZONE_0, INST_0);
+
+    /*--- Flow tractions ---*/
+
+    direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }

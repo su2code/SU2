@@ -86,6 +86,11 @@ public:
   void Run(void) override;
 
   /*!
+   * \brief Update the current solution (residuals, tractions, etc.)
+   */
+  void Update_DirectSolution(void);
+
+  /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
   void Postprocess(void) override;
@@ -100,7 +105,13 @@ public:
    * \brief Run one iteration of the solver.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void DirectRun(RECORDING kind_recording);
+  void DirectRun_FixedPoint(RECORDING kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   */
+  void DirectRun_Residual(RECORDING kind_recording);
 
   /*!
    * \brief Set the objective function.
@@ -133,5 +144,27 @@ public:
    * \return false
    */
   inline bool GetTimeConvergence() const override {return false;};
+
+  protected:
+
+  /*!
+   * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.
+   */
+  void Run_FixedPoint(void);
+
+  /*!
+   * \brief Run the computation of the main residual-based discrete adjoint sensitivities with a single zone.
+   */
+  void Run_Residual(void);
+
+  /*!
+   * \brief Run a single iteration of the secondary fixed-point discrete adjoint solver with a single zone.
+   */
+  void SecondaryRun_FixedPoint(void);
+
+  /*!
+   * \brief Run the computation of the secondary residual-based discrete adjoint sensitivities with a single zone.
+   */
+  void SecondaryRun_Residual(void);
 
 };

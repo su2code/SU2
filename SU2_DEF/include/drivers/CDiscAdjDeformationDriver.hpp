@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/fem/fem_geometry_structure.hpp"

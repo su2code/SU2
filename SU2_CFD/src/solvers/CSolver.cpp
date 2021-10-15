@@ -4105,6 +4105,52 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
   }
 }
 
+void CSolver::ComputeResidual_RMS(const CGeometry *geometry, const CConfig *config){
+
+    /*--- Set Residuals to zero ---*/
+    SU2_OMP_MASTER
+    for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        Residual_RMS[iVar] = 0.0;
+        Residual_Max[iVar] = 0.0;
+    }
+    END_SU2_OMP_MASTER
+
+    vector<su2double> resRMS(nVar, 0.0);
+    vector<su2double> resMax(nVar,0.0);
+    vector<const su2double*> coordMax(nVar,nullptr);
+    vector<unsigned long> idxMax(nVar,0);
+
+    /*--- Iterate over residuals and determine RMS and MAX values ---*/
+
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            unsigned long total_index = iPoint*nVar + iVar;
+
+            su2double Res = fabs(LinSysRes[total_index]);
+            resRMS[iVar] += Res*Res;
+
+            if (Res > resMax[iVar]) {
+                resMax[iVar] = Res;
+                idxMax[iVar] = iPoint;
+                coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+            }
+        }
+    }
+    END_SU2_OMP_FOR
+    SU2_OMP_CRITICAL
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        Residual_RMS[iVar] += resRMS[iVar];
+        AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+    }
+    END_SU2_OMP_CRITICAL
+    SU2_OMP_BARRIER
+
+    /*--- Compute the root mean square residual ---*/
+    SetResidual_RMS(geometry, config);
+}
+
 void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config){
 
   SU2_OMP_PARALLEL {

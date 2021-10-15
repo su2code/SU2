@@ -248,3 +248,58 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
   }
   END_SU2_OMP_PARALLEL
 }
+
+void CIntegration::ComputeResiduals(CGeometry ****geometry_container, CSolver *****solvers_container, CNumerics ******numerics_container,
+                                    CConfig **config_container, unsigned short EqSystem, unsigned short iZone,
+                                    unsigned short iInst) {
+
+    CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
+    CConfig* config = config_container[iZone];
+    CSolver** solvers = solvers_container[iZone][iInst][MESH_0];
+    CNumerics** numerics = numerics_container[iZone][iInst][MESH_0][EqSystem];
+
+    /*--- Update global parameters ---*/
+
+    switch (config->GetKind_Solver()) {
+        case EULER:
+        case DISC_ADJ_EULER:
+        case INC_EULER:
+        case DISC_ADJ_INC_EULER:
+        case NEMO_EULER:
+            config->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
+            break;
+
+        case NAVIER_STOKES:
+        case DISC_ADJ_NAVIER_STOKES:
+        case INC_NAVIER_STOKES:
+        case DISC_ADJ_INC_NAVIER_STOKES:
+        case NEMO_NAVIER_STOKES:
+            config->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
+            break;
+
+        case RANS:
+        case DISC_ADJ_RANS:
+        case INC_RANS:
+        case DISC_ADJ_INC_RANS:
+            config->SetGlobalParam(RANS, RUNTIME_FLOW_SYS);
+            break;
+    }
+
+    /*--- Pre-processing re-sets the residuals before each evaluation ---*/
+
+    solvers[EqSystem]->Preprocessing(geometry, solvers, config, MESH_0, 0, EqSystem, false);
+
+    /*--- Space integration computes the residuals ---*/
+
+    Space_Integration(geometry, solvers, numerics, config, MESH_0, NO_RK_ITER, EqSystem);
+
+    solvers[EqSystem]->ComputeResidual_RMS(geometry, config);
+
+    /*--- Post-processing  ---*/
+
+    solvers[EqSystem]->Postprocessing(geometry, solvers, config, MESH_0);
+
+    solvers[EqSystem]->Pressure_Forces(geometry, config);
+    solvers[EqSystem]->Momentum_Forces(geometry, config);
+    solvers[EqSystem]->Friction_Forces(geometry, config);
+}
