@@ -2554,7 +2554,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
-      YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+      
+      if (!wallfunctions) {
+        YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+      }
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
