@@ -1315,6 +1315,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
+      case TURB_MODEL::NONE:
+        SU2_MPI::Error("No turbulence model selected.", CURRENT_FUNCTION);
+        break;
       case TURB_MODEL::SA:        spalart_allmaras = true;        break;
       case TURB_MODEL::SA_NEG:    neg_spalart_allmaras = true;    break;
       case TURB_MODEL::SA_E:      e_spalart_allmaras = true;      break;
@@ -1322,9 +1325,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case TURB_MODEL::SA_E_COMP: e_comp_spalart_allmaras = true; break;
       case TURB_MODEL::SST:       menter_sst = true;              break;
       case TURB_MODEL::SST_SUST:  menter_sst = true;              break;
-      default:
-        SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
-        break;
     }
 
   /*--- If the Menter SST model is used, store the constants of the model and determine the

@@ -1530,6 +1530,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       if (incompressible) file << "Incompressible RANS equations.\n";
       file << "Turbulence model: ";
       switch (Kind_Turb_Model) {
+        case TURB_MODEL::NONE: break;
         case TURB_MODEL::SA:
           file << "Spalart Allmaras\n";
           break;
@@ -1551,7 +1552,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_MODEL::SST_SUST:
           file << "Menter's SST with sustaining terms\n";
           break;
-        default: break;
       }
       break;
   }
