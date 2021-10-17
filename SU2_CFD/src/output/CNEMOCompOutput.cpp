@@ -142,7 +142,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
     AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
   /// END_GROUP
 
@@ -169,7 +169,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
     AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
   /// END_GROUP
 
@@ -196,7 +196,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
     AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
   /// END_GROUP
 
@@ -601,7 +601,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
 
   SetHistoryOutputValue("MAX_DENSITY", log10(NEMO_solver->GetRes_Max(0)));
@@ -622,7 +622,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
 
   if (multiZone){
@@ -645,7 +645,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
       SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
 
