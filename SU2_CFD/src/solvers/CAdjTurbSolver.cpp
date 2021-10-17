@@ -42,6 +42,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Dimension of the problem  ---*/
   switch (config->GetKind_Turb_Model()) {
+    case TURB_MODEL::NONE:                 break;
     case TURB_MODEL::SA :        nVar = 1; break;
     case TURB_MODEL::SA_NEG :    nVar = 1; break;
     case TURB_MODEL::SA_E :      nVar = 1; break;
@@ -49,7 +50,6 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     case TURB_MODEL::SA_E_COMP : nVar = 1; break;
     case TURB_MODEL::SST :       nVar = 2; break;
     case TURB_MODEL::SST_SUST :  nVar = 2; break;
-    default: break;
   }
 
   /*--- Initialize nVarGrad for deallocation ---*/
