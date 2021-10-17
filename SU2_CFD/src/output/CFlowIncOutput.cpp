@@ -117,8 +117,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   switch(turb_model){
   case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Root-mean square residual of nu tilde (TURB_MODEL::SA model).
-    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (TURB_MODEL::SA model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
+    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;
   case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
@@ -146,14 +146,14 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   switch(turb_model){
   case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (TURB_MODEL::SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (TURB_MODEL::SA model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
+    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;
   case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (TURB_MODEL::SST model).
-    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (TURB_MODEL::SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (TURB_MODEL::SST model).
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (TURB_MODEL::SST model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
+    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
   }
@@ -177,14 +177,14 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   switch(turb_model){
   case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (TURB_MODEL::SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (TURB_MODEL::SA model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
+    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;
   case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (TURB_MODEL::SST model).
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (TURB_MODEL::SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (TURB_MODEL::SST model).
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (TURB_MODEL::SST model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
+    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
+    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
   }
