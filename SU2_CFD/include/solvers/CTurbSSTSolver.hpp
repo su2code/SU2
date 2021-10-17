@@ -92,7 +92,7 @@ public:
                      unsigned short iMesh,
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
-                     bool Output) final;
+                     bool Output) override;
 
   /*!
    * \brief Computes the eddy viscosity.
@@ -104,7 +104,7 @@ public:
   void Postprocessing(CGeometry *geometry,
                       CSolver **solver_container,
                       CConfig *config,
-                      unsigned short iMesh) final;
+                      unsigned short iMesh) override;
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -116,7 +116,7 @@ public:
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
   void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, CConfig* config) final;
+                        CNumerics* numerics, CConfig* config) override;
 
   /*!
    * \brief Source term computation.
@@ -130,7 +130,7 @@ public:
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Source term computation.
@@ -144,7 +144,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) final;
+                       unsigned short iMesh) override;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -160,7 +160,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) final;
+                        unsigned short val_marker) override;
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -175,7 +175,7 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config,
-                          unsigned short val_marker) final;
+                          unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -191,7 +191,7 @@ public:
                     CNumerics *conv_numerics,
                     CNumerics *visc_numerics,
                     CConfig *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -207,7 +207,7 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) final;
+                unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -223,7 +223,7 @@ public:
                       CNumerics *conv_numerics,
                       CNumerics *visc_numerics,
                       CConfig *config,
-                      unsigned short val_marker) final;
+                      unsigned short val_marker) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -239,7 +239,7 @@ public:
                             CNumerics *conv_numerics,
                             CNumerics *visc_numerics,
                             CConfig *config,
-                            unsigned short val_marker) final;
+                            unsigned short val_marker) override;
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -254,13 +254,13 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) final;
+                 unsigned short val_marker) override;
 
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants
    */
-  inline const su2double* GetConstants() const final { return constants; }
+  inline const su2double* GetConstants() const override { return constants; }
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -270,7 +270,7 @@ public:
    */
   void SetInletAtVertex(const su2double *val_inlet,
                         unsigned short iMarker,
-                        unsigned long iVertex) final;
+                        unsigned long iVertex) override;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -286,7 +286,7 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              const CGeometry *geometry,
-                             const CConfig *config) const final;
+                             const CConfig *config) const override;
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -296,19 +296,19 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(const CConfig* config, unsigned short iMarker) final;
+  void SetUniformInlet(const CConfig* config, unsigned short iMarker) override;
 
   /*!
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */
-  inline su2double GetTke_Inf(void) const final { return Solution_Inf[0]; }
+  inline su2double GetTke_Inf(void) const override { return Solution_Inf[0]; }
 
   /*!
    * \brief Get the value of the turbulent frequency.
    * \return Value of the turbulent frequency.
    */
-  inline su2double GetOmega_Inf(void) const final { return Solution_Inf[1]; }
+  inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
   
 };
