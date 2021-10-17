@@ -5620,6 +5620,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
+          case TURB_MODEL::NONE: break;
           case TURB_MODEL::SA:        cout << "Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
@@ -5627,7 +5628,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SST:       cout << "Menter's SST"     << endl; break;
           case TURB_MODEL::SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
-          default: break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         if (Kind_Trans_Model == BC) cout << "Using the revised BC transition model (2020)" << endl;
