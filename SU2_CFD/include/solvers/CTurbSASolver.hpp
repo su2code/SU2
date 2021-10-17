@@ -108,7 +108,7 @@ public:
                      unsigned short iMesh,
                      unsigned short iRKStep,
                      unsigned short RunTime_EqSystem,
-                     bool Output) override;
+                     bool Output) final;
 
   /*!
    * \brief A virtual member.
@@ -119,7 +119,7 @@ public:
   void Postprocessing(CGeometry *geometry,
                       CSolver **solver_container,
                       CConfig *config,
-                      unsigned short iMesh) override;
+                      unsigned short iMesh) final;
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -131,7 +131,7 @@ public:
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
   void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, CConfig* config) override;
+                        CNumerics* numerics, CConfig* config) final;
 
   /*!
    * \brief Source term computation.
@@ -145,7 +145,7 @@ public:
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
-                       unsigned short iMesh) override;
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Source term computation.
@@ -159,7 +159,7 @@ public:
                        CSolver **solver_container,
                        CNumerics *numerics,
                        CConfig *config,
-                       unsigned short iMesh) override;
+                       unsigned short iMesh) final;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -175,7 +175,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) override;
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -191,7 +191,7 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config,
-                          unsigned short val_marker) override;
+                          unsigned short val_marker) final;
 
   /*!
    * \brief Impose the Far Field boundary condition.
@@ -207,7 +207,7 @@ public:
                     CNumerics *conv_numerics,
                     CNumerics *visc_numerics,
                     CConfig *config,
-                    unsigned short val_marker) override;
+                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -223,7 +223,7 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) override;
+                unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -239,7 +239,7 @@ public:
                       CNumerics *conv_numerics,
                       CNumerics *visc_numerics,
                       CConfig *config,
-                      unsigned short val_marker) override;
+                      unsigned short val_marker) final;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -255,7 +255,7 @@ public:
                             CNumerics *conv_numerics,
                             CNumerics *visc_numerics,
                             CConfig *config,
-                            unsigned short val_marker) override;
+                            unsigned short val_marker) final;
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -271,7 +271,7 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) override;
+                 unsigned short val_marker) final;
 
   /*!
    * \brief Impose the engine inflow boundary condition.
@@ -287,7 +287,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) override;
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose the engine exhaust boundary condition.
@@ -303,7 +303,7 @@ public:
                          CNumerics *conv_numerics,
                          CNumerics *visc_numerics,
                          CConfig *config,
-                         unsigned short val_marker) override;
+                         unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -319,7 +319,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) override;
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk outlet boundary condition.
@@ -335,7 +335,7 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) override;
+                        unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -353,7 +353,7 @@ public:
                   CNumerics *visc_numerics,
                   CConfig *config,
                   unsigned short val_marker,
-                  bool val_inlet_surface) override;
+                  bool val_inlet_surface) final;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -363,7 +363,7 @@ public:
    */
   void SetInletAtVertex(const su2double *val_inlet,
                         unsigned short iMarker,
-                        unsigned long iVertex) override;
+                        unsigned long iVertex) final;
 
   /*!
    * \brief Get the set of value imposed at an inlet.
@@ -379,7 +379,7 @@ public:
                              unsigned short val_kind_marker,
                              string val_marker,
                              const CGeometry *geometry,
-                             const CConfig *config) const override;
+                             const CConfig *config) const final;
 
   /*!
    * \brief Set a uniform inlet profile
@@ -390,12 +390,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(const CConfig* config, unsigned short iMarker) override;
+  void SetUniformInlet(const CConfig* config, unsigned short iMarker) final;
 
   /*!
    * \brief Get the value of nu tilde at the far-field.
    * \return Value of nu tilde at the far-field.
    */
-  inline su2double GetNuTilde_Inf(void) const override { return Solution_Inf[0]; }
+  inline su2double GetNuTilde_Inf(void) const final { return Solution_Inf[0]; }
 
 };
