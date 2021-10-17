@@ -44,13 +44,13 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void) override;
+  void ExtraADPreaccIn(void) final;
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) final;
 
 public:
   /*!
@@ -78,13 +78,13 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void) override;
+  void ExtraADPreaccIn(void) final;
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) final;
 
 public:
   /*!
@@ -117,13 +117,13 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void) override;
+  void ExtraADPreaccIn(void) final;
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) final;
 
 public:
   /*!
@@ -140,7 +140,7 @@ public:
   /*!
    * \brief Sets value of first blending function.
    */
-  void SetF1blending(su2double val_F1_i, su2double val_F1_j) override {
+  void SetF1blending(su2double val_F1_i, su2double val_F1_j) final {
     F1_i = val_F1_i; F1_j = val_F1_j;
   }
 
