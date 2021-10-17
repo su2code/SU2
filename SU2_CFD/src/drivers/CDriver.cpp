@@ -1303,7 +1303,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     case ADJ_NAVIER_STOKES:
       adj_ns = ns = compressible = true;
-      turbulent = (config->GetKind_Turb_Model() != NONE); break;
+      turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE); break;
 
     case ADJ_RANS:
       adj_ns = ns = compressible = turbulent = true;
@@ -1315,13 +1315,13 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:        spalart_allmaras = true;        break;
-      case SA_NEG:    neg_spalart_allmaras = true;    break;
-      case SA_E:      e_spalart_allmaras = true;      break;
-      case SA_COMP:   comp_spalart_allmaras = true;   break;
-      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-      case SST:       menter_sst = true;              break;
-      case SST_SUST:  menter_sst = true;              break;
+      case TURB_MODEL::SA:        spalart_allmaras = true;        break;
+      case TURB_MODEL::SA_NEG:    neg_spalart_allmaras = true;    break;
+      case TURB_MODEL::SA_E:      e_spalart_allmaras = true;      break;
+      case TURB_MODEL::SA_COMP:   comp_spalart_allmaras = true;   break;
+      case TURB_MODEL::SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case TURB_MODEL::SST:       menter_sst = true;              break;
+      case TURB_MODEL::SST_SUST:  menter_sst = true;              break;
       default:
         SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
         break;
@@ -2697,7 +2697,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
             RMSTable << log10(solvers[FLOW_SOL]->GetRes_RMS(iVar));
         }
 
-        if (configs->GetKind_Turb_Model() != NONE && !configs->GetFrozen_Visc_Disc()) {
+        if (configs->GetKind_Turb_Model() != TURB_MODEL::NONE && !configs->GetFrozen_Visc_Disc()) {
           for (unsigned short iVar = 0; iVar < solvers[TURB_SOL]->GetnVar(); iVar++) {
             if (!addVals)
               RMSTable.AddColumn("rms_Turb" + iVar_iZone2string(iVar, iZone), fieldWidth);
