@@ -1775,7 +1775,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP:        cout << "       Res[nu]"; break;
-              case TURB_MODEL::SST:	case TURB_MODEL::SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
               default: break;
             }
 
