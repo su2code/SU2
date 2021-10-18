@@ -1412,7 +1412,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 SPRINTF(surface_coeff, ", %12.10f", sqrt(MachOut[iMarker_Monitoring][nSpanWiseSections][1]*MachOut[iMarker_Monitoring][nSpanWiseSections][1] + MachOut[iMarker_Monitoring][nSpanWiseSections][0]*MachOut[iMarker_Monitoring][nSpanWiseSections][0]));
                 strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
                 strcat(turbo_coeff, surface_coeff);
 
@@ -1771,7 +1771,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
-              case SST:	case SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              case SST:  case SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
             }
 
             if (weakly_coupled_heat) {

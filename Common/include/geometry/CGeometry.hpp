@@ -133,7 +133,7 @@ protected:
   vector<vector<su2double> > FaceArea_plane;   /*!< \brief Vector containing area/volume associated with  new points appearing on a single plane */
   vector<vector<unsigned long> > Plane_points; /*!< \brief Vector containing points appearing on a single plane */
 
-  vector<su2double> XCoordList;	          /*!< \brief Vector containing points appearing on a single plane */
+  vector<su2double> XCoordList;              /*!< \brief Vector containing points appearing on a single plane */
 
 #if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
   vector<vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
