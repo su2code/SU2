@@ -6456,6 +6456,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
+
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:
