@@ -179,7 +179,6 @@
 		354903D92537E0290095B597 /* CVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903472537E0280095B597 /* CVariable.cpp */; };
 		354903DA2537E0290095B597 /* CMeshBoundVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903482537E0280095B597 /* CMeshBoundVariable.cpp */; };
 		354903DB2537E0290095B597 /* CDiscAdjFEABoundVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903492537E0280095B597 /* CDiscAdjFEABoundVariable.cpp */; };
-		354903DC2537E0290095B597 /* CDiscAdjFEAVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549034A2537E0280095B597 /* CDiscAdjFEAVariable.cpp */; };
 		354903DD2537E0290095B597 /* CBaselineVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549034B2537E0280095B597 /* CBaselineVariable.cpp */; };
 		354903DE2537E0290095B597 /* CAdjTurbVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549034C2537E0280095B597 /* CAdjTurbVariable.cpp */; };
 		354903DF2537E0290095B597 /* CAdjEulerVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549034D2537E0280095B597 /* CAdjEulerVariable.cpp */; };
@@ -262,6 +261,15 @@
 		35D63007259987B8008DF28B /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D63006259987B7008DF28B /* blas_structure.cpp */; };
 		35D6301625998877008DF28B /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301325998877008DF28B /* mpi_structure.cpp */; };
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
+		40C6D17D271F8053009B5531 /* CScalarVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D17B271F8053009B5531 /* CScalarVariable.cpp */; };
+		40C6D17E271F8053009B5531 /* CFlowVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D17C271F8053009B5531 /* CFlowVariable.cpp */; };
+		40C6D183271F80CC009B5531 /* omp_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D182271F80CC009B5531 /* omp_structure.cpp */; };
+		40C6D18B271F818F009B5531 /* CFVMOutput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D18A271F818F009B5531 /* CFVMOutput.cpp */; };
+		40C6D18D271F81AD009B5531 /* CNewtonIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */; };
+		40C6D193271F822F009B5531 /* CCGNSFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D192271F822E009B5531 /* CCGNSFileWriter.cpp */; };
+		40C6D19D271F840E009B5531 /* scalar_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19A271F840E009B5531 /* scalar_sources.cpp */; };
+		40C6D19E271F840E009B5531 /* scalar_diffusion.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19B271F840E009B5531 /* scalar_diffusion.cpp */; };
+		40C6D19F271F840E009B5531 /* scalar_convection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19C271F840E009B5531 /* scalar_convection.cpp */; };
 		E9D6EE572316522800618E36 /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
@@ -291,7 +299,6 @@
 		354901042537E0050095B597 /* CLinearPartitioner.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CLinearPartitioner.hpp; sourceTree = "<group>"; };
 		354901052537E0050095B597 /* C1DInterpolation.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = C1DInterpolation.hpp; sourceTree = "<group>"; };
 		354901062537E0050095B597 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = printing_toolbox.hpp; sourceTree = "<group>"; };
-		354901072537E0050095B597 /* CVertexMap.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CVertexMap.hpp; sourceTree = "<group>"; };
 		354901092537E0050095B597 /* CMMSNSUnitQuadSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMMSNSUnitQuadSolution.hpp; sourceTree = "<group>"; };
 		3549010A2537E0050095B597 /* CMMSNSTwoHalfCirclesSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMMSNSTwoHalfCirclesSolution.hpp; sourceTree = "<group>"; };
 		3549010B2537E0050095B597 /* CUserDefinedSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CUserDefinedSolution.hpp; sourceTree = "<group>"; };
@@ -310,7 +317,6 @@
 		354901182537E0050095B597 /* CSymmetricMatrix.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSymmetricMatrix.hpp; sourceTree = "<group>"; };
 		354901192537E0050095B597 /* geometry_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = geometry_toolbox.hpp; sourceTree = "<group>"; };
 		3549011A2537E0050095B597 /* allocation_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = allocation_toolbox.hpp; sourceTree = "<group>"; };
-		3549011B2537E0050095B597 /* C2DContainer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = C2DContainer.hpp; sourceTree = "<group>"; };
 		3549011C2537E0050095B597 /* graph_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = graph_toolbox.hpp; sourceTree = "<group>"; };
 		354901202537E0050095B597 /* option_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = option_structure.hpp; sourceTree = "<group>"; };
 		354901232537E0050095B597 /* graph_coloring_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = graph_coloring_structure.hpp; sourceTree = "<group>"; };
@@ -476,9 +482,7 @@
 		354902562537E0280095B597 /* CAdjElasticityOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CAdjElasticityOutput.hpp; sourceTree = "<group>"; };
 		354902572537E0280095B597 /* CMeshOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMeshOutput.hpp; sourceTree = "<group>"; };
 		354902582537E0280095B597 /* CElasticityOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CElasticityOutput.hpp; sourceTree = "<group>"; };
-		354902592537E0280095B597 /* CAdjFlowOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CAdjFlowOutput.hpp; sourceTree = "<group>"; };
 		3549025A2537E0280095B597 /* CMultizoneOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMultizoneOutput.hpp; sourceTree = "<group>"; };
-		3549025B2537E0280095B597 /* output_structure_legacy.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = output_structure_legacy.inl; sourceTree = "<group>"; };
 		3549025D2537E0280095B597 /* CNSSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CNSSolver.hpp; sourceTree = "<group>"; };
 		3549025E2537E0280095B597 /* CDiscAdjSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CDiscAdjSolver.hpp; sourceTree = "<group>"; };
 		3549025F2537E0280095B597 /* CEulerSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CEulerSolver.hpp; sourceTree = "<group>"; };
@@ -548,7 +552,6 @@
 		354902A72537E0280095B597 /* CVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CVariable.hpp; sourceTree = "<group>"; };
 		354902A82537E0280095B597 /* CDiscAdjFEABoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CDiscAdjFEABoundVariable.hpp; sourceTree = "<group>"; };
 		354902A92537E0280095B597 /* CMeshBoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMeshBoundVariable.hpp; sourceTree = "<group>"; };
-		354902AA2537E0280095B597 /* CDiscAdjFEAVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CDiscAdjFEAVariable.hpp; sourceTree = "<group>"; };
 		354902AB2537E0280095B597 /* CBaselineVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CBaselineVariable.hpp; sourceTree = "<group>"; };
 		354902AC2537E0280095B597 /* CAdjTurbVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CAdjTurbVariable.hpp; sourceTree = "<group>"; };
 		354902AD2537E0280095B597 /* CAdjEulerVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CAdjEulerVariable.hpp; sourceTree = "<group>"; };
@@ -678,7 +681,6 @@
 		354903472537E0280095B597 /* CVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CVariable.cpp; sourceTree = "<group>"; };
 		354903482537E0280095B597 /* CMeshBoundVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMeshBoundVariable.cpp; sourceTree = "<group>"; };
 		354903492537E0280095B597 /* CDiscAdjFEABoundVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CDiscAdjFEABoundVariable.cpp; sourceTree = "<group>"; };
-		3549034A2537E0280095B597 /* CDiscAdjFEAVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CDiscAdjFEAVariable.cpp; sourceTree = "<group>"; };
 		3549034B2537E0280095B597 /* CBaselineVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CBaselineVariable.cpp; sourceTree = "<group>"; };
 		3549034C2537E0280095B597 /* CAdjTurbVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CAdjTurbVariable.cpp; sourceTree = "<group>"; };
 		3549034D2537E0280095B597 /* CAdjEulerVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CAdjEulerVariable.cpp; sourceTree = "<group>"; };
@@ -854,6 +856,31 @@
 		35D6301425998877008DF28B /* vectorization.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = vectorization.hpp; sourceTree = "<group>"; };
 		35D6301525998877008DF28B /* omp_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = omp_structure.hpp; sourceTree = "<group>"; };
 		35D6301725999185008DF28B /* CSquareMatrixCM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSquareMatrixCM.cpp; sourceTree = "<group>"; };
+		40C6D17B271F8053009B5531 /* CScalarVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CScalarVariable.cpp; sourceTree = "<group>"; };
+		40C6D17C271F8053009B5531 /* CFlowVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CFlowVariable.cpp; sourceTree = "<group>"; };
+		40C6D17F271F806D009B5531 /* CScalarVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CScalarVariable.hpp; sourceTree = "<group>"; };
+		40C6D180271F806D009B5531 /* CFlowVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CFlowVariable.hpp; sourceTree = "<group>"; };
+		40C6D181271F80BB009B5531 /* code_config.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = code_config.hpp; sourceTree = "<group>"; };
+		40C6D182271F80CC009B5531 /* omp_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = omp_structure.cpp; sourceTree = "<group>"; };
+		40C6D184271F80FD009B5531 /* blas_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = blas_structure.hpp; sourceTree = "<group>"; };
+		40C6D185271F8120009B5531 /* ndflattener.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ndflattener.hpp; sourceTree = "<group>"; };
+		40C6D186271F8120009B5531 /* CQuasiNewtonInvLeastSquares.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CQuasiNewtonInvLeastSquares.hpp; sourceTree = "<group>"; };
+		40C6D187271F8120009B5531 /* CSquareMatrixCM.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSquareMatrixCM.hpp; sourceTree = "<group>"; };
+		40C6D188271F817C009B5531 /* CFVMOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CFVMOutput.hpp; sourceTree = "<group>"; };
+		40C6D189271F817C009B5531 /* CAdjFlowCompOutput.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CAdjFlowCompOutput.hpp; sourceTree = "<group>"; };
+		40C6D18A271F818F009B5531 /* CFVMOutput.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CFVMOutput.cpp; sourceTree = "<group>"; };
+		40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CNewtonIntegration.cpp; sourceTree = "<group>"; };
+		40C6D18E271F81B9009B5531 /* CNewtonIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CNewtonIntegration.hpp; sourceTree = "<group>"; };
+		40C6D18F271F81D9009B5531 /* CScalarSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CScalarSolver.hpp; sourceTree = "<group>"; };
+		40C6D190271F81D9009B5531 /* CScalarSolver.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CScalarSolver.inl; sourceTree = "<group>"; };
+		40C6D191271F8221009B5531 /* CCGNSFileWriter.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CCGNSFileWriter.hpp; sourceTree = "<group>"; };
+		40C6D192271F822E009B5531 /* CCGNSFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CCGNSFileWriter.cpp; sourceTree = "<group>"; };
+		40C6D196271F83CC009B5531 /* scalar_sources.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_sources.hpp; sourceTree = "<group>"; };
+		40C6D197271F83CC009B5531 /* scalar_diffusion.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_diffusion.hpp; sourceTree = "<group>"; };
+		40C6D198271F83CC009B5531 /* scalar_convection.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_convection.hpp; sourceTree = "<group>"; };
+		40C6D19A271F840E009B5531 /* scalar_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_sources.cpp; sourceTree = "<group>"; };
+		40C6D19B271F840E009B5531 /* scalar_diffusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_diffusion.cpp; sourceTree = "<group>"; };
+		40C6D19C271F840E009B5531 /* scalar_convection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_convection.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -899,6 +926,7 @@
 		354900E92537E0050095B597 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D181271F80BB009B5531 /* code_config.hpp */,
 				35D6301025998877008DF28B /* parallelization */,
 				357BEE80256D6F7500423D14 /* adt */,
 				357BEE77256D6F7500423D14 /* basic_types */,
@@ -936,14 +964,15 @@
 			isa = PBXGroup;
 			children = (
 				354901042537E0050095B597 /* CLinearPartitioner.hpp */,
+				40C6D186271F8120009B5531 /* CQuasiNewtonInvLeastSquares.hpp */,
+				40C6D187271F8120009B5531 /* CSquareMatrixCM.hpp */,
+				40C6D185271F8120009B5531 /* ndflattener.hpp */,
 				354901052537E0050095B597 /* C1DInterpolation.hpp */,
 				354901062537E0050095B597 /* printing_toolbox.hpp */,
-				354901072537E0050095B597 /* CVertexMap.hpp */,
 				354901082537E0050095B597 /* MMS */,
 				354901182537E0050095B597 /* CSymmetricMatrix.hpp */,
 				354901192537E0050095B597 /* geometry_toolbox.hpp */,
 				3549011A2537E0050095B597 /* allocation_toolbox.hpp */,
-				3549011B2537E0050095B597 /* C2DContainer.hpp */,
 				3549011C2537E0050095B597 /* graph_toolbox.hpp */,
 			);
 			path = toolboxes;
@@ -1041,6 +1070,7 @@
 		354901492537E0050095B597 /* linear_algebra */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D184271F80FD009B5531 /* blas_structure.hpp */,
 				357BEE94256D6F8900423D14 /* vector_expressions.hpp */,
 				3549014A2537E0050095B597 /* CMatrixVectorProduct.hpp */,
 				3549014B2537E0050095B597 /* CSysSolve.hpp */,
@@ -1290,6 +1320,7 @@
 		3549022F2537E0280095B597 /* integration */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D18E271F81B9009B5531 /* CNewtonIntegration.hpp */,
 				354902302537E0280095B597 /* CSingleGridIntegration.hpp */,
 				354902312537E0280095B597 /* CMultiGridIntegration.hpp */,
 				354902322537E0280095B597 /* CIntegrationFactory.hpp */,
@@ -1303,6 +1334,8 @@
 		354902362537E0280095B597 /* output */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D189271F817C009B5531 /* CAdjFlowCompOutput.hpp */,
+				40C6D188271F817C009B5531 /* CFVMOutput.hpp */,
 				357BEEC9256D70DC00423D14 /* CNEMOCompOutput.hpp */,
 				354902372537E0280095B597 /* CFlowCompFEMOutput.hpp */,
 				354902382537E0280095B597 /* CHeatOutput.hpp */,
@@ -1320,9 +1353,7 @@
 				354902562537E0280095B597 /* CAdjElasticityOutput.hpp */,
 				354902572537E0280095B597 /* CMeshOutput.hpp */,
 				354902582537E0280095B597 /* CElasticityOutput.hpp */,
-				354902592537E0280095B597 /* CAdjFlowOutput.hpp */,
 				3549025A2537E0280095B597 /* CMultizoneOutput.hpp */,
-				3549025B2537E0280095B597 /* output_structure_legacy.inl */,
 			);
 			path = output;
 			sourceTree = "<group>";
@@ -1338,6 +1369,7 @@
 		3549023E2537E0280095B597 /* filewriter */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D191271F8221009B5531 /* CCGNSFileWriter.hpp */,
 				3549023F2537E0280095B597 /* CParaviewFileWriter.hpp */,
 				354902402537E0280095B597 /* CTecplotFileWriter.hpp */,
 				354902412537E0280095B597 /* CSurfaceFEMDataSorter.hpp */,
@@ -1362,6 +1394,8 @@
 		3549025C2537E0280095B597 /* solvers */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D18F271F81D9009B5531 /* CScalarSolver.hpp */,
+				40C6D190271F81D9009B5531 /* CScalarSolver.inl */,
 				357BEE97256D6FB700423D14 /* CFVMFlowSolverBase.hpp */,
 				357BEE96256D6FB700423D14 /* CFVMFlowSolverBase.inl */,
 				357BEE95256D6FB700423D14 /* CNEMOEulerSolver.hpp */,
@@ -1399,6 +1433,7 @@
 		354902782537E0280095B597 /* numerics */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D195271F83CC009B5531 /* scalar */,
 				357BEEFD256D71ED00423D14 /* NEMO */,
 				354902792537E0280095B597 /* elasticity */,
 				3549027E2537E0280095B597 /* turbulent */,
@@ -1482,6 +1517,8 @@
 				3549029F2537E0280095B597 /* CFEAVariable.hpp */,
 				354902A02537E0280095B597 /* CEulerVariable.hpp */,
 				354902A12537E0280095B597 /* CMeshVariable.hpp */,
+				40C6D180271F806D009B5531 /* CFlowVariable.hpp */,
+				40C6D17F271F806D009B5531 /* CScalarVariable.hpp */,
 				354902A22537E0280095B597 /* CDiscAdjMeshBoundVariable.hpp */,
 				354902A32537E0280095B597 /* CIncNSVariable.hpp */,
 				354902A42537E0280095B597 /* CTurbVariable.hpp */,
@@ -1490,7 +1527,6 @@
 				354902A72537E0280095B597 /* CVariable.hpp */,
 				354902A82537E0280095B597 /* CDiscAdjFEABoundVariable.hpp */,
 				354902A92537E0280095B597 /* CMeshBoundVariable.hpp */,
-				354902AA2537E0280095B597 /* CDiscAdjFEAVariable.hpp */,
 				354902AB2537E0280095B597 /* CBaselineVariable.hpp */,
 				354902AC2537E0280095B597 /* CAdjTurbVariable.hpp */,
 				354902AD2537E0280095B597 /* CAdjEulerVariable.hpp */,
@@ -1596,6 +1632,7 @@
 		354902D82537E0280095B597 /* integration */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */,
 				354902D92537E0280095B597 /* CFEM_DG_Integration.cpp */,
 				354902DA2537E0280095B597 /* CIntegration.cpp */,
 				354902DB2537E0280095B597 /* CStructuralIntegration.cpp */,
@@ -1609,6 +1646,7 @@
 		354902E12537E0280095B597 /* output */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D18A271F818F009B5531 /* CFVMOutput.cpp */,
 				357BEEE1256D712600423D14 /* CNEMOCompOutput.cpp */,
 				354902E22537E0280095B597 /* COutput.cpp */,
 				354902E32537E0280095B597 /* COutputFactory.cpp */,
@@ -1644,6 +1682,7 @@
 		354902EC2537E0280095B597 /* filewriter */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D192271F822E009B5531 /* CCGNSFileWriter.cpp */,
 				354902ED2537E0280095B597 /* CCSVFileWriter.cpp */,
 				354902EE2537E0280095B597 /* CSurfaceFVMDataSorter.cpp */,
 				354902EF2537E0280095B597 /* CParallelFileWriter.cpp */,
@@ -1703,6 +1742,7 @@
 		354903242537E0280095B597 /* numerics */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D199271F840E009B5531 /* scalar */,
 				357BEEE9256D71E100423D14 /* NEMO */,
 				354903252537E0280095B597 /* template.cpp */,
 				354903262537E0280095B597 /* elasticity */,
@@ -1784,9 +1824,10 @@
 				354903472537E0280095B597 /* CVariable.cpp */,
 				354903482537E0280095B597 /* CMeshBoundVariable.cpp */,
 				354903492537E0280095B597 /* CDiscAdjFEABoundVariable.cpp */,
-				3549034A2537E0280095B597 /* CDiscAdjFEAVariable.cpp */,
 				3549034B2537E0280095B597 /* CBaselineVariable.cpp */,
 				3549034C2537E0280095B597 /* CAdjTurbVariable.cpp */,
+				40C6D17C271F8053009B5531 /* CFlowVariable.cpp */,
+				40C6D17B271F8053009B5531 /* CScalarVariable.cpp */,
 				3549034D2537E0280095B597 /* CAdjEulerVariable.cpp */,
 				3549034E2537E0280095B597 /* CEulerVariable.cpp */,
 				3549034F2537E0280095B597 /* CMeshVariable.cpp */,
@@ -2123,6 +2164,7 @@
 		35D6301025998877008DF28B /* parallelization */ = {
 			isa = PBXGroup;
 			children = (
+				40C6D182271F80CC009B5531 /* omp_structure.cpp */,
 				35D6301125998877008DF28B /* mpi_structure.hpp */,
 				35D6301225998877008DF28B /* special_vectorization.hpp */,
 				35D6301325998877008DF28B /* mpi_structure.cpp */,
@@ -2130,6 +2172,26 @@
 				35D6301525998877008DF28B /* omp_structure.hpp */,
 			);
 			path = parallelization;
+			sourceTree = "<group>";
+		};
+		40C6D195271F83CC009B5531 /* scalar */ = {
+			isa = PBXGroup;
+			children = (
+				40C6D196271F83CC009B5531 /* scalar_sources.hpp */,
+				40C6D197271F83CC009B5531 /* scalar_diffusion.hpp */,
+				40C6D198271F83CC009B5531 /* scalar_convection.hpp */,
+			);
+			path = scalar;
+			sourceTree = "<group>";
+		};
+		40C6D199271F840E009B5531 /* scalar */ = {
+			isa = PBXGroup;
+			children = (
+				40C6D19A271F840E009B5531 /* scalar_sources.cpp */,
+				40C6D19B271F840E009B5531 /* scalar_diffusion.cpp */,
+				40C6D19C271F840E009B5531 /* scalar_convection.cpp */,
+			);
+			path = scalar;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -2193,6 +2255,7 @@
 				3549038E2537E0290095B597 /* CFEMDataSorter.cpp in Sources */,
 				354903712537E0280095B597 /* CDiscAdjMultizoneDriver.cpp in Sources */,
 				354903B22537E0290095B597 /* CDiscAdjMeshSolver.cpp in Sources */,
+				40C6D183271F80CC009B5531 /* omp_structure.cpp in Sources */,
 				354903732537E0280095B597 /* CDummyDriver.cpp in Sources */,
 				3549039E2537E0290095B597 /* CAdjHeatOutput.cpp in Sources */,
 				354901E62537E0050095B597 /* CMMSNSTwoHalfCirclesSolution.cpp in Sources */,
@@ -2228,6 +2291,7 @@
 				354903CF2537E0290095B597 /* centered.cpp in Sources */,
 				354903932537E0290095B597 /* CSU2FileWriter.cpp in Sources */,
 				354903E42537E0290095B597 /* CTurbVariable.cpp in Sources */,
+				40C6D19D271F840E009B5531 /* scalar_sources.cpp in Sources */,
 				354903E82537E0290095B597 /* CNSVariable.cpp in Sources */,
 				3549039A2537E0290095B597 /* CFlowCompOutput.cpp in Sources */,
 				354903B72537E0290095B597 /* CEulerSolver.cpp in Sources */,
@@ -2252,6 +2316,7 @@
 				354903C72537E0290095B597 /* heat.cpp in Sources */,
 				354902092537E0050095B597 /* CMeshReaderFVM.cpp in Sources */,
 				354901FE2537E0050095B597 /* CVertexMPI.cpp in Sources */,
+				40C6D17D271F8053009B5531 /* CScalarVariable.cpp in Sources */,
 				357BEEF8256D71E100423D14 /* ausm.cpp in Sources */,
 				354901E22537E0050095B597 /* CIncTGVSolution.cpp in Sources */,
 				354903902537E0290095B597 /* CParaviewVTMFileWriter.cpp in Sources */,
@@ -2294,13 +2359,13 @@
 				354903EA2537E0290095B597 /* CTurbSAVariable.cpp in Sources */,
 				354902022537E0050095B597 /* CVertex.cpp in Sources */,
 				3549037F2537E0280095B597 /* COutput.cpp in Sources */,
-				354903DC2537E0290095B597 /* CDiscAdjFEAVariable.cpp in Sources */,
 				357BEEF7256D71E100423D14 /* ausmplusup2.cpp in Sources */,
 				354903C42537E0290095B597 /* turb_convection.cpp in Sources */,
 				354903A42537E0290095B597 /* CAdjEulerSolver.cpp in Sources */,
 				354903B32537E0290095B597 /* CTurbSASolver.cpp in Sources */,
 				357BEE53256D592C00423D14 /* CPengRobinson.cpp in Sources */,
 				354903E02537E0290095B597 /* CEulerVariable.cpp in Sources */,
+				40C6D18D271F81AD009B5531 /* CNewtonIntegration.cpp in Sources */,
 				354903812537E0280095B597 /* CWindowingTools.cpp in Sources */,
 				354903942537E0290095B597 /* CFVMDataSorter.cpp in Sources */,
 				357BEE59256D592C00423D14 /* CMutationTCLib.cpp in Sources */,
@@ -2317,6 +2382,7 @@
 				354903E52537E0290095B597 /* CAdjNSVariable.cpp in Sources */,
 				354901DE2537E0050095B597 /* CMMSNSTwoHalfSpheresSolution.cpp in Sources */,
 				354901E12537E0050095B597 /* CRinglebSolution.cpp in Sources */,
+				40C6D18B271F818F009B5531 /* CFVMOutput.cpp in Sources */,
 				354903AE2537E0290095B597 /* CSolverFactory.cpp in Sources */,
 				3549037A2537E0280095B597 /* CSingleGridIntegration.cpp in Sources */,
 				354901D72537E0050095B597 /* CInterpolator.cpp in Sources */,
@@ -2360,6 +2426,7 @@
 				354903992537E0290095B597 /* CAdjFlowIncOutput.cpp in Sources */,
 				354901DB2537E0050095B597 /* CMMSIncEulerSolution.cpp in Sources */,
 				354901F92537E0050095B597 /* CPrimalGrid.cpp in Sources */,
+				40C6D17E271F8053009B5531 /* CFlowVariable.cpp in Sources */,
 				354902032537E0050095B597 /* CPoint.cpp in Sources */,
 				354903852537E0280095B597 /* CMultizoneOutput.cpp in Sources */,
 				357BEEF6256D71E100423D14 /* roe.cpp in Sources */,
@@ -2385,11 +2452,13 @@
 				357BEF13256D722500423D14 /* CFreeFormDefBox.cpp in Sources */,
 				357BEEE6256D716400423D14 /* CNEMONSVariable.cpp in Sources */,
 				354902042537E0050095B597 /* CTurboVertex.cpp in Sources */,
+				40C6D19E271F840E009B5531 /* scalar_diffusion.cpp in Sources */,
 				357BEF11256D722500423D14 /* CSurfaceMovement.cpp in Sources */,
 				357BEE55256D592C00423D14 /* CIdealGas.cpp in Sources */,
 				354903892537E0290095B597 /* CSurfaceFVMDataSorter.cpp in Sources */,
 				357BEEF4256D71E100423D14 /* lax.cpp in Sources */,
 				354903B02537E0290095B597 /* CSolver.cpp in Sources */,
+				40C6D19F271F840E009B5531 /* scalar_convection.cpp in Sources */,
 				354901D52537E0050095B597 /* CRadialBasisFunction.cpp in Sources */,
 				357BEE75256D59AA00423D14 /* fem_cgns_elements.cpp in Sources */,
 				E9D6EE572316522800618E36 /* (null) in Sources */,
@@ -2405,6 +2474,7 @@
 				354902152537E0050095B597 /* CSysMatrix.cpp in Sources */,
 				354903BC2537E0290095B597 /* SU2_CFD.cpp in Sources */,
 				357BEE49256D589B00423D14 /* CNEMONSSolver.cpp in Sources */,
+				40C6D193271F822F009B5531 /* CCGNSFileWriter.cpp in Sources */,
 				354903BB2537E0290095B597 /* CRadSolver.cpp in Sources */,
 				3549020A2537E0050095B597 /* CPhysicalGeometry.cpp in Sources */,
 				354903C22537E0290095B597 /* transition.cpp in Sources */,
