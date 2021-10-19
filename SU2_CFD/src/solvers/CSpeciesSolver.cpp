@@ -159,8 +159,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
    First, we also set the column index for any inlet profiles. ---*/
 
   const bool turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-  const bool turb_SST = turbulent && (config->GetKind_Turb_Model() == SST);
-  const bool turb_SA = turbulent && (config->GetKind_Turb_Model() == SA);
+  const bool turb_SST = turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool turb_SA = turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SA);
 
   /// NOTE TK:: Make inlet files possible. Note that we have to count for turnb as well! See also CDriver.cpp for the
   /// loading
@@ -295,7 +295,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
                                           RUNTIME_FLOW_SYS, false);
   // Update eddy-visc which needs correct mixture density and mixture lam-visc. Note that after this, another Flow-Pre
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
-  if (config->GetKind_Turb_Model())
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
     solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   // For feature_multicomp this Scalar-Pre only computes the laminar contribution to mass diffusivity
   solver[MESH_0][SPECIES_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
