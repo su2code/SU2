@@ -39,7 +39,7 @@ class CVariable;
 class CFlowCompOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; //!< Kind of turbulence model
+  TURB_MODEL turb_model; //!< Kind of turbulence model
 
 public:
 

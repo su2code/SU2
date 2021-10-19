@@ -1299,8 +1299,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const bool viscous = config->GetViscous();
   const bool dynamic_grid = config->GetDynamic_Grid();
   const bool gravity = config->GetGravityForce();
-  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
-  const bool turbulent = Kind_Turb_Model != NONE;
+  const TURB_MODEL Kind_Turb_Model = config->GetKind_Turb_Model();
+  const bool turbulent = Kind_Turb_Model != TURB_MODEL::NONE;
   const bool fixed_cl = config->GetFixed_CL_Mode();
   const auto Kind_Solver = config->GetKind_Solver();
   const auto Ref_NonDim = config->GetRef_NonDim();
@@ -1530,25 +1530,26 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       if (incompressible) file << "Incompressible RANS equations.\n";
       file << "Turbulence model: ";
       switch (Kind_Turb_Model) {
-        case SA:
+        case TURB_MODEL::NONE: break;
+        case TURB_MODEL::SA:
           file << "Spalart Allmaras\n";
           break;
-        case SA_NEG:
+        case TURB_MODEL::SA_NEG:
           file << "Negative Spalart Allmaras\n";
           break;
-        case SA_E:
+        case TURB_MODEL::SA_E:
           file << "Edwards Spalart Allmaras\n";
           break;
-        case SA_COMP:
+        case TURB_MODEL::SA_COMP:
           file << "Compressibility Correction Spalart Allmaras\n";
           break;
-        case SA_E_COMP:
+        case TURB_MODEL::SA_E_COMP:
           file << "Compressibility Correction Edwards Spalart Allmaras\n";
           break;
-        case SST:
+        case TURB_MODEL::SST:
           file << "Menter's SST\n";
           break;
-        case SST_SUST:
+        case TURB_MODEL::SST_SUST:
           file << "Menter's SST with sustaining terms\n";
           break;
       }
