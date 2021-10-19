@@ -3311,8 +3311,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error(string("For RANS problems, use NONE, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
       if (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::STANDARD_FUNCTION) {
-        /// TODO TK:: Add warnings, errors, incompatibilities here.
-
+        if (!((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)))
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS or INC_RANS.\n"), CURRENT_FUNCTION);
+        if (nRough_Wall != 0)
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION and WALL_ROUGHNESS migh not be compatible. Checking required!\n"), CURRENT_FUNCTION);
       }
 
     }
