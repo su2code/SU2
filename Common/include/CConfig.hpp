@@ -554,7 +554,7 @@ private:
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_DV_FEA;              /*!< \brief Kind of Design Variable for FEA problems.*/
 
-  unsigned short Kind_Turb_Model;   /*!< \brief Turbulent model definition. */
+  TURB_MODEL Kind_Turb_Model;       /*!< \brief Turbulent model definition. */
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow,
@@ -4183,7 +4183,7 @@ public:
    * \brief Get the kind of the turbulence model.
    * \return Kind of the turbulence model.
    */
-  unsigned short GetKind_Turb_Model(void) const { return Kind_Turb_Model; }
+  TURB_MODEL GetKind_Turb_Model(void) const { return Kind_Turb_Model; }
 
   /*!
    * \brief Get the kind of the transition model.

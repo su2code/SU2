@@ -406,8 +406,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
                                                      CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
-                         (config->GetKind_Turb_Model() == SST_SUST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) ||
+                         (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -726,7 +726,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  unsigned short turb_model = config->GetKind_Turb_Model();
+  TURB_MODEL turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent;
   const su2double* Solution_Fine = nullptr;
   const passivedouble* Coord = nullptr;
@@ -734,7 +734,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
   bool steady_restart = config->GetSteadyRestart();
-  bool turbulent = (config->GetKind_Turb_Model() != NONE);
+  bool turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", iter);
 
@@ -751,7 +751,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    (that could appear in the restart file before the grid velocities). ---*/
   unsigned short turbVars = 0;
   if (turbulent){
-    if ((turb_model == SST) || (turb_model == SST_SUST)) turbVars = 2;
+    if ((turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST)) turbVars = 2;
     else turbVars = 1;
   }
 
@@ -946,7 +946,7 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
                                                    CConfig *config, unsigned long TimeIter) {
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  const bool rans = (config->GetKind_Turb_Model() != NONE);
+  const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
@@ -1266,7 +1266,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
 
         /*--- Turbulent kinetic energy. ---*/
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
@@ -1432,7 +1432,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
               /*--- Turbulent kinetic energy ---*/
 
-              if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+              if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 

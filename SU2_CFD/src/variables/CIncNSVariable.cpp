@@ -42,7 +42,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
    * Axisymmetric: total-viscosity * y-vel / y-coord
    * Streamwise Periodic: eddy viscosity (mu_t) ---*/
   if (config->GetAxisymmetric() ||
-      (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE))) {
+      (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != TURB_MODEL::NONE))) {
     nAuxVar = 1;
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);

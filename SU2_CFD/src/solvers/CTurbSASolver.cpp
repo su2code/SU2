@@ -251,7 +251,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
-  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
+  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
 
   /*--- Compute eddy viscosity ---*/
 
@@ -295,7 +295,7 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Roughness heights. ---*/
-    if (config->GetKind_Turb_Model() == SA)
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SA)
       numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
 
@@ -1607,7 +1607,7 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    SA_NEG model is more robust due to allowing for negative nu_tilde,
    so the under-relaxation is not applied to that variant. */
 
-  if (config->GetKind_Turb_Model() == SA_NEG) return;
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG) return;
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
