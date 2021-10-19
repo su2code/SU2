@@ -308,7 +308,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
    * iteration for stability.
    */
-  void ComputeUnderRelaxationFactor(const CConfig* config);
+  virtual void ComputeUnderRelaxationFactor(const CConfig* config);
 
   /*!
    * \brief General implementation to load a flow solution from a restart file.
