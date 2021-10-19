@@ -37,14 +37,16 @@
  */
 class CCentLax_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar; /*!< \brief Iteration on dimension and variables. */
+
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
   su2double *MeanU, *MeanV;
+  su2double *MeandPdU;
   su2double *ProjFlux;  /*!< \brief Projected inviscid flux tensor. */
   su2double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */
   su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eigenvalues. */
   su2double Phi_i, Phi_j, sc0, StretchingFactor; /*!< \brief Streching parameters. */
-  su2double Epsilon_0; /*!< \brief Artificial dissipation values. */
+  su2double Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
+  bool stretching;
 
 public:
 
@@ -52,6 +54,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of primitive gradient variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CCentLax_NEMO(unsigned short val_nDim, unsigned short val_nVar,
