@@ -1408,6 +1408,31 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the source terms
    */
   inline virtual ResidualType<> ComputeChemistry(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
+
+  /*!
+   * \brief Check if residual constains a NaN value
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_residual - residual of the numeric function.
+   * \param[out] ERR - Presencse of NaN in vector
+   */
+  static bool CheckResidualNaNs(bool implicit, int nVar, const ResidualType<> residual) {
+
+    bool ERR = false;
+    const bool jac_j = residual.jacobian_j != nullptr;
+
+    for (auto iVar = 0; iVar<nVar; iVar++){
+      if (std::isnan(SU2_TYPE::GetValue(residual[iVar]))) ERR = true;
+
+      if (implicit) {
+        for (auto jVar = 0; jVar < nVar; jVar++){
+          if (std::isnan(SU2_TYPE::GetValue(residual.jacobian_i[iVar][jVar]))) ERR = true;
+          if ((jac_j) && (std::isnan(SU2_TYPE::GetValue(residual.jacobian_j[iVar][jVar])))) ERR = true;
+        }
+      }
+    }
+    return ERR;
+  }
+
   /*!
    * \brief Set intermittency for numerics (used in SA with LM transition model)
    */
