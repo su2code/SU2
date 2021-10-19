@@ -321,7 +321,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-4.230000, -1.930543, -1.998684, 1.250334, -1.635534,  1.462491, 10, -2.151894, 0.072872, 0.002514] #last 10 columns
+    turb_wallfunction_flatplate_sst.test_vals = [-4.229955, -1.930560, -1.998477, 1.250383, -1.635663, 1.462396, 10.000000, -2.151959, 0.072873, 0.002514] #last 10 columns
     turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
     turb_wallfunction_flatplate_sst.timeout   = 1600
     turb_wallfunction_flatplate_sst.tol       = 0.00001
