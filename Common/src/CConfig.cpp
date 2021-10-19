@@ -6457,8 +6457,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
-          if((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES))
-            SU2_MPI::Error("Implicit time scheme is not working with NEMO. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
+          if (Kind_Solver == NEMO_NAVIER_STOKES)
+            SU2_MPI::Error("Implicit time scheme is not working with NEMO for viscous problems. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:
