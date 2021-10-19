@@ -330,7 +330,6 @@ void CDiscAdjDeformationDriver::Run() {
             SetDiscAdjDeformation_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
         else
             SetDiscAdjDeformation_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
-
         }
     } // for iZone
 

@@ -565,7 +565,11 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-
+  //    TODO:   Add case for GetDeform_Mesh(), register volume coordinates as output on the mesh solver
+  if (config[iZone]->GetDeform_Mesh()) {
+      /*--- Deformed mesh coordinates ---*/
+      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+  }
   }
   END_SU2_OMP_PARALLEL
 }

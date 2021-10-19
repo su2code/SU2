@@ -769,6 +769,10 @@ void CDiscAdjSinglezoneDriver::Update_DirectSolution() {
     geometry->SetBoundControlVolume(config, UPDATE);
     geometry->SetMaxLength(config);
 
+    /*--- Mesh movement ---*/
+
+    direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, RecordingState);
+
     /*--- Flow and turbulent conservative state variables ---*/
 
     direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);

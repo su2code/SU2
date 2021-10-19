@@ -707,6 +707,12 @@ public:
   void SetAdjointSurfaceForces(unsigned short iMarker, vector<passivedouble> forces);
 
   /*!
+   * \brief Set the adjoint coordinates (psi) at each cell in fluid mesh.
+   * \param[in] coords - User-defined coordinates vector.
+   */
+  void SetAdjointCoordinates(vector<passivedouble> coords);
+
+  /*!
    * \brief Get sens of aero funcs wrt conservative states.
    */
   vector<passivedouble> GetdIdq();
