@@ -77,7 +77,7 @@ public:
   /*!
    * \brief Compute species V-E specific heats at constant volume.
    */
-  vector<su2double>& ComputeSpeciesCvVibEle() final;
+  vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) final;
 
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
@@ -92,7 +92,9 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates() final;
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                               su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
