@@ -150,7 +150,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -185,7 +185,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -219,7 +219,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 };
 
 /*!
@@ -254,7 +254,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 };
 
 /*!
@@ -285,7 +285,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
@@ -382,7 +382,7 @@ public:
    * \param[in] val_F1_i - Value of the first blending function at point i.
    * \param[in] val_F1_j - Value of the first blending function at point j.
    */
-  inline void SetF1blending(su2double val_F1_i, su2double val_F1_j) final {
+  inline void SetF1blending(su2double val_F1_i, su2double val_F1_j) override {
     F1_i = val_F1_i;
     F1_j = val_F1_j;
   }
@@ -392,7 +392,7 @@ public:
    * \param[in] val_F2_i - Value of the second blending function at point i.
    * \param[in] val_F2_j - Value of the second blending function at point j.
    */
-  inline void SetF2blending(su2double val_F2_i, su2double val_F2_j) final {
+  inline void SetF2blending(su2double val_F2_i, su2double val_F2_j) override {
     F2_i = val_F2_i;
     F2_j = val_F2_j;
   }
@@ -402,7 +402,7 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
-  inline void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) final {
+  inline void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) override {
     CDkw_i = val_CDkw_i;
     CDkw_j = val_CDkw_j;
   }
@@ -412,6 +412,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) final;
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };

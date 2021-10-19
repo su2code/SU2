@@ -41,13 +41,13 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() final;
+  void ExtraADPreaccIn() override;
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) final;
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
   /*!
@@ -71,13 +71,13 @@ private:
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() final;
+  void ExtraADPreaccIn() override;
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) final;
+  void FinishResidualCalc(const CConfig* config) override;
 
 public:
   /*!
