@@ -132,8 +132,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
    *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
-  const unsigned short turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+  const TURB_MODEL turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
 
   AD::StartNoSharedReading();
 
@@ -144,7 +144,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
     su2double eddy_visc = 0.0, turb_ke = 0.0;
 
-    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
+    if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 

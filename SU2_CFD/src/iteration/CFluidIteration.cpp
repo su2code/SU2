@@ -131,7 +131,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     // mixture lam-visc. In order to get the correct mixture properties, based on the just updated mass-fractions, the
     // Flow-Pre has to be called upfront. The updated eddy-visc are copied into the flow-solver Primitive in another 
     // Flow-Pre call which is done at the start of the next iteration.
-    if(config[val_iZone]->GetKind_Turb_Model()) {
+    if(config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE) {
       solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
       solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
     }

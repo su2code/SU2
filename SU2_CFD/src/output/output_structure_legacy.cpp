@@ -477,12 +477,13 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
-    case SST:case SST_SUST:
+    case TURB_MODEL::SST:case TURB_MODEL::SST_SUST:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\"");
       break;
+    default: break;
   }
   switch (config->GetKind_Scalar_Model()) {
     case PASSIVE_SCALAR: case PROGRESS_VARIABLE:
@@ -490,12 +491,13 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       break;
   }
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
-    case SST:case SST_SUST:
+    case TURB_MODEL::SST:case TURB_MODEL::SST_SUST:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\"");
       break;
+    default: break;
   }
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
@@ -864,8 +866,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
-        case SST: case SST_SUST: nVar_Turb = 2; break;
+        case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP: nVar_Turb = 1; break;
+        case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: nVar_Turb = 2; break;
+        default: break;
       }
     }
     if (scalar) {
@@ -890,8 +893,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
-        case SST: case SST_SUST: nVar_AdjTurb = 2; break;
+        case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP: nVar_AdjTurb = 1; break;
+        case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: nVar_AdjTurb = 2; break;
+        default: break;
       }
     }
     if (weakly_coupled_heat) nVar_AdjHeat = 1;
@@ -1801,8 +1805,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
-              case SST:	case SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP:        cout << "       Res[nu]"; break;
+              case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              default: break;
             }
 
             if (weakly_coupled_heat) {
@@ -2467,7 +2472,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
   bool turbulent          = config[val_iZone]->GetKind_Solver() == RANS;
   bool fixed_cl           = config[val_iZone]->GetFixed_CL_Mode();
   unsigned short Kind_Solver = config[val_iZone]->GetKind_Solver();
-  unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
+  TURB_MODEL Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
   unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
@@ -2858,13 +2863,14 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         if (incompressible) Breakdown_file << "Incompressible RANS equations." << "\n";
         Breakdown_file << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
-          case SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
-          case SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
-          case SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
-          case SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
-          case SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
-          case SST_SUST:  Breakdown_file << "Menter's SST with sustaining terms" << "\n"; break;
+          case TURB_MODEL::SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
+          case TURB_MODEL::SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
+          case TURB_MODEL::SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
+          case TURB_MODEL::SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
+          case TURB_MODEL::SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
+          case TURB_MODEL::SST:       Breakdown_file << "Menter's TURB_MODEL::SST"     << "\n"; break;
+          case TURB_MODEL::SST_SUST:  Breakdown_file << "Menter's TURB_MODEL::SST with sustaining terms" << "\n"; break;
+          default: break;
         }
         break;
     }
@@ -6124,7 +6130,7 @@ void COutputLegacy::WriteTurboPerfConvHistory(CConfig *config){
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool menter_sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool menter_sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   unsigned short nBladesRow, nStages;
   unsigned short iStage;

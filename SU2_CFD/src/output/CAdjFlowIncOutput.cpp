@@ -121,17 +121,17 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   if (!frozen_visc) {
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
       AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
       AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
       AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
   if (config->AddRadiation()){
@@ -171,17 +171,17 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
   if (!frozen_visc) {
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
       AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
       AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the adjoint dissipation.
       AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
   /// END_GROUP
@@ -199,17 +199,17 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   if (!frozen_visc) {
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: BGS residual of the adjoint nu tilde.
       AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
       AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: BGS residual of the adjoint dissipation.
       AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
   if (config->AddRadiation()){
@@ -234,7 +234,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  if (turb_model && !frozen_visc) {
+  if ((turb_model != TURB_MODEL::NONE) && !frozen_visc) {
     AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence.");
     AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence.");
   }
@@ -270,14 +270,14 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
   if (!frozen_visc) {
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetHistoryOutputValue("RMS_ADJ_TKE", log10(adjturb_solver->GetRes_RMS(0)));
       SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
   if (config->AddRadiation()){
@@ -317,14 +317,14 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
   if (!frozen_visc) {
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
       SetHistoryOutputValue("MAX_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_Max(1)));
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
 
@@ -344,14 +344,14 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     }
     if (!frozen_visc) {
       switch(turb_model){
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
         SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
         break;
-      case SST:
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
         SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
         SetHistoryOutputValue("BGS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
         break;
-      default: break;
+      case TURB_MODEL::NONE: break;
       }
     }
     if (config->AddRadiation()){
@@ -368,7 +368,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LINSOL_ITER", adjflow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjflow_solver->GetResLinSolver()));
 
-  if (turb_model && !frozen_visc) {
+  if ((turb_model != TURB_MODEL::NONE) && !frozen_visc) {
     SetHistoryOutputValue("LINSOL_ITER_TURB", adjturb_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(adjturb_solver->GetResLinSolver()));
   }
@@ -405,17 +405,17 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   if (!frozen_visc){
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Adjoint nu tilde.
       AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION", "Adjoint Spalart-Allmaras variable");
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       /// DESCRIPTION: Adjoint kinetic energy.
       AddVolumeOutput("ADJ_TKE", "Adjoint_TKE", "SOLUTION", "Adjoint turbulent kinetic energy");
       /// DESCRIPTION: Adjoint dissipation.
       AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION", "Adjoint rate of dissipation");
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
 
@@ -465,17 +465,17 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ADJ_TEMPERATURE", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint temperature");
   if (!frozen_visc){
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Residual of the nu tilde.
       AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL", "Residual of the adjoint Spalart-Allmaras variable");
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       /// DESCRIPTION: Residual of the adjoint kinetic energy.
       AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL", "Residual of the adjoint turb. kinetic energy");
       /// DESCRIPTION: Residual of the adjoint dissipation.
       AddVolumeOutput("RES_ADJ_DISSIPATION", "Residual_Adjoint_Omega", "RESIDUAL", "Residual of adjoint rate of dissipation");
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
   if (config->AddRadiation()){
@@ -525,7 +525,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   CVariable* Node_AdjScalar = nullptr;
   CPoint*    Node_Geo     = geometry->nodes;
 
-  if (turb_model && !frozen_visc){
+  if ((turb_model != TURB_MODEL::NONE) && !frozen_visc){
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
   }
   if (weakly_coupled_heat){
@@ -569,16 +569,15 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   // Turbulent
   if (!frozen_visc){
     switch(turb_model){
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetVolumeOutputValue("ADJ_TKE",         iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1));
       break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
       SetVolumeOutputValue("ADJ_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
       break;
-    case NONE:
-      break;
+    case TURB_MODEL::NONE: break;
     }
   }
   // Radiation
@@ -618,16 +617,15 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   }
   if (!frozen_visc){
     switch(config->GetKind_Turb_Model()){
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetVolumeOutputValue("RES_ADJ_TKE",         iPoint, Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
       SetVolumeOutputValue("RES_ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1) - Node_AdjTurb->GetSolution_Old(iPoint, 1));
       break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
       SetVolumeOutputValue("RES_ADJ_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
       break;
-    case NONE:
-      break;
+    case TURB_MODEL::NONE: break;
     }
   }
   if (config->AddRadiation()){
