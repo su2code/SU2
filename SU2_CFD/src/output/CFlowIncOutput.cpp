@@ -741,8 +741,9 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     case PASSIVE_SCALAR:
       SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DIFFUSIVITY"   , iPoint, Node_Scalar->GetDiffusivity(iPoint, 0));
-      SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
-      // SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, 2224.43 * Node_Scalar->GetSolution(iPoint)[0] + 1009.39 * (1- Node_Scalar->GetSolution(iPoint)[0]));
+      // Commented because currently Cp from FluidModel cannot show large variations (residuals blow up). Probably a bug somewhere.
+      // SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
+      SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, 2224.43 * Node_Scalar->GetSolution(iPoint)[0] + 1009.39 * (1- Node_Scalar->GetSolution(iPoint)[0]));
       SetVolumeOutputValue("CONDUCTIVITY"   , iPoint, Node_Flow->GetThermalConductivity(iPoint));
       SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, solver[FLOW_SOL]->GetFluidModel()->ComputeMeanMolecularWeight(molar_masses, Node_Scalar->GetSolution(iPoint)));
       break;

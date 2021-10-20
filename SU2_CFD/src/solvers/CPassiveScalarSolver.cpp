@@ -158,8 +158,8 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   //TODO MH: for MIXTURE_FLUID_MODEL a nan is created due to all inputs of SetDiffusivity being zero 
   /*--- initialize the mass diffusivity ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++){
-    auto M = FluidModel->GetMassDiffusivity(); // returns a su2double, note that for more species this should be a vector
-    // auto M = config->GetDiffusivity_Constant(); // Right now DIFFUSIVITY_CONSTANT needs to be specified next to UNITY_LEWIS in order to initialise su2double M
+    // auto M = FluidModel->GetMassDiffusivity(); // returns a su2double, note that for more species this should be a vector
+    auto M = config->GetDiffusivity_Constant(); // Right now DIFFUSIVITY_CONSTANT needs to be specified next to UNITY_LEWIS in order to initialise su2double M
     // loop over all points and set diffusivity
     // why construct the entire diffusivity matrix?
    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
