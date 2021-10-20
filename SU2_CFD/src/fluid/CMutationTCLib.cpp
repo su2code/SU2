@@ -103,7 +103,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
 }
 
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){
+vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
    mix->getCvsMass(Cv_ks.data());
 
@@ -132,7 +132,9 @@ vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_
   return eves;
 }
 
-vector<su2double>& CMutationTCLib::ComputeNetProductionRates(){
+vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                               su2double **val_jacobian){
 
   mix->netProductionRates(ws.data());
 

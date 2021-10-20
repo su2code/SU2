@@ -40,8 +40,8 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   unsigned short nLineLets;
   const bool turbulent = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
-  const bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
-  const bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
+  const bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
+  const bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SA));
   const bool multizone = config->GetMultizone_Problem();
 
   /*--- Dimension of the problem --> passive scalar will only ever

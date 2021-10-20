@@ -39,7 +39,7 @@ class CVariable;
 class CFlowCompOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; //!< Kind of turbulence model
+  TURB_MODEL turb_model; //!< Kind of turbulence model
   unsigned short scalar_model; /*!< \brief The kind of scalar transport model*/
 
 public:

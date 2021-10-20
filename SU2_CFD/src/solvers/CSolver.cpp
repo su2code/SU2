@@ -3527,7 +3527,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   auto profile_filename = config->GetInlet_FileName();
 
   unsigned short nVar_Turb = 0;
-  if (config->GetKind_Turb_Model() != NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   unsigned short nVar_Scalar = 0;
   if (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL) nVar_Scalar = solver[MESH_0][SCALAR_SOL]->GetnVar();
@@ -3616,15 +3616,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
 
     switch (config->GetKind_Turb_Model()) {
-      case NO_TURB_MODEL:
-        /*--- no turbulence model---*/
-        break;
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case TURB_MODEL::NONE: break;
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE   " << setw(24);
         columnValue << config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND() <<"\t";
         break;
-      case SST: case SST_SUST:
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
         /*--- 2-equation turbulence model (SST) ---*/
         columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
