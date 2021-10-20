@@ -1223,10 +1223,20 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
-  /*!\brief WALLMODELKAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
-  addDoubleOption("WALLMODELKAPPA", wallModelKappa, 0.41);
-  /*!\brief WALLMODELB \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.0 \ingroup Config*/
-  addDoubleOption("WALLMODELB", wallModelB, 5.5);
+
+  /*--- Options related to wall models. ---*/
+
+  /*!\brief WALLMODEL_KAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
+  addDoubleOption("WALLMODEL_KAPPA", wallModel_Kappa, 0.41);
+  /*!\brief WALLMODEL_MAXITER \n DESCRIPTION: Max iterations used for the wall model \n DEFAULT 200 \ingroup Config*/
+  addUnsignedShortOption("WALLMODEL_MAXITER", wallModel_MaxIter, 200);
+  /*!\brief WALLMODEL_RELFAC \n DESCRIPTION: Relaxation factor used for the wall model \n DEFAULT 0.5 \ingroup Config*/
+  addDoubleOption("WALLMODEL_RELFAC", wallModel_RelFac, 0.5);
+  /*!\brief WALLMODEL_MINYPLUS \n DESCRIPTION: lower limit for Y+ used for the wall model \n DEFAULT 5.0 \ingroup Config*/
+  addDoubleOption("WALLMODEL_MINYPLUS", wallModel_MinYplus, 5.0);
+  /*!\brief WALLMODEL_B \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.5 \ingroup Config*/
+  addDoubleOption("WALLMODEL_B", wallModel_B, 5.5);
+
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */
@@ -3295,10 +3305,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (Kind_WallFunctions[iMarker] != WALL_FUNCTIONS::NONE)
         Wall_Functions = true;
 
-      if ((Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::ADAPTIVE_FUNCTION) || (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::SCALABLE_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL))
-
+      if ((Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::ADAPTIVE_FUNCTION) ||
+          (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::SCALABLE_FUNCTION) ||
+          (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL))
         SU2_MPI::Error(string("For RANS problems, use NONE, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+
+      if (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::STANDARD_FUNCTION) {
+        if (!((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)))
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS or INC_RANS.\n"), CURRENT_FUNCTION);
+        if (nRough_Wall != 0)
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION and WALL_ROUGHNESS migh not be compatible. Checking required!\n"), CURRENT_FUNCTION);
+      }
 
     }
   }

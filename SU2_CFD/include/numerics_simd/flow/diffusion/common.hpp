@@ -151,7 +151,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
 
 /*!
  * \brief Scale the stress tensor according to the target (from a
- *        wall function) magnitute in the tangential direction.
+ *        wall function) magnitude in the tangential direction.
  */
 template<class Container, size_t nDim>
 FORCEINLINE void addTauWall(Int iPoint, Int jPoint,

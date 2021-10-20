@@ -1273,11 +1273,11 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
-  constexpr unsigned short max_iter = 200;
+  const unsigned short max_iter = config->GetwallModel_MaxIter();
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
-  su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -1298,9 +1298,9 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
-      /*--- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition ---*/
+      /*--- Do not use wall model at the ipoint when y+ < "limit" ---*/
 
-      if (Y_Plus < 5.0) continue;
+      if (Y_Plus < config->GetwallModel_MinYPlus()) continue;
 
       su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
       su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
@@ -1316,7 +1316,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       unsigned short counter = 0;
       su2double diff = 1.0;
-      relax = 0.5;
+      su2double relax = config->GetwallModel_RelFac();
       while (diff > tol) {
         // note the error in Nichols and Nelson
         su2double func = pow(nu_til_old,4) - (Eddy_Visc/Density_Normal)*(pow(nu_til_old,3) + pow(Kin_Visc_Normal,3)*cv1_3);
