@@ -3128,7 +3128,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
       if (compressible){
-        Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetConductivity_Ref();
+        Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetThermal_Conductivity_Ref();
         if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
         else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
       }

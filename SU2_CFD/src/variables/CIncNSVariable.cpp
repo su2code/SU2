@@ -34,6 +34,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
 
