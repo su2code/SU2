@@ -799,10 +799,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
-  // Not necessary in SST-2003 version, StrainMag used instead
-  // su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
-  //                               Vorticity_i[1]*Vorticity_i[1] +
-  //                               Vorticity_i[2]*Vorticity_i[2]);
+  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+                                Vorticity_i[1]*Vorticity_i[1] +
+                                Vorticity_i[2]*Vorticity_i[2]);
 
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
@@ -849,14 +848,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*ScalarVar_i[0]*diverg;
    }
-  // Production term difference between SST-1994 and SST-2003 version
-  //  pk = min(pk,20.0*beta_star*Density_i*ScalarVar_i[1]*ScalarVar_i[0]);
-   pk = min(pk,10.0*beta_star*Density_i*ScalarVar_i[1]*ScalarVar_i[0]);
+
+   pk = min(pk,20.0*beta_star*Density_i*ScalarVar_i[1]*ScalarVar_i[0]);
    pk = max(pk,0.0);
 
-  // Change to StrainMag definition in SST-2003 version
-  //  zeta = max(ScalarVar_i[1], VorticityMag*F2_i/a1);
-   zeta = max(ScalarVar_i[1], StrainMag_i*F2_i/a1);
+   zeta = max(ScalarVar_i[1], VorticityMag*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
