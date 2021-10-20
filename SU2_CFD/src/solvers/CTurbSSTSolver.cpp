@@ -253,18 +253,24 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
 
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
-
-    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+    // Vorticity not needed in SST-2003 version, StrainMag used instead
+    // const su2double *Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+    // su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+    //                               Vorticity[1]*Vorticity[1] +
+    //                               Vorticity[2]*Vorticity[2]);
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
     su2double F2 = nodes->GetF2blending(iPoint);
 
+    const su2double S = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
+
     /*--- Compute the eddy viscosity ---*/
 
     su2double kine  = nodes->GetSolution(iPoint,0);
     su2double omega = nodes->GetSolution(iPoint,1);
-    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    // su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2)); // VorticityMag not used in SST-2003, StrainMag used instead
+    su2double zeta  = min(1.0/omega, a1/(S*F2));
     su2double muT   = max(rho*kine*zeta,0.0);
 
     nodes->SetmuT(iPoint,muT);

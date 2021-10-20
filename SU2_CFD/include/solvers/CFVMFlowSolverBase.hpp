@@ -1049,6 +1049,7 @@ class CFVMFlowSolverBase : public CSolver {
 
       for (unsigned long iDim = 0; iDim < nDim; iDim++) {
         StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
+        // StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim), 2); // MH:: Fluent neglects divergence term which might be wrong for incompressible flow with Mach = 0.28
       }
       if (nDim == 2) {
         StrainMag(iPoint) += pow(Div, 2);
