@@ -156,19 +156,19 @@ public:
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
   template <unsigned short NVAR, unsigned short NSPECIES>
-  const void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
-                                                su2double **val_Mean_GradPrimVar,
-                                                su2double *val_Mean_Eve,
-                                                su2double *val_Mean_Cvve,
-                                                su2double *val_diffusion_coeff,
-                                                su2double val_laminar_viscosity,
-                                                su2double val_eddy_viscosity,
-                                                su2double val_thermal_conductivity,
-                                                su2double val_thermal_conductivity_ve,
-                                                su2double val_dist_ij, su2double *val_normal,
-                                                su2double val_dS, su2double *val_Fv,
-                                                su2double **val_Jac_i, su2double **val_Jac_j,
-                                                const CConfig *config){
+  void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                                         su2double **val_Mean_GradPrimVar,
+                                         su2double *val_Mean_Eve,
+                                         su2double *val_Mean_Cvve,
+                                         su2double *val_diffusion_coeff,
+                                         su2double val_laminar_viscosity,
+                                         su2double val_eddy_viscosity,
+                                         su2double val_thermal_conductivity,
+                                         su2double val_thermal_conductivity_ve,
+                                         su2double val_dist_ij, su2double *val_normal,
+                                         su2double val_dS, su2double *val_Fv,
+                                         su2double **val_Jac_i, su2double **val_Jac_j,
+                                         const CConfig *config){
 
     /*--- Template matrix creation for code optimization ---*/
     template <int nRows, int nCols>
@@ -194,7 +194,7 @@ public:
 
     /*--- Calculate preliminary geometric quantities ---*/
     su2double dij = val_dist_ij;
-    su2double theta = GeometryToolbox::SquaredNorm(val_normal,nDim)
+    su2double theta = GeometryToolbox::SquaredNorm(nDim, val_normal);
 
     /*--- Rename for convenience ---*/
     su2double rho_i = V_i[RHO_INDEX];
