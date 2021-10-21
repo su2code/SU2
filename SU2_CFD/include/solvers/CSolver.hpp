@@ -1903,10 +1903,17 @@ public:
 
   /*!
    * \brief Get matrix-vector product dfadxv^T x psi.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iDim - Dimension index.
    * \return Sensitivitiy of aero tractions wrt volume coordinates.
    */
   inline virtual su2double GetDerivative_dfadxv(unsigned long iPoint, unsigned long iDim) const { return 0.0; } ;
+
+  /*!
+   * \brief Get matrix-vector product dxvdua^T x psi.
+   * \param[in] iMarker - Marker identifier.
+   */
+  inline virtual vector<su2double> GetDerivative_dxvdua(unsigned short iMarker) const { return vector<su2double>{}; }
 
   /*!
    * \brief A virtual member.

@@ -76,6 +76,13 @@ public:
    */
   ~CDiscAdjMeshSolver() override;
 
+  /*
+   * \brief Register the mesh variables as outputs.
+   * \param[in] geometry_container - The geometry container holding all grid levels.
+   * \param[in] config_container - The particular config.
+   */
+  void RegisterOutput(CGeometry *geometry, CConfig *config) override;
+
   /*!
    * \brief Performs the preprocessing of the AD-based mesh adjoint solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
@@ -83,6 +90,13 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterSolution(CGeometry *geometry, CConfig *config) override;
+
+  /*!
+   * \brief Seed the volume coordinate adjoints of the AD-based mesh adjoint solver.
+   * \param[in] geometry_container - The geometry container holding all grid levels.
+   * \param[in] config_container - The particular config.
+   */
+  void SetAdjoint_Output(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration

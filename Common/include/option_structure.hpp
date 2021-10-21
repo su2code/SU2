@@ -2234,7 +2234,8 @@ static const MapType<string, ENUM_DISC_ADJ_TYPE> DiscreteAdjoint_Map = {
 enum class ENUM_VARIABLE {
     RESIDUALS,
     OBJECTIVE,
-    TRACTIONS
+    TRACTIONS,
+    COORDINATES
 };
 
 

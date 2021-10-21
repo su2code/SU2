@@ -55,10 +55,13 @@ private:
   su2matrix<su2double> Partial_Prod_dAdxv;    /*!< \brief Partial sensitivity of the residuals w.r.t. the coordinates (matrix-vector product with adjoint vector). */
   su2matrix<su2double> Partial_Sens_dIdxv;    /*!< \brief Partial sensitivity of the objective w.r.t. the coordinates. */
   su2matrix<su2double> Partial_Prod_dfadxv;   /*!< \brief Partial sensitivity of the surface tractions w.r.t. the coordinates (matrix-vector product with adjoint vector). */
+  su2matrix<su2double> Partial_Prod_dxvdxv;   /*!< \brief Partial sensitivity of the deformed surface coordinates w.r.t. the prescribed coordinates (matrix-vector product with adjoint vector). */
+  vector<vector<su2double>> Partial_Prod_dAdua;    /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+  vector<vector<su2double>> Partial_Sens_dIdua;    /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
+  vector<vector<su2double>> Partial_Prod_dfadua;   /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
+  vector<vector<su2double>> Partial_Prod_dxvdua;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   su2vector<su2double> Partial_Prod_dAdxt;    /*!< \brief Partial sensitivity of the residuals w.r.t. the input variables (matrix-vector product with adjoint vector). */
   su2vector<su2double> Partial_Sens_dIdxt;    /*!< \brief Partial sensitivity of the objective w.r.t. the input variables. */
-  vector<vector<su2double>> Partial_Prod_dAdua;    /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
-  vector<vector<su2double>> Partial_Sens_dIdua;    /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements. */
   su2matrix<int> AD_ResidualIndex;    /*!< \brief Indices of Residual variables in the adjoint vector. */
 
   vector<vector<su2double> > CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
@@ -143,7 +146,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Kind of output variables.
    */
-  void ExtractAdjoint_Solution_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable);
+  void ExtractAdjoint_Solution_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable) override;
 
   /*!
    * \brief Set the surface sensitivity.
@@ -285,9 +288,16 @@ public:
 
   /*!
    * \brief Get matrix-vector product dfadxv^T x psi.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iDim - Dimension index.
    */
   su2double GetDerivative_dfadxv(unsigned long iPoint, unsigned long iDim) const override;
+
+  /*!
+   * \brief Get matrix-vector product dxvdua^T x psi.
+   * \param[in] iMarker - Marker identifier.
+   */
+  vector<su2double> GetDerivative_dxvdua(unsigned short iMarker) const override;
 
   /*!
    * \brief Prepare the solver for a new recording.
@@ -318,7 +328,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Kind of output variables.
    */
-  void ExtractAdjoint_Variables_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable);
+  void ExtractAdjoint_Variables_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable) override;
 
   /*!
    * \brief A virtual member.
@@ -326,7 +336,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Kind of output variables.
    */
-  void ExtractAdjoint_Geometry_Residual(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable);
+  void ExtractAdjoint_Geometry_Residual(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) override;
 
   /*!
    * \brief A virtual member.

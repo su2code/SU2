@@ -79,7 +79,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (config->GetDeform_Mesh()) {
       SecondaryVariables = RECORDING::MESH_DEFORM;
     }
-    else { SecondaryVariables = RECORDING::MESH_COORDS; }
+    else {
+      SecondaryVariables = RECORDING::MESH_COORDS;
+    }
     MainSolver = ADJFLOW_SOL;
     break;
 
@@ -706,7 +708,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
             solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, nullptr, ENUM_VARIABLE::OBJECTIVE);
         }
         else { // MESH_DEFORM
-            solver[ADJMESH_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJFLOW_SOL], ENUM_VARIABLE::OBJECTIVE);
+            solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJMESH_SOL], ENUM_VARIABLE::OBJECTIVE);
         }
     }
 
@@ -729,7 +731,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
             solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, nullptr, ENUM_VARIABLE::TRACTIONS);
         }
         else { // MESH_DEFORM
-            solver[ADJMESH_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJFLOW_SOL], ENUM_VARIABLE::TRACTIONS);
+            solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJMESH_SOL], ENUM_VARIABLE::TRACTIONS);
         }
     }
 
@@ -737,6 +739,34 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
 
     AD::ClearAdjoints();
 
+    /*--- Skip the derivation of the mesh solver if it is not defined ---*/
+
+    if (SecondaryVariables == RECORDING::MESH_COORDS) return;
+
+    /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
+
+    SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
+
+        /*--- Initialize the adjoints the conservative variables ---*/
+
+        solver[ADJMESH_SOL]->SetAdjoint_Output(geometry, config);
+
+    }
+    END_SU2_OMP_PARALLEL
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the volume coordinates and store them for the next iteration ---*/
+
+    if (config->GetFluidProblem()) {
+        solver[ADJFLOW_SOL]->ExtractAdjoint_Geometry_Residual(geometry, config, solver[ADJMESH_SOL], ENUM_VARIABLE::COORDINATES);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
 }
 
 void CDiscAdjSinglezoneDriver::Update_DirectSolution() {

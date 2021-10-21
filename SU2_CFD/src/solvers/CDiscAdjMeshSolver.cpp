@@ -96,11 +96,16 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 }
 
+void CDiscAdjMeshSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
+
+    /*--- Register variables as output of the solver iteration.---*/
+    direct_solver->GetNodes()->RegisterSolution(false);
+}
+
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   /*--- Register reference mesh coordinates ---*/
   direct_solver->GetNodes()->Register_MeshCoord();
-
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
@@ -115,6 +120,19 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
+}
+
+void CDiscAdjMeshSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
+
+    su2double Solution[MAXNVAR] = {0.0};
+    unsigned short iVar;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
+        for (iVar = 0; iVar < nVar; iVar++)
+            Solution[iVar] = nodes->GetSolution(iPoint,iVar);
+
+        direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
+    }
 }
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
