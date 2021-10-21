@@ -54,6 +54,7 @@ private:
   Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
   dist_ij;                      /*!< \brief Length of the edge and face. */
 
 public:
@@ -108,6 +109,7 @@ private:
   Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
   dist_ij;                      /*!< \brief Length of the edge and face. */
   bool implicit;                /*!< \brief Implicit calculus. */
 

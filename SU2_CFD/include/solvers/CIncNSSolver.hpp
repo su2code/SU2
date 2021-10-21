@@ -71,7 +71,7 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_WF(CGeometry *geometry,
+  void SetTau_Wall_WF(CGeometry *geometry,
                      CSolver** solver_container,
                      const CConfig* config);
 

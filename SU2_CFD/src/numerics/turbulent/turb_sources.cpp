@@ -760,7 +760,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
                           CNumerics(val_nDim, val_nVar, config) {
 
   incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-  sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
+  sustaining_terms = (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   axisymmetric = config->GetAxisymmetric();
 
   /*--- Closure constants ---*/

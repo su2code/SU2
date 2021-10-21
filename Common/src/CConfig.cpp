@@ -1076,7 +1076,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
-  addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
+  addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
@@ -1223,10 +1223,20 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
-  /*!\brief WALLMODELKAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
-  addDoubleOption("WALLMODELKAPPA", wallModelKappa, 0.41);
-  /*!\brief WALLMODELB \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.0 \ingroup Config*/
-  addDoubleOption("WALLMODELB", wallModelB, 5.5);
+
+  /*--- Options related to wall models. ---*/
+
+  /*!\brief WALLMODEL_KAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
+  addDoubleOption("WALLMODEL_KAPPA", wallModel_Kappa, 0.41);
+  /*!\brief WALLMODEL_MAXITER \n DESCRIPTION: Max iterations used for the wall model \n DEFAULT 200 \ingroup Config*/
+  addUnsignedShortOption("WALLMODEL_MAXITER", wallModel_MaxIter, 200);
+  /*!\brief WALLMODEL_RELFAC \n DESCRIPTION: Relaxation factor used for the wall model \n DEFAULT 0.5 \ingroup Config*/
+  addDoubleOption("WALLMODEL_RELFAC", wallModel_RelFac, 0.5);
+  /*!\brief WALLMODEL_MINYPLUS \n DESCRIPTION: lower limit for Y+ used for the wall model \n DEFAULT 5.0 \ingroup Config*/
+  addDoubleOption("WALLMODEL_MINYPLUS", wallModel_MinYplus, 5.0);
+  /*!\brief WALLMODEL_B \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.5 \ingroup Config*/
+  addDoubleOption("WALLMODEL_B", wallModel_B, 5.5);
+
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */
@@ -3273,16 +3283,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
+  if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != TURB_MODEL::NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
   }
-  if (Kind_Solver == INC_NAVIER_STOKES && Kind_Turb_Model != NONE){
+  if (Kind_Solver == INC_NAVIER_STOKES && Kind_Turb_Model != TURB_MODEL::NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
   }
-  if (Kind_Solver == RANS && Kind_Turb_Model == NONE){
+  if (Kind_Solver == RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
   }
-  if (Kind_Solver == INC_RANS && Kind_Turb_Model == NONE){
+  if (Kind_Solver == INC_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
@@ -3295,10 +3305,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (Kind_WallFunctions[iMarker] != WALL_FUNCTIONS::NONE)
         Wall_Functions = true;
 
-      if ((Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::ADAPTIVE_FUNCTION) || (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::SCALABLE_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL))
-
+      if ((Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::ADAPTIVE_FUNCTION) ||
+          (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::SCALABLE_FUNCTION) ||
+          (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL))
         SU2_MPI::Error(string("For RANS problems, use NONE, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+
+      if (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::STANDARD_FUNCTION) {
+        if (!((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)))
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS or INC_RANS.\n"), CURRENT_FUNCTION);
+        if (nRough_Wall != 0)
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION and WALL_ROUGHNESS migh not be compatible. Checking required!\n"), CURRENT_FUNCTION);
+      }
 
     }
   }
@@ -4043,18 +4060,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
 
   if ((Kind_Solver == NAVIER_STOKES) &&
-      (Kind_Turb_Model != NONE))
+      (Kind_Turb_Model != TURB_MODEL::NONE))
     Kind_Solver = RANS;
 
   if ((Kind_Solver == INC_NAVIER_STOKES) &&
-      (Kind_Turb_Model != NONE))
+      (Kind_Turb_Model != TURB_MODEL::NONE))
     Kind_Solver = INC_RANS;
 
   if (Kind_Solver == EULER ||
       Kind_Solver == INC_EULER ||
       Kind_Solver == NEMO_EULER ||
       Kind_Solver == FEM_EULER)
-    Kind_Turb_Model = NONE;
+    Kind_Turb_Model = TURB_MODEL::NONE;
 
   Kappa_2nd_Flow = jst_coeff[0];
   Kappa_4th_Flow = jst_coeff[1];
@@ -4435,7 +4452,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
-  if ((Kind_Turb_Model != SA) && (Kind_Trans_Model == BC)){
+  if ((Kind_Turb_Model != TURB_MODEL::SA) && (Kind_Trans_Model == BC)){
     SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
   }
 
@@ -4533,7 +4550,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
-  if (Kind_Solver == RANS && Kind_Turb_Model != SST && Kind_Turb_Model != SST_SUST && using_uq){
+  if (Kind_Solver == RANS && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST && using_uq){
     SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
   }
 
@@ -5620,13 +5637,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:        cout << "Spalart Allmaras" << endl; break;
-          case SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
-          case SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
-          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case SST:       cout << "Menter's SST"     << endl; break;
-          case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
+          case TURB_MODEL::NONE: break;
+          case TURB_MODEL::SA:        cout << "Spalart Allmaras" << endl; break;
+          case TURB_MODEL::SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
+          case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
+          case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
+          case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case TURB_MODEL::SST:       cout << "Menter's SST"     << endl; break;
+          case TURB_MODEL::SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         if (Kind_Trans_Model == BC) cout << "Using the revised BC transition model (2020)" << endl;
@@ -6456,8 +6474,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
-          if((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES))
-            SU2_MPI::Error("Implicit time scheme is not working with NEMO. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
+          if (Kind_Solver == NEMO_NAVIER_STOKES)
+            SU2_MPI::Error("Implicit time scheme is not working with NEMO for viscous problems. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:

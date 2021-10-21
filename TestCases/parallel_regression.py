@@ -66,12 +66,12 @@ def main():
     thermalbath_frozen.tol       = 0.00001
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge
+    # Inviscid single wedge, implicit
     invwedge           = TestCase('invwedge')
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.954417, -1.479835, -16.737319, -17.063704, -17.010424, 2.372843, 1.754751, 5.401691, 0.954721]
+    invwedge.test_vals = [-0.998812, -1.524371, -18.301794, -18.629156, -18.575201, 2.318954, 2.011581,  5.366905, 0.919345]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -330,7 +330,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.019756]
+    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.0197560, 20, -1.741326, 20, -4.864272]
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001

@@ -70,7 +70,7 @@ private:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+  void SetTau_Wall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
 
 public:
 
