@@ -1554,7 +1554,7 @@ public:
    * \param[in] val_tauwall_i - Tauwall at point i
    * \param[in] val_tauwall_j - Tauwall at point j
    */
-  inline virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
+  inline virtual void SetTau_Wall(su2double val_tauwall_i, su2double val_tauwall_j) { }
 
   /*!
    * \brief - Calculate the central/upwind blending function for a face

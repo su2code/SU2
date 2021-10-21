@@ -196,7 +196,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   const auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
   bool viscous = config->GetViscous();
-  bool rans = (config->GetKind_Turb_Model() != NONE);
+  bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

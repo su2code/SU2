@@ -1889,7 +1889,7 @@ public:
           this->doubleInfo[i] = new su2double[1];
 
           /* Check for a valid RANS turbulence model. */
-          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          map<string, TURB_MODEL>::const_iterator iit;
           iit = Turb_Model_Map.find(option_value[counter++]);
           if(iit == Turb_Model_Map.end()) {
             string newstring;
@@ -1903,8 +1903,6 @@ public:
             newstring.append(", specified");
             return newstring;
           }
-
-          this->intInfo[i][0] = iit->second;
 
           /* Extract the exchange distance. */
           istringstream ss_1st(option_value[counter++]);
