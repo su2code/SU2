@@ -39,8 +39,6 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     nPrimVar     = val_nPrimVar;
     nPrimVarGrad = val_nPrimVarGrad;
 
-    hs.resize(nSpecies,0.0);
-
     RHOS_INDEX      = 0;
     T_INDEX         = nSpecies;
     TVE_INDEX       = nSpecies+1;
@@ -60,24 +58,6 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     Ys   = new su2double[nSpecies];
     Ys_i = new su2double[nSpecies];
     Ys_j = new su2double[nSpecies];
-
-    dJdr_i = new su2double* [nSpecies];
-    dJdr_j = new su2double* [nSpecies];
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      dJdr_i[iSpecies] = new su2double[nSpecies];
-      dJdr_j[iSpecies] = new su2double[nSpecies];
-    }
-
-    dFdVi = new su2double*[nVar];
-    dFdVj = new su2double*[nVar];
-    dVdUi = new su2double*[nVar];
-    dVdUj = new su2double*[nVar];
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      dFdVi[iVar] = new su2double[nVar];
-      dFdVj[iVar] = new su2double[nVar];
-      dVdUi[iVar] = new su2double[nVar];
-      dVdUj[iVar] = new su2double[nVar];
-    }
 
     ionization = config->GetIonization();
     if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -100,37 +80,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNEMONumerics::~CNEMONumerics(void) {
-  unsigned short iVar,iSpecies; 
-  if (dFdVi != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete [] dFdVi[iVar];
-    delete [] dFdVi;
-  }
-  if (dFdVj != NULL) {
-     for (iVar = 0; iVar < nVar; iVar++)
-      delete [] dFdVj[iVar];
-    delete [] dFdVj;
-  }
-  if (dVdUi != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete [] dVdUi[iVar];
-    delete [] dVdUi;
-  }
-  if (dVdUj != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete [] dVdUj[iVar];
-    delete [] dVdUj;
-  }
-  if (dJdr_i != NULL) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete [] dJdr_i[iSpecies];
-    delete [] dJdr_i;
-  }
-  if (dJdr_j != NULL) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete [] dJdr_j[iSpecies];
-    delete [] dJdr_j;
-  }
+
   delete [] Ys;
   delete [] Ys_i;
   delete [] Ys_j;
@@ -317,7 +267,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
-  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
+  const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
 
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
