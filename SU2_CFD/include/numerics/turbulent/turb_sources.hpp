@@ -33,29 +33,36 @@
 /*!
  * \class CSourcePieceWise_TurbSA
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \brief The variables that are subject to change in each variation/correction have their own class. Additional source terms are implemented as decorators.
  * \ingroup SourceDiscr
  * \author A. Bueno.
  */
+template<class ft2_class, class ModVort_class, class r_class>
 class CSourceBase_TurbSA : public CNumerics {
 protected:
-  su2double cv1_3;
-  su2double k2;
-  su2double cb1;
-  su2double cw2;
-  su2double ct3;
-  su2double ct4;
-  su2double cw3_6;
-  su2double cb2_sigma;
-  su2double sigma;
-  su2double cb2;
-  su2double cw1;
-  su2double cr1;
+  /*--- List of constants and auxiliary functions ---*/
+  su2double cv1_3,
+            k2,
+            cb1,
+            cw2,
+            ct3,
+            ct4,
+            cw3_6,
+            cb2_sigma,
+            sigma,
+            cb2,
+            cw1,
+            cr1;
 
   su2double Gamma_BC = 0.0;
   su2double intermittency;
-  su2double Production, Destruction, CrossProduction;
 
+  /*--- Source term components ---*/
+  su2double Production, Destruction, CrossProduction, AddSourceTerm;
+
+  /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
+  
 private:
   su2double Jacobian_Buffer; /// Static storage for the Jacobian (which needs to be pointer for return type).
 
@@ -116,179 +123,134 @@ public:
    * \brief  ______________.
    */
   inline su2double GetCrossProduction(void) const final { return CrossProduction; }
+
+  su2double ComputeXsi(const su2double nue, const su2double nul) { return nue/nul  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.nue/nul }
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) final {
+    
+  };
+};
+
+/*------------------------------------------------------------------------------
+| Define the Spalart-Allmaras variation/corrections.
+| \author A. Bueno., E.Molina, F. Palacios
+------------------------------------------------------------------------------*/
+/*!
+ * \brief SU2 baseline ft2 term value
+ * \param[in] ft2 - ft2 variable
+ * \param[in] d_ft2 - derivative of ft2 w.r.t. nue variable
+ * \return Zero
+ */
+class ft2_bsl { static double get(su2double ft2, su2double d_ft2) { ft2 = 0.0; d_ft2 = 0.0; } };
+
+/*!
+ * \brief non-zero ft2 term according to the literature.
+ * \param[in] ct3 - constant ct3
+ * \param[in] ct4 - constant ct4
+ * \param[in] nut - nu_tilde
+ * \param[in] nul - dynamic laminar viscosity
+ * \param[in] ft2 - ft2 variable
+ * \param[in] d_ft2 - derivative of ft2 w.r.t. nue variable
+ */
+class ft2_nonzero {
+  static void get(const su2double ct3, const su2double ct4, const su2double nue, const su2double nul, su2double ft2, su2double d_ft2) {
+    const su2double xsi = ComputeXsi(nue, nul),
+                    xsi2 = xsi*xsi;
+
+    const su2double dxsi = 1.0/nul;
+    
+    ft2 = ct3*exp(-ct4*xsi2);
+    d_ft2 = -2.0*ct4*xsi*ft2*dxsi;
+  }
+};
+
+class ModVort_bsl {
+  static double get(const su2double S, const su2double nue, const su2double fv2, const su2double inv_k2_d2, const su2double d_fv2, su2double Shat, su2double d_Shat){
+
+    Shat = S + nue*fv2*inv_k2_d2;
+    Shat = max(Shat, 1.0e-10);
+
+    d_Shat = (Shat <= 1.0e-10) ? 0.0 : (fv2 + nue*d_fv2)*inv_k2_d2;
+  }
 };
 
 
-/*!
- * \class CSourcePieceWise_TurbSA
- * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
- * \ingroup SourceDiscr
- * \author A. Bueno.
- */
-class CSourcePieceWise_TurbSA final : public CSourceBase_TurbSA {
-private:
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  unsigned short iDim;
-  bool transition;
-  bool axisymmetric;
+class ModVort_Edw {
+  static double get(const su2double nue, const su2double nul, const su2double fv1, const su2double inv_k2_d2, const su2double d_fv1, su2double Shat, su2double d_Shat){
+
+    /*
+      From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
+      This form was developed primarily to improve the near-wall numerical behavior of the model (i.e., the goal was to improve the convergence behavior). The reference is:
+      Edwards, J. R. and Chandra, S. "Comparison of Eddy Viscosity-Transport Turbulence Models for Three-Dimensional, Shock-Separated Flowfields," AIAA Journal, Vol. 34, No. 4, 1996, pp. 756-763.
+      In this modificaton Omega is replaced by Strain Rate
+    */
+
+    const su2double xsi = ComputeXsi(nue, nul);
+
+    /*--- Evaluate Omega, here Omega is the Strain Rate ---*/
+
+    su2double Sbar = 0.0;
+    for(iDim=0;iDim<nDim;++iDim){
+      for(jDim=0;jDim<nDim;++jDim){
+	Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
+    for(iDim=0;iDim<nDim;++iDim){
+      Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+
+    const su2double Omega = sqrt(max(Sbar,0.0));
+
+    /*--- Rotational correction term ---*/
+    if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+
+    const su2double S = Omega;
+
+    Shat = max(S*((1.0/max(xsi,1.0e-16))+fv1),1.0e-16);
+    Shat = max(Shat, 1.0e-10);
+
+    d_Shat = (Shat <= 1.0e-10) ? 0.0 : -S*pow(xsi,-2.0)/nul + S*d_fv1;
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-
-};
-
-/*!
- * \class CSourcePieceWise_TurbSA_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
- * \ingroup SourceDiscr
- * \author E.Molina, A. Bueno.
- * \version 7.2.0 "Blackbird"
- */
-class CSourcePieceWise_TurbSA_COMP final : public CSourceBase_TurbSA {
-private:
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  su2double aux_cc, CompCorrection, c5;
-  unsigned short iDim, jDim;
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-
-};
-
-/*!
- * \class CSourcePieceWise_TurbSA_E
- * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
- * \ingroup SourceDiscr
- * \author E.Molina, A. Bueno.
- * \version 7.2.0 "Blackbird"
- */
-class CSourcePieceWise_TurbSA_E final : public CSourceBase_TurbSA {
-private:
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  su2double Sbar;
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-};
-
-/*!
- * \class CSourcePieceWise_TurbSA_E_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
- * \ingroup SourceDiscr
- * \author E.Molina, A. Bueno.
- * \version 7.2.0 "Blackbird"
- */
-class CSourcePieceWise_TurbSA_E_COMP : public CSourceBase_TurbSA {
-private:
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  su2double Sbar;
-  su2double aux_cc, CompCorrection, c5;
-  unsigned short jDim;
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-};
-
-/*!
- * \class CSourcePieceWise_TurbSA_Neg
- * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
- * \ingroup SourceDiscr
- * \author F. Palacios
- */
-class CSourcePieceWise_TurbSA_Neg : public CSourceBase_TurbSA {
-private:
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-
-};
-
 /*!
  * \class CSourcePieceWise_TurbSST
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
