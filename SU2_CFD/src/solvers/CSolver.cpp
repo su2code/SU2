@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -187,7 +187,6 @@ CSolver::~CSolver(void) {
   delete [] Restart_Data;
 
   delete VerificationSolution;
-
 }
 
 void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
@@ -2065,7 +2064,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
   /*--- Loop boundary edges ---*/
 
   for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -3527,7 +3527,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   auto profile_filename = config->GetInlet_FileName();
 
   unsigned short nVar_Turb = 0;
-  if (config->GetKind_Turb_Model() != NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
@@ -3613,15 +3613,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
 
     switch (config->GetKind_Turb_Model()) {
-      case NO_TURB_MODEL:
-        /*--- no turbulence model---*/
-        break;
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case TURB_MODEL::NONE: break;
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE   " << setw(24);
         columnValue << config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND() <<"\t";
         break;
-      case SST: case SST_SUST:
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
         /*--- 2-equation turbulence model (SST) ---*/
         columnName << "TKE        " << setw(24) << "DISSIPATION";
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
@@ -3690,11 +3688,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
       switch(config->GetKindInletInterpolationFunction()){
 
-        case (NONE):
+        case (INLET_SPANWISE_INTERP::NONE):
           Interpolate = false;
           break;
 
-        case (AKIMA_1D):
+        case (INLET_SPANWISE_INTERP::AKIMA_1D):
           for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
@@ -3702,7 +3700,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           interpolation_function = "AKIMA";
           break;
 
-        case (LINEAR_1D):
+        case (INLET_SPANWISE_INTERP::LINEAR_1D):
           for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
@@ -3710,17 +3708,25 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           interpolation_function = "LINEAR";
           break;
 
+        case (INLET_SPANWISE_INTERP::CUBIC_1D):
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
+            Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+            interpolator[iCol] = new CCubicSpline(InletRadii,Interpolation_Column);
+          }
+          interpolation_function = "CUBIC";
+          break;
+
         default:
-          SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
+          SU2_MPI::Error("Unknown type of interpolation function for inlets.\n",CURRENT_FUNCTION);
           break;
       }
 
       if (Interpolate){
         switch(config->GetKindInletInterpolationType()){
-          case(VR_VTHETA):
+          case(INLET_INTERP_TYPE::VR_VTHETA):
             interpolation_type="VR_VTHETA";
             break;
-          case(ALPHA_PHI):
+          case(INLET_INTERP_TYPE::ALPHA_PHI):
             interpolation_type="ALPHA_PHI";
             break;
         }
@@ -3807,7 +3813,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             for that interpolator[iVar], cycling through all columns to get all the
             data for that vertex ---*/
             Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
-            if (interpolator[iVar]->GetPointMatch() == false){
+            if (Interp_Radius < InletRadii.front() || Interp_Radius > InletRadii.back()) {
               cout << "WARNING: Did not find a match between the radius in the inlet file " ;
               cout << std::scientific;
               cout << "at location: [" << Coord[0] << ", " << Coord[1];
@@ -3821,15 +3827,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
           }
 
-          /* --- Correcting for Interpolation Type ---*/
-          switch(config->GetKindInletInterpolationType()){
-          case(VR_VTHETA):
-            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
-          break;
-          case(ALPHA_PHI):
-            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
-          break;
-          }
+          /*--- Correcting for Interpolation Type ---*/
+
+          Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord,
+                                              nVar_Turb, config->GetKindInletInterpolationType());
 
           solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
 
@@ -4208,4 +4209,94 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
+}
+
+void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
+
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  const bool unsteady            = config->GetTime_Domain();
+  const string filename          = config->GetlibROMbase_FileName();
+  const unsigned long TimeIter   = config->GetTimeIter();
+  const unsigned long nTimeIter  = config->GetnTime_Iter();
+  const int maxBasisDim          = config->GetMax_BasisDim();
+  const int save_freq            = config->GetRom_SaveFreq();
+  int dim = int(nPointDomain * nVar);
+  bool incremental = false;
+
+  if (!u_basis_generator) {
+
+    /*--- Define SVD basis generator ---*/
+    auto timesteps = static_cast<int>(nTimeIter - TimeIter);
+    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
+                                                false, true).setMaxBasisDimension(int(maxBasisDim));
+
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
+
+      if (unsteady) {
+        if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
+      }
+    }
+    else {
+      if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
+
+      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
+                                    1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
+      incremental = true;
+    }
+
+    u_basis_generator.reset(new CAROM::BasisGenerator(
+      svd_options, incremental,
+      filename));
+
+    // Save mesh ordering
+    std::ofstream f;
+    f.open(filename + "_mesh_" + to_string(rank) + ".csv");
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+        auto Coord = geometry->nodes->GetCoord(iPoint);
+
+        for (unsigned long iDim; iDim < nDim; iDim++) {
+          f << Coord[iDim] << ", ";
+        }
+        f << globalPoint << "\n";
+      }
+    f.close();
+  }
+
+  if (unsteady && (TimeIter % save_freq == 0)) {
+    // give solution and time steps to libROM:
+    su2double dt = config->GetDelta_UnstTime();
+    su2double t =  config->GetCurrent_UnstTime();
+    u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
+  }
+
+  /*--- End collection of data and save POD ---*/
+
+  if (converged) {
+
+    if (!unsteady) {
+       // dt is different for each node, so just use a placeholder dt
+       su2double dt = base_nodes->GetDelta_Time(0);
+       su2double t = dt*TimeIter;
+       u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
+    }
+
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      u_basis_generator->writeSnapshot();
+    }
+
+    if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
+    int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+
+    if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
+    u_basis_generator->endSamples();
+
+    if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
+  }
+
+#else
+  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
+#endif
+
 }

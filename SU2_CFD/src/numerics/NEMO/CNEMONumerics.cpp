@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
  */
 
 #include "../../../include/numerics/NEMO/CNEMONumerics.hpp"
-
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad,
@@ -158,38 +158,34 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
                                        const su2double val_scale,
                                        su2double **val_Proj_Jac_Tensor) {
 
-  unsigned short iDim, jDim, iVar, jVar, iSpecies, jSpecies;
-  su2double proj_vel, rho, u[MAXNDIM], rhoEve, H;
   const su2double *rhos;
 
   rhos = &val_V[RHOS_INDEX];
 
   /*--- Initialize the Jacobian tensor ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = 0.0;
 
   /*--- Rename for convenience ---*/
-  rho    = val_V[RHO_INDEX];
-  H      = val_V[H_INDEX];
-  //H = (val_U[nSpecies+nDim]+val_V[P_INDEX])/val_V[RHO_INDEX];
-  rhoEve = val_U[nSpecies+nDim+1];
-  for (iDim = 0; iDim < nDim; iDim++)
+  su2double rho    = val_V[RHO_INDEX];
+  su2double H      = val_V[H_INDEX];
+  su2double rhoEve = val_U[nSpecies+nDim+1];
+
+  su2double u[MAXNDIM];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     u[iDim] = val_V[VEL_INDEX+iDim];
 
   /*--- Calculate projected velocity ---*/
-  proj_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    proj_vel += u[iDim]*val_normal[iDim];
-  }
+  su2double proj_vel = GeometryToolbox::DotProduct(nDim, u, val_normal);
 
   /*--- Species density rows ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (unsigned short jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       val_Proj_Jac_Tensor[iSpecies][jSpecies] += -(rhos[iSpecies]/rho) * proj_vel;
     }
     val_Proj_Jac_Tensor[iSpecies][iSpecies]   += proj_vel;
-    for (iDim  = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim  = 0; iDim < nDim; iDim++) {
       val_Proj_Jac_Tensor[iSpecies][nSpecies+iDim] += (rhos[iSpecies]/rho) * val_normal[iDim];
       val_Proj_Jac_Tensor[nSpecies+iDim][iSpecies] += val_dPdU[iSpecies]*val_normal[iDim] - proj_vel*u[iDim];
     }
@@ -198,8 +194,8 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
   }
 
   /*--- Momentum rows ---*/
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+jDim] += val_dPdU[nSpecies+jDim]*val_normal[iDim] + u[iDim]*val_normal[jDim];
     }
     val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+iDim]   += proj_vel;
@@ -208,18 +204,18 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
   }
 
   /*--- Total energy row ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+iDim] += val_dPdU[nSpecies+iDim]*proj_vel + H*val_normal[iDim];
   val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+nDim]   += (1+val_dPdU[nSpecies+nDim])*proj_vel;
   val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+nDim+1] +=  val_dPdU[nSpecies+nDim+1] *proj_vel;
 
   /*--- Vib.-el. energy row ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho*val_normal[iDim];
   val_Proj_Jac_Tensor[nSpecies+nDim+1][nSpecies+nDim+1] = proj_vel;
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = val_scale * val_Proj_Jac_Tensor[iVar][jVar];
 }
 
@@ -243,6 +239,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   su2double *Ds, *V, **GV, mu, ktr, kve;
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
+
+  su2activematrix Flux_Tensor(nVar,nDim);
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -269,11 +267,12 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
+  // NOTE: V[iSpecies] is == Ys.
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
     Mass += V[iSpecies]*Ms[iSpecies];
-  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+  Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
   tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
   scl  = tmp1/ktr;
   ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
@@ -282,8 +281,10 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
   /*--- Pre-compute mixture quantities ---*/
+
+  su2double Vector[MAXNDIM] = {0.0};
+
   for (iDim = 0; iDim < nDim; iDim++) {
-    Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }

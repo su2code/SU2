@@ -2,7 +2,7 @@
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,11 +73,11 @@ protected:
    * This function requires that the stress tensor already be
    * computed using \ref GetStressTensor
    *
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_tau_wall - The wall stress
+   * \param[in] UnitNormal - Unit normal vector.
+   * \param[in] TauWall - The wall stress.
    */
-  void AddTauWall(const su2double *val_normal,
-                  su2double val_tau_wall);
+  void AddTauWall(const su2double *UnitNormal,
+                  su2double TauWall);
 
   /**
    * \brief Calculate the Jacobian of the viscous + turbulent stress tensor
@@ -186,7 +186,7 @@ public:
    * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
-  inline void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) override {
+  inline void SetTau_Wall(su2double val_tauwall_i, su2double val_tauwall_j) override {
     TauWall_i = val_tauwall_i;
     TauWall_j = val_tauwall_j;
   }

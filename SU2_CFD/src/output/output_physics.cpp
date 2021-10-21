@@ -2,7 +2,7 @@
  * \file output_physics.cpp
  * \brief Main subroutines to compute physical output quantities such as CL, CD, entropy generation, mass flow, ecc... .
  * \author S. Vitale
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,7 +43,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
   relVel = new su2double[nDim];
   su2double muLam, kine, omega, nu;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
+  bool menter_sst       = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   unsigned short nBladesRow, nStages;
 

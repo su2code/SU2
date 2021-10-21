@@ -3,7 +3,7 @@
  * \brief File, which contains the implementation for the wall model functions
  *        for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ CWallModel::CWallModel(CConfig *config) {
   Pr_lam  = config->GetPrandtl_Lam();
   Pr_turb = config->GetPrandtl_Turb();
 
-  karman = 0.41; // von Karman constant -> k = 0.41; or 0.38;
+  karman = config->GetwallModel_Kappa(); // von Karman constant -> k = 0.41; or 0.38;
 }
 
 void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,

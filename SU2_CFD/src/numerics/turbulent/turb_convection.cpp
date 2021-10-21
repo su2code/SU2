@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes to compute convective
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,78 +28,6 @@
 
 #include "../../../include/numerics/turbulent/turb_convection.hpp"
 
-CUpwScalar::CUpwScalar(unsigned short val_nDim,
-                       unsigned short val_nVar,
-                       const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config),
-  implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
-  dynamic_grid(config->GetDynamic_Grid())
-{
-  Flux = new su2double [nVar];
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-  }
-}
-
-CUpwScalar::~CUpwScalar(void) {
-
-  delete [] Flux;
-  if (Jacobian_i != nullptr) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      delete [] Jacobian_i[iVar];
-      delete [] Jacobian_j[iVar];
-    }
-    delete [] Jacobian_i;
-    delete [] Jacobian_j;
-  }
-}
-
-CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
-
-  unsigned short iDim;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
-  if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
-  }
-
-  ExtraADPreaccIn();
-
-  Density_i = V_i[nDim+2];
-  Density_j = V_j[nDim+2];
-
-  q_ij = 0.0;
-  if (dynamic_grid) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
-      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
-    }
-  }
-  else {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
-    }
-  }
-
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
-
-  FinishResidualCalc(config);
-
-  AD::SetPreaccOut(Flux, nVar);
-  AD::EndPreacc();
-
-  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-
-}
-
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                const CConfig* config) :
@@ -112,7 +40,7 @@ void CUpwSca_TurbSA::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
+  Flux[0] = a0*ScalarVar_i[0]+a1*ScalarVar_j[0];
 
   if (implicit) {
     Jacobian_i[0][0] = a0;
@@ -132,8 +60,8 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
-  Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
+  Flux[0] = a0*Density_i*ScalarVar_i[0]+a1*Density_j*ScalarVar_j[0];
+  Flux[1] = a0*Density_i*ScalarVar_i[1]+a1*Density_j*ScalarVar_j[1];
 
   if (implicit) {
     Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;

@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -69,9 +69,9 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.107800, 1.574246, 47250.000000, 0.000000]
+    discadj_arina2k.test_vals    = [-3.087863, -3.481496, 6.8879e-02, 0]
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
-    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.timeout      = 1600
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
 
@@ -84,7 +84,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230556, 0.696586, 0.180740, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.230556, 0.696586, 0.180740, -0.000018, 5, -4.275186, 5, -8.926013] #last 8 columns
     discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -241,7 +241,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.271573, 0.671242, -3.172000, -8.231600] #last 4 columns
+    discadj_heat.test_vals = [-2.271569, 0.671288, -3.172000, -8.231500] #last 4 columns
     discadj_heat.su2_exec  = "SU2_CFD_AD"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001

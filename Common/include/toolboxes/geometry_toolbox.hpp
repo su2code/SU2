@@ -1,7 +1,7 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -190,6 +190,19 @@ inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Sca
     c[iDim] = O[iDim];
     for (int k = 0; k < nDim; ++k) c[iDim] += R[iDim][k] * d[k];
   }
+}
+
+/*! \brief Tangent projection  */
+template<class Mat, class Scalar, class Int>
+inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector, Scalar* proj) {
+
+  for (Int iDim = 0; iDim < nDim; iDim++)
+    proj[iDim] = DotProduct(nDim, tensor[iDim], vector);
+
+  auto normalProj = DotProduct(nDim, proj, vector);
+
+  for (Int iDim = 0; iDim < nDim; iDim++)
+    proj[iDim] -= normalProj * vector[iDim];
 }
 
 }

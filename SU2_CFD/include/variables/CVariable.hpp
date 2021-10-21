@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,8 +40,6 @@
 
 class CFluidModel;
 class CNEMOGas;
-
-using namespace std;
 
 /*!
  * \class CVariable
@@ -144,7 +142,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CVariable(unsigned long npoint, unsigned long nvar, CConfig *config);
+  CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config);
 
   /*!
    * \overload
@@ -154,7 +152,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] adjoint - True if derived class is an adjoint variable.
    */
-  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint = false);
+  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config, bool adjoint = false);
 
   /*!
    * \brief Destructor of the class.
@@ -409,35 +407,20 @@ public:
   }
 
   /*!
-   * \brief Add a value to the solution, clipping the values.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the solution change.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
-   */
-  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                 su2double lowerlimit, su2double upperlimit) {
-
-    su2double val_new = Solution_Old(iPoint, iVar) + solution;
-    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
-  }
-
-  /*!
    * \brief Update the variables using a conservative format.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \param[in] solution - Value of the solution change.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_density_old - Value of the old density.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
+   * \param[in] lowerlimit - Lower value for Solution clipping.
+   * \param[in] upperlimit - Upper value for Solution clipping.
+   * \param[in] Sol2Conservative - Factor multiplied to Solution to get transported variable.
+   * \param[in] Sol2Conservative_old - Factor multiplied to Solution to get transported variable, of the previous Iteration.
    */
-  inline void AddConservativeSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                      su2double val_density, su2double val_density_old,
-                                      su2double lowerlimit, su2double upperlimit) {
+  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
+                                 su2double lowerlimit, su2double upperlimit,
+                                 su2double Sol2Conservative = 1.0, su2double Sol2Conservative_old = 1.0) {
 
-    su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
+    su2double val_new = (Solution_Old(iPoint,iVar)*Sol2Conservative_old + solution)/Sol2Conservative;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
   }
 
@@ -628,7 +611,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of the solution gradient.
    */
-  inline su2double** GetAuxVarGradient(unsigned long iPoint) {
+  inline CMatrixView<su2double> GetAuxVarGradient(unsigned long iPoint) {
     return Grad_AuxVar[iPoint];
   }
 
@@ -717,7 +700,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of the gradient solution.
    */
-  inline su2double **GetGradient(unsigned long iPoint) { return Gradient[iPoint]; }
+  inline CMatrixView<su2double> GetGradient(unsigned long iPoint) { return Gradient[iPoint]; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -967,6 +950,12 @@ public:
   inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
 
   /*!
+   * \brief Get the species enthalpy.
+   * \return Value of the species enthalpy.
+   */
+  inline virtual su2double* GetEnthalpys(unsigned long iPoint) { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \return Value of the flow energy.
@@ -986,13 +975,6 @@ public:
    * \return Pointer to the objective function source.
    */
   inline virtual su2double *GetObjFuncSource(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the internal boundary vector.
-   */
-  inline virtual su2double *GetIntBoundary_Jump(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -1169,13 +1151,6 @@ public:
    * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
    */
   inline virtual void SetObjFuncSource(unsigned long iPoint, const su2double *val_SetObjFuncSource) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump.
-   */
-  inline virtual void SetIntBoundary_Jump(unsigned long iPoint, const su2double *val_IntBoundary_Jump) {}
 
   /*!
    * \brief A virtual member.
@@ -1658,7 +1633,7 @@ public:
    * \brief A virtual member.
    * \return Value of the primitive variables gradient.
    */
-  inline virtual su2double **GetGradient_Primitive(unsigned long iPoint) { return nullptr; }
+  inline virtual CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -1670,7 +1645,7 @@ public:
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
    * \return Value of the primitive gradient for MUSCL reconstruction.
    */
-  inline virtual su2double **GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
+  inline virtual CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
@@ -2196,11 +2171,11 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
-  inline virtual void SetTauWall(unsigned long iPoint, su2double val_tau_wall) {}
+  inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
-  inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }
 
-  inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+  inline virtual void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }

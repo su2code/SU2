@@ -2,7 +2,7 @@
  * \file CFlowCompFEMOutput.hpp
  * \brief  Headers of the compressible FEM flow output.
  * \author R. Sanchez, T. Albring.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@ class CVariable;
 class CFlowCompFEMOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; //!< Kind of turbulence model
+  TURB_MODEL turb_model; //!< Kind of turbulence model
 
 public:
 
@@ -101,6 +101,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInit_Residuals(CConfig *config) override;
+  bool SetInit_Residuals(const CConfig *config) override;
 
 };

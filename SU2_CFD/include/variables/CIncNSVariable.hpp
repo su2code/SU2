@@ -3,7 +3,7 @@
  * \brief Class for defining the variables of the incompressible
           Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,6 +38,7 @@
  */
 class CIncNSVariable final : public CIncEulerVariable {
 private:
+  VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
 
 public:
@@ -52,12 +53,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                 unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CIncNSVariable() override = default;
+                 unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
    * \brief Set the laminar viscosity.
@@ -104,6 +100,18 @@ public:
    */
   bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
+
+  /*!
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  inline void SetTau_Wall(unsigned long iPoint, su2double tau_wall) override { Tau_Wall(iPoint) = tau_wall; }
+
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  inline su2double GetTau_Wall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  inline const VectorType& GetTau_Wall() const { return Tau_Wall; }
 
   /*!
    * \brief Set the DES Length Scale.

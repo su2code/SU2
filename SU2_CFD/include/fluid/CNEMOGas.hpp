@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,8 +48,8 @@ protected:
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
   nEl,                                   /*!< \brief Number of electrons in gas */
   nDim,                                  /*!< \brief Number of dimensions. */
-  nEnergyEq = 2,                         /*!< \brief Number of energy equations for the 2T model. */
-  Kind_TransCoeffModel;                  /*!< \brief Transport coefficients model for NEMO solver. */
+  nEnergyEq = 2;                         /*!< \brief Number of energy equations for the 2T model. */
+  TRANSCOEFFMODEL Kind_TransCoeffModel;  /*!< \brief Transport coefficients model for NEMO solver. */
 
   unsigned iSpecies,                     /*!< \brief Common iteration counter for species */
   jSpecies,                              /*!< \brief Common iteration counter for species */
@@ -79,6 +79,7 @@ protected:
   hs,                                    /*!< \brief Species enthalpies */
   MolarFractions,                        /*!< \brief Species molar fractions */
   ws,                                    /*!< \brief Species net production rates */
+  taus,                                  /*!< \brief Relaxtion time scales */
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
@@ -101,6 +102,7 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
+   * \param[in] Ms   - Mass fractions of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
@@ -114,7 +116,7 @@ public:
   /*!
    * \brief Compute species V-E specific heats at constant volume.
    */
-  virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
+  virtual vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) = 0;
 
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
@@ -124,7 +126,16 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  virtual vector<su2double>& ComputeNetProductionRates() = 0;
+  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                                       const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                                       su2double **val_jacobian) = 0;
+
+  /*!
+   * \brief Populate chemical source term jacobian. 
+   */
+  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
+                                 const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                 su2double **val_jacobian){};
 
   /*!
    * \brief Compute vibrational energy source term.
@@ -132,9 +143,16 @@ public:
   virtual su2double ComputeEveSourceTerm() { return 0; }
 
   /*!
+   * \brief Compute vibration enery source term jacobian.
+   */
+  virtual void GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve,
+                                        const su2double *dTdU, const su2double* dTvedU,
+                                        su2double **val_jacobian){};
+
+  /*!
    * \brief Compute vector of species V-E energy.
    */
-  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
+  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) = 0;
 
   /*!
    * \brief Compute species enthalpies.
@@ -184,17 +202,17 @@ public:
   /*!
    * \brief Compute derivative of pressure w.r.t. conservative variables.
    */
-  void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
+  void ComputedPdU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dPdU);
 
   /*!
    * \brief Compute derivative of temperature w.r.t. conservative variables.
    */
-  void ComputedTdU(su2double *V, su2double *val_dTdU);
+  void ComputedTdU(const su2double *V, su2double *val_dTdU);
 
   /*!
    * \brief Compute derivative of vibrational temperature w.r.t. conservative variables.
    */
-  void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
+  void ComputedTvedU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dTvedU);
 
   /*!
    * \brief Set the translational temperature.

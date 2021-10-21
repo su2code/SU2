@@ -2,7 +2,7 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,18 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CMultizoneOutput.hpp"
 
-CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim, false) {
+CMultizoneOutput::CMultizoneOutput(const CConfig* driver_config, const CConfig* const* config, unsigned short nDim) :
+  COutput(driver_config, nDim, false) {
 
   unsigned short iZone = 0;
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
 
   nZone = driver_config->GetnZone();
-
-  fieldWidth = 12;
 
   bgs_res_name = "BGS_RES";
 
@@ -78,12 +74,9 @@ CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, uns
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("AVG_BGS_RES[0]");
+  if (convFields.empty()) convFields.emplace_back("AVG_BGS_RES[0]");
 
 }
-
-CMultizoneOutput::~CMultizoneOutput() {}
-
 
 void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config) {
 
@@ -141,7 +134,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
   }
 }
 
-bool CMultizoneOutput::WriteScreen_Header(CConfig *config) {
+bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {
 
   /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
 
@@ -157,7 +150,7 @@ bool CMultizoneOutput::WriteScreen_Header(CConfig *config) {
   return false;
 }
 
-bool CMultizoneOutput::WriteScreen_Output(CConfig *config) {
+bool CMultizoneOutput::WriteScreen_Output(const CConfig *config) {
 
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
   unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
@@ -183,7 +176,7 @@ bool CMultizoneOutput::WriteScreen_Output(CConfig *config) {
   return true;
 }
 
-bool CMultizoneOutput::WriteHistoryFile_Output(CConfig *config){
+bool CMultizoneOutput::WriteHistoryFile_Output(const CConfig *config){
 
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);

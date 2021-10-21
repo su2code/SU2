@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,8 +35,6 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
-
-using namespace std;
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -113,7 +111,7 @@ private:
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
 
-  enum : size_t { MAXNVAR = 8 };    /*!< \brief Maximum number of variables the matrix can handle. The static
+  enum : size_t { MAXNVAR = 20 };   /*!< \brief Maximum number of variables the matrix can handle. The static
                                                 size is needed for fast, per-thread, static memory allocation. */
 
   enum { OMP_MAX_SIZE_L = 8192 };   /*!< \brief Max. chunk size used in light parallel for loops. */

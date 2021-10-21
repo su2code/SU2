@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,6 +118,11 @@ protected:
    */
   template<ENUM_TIME_INT IntegrationType>
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
 
 public:
   /*!

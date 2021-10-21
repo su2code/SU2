@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -47,7 +47,7 @@ def main():
     thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
-    thermalbath.test_vals = [2.473627,    2.473627,  -11.989166,  -11.879331,  -32.000000,   10.804939]
+    thermalbath.test_vals = [0.945997, 0.945997, -12.039262, -12.171767, -32.000000, 10.013239]
     thermalbath.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
@@ -59,36 +59,36 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864]
+    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.039251, -12.171781, -32.000000, 10.013545]
     thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
     thermalbath_frozen.tol       = 0.00001
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge
+    # Inviscid single wedge, implicit
     invwedge           = TestCase('invwedge')
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.956173,-1.480936,-16.738781,-17.063703,-17.011887,2.371977,1.732488,5.399642,0.953492]
+    invwedge.test_vals = [-0.998812, -1.524371, -18.301794, -18.629156, -18.575201, 2.318954, 2.011581,  5.366905, 0.919345]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
     invwedge.tol       = 0.00001
     test_list.append(invwedge)
 
-    # Viscous single wedge
-    viscwedge           = TestCase('viscwedge')
-    viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
-    viscwedge.cfg_file  = "viscwedge.cfg"
-    viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
-    viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
-    viscwedge.timeout   = 1600
-    viscwedge.new_output = True
-    viscwedge.tol       = 0.00001
-    test_list.append(viscwedge)
+    # Viscous single cone - axisymmetric
+    visc_cone           = TestCase('visc_cone')
+    visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
+    visc_cone.cfg_file  = "axi_visccone.cfg"
+    visc_cone.test_iter = 10
+    visc_cone.test_vals = [-5.175785, -5.700548, -20.705025, -20.592408, -22.851499, -1.540045, -2.104353, 2.197906, -2.576183]
+    visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
+    visc_cone.timeout   = 1600
+    visc_cone.new_output = True
+    visc_cone.tol       = 0.00001
+    test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
     #viscwedge_mpp           = TestCase('viscwedge_mpp')
@@ -185,6 +185,17 @@ def main():
     bluntbody.tol       = 0.00001
     test_list.append(bluntbody)
 
+    # Equivalent area NACA64-206
+    ea_naca64206           = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file  = "NACA64206.cfg"
+    ea_naca64206.test_iter = 10
+    ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.0]
+    ea_naca64206.su2_exec  = "mpirun -n 2 SU2_CFD"
+    ea_naca64206.timeout   = 1600
+    ea_naca64206.tol       = 0.00001
+    test_list.append(ea_naca64206)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -194,7 +205,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360]
+    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360, 9.0144e-04, 2.3622e+00, -2.3613e+00]
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
@@ -319,7 +330,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.019756]
+    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.0197560, 20, -1.741326, 20, -4.864272]
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -378,7 +389,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [ -12.096569, -6.625843, -8.807541, -2.393279]
+    axi_rans_air_nozzle.test_vals = [-12.098340, -6.651791, -8.877009, -2.393286]
     axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
@@ -484,6 +495,17 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.timeout   = 1600
     sp_pipeSlice_3d_dp_hf_tp.tol       = 0.00001
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
+
+    # 2D pin array with heat transfer BC on pin surfaces
+    inc_heatTransfer_BC           = TestCase('inc_heatTransfer_BC')
+    inc_heatTransfer_BC.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    inc_heatTransfer_BC.cfg_file  = "BC_HeatTransfer.cfg"
+    inc_heatTransfer_BC.test_iter = 50
+    inc_heatTransfer_BC.test_vals = [-8.242458, -7.340502, -7.407009, -0.152357, -1.6675e+03] #last 7 lines
+    inc_heatTransfer_BC.su2_exec  = "mpirun -n 2 SU2_CFD"
+    inc_heatTransfer_BC.timeout   = 1600
+    inc_heatTransfer_BC.tol       = 0.00001
+    test_list.append(inc_heatTransfer_BC)
 
     ############################
     ### Incompressible RANS  ###
@@ -1047,7 +1069,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.397970, 0.352779, 0.405462]
+    channel_2D.test_vals = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1060,7 +1082,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620168, 0.505184, 0.415129]
+    channel_3D.test_vals = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -1235,6 +1257,22 @@ def main():
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
     test_list.append(p1rad)
+
+
+    # #############################
+    # ### Solid Heat Conduction ###
+    # #############################
+
+    # 2D pins, periodically connected
+    solid_periodic_pins           = TestCase('solid_periodic_pins')
+    solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
+    solid_periodic_pins.cfg_file  = "configSolid.cfg"
+    solid_periodic_pins.test_iter = 750
+    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
+    solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
+    solid_periodic_pins.timeout   = 1600
+    solid_periodic_pins.tol       = 0.00001
+    test_list.append(solid_periodic_pins)
 
     # ###############################
     # ### Conjugate heat transfer ###

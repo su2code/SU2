@@ -2,7 +2,7 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
 #include <type_traits>
@@ -67,6 +66,17 @@ template<class T, class F> struct su2conditional<false, T, F> { using type = F; 
 template<bool B, class T, class F>
 using su2conditional_t = typename su2conditional<B,T,F>::type;
 
+/*! \brief Static cast "In" to "Out", in debug builds a dynamic cast is used. */
+template<class Out, class In>
+FORCEINLINE Out su2staticcast_p(In ptr) {
+  static_assert(std::is_pointer<In>::value, "This expects a pointer");
+#ifndef NDEBUG
+  return static_cast<Out>(ptr);
+#else
+  return dynamic_cast<Out>(ptr);
+#endif
+}
+
 /*--- Detect compilation with OpenMP. ---*/
 #if defined(_OPENMP)
 #define HAVE_OMP
@@ -79,25 +89,15 @@ using su2conditional_t = typename su2conditional<B,T,F>::type;
 #include "codi.hpp"
 #include "codi/tools/dataStore.hpp"
 
-#ifndef CODI_INDEX_TAPE
-#define CODI_INDEX_TAPE 0
-#endif
-#ifndef CODI_PRIMAL_TAPE
-#define CODI_PRIMAL_TAPE 0
-#endif
-#ifndef CODI_PRIMAL_INDEX_TAPE
-#define CODI_PRIMAL_INDEX_TAPE 0
-#endif
-
 #if defined(HAVE_OMP)
 using su2double = codi::RealReverseIndexParallel;
 #else
-#if CODI_INDEX_TAPE
+#if defined(CODI_INDEX_TAPE)
 using su2double = codi::RealReverseIndex;
-#elif CODI_PRIMAL_TAPE
-using su2double = codi::RealReversePrimal;
-#elif CODI_PRIMAL_INDEX_TAPE
-using su2double = codi::RealReversePrimalIndex;
+//#elif defined(CODI_PRIMAL_TAPE)
+//using su2double = codi::RealReversePrimal;
+//#elif defined(CODI_PRIMAL_INDEX_TAPE)
+//using su2double = codi::RealReversePrimalIndex;
 #else
 using su2double = codi::RealReverse;
 #endif

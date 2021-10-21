@@ -2,7 +2,7 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,22 +29,20 @@
 #include "../../include/fluid/CFluidModel.hpp"
 
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                               unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
+                               unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
                                CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
 
-  if (config->GetAxisymmetric()) {
-    nAuxVar = 1;
-    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
-    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
-  }
-
-  /*--- Allocate memory for the AuxVar+gradient of eddy viscosity mu_t ---*/
-  if (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE)) {
+  /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
+   * Axisymmetric: total-viscosity * y-vel / y-coord
+   * Streamwise Periodic: eddy viscosity (mu_t) ---*/
+  if (config->GetAxisymmetric() ||
+      (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != TURB_MODEL::NONE))) {
     nAuxVar = 1;
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);

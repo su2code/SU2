@@ -2,7 +2,7 @@
  * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -265,7 +265,7 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   }
 }
 
-bool CElasticityOutput::SetInit_Residuals(CConfig *config){
+bool CElasticityOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 

@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Main class for defining the NEMO Euler's flow solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE> {
 protected:
@@ -84,6 +84,11 @@ protected:
    * \param[in] val_und_lapl_j Undivided laplacian at point j.
    */
   inline void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
 
 public:
 
@@ -193,6 +198,13 @@ public:
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                                CConfig *config, bool Output);
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
 
   /*!
    * \brief Set the fluid solver nondimensionalization.

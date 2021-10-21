@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -164,18 +164,6 @@ class CDiscAdjFluidIteration final : public CIteration {
    */
   void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                       unsigned short iZone, unsigned short iInst) override;
-
-  /*!
-   * \brief Record a single iteration of the direct mean flow system.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions

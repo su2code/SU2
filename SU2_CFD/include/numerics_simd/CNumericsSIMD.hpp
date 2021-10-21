@@ -2,7 +2,7 @@
  * \file CNumericsSIMD.hpp
  * \brief Vectorized (SIMD) numerics classes.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/parallelization/vectorization.hpp"
 
 /*!

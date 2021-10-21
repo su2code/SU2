@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,7 +58,7 @@ void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry
                                               unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
-  bool turbulent = (donor_config->GetKind_Turb_Model() != NONE);
+  bool turbulent = (donor_config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
 
 
@@ -93,7 +93,7 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
                                                unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
-  bool turbulent = (target_config->GetKind_Turb_Model() != NONE);
+  bool turbulent = (target_config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
 
   target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);

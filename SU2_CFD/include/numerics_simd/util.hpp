@@ -2,7 +2,7 @@
  * \file util.hpp
  * \brief Generic auxiliary functions.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,6 +107,24 @@ FORCEINLINE Double squaredNorm(ForwardIterator iterator) {
 template<size_t nDim>
 FORCEINLINE Double squaredNorm(const VectorDbl<nDim>& vector) {
   return squaredNorm<nDim>(vector.data());
+}
+
+/*!
+ * \brief Tangential projection.
+ */
+template<size_t nDim>
+FORCEINLINE VectorDbl<nDim> tangentProjection(const MatrixDbl<nDim>& tensor,
+                                              const VectorDbl<nDim>& unitVector) {
+  VectorDbl<nDim> proj;
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    proj(iDim) = dot(tensor[iDim], unitVector);
+
+  Double normalProj = dot(proj, unitVector);
+
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    proj(iDim) -= normalProj * unitVector(iDim);
+
+  return proj;
 }
 
 /*!

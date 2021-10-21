@@ -4,7 +4,7 @@
  * \brief Header file for the class CMeshReaderFVM.
  *        The implementations are in the <i>CMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
 /*!
  * \class CMeshReaderFVM
  * \brief Base class for the mesh zone readers of the finite volume solver (FVM).
- * \author: T. Economon
+ * \author T. Economon
  */
 class CMeshReaderFVM {
 
@@ -46,7 +46,7 @@ protected:
   const int rank;  /*!< \brief MPI Rank. */
   const int size;  /*!< \brief MPI Size. */
 
-  CConfig* const config = nullptr; /*!< \brief Local pointer to the config parameter object. */
+  const CConfig* config = nullptr; /*!< \brief Local pointer to the config parameter object. */
 
   unsigned short dimension = 0; /*!< \brief Dimension of the problem (2 or 3). */
 
@@ -70,14 +70,9 @@ public:
    * \param[in] val_iZone  - Current zone index.
    * \param[in] val_nZone  - Total number of zones.
    */
-  CMeshReaderFVM(CConfig        *val_config,
+  CMeshReaderFVM(const CConfig *val_config,
                  unsigned short val_iZone,
                  unsigned short val_nZone);
-
-  /*!
-   * \brief Destructor of the CMeshReaderFVM class.
-   */
-  ~CMeshReaderFVM(void) = default;
 
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).
@@ -109,7 +104,7 @@ public:
    * \param[in] val_iMarker - current marker index.
    * \returns Number of surface elements for a marker.
    */
-  inline unsigned long GetNumberOfSurfaceElementsForMarker(int val_iMarker) {
+  inline unsigned long GetNumberOfSurfaceElementsForMarker(int val_iMarker) const {
     return (unsigned long)surfaceElementConnectivity[val_iMarker].size()/SU2_CONN_SIZE;
   }
 

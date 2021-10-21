@@ -20,3 +20,7 @@ option('enable-mixedprec', type : 'boolean', value : false, description: 'use si
 option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
 option('enable-mpp',  type : 'boolean', value : false, description: 'enable Mutation++ support')
 option('opdi-backend', type : 'combo', choices : ['auto', 'macro', 'ompt'], value : 'auto', description: 'OpDiLib backend choice')
+option('codi-tape', type : 'combo', choices : ['JacobianLinear', 'JacobianIndex'], value : 'JacobianLinear', description: 'CoDiPack tape choice')
+option('opdi-shared-read-opt', type : 'boolean', value : true, description : 'OpDiLib shared reading optimization')
+option('librom_root', type : 'string', value : '', description: 'libROM base directory')
+option('enable-librom', type : 'boolean', value : false, description: 'enable LLNL libROM support')

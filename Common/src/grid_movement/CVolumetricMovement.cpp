@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,11 +105,11 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
   for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
     iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
+    geometry[iMGlevel]->SetControlVolume(geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
     if (config->GetGrid_Movement())
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine]);
   }
 
 }
@@ -356,68 +356,8 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
         nNonconvexElements++;
       }
     }
-  } else if (false) {
-
-    /*--- 3D elements ---*/
-    unsigned short iNode, iFace, nFaceNodes;
-
-    for (iElem = 0; iElem < geometry->GetnElem(); iElem++){
-      for (iFace = 0; iFace < geometry->elem[iElem]->GetnFaces(); iFace++){
-        nFaceNodes = geometry->elem[iElem]->GetnNodesFace(iFace);
-
-        su2double minCrossProductLength = 1.e6, maxCrossProductLength = -1.e6;
-        for (iNode = 0; iNode < nFaceNodes; iNode++) {
-          su2double crossProductLength = 0.0;
-
-          /*--- Get coords of node face_point_i and its adjacent nodes in the face ---*/
-          unsigned long face_point_i, face_point_j, face_point_k;
-
-          face_point_i = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode));
-
-          /// TODO: Faces may have up to 4 nodes, not all posibilities are covered
-
-          if (iNode == 0) {
-            face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, nFaceNodes-1));
-            face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode+1));
-          } else if (iNode == nFaceNodes-1) {
-            face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode-1));
-            face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, 0));
-          }
-
-          const auto Coords_i = geometry->nodes->GetCoord(face_point_i);
-          const auto Coords_j = geometry->nodes->GetCoord(face_point_j);
-          const auto Coords_k = geometry->nodes->GetCoord(face_point_k);
-
-          /*--- Get edge vectors from point k to i and point j to i ---*/
-          su2double edgeVector_i[3], edgeVector_j[3];
-          GeometryToolbox::Distance(nDim, Coords_k, Coords_i, edgeVector_i);
-          GeometryToolbox::Distance(nDim, Coords_j, Coords_i, edgeVector_j);
-
-          /*--- Calculate cross product of edge vectors and its length---*/
-          su2double crossProduct[3];
-          GeometryToolbox::CrossProduct(edgeVector_i, edgeVector_j, crossProduct);
-
-          /// TODO: This logic is incorrect, the norm will never be less than 0
-
-          crossProductLength = GeometryToolbox::Norm(nDim, crossProduct);
-
-          /*--- Check if length is minimum or maximum ---*/
-          if (crossProductLength < minCrossProductLength) {
-            minCrossProductLength = crossProductLength;
-          } else if (crossProductLength > maxCrossProductLength) {
-            maxCrossProductLength = crossProductLength;
-          }
-        }
-
-      /*--- If minimum cross product length is smaller than 0,
-      face (and therefore element) is not convex ---*/
-      if (minCrossProductLength < 0) {
-        nNonconvexElements++;
-        break;
-      }
-
-      }
-    }
+  } else if (rank == MASTER_NODE) {
+    cout << "\nWARNING: Convexity is not checked for 3D elements (issue #1171).\n" << endl;
   }
 
   unsigned long nNonconvexElements_Local = nNonconvexElements; nNonconvexElements = 0;

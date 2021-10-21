@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -583,7 +583,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Open the grid file again and go to the position where
@@ -1146,7 +1145,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Store the global ID's of the nodes in such a way that they can
@@ -1283,7 +1281,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Sequential mode. Create the data for the points. The global
         number of points equals the local number of points. ---*/
   nPoint     = Global_nPoint;
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   for(unsigned long i=0; i<nPoint; ++i) {
@@ -3185,9 +3182,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
     elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-    /*--- Initialize the array, which stores whether or not the faces are
-          considered to have a constant Jacobian. ---*/
-    elem[i]->InitializeJacobianConstantFaces(nFaces);
+    /*--- Reset the array, which stores whether or not the faces are
+          considered to have a constant Jacobian, to false. ---*/
+    elem[i]->ResetJacobianConstantFaces();
 
     /*--- Loop over the number of faces of this element. ---*/
     su2double jacFaceMax = 0.0;
@@ -3355,7 +3352,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -3500,7 +3497,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* Retrieve the floating point information for this boundary marker.
              The exchange location is the first element of this array. */
@@ -3952,7 +3949,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
         case ISOTHERMAL:
         case HEAT_FLUX: {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
             for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l)
               bound[iMarker][l]->RemoveMultipleDonorsWallFunctions();
@@ -4825,7 +4822,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* Retrieve the integer information for this boundary marker.
              The number of points in normal direction for the wall function

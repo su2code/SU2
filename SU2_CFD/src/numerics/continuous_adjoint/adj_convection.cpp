@@ -2,7 +2,7 @@
  * \file adj_convection.cpp
  * \brief Implementation of adjoint convection numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -829,8 +829,8 @@ void CUpwSca_AdjTurb::ComputeResidual (su2double *val_residual_i, su2double *val
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
     Velocity_j[iDim] = U_j[iDim+1]/U_j[0];
-    proj_conv_flux_i += (TurbVar_Grad_i[0][iDim]/sigma - Velocity_i[iDim])*Normal[iDim]; // projection of convective flux at iPoint
-    proj_conv_flux_j += (TurbVar_Grad_j[0][iDim]/sigma - Velocity_j[iDim])*Normal[iDim]; // projection of convective flux at jPoint
+    proj_conv_flux_i += (ScalarVar_Grad_i[0][iDim]/sigma - Velocity_i[iDim])*Normal[iDim]; // projection of convective flux at iPoint
+    proj_conv_flux_j += (ScalarVar_Grad_j[0][iDim]/sigma - Velocity_j[iDim])*Normal[iDim]; // projection of convective flux at jPoint
   }
   proj_conv_flux_ij = 0.5*fabs(proj_conv_flux_i+proj_conv_flux_j); // projection of average convective flux
 

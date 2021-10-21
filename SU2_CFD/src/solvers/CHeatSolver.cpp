@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -104,10 +104,9 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Set the reference values for temperature ---*/
 
-  su2double Temperature_FreeStream = config->GetInc_Temperature_Init();
-  config->SetTemperature_FreeStream(Temperature_FreeStream);
-
+  su2double Temperature_FreeStream = config->GetTemperature_FreeStream();
   su2double Temperature_Ref = 0.0;
+
   if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
     Temperature_Ref = 1.0;
   }
@@ -118,22 +117,19 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     Temperature_Ref = config->GetInc_Temperature_Ref();
   }
   config->SetTemperature_Ref(Temperature_Ref);
+  config->SetTemperature_FreeStreamND(Temperature_FreeStream/Temperature_Ref);
 
   /*--- Set the reference values for heat fluxes. If the heat solver runs stand-alone,
    *    thermal conductivity is read directly from config file ---*/
 
-
   if (heat_equation) {
+    su2double rho_cp = config->GetMaterialDensity(0)*config->GetSpecific_Heat_Cp();
+    config->SetThermalDiffusivity(config->GetThermal_Conductivity_Constant() / rho_cp);
 
-    const su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
-    config->SetThermalDiffusivity_Solid(config->GetThermalConductivity_Solid() / rho_cp);
-
-    config->SetTemperature_FreeStreamND(config->GetTemperature_Initial_Solid()/config->GetTemperature_Ref());
+    /*--- Fluxes are computed via thermal diffusivity (not conductivity), so we have to divide by rho*cp ---*/
     config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);
   }
   else if (flow) {
-
-    config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
     config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
   }
 
@@ -162,6 +158,19 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   nodes = new CHeatVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
 
   SetBaseClassPointerToNodes();
+
+  /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers. ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  /*--- Store if implicit scheme is used. This has implications on the Residual and Jacobian handling for periodic
+   * boundaries  ---*/
+  const bool euler_implicit = (config->GetKind_TimeIntScheme_Heat() == EULER_IMPLICIT);
+  SetImplicitPeriodic(euler_implicit);
+
 
   /*--- MPI solution ---*/
 
@@ -352,8 +361,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-            **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
+  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected,
+            Project_Grad_i, Project_Grad_j, Project_Temp_i_Grad, Project_Temp_j_Grad;
 
   su2double Vector_i[MAXNDIM] = {0};
   su2double Vector_j[MAXNDIM] = {0};
@@ -377,8 +386,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
 
-      Temp_i_Grad = nodes->GetGradient(iPoint);
-      Temp_j_Grad = nodes->GetGradient(jPoint);
+      const auto Temp_i_Grad = nodes->GetGradient(iPoint);
+      const auto Temp_j_Grad = nodes->GetGradient(jPoint);
       numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
       Temp_i = nodes->GetTemperature(iPoint);
@@ -392,10 +401,10 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
           Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
         }
 
-        Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
-        Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
-        Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
-        Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
+        const auto Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
+        const auto Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+        const auto Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
+        const auto Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
 
         /*Loop to correct the flow variables*/
         for (auto iVar = 0u; iVar < nVarFlow; iVar++) {
@@ -450,7 +459,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   CNumerics* numerics = numerics_container[VISC_TERM];
 
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
-            thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
+            thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j;
 
   const bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
@@ -471,8 +480,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                        geometry->nodes->GetCoord(jPoint));
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
-    Temp_i_Grad = nodes->GetGradient(iPoint);
-    Temp_j_Grad = nodes->GetGradient(jPoint);
+    const auto Temp_i_Grad = nodes->GetGradient(iPoint);
+    const auto Temp_j_Grad = nodes->GetGradient(jPoint);
     numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
     /*--- Primitive variables w/o reconstruction ---*/
@@ -490,8 +499,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
       thermal_diffusivity_j = (laminar_viscosity/Prandtl_Lam) + (eddy_viscosity_j/Prandtl_Turb);
     }
     else {
-      thermal_diffusivity_i = config->GetThermalDiffusivity_Solid();
-      thermal_diffusivity_j = config->GetThermalDiffusivity_Solid();
+      thermal_diffusivity_i = config->GetThermalDiffusivity();
+      thermal_diffusivity_j = config->GetThermalDiffusivity();
     }
 
     numerics->SetThermalDiffusivity(thermal_diffusivity_i,thermal_diffusivity_j);
@@ -573,7 +582,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
   const su2double laminar_viscosity = config->GetMu_ConstantND();
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity_Solid();
+  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity();
 
   //su2double Prandtl_Turb = config->GetPrandtl_Turb();
   //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
@@ -833,7 +842,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double rho_cp_solid = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
+  const su2double rho_cp_solid = config->GetMaterialDensity(0)*config->GetSpecific_Heat_Cp();
 
   if (flow) {
 
@@ -897,6 +906,20 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
   }
 }
 
+void CHeatSolver::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                                           CConfig* config) {
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. For implicit calculations
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+}
+
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned long iPointNormal;
@@ -905,7 +928,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   string Marker_Tag, HeatFlux_Tag;
 
   const su2double thermal_diffusivity = flow ? config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() :
-                                               config->GetThermalDiffusivity_Solid();
+                                               config->GetThermalDiffusivity();
 
   AllBound_HeatFlux = 0.0;
   AllBound_AverageT = 0.0;
@@ -1028,7 +1051,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
 
-  thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+  thermal_diffusivity = config->GetThermalDiffusivity();
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
@@ -1066,7 +1089,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- Viscous contribution ---*/
 
-    thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+    thermal_diffusivity = config->GetThermalDiffusivity();
     if(flow) {
       if(turb) {
         eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
@@ -1106,7 +1129,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
       /*--- Viscous contribution ---*/
 
-      thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+      thermal_diffusivity = config->GetThermalDiffusivity();
       if(flow) {
         if(turb) {
           eddy_viscosity = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
@@ -1278,11 +1301,12 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
+    const su2double dt = nodes->GetDelta_Time(iPoint);
+    if (dt != 0.0) {
+      /*--- For nodes on periodic boundaries, add the respective partner volume. ---*/
       // Identical for flow and heat
-      const su2double Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Vol / dt);
 
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -1328,6 +1352,12 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
     }
+  }
+
+  /*--- Synchronize the solution between master and passive periodic nodes after the linear solve. ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
   /*--- MPI solution ---*/
