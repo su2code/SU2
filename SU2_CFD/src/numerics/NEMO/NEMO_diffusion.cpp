@@ -354,7 +354,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
         Jacobian_j[iVar][jVar] = 0.0;
       }
     }
-    GetViscousProjJacs<nDim,nSpecies>(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    GetViscousProjJacs<nVar,nSpecies>(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
                        Mean_Diffusion_Coeff, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                        Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                        dist_ij, UnitNormal, Area, Proj_Flux_Tensor,

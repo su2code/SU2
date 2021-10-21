@@ -139,6 +139,11 @@ public:
                           su2double val_therm_conductivity_ve,
                           const CConfig *config);
 
+
+  /*--- Template matrix creation for code optimization ---*/
+  template <int nRows, int nCols>
+  using Matrix = C2DContainer<unsigned short, su2double, StorageType::RowMajor, 8, nRows, nCols>;
+
   /*!
    * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
@@ -170,11 +175,8 @@ public:
                           su2double **val_Jac_i, su2double **val_Jac_j,
                           const CConfig *config){
 
-    /*--- Template matrix creation for code optimization ---*/
-    template <int nRows, int nCols>
-    using Matrix = C2DContainer<unsigned short, su2double, StorageType::RowMajor, 8, nRows, nCols>
-
-    Matrix<NVAR, NVAR> dFdVi, dFdVj, dVdUi, dVdUj, val_Jac_i, val_Jac_j;
+    /*--- Initialize matrices ---*/
+    Matrix<NVAR, NVAR> dFdVi, dFdVj, dVdUi, dVdUj;
     Matrix<NSPECIES, NSPECIES> dJdr_i, dJdr_j;
 
     /*--- Play tricks on the compiler, in static mode use NVAR from the template, in dynamic mode
@@ -185,10 +187,8 @@ public:
     // Allocate and initialize, for the static case the compiler optimizes this away.
     dFdVi.resize(nVar, nVar) = su2double(0.0);
     dFdVj.resize(nVar, nVar) = su2double(0.0);
-    dFdUi.resize(nVar, nVar) = su2double(0.0);
-    dFdUj.resize(nVar, nVar) = su2double(0.0);
-    val_Jac_i.resize(nVar, nVar) = su2double(0.0);
-    val_Jac_j.resize(nVar, nVar) = su2double(0.0);
+    dVdUi.resize(nVar, nVar) = su2double(0.0);
+    dVdUj.resize(nVar, nVar) = su2double(0.0);
     dJdr_i.resize(nSpecies,nSpecies) = su2double(0.0);
     dJdr_j.resize(nSpecies,nSpecies) = su2double(0.0);
 
