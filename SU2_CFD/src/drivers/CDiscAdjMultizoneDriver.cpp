@@ -469,6 +469,7 @@ void CDiscAdjMultizoneDriver::Run() {
       if (nNewtonBasisSamples[iZone]) {
         if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
           GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+          cout << "checking basis..." << endl;
           if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
             fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
             NewtonUpdateWaitIterations = 0;

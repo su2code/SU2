@@ -150,7 +150,7 @@ protected:
 
     su2double FirstQuotient = abs(Krylov_Criterion_Quotients[0]);
 
-//    cout << " current criterion value: " << FirstQuotient << endl;
+    cout << " current criterion value: " << FirstQuotient << endl;
     if (FirstQuotient > KrylovCriterionValue) {
 
       cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
