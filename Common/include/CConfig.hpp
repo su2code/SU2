@@ -851,10 +851,13 @@ private:
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  su2double *Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
-  *Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
-  wallModelKappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
-  wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
+  unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
+  su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
+  wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
+  wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
+  wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
+  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  *Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -863,7 +866,7 @@ private:
   Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
   Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
-  Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
+  Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
   Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
   Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
@@ -1734,13 +1737,31 @@ public:
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
    * \return von Karman constant.
    */
-  su2double GetwallModelKappa(void) const { return wallModelKappa; }
+  su2double GetwallModel_Kappa() const { return wallModel_Kappa; }
 
   /*!
-   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
-   * \return von Karman constant.
+   * \brief Get the value of the max. number of Newton iterations for turbulence wall modeling.
+   * \return Max number of iterations.
    */
-  su2double GetwallModelB(void) const { return wallModelB; }
+  unsigned short GetwallModel_MaxIter() const { return wallModel_MaxIter; }
+
+  /*!
+   * \brief Get the value of the relaxation factor for turbulence wall modeling.
+   * \return Relaxation factor.
+   */
+  su2double GetwallModel_RelFac() const { return wallModel_RelFac; }
+
+  /*!
+   * \brief Get the value of the minimum Y+ value below which the wall function is deactivated.
+   * \return Minimum Y+ value.
+   */
+  su2double GetwallModel_MinYPlus() const { return wallModel_MinYplus; }
+
+  /*!
+   * \brief Get the value of the wall model constant B for turbulence wall modeling.
+   * \return Wall model constant B.
+   */
+  su2double GetwallModel_B() const { return wallModel_B; }
 
   /*!
    * \brief Get the value of the thermal diffusivity for solids.
@@ -1816,10 +1837,10 @@ public:
   su2double GetFan_Poly_Eff(void) const { return Fan_Poly_Eff; }
 
   /*!
-   * \brief Get the value of the reference conductivity for non-dimensionalization.
-   * \return Reference conductivity for non-dimensionalization.
+   * \brief Get the value of the reference thermal conductivity for non-dimensionalization.
+   * \return Reference thermal conductivity for non-dimensionalization.
    */
-  su2double GetConductivity_Ref(void) const { return Conductivity_Ref; }
+  su2double GetThermal_Conductivity_Ref(void) const { return Thermal_Conductivity_Ref; }
 
   /*!
    * \brief Get the value of the reference angular velocity for non-dimensionalization.
@@ -2484,7 +2505,7 @@ public:
    * \brief Set the reference conductivity for nondimensionalization.
    * \param[in] val_conductivity_ref - Value of the reference conductivity.
    */
-  void SetConductivity_Ref(su2double val_conductivity_ref) { Conductivity_Ref = val_conductivity_ref; }
+  void SetConductivity_Ref(su2double val_conductivity_ref) { Thermal_Conductivity_Ref = val_conductivity_ref; }
 
   /*!
    * \brief Set the nondimensionalized freestream pressure.
