@@ -86,7 +86,7 @@ def main():
 
   confFile = str(options.filename)
 
-  FSI_config = FSI.FSIConfig(confFile) 		# FSI configuration file
+  FSI_config = FSI.FSIConfig(confFile, comm) 		# FSI configuration file
   CFD_ConFile = FSI_config['CFD_CONFIG_FILE_NAME']	# CFD configuration file
   CSD_ConFile = FSI_config['CSD_CONFIG_FILE_NAME']	# CSD configuration file
 
