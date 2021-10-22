@@ -294,6 +294,12 @@ public:
   su2double GetDerivative_dfadxv(unsigned long iPoint, unsigned long iDim) const override;
 
   /*!
+   * \brief Get matrix-vector product dfadua^T x psi.
+   * \param[in] iMarker - Marker identifier.
+   */
+  vector<su2double> GetDerivative_dfadua(unsigned short iMarker) const override;
+    
+  /*!
    * \brief Get matrix-vector product dxvdua^T x psi.
    * \param[in] iMarker - Marker identifier.
    */
