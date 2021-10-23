@@ -1142,6 +1142,7 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
+  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -3638,6 +3639,12 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetWall_Catalytic_TagBound(unsigned short val_marker) const { return Wall_Catalytic[val_marker]; }
+
+  /*!
+   * \brief Get wall catalytic efficiency.
+   * \return wall catalytic efficiency value.
+   */
+  su2double GetCatalytic_Efficiency(void) const { return CatalyticEfficiency; }
 
   /*!
    * \brief Fluid model that we are using.

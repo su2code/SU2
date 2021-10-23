@@ -810,14 +810,30 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
       /*--- Calculate normal derivative of mass fraction ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        if (iSpecies == 0) {
-          dYdn[iSpecies] = (0.999-Yj[iSpecies])/dij;
-        } else if (iSpecies == 1) {
-          dYdn[iSpecies] = (0.001-Yj[iSpecies])/dij;
+        if (iSpecies == 3) {
+          dYdn[iSpecies] = (0.7586-Yj[iSpecies])/dij;
+        } else if (iSpecies == 4) {
+          dYdn[iSpecies] = (0.2414-Yj[iSpecies])/dij;
         } else {
           dYdn[iSpecies] = (0-Yj[iSpecies])/dij;
         }
       }
+
+      /*--- Identify the boundary ---*/
+      string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+      /*--- Get isothermal wall temp ----*/
+      su2double Tw = config->GetIsothermal_Temperature(Marker_Tag);
+
+      su2double gam = config->GetCatalytic_Efficiency();
+      cout << "catalytic efficiency: " << gam << endl;
+
+      //Set up for SU2 TC lib
+      //Figure out why Yi and Vi[RHOS]/Vi[RHO] give different answers
+      Res_Visc[0] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+      Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+      //Res_Visc[3] = gam*Vi[RHOS_INDEX+0]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+      //Res_Visc[4] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
 
       /*--- Calculate supplementary quantities ---*/
       SdYdn = 0.0;
@@ -825,8 +841,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
 
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
-                                       +Yst[iSpecies]*SdYdn            )*Area;
+        //Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
+        //                               +Yst[iSpecies]*SdYdn            )*Area;
         Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }

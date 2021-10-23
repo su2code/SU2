@@ -2598,7 +2598,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
         enthalpy transport due to mass diffusion ---*/ 
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven + sumJhs;
-        cout << sumJhs << endl;
       }
 
       /*--- Note that y+, and heat are computed at the
