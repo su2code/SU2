@@ -314,7 +314,6 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
                                           CSolver ***solver_container,
                                           CConfig *config,
                                           unsigned long ExtIter) {
-  su2double *coords;
   bool Restart   = (config->GetRestart() || config->GetRestart_Flow());
   
   
@@ -365,18 +364,19 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
       /*--- the burnt value of the progress variable is set to a value slightly below the maximum value ---*/
 
       prog_burnt = 0.95*fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
-      for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
+      for (unsigned long i_point = 0; i_point < nPointDomain; i_point++) {
         
         for (unsigned long i_var = 0; i_var < nVar; i_var++)
           Solution[i_var] = 0.0;
         
-        coords = geometry[i_mesh]->nodes->GetCoord(i_point);
+        auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         /* determine if our location is above or below the plane, assuming the normal 
            is pointing towards the burned region*/ 
-        point_loc = flame_normal[0]*(coords[0]-flame_offset[0]) 
-                  + flame_normal[1]*(coords[1]-flame_offset[1]) 
-                  + flame_normal[2]*(coords[2]-flame_offset[2]);
+        point_loc = 0.0;
+        for (unsigned short i_dim =0; i_dim < geometry[i_mesh]->GetnDim(); i_dim++) {
+          point_loc +=  flame_normal[i_dim]*(coords[i_dim]-flame_offset[i_dim]); 
+        }
 
         /* compute the exact distance from point to plane */          
         point_loc = point_loc/flamenorm;
