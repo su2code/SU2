@@ -61,7 +61,7 @@ protected:
   using CQuasiNewtonInvLeastSquares<Scalar_t>::R;           // basis of unstable space, nbasis many
 
   /*--- Some more storage is needed because of the handling of two separated solution update strategies ---*/
-  su2matrix<Scalar> q,q_outer;
+  su2matrix<Scalar> q,q_old,q_outer;
   su2matrix<Scalar> p;                  // projected solution
   Eigen::VectorXd p_R;                  // projected solution in terms of basis R
   Eigen::VectorXd pn_R;                 // old projected solution in terms of basis R
@@ -150,10 +150,11 @@ protected:
 
     su2double FirstQuotient = abs(Krylov_Criterion_Quotients[0]);
 
-    cout << " current criterion value: " << FirstQuotient << endl;
+    if (SU2_MPI::GetRank() == MASTER_NODE) cout << " eigenvalue ratio: " << fixed << setprecision(1) << setw(5) << FirstQuotient;
     if (FirstQuotient > KrylovCriterionValue) {
 
-      cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
+      if (SU2_MPI::GetRank() == MASTER_NODE)
+        cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
       iBasis++;
 
       /*--- Get reference to new basis vector, extract first column from Q ---*/
@@ -167,7 +168,7 @@ protected:
 //      }
 //      Eigen_NewR.normalize();
 
-      cout << "done." << endl;
+      if (SU2_MPI::GetRank() == MASTER_NODE) cout << "done." << endl;
 
       return true;
     }
@@ -232,6 +233,9 @@ protected:
 
     /*--- Compute update w.r.t. subspace basis (Eq. (5.6) in original paper of Shroff & Keller). ---*/
     p_R = pn_R + NewtonInverseMatrix * (p_R - pn_R);
+    if (SU2_MPI::GetRank() == MASTER_NODE)
+      cout << " corr. basis size " << iBasis << " - ";
+      //cout << "newton step matrix " << NewtonInverseMatrix << endl;
 //    p_R = pn_R + (p_R - pn_R);                        // linear algebra sanity check
 
     /*--- Compute unstable part w.r.t. standard basis ---*/
@@ -266,6 +270,7 @@ public:
     nPtDomain = nptdomain? nptdomain : npt;
     work.resize(npt,nvar);
     q.resize(npt,nvar);
+    q_old.resize(npt,nvar);
     q_outer.resize(npt,nvar);
     p.resize(npt,nvar);
     X.clear();                              // role here: store history of delta solutions in stable space
@@ -318,6 +323,8 @@ public:
           EigenR.col(i) = Eigen::VectorXd::Map(R[i].data(),R[0].size());
         }
         p_R.resize(iBasis);
+
+        return true;
       }
     }
     else {
@@ -336,7 +343,7 @@ public:
     NewtonInverseMatrix.resize(iBasis,iBasis);
     DR.resize(DR.rows(),iBasis);
 
-    cout << "Evaluate R^T (dG/du)^T R[i] for i = ";
+    if (SU2_MPI::GetRank() == MASTER_NODE) cout << "Evaluate R^T (dG/du)^T R[i] for i = ";
     for (Index j = 0; j < iBasis; ++j) {
 
       AD::ClearAdjoints();
@@ -376,7 +383,7 @@ public:
     /*--- Set the corrected new solution at address work, use work2 ---*/
 //    SU2_OMP_SIMD
     for (Index i = 0; i < work.size(); ++i) {
-      work.data()[i] = q.data()[i] + p.data()[i];         // work addresses: corrected solution (add corrected projected solution)
+      work.data()[i] = q.data()[i] + p.data()[i];     // work addresses: corrected solution (add corrected projected solution)
     }
   }
 };
