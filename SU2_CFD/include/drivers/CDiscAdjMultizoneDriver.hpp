@@ -123,6 +123,7 @@ protected:
   vector<su2matrix<int> > OutputIndices;
   vector<unsigned short> nNewtonBasisSamples;
   unsigned short NewtonUpdateWaitIterations;
+  bool rpm_outer = false;
 
   /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton). */
   static constexpr unsigned long KrylovMinIters = 3;

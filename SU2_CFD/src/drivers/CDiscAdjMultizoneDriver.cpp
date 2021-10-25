@@ -178,6 +178,9 @@ void CDiscAdjMultizoneDriver::StartSolver() {
   InputIndices.resize(nZone);
   OutputIndices.resize(nZone);
   nNewtonBasisSamples.resize(nZone);
+  if(driver_config->GetnOuter_Iter() > 1)
+    rpm_outer = true;
+
 
   for (iZone = 0; iZone < nZone; iZone++) {
     wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
@@ -267,8 +270,19 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
      * ---*/
 
     GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
-    fixPtSubspaceCorrector[iZone].compute();
+    fixPtSubspaceCorrector[iZone].computeProjections();
+    if(!rpm_outer) fixPtSubspaceCorrector[iZone].shift(false);
+    fixPtSubspaceCorrector[iZone].computeCorrection();
     SetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+
+    if(!rpm_outer) {
+      if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
+        if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
+          fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
+          NewtonUpdateWaitIterations = 0;
+        }
+      }
+    }
   }
 
   /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
@@ -466,10 +480,9 @@ void CDiscAdjMultizoneDriver::Run() {
         }
       }
 
-      if (nNewtonBasisSamples[iZone]) {
+      if (nNewtonBasisSamples[iZone] && (rpm_outer == true)) {
+        fixPtSubspaceCorrector[iZone].shift(true);
         if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
-          GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
-          cout << "checking basis..." << endl;
           if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
             fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
             NewtonUpdateWaitIterations = 0;

@@ -74,11 +74,13 @@ public:
    */
   void computeProjectedJacobian(unsigned short iZone, su2matrix<int>& InputIndices, su2matrix<int>& OutputIndices) {}
 
-  void projectSolution() {}
+  void computeProjections();
+
+  void shift(bool outer);
 
   /*!
    * \brief Compute a new approximation.
    * \note To be used after storing the FP result.
    */
-  void compute() {}
+  void computeCorrection() {}
 };

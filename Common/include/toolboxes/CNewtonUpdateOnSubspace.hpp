@@ -190,40 +190,6 @@ protected:
     Eigen_p = EigenR*p_R;                               // p addresses: (uncorrected) projected solution in standard basis (needed for computation of q)
   }
 
-  // Also updates current q (so don't touch outside)
-  void computeProjections(bool outer) {
-
-    if (iBasis > 0) {
-
-    /*--- Project solution-to-be-corrected update (loaded at address in work), store at p, coefficients at p_R. ---*/
-      projectWork();
-//      SU2_OMP_SIMD
-      for (Index i = 0; i < work.size(); ++i) {
-        work.data()[i] = work.data()[i] - p.data()[i];      // work addresses: q (subtract uncorrected projected solution)
-      }
-    } else {
-      for (Index i = 0; i < p.size(); ++i)
-        p.data()[i] = 0.0;
-    }
-
-    /*--- Update X to check for new basis elements. ---*/
-
-    /*--- Check for need to shift left. ---*/
-    if (iSample+1 == X.size()) {
-      shiftHistoryLeft(X);
-      iSample--;                                      // X[0].data not needed anymore
-    }
-
-    if(outer) std::swap(q,q_outer);                   // q addresses: outer q
-//    SU2_OMP_SIMD
-    for (Index i = 0; i < work.size(); ++i) {
-      q.data()[i] = work.data()[i] - q.data()[i];     // q addresses: delta q
-    }
-    std::swap(X[++iSample], q);                       // X[iSample] addresses: delta q, address under q is unused
-    std::swap(q, work);                               // q addresses: q ;-)
-    if(outer) std::swap(q,q_outer);                   // q_outer addresses: outer q
-  }
-
   void correctUnstableProjection() {
 
     if (EigenR.cols() > BasisSize_n) {
@@ -356,25 +322,68 @@ public:
         DR.col(j)(it) = AD::GetDerivative(InputIndices.data()[it]);     // extract DR = (dG/du)^T*R[j]
       for (Index i = 0; i < iBasis; ++i)
         ProjectedJacobian(i,j) = DotEigen(EigenR.col(i),DR.col(j));     // R^T*DR
-      cout << j+1 << ", ";
+      if (SU2_MPI::GetRank() == MASTER_NODE) cout << j+1 << ", ";
     }
-    cout << "...";
+    if (SU2_MPI::GetRank() == MASTER_NODE) cout << "...";
     ProjectedJacobian = NewtonInverseMatrix.setIdentity() - ProjectedJacobian;
     NewtonInverseMatrix = ProjectedJacobian.inverse();
-    cout << " done." << endl;
+    if (SU2_MPI::GetRank() == MASTER_NODE) cout << " done." << endl;
+  }
+
+  void computeProjections() {
+
+    /*--- save p_R to pn_R to prepare next Newton step ---*/
+    pn_R = p_R;                                         // pn_R: z in original paper
+
+    if (iBasis > 0) {
+
+    /*--- Project solution-to-be-corrected update (loaded at address in work), store at p, coefficients at p_R. ---*/
+      projectWork();
+//      SU2_OMP_SIMD
+      for (Index i = 0; i < work.size(); ++i) {
+        work.data()[i] = work.data()[i] - p.data()[i];  // work addresses: q (subtract uncorrected projected solution)
+      }
+    } else {
+      for (Index i = 0; i < p.size(); ++i)
+        p.data()[i] = 0.0;
+    }
+
+    std::swap(q,work);            // work addresses: old q, q addresses: new q
+  }
+
+  void shift(bool outer) {
+
+    /*--- Set the right q_old ---*/
+    if (outer) {
+      std:swap(q_outer,q_old);
+    }
+    else {
+      std::swap(work,q_old);        // q_old addresses old q, vector at work-address free to use
+    }
+
+    /*--- Update X to check for new basis elements. ---*/
+    /*--- Check for need to shift left. ---*/
+    if (iSample+1 == X.size()) {
+      shiftHistoryLeft(X);
+      iSample--;                    // X[0].data not needed anymore
+    }
+
+    // SU2_OMP_SIMD
+    for (Index i = 0; i < work.size(); ++i) {
+      work.data()[i] = q.data()[i] - q_old.data()[i];   // work addresses: delta q
+    }
+
+    std::swap(X[++iSample], work);  // X[iSample] addresses: delta q, vector at work-address free to use
+
+    if (outer)
+      std::swap(q,q_outer);         // if called in outer loop, update q_outer
   }
 
   /*!
    * \brief Compute a new approximation.
    * \note To be used after storing the FP result.
    */
-  void compute() {
-
-    /*--- save p_R to pn_R to prepare next Newton step ---*/
-    pn_R = p_R;                                           // pn_R: z in original paper
-
-    /*--- Compute new projection solution p, its coefficients p_R, and new delta solution q ---*/
-    computeProjections(false);
+  void computeCorrection() {
 
     /*--- Newton correction for the slow/unstable part of the solution update. ---*/
     if (iBasis > 0)
