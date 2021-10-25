@@ -9,3 +9,8 @@ Just a very! brief explanation
 Again
 
 ...
+
+## laminar_premixed_flame
+
+A laminar premixed flame stabilized on a isothermal burner with a fixed wall temperature
+using a small lookup table for all thermo-chemical quantities

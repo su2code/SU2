@@ -48,16 +48,16 @@ def main():
     ### NOT FLAMELET                   ###
     ######################################
 
-    # NACA0012 Hydrofoil
-    inc_euler_naca0012           = TestCase('inc_euler_naca0012')
-    inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
-    inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
-    inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-4.801273, -3.773079, 0.495236, 0.007346]
-    inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
-    inc_euler_naca0012.timeout   = 1600
-    inc_euler_naca0012.tol       = 0.00001
-    test_list.append(inc_euler_naca0012)
+    # 2D laminar premixed flame with FGM table 
+    flamelet_laminar_premixed           = TestCase('flamelet_laminar_premixed')
+    flamelet_laminar_premixed.cfg_dir   = "flamelet/laminar_premixed_flame"
+    flamelet_laminar_premixed.cfg_file  = "premixed_burner.cfg"
+    flamelet_laminar_premixed.test_iter = 10
+    flamelet_laminar_premixed.test_vals = [-0.716925, -8.784123, -12.251280, 2317.000000]
+    flamelet_laminar_premixed.su2_exec  = "parallel_computation.py -f"
+    flamelet_laminar_premixed.timeout   = 1600
+    flamelet_laminar_premixed.tol       = 0.00001
+    test_list.append(flamelet_laminar_premixed)
 
     # 2D CHT case streamwise periodicity
     sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
