@@ -74,9 +74,9 @@ public:
    */
   void computeProjectedJacobian(unsigned short iZone, su2matrix<int>& InputIndices, su2matrix<int>& OutputIndices) {}
 
-  void computeProjections();
+  void computeProjections() {}
 
-  void shift(bool outer);
+  void shift(bool outer) {}
 
   /*!
    * \brief Compute a new approximation.
