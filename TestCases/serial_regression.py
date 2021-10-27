@@ -659,6 +659,94 @@ def main():
     fem_ns_unsteady_cylinder_ader.tol       = 0.00001
     test_list.append(fem_ns_unsteady_cylinder_ader)
 
+    ###########################
+    ### Turbulence modeling ###
+    ###########################
+
+    # SA Baseline (Identical to RANS SA RAE2822)
+    turbmod_sa_bsl_rae2822           = TestCase('turbmod_sa_bsl_rae2822')
+    turbmod_sa_bsl_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_bsl_rae2822.cfg_file  = "turb_SA_BSL_RAE2822.cfg"
+    turbmod_sa_bsl_rae2822.test_iter = rae2822_sa.test_iter
+    turbmod_sa_bsl_rae2822.test_vals = rae2822_sa.test_vals
+    turbmod_sa_bsl_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_bsl_rae2822.timeout   = rae2822_sa.timeout
+    turbmod_sa_bsl_rae2822.new_output = True
+    turbmod_sa_bsl_rae2822.tol       = rae2822_sa.tol
+    test_list.append(turbmod_sa_bsl_rae2822)
+
+    # SA Negative
+    turbmod_sa_neg_rae2822           = TestCase('turbmod_sa_neg_rae2822')
+    turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
+    turbmod_sa_neg_rae2822.test_iter = 20
+    turbmod_sa_neg_rae2822.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    turbmod_sa_neg_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_neg_rae2822.timeout   = 1600
+    turbmod_sa_neg_rae2822.new_output = True
+    turbmod_sa_neg_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_neg_rae2822)
+
+    # SA Compressibility Correction
+    turbmod_sa_comp_rae2822           = TestCase('turbmod_sa_comp_rae2822')
+    turbmod_sa_comp_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_comp_rae2822.cfg_file  = "turb_SA_COMP_RAE2822.cfg"
+    turbmod_sa_comp_rae2822.test_iter = 20
+    turbmod_sa_comp_rae2822.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    turbmod_sa_comp_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_comp_rae2822.timeout   = 1600
+    turbmod_sa_comp_rae2822.new_output = True
+    turbmod_sa_comp_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_comp_rae2822)
+
+    # SA Edwards
+    turbmod_sa_edw_rae2822           = TestCase('turbmod_sa_edw_rae2822')
+    turbmod_sa_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_edw_rae2822.cfg_file  = "turb_SA_EDW_RAE2822.cfg"
+    turbmod_sa_edw_rae2822.test_iter = 20
+    turbmod_sa_edw_rae2822.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    turbmod_sa_edw_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_edw_rae2822.timeout   = 1600
+    turbmod_sa_edw_rae2822.new_output = True
+    turbmod_sa_edw_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_edw_rae2822)
+
+    # SA Compressibility and Edwards
+    turbmod_sa_comp_edw_rae2822           = TestCase('turbmod_sa_comp_edw_rae2822')
+    turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
+    turbmod_sa_comp_edw_rae2822.test_iter = 20
+    turbmod_sa_comp_edw_rae2822.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    turbmod_sa_comp_edw_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_comp_edw_rae2822.timeout   = 1600
+    turbmod_sa_comp_edw_rae2822.new_output = True
+    turbmod_sa_comp_edw_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_comp_edw_rae2822)
+
+    # SA ft2
+    turbmod_sa_ft2_rae2822           = TestCase('turbmod_sa_ft2_rae2822')
+    turbmod_sa_ft2_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_ft2_rae2822.cfg_file  = "turb_SA_FT2_RAE2822.cfg"
+    turbmod_sa_ft2_rae2822.test_iter = 20
+    turbmod_sa_ft2_rae2822.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    turbmod_sa_ft2_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_ft2_rae2822.timeout   = 1600
+    turbmod_sa_ft2_rae2822.new_output = True
+    turbmod_sa_ft2_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_ft2_rae2822)
+
+    # SA QCR
+    turbmod_sa_qcr_rae2822           = TestCase('turbmod_sa_qcr_rae2822')
+    turbmod_sa_qcr_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_qcr_rae2822.cfg_file  = "turb_SA_QCR_RAE2822.cfg"
+    turbmod_sa_qcr_rae2822.test_iter = 20
+    turbmod_sa_qcr_rae2822.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    turbmod_sa_qcr_rae2822.su2_exec  = "SU2_CFD"
+    turbmod_sa_qcr_rae2822.timeout   = 1600
+    turbmod_sa_qcr_rae2822.new_output = True
+    turbmod_sa_qcr_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_qcr_rae2822)
+
     #########################
     ###    Transition     ###
     #########################
