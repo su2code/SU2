@@ -30,27 +30,39 @@
 
 #include "../../../include/numerics/CNumerics.hpp"
 
-CSourceSpecies::CSourceSpecies(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+CSourceBase_Species::CSourceBase_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config) {
   residual = new su2double[nVar]();
   jacobian = new su2double*[nVar];
-
-  for (unsigned short iVar = 0; iVar < nVar; ++iVar) jacobian[iVar] = new su2double[nVar]();
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    jacobian[iVar] = new su2double[nVar]();
+  }
 }
 
-CSourceSpecies::~CSourceSpecies() {
+CSourceBase_Species::~CSourceBase_Species() {
   delete[] residual;
   if (jacobian) {
-    for (unsigned short iVar = 0; iVar < nVar; ++iVar) delete[] jacobian[iVar];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      delete[] jacobian[iVar];
+    }
     delete[] jacobian;
   }
 }
 
-CNumerics::ResidualType<> CSourceSpecies::ComputeResidual(const CConfig* config) {
-  residual = new su2double[nVar]();
-  jacobian = new su2double*[nVar];
+CSourceAxisymmetric_Species::CSourceAxisymmetric_Species(unsigned short val_nDim, unsigned short val_nVar,
+                                                         const CConfig* config)
+    : CSourceBase_Species(val_nDim, val_nVar, config) {
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+}
 
-  for (unsigned short iVar = 0; iVar < nVar; ++iVar) jacobian[iVar] = new su2double[nVar]();
+CNumerics::ResidualType<> CSourceAxisymmetric_Species::ComputeResidual(const CConfig* config) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
+
+  if (implicit) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) jacobian[iVar][jVar] = 0.0;
+    }
+  }
 
   return ResidualType<>(residual, jacobian, nullptr);
 }

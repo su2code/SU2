@@ -1946,7 +1946,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (species) {
 
-    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
 
     switch (config->GetKind_ConvNumScheme_Species()) {
       case NONE :
@@ -1954,6 +1954,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species(nDim, nVar_Species, config);
+          numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species(nDim, nVar_Species, config);
         }
         break;
       default :
@@ -1965,23 +1966,22 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /// NOTE TK:: understand the "true" input. Correction of the gradient when to apply and when not. True for now as Turb does that as well. Maybe no correction available on boundaries.
-      if (iMGlevel == MESH_0) numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species(nDim, nVar_Species, true, config);
+      numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species(nDim, nVar_Species, true, config);
+      numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species(nDim, nVar_Species, false, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    /// NOTE TK:: Here we would need to add axissymetric source term instantiation
+
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourceNothing(nDim, nVar_Species, config);
+      if (config->GetAxisymmetric() == YES) { //TK:: not implemented yet
+        numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species(nDim, nVar_Flow, config);
+      }
+      else {
+        numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourceNothing(nDim, nVar_Species, config);
+      }
       numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
 
-    /*--- Definition of the boundary condition method ---*/
-
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species(nDim, nVar_Species, config);
-      /// NOTE TK:: see above, correct_grad here is false
-      numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species(nDim, nVar_Species, false, config);
-    }
   } // if species
 
   /*--- Solver definition of the finite volume heat solver  ---*/

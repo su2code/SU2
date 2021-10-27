@@ -31,12 +31,14 @@
 #include "../scalar/scalar_sources.hpp"
 
 /*!
- * \class CSourceSpecies
- * \brief
+ * \class CSourceBase_Species
+ * \brief Intermediate source term class to allocate the internally
+ *        stored residual and Jacobian. Not for stand alone use,
+ *        just a helper to build more complicated classes.
  * \ingroup SourceDiscr
- * \author T. Kattmann.
+ * \author T. Kattmann
  */
-class CSourceSpecies : public CNumerics {
+class CSourceBase_Species : public CNumerics {
  protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
@@ -48,17 +50,37 @@ class CSourceSpecies : public CNumerics {
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceSpecies(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CSourceBase_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceSpecies();
+  ~CSourceBase_Species();
+};
+
+/*!
+ * \class CSourceAxisymmetric_Species
+ * \brief Class for source term for solving axisymmetric problems.
+ * \ingroup SourceDiscr
+ * \author T. Kattmann
+ */
+class CSourceAxisymmetric_Species : public CSourceBase_Species {
+ protected:
+  bool implicit;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceAxisymmetric_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
-   * \brief Residual for source term integration.
+   * \brief Residual of the axisymmetric source term.
    * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 };

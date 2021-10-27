@@ -5136,6 +5136,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != INC_RANS) //TK:: DISC_ADJ_* ?
       SU2_MPI::Error("Species transport currently only avaialble for incompressible flow.", CURRENT_FUNCTION);
 
+    // For now, do not allow axisymmetric simulations
+    if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);
+
     // Helper function that checks scalar variable bounds,
     auto checkScalarBounds = [&](su2double scalar, string name, su2double lowerBound, su2double upperBound) {
       if (scalar < lowerBound || scalar > upperBound)
