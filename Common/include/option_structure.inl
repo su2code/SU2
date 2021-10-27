@@ -1120,14 +1120,7 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInletSpecies() override {
-    /*--- Release allocated memory. ---*/
-    if (marker) delete[] marker;
-    for (unsigned long i = 0; i < size; i++) {
-      if (inletspeciesval[i]) delete[] inletspeciesval[i];
-    }
-    if (inletspeciesval) delete[] inletspeciesval;
-  };
+  ~COptionInletSpecies() override {};
 
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
