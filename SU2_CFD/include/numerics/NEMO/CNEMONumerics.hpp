@@ -167,78 +167,55 @@ public:
 
     switch (nVar) {
       case 5:
-        return ComputeViscousJacs_impl<5, 1>(su2double *val_Mean_PrimVar, su2double **val_Mean_GradPrimVar,
-                                             su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                                             su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
-                                             su2double val_eddy_viscosity, su2double val_thermal_conductivity,
-                                             su2double val_thermal_conductivity_ve,
-                                             su2double val_dist_ij, su2double *val_normal,
-                                             su2double val_dS, su2double *val_Fv,
-                                             su2double **val_Jac_i, su2double **val_Jac_j,
-                                             const CConfig *config);
+        return ComputeViscousJacs_impl<5, 1>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                             val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                             val_laminar_viscosity, val_eddy_viscosity,
+                                             val_thermal_conductivity, val_thermal_conductivity_ve,
+                                             val_dist_ij, val_normal, val_dS, val_Fv,
+                                             val_Jac_i, val_Jac_j, config);
 
       case 6:
         switch (nSpecies) {
-          case 1: return ComputeViscousJacobians_impl<6, 1>(su2double *val_Mean_PrimVar,
-                           su2double **val_Mean_GradPrimVar,
-                           su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                           su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
-                           su2double val_eddy_viscosity, su2double val_thermal_conductivity,
-                           su2double val_thermal_conductivity_ve,
-                           su2double val_dist_ij, su2double *val_normal,
-                           su2double val_dS, su2double *val_Fv,
-                           su2double **val_Jac_i, su2double **val_Jac_j,
-                           const CConfig *config);
+          case 1: return ComputeViscousJacobians_impl<6, 1>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                                            val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                                            val_laminar_viscosity, val_eddy_viscosity,
+                                                            val_thermal_conductivity, val_thermal_conductivity_ve,
+                                                            val_dist_ij, val_normal, val_dS, val_Fv,
+                                                            val_Jac_i, val_Jac_j, config);
 
-          case 2: return ComputeViscousJacobians_impl<6, 2>(su2double *val_Mean_PrimVar,
-                           su2double **val_Mean_GradPrimVar,
-                           su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                           su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
-                           su2double val_eddy_viscosity, su2double val_thermal_conductivity,
-                           su2double val_thermal_conductivity_ve,
-                           su2double val_dist_ij, su2double *val_normal,
-                           su2double val_dS, su2double *val_Fv,
-                           su2double **val_Jac_i, su2double **val_Jac_j,
-                           const CConfig *config);
+          case 2: return ComputeViscousJacobians_impl<6, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                                            val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                                            val_laminar_viscosity, val_eddy_viscosity,
+                                                            val_thermal_conductivity, val_thermal_conductivity_ve,
+                                                            val_dist_ij, val_normal, val_dS, val_Fv,
+                                                            val_Jac_i, val_Jac_j, config);
 
           default: SU2_MPI::Error("nVar and nSpecies mismatch.", CURRENT_FUNCTION);
         }
 
       case 7:
-        return ComputeViscousJacs_impl<7, 2>(su2double *val_Mean_PrimVar,
-                 su2double **val_Mean_GradPrimVar,
-                 su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                 su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
-                 su2double val_eddy_viscosity, su2double val_thermal_conductivity,
-                 su2double val_thermal_conductivity_ve,
-                 su2double val_dist_ij, su2double *val_normal,
-                 su2double val_dS, su2double *val_Fv,
-                 su2double **val_Jac_i, su2double **val_Jac_j,
-                 const CConfig *config);
+        return ComputeViscousJacs_impl<7, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                             val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                             val_laminar_viscosity, val_eddy_viscosity,
+                                             val_thermal_conductivity, val_thermal_conductivity_ve,
+                                             val_dist_ij, val_normal, val_dS, val_Fv,
+                                             val_Jac_i, val_Jac_j, config);
 
       case 9:
-        return ComputeViscousJacs_impl<9, 5>(su2double *val_Mean_PrimVar,
-                 su2double **val_Mean_GradPrimVar,
-                 su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                 su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
-                 su2double val_eddy_viscosity, su2double val_thermal_conductivity,
-                 su2double val_thermal_conductivity_ve,
-                 su2double val_dist_ij, su2double *val_normal,
-                 su2double val_dS, su2double *val_Fv,
-                 su2double **val_Jac_i, su2double **val_Jac_j,
-                 const CConfig *config);
+        return ComputeViscousJacs_impl<9, 5>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                             val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                             val_laminar_viscosity, val_eddy_viscosity,
+                                             val_thermal_conductivity, val_thermal_conductivity_ve,
+                                             val_dist_ij, val_normal, val_dS, val_Fv,
+                                             val_Jac_i, val_Jac_j, config);
 
       case 10:
-        return ComputeViscousJacs_impl<10, 5>(su2double *val_Mean_PrimVar,
-                 su2double **val_Mean_GradPrimVar,
-                 su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                 su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
-                 su2double val_eddy_viscosity, su2double val_thermal_conductivity,
-                 su2double val_thermal_conductivity_ve,
-                 su2double val_dist_ij, su2double *val_normal,
-                 su2double val_dS, su2double *val_Fv,
-                 su2double **val_Jac_i, su2double **val_Jac_j,
-                 const CConfig *config);
+        return ComputeViscousJacs_impl<10, 5>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                              val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                              val_laminar_viscosity, val_eddy_viscosity,
+                                              val_thermal_conductivity, val_thermal_conductivity_ve,
+                                              val_dist_ij, val_normal, val_dS, val_Fv,
+                                              val_Jac_i, val_Jac_j, config);
 
       default:
         SU2_MPI::Error("Implicit solver not setup for seleced Gas Model.", CURRENT_FUNCTION);
