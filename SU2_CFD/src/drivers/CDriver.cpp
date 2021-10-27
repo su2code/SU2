@@ -1977,7 +1977,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species(nDim, nVar_Flow, config);
       }
       else {
-        numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourceNothing(nDim, nVar_Species, config);
+        numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
       }
       numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
     }

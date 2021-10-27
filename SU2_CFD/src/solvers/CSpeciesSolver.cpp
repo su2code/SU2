@@ -61,12 +61,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   nDim = geometry->GetnDim();
 
   /*--- Single grid simulation ---*/
-
-  /*--- Define some auxiliary vector related with the solution ---*/
-  Solution = new su2double[nVar];
-  Solution_i = new su2double[nVar];
-  Solution_j = new su2double[nVar];
-
   /*--- do not see a reason to use only single grid ---*/
   // if (iMesh == MESH_0) {
 
@@ -162,7 +156,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   const bool turb_SST = turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   const bool turb_SA = turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SA);
 
-  /// NOTE TK:: Make inlet files possible. Note that we have to count for turnb as well! See also CDriver.cpp for the
+  /// NOTE TK:: Make inlet files possible. Note that we have to count for turb as well! See also CDriver.cpp for the
   /// loading
 
   Inlet_Position = nDim * 2 + 2;
@@ -406,7 +400,6 @@ void CSpeciesSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver
 
     for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
         for (int iVar = 0; iVar < nVar; iVar++) {
           scalar_init[iVar] = config->GetSpecies_Init(iVar);
@@ -567,8 +560,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       /*--- Allocate the value at the outlet ---*/
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
-      nodes->SetSolution_Old(iPoint, Solution);
+      nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
 
       LinSysRes.SetBlock_Zero(iPoint);
 
