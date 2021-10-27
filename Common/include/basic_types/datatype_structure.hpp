@@ -95,19 +95,9 @@ namespace SU2_TYPE {
 
   FORCEINLINE void SetDerivative(su2double& data, const passivedouble &val) {data.setGradient(val);}
 
-#ifdef CODI_REVERSE_TYPE
-  FORCEINLINE passivedouble GetSecondary(const su2double& data) {
-    return AD::getGlobalTape().getGradient(AD::inputValues[AD::adjointVectorPosition++]);
-  }
-
-  FORCEINLINE passivedouble GetDerivative(const su2double& data) {
-    return AD::getGlobalTape().getGradient(AD::inputValues[AD::adjointVectorPosition++]);
-  }
-#else // forward
   FORCEINLINE passivedouble GetSecondary(const su2double& data) {return data.getGradient();}
 
   FORCEINLINE passivedouble GetDerivative(const su2double& data) {return data.getGradient();}
-#endif
 
 #else // passive type, no AD
 

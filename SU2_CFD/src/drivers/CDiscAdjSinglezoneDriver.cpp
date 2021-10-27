@@ -44,7 +44,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
 
-
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
   iteration   = iteration_container[ZONE_0][INST_0];
@@ -54,15 +53,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   integration = integration_container[ZONE_0][INST_0];
 
   /*--- Store the recording state ---*/
-  RecordingState = NONE;
-
-  /*--- Determine if the problem is a turbomachinery problem ---*/
-  bool turbo = config->GetBoolTurbomachinery();
-
-  bool compressible = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
-
-  /*--- Determine if the problem has a mesh deformation solver ---*/
-  bool mesh_def = config->GetDeform_Mesh();
+  RecordingState = RECORDING::CLEAR_INDICES;
 
   /*--- Initialize the direct iteration ---*/
 
@@ -72,16 +63,23 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    if (turbo) {
+
+    if (config->GetBoolTurbomachinery()) {
       direct_iteration = new CTurboIteration(config);
       output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
-    else       direct_iteration = CIterationFactory::CreateIteration(EULER, config);
-    if (compressible) direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
-    else direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim);
-    MainVariables = SOLUTION_VARIABLES;
-    if (mesh_def) SecondaryVariables = MESH_DEFORM;
-    else          SecondaryVariables = MESH_COORDS;
+    else { direct_iteration = CIterationFactory::CreateIteration(EULER, config); }
+
+    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+      direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
+    }
+    else { direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim); }
+
+    MainVariables = RECORDING::SOLUTION_VARIABLES;
+    if (config->GetDeform_Mesh()) {
+      SecondaryVariables = RECORDING::MESH_DEFORM;
+    }
+    else { SecondaryVariables = RECORDING::MESH_COORDS; }
     MainSolver = ADJFLOW_SOL;
     break;
 
@@ -90,8 +88,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     direct_iteration = CIterationFactory::CreateIteration(FEM_EULER, config);
     direct_output = COutputFactory::CreateOutput(FEM_EULER, config, nDim);
-    MainVariables = SOLUTION_VARIABLES;
-    SecondaryVariables = MESH_COORDS;
+    MainVariables = RECORDING::SOLUTION_VARIABLES;
+    SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJFLOW_SOL;
     break;
 
@@ -100,8 +98,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: elasticity equation." << endl;
     direct_iteration =  CIterationFactory::CreateIteration(FEM_ELASTICITY, config);
     direct_output = COutputFactory::CreateOutput(FEM_ELASTICITY, config, nDim);
-    MainVariables = SOLUTION_VARIABLES;
-    SecondaryVariables = MESH_COORDS;
+    MainVariables = RECORDING::SOLUTION_VARIABLES;
+    SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJFEA_SOL;
     break;
 
@@ -110,8 +108,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       cout << "Direct iteration: heat equation." << endl;
     direct_iteration = CIterationFactory::CreateIteration(HEAT_EQUATION, config);
     direct_output = COutputFactory::CreateOutput(HEAT_EQUATION, config, nDim);
-    MainVariables = SOLUTION_VARIABLES;
-    SecondaryVariables = MESH_COORDS;
+    MainVariables = RECORDING::SOLUTION_VARIABLES;
+    SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJHEAT_SOL;
     break;
 
@@ -132,8 +130,6 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
-  /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
-
   /*--- Preprocess the adjoint iteration ---*/
 
   iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
@@ -145,16 +141,12 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    *--- we only have to record if the current recording is different from the main variables. ---*/
 
   if (RecordingState != MainVariables){
-
     MainRecording();
-
   }
 
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
-
-  const bool steady = !config->GetTime_Domain();
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -186,9 +178,8 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-    iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    iteration->IterateDiscAdj(geometry_container, solver_container,
+                              config_container, ZONE_0, INST_0, false);
 
     /*--- Monitor the pseudo-time ---*/
 
@@ -202,7 +193,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Output files for steady state simulations. ---*/
 
-    if (steady) {
+    if (!config->GetTime_Domain()) {
       iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
                         config_container, Adjoint_Iter, false, ZONE_0, INST_0);
     }
@@ -245,7 +236,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
 }
 
-void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
+void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   AD::Reset();
 
@@ -255,7 +246,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   /*---Enable recording and register input of the iteration --- */
 
-  if (kind_recording != NONE){
+  if (kind_recording != RECORDING::CLEAR_INDICES){
 
     AD::StartRecording();
 
@@ -264,8 +255,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
       cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
     }
-    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
+    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
   }
 
   /*--- Set the dependencies of the iteration ---*/
@@ -277,21 +268,19 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   DirectRun(kind_recording);
 
-  // NOTE: The inverse design calls were moved to DirectRun() - postprocess
-
   /*--- Store the recording state ---*/
 
   RecordingState = kind_recording;
 
   /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
+  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
 
-  if (kind_recording != NONE && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+  if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
@@ -313,18 +302,17 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  bool time_stepping = config->GetTime_Marching() != TIME_MARCHING::STEADY;
-  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
+  const auto IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
   CWindowingTools windowEvaluator = CWindowingTools();
 
-  if (time_stepping){
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY){
     if (TimeIter < IterAvg_Obj){
-      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
+      /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
       seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
-    else{
+    else {
       seeding = 0.0;
     }
   }
@@ -356,18 +344,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
-
-//    if (config->GetnMarker_Analyze() != 0)
-//      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
-
-//    if ((config->GetnMarker_Analyze() != 0) && compressible)
-//      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
-
-//    if (config->GetnMarker_NearFieldBound() != 0)
-//      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
-
-//    if (config->GetPlot_Section_Forces())
-//      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
 
     /*--- Surface based obj. function ---*/
 
@@ -437,7 +413,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
 }
 
-void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
+void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Mesh movement ---*/
 
@@ -461,7 +437,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
 }
 
-void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recording){
+void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
 
   /*--- Print the residuals of the direct iteration that we just recorded ---*/
   /*--- This routine should be moved to the output, once the new structure is in place ---*/
@@ -493,7 +469,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
 
     case DISC_ADJ_FEM:
 
-      if (config->GetGeometricConditions() == LARGE_DEFORMATIONS){
+      if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
         cout << "UTOL-A: "   << log10(solver[FEA_SOL]->GetRes_FEM(0))
              << ", RTOL-A: " << log10(solver[FEA_SOL]->GetRes_FEM(1))
              << ", ETOL-A: " << log10(solver[FEA_SOL]->GetRes_FEM(2)) << "." << endl;
@@ -520,11 +496,11 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
 
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
-  else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != NONE)){
+  else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != RECORDING::CLEAR_INDICES)){
     cout << endl << "Recording the computational graph with respect to the ";
     switch (SecondaryVariables){
-      case MESH_COORDS: cout << "mesh coordinates." << endl;    break;
-      default:          cout << "secondary variables." << endl; break;
+      case RECORDING::MESH_COORDS: cout << "mesh coordinates." << endl;    break;
+      default:                     cout << "secondary variables." << endl; break;
      }
   }
 
@@ -535,9 +511,9 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(NONE);
+  SetRecording(RECORDING::CLEAR_INDICES);
 
-  /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+  /*--- Store the computational graph of one direct iteration with the solution variables as input. ---*/
 
   SetRecording(MainVariables);
 
@@ -548,7 +524,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(NONE);
+  SetRecording(RECORDING::CLEAR_INDICES);
 
   /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
 
@@ -569,7 +545,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Extract the computed sensitivity values. ---*/
 
-  if (SecondaryVariables == MESH_COORDS) {
+  if (SecondaryVariables == RECORDING::MESH_COORDS) {
     solver[MainSolver]->SetSensitivity(geometry, config);
   }
   else { // MESH_DEFORM

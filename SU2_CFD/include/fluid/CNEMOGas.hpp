@@ -48,8 +48,8 @@ protected:
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
   nEl,                                   /*!< \brief Number of electrons in gas */
   nDim,                                  /*!< \brief Number of dimensions. */
-  nEnergyEq = 2,                         /*!< \brief Number of energy equations for the 2T model. */
-  Kind_TransCoeffModel;                  /*!< \brief Transport coefficients model for NEMO solver. */
+  nEnergyEq = 2;                         /*!< \brief Number of energy equations for the 2T model. */
+  TRANSCOEFFMODEL Kind_TransCoeffModel;  /*!< \brief Transport coefficients model for NEMO solver. */
 
   unsigned iSpecies,                     /*!< \brief Common iteration counter for species */
   jSpecies,                              /*!< \brief Common iteration counter for species */
@@ -124,17 +124,16 @@ public:
   virtual vector<su2double>& ComputeMixtureEnergies() = 0;
 
     /*!
-   * \brief Get vibrational energy source term.
+   * \brief Compute chemical production and destruction rates.
    */
-  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V,
-                                                       su2double* eve, su2double* cvve,
-                                                       su2double* dTdU, su2double* dTvedU,
+  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
+                                                       su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                                        su2double **val_jacobian) = 0;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  virtual void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve,
+  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
                                  su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                  su2double **val_jacobian){};
 
@@ -144,16 +143,16 @@ public:
   virtual su2double ComputeEveSourceTerm() { return 0; }
 
   /*!
-   * \brief Compute vector of species V-E energy.
+   * \brief Compute vibration enery source term jacobian.
    */
-   virtual void GetEveSourceTermJacobian(su2double *V,su2double *eve, su2double *cvve,
-                                         su2double *dTdU, su2double* dTvedU,
-                                         su2double **val_jacobian){};
+  virtual void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
+                                        su2double *dTdU, su2double* dTvedU,
+                                        su2double **val_jacobian){};
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute vector of species V-E energy.
    */
-  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
+  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) = 0;
 
   /*!
    * \brief Compute species enthalpies.

@@ -114,8 +114,8 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
   su2double init_val;
   switch(config->GetKind_P1_Init()){
-    case P1_INIT_ZERO: init_val = 0.0; break;
-    case P1_INIT_TEMP: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
+    case P1_INIT::ZERO: init_val = 0.0; break;
+    case P1_INIT::TEMPERATURE: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
     default: init_val = 0.0; break;
   }
 

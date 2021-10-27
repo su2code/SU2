@@ -69,9 +69,9 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,
                                                    CNumerics **numerics, CConfig *config,
                                                    unsigned short RunTime_EqSystem) {
-  bool first_iter = (config->GetInnerIter() == 0);
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
+  const bool first_iter = (config->GetInnerIter() == 0);
+  const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  const auto IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   CSolver* solver = solver_container[MainSolver];
@@ -85,13 +85,13 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
   else {
     /*--- If the analysis is nonlinear the stress terms also need to be computed. ---*/
     /*--- For full Newton-Raphson the stiffness matrix and the nodal term are updated every time. ---*/
-    if (IterativeScheme == NEWTON_RAPHSON) {
+    if (IterativeScheme == STRUCT_SPACE_ITE::NEWTON) {
       solver->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
     }
 
     /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning
      * of the time step, then only the Nodal Stress Term has to be computed on each iteration. ---*/
-    if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
+    if (IterativeScheme == STRUCT_SPACE_ITE::MOD_NEWTON) {
       if (first_iter)
         solver->Compute_StiffMatrix_NodalStressRes(geometry, numerics, config);
       else
@@ -106,19 +106,19 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
     switch (config->GetMarker_All_KindBC(iMarker)) {
 
       case LOAD_DIR_BOUNDARY:
-        solver->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Dir_Load(geometry, config, iMarker);
         break;
 
       case LOAD_SINE_BOUNDARY:
-        solver->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Sine_Load(geometry, config, iMarker);
         break;
 
       case LOAD_BOUNDARY:
-        solver->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Normal_Load(geometry, config, iMarker);
         break;
 
       case DAMPER_BOUNDARY:
-        solver->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Damper(geometry, config, iMarker);
         break;
     }
   }
@@ -134,13 +134,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   /*--- Set the Jacobian according to the different time integration methods ---*/
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
+    case (STRUCT_TIME_INT::CD_EXPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
-    case (NEWMARK_IMPLICIT):
+    case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, numerics, config);
       break;
-    case (GENERALIZED_ALPHA):
+    case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
       solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, numerics, config);
       break;
   }
@@ -150,13 +150,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Clamped(geometry, config, iMarker);
         break;
       case SYMMETRY_PLANE:
-        solver_container[MainSolver]->BC_Sym_Plane(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, config, iMarker);
         break;
       case DISP_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_DispDir(geometry, config, iMarker);
         break;
     }
   }
@@ -168,13 +168,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   /*--- Update solution ---*/
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
+    case (STRUCT_TIME_INT::CD_EXPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
-    case (NEWMARK_IMPLICIT):
+    case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       solver_container[MainSolver]->ImplicitNewmark_Update(geometry, config);
       break;
-    case (GENERALIZED_ALPHA):
+    case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
       solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, config);
       break;
   }
@@ -184,7 +184,7 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Clamped_Post(geometry, config, iMarker);
         break;
     }
   }
@@ -198,12 +198,12 @@ void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolv
   /*--- Update the solution according to the integration scheme used ---*/
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
+    case (STRUCT_TIME_INT::CD_EXPLICIT):
       break;
-    case (NEWMARK_IMPLICIT):
+    case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
       if (fsi) solver->ImplicitNewmark_Relaxation(geometry, config);
       break;
-    case (GENERALIZED_ALPHA):
+    case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
       solver->GeneralizedAlpha_UpdateSolution(geometry, config);
       solver->GeneralizedAlpha_UpdateLoads(geometry, config);
       break;
@@ -212,8 +212,6 @@ void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolv
   /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
 
   solver->GetNodes()->Set_Solution_time_n();
-  solver->GetNodes()->SetSolution_Vel_time_n();
-  solver->GetNodes()->SetSolution_Accel_time_n();
 
   /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
 

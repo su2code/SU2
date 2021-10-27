@@ -49,6 +49,9 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   Omega11.resize(nSpecies,nSpecies,4,0.0);
   RxnConstantTable.resize(6,5) = su2double(0.0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
+  taus.resize(nSpecies,0.0);
+  eve_eq.resize(nSpecies,0.0);
+  eve.resize(nSpecies,0.0);
 
   if(viscous){
     MolarFracWBE.resize(nSpecies,0.0);
@@ -58,13 +61,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
   if (gas_model =="ARGON"){
     if (nSpecies != 1) {
-      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition", CURRENT_FUNCTION);
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf <<endl;
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -111,13 +114,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
-      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition", CURRENT_FUNCTION);
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -257,13 +260,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
-      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition",CURRENT_FUNCTION);
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      cout << "CONFIG ERROR: Initial gas mass fractions do not sum to 1!" << endl;
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -643,7 +646,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
 
-  /*--- Rename cause im lazy TODO ---*/
+  /*--- Rename for convenience. ---*/
   Tve = val_T;
 
   /*--- Loop through species ---*/
@@ -696,11 +699,11 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
 vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
-  su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
+  su2double Ev, Ee, Ef, num;
 
-  rhoEmix = 0.0;
-  rhoEve  = 0.0;
-  denom   = 0.0;
+  su2double rhoEmix = 0.0;
+  su2double rhoEve  = 0.0;
+  su2double denom   = 0.0;
 
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
 
@@ -715,7 +718,7 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
     // Species electronic energy
     num = 0.0;
-    denom = ElDegeneracy(iSpecies,0) * exp(CharElTemp(iSpecies,0)/Tve);
+    denom = ElDegeneracy(iSpecies,0) * exp(-CharElTemp(iSpecies,0)/Tve);
     for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
       num   += ElDegeneracy(iSpecies,iEl) * CharElTemp(iSpecies,iEl) * exp(-CharElTemp(iSpecies,iEl)/Tve);
       denom += ElDegeneracy(iSpecies,iEl) * exp(-CharElTemp(iSpecies,iEl)/Tve);
@@ -746,7 +749,7 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
 }
 
-vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   su2double Ev, Eel, Ef, num, denom;
   unsigned short iElectron = nSpecies-1;
@@ -778,17 +781,16 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-
-    eves[iSpecies] = Ev + Eel;
+    if(vibe_only == true) {eves[iSpecies] = Ev;}
+    else {eves[iSpecies] = Ev + Eel;}
   }
 
   return eves;
 }
 
-vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double *V,
-                                                                su2double* eve, su2double *cvve,
-                                                                su2double* dTdU, su2double* dTvedU,
-                                                                su2double **val_jacobian){
+vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
+                                                        su2double* cvve, su2double* dTdU, su2double* dTvedU,
+							su2double **val_jacobian){
 
   /*---                          ---*/
   /*--- Nonequilibrium chemistry ---*/
@@ -798,22 +800,20 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double
   unsigned short ii, iReaction;
   su2double Keq;
   ws.resize(nSpecies,0.0);
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
+    ws[iSpecies] = 0.0;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
   //       temperature.  This relaxes some of the stiffness in the chemistry
   //       source term.
-  T_min   = 800.0;
-  epsilon = 80;
+  su2double T_min   = 800.0;
+  su2double epsilon = 80;
 
   /*--- Define preferential dissociation coefficient ---*/
   //alpha = 0.3; //TODO: make this a config option?
 
-  /*--- Zero out ws vector ---*/
-  for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-    ws[iSpecies] = 0.0;
-
-  /*--- Loop over all reactions ---*/ 
+  /*--- Loop over all reactions ---*/
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
 
     /*--- Determine the rate-controlling temperature ---*/
@@ -876,13 +876,12 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double
     if (implicit) {
       ChemistryJacobian(iReaction, V, eve, cvve, dTdU, dTvedU, val_jacobian);
     }
-
   } //iReaction
 
   return ws;
 }
 
-void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, 
+void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, 
                                   su2double* eve, su2double *cvve,
                                   su2double* dTdU, su2double* dTvedU,
                                   su2double **val_jacobian) {
@@ -891,6 +890,9 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
   unsigned short nEve = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
 
+  su2double T_min   = 800.0;
+  su2double epsilon = 80;
+    
   /*--- Initializing derivative variables ---*/
   dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
   dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
@@ -1010,14 +1012,13 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
 
 void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
-  unsigned short ii, iIndex, tbl_offset, pwr;
-  su2double N, tmp1, tmp2;
+  unsigned short ii;
 
   /*--- Acquire database constants from CConfig ---*/
   GetChemistryEquilConstants(val_Reaction);
 
   /*--- Calculate mixture number density ---*/
-  N = 0.0;
+  su2double N = 0.0;
   for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++) {
     N += rhos[iSpecies]/MolarMass[iSpecies]*AVOGAD_CONSTANT;
   }
@@ -1026,11 +1027,11 @@ void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
   N = N*(1E-6);
 
   /*--- Determine table index based on mixture N ---*/
-  tbl_offset = 14;
-  pwr        = floor(log10(N));
+  unsigned short tbl_offset = 14;
+  unsigned short pwr        = floor(log10(N));
 
   /*--- Bound the interpolation to table limit values ---*/
-  iIndex = int(pwr) - tbl_offset;
+  unsigned short iIndex = int(pwr) - tbl_offset;
   if (iIndex <= 0) {
     for (ii = 0; ii < 5; ii++)
       A[ii] = RxnConstantTable(0,ii);
@@ -1042,8 +1043,8 @@ void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
   }
 
   /*--- Calculate interpolation denominator terms avoiding pow() ---*/
-  tmp1 = 1.0;
-  tmp2 = 1.0;
+  su2double tmp1 = 1.0;
+  su2double tmp2 = 1.0;
   for (ii = 0; ii < pwr; ii++) {
     tmp1 *= 10.0;
     tmp2 *= 10.0;
@@ -1062,20 +1063,18 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
   /*---                                                                    ---*/
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
-    // Note: Electronic energy not implemented
-    // Note: Landau-Teller formulation
-    // Note: Millikan & White relaxation time (requires P in Atm.)
-    // Note: Park limiting cross section
   /*---                                                                    ---*/
+  // Note: Electronic energy not implemented
+  // Note: Landau-Teller formulation
+  // Note: Millikan & White relaxation time (requires P in Atm.)
+  // Note: Park limiting cross section
 
-  /*---Initialize and zero variables ---*/
-  su2double mu, A_sr, B_sr, num, denom, Cs, sig_s,
-  tau_sr, tauP, tauMW;
+  su2double A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW;
   vector<su2double> MolarFrac;
+  su2activematrix mu;
 
   MolarFrac.resize(nSpecies,0.0);
-  eve_eq.resize(nSpecies,0.0);
-  eve.resize(nSpecies,0.0);
+  mu.resize(nSpecies,nSpecies)=su2double(0.0);
 
   su2double omegaVT = 0.0;
   su2double omegaCV = 0.0;
@@ -1091,8 +1090,8 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
 
   /*--- Compute Eve and Eve* ---*/
-  eve_eq = ComputeSpeciesEve(T);
-  eve    = ComputeSpeciesEve(Tve);
+  eve_eq = ComputeSpeciesEve(T, true);
+  eve    = ComputeSpeciesEve(Tve, true);
 
   /*--- Loop over species to calculate source term --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1101,10 +1100,11 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     num   = 0.0;
     denom = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      mu     = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
-      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(CharVibTemp[iSpecies], 4.0/3.0);
-      B_sr   = 0.015 * pow(mu, 0.25);
-      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
+      mu(iSpecies,jSpecies) = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
+      A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
+      B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
+      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42); 
+
       num   += MolarFrac[jSpecies];
       denom += MolarFrac[jSpecies] / tau_sr;
     }
@@ -1113,7 +1113,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
     /*--- Park limiting cross section ---*/
     Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
-    sig_s = 1E-20*(5E4*5E4)/(T*T);
+    sig_s = 3E-21*(2.5E9)/(T*T);
 
     tauP = 1/(sig_s*Cs*N);
 
@@ -1137,9 +1137,9 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
 }
 
-void CSU2TCLib::GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
+void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
 
-  unsigned short iVar;	
+  unsigned short iVar;
   unsigned short nEv  = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
 
@@ -1150,16 +1150,13 @@ void CSU2TCLib::GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double
   /*--- Loop through species ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
-    for (iVar = 0; iVar < nVar; iVar++) { 
-
-      val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar] -
-                                                                cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
+    for (iVar = 0; iVar < nVar; iVar++) {
+        val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar]-cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
     }
   }
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
-
+      val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 }
 
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
@@ -1179,9 +1176,9 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double 
 
 vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
    DiffusionCoeffWBE();
-  if(Kind_TransCoeffModel == GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
    DiffusionCoeffGY();
 
   return DiffusionCoeff;
@@ -1190,9 +1187,9 @@ vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
 su2double CSU2TCLib::GetViscosity(){
 
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     ViscosityWBE();
-  if(Kind_TransCoeffModel == GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ViscosityGY();
 
   return Mu;
@@ -1201,9 +1198,9 @@ su2double CSU2TCLib::GetViscosity(){
 
 vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     ThermalConductivitiesWBE();
-  if(Kind_TransCoeffModel == GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ThermalConductivitiesGY();
 
   return ThermalConductivities;
@@ -1212,13 +1209,13 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
 void CSU2TCLib::DiffusionCoeffWBE(){
 
-  su2double conc, Mi, Mj, M, Omega_ij, denom;
+  su2double Mi, Mj, Omega_ij, denom;
   su2activematrix Dij;
 
   Dij.resize(nSpecies, nSpecies) = su2double(0.0);
 
   /*--- Calculate species mole fraction ---*/
-  conc = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
     conc               += MolarFracWBE[iSpecies];
@@ -1228,7 +1225,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
 
   /*--- Calculate mixture molar mass (kg/mol) ---*/
   // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
-  M = 0.0;
+  su2double M = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
   M = M*1E-3;
@@ -1270,10 +1267,10 @@ void CSU2TCLib::DiffusionCoeffWBE(){
 
 void CSU2TCLib::ViscosityWBE(){
 
-  su2double tmp1, tmp2, conc;
+  su2double tmp1, tmp2;
 
   /*--- Calculate species mole fraction ---*/
-  conc = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
     conc               += MolarFracWBE[iSpecies];
@@ -1364,7 +1361,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
 
         /*--- Calculate heavy-particle binary diffusion coefficient ---*/
         su2double D_ij = kb*T/(Pressure*d1_ij);
-        su2double denom = gam_j/D_ij;
+        denom += gam_j/D_ij;
       }
     }
     if (ionization) {
@@ -1458,10 +1455,10 @@ void CSU2TCLib::ViscosityGY(){
           + Omega11(iSpecies,jSpecies,1)*log(Tve)
           + Omega11(iSpecies,jSpecies,2));
       su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-      su2double denom = gam_j*d2_ij;
+      denom += gam_j*d2_ij;
     }
     /*--- Calculate species laminar viscosity ---*/
-    su2double Mu = (Mi/Na * gam_i) / denom;
+    Mu += (Mi/Na * gam_i) / denom;
   }
   // if (ionization) {
   //   iSpecies = nSpecies-1;
@@ -1487,11 +1484,11 @@ void CSU2TCLib::ViscosityGY(){
 
 void CSU2TCLib::ThermalConductivitiesGY(){
 
-  su2double Cvve, Mi, Mj, mi, mj, pi, R, Na, kb, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij, rhoCvve;
+  su2double Mi, Mj, mi, mj, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij;
 
-  pi   = PI_NUMBER;
-  Na   = AVOGAD_CONSTANT;
-  kb   = BOLTZMANN_CONSTANT;
+  su2double pi   = PI_NUMBER;
+  su2double Na   = AVOGAD_CONSTANT;
+  su2double kb   = BOLTZMANN_CONSTANT;
 
   if (ionization) {
     SU2_MPI::Error("NEEDS REVISION w/ IONIZATION",CURRENT_FUNCTION);
@@ -1499,19 +1496,19 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 
   /*--- Mixture vibrational-electronic specific heat ---*/
   Cvves = ComputeSpeciesCvVibEle(Tve);
+  su2double rhoCvve = 0.0;
 
-  rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
-  Cvve = rhoCvve/Density;
+  su2double Cvve = rhoCvve/Density;
 
   /*--- Calculate mixture gas constant ---*/
-  R = 0.0;
+  su2double R = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     R += Ru * rhos[iSpecies]/Density;
   }
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-  ThermalCond_tr    = 0.0;
+  ThermalCond_tr = 0.0;
   ThermalCond_ve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     /*--- Calculate molar concentration ---*/
@@ -1582,7 +1579,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
-  su2double        Btol     = 1.0E-6;    // Tolerance for the Bisection method
+  su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
   unsigned short maxBIter = 50;        // Maximum Bisection method iterations
 
   //Initialize solution
@@ -1590,6 +1587,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
   // Execute the root-finding method
   bool Bconvg = false;
+  su2double rhoEve_t;
 
   for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
     Tve      = (Tve_o+Tve2)/2.0;
@@ -1605,7 +1603,10 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
     }
   }
   // If absolutely no convergence, then assign to the TR temperature
-  if (!Bconvg) Tve = T;
+  if (!Bconvg) {
+    Tve = T;
+    cout <<"Warning: temperatures did not converge, error= "<< fabs(rhoEve_t-rhoEve)<<endl;
+  }
 
   temperatures[0] = T;
   temperatures[1] = Tve;

@@ -27,37 +27,33 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
 
-class CFlowOutput : public COutput{
-public:
+class CFlowOutput : public CFVMOutput{
+protected:
+  unsigned long lastInnerIter;
+
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
+  CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFlowOutput(void) override;
-
-protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void AddAnalyzeSurfaceOutput(CConfig *config);
+  void AddAnalyzeSurfaceOutput(const CConfig *config);
 
   /*!
    * \brief Set flow surface output field values
    * \param[in] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in,out] config - Definition of the particular problem.
    * \param[in] output - Boolean indicating whether information should be written to screen
    */
-  void SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+  void SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output);
 
   /*!
    * \brief Add aerodynamic coefficients as output fields
@@ -81,30 +77,74 @@ protected:
 
   /*!
    * \brief Add CP inverse design output as history fields
-   * \param[in] config - Definition of the particular problem.
    */
-  void Add_CpInverseDesignOutput(CConfig *config);
+  void Add_CpInverseDesignOutput();
 
   /*!
-   * \brief Set CP inverse design output field values
-   * \param[in] solver - The container holding all solution data.
+   * \brief Set CP inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Add nearfield inverse design output as history fields
+   */
+  void Add_NearfieldInverseDesignOutput();
+
+  /*!
+   * \brief Set nearfield inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
    * \param[in] VelocityGradient - Velocity gradients
    * \return Value of the Q criteration at the node
    */
-  su2double GetQ_Criterion(su2double** VelocityGradient) const;
+  template<class T>
+  su2double GetQ_Criterion(const T& VelocityGradient) const {
+
+    /*--- Make a 3D copy of the gradient so we do not have worry about nDim ---*/
+
+    su2double Grad_Vel[3][3] = {{0.0}};
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+        Grad_Vel[iDim][jDim] = VelocityGradient[iDim][jDim];
+
+    /*--- Q Criterion Eq 1.2 of HALLER, G. (2005). An objective definition of a vortex.
+     Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
+
+    /*--- Components of the strain rate tensor (symmetric) ---*/
+    su2double s11 = Grad_Vel[0][0];
+    su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+    su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+    su2double s22 = Grad_Vel[1][1];
+    su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+    su2double s33 = Grad_Vel[2][2];
+
+    /*--- Components of the spin tensor (skew-symmetric) ---*/
+    su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
+    su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
+    su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
+
+    /*--- Q = ||Omega|| - ||Strain|| ---*/
+    su2double Q = 2*(pow(omega12,2) + pow(omega13,2) + pow(omega23,2)) -
+      (pow(s11,2) + pow(s22,2) + pow(s33,2) + 2*(pow(s12,2) + pow(s13,2) + pow(s23,2)));
+
+    return Q;
+  }
 
   /*!
    * \brief Write information to meta data file
    * \param[in] config - Definition of the particular problem per zone.
    */
-  void WriteMetaData(CConfig *config);
+  void WriteMetaData(const CConfig *config);
 
   /*!
    * \brief Write any additional files defined for the current solver.
@@ -125,10 +165,9 @@ protected:
   /*!
    * \brief Write the forces breakdown file
    * \param[in] config - Definition of the particular problem per zone.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - The container holding all solution data.
+   * \param[in] flow_solver - The container holding all solution data.
    */
-  void WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container);
+  void WriteForcesBreakdown(const CConfig *config, const CSolver *flow_solver) const;
 
   /*!
    * \brief Set the time averaged output fields.
@@ -141,4 +180,11 @@ protected:
    * \param node_flow
    */
   void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
+
+  /*!
+   * \brief Write additional output for fixed CL mode.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void SetFixedCLScreenOutput(const CConfig *config);
+
 };

@@ -76,6 +76,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   CNumerics* conv_bound_numerics = numerics[CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
   CNumerics* visc_bound_numerics = numerics[VISC_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
 
+  /*--- Pause preaccumulation in boundary conditions for hybrid parallel AD. ---*/
+  /// TODO: Check if this is really needed.
+  //const auto pausePreacc = (omp_get_num_threads() > 1) && AD::PausePreaccumulation();
+
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);
@@ -153,6 +157,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
+      case HEAT_TRANSFER:
+        solver_container[MainSolver]->BC_HeatTransfer_Wall(geometry, config, iMarker);
+        break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
@@ -172,11 +179,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. ---*/
+   accumulated correctly during the communications. ---*/
 
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
+
+  //AD::ResumePreaccumulation(pausePreacc);
 
 }
 
@@ -184,6 +193,12 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  bool rom = config->GetReduced_Model();
+  
+  if (rom) {
+    solver_container[MainSolver]->ROM_Iteration(geometry, solver_container, config);
+    return;
+  }
 
   switch (config->GetKind_TimeIntScheme()) {
     case (RUNGE_KUTTA_EXPLICIT):

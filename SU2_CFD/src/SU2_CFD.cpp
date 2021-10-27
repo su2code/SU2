@@ -32,7 +32,7 @@
 #include "libxsmm.h"
 #endif
 
-/* Include file, needed for the runtime NaN catching. */
+/* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
 using namespace std;
@@ -73,13 +73,8 @@ int main(int argc, char *argv[]) {
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
-  /*--- AD initialization ---*/
-#ifdef HAVE_OPDI
-  AD::getGlobalTape().initialize();
-#endif
-
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
-  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+  // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
   /*--- Initialize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM

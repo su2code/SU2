@@ -192,6 +192,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
 
+  SetReferenceValues(*config);
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
@@ -483,7 +485,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       /*--- Constant thermal conductivity model ---*/
 
-      config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+      config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
 
       /*--- Conductivity model via polynomial. ---*/
 
@@ -601,7 +603,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     if (viscous){
 
       switch(config->GetKind_ViscosityModel()){
-      case CONSTANT_VISCOSITY:
+      case VISCOSITYMODEL::CONSTANT:
         ModelTable << "CONSTANT_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -610,7 +612,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-      case SUTHERLAND:
+      case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -627,7 +629,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-      case POLYNOMIAL_VISCOSITY:
+      case VISCOSITYMODEL::POLYNOMIAL:
         ModelTable << "POLYNOMIAL_VISCOSITY";
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
           stringstream ss;
@@ -641,7 +643,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       }
 
       switch(config->GetKind_ConductivityModel()){
-      case CONSTANT_PRANDTL:
+      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
         ModelTable << "CONSTANT_PRANDTL";
         NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();
         Unit.str("");
@@ -650,16 +652,16 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-      case CONSTANT_CONDUCTIVITY:
-        ModelTable << "CONSTANT_CONDUCTIVITY";
+      case CONDUCTIVITYMODEL::CONSTANT:
+        ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
+        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
 
-      case POLYNOMIAL_CONDUCTIVITY:
-        ModelTable << "POLYNOMIAL_CONDUCTIVITY";
+      case CONDUCTIVITYMODEL::POLYNOMIAL:
+        ModelTable << "POLYNOMIAL";
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
           stringstream ss;
           ss << iVar;
@@ -815,6 +817,29 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
 }
 
+void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  /*--- Evaluate reference values for non-dimensionalization. For dimensional or non-dim
+   based on initial values, use the far-field state (inf). For a custom non-dim based
+   on user-provided reference values, use the ref values to compute the forces. ---*/
+
+  su2double RefDensity, RefVel2;
+
+  if ((config.GetRef_Inc_NonDim() == DIMENSIONAL) ||
+      (config.GetRef_Inc_NonDim() == INITIAL_VALUES)) {
+    RefDensity = Density_Inf;
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  }
+  else {
+    RefDensity = config.GetInc_Density_Ref();
+    RefVel2 = pow(config.GetInc_Velocity_Ref(), 2);
+  }
+
+  DynamicPressureRef = 0.5 * RefDensity * RefVel2;
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
+
+}
+
 void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
@@ -913,6 +938,8 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
   unsigned long iPoint, nonPhysicalPoints = 0;
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -925,6 +952,8 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
     if (!physical) nonPhysicalPoints++;
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
 }
@@ -993,6 +1022,12 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -1057,6 +1092,10 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   END_SU2_OMP_FOR
   } // end color loop
 
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
+
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
@@ -1084,6 +1123,12 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1225,6 +1270,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   END_SU2_OMP_FOR
   } // end color loop
 
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
+
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
@@ -1272,6 +1321,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
+
+  AD::StartNoSharedReading();
 
   if (body_force) {
 
@@ -1374,11 +1425,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     END_SU2_OMP_FOR
   }
 
+  AD::EndNoSharedReading();
+
   if (axisymmetric) {
 
     /*--- For viscous problems, we need an additional gradient. ---*/
 
     if (viscous) {
+
+      AD::StartNoSharedReading();
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -1398,6 +1453,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
       END_SU2_OMP_FOR
 
+      AD::EndNoSharedReading();
+
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
 
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -1410,6 +1467,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
 
     /*--- loop over points ---*/
+
+    AD::StartNoSharedReading();
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1461,9 +1520,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
 
   if (radiation) {
+
+    AD::StartNoSharedReading();
 
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -1505,6 +1568,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
     END_SU2_OMP_FOR
 
+    AD::EndNoSharedReading();
   }
 
   if (streamwise_periodic) {
@@ -1512,12 +1576,16 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- For turbulent streamwise periodic problems w/ energy eq, we need an additional gradient of Eddy viscosity. ---*/
     if (streamwise_periodic_temperature && turbulent) {
 
+      AD::StartNoSharedReading();
+
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         /*--- Set the auxiliary variable, Eddy viscosity mu_t, for this node. ---*/
         nodes->SetAuxVar(iPoint, 0, nodes->GetEddyViscosity(iPoint));
       }
       END_SU2_OMP_FOR
+
+      AD::EndNoSharedReading();
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -1531,6 +1599,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
     numerics->SetStreamwisePeriodicValues(SPvals);
+
+    AD::StartNoSharedReading();
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1558,6 +1628,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     } // for iPoint
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
 
     if(!streamwise_periodic_temperature && energy) {
 
@@ -1600,7 +1672,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           END_SU2_OMP_FOR
         }// if periodic inlet boundary
       }// for iMarker
-
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
 
@@ -1612,6 +1683,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
       if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+      AD::StartNoSharedReading();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1634,6 +1707,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       }
       END_SU2_OMP_FOR
+
+      AD::EndNoSharedReading();
     }
   }
 
@@ -2510,6 +2585,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
     /*--- Loop over all nodes (excluding halos) ---*/
 
+    AD::StartNoSharedReading();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2562,6 +2639,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
 
   else {
@@ -2610,7 +2689,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     /*--- Loop over the boundary edges ---*/
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -2648,6 +2728,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
     /*--- Loop over all nodes (excluding halos) to compute the remainder
      of the dual time-stepping source term. ---*/
+
+    AD::StartNoSharedReading();
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2704,6 +2786,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
 
 }
@@ -2958,13 +3042,13 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    write it to the restart if it is active. Therefore, we must reduce nVar
    here if energy is inactive so that the restart is read correctly. ---*/
 
-  bool energy = config->GetEnergy_Equation();
-  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  unsigned short nVar_Restart = nVar;
-  if (!(energy || weakly_coupled_heat)) nVar_Restart--;
   su2double Solution[MAXNVAR] = {0.0};
-  Solution[nVar-1] = GetTemperature_Inf();
+
+  auto nVar_Restart = nVar;
+  if (!(config->GetEnergy_Equation() || config->GetWeakly_Coupled_Heat())) {
+    nVar_Restart--;
+    Solution[nVar-1] = GetTemperature_Inf();
+  }
 
   LoadRestart_impl(geometry, solver, config, val_iter, val_update_geo, Solution, nVar_Restart);
 

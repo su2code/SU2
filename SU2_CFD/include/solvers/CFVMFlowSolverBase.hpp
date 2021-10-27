@@ -147,12 +147,14 @@ class CFVMFlowSolverBase : public CSolver {
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
+  su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
   su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
@@ -178,6 +180,8 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > CPressure;         /*!< \brief Pressure coefficient for each boundary and vertex. */
   vector<vector<su2double> > CPressureTarget;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
   vector<vector<su2double> > YPlus;             /*!< \brief Yplus for each boundary and vertex. */
+  vector<vector<su2double> > UTau;                 /*!< \brief UTau for each boundary and vertex. */
+  vector<vector<su2double> > EddyViscWall;         /*!< \brief Eddy viscosuty at the wall for each boundary and vertex. */
 
   bool space_centered;       /*!< \brief True if space centered scheme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
@@ -227,6 +231,13 @@ class CFVMFlowSolverBase : public CSolver {
   CFVMFlowSolverBase() : CSolver() {}
 
   /*!
+   * \brief Set reference values for pressure, forces, etc., e.g. "AeroCoeffForceRef".
+   * \note Implement this method in the derived class and call it in its constructor.
+   * Duplicating this type of information has caused bugs (I know because I fixed them).
+   */
+  virtual void SetReferenceValues(const CConfig& config) = 0;
+
+  /*!
    * \brief Allocate member variables.
    */
   void Allocate(const CConfig& config);
@@ -266,6 +277,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    */
   void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Computes and sets the required auxilliary vars (and gradients) for axisymmetric flow.
+   */
+  void ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config);
 
   /*!
    * \brief Instantiate a SIMD numerics object.
@@ -398,6 +414,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -524,9 +541,10 @@ class CFVMFlowSolverBase : public CSolver {
 
     }
 
-    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0. ---*/
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+     * This is only done once because in dual time the time step cannot be variable. ---*/
 
-    if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+    if (dual_time && (Iteration == config->GetRestart_Iter()) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 
       /*--- Thread-local variable for reduction. ---*/
       su2double glbDtND = 1e30;
@@ -541,8 +559,7 @@ class CFVMFlowSolverBase : public CSolver {
       END_SU2_OMP_CRITICAL
       SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER
-      {
+      SU2_OMP_MASTER {
         SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
         Global_Delta_UnstTimeND = glbDtND;
 
@@ -617,6 +634,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -987,12 +1005,11 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
-   * \tparam VelocityOffset: Index in the primitive variables where the velocity starts.
+   * \tparam VelocityOffset - Index in the primitive variables where the velocity starts.
    */
-  template<size_t VelocityOffset>
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh,
+                                    const size_t VelocityOffset = 1) {
 
-    const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
     auto& StrainMag = nodes->GetStrainMag();
 
     ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
@@ -1002,31 +1019,28 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
-      constexpr size_t u = VelocityOffset;
-      constexpr size_t v = VelocityOffset+1;
-      constexpr size_t w = VelocityOffset+2;
+      const auto VelocityGradient = nodes->GetGradient_Primitive(iPoint, VelocityOffset);
+      auto Vorticity = nodes->GetVorticity(iPoint);
 
       /*--- Vorticity ---*/
 
-      su2double* Vorticity = nodes->GetVorticity(iPoint);
-
-      Vorticity[0] = 0.0; Vorticity[1] = 0.0;
-
-      Vorticity[2] = Gradient_Primitive(iPoint,v,0)-Gradient_Primitive(iPoint,u,1);
+      Vorticity[0] = 0.0;
+      Vorticity[1] = 0.0;
+      Vorticity[2] = VelocityGradient(1,0)-VelocityGradient(0,1);
 
       if (nDim == 3) {
-        Vorticity[0] = Gradient_Primitive(iPoint,w,1)-Gradient_Primitive(iPoint,v,2);
-        Vorticity[1] = -(Gradient_Primitive(iPoint,w,0)-Gradient_Primitive(iPoint,u,2));
+        Vorticity[0] = VelocityGradient(2,1)-VelocityGradient(1,2);
+        Vorticity[1] = -(VelocityGradient(2,0)-VelocityGradient(0,2));
       }
 
       /*--- Strain Magnitude ---*/
 
       AD::StartPreacc();
-      AD::SetPreaccIn(&Gradient_Primitive[iPoint][VelocityOffset], nDim, nDim);
+      AD::SetPreaccIn(VelocityGradient, nDim, nDim);
 
       su2double Div = 0.0;
       for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        Div += Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim);
+        Div += VelocityGradient(iDim, iDim);
       Div /= 3.0;
 
       StrainMag(iPoint) = 0.0;
@@ -1034,7 +1048,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- Add diagonal part ---*/
 
       for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-        StrainMag(iPoint) += pow(Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim) - Div, 2);
+        StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
       }
       if (nDim == 2) {
         StrainMag(iPoint) += pow(Div, 2);
@@ -1042,11 +1056,11 @@ class CFVMFlowSolverBase : public CSolver {
 
       /*--- Add off diagonals ---*/
 
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,1) + Gradient_Primitive(iPoint,v,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
 
       if (nDim == 3) {
-        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,2) + Gradient_Primitive(iPoint,w,0)), 2);
-        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,v,2) + Gradient_Primitive(iPoint,w,1)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
       }
 
       StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
@@ -2081,6 +2095,12 @@ class CFVMFlowSolverBase : public CSolver {
   inline void SetTotal_HeatFluxDiff(su2double val_heat) final { Total_HeatFluxDiff = val_heat; }
 
   /*!
+   * \brief Set the value of the Equivalent Area coefficient.
+   * \param[in] val_equiv - Value of the Equivalent Area coefficient.
+   */
+  inline void SetTotal_CEquivArea(su2double val_equiv) final { Total_CEquivArea = val_equiv; }
+
+  /*!
    * \brief Set the value of the Near-Field pressure oefficient.
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
    */
@@ -2111,6 +2131,12 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+   */
+  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
 
   /*!
    * \brief Set the value of the custom objective function.
@@ -2443,7 +2469,7 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Get the skin friction coefficient.
+   * \brief Get the heat flux.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
@@ -2480,5 +2506,25 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const final {
     return YPlus[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Get the u_tau .
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the u_tau.
+   */
+  inline su2double GetUTau(unsigned short val_marker, unsigned long val_vertex) const final {
+    return UTau[val_marker][val_vertex];
+  }
+
+   /*!
+   * \brief Get the eddy viscosity at the wall (wall functions).
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the eddy viscosity.
+   */
+  inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
+    return EddyViscWall[val_marker][val_vertex];
   }
 };

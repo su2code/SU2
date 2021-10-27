@@ -28,24 +28,8 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
-
-/*--- Cross product ---*/
-
-#define CROSS(dest,v1,v2) \
-(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];  \
-(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];  \
-(dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
-
-/*--- Cross product ---*/
-
-#define DOT(v1,v2) ((v1)[0]*(v2)[0] + (v1)[1]*(v2)[1] + (v1)[2]*(v2)[2]);
-
-/*--- a = b - c ---*/
-
-#define SUB(dest,v1,v2) \
-(dest)[0] = (v1)[0] - (v2)[0];  \
-(dest)[1] = (v1)[1] - (v2)[1];  \
-(dest)[2] = (v1)[2] - (v2)[2];
+#include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/toolboxes/ndflattener.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),
@@ -55,7 +39,7 @@ CGeometry::CGeometry(void) :
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iFace, iVertex;
+  unsigned long iElem, iElem_Bound, iVertex;
   unsigned short iMarker;
 
   if (elem != nullptr) {
@@ -72,12 +56,6 @@ CGeometry::~CGeometry(void) {
       delete [] bound[iMarker];
     }
     delete [] bound;
-  }
-
-  if (face != nullptr) {
-    for (iFace = 0; iFace < nFace; iFace ++)
-      delete face[iFace];
-    delete[] face;
   }
 
   delete nodes;
@@ -1508,68 +1486,6 @@ void CGeometry::TestGeometry(void) const {
 
 }
 
-void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
-  unsigned long i, k;
-  su2double p, qn, sig, un, *u;
-
-  u = new su2double [n];
-
-  if (yp1 > 0.99e30)      // The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;       // -ural"
-  else {                  // or else to have a specified first derivative.
-    y2[0] = -0.5;
-    u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
-  }
-
-  for (i=2; i<=n-1; i++) {                  //  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);      //  gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;                      //  porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;                    //  factors.
-
-    su2double a1 = (y[i]-y[i-1])/(x[i]-x[i-1]); if (x[i] == x[i-1]) a1 = 1.0;
-    su2double a2 = (y[i-1]-y[i-2])/(x[i-1]-x[i-2]); if (x[i-1] == x[i-2]) a2 = 1.0;
-    u[i-1]= a1 - a2;
-    u[i-1]=(6.0*u[i-1]/(x[i]-x[i-2])-sig*u[i-2])/p;
-
-  }
-
-  if (ypn > 0.99e30)            // The upper boundary condition is set either to be
-    qn=un=0.0;                  // "natural"
-  else {                        // or else to have a specified first derivative.
-    qn=0.5;
-    un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
-  }
-  y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)  // This is the backsubstitution loop of the tridiagonal algorithm.
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];
-
-  delete[] u;
-
-}
-
-su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<su2double>&y2a, unsigned long n, su2double x) {
-  unsigned long klo, khi, k;
-  su2double h, b, a, y;
-
-  if (x < xa[0]) x = xa[0];       // Clip max and min values
-  if (x > xa[n-1]) x = xa[n-1];
-
-  klo = 1;                     // We will find the right place in the table by means of
-  khi = n;                     // bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {        // routine are at random values of x. If sequential calls
-    k = (khi+klo) >> 1;        // are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi = k;  // to store previous values of klo and khi and test if
-    else klo=k;                // they remain appropriate on the next call.
-  }                            // klo and khi now bracket the input value of x
-  h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl; // The xa?s must be distinct.
-  a = (xa[khi-1]-x)/h;
-  b = (x-xa[klo-1])/h;         // Cubic spline polynomial is now evaluated.
-  y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
-
-  return y;
-}
-
 bool CGeometry::SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
                                                            const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
@@ -1626,16 +1542,16 @@ bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double d
 
   /*--- Find vectors for two edges sharing vert0 ---*/
 
-  SUB(edge1, vert1, vert0);
-  SUB(edge2, vert2, vert0);
+  GeometryToolbox::Distance(3, vert1, vert0, edge1);
+  GeometryToolbox::Distance(3, vert2, vert0, edge2);
 
   /*--- Begin calculating determinant - also used to calculate U parameter ---*/
 
-  CROSS(pvec, dir, edge2);
+  GeometryToolbox::CrossProduct(dir, edge2, pvec);
 
   /*--- If determinant is near zero, ray lies in plane of triangle ---*/
 
-  det = DOT(edge1, pvec);
+  det = GeometryToolbox::DotProduct(3, edge1, pvec);
 
 
   if (fabs(det) < epsilon) return(false);
@@ -1644,27 +1560,27 @@ bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double d
 
   /*--- Calculate distance from vert0 to ray origin ---*/
 
-  SUB(tvec, orig, vert0);
+  GeometryToolbox::Distance(3, orig, vert0, tvec);
 
   /*--- Calculate U parameter and test bounds ---*/
 
-  u = inv_det * DOT(tvec, pvec);
+  u = inv_det * GeometryToolbox::DotProduct(3, tvec, pvec);
 
   if (u < 0.0 || u > 1.0) return(false);
 
   /*--- prepare to test V parameter ---*/
 
-  CROSS(qvec, tvec, edge1);
+  GeometryToolbox::CrossProduct(tvec, edge1, qvec);
 
   /*--- Calculate V parameter and test bounds ---*/
 
-  v = inv_det * DOT(dir, qvec);
+  v = inv_det * GeometryToolbox::DotProduct(3, dir, qvec);
 
   if (v < 0.0 || u + v > 1.0) return(false);
 
   /*--- Calculate t, ray intersects triangle ---*/
 
-  t = inv_det * DOT(edge2, qvec);
+  t = inv_det * GeometryToolbox::DotProduct(3, edge2, qvec);
 
   /*--- Compute the intersection point in cartesian coordinates ---*/
 
@@ -1724,21 +1640,21 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double p
 
   su2double dir[3], intersect[3], u[3], v[3], edge1[3], edge2[3], Plane_Normal[3], Denominator, Numerator, Aux;
 
-  SUB(dir, point1, point0);
+  GeometryToolbox::Distance(3, point1, point0, dir);
 
   if (RayIntersectsTriangle(point0, dir, vert0, vert1, vert2, intersect)) {
 
     /*--- Check that the intersection is in the segment ---*/
 
-    SUB(u, point0, intersect);
-    SUB(v, point1, intersect);
+    GeometryToolbox::Distance(3, point0, intersect, u);
+    GeometryToolbox::Distance(3, point1, intersect, v);
 
-    SUB(edge1, vert1, vert0);
-    SUB(edge2, vert2, vert0);
-    CROSS(Plane_Normal, edge1, edge2);
+    GeometryToolbox::Distance(3, vert1, vert0, edge1);
+    GeometryToolbox::Distance(3, vert2, vert0, edge2);
+    GeometryToolbox::CrossProduct(edge1, edge2, Plane_Normal);
 
-    Denominator = DOT(Plane_Normal, u);
-    Numerator = DOT(Plane_Normal, v);
+    Denominator = GeometryToolbox::DotProduct(3, Plane_Normal, u);
+    Numerator = GeometryToolbox::DotProduct(3, Plane_Normal, v);
 
     Aux = Numerator * Denominator;
 
@@ -2492,18 +2408,12 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(const CConfig *config) const {
+void CGeometry::RegisterCoordinates() const {
   const bool input = true;
-  const bool push_index = config->GetMultizone_Problem()? false : true;
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
-    }
-    if(!push_index) {
-      nodes->SetIndex(iPoint, input);
-    }
+    nodes->RegisterCoordinates(iPoint, input);
   }
   END_SU2_OMP_FOR
 }
@@ -2512,10 +2422,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetDynamic_Grid()){
-    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-  }
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
@@ -2747,8 +2653,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   su2double U[3] = {0.0}, V[3] = {0.0}, W[3] = {0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
-
-  const bool fea = config->GetStructuralProblem();
 
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -3013,7 +2917,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
-  if ((rank == MASTER_NODE) && (!fea))
+  if (rank == MASTER_NODE)
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();
@@ -3549,7 +3453,7 @@ void CGeometry::SetElemVolume()
   END_SU2_OMP_PARALLEL
 }
 
-void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
+void CGeometry::SetRotationalVelocity(const CConfig *config, bool print) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -3602,7 +3506,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
 }
 
-void CGeometry::SetShroudVelocity(CConfig *config) {
+void CGeometry::SetShroudVelocity(const CConfig *config) {
 
   unsigned long iPoint, iVertex;
   unsigned short iMarker, iMarkerShroud;
@@ -3621,7 +3525,7 @@ void CGeometry::SetShroudVelocity(CConfig *config) {
   }
 }
 
-void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
+void CGeometry::SetTranslationalVelocity(const CConfig *config, bool print) {
 
   su2double xDot[3] = {0.0,0.0,0.0};
 
@@ -3641,10 +3545,68 @@ void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetGridVel(iPoint, xDot);
-
 }
 
-void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
+void CGeometry::SetWallVelocity(const CConfig *config, bool print) {
+
+  const su2double L_Ref = config->GetLength_Ref();
+  const su2double Omega_Ref = config->GetOmega_Ref();
+  const su2double Vel_Ref = config->GetVelocity_Ref();
+
+  /*--- Store grid velocity for each node on the moving surface(s).
+   Sum and store the x, y, & z velocities due to translation and rotation. ---*/
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
+
+    /*--- Identify iMarker from the list of those under MARKER_MOVING
+     Get prescribed wall speed from config for this marker. ---*/
+
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const auto jMarker = config->GetMarker_Moving(Marker_Tag);
+
+    su2double xDot[MAXNDIM], Center[MAXNDIM], Omega[MAXNDIM];
+
+    for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
+      Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      Omega[iDim] = config->GetMarkerRotationRate(jMarker, iDim) / Omega_Ref;
+      xDot[iDim] = config->GetMarkerTranslationRate(jMarker, iDim) / Vel_Ref;
+    }
+
+    if (rank == MASTER_NODE && print) {
+      cout << " Storing grid velocity for marker: ";
+      cout << Marker_Tag << ".\n";
+      cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+      cout << ", " << xDot[2]*config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ") m/s.\n";
+      else cout << ") ft/s.\n";
+      cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+      cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+      cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+    }
+
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Calculate non-dim. position from rotation center ---*/
+      su2double r[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        r[iDim] = (nodes->GetCoord(iPoint,iDim) - Center[iDim]) / L_Ref;
+
+      /*--- Cross Product of angular velocity and distance from center to
+       get the rotational velocity. Note that we are adding on the velocity
+       due to pure translation as well. ---*/
+
+      su2double GridVel[MAXNDIM];
+      GeometryToolbox::CrossProduct(Omega, r, GridVel);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        nodes->SetGridVel(iPoint, iDim, xDot[iDim]+GridVel[iDim]);
+    }
+  }
+}
+
+void CGeometry::SetGridVelocity(const CConfig *config) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 
@@ -3823,6 +3785,33 @@ void CGeometry::SetNaturalElementColoring()
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
 
+void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* geometry) {
+
+  using tColor = uint8_t;
+  constexpr auto nColor = numeric_limits<tColor>::max();
+
+  if (nMGLevels) CoarseGridColor_.resize(nPoint,nMGLevels) = 0;
+
+  for (auto iMesh = nMGLevels; iMesh >= 1; --iMesh) {
+    /*--- Color the coarse points. ---*/
+    vector<tColor> color;
+    const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
+    if (colorSparsePattern<CCompressedSparsePatternUL, tColor, nColor>(adjacency, 1, false, &color).empty())
+      continue;
+
+    /*--- Propagate colors to fine mesh. ---*/
+    for (auto step = 0u; step < iMesh; ++step) {
+      auto coarseMesh = geometry[iMesh-1-step];
+      if (step)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+          CoarseGridColor_(iPoint,step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step-1);
+      else
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+          CoarseGridColor_(iPoint,step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+    }
+  }
+}
+
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
 
   int nZone = config_container[ZONE_0]->GetnZone();
@@ -3854,15 +3843,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
     for (int iZone = 0; iZone < nZone; iZone++){
-      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
-      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      unique_ptr<CADTElemClass> WallADT = geometry_container[iZone][iInst][MESH_0]->ComputeViscousWallADT(config_container[iZone]);
       if (WallADT && !WallADT->IsEmpty()){
         allEmpty = false;
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone])
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config_container[jZone], iZone);
         }
       }
     }
@@ -3872,6 +3860,29 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       for (int iZone = 0; iZone < nZone; iZone++){
         CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
+      }
+    }
+    /*--- Otherwise, set wall roughnesses. ---*/
+    if(!allEmpty){
+      /*--- Store all wall roughnesses in a common data structure. ---*/
+      // [iZone][iMarker] -> roughness, for this rank
+      auto roughness_f =
+        make_pair( nZone, [config_container,geometry_container,iInst](unsigned long iZone){
+          const CConfig* config = config_container[iZone];
+          const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+          return make_pair( nMarker, [config](unsigned long iMarker){
+            return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
+          });
+        });
+      NdFlattener<2> roughness_local(roughness_f);
+      // [rank][iZone][iMarker] -> roughness
+      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+      // use it to update roughnesses
+      for(int jZone=0; jZone<nZone; jZone++){
+        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){
+          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+        }
       }
     }
   }

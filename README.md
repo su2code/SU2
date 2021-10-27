@@ -38,7 +38,7 @@ You will find more information and the latest news in:
 
 ## Precompiled binaries for Linux, MacOS, Windows
 
-You can find precompiled binaries of the latest version on our [download page](https://su2code.github.io/download/) or under [releases](https://github.com/su2code/SU2/releases).
+You can find precompiled binaries of the latest version on our [download page](https://su2code.github.io/download.html) or under [releases](https://github.com/su2code/SU2/releases).
 
 ## Build SU2
 The build system of SU2 is based on a combination of [meson](http://mesonbuild.com/) (as the front-end) and [ninja](https://ninja-build.org/) (as the back-end). Meson is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible. Ninja is a small low-level build system with a focus on speed. 

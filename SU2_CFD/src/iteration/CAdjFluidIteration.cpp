@@ -118,13 +118,6 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 
       solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone]);
-
-      /*--- Set the internal boundary condition on nearfield surfaces ---*/
-
-      if ((config[val_iZone]->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-          (config[val_iZone]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
-        solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(
-            geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone]);
     }
 
     if (rank == MASTER_NODE && val_iZone == ZONE_0) cout << "End direct solver, begin adjoint problem." << endl;

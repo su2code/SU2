@@ -106,12 +106,6 @@ public:
    * \brief Mach the near field boundary condition.
    * \param[in] config - Definition of the particular problem.
    */
-  void MatchNearField(CConfig *config) override;
-
-  /*!
-   * \brief Mach the near field boundary condition.
-   * \param[in] config - Definition of the particular problem.
-   */
   void MatchActuator_Disk(CConfig *config) override;
 
   /*!
@@ -155,7 +149,7 @@ public:
    * \param[in] fine_mesh - Geometry container for the finer mesh level.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) override;
+  void SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.

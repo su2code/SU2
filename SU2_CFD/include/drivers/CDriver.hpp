@@ -246,14 +246,13 @@ protected:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void StaticMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSurfaceMovement *surface_movement);
+  void StaticMesh_Preprocessing(const CConfig *config, CGeometry **geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
   void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
-
 
   /*!
    * \brief A virtual member.
@@ -449,6 +448,12 @@ public:
   passivedouble GetUnsteady_TimeStep() const;
 
   /*!
+   * \brief Get the name of the output file for the surface.
+   * \return File name for the surface output.
+   */
+  string GetSurfaceFileName() const;
+
+  /*!
    * \brief Get the global index of a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -521,12 +526,23 @@ public:
   void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) const;
 
   /*!
+   * \brief Get the normal (vector) at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] unitNormal - Bool to normalise the vector.
+   * \return Normal (vector) at the vertex.
+   */
+  vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
+
+  /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    * \return Unit normal (vector) at the vertex.
    */
-  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const;
+  inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
+    return GetVertexNormal(iMarker, iVertex, true);
+  }
 
   /*!
    * \brief Get all the boundary markers tags.
@@ -661,6 +677,8 @@ public:
    * \param[in] val_AdjointZ - Value of the adjoint in the direction Z.
    */
   void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
+                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
+  void SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                  passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!

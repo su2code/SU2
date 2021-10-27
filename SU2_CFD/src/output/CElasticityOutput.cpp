@@ -1,5 +1,5 @@
 /*!
- * \file output_elasticity.cpp
+ * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
  * \version 7.2.0 "Blackbird"
@@ -33,9 +33,9 @@
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
-  linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  dynamic = (config->GetTime_Domain());  // Dynamic analysis.
+  linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+  dynamic = (config->GetTime_Domain());
 
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
@@ -72,6 +72,10 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
+    if (dynamic) {
+      requestedVolumeFields.emplace_back("VELOCITY");
+      requestedVolumeFields.emplace_back("ACCELERATION");
+    }
     if (config->GetTopology_Optimization()) requestedVolumeFields.emplace_back("TOPOLOGY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
@@ -261,7 +265,7 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   }
 }
 
-bool CElasticityOutput::SetInit_Residuals(CConfig *config){
+bool CElasticityOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 

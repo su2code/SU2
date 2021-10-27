@@ -54,8 +54,18 @@ endif
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
-  codi_rev_args = '-DCODI_REVERSE_TYPE'
-  codi_for_args = '-DCODI_FORWARD_TYPE'
+  codi_rev_args = ['-DCODI_REVERSE_TYPE']
+  codi_for_args = ['-DCODI_FORWARD_TYPE']
+endif
+
+if get_option('enable-autodiff')
+  if get_option('codi-tape') == 'JacobianIndex'
+    codi_rev_args += '-DCODI_INDEX_TAPE'
+  #elif get_option('codi-tape') == 'PrimalLinear'
+  #  codi_rev_args += '-DCODI_PRIMAL_TAPE'
+  #elif get_option('codi-tape') == 'PrimalIndex'
+  #  codi_rev_args += '-DCODI_PRIMAL_INDEX_TAPE'
+  endif
 endif
 
 # add cgns library
@@ -114,6 +124,10 @@ if omp
       su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
     elif get_option('opdi-backend') == 'ompt'
       su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
+    endif
+
+    if get_option('opdi-shared-read-opt') == false
+      su2_cpp_args += '-DOPDI_VARIABLE_ADJOINT_ACCESS_MODE=0'
     endif
   endif
 endif
@@ -187,8 +201,7 @@ if get_option('enable-librom')
 
    su2_deps += librom_dep
 
-
- endif
+endif
 
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
@@ -267,7 +280,7 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @11@ install' to compile and install SU2
+         Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
@@ -279,4 +292,13 @@ if get_option('enable-mpp')
           export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
 
           ''')
+endif
+
+if get_option('enable-librom')
+  message(''' To run SU2 with libROM library, add this line to your .bashrc file:
+
+          export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
+          
+          '''.format(get_option('librom_root')))
+
 endif

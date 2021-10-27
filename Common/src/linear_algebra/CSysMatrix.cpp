@@ -185,10 +185,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- This is akin to the row_ptr. ---*/
   omp_partitions = new unsigned long [omp_num_parts+1];
 
-  /// TODO: Use a work estimate to produce more balanced partitions.
-  auto pts_per_part = roundUpDiv(nPointDomain, omp_num_parts);
-  for(auto part = 0ul; part < omp_num_parts; ++part)
-    omp_partitions[part] = part * pts_per_part;
+  /*--- Work estimate based on non-zeros to produce balanced partitions. ---*/
+
+  const auto row_ptr_prec = ilu_needed? row_ptr_ilu : row_ptr;
+  const auto nnz_prec = row_ptr_prec[nPointDomain];
+
+  const auto nnz_per_part = roundUpDiv(nnz_prec, omp_num_parts);
+
+  for (auto iPoint = 0ul, part = 0ul; iPoint < nPointDomain; ++iPoint) {
+    if (row_ptr_prec[iPoint] >= part*nnz_per_part)
+      omp_partitions[part++] = iPoint;
+  }
   omp_partitions[omp_num_parts] = nPointDomain;
 
   /*--- Generate MKL Kernels ---*/

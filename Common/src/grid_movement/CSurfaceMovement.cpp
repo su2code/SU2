@@ -26,6 +26,7 @@
  */
 
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
+#include "../../include/toolboxes/C1DInterpolation.hpp"
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
@@ -1576,11 +1577,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
     }
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-#else
-  MaxDiff = my_MaxDiff;
-#endif
 
   if (rank == MASTER_NODE)
     cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
@@ -3163,80 +3160,6 @@ void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned s
 
 }
 
-void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
-                                    unsigned short iZone, unsigned long iter) {
-
-  /*--- Local variables ---*/
-  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iVertex;
-  su2double xDot[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, r[3] = {0.0,0.0,0.0}, GridVel[3] = {0.0,0.0,0.0};
-  su2double L_Ref     = config->GetLength_Ref();
-  su2double Omega_Ref = config->GetOmega_Ref();
-  su2double Vel_Ref   = config->GetVelocity_Ref();
-  string Marker_Tag;
-
-  /*--- Store grid velocity for each node on the moving surface(s).
-   Sum and store the x, y, & z velocities due to translation and rotation. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-
-      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
-
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      jMarker    = config->GetMarker_Moving(Marker_Tag);
-
-      /*--- Get prescribed wall speed from config for this marker ---*/
-
-      for (iDim = 0; iDim < 3; iDim++){
-        Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
-        Omega[iDim]  = config->GetMarkerRotationRate(jMarker, iDim)/Omega_Ref;
-        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim)/Vel_Ref;
-      }
-
-
-      if (rank == MASTER_NODE && iter == 0) {
-        cout << " Storing grid velocity for marker: ";
-        cout << Marker_Tag << "." << endl;
-        cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
-        cout << ", " << xDot[2]*config->GetVelocity_Ref();
-        if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
-        else cout << ") ft/s." << endl;
-        cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
-        cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
-        cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
-      }
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-        /*--- Get the index and coordinates of the current point ---*/
-
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Coord  = geometry->nodes->GetCoord(iPoint);
-
-        /*--- Calculate non-dim. position from rotation center ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
-        if (nDim == 2) r[nDim] = 0.0;
-
-        /*--- Cross Product of angular velocity and distance from center to
-         get the rotational velocity. Note that we are adding on the velocity
-         due to pure translation as well. ---*/
-
-        GridVel[0] = xDot[0] + Omega[1]*r[2] - Omega[2]*r[1];
-        GridVel[1] = xDot[1] + Omega[2]*r[0] - Omega[0]*r[2];
-        GridVel[2] = xDot[2] + Omega[0]*r[1] - Omega[1]*r[0];
-
-        /*--- Store the moving wall velocity for this node ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          geometry->nodes->SetGridVel(iPoint, iDim, GridVel[iDim]);
-
-      }
-    }
-  }
-}
-
 void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long TimeIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements) {
 
   /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
@@ -3862,15 +3785,13 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   yp1 = (Xcoord[1]-Xcoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Xcoord[n_Airfoil-1]-Xcoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Xcoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
+  CCubicSpline splineX(Svalue, Xcoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   n_Airfoil = Svalue.size();
   yp1 = (Ycoord[1]-Ycoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Ycoord[n_Airfoil-1]-Ycoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Ycoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
+  CCubicSpline splineY(Svalue, Ycoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3911,8 +3832,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
           Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i))/TotalArch;
         }
 
-        NewXCoord = boundary->GetSpline(Svalue, Xcoord, Xcoord2, n_Airfoil, Arch);
-        NewYCoord = boundary->GetSpline(Svalue, Ycoord, Ycoord2, n_Airfoil, Arch);
+        NewXCoord = splineX(Arch);
+        NewYCoord = splineY(Arch);
 
         /*--- Store the delta change in the x & y coordinates ---*/
 

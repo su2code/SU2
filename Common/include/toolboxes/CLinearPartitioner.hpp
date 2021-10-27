@@ -38,7 +38,7 @@ using namespace std;
  * \class CLinearPartitioner
  * \brief Helper class that provides the counts for each rank in a linear
  *        partitioning given the global count as input.
- * \author: T. Economon
+ * \author T. Economon
  */
 class CLinearPartitioner {
 
@@ -114,6 +114,16 @@ public:
    */
   inline unsigned long GetCumulativeSizeBeforeRank(int rank) const {
     return cumulativeSizeBeforeRank[rank];
+  }
+
+  /*!
+   * \brief Checks if an index belongs to a rank.
+   * \param[in] index - Current index.
+   * \param[in] rank - MPI rank identifier.
+   * \returns True if index is owned by rank.
+   */
+  bool IndexBelongsToRank(unsigned long index, int rank) const {
+    return index >= cumulativeSizeBeforeRank[rank] && index < cumulativeSizeBeforeRank[rank+1];
   }
 
 };

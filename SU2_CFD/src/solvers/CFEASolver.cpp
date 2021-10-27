@@ -1401,10 +1401,10 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     else if (dynamic) {
 
       switch (config->GetKind_TimeIntScheme_FEA()) {
-        case (CD_EXPLICIT):
+        case (STRUCT_TIME_INT::CD_EXPLICIT):
           cout << "NOT IMPLEMENTED YET" << endl;
           break;
-        case (NEWMARK_IMPLICIT):
+        case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
           for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1458,7 +1458,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 
           break;
-        case (GENERALIZED_ALPHA):
+        case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
           cout << "NOT IMPLEMENTED YET" << endl;
           break;
       }
@@ -1556,10 +1556,10 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
   su2double gamma = config->GetNewmark_gamma(), beta = config->GetNewmark_beta();
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
+    case (STRUCT_TIME_INT::CD_EXPLICIT):
       cout << "NOT IMPLEMENTED YET" << endl;
       break;
-    case (NEWMARK_IMPLICIT):
+    case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
       /*--- Integration constants for Newmark scheme ---*/
 
@@ -1575,7 +1575,7 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 
       break;
 
-    case (GENERALIZED_ALPHA):
+    case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
 
       /*--- Integration constants for Generalized Alpha ---*/
       /*--- Needs to be updated if accounting for structural damping ---*/
@@ -1600,7 +1600,7 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 }
 
 
-void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Clamped(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   const bool dynamic = config->GetTime_Domain();
   const su2double zeros[MAXNVAR] = {0.0};
@@ -1632,7 +1632,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
-void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Clamped_Post(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   bool dynamic = config->GetTime_Domain();
 
@@ -1654,7 +1654,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 
 }
 
-void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
   const bool dynamic = config->GetTime_Domain();
@@ -1712,7 +1712,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
 }
 
-void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_DispDir(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
 
@@ -1817,7 +1817,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
   /*--- Residuals do not have to be computed while recording. ---*/
   if (config->GetDiscrete_Adjoint() && AD::TapeActive()) return;
 
-  if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
+  if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE) {
 
     /*--- For nonlinear analysis we have 3 convergence criteria: ---*/
     /*--- UTOL = norm(Delta_U(k)): ABSOLUTE, norm of the incremental displacements ---*/
@@ -1890,11 +1890,11 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
 
 }
 
-void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Normal_Load(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   /*--- Determine whether the load conditions are applied in the reference or in the current configuration. ---*/
 
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
 
   /*--- Retrieve the normal pressure and the application conditions for the considered boundary. ---*/
 
@@ -1984,7 +1984,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
 
 }
 
-void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Dir_Load(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   auto TagBound = config->GetMarker_All_TagBound(val_marker);
   su2double LoadDirVal = config->GetLoad_Dir_Value(TagBound);
@@ -2045,7 +2045,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
 
 }
 
-void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Damper(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   const su2double dampConst = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
 
@@ -2097,26 +2097,6 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
 
       nodes->Add_SurfaceLoad_Res(iPoint, force);
     }
-
-  }
-
-}
-
-void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker){
-
-  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-    auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Retrieve the boundary displacement ---*/
-    su2double Disp[MAXNVAR] = {0.0};
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Disp[iDim] = nodes->GetBound_Disp(iNode,iDim);
-
-    /*--- Set and enforce solution ---*/
-    LinSysSol.SetBlock(iNode, Disp);
-    Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
 
   }
 
@@ -2199,9 +2179,9 @@ void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics 
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
-  const bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
+  const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
   const bool body_forces = config->GetDeadLoad();
 
   /*--- For simplicity, no incremental loading is handled with increment of 1. ---*/
@@ -2387,9 +2367,9 @@ void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
-  const bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
+  const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
   const bool body_forces = config->GetDeadLoad();
 
   /*--- Blend between previous and current timestep. ---*/
@@ -2604,10 +2584,11 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config) {
+void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *config) {
 
   const unsigned short predOrder = config->GetPredictorOrder();
   const su2double Delta_t = config->GetDelta_DynTime();
+  const bool dynamic = config->GetTime_Domain();
 
   if(predOrder > 2 && rank == MASTER_NODE)
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
@@ -2647,12 +2628,14 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
       } break;
     }
 
+    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint, nodes->GetSolution_Vel(iPoint));
+
   }
   END_SU2_OMP_PARALLEL
 
 }
 
-void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {
+void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *config, unsigned long iOuterIter) {
 
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
@@ -2666,21 +2649,21 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
   su2double delta_deltaU[MAXNVAR] = {0.0};
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
 
-  unsigned short RelaxMethod_FSI = config->GetRelaxation_Method_FSI();
+  const auto RelaxMethod_FSI = config->GetRelaxation_Method_BGS();
 
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
 
-  if (RelaxMethod_FSI == NO_RELAXATION) {
+  if (RelaxMethod_FSI == BGS_RELAXATION::NONE) {
 
     SetWAitken_Dyn(1.0);
 
   }
-  else if (RelaxMethod_FSI == FIXED_PARAMETER) {
+  else if (RelaxMethod_FSI == BGS_RELAXATION::FIXED) {
 
     SetWAitken_Dyn(config->GetAitkenStatRelax());
 
   }
-  else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
+  else if (RelaxMethod_FSI == BGS_RELAXATION::AITKEN) {
 
     if (iOuterIter == 0) {
 
@@ -2742,9 +2725,10 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
 
 }
 
-void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
+void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
+  const bool dynamic = config->GetTime_Domain();
 
   /*--- To nPoint to avoid communication. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
@@ -2766,6 +2750,16 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
       newDispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
 
     nodes->SetSolution_Pred(iPoint, newDispPred);
+
+    /*--- Set predicted velocity to update in multizone iterations ---*/
+    if (dynamic) {
+      su2double newVelPred[MAXNVAR] = {0.0};
+      const su2double* velPred = nodes->GetSolution_Vel_Pred(iPoint);
+      const su2double* velCalc = nodes->GetSolution_Vel(iPoint);
+      for (unsigned short iDim=0; iDim < nDim; iDim++)
+        newVelPred[iDim] = (1.0 - WAitken)*velPred[iDim] + WAitken*velCalc[iDim];
+      nodes->SetSolution_Vel_Pred(iPoint, newVelPred);
+    }
   }
   END_SU2_OMP_PARALLEL
 
@@ -3202,22 +3196,23 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
   CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
 
-  if (dynamic) {
-    nodes->Set_Solution_time_n();
-    nodes->SetSolution_Vel_time_n();
-    nodes->SetSolution_Accel_time_n();
-  }
+  if (dynamic) nodes->Set_Solution_time_n();
 
-  if (fluid_structure && !dynamic) {
+  if (fluid_structure) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
       nodes->SetSolution_Pred(iPoint, nodes->GetSolution(iPoint));
       nodes->SetSolution_Pred_Old(iPoint, nodes->GetSolution(iPoint));
     }
-  }
 
-  if (fluid_structure && discrete_adjoint) {
-    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-      nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
+    if (dynamic) {
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        nodes->SetSolution_Vel_Pred(iPoint, nodes->GetSolution_Vel(iPoint));
+    }
+
+    if (discrete_adjoint) {
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
+    }
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/

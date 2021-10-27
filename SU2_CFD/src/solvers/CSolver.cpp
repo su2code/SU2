@@ -45,6 +45,8 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/C1DInterpolation.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
@@ -89,10 +91,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
-  
-  #ifdef HAVE_LIBROM
-    u_basis_generator  = NULL;
-  #endif
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -189,10 +187,6 @@ CSolver::~CSolver(void) {
   delete [] Restart_Data;
 
   delete VerificationSolution;
-
-  #ifdef HAVE_LIBROM
-    if (u_basis_generator != NULL) u_basis_generator = nullptr;
-  #endif
 
 }
 
@@ -2071,7 +2065,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
   /*--- Loop boundary edges ---*/
 
   for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -2865,11 +2860,9 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- Read all lines in the restart file and extract data. ---*/
 
-  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
 
-    getline (restart_file, text_line);
-
-    vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
+    if (!getline (restart_file, text_line)) break;
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -2877,6 +2870,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
+
+      vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
 
       /*--- Store the solution (starting with node coordinates) --*/
 
@@ -2890,16 +2885,19 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     }
   }
 
+  if (iPoint_Global != geometry->GetGlobal_nPointDomain())
+    SU2_MPI::Error("The solution file does not match the mesh, currently only binary files can be interpolated.",
+                   CURRENT_FUNCTION);
+
 }
 
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  unsigned short iVar;
   val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
-  int nRestart_Vars = 5, nFields;
-  Restart_Vars = new int[5];
+  const int nRestart_Vars = 5;
+  Restart_Vars = new int[nRestart_Vars];
   fields.clear();
 
 #ifndef HAVE_MPI
@@ -2933,9 +2931,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. ---*/
 
-  nFields = Restart_Vars[1];
+  const unsigned long nFields = Restart_Vars[1];
+  const unsigned long nPointFile = Restart_Vars[2];
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -2943,7 +2942,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    variable string vector with the Point_ID tag that wasn't written. ---*/
 
   fields.push_back("Point_ID");
-  for (iVar = 0; iVar < nFields; iVar++) {
+  for (auto iVar = 0u; iVar < nFields; iVar++) {
     ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
     if (ret != (unsigned long)CGNS_STRING_SIZE) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
@@ -2953,12 +2952,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[nFields*nPointFile];
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  ret = fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
-  if (ret != (unsigned long)nFields*geometry->GetnPointDomain()) {
+  ret = fread(Restart_Data, sizeof(passivedouble), nFields*nPointFile, fhw);
+  if (ret != nFields*nPointFile) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
 
@@ -2974,20 +2973,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   SU2_MPI::Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
-  unsigned long iPoint_Global, index, iChar;
-  string field_buf;
-
-  int ierr;
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  int ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
-  /*--- Error check opening the file. ---*/
-
-  if (ierr) {
-    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-  }
+  if (ierr) SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
 
   /*--- First, read the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, read the
@@ -3010,9 +3001,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. ---*/
 
-  nFields = Restart_Vars[1];
+  const unsigned long nFields = Restart_Vars[1];
+  const unsigned long nPointFile = Restart_Vars[2];
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -3034,16 +3026,15 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    we need them for writing visualization files (SU2_SOL). ---*/
 
   fields.push_back("Point_ID");
-  for (iVar = 0; iVar < nFields; iVar++) {
-    index = iVar*CGNS_STRING_SIZE;
-    field_buf.append("\"");
-    for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
+  for (auto iVar = 0u; iVar < nFields; iVar++) {
+    const auto index = iVar*CGNS_STRING_SIZE;
+    string field_buf("\"");
+    for (int iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
       str_buf[iChar] = mpi_str_buf[index + iChar];
     }
     field_buf.append(str_buf);
     field_buf.append("\"");
     fields.push_back(field_buf.c_str());
-    field_buf.clear();
   }
 
   /*--- Free string buffer memory. ---*/
@@ -3063,17 +3054,40 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    that will be placed in the restart. Here, we are collecting each one of the
    points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
-  int *blocklen = new int[geometry->GetnPointDomain()];
-  MPI_Aint *displace = new MPI_Aint[geometry->GetnPointDomain()];
-  int counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
-      blocklen[counter] = nFields;
-      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
-      counter++;
+  int nBlock;
+  int *blocklen = nullptr;
+  MPI_Aint *displace = nullptr;
+
+  if (nPointFile == geometry->GetGlobal_nPointDomain() ||
+      config->GetKind_SU2() == SU2_COMPONENT::SU2_SOL) {
+    /*--- No interpolation, each rank reads the indices it needs. ---*/
+    nBlock = geometry->GetnPointDomain();
+
+    blocklen = new int[nBlock];
+    displace = new MPI_Aint[nBlock];
+    int counter = 0;
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); ++iPoint_Global) {
+      if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+        blocklen[counter] = nFields;
+        displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
+        counter++;
+      }
     }
   }
-  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  else {
+    /*--- Interpolation required, read large blocks of data. ---*/
+    nBlock = 1;
+
+    blocklen = new int[nBlock];
+    displace = new MPI_Aint[nBlock];
+
+    const auto partitioner = CLinearPartitioner(nPointFile,0);
+
+    blocklen[0] = nFields*partitioner.GetSizeOnRank(rank);
+    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*sizeof(passivedouble);;
+  }
+
+  MPI_Type_create_hindexed(nBlock, blocklen, displace, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -3083,11 +3097,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
+  const int bufSize = nBlock*blocklen[0];
+  Restart_Data = new passivedouble[bufSize];
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data, nFields*geometry->GetnPointDomain(), MPI_DOUBLE, &status);
+  MPI_File_read_all(fhw, Restart_Data, bufSize, MPI_DOUBLE, &status);
 
   /*--- All ranks close the file after writing. ---*/
 
@@ -3102,6 +3117,207 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
 #endif
 
+  if (nPointFile != geometry->GetGlobal_nPointDomain() &&
+      config->GetKind_SU2() != SU2_COMPONENT::SU2_SOL) {
+    InterpolateRestartData(geometry, config);
+  }
+}
+
+void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *config) {
+
+  if (geometry->GetGlobal_nPointDomain() == 0) return;
+
+  if (size != SINGLE_NODE && size % 2)
+    SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
+
+  if (config->GetFEMSolver())
+    SU2_MPI::Error("Cannot interpolate the restart file for FEM problems.", CURRENT_FUNCTION);
+
+  /* Challenges:
+   *  - Do not use too much memory by gathering the restart data in all ranks.
+   *  - Do not repeat too many computations in all ranks.
+   * Solution?:
+   *  - Build a local ADT for the domain points (not the restart points).
+   *  - Find the closest target point for each donor, which does not match all targets.
+   *  - "Diffuse" the data to neighbor points.
+   *  Complexity is approx. Nlt + (Nlt + Nd) log(Nlt) where Nlt is the LOCAL number
+   *  of target points and Nd the TOTAL number of donors. */
+
+  const unsigned long nFields = Restart_Vars[1];
+  const unsigned long nPointFile = Restart_Vars[2];
+  const auto t0 = SU2_MPI::Wtime();
+  auto nRecurse = 0;
+
+  if (rank == MASTER_NODE) {
+    cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
+            "the mesh (" << geometry->GetGlobal_nPointDomain() << ").\n"
+            "A recursive nearest neighbor interpolation will be performed." << endl;
+  }
+
+  su2activematrix localVars(nPointDomain, nFields);
+  localVars = su2double(0.0);
+  {
+  su2vector<uint8_t> isMapped(nPoint);
+  isMapped = false;
+
+  /*--- ADT of local target points. ---*/
+  {
+  const auto& coord = geometry->nodes->GetCoord();
+  vector<unsigned long> index(nPointDomain);
+  iota(index.begin(), index.end(), 0ul);
+
+  CADTPointsOnlyClass adt(nDim, nPointDomain, coord.data(), index.data(), false);
+  vector<unsigned long>().swap(index);
+
+  /*--- Copy local donor restart data, which will circulate over all ranks. ---*/
+
+  const auto partitioner = CLinearPartitioner(nPointFile,0);
+
+  unsigned long nPointDonorMax = 0;
+  for (int i=0; i<size; ++i)
+    nPointDonorMax = max(nPointDonorMax, partitioner.GetSizeOnRank(i));
+
+  su2activematrix sendBuf(nPointDonorMax, nFields);
+
+  for (auto iPoint = 0ul; iPoint < nPointDonorMax; ++iPoint) {
+    const auto iPointDonor = min(iPoint,partitioner.GetSizeOnRank(rank)-1ul);
+    for (auto iVar = 0ul; iVar < nFields; ++iVar)
+      sendBuf(iPoint,iVar) = Restart_Data[iPointDonor*nFields+iVar];
+  }
+
+  delete [] Restart_Data;
+  Restart_Data = nullptr;
+
+  /*--- Make room to receive donor data from other ranks, and to map it to target points. ---*/
+
+  su2activematrix donorVars(nPointDonorMax, nFields);
+  vector<su2double> donorDist(nPointDomain, 1e12);
+
+  /*--- Circle over all ranks. ---*/
+
+  const int dst = (rank+1) % size; // send to next
+  const int src = (rank-1+size) % size; // receive from prev.
+  const int count = sendBuf.size();
+
+  for (int iStep = 0; iStep < size; ++iStep) {
+
+    swap(sendBuf, donorVars);
+
+    if (iStep) {
+      /*--- Odd ranks send and then receive, and vice versa. ---*/
+      if (rank%2) SU2_MPI::Send(sendBuf.data(), count, MPI_DOUBLE, dst, 0, SU2_MPI::GetComm());
+      else SU2_MPI::Recv(donorVars.data(), count, MPI_DOUBLE, src, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+
+      if (rank%2==0) SU2_MPI::Send(sendBuf.data(), count, MPI_DOUBLE, dst, 0, SU2_MPI::GetComm());
+      else SU2_MPI::Recv(donorVars.data(), count, MPI_DOUBLE, src, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+    }
+
+    /*--- Find the closest target for each donor. ---*/
+
+    vector<su2double> targetDist(donorVars.rows());
+    vector<unsigned long> iTarget(donorVars.rows());
+
+    SU2_OMP_PARALLEL_(for schedule(dynamic,4*OMP_MIN_SIZE))
+    for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
+      int r=0;
+      adt.DetermineNearestNode(donorVars[iDonor], targetDist[iDonor], iTarget[iDonor], r);
+    }
+    END_SU2_OMP_PARALLEL
+
+    /*--- Keep the closest donor for each target (this is separate for OpenMP). ---*/
+
+    for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
+      const auto iPoint = iTarget[iDonor];
+      const auto dist = targetDist[iDonor];
+
+      if (dist < donorDist[iPoint]) {
+        donorDist[iPoint] = dist;
+        isMapped[iPoint] = true;
+        for (auto iVar = 0ul; iVar < donorVars.cols(); ++iVar)
+          localVars(iPoint,iVar) = donorVars(iDonor,iVar);
+      }
+    }
+  }
+  } // everything goes out of scope except "localVars" and "isMapped"
+
+  /*--- Recursively diffuse the nearest neighbor data. ---*/
+
+  auto nDonor = isMapped;
+  bool done = false;
+
+  SU2_OMP_PARALLEL
+  while (!done) {
+    SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      /*--- Do not change points that are already interpolated. ---*/
+      if (isMapped[iPoint]) continue;
+
+      /*--- Boundaries to boundaries and domain to domain. ---*/
+      const bool boundary_i = geometry->nodes->GetSolidBoundary(iPoint);
+
+      for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+        if (!isMapped[jPoint]) continue;
+        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
+
+        nDonor[iPoint]++;
+
+        for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
+          localVars(iPoint,iVar) += localVars(jPoint,iVar);
+      }
+
+      if (nDonor[iPoint] > 0) {
+        for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
+          localVars(iPoint,iVar) /= nDonor[iPoint];
+        nDonor[iPoint] = true;
+      }
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Repeat while all points are not mapped. ---*/
+
+    SU2_OMP_MASTER {
+      done = true;
+      ++nRecurse;
+    }
+    END_SU2_OMP_MASTER
+
+    bool myDone = true;
+
+    SU2_OMP_FOR_STAT(16*OMP_MIN_SIZE)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      isMapped[iPoint] = nDonor[iPoint];
+      myDone &= nDonor[iPoint];
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_ATOMIC
+    done &= myDone;
+
+    SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_PARALLEL
+
+  } // everything goes out of scope except "localVars"
+
+  /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
+
+  Restart_Data = new passivedouble[nPointDomain*nFields];
+  Restart_Vars[2] = nPointDomain;
+
+  int counter = 0;
+  for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); ++iPoint_Global) {
+    const auto iPoint = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+    if (iPoint >= 0) {
+      for (auto iVar = 0ul; iVar < nFields; ++iVar)
+        Restart_Data[counter*nFields+iVar] = SU2_TYPE::GetValue(localVars(iPoint,iVar));
+      counter++;
+    }
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "Number of recursions: " << nRecurse << ".\n"
+            "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
+  }
 }
 
 void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) const {
@@ -3299,54 +3515,24 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    hand. Note that, in the future, these routines can be used for any solver
    and potentially any marker type (beyond inlets). ---*/
 
-  unsigned short KIND_SOLVER = val_kind_solver;
-  unsigned short KIND_MARKER = val_kind_marker;
+  const auto KIND_SOLVER = val_kind_solver;
+  const auto KIND_MARKER = val_kind_marker;
 
-  /*--- Local variables ---*/
+  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
+                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
 
-  unsigned short iDim, iVar, iMesh, iMarker, jMarker;
-  unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
-  su2double Area_Children, Area_Parent, dist, min_dist, Interp_Radius, Theta;
-  const su2double *Coord = nullptr;
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
+  const auto iZone = config->GetiZone();
+  const auto nZone = config->GetnZone();
 
-  string UnstExt, text_line;
-  ifstream restart_file;
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string Marker_Tag;
-  string profile_filename = config->GetInlet_FileName();
-  ifstream inlet_file;
-  string Interpolation_Function, Interpolation_Type;
-  bool Interpolate = false;
-
-  su2double *Normal = new su2double[nDim];
-
-  unsigned long Marker_Counter = 0;
-
-  bool turbulent = (config->GetKind_Solver() == RANS ||
-                    config->GetKind_Solver() == INC_RANS ||
-                    config->GetKind_Solver() == ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_INC_RANS);
+  auto profile_filename = config->GetInlet_FileName();
 
   unsigned short nVar_Turb = 0;
-  if (turbulent)
-    switch (config->GetKind_Turb_Model()) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        nVar_Turb = 1;
-        break;
-      case SST: case SST_SUST:
-        nVar_Turb = 2;
-        break;
-      default:
-        SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
-        break;
-    }
+  if (config->GetKind_Turb_Model() != NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+
+  /*--- names of the columns in the profile ---*/
+  vector<string> columnNames;
+  vector<string> columnValues;
 
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
@@ -3355,7 +3541,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    necessary in case we are writing a template profile file or for Inlet
    Interpolation purposes. ---*/
 
-  unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+
+  /*--- for incompressible flow, we can switch the energy equation off ---*/
+  /*--- for now, we write the temperature even if we are not using it ---*/
+  /*--- because a number of routines depend on the presence of the temperature field ---*/
+  //if (config->GetEnergy_Equation() ==false)
+  //nCol_InletFile = nCol_InletFile -1;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -3364,23 +3556,97 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Modify file name for an unsteady restart ---*/
 
-  if (dual_time || time_stepping)
+  if (time_stepping)
     profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
+
+
+  // create vector of column names
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- Skip if this is the wrong type of marker. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
+
+    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
+    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
+    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    std::stringstream columnName,columnValue;
+
+    columnValue << setprecision(15);
+    columnValue << std::scientific;
+
+    columnValue << t_total << "\t" << p_total <<"\t";
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      columnValue << flow_dir[iDim] <<"\t";
+    }
+
+    columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
+    if(nDim==3) columnName << "COORD-Z    " << setw(24);
+
+    if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
+      switch (config->GetKind_Inlet()) {
+        /*--- compressible conditions ---*/
+        case INLET_TYPE::TOTAL_CONDITIONS:
+          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+          break;
+        case INLET_TYPE::MASS_FLOW:
+          columnName << "DENSITY    " << setw(24) << "VELOCITY   " << setw(24);
+          break;
+        default:
+          SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+          break;        }
+    } else {
+      switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
+        /*--- incompressible conditions ---*/
+        case INLET_TYPE::VELOCITY_INLET:
+          columnName << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24);
+          break;
+        case INLET_TYPE::PRESSURE_INLET:
+          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+          break;
+        default:
+          SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
+          break;
+      }
+    }
+
+    columnName << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
+    if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
+
+    switch (config->GetKind_Turb_Model()) {
+      case NO_TURB_MODEL:
+        /*--- no turbulence model---*/
+        break;
+      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+        /*--- 1-equation turbulence model: SA ---*/
+        columnName << "NU_TILDE   " << setw(24);
+        columnValue << config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND() <<"\t";
+        break;
+      case SST: case SST_SUST:
+        /*--- 2-equation turbulence model (SST) ---*/
+        columnName << "TKE        " << setw(24) << "DISSIPATION";
+        columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
+        break;
+    }
+
+    columnNames.push_back(columnName.str());
+    columnValues.push_back(columnValue.str());
+
+  }
+
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames,columnValues);
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  Marker_Counter = 0;
-
-  unsigned short global_failure = 0, local_failure = 0;
-  ostringstream error_msg;
+  unsigned long Marker_Counter = 0;
+  unsigned short local_failure = 0;
 
   const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- Skip if this is the wrong type of marker. ---*/
 
@@ -3388,9 +3654,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     /*--- Get tag in order to identify the correct inlet data. ---*/
 
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-    for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+    for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
 
       /*--- If we have not found the matching marker string, continue to next marker. ---*/
 
@@ -3402,18 +3668,18 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
       /*--- Get data for this profile. ---*/
 
-      vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-      unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+      const vector<passivedouble>& Inlet_Data = profileReader.GetDataForProfile(jMarker);
+      const auto nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
       vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
       /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
       vector<su2double> Inlet_Values(nCol_InletFile+nDim);
       vector<su2double> Inlet_Interpolated(nColumns);
 
-      unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
+      const auto nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
       /*--- Pointer to call Set and Evaluate functions. ---*/
-      vector<C1DInterpolation*> interpolator (nColumns);
+      vector<C1DInterpolation*> interpolator(nColumns,nullptr);
       string interpolation_function, interpolation_type;
 
       /*--- Define the reference for interpolation. ---*/
@@ -3421,41 +3687,49 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
       vector<su2double> Interpolation_Column (nRows);
 
+      bool Interpolate = true;
+
       switch(config->GetKindInletInterpolationFunction()){
 
-        case (NONE):
+        case (INLET_SPANWISE_INTERP::NONE):
           Interpolate = false;
           break;
 
-        case (AKIMA_1D):
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+        case (INLET_SPANWISE_INTERP::AKIMA_1D):
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
-            interpolation_function = "AKIMA";
-            Interpolate = true;
           }
+          interpolation_function = "AKIMA";
           break;
 
-        case (LINEAR_1D):
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+        case (INLET_SPANWISE_INTERP::LINEAR_1D):
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
-            interpolation_function = "LINEAR";
-            Interpolate = true;
           }
+          interpolation_function = "LINEAR";
+          break;
+
+        case (INLET_SPANWISE_INTERP::CUBIC_1D):
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
+            Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+            interpolator[iCol] = new CCubicSpline(InletRadii,Interpolation_Column);
+          }
+          interpolation_function = "CUBIC";
           break;
 
         default:
-          SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
+          SU2_MPI::Error("Unknown type of interpolation function for inlets.\n",CURRENT_FUNCTION);
           break;
       }
 
-      if (Interpolate == true){
+      if (Interpolate){
         switch(config->GetKindInletInterpolationType()){
-          case(VR_VTHETA):
+          case(INLET_INTERP_TYPE::VR_VTHETA):
             interpolation_type="VR_VTHETA";
             break;
-          case(ALPHA_PHI):
+          case(INLET_INTERP_TYPE::ALPHA_PHI):
             interpolation_type="ALPHA_PHI";
             break;
         }
@@ -3466,40 +3740,37 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         else if (nDim == 2)
           cout<<"Ensure the flow direction is in x direction"<<endl;
       }
-      else if(Interpolate == false) {
+      else {
         cout<<"No Inlet Interpolation being used"<<endl;
       }
 
       /*--- Loop through the nodes on this marker. ---*/
 
-      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-        iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-        Coord = geometry[MESH_0]->nodes->GetCoord(iPoint);
+        const auto iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        const auto Coord = geometry[MESH_0]->nodes->GetCoord(iPoint);
 
-        if(Interpolate == false) {
+        if (!Interpolate) {
 
-          min_dist = 1e16;
+          su2double min_dist = 1e16;
 
           /*--- Find the distance to the closest point in our inlet profile data. ---*/
 
-          for (iRow = 0; iRow < nRows; iRow++) {
+          for (auto iRow = 0ul; iRow < nRows; iRow++) {
 
             /*--- Get the coords for this data point. ---*/
 
-            index = iRow*nColumns;
+            const auto index = iRow*nColumns;
 
-            dist = 0.0;
-            for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
-            dist = sqrt(dist);
+            const auto dist = GeometryToolbox::Distance(nDim, Coord, &Inlet_Data[index]);
 
             /*--- Check is this is the closest point and store data if so. ---*/
 
             if (dist < min_dist) {
-            min_dist = dist;
-            for (iVar = 0; iVar < nColumns; iVar++)
-              Inlet_Values[iVar] = Inlet_Data[index+iVar];
+              min_dist = dist;
+              for (auto iVar = 0ul; iVar < nColumns; iVar++)
+                Inlet_Values[iVar] = Inlet_Data[index+iVar];
             }
 
           }
@@ -3515,39 +3786,37 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           } else {
 
             unsigned long GlobalIndex = geometry[MESH_0]->nodes->GetGlobalIndex(iPoint);
-            cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+            cout << "WARNING: Did not find a match between the points in the inlet file\n";
             cout << "and point " << GlobalIndex;
             cout << std::scientific;
             cout << " at location: [" << Coord[0] << ", " << Coord[1];
-            if (nDim ==3) error_msg << ", " << Coord[2];
-            cout << "]" << endl;
-            cout << "Distance to closest point: " << min_dist << endl;
-            cout << "Current tolerance:         " << tolerance << endl;
-            cout << endl;
-            cout << "You can widen the tolerance for point matching by changing the value" << endl;
+            if (nDim==3) cout << ", " << Coord[2];
+            cout << "]\n";
+            cout << "Distance to closest point: " << min_dist << "\n";
+            cout << "Current tolerance:         " << tolerance << "\n\n";
+            cout << "You can increase the tolerance for point matching by changing the value\n";
             cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
             local_failure++;
             break;
           }
 
         }
-
-        else if(Interpolate == true) {
+        else { // Interpolate
 
           /* --- Calculating the radius and angle of the vertex ---*/
           /* --- Flow should be in z direction for 3D cases ---*/
           /* --- Or in x direction for 2D cases ---*/
-          Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-          Theta = atan2(Coord[1],Coord[0]);
+          const su2double Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
+          const su2double Theta = atan2(Coord[1],Coord[0]);
 
           /* --- Evaluating and saving the final spline data ---*/
-          for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+          for (auto iVar=0ul; iVar < nColumns; iVar++){
 
             /*---Evaluate spline will get the respective value of the Data set (column) specified
             for that interpolator[iVar], cycling through all columns to get all the
             data for that vertex ---*/
             Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
-            if (interpolator[iVar]->GetPointMatch() == false){
+            if (Interp_Radius < InletRadii.front() || Interp_Radius > InletRadii.back()) {
               cout << "WARNING: Did not find a match between the radius in the inlet file " ;
               cout << std::scientific;
               cout << "at location: [" << Coord[0] << ", " << Coord[1];
@@ -3561,15 +3830,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
           }
 
-          /* --- Correcting for Interpolation Type ---*/
-          switch(config->GetKindInletInterpolationType()){
-          case(VR_VTHETA):
-            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
-          break;
-          case(ALPHA_PHI):
-            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
-          break;
-          }
+          /*--- Correcting for Interpolation Type ---*/
+
+          Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord,
+                                              nVar_Turb, config->GetKindInletInterpolationType());
 
           solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
 
@@ -3580,13 +3844,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
       } // end iVertex loop
 
-      if(config->GetPrintInlet_InterpolatedData() == true) {
-          PrintInletInterpolatedData(Inlet_Data_Interpolated, profileReader.GetTagForProfile(jMarker),
-                                     geometry[MESH_0]->nVertex[iMarker], nDim, nCol_InletFile+nDim);
+      if (config->GetPrintInlet_InterpolatedData()) {
+        PrintInletInterpolatedData(Inlet_Data_Interpolated, profileReader.GetTagForProfile(jMarker),
+                                   geometry[MESH_0]->nVertex[iMarker], nDim, nCol_InletFile+nDim);
       }
 
-      for (int i=0; i<nColumns;i++)
-        delete interpolator[i];
+      for (auto& interp : interpolator) delete interp;
 
     } // end jMarker loop
 
@@ -3594,6 +3857,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   } // end iMarker loop
 
+  unsigned short global_failure;
   SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 
   if (global_failure > 0) {
@@ -3603,18 +3867,19 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   /*--- Copy the inlet data down to the coarse levels if multigrid is active.
    Here, we use a face area-averaging to restrict the values. ---*/
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
         /* Check the number of columns and allocate temp array. */
 
         unsigned short nColumns = 0;
-        for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+        for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
             nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            break;
           }
         }
         vector<su2double> Inlet_Values(nColumns);
@@ -3622,19 +3887,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
         /*--- Loop through the nodes on this marker. ---*/
 
-        for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+        for (auto iVertex = 0ul; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
 
           /*--- Get the coarse mesh point and compute the boundary area. ---*/
 
-          iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
-          geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
-          Area_Parent = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
-          Area_Parent = sqrt(Area_Parent);
+          const auto iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          const auto Normal = geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal();
+          const su2double Area_Parent = GeometryToolbox::Norm(nDim, Normal);
 
           /*--- Reset the values for the coarse point. ---*/
 
-          for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
+          for (auto& v : Inlet_Values) v = 0.0;
 
           /*-- Loop through the children and extract the inlet values
            from those nodes that lie on the boundary as well as their
@@ -3643,14 +3906,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            children from the interior volume will not be included in
            the averaging. ---*/
 
-          for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-            Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
-            Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
-                                                                           Marker_Tag, geometry[iMesh-1], config);
-            for (iVar = 0; iVar < nColumns; iVar++) {
+          for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+            const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+
+            auto Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
+                                                                                Marker_Tag, geometry[iMesh-1], config);
+            for (auto iVar = 0u; iVar < nColumns; iVar++)
               Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
-            }
           }
 
           /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
@@ -3662,7 +3924,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     }
   }
 
-  delete [] Normal;
 }
 
 
@@ -3954,115 +4215,7 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 }
 
 
-#ifdef HAVE_LIBROM
-void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
-  
-  bool unsteady = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                  (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-                  (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING));
-  unsigned long iPoint, total_index;
-  unsigned short iVar;
-  
-  string filename = config->GetlibROMbase_FileName();
-  unsigned short pod_basis = config->GetKind_PODBasis(); //TODO: POD BASIS KIND
-  unsigned long TimeIter = config->GetTimeIter();
-  unsigned long nTimeIter = config->GetnTime_Iter();
-  int dim = int(nPointDomain * nVar);
-  bool incremental = false;
-  //bool StopCalc = ((TimeIter+1) == nTimeIter);
-
-  // Get solver nodes
-  CVariable* nodes = GetNodes();
-  
-  /*--- Define SVD basis generator ---*/
-  
-  CAROM::Options svd_options = CAROM::Options(dim, 2).setMaxBasisDimension(int(0.1*dim));
- 
-  if (!u_basis_generator) {
-    if (pod_basis == STATIC_POD) {
-      std::cout << "Creating static basis generator." << std::endl;
-    }
-    else {
-      std::cout << "Creating incremental basis generator." << std::endl;
-      svd_options.setIncrementalSVD(1.0e-2, config->GetDelta_UnstTimeND(),
-                                    1.0e-2, config->GetDelta_UnstTimeND()*100, true).setDebugMode(false);
-      incremental = true;
-    }
-    
-    u_basis_generator.reset(new CAROM::BasisGenerator(
-      svd_options, incremental,
-      filename));
-    
-    // Print nodes for each rank for now
-    std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
-    
-    // Save mesh ordering
-    std::ofstream f;
-    f.open(filename + to_string(rank) + ".csv");
-        for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
-          unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
-          auto Coord = geometry->nodes->GetCoord(iPoint);
-          f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
-        }
-    f.close();
-  }
-
-   if (unsteady) {
-      double* u = new double[nPointDomain*nVar];
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-         for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint*nVar + iVar;
-            u[total_index] = nodes->GetSolution(iPoint,iVar);
-         }
-      }
-      
-      // give solution and time steps to libROM:
-      double dt = config->GetDelta_UnstTimeND();
-      double t =  config->GetCurrent_UnstTime();
-      std::cout << "Taking sample" << std::endl;
-      u_basis_generator->takeSample(u, t, dt);
-      // not implemented yet: u_basis_generator->computeNextSampleTime(u, rhs, t);
-      // bool u_samples = u_basis_generator->isNextSample(t);
-      delete[] u;
-   }
-   
-  /*--- End collection of data and save POD ---*/
-  
-   if (converged) {
-
-      if (!unsteady) {
-         double* u = new double[nPointDomain*nVar];
-         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-               total_index = iPoint*nVar + iVar;
-               u[total_index] = nodes->GetSolution(iPoint, iVar);
-            }
-         }
-         
-         // dt is different for each node, so just use a placeholder dt for now
-         double dt = base_nodes->GetDelta_Time(0);
-         double t = dt*TimeIter;
-         std::cout << "Taking sample" << std::endl;
-         u_basis_generator->takeSample(u, t, dt);
-
-         delete[] u;
-      }
-      
-      if (pod_basis == STATIC_POD) {
-         u_basis_generator->writeSnapshot();
-      }
-      std::cout << "Computing SVD" << std::endl;
-      int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
-      std::cout << "Basis dimension: " << rom_dim << std::endl;
-      u_basis_generator->endSamples();
-      std::cout << "ROM Sampling ended" << std::endl;
-   }
-}
-#endif
-
-
-void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar,
-                               CGeometry *geometry, CConfig *config) {
+void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   // Explanation of certain ROM-specific variables:
   // TrialBasis   ...POD-built reduced basis, Phi
   // GenCoordsY   ...generalized coordinate vector, y
@@ -4353,8 +4506,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  //unsigned long nsnaps = Phi.size();
-  unsigned long nsnaps = 10;
+  unsigned long nsnaps = Phi.size();
+  //unsigned long nsnaps = 10;
   unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
   std::vector<double> PhiNodes;
@@ -4484,7 +4637,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   if (!read_mask_from_file) {
   ofstream fs;
-  std::string fname = "masked_nodes_airfoil_"+to_string(desired_nodes)+".csv";
+  std::string fname = "masked_nodes_airfoil_allphi_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
@@ -4528,15 +4681,6 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   }
   
   unsigned long desired_nodes = config->GetnHyper_Nodes();
-  ofstream fs;
-  std::string fname = "masked_nodes_neighs_"+to_string(desired_nodes)+".csv";
-  fs.open(fname);
-  set <unsigned long> :: iterator itr;
-  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
-    fs << *itr << "," ;
-  }
-  fs << "\n";
-  fs.close();
   
   /*--- Include neighbors of neighbors for viscous part of residual ---*/
   
@@ -4567,23 +4711,23 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
        
   }
   
-  //ofstream fs;
-  //std::string fname = "masked_nodes_neighs.csv";
+  ofstream fs;
+  std::string fname = "masked_nodes_neighs_allphi_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
-  //set <unsigned long> :: iterator itr;
+  set <unsigned long> :: iterator itr;
   for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
     fs << *itr << "," ;
   }
   fs << "\n";
   fs.close();
   
-  std::string fname2 = "masked_nodes_edges.csv";
-  fs.open(fname2);
-  for (unsigned long i : Edge_masked) {
-    fs << i << "," ;
-  }
-  fs << "\n";
-  fs.close();
+  //std::string fname2 = "masked_nodes_edges.csv";
+  //fs.open(fname2);
+  //for (unsigned long i : Edge_masked) {
+  //  fs << i << "," ;
+  //}
+  //fs << "\n";
+  //fs.close();
   
 }
 
@@ -4621,4 +4765,94 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
     }
   }
   SetRes_ROM(ReducedRes);
+}
+
+void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
+
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  const bool unsteady            = config->GetTime_Domain();
+  const string filename          = config->GetlibROMbase_FileName();
+  const unsigned long TimeIter   = config->GetTimeIter();
+  const unsigned long nTimeIter  = config->GetnTime_Iter();
+  const int maxBasisDim          = config->GetMax_BasisDim();
+  const int save_freq            = config->GetRom_SaveFreq();
+  int dim = int(nPointDomain * nVar);
+  bool incremental = false;
+
+  if (!u_basis_generator) {
+
+    /*--- Define SVD basis generator ---*/
+    auto timesteps = static_cast<int>(nTimeIter - TimeIter);
+    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
+                                                false, true).setMaxBasisDimension(int(maxBasisDim));
+
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
+
+      if (unsteady) {
+        if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
+      }
+    }
+    else {
+      if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
+
+      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
+                                    1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
+      incremental = true;
+    }
+
+    u_basis_generator.reset(new CAROM::BasisGenerator(
+      svd_options, incremental,
+      filename));
+
+    // Save mesh ordering
+    std::ofstream f;
+    f.open(filename + "_mesh_" + to_string(rank) + ".csv");
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+        auto Coord = geometry->nodes->GetCoord(iPoint);
+
+        for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+          f << Coord[iDim] << ", ";
+        }
+        f << globalPoint << "\n";
+      }
+    f.close();
+  }
+
+  if (unsteady && (TimeIter % save_freq == 0)) {
+    // give solution and time steps to libROM:
+    su2double dt = config->GetDelta_UnstTime();
+    su2double t =  config->GetCurrent_UnstTime();
+    u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
+  }
+
+  /*--- End collection of data and save POD ---*/
+
+  if (converged) {
+
+    if (!unsteady) {
+       // dt is different for each node, so just use a placeholder dt
+       su2double dt = base_nodes->GetDelta_Time(0);
+       su2double t = dt*TimeIter;
+       u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
+    }
+
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      u_basis_generator->writeSnapshot();
+    }
+
+    if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
+    int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+
+    if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
+    u_basis_generator->endSamples();
+
+    if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
+  }
+
+#else
+  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
+#endif
+  
 }

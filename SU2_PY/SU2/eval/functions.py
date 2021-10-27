@@ -294,10 +294,6 @@ def aerodynamics( config, state=None ):
             name = su2io.expand_time(name,konfig)
             push.extend(name)
             
-            # equivarea files to push
-            if 'WEIGHT_NF' in info.FILES:
-                push.append(info.FILES['WEIGHT_NF'])
-
             # pressure files to push
             if 'TARGET_CP' in info.FILES:
                 push.append(info.FILES['TARGET_CP'])

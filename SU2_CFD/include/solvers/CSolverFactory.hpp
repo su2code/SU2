@@ -2,7 +2,7 @@
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -87,7 +87,7 @@ class CSolverFactory {
 
 private:
 
-  static map<const CSolver*, SolverMetaData> allocatedSolvers;
+  static std::map<const CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!
    * \brief Create a turbulent solver

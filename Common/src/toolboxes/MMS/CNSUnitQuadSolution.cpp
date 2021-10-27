@@ -77,11 +77,11 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
     SU2_MPI::Error("Gamma must be 1.5 for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Constant viscosity must be selected for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 

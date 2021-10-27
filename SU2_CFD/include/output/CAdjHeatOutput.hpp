@@ -1,5 +1,5 @@
 /*!
- * \file output_fea_discadj.hpp
+ * \file CAdjHeatOutput.hpp
  * \brief Headers of the adjoint heat output.
  * \author T. Albring
  * \version 7.2.0 "Blackbird"

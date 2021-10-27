@@ -1,6 +1,6 @@
 /*!
  * \file CTransLMSolver.cpp
- * \brief Main subrotuines for Transition model solver.
+ * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake
  * \version 7.2.0 "Blackbird"
  *
@@ -30,7 +30,10 @@
 #include "../../include/variables/CTransLMVariable.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
 
-
+/*---  This is the implementation of the Langtry-Menter transition model.
+       The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 
+       DOI: https://doi.org/10.2514/1.42362 ---*/
+       
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
@@ -104,7 +107,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Read farfield conditions from config ---*/
     Intermittency_Inf = config->GetIntermittency_FreeStream();
-    tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
+    tu_Inf            = 100.0 * config->GetTurbulenceIntensity_FreeStream();
 
     /*-- Initialize REth from correlation --*/
     if (tu_Inf <= 1.3) {

@@ -57,6 +57,34 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Read from CConfig ---*/
     implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+    sumdFdYjeve = new su2double[nSpecies];
+
+    Ys   = new su2double[nSpecies];
+    Ys_i = new su2double[nSpecies];
+    Ys_j = new su2double[nSpecies];
+
+    dJdr_i = new su2double*[nSpecies];
+    dJdr_j = new su2double*[nSpecies];
+    dFdYi = new su2double *[nSpecies];
+    dFdYj = new su2double *[nSpecies];
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      dJdr_i[iSpecies] = new su2double[nSpecies];
+      dJdr_j[iSpecies] = new su2double[nSpecies];
+      dFdYi[iSpecies] = new su2double[nSpecies];
+      dFdYj[iSpecies] = new su2double[nSpecies];
+    }
+
+    dFdVi = new su2double*[nVar];
+    dFdVj = new su2double*[nVar];
+    dVdUi = new su2double*[nVar];
+    dVdUj = new su2double*[nVar];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      dFdVi[iVar] = new su2double[nVar];
+      dFdVj[iVar] = new su2double[nVar];
+      dVdUi[iVar] = new su2double[nVar];
+      dVdUj[iVar] = new su2double[nVar];
+    }
+
     ionization = config->GetIonization();
     if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
     else            { nHeavy = nSpecies;   nEl = 0; }
@@ -78,7 +106,51 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNEMONumerics::~CNEMONumerics(void) {
-
+  unsigned short iVar,iSpecies; 
+  if (dFdVi != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete [] dFdVi[iVar];
+    delete [] dFdVi;
+  }
+  if (dFdVj != NULL) {
+     for (iVar = 0; iVar < nVar; iVar++)
+      delete [] dFdVj[iVar];
+    delete [] dFdVj;
+  }
+  if (dVdUi != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete [] dVdUi[iVar];
+    delete [] dVdUi;
+  }
+  if (dVdUj != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete [] dVdUj[iVar];
+    delete [] dVdUj;
+  }
+  if (dJdr_i != NULL) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete [] dJdr_i[iSpecies];
+    delete [] dJdr_i;
+  }
+  if (dJdr_j != NULL) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete [] dJdr_j[iSpecies];
+    delete [] dJdr_j;
+  }
+    if (dFdYi != NULL) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete dFdYi[iSpecies];
+    delete [] dFdYi;
+  }
+  if (dFdYj != NULL) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete dFdYj[iSpecies];
+    delete [] dFdYj;
+  }
+  delete [] sumdFdYjeve;
+  delete [] Ys;
+  delete [] Ys_i;
+  delete [] Ys_j;
   delete fluidmodel;
 }
 
@@ -244,6 +316,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
+  su2activematrix Flux_Tensor(nVar,nDim);
+
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
@@ -269,11 +343,12 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
+  // NOTE: V[iSpecies] is == Ys.
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
     Mass += V[iSpecies]*Ms[iSpecies];
-  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+  Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
   tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
   scl  = tmp1/ktr;
   ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
@@ -282,8 +357,10 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
   /*--- Pre-compute mixture quantities ---*/
+
+  su2double Vector[MAXNDIM] = {0.0};
+
   for (iDim = 0; iDim < nDim; iDim++) {
-    Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
@@ -371,8 +448,10 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 
   /*--- Initialize storage vectors & matrices ---*/
   for (iVar = 0; iVar < nSpecies; iVar++) {
-    sumdFdYjh[iVar]   = 0.0;
-    sumdFdYjeve[iVar] = 0.0;
+    //sumdFdYjh[iVar]   = 0.0;
+    //sumdFdYjeve[iVar] = 0.0;
+    //TODO DELETE
+
     for (jVar = 0; jVar < nSpecies; jVar++) {
       dFdYi[iVar][jVar] = 0.0;
       dFdYj[iVar][jVar] = 0.0;
@@ -401,10 +480,9 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
-  hs       = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_Mean_Eve);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_Mean_Eve);
   Cvtr     = fluidmodel->GetSpeciesCvTraRot();
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
@@ -423,6 +501,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
     sumY_j += Ds[iSpecies]*theta/dij*Ys_j[iSpecies];
     sumY   += Ds[iSpecies]*theta/dij*(Ys_j[iSpecies]-Ys_i[iSpecies]);
   }
+
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (jSpecies  = 0; jSpecies < nSpecies; jSpecies++) {

@@ -45,8 +45,7 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Allocate ---*/
 
-  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-  fsi_analysis   = config->GetFSI_Simulation();
+  fsi_analysis = config->GetFSI_Simulation();
 
   /*--- Surface residual ---*/
   Residual_Ext_Surf.resize(nBoundPt,nVar) = su2double(0.0);
@@ -55,7 +54,7 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
   if (fsi_analysis) FlowTraction.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
-  if (gen_alpha) {
+  if (config->GetKind_TimeIntScheme_FEA() == STRUCT_TIME_INT::GENERALIZED_ALPHA) {
     Residual_Ext_Surf_n.resize(nBoundPt,nVar) = su2double(0.0);
 
     if (fsi_analysis) FlowTraction_n.resize(nBoundPt,nVar) = su2double(0.0);

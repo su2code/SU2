@@ -50,11 +50,12 @@ private:
   ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
   ArrheniusTheta,                   /*!< \brief Arrhenius reaction characteristic temperature */
   CharVibTemp,                      /*!< \brief Characteristic vibrational temperature for e_vib */
-  RotationModes,	          /*!< \brief Rotational modes of energy storage */
+  RotationModes,                  /*!< \brief Rotational modes of energy storage */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Tcb_b,                          /*!< \brief Rate controlling temperature exponent (bkw) */
+  taus,
   Diss,                           /*!< \brief Dissociation potential. */
   MassFrac_FreeStream,            /*!< \brief Mixture mass fractions of the fluid. */
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
@@ -72,7 +73,7 @@ private:
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
-  /*--- Implicit Variables *---*/
+  /*--- Implicit variables ---*/
   su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
   *dPdU, *dTdU, *dTvedU;
 
@@ -134,20 +135,21 @@ public:
   /*!
    * \brief Compute species V-E energy.
    */
-  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
+  vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) final;
 
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve,
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
                                                su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
   /*!
-   * \brief Populate chemical source term jacobian. 
+   * \brief Compute chemical source term jacobian. 
    */
-  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, su2double* cvve,
-                         su2double* dTdU, su2double* dTvedU, su2double **val_jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
+                         su2double* cvve, su2double* dTdU, su2double* dTvedU,
+                         su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
@@ -155,9 +157,10 @@ public:
   su2double ComputeEveSourceTerm() final;
 
   /*!
-   * \brief Get vibration enery source term jacobian.
+   * \brief Compute relaxation source term jacobian.
    */
-  void GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU,
+  void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
+                                su2double *dTdU, su2double* dTvedU,
                                 su2double **val_jacobian) final;
 
   /*!

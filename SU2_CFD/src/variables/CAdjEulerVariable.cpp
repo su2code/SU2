@@ -91,9 +91,6 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   /*--- Allocate and initializate projection vector for wall boundary condition ---*/
   ForceProj_Vector.resize(nPoint,nDim) = su2double(0.0);
 
-  /*--- Allocate and initializate interior boundary jump vector for near field boundary condition ---*/
-  IntBoundary_Jump.resize(nPoint,nVar) = su2double(0.0);
-
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);

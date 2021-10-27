@@ -48,9 +48,14 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   MeandPdU = new su2double[nVar];
   ProjFlux = new su2double[nVar];
   Flux     = new su2double[nVar];
-
   mean_eves.resize(nSpecies,0.0);
 
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CCentLax_NEMO::~CCentLax_NEMO(void) {
@@ -61,6 +66,12 @@ CCentLax_NEMO::~CCentLax_NEMO(void) {
   delete [] MeandPdU;
   delete [] ProjFlux;
   delete [] Flux;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
 CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) {
@@ -126,6 +137,12 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   }
 
   if (implicit) {
+
+    for (iVar = 0; iVar < nVar; iVar++){
+      for (jVar = 0; jVar < nVar; jVar++){
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0; }}
+
     cte = Epsilon_0*StretchingFactor*MeanLambda;
 
     for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
@@ -151,5 +168,5 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     Jacobian_j[nSpecies+nDim][nSpecies+nDim+1]   -= cte*dPdU_j[nSpecies+nDim+1];
     Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
   }
-  return ResidualType<>(Flux, nullptr, nullptr);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

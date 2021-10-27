@@ -50,7 +50,6 @@ void CSinglezoneDriver::StartSolver() {
   StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
-  bool libROM = config_container[MESH_0]->GetSave_libROM();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -96,11 +95,10 @@ void CSinglezoneDriver::StartSolver() {
     Output(TimeIter);
 
     /*--- Save iteration solution for libROM ---*/
-    #ifdef HAVE_LIBROM
-        if (libROM) {
-          solver_container[0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[0][INST_0][MESH_0], geometry_container[0][INST_0][0], config_container[0], StopCalc);
-        }
-    #endif
+    if (config_container[MESH_0]->GetSave_libROM()) {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                     config_container[ZONE_0], StopCalc);
+    }
     
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
@@ -137,6 +135,25 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
   }
+  else if (config_container[ZONE_0]->GetHeatProblem()) {
+    /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
+    solver_container[ZONE_0][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                            solver_container[ZONE_0][INST_0],
+                                                                            config_container[ZONE_0], TimeIter);
+  }
+  
+  /*---- Initialize ROM specific variables. -------------------------------------------------------*/
+  if (config_container[ZONE_0]->GetReduced_Model()) {
+    if (rank == MASTER_NODE) {
+      cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->Mask_Selection(geometry_container[ZONE_0][INST_0][0],
+                                                         config_container[ZONE_0]);
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->FindMaskedEdges(geometry_container[ZONE_0][INST_0][0],
+                                                         config_container[ZONE_0]);
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetROM_Variables(geometry_container[ZONE_0][INST_0][0],
+                                                         config_container[ZONE_0]);
+    }
+  }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
@@ -166,14 +183,14 @@ void CSinglezoneDriver::Run() {
 
 void CSinglezoneDriver::Postprocess() {
 
-    iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+  iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+      numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+  /*--- A corrector step can help preventing numerical instabilities ---*/
+
+  if (config_container[ZONE_0]->GetRelaxation())
+    iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-    /*--- A corrector step can help preventing numerical instabilities ---*/
-
-    if (config_container[ZONE_0]->GetRelaxation())
-      iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
 
@@ -230,7 +247,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0],
                                  solver_container[ZONE_0][INST_0][MESH_0],
                                  numerics_container[ZONE_0][INST_0][MESH_0],
-                                 config_container[ZONE_0], NONE);
+                                 config_container[ZONE_0], RECORDING::CLEAR_INDICES);
 
   /*--- Update the wall distances if the mesh was deformed. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() ||

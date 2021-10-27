@@ -54,7 +54,7 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
    *    return a CMirror if the target requires conservative inter-
    *    polation, or the type of interpolator defined by "type". ---*/
 
-  if (type == WEIGHTED_AVERAGE) {
+  if (type == INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE) {
     if (verbose) cout << "using a sliding mesh approach." << endl;
     interpolator = new CSlidingMesh(geometry_container, config, iZone, jZone);
   }
@@ -64,17 +64,17 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
   }
   else {
     switch(type) {
-    case ISOPARAMETRIC:
+    case INTERFACE_INTERPOLATOR::ISOPARAMETRIC:
       if (verbose) cout << "using the isoparametric approach." << endl;
       interpolator = new CIsoparametric(geometry_container, config, iZone, jZone);
       break;
 
-    case NEAREST_NEIGHBOR:
+    case INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR:
       if (verbose) cout << "using a nearest neighbor approach." << endl;
       interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
       break;
 
-    case RADIAL_BASIS_FUNCTION:
+    case INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION:
       if (verbose) cout << "using a radial basis function approach." << endl;
       interpolator = new CRadialBasisFunction(geometry_container, config, iZone, jZone);
       break;

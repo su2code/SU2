@@ -71,7 +71,6 @@ namespace PrintingToolbox {
 class CTablePrinter{
 public:
   CTablePrinter(std::ostream * output, const std::string & separator = "|");
-  ~CTablePrinter();
 
   enum alignment {
     CENTER,

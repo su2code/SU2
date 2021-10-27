@@ -1,5 +1,5 @@
 /*!
- * \file output_adj_heat.cpp
+ * \file CAdjHeatOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
  * \version 7.2.0 "Blackbird"

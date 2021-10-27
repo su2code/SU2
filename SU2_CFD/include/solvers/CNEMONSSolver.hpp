@@ -42,9 +42,6 @@
 class CNEMONSSolver final : public CNEMOEulerSolver {
 private:
 
-  su2double Prandtl_Lam,     /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;              /*!< \brief Turbulent Prandtl number. */
-
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -54,6 +51,27 @@ private:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config, bool Output) override;
+
+  /*!
+   * \brief Compute the viscous residuals.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
+
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+
 public:
 
   /*!
@@ -197,17 +215,4 @@ public:
                                CNumerics *visc_numerics,
                                CConfig *config,
                                unsigned short val_marker) override;
-
-  /*!
-   * \brief Compute the viscous residuals.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
-
 };

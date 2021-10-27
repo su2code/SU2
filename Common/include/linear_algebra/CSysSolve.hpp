@@ -256,6 +256,7 @@ private:
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
 
     /*--- Reset the pointers. ---*/
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
@@ -276,6 +277,7 @@ private:
     LinSysSol.PassiveCopy(LinSysSol_tmp);
 
     /*--- Reset the pointers. ---*/
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;

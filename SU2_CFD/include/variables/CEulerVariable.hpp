@@ -143,7 +143,9 @@ public:
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double **GetGradient_Primitive(unsigned long iPoint) final { return Gradient_Primitive[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
+    return Gradient_Primitive(iPoint,iVar);
+  }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -156,7 +158,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief A virtual member.

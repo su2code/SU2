@@ -252,7 +252,7 @@ namespace AD{
 
   /*!
    * \brief Start a passive region, i.e. stop recording.
-   * \return True is tape was active.
+   * \return True if tape was active.
    */
   inline bool BeginPassive() { return false; }
 
@@ -261,6 +261,28 @@ namespace AD{
    * \param[in] wasActive - Whether we were recording before entering the passive region.
    */
   inline void EndPassive(bool wasActive) {}
+
+  /*!
+   * \brief Pause the use of preaccumulation.
+   * \return True if preaccumulation was active.
+   */
+  inline bool PausePreaccumulation() { return false; }
+
+  /*!
+   * \brief Resume the use of preaccumulation.
+   * \param[in] wasActive - Whether preaccumulation was active before pausing.
+   */
+  inline void ResumePreaccumulation(bool wasActive) {}
+
+  /*!
+   * \brief Begin a hybrid parallel adjoint evaluation mode that assumes an inherently safe reverse path.
+   */
+  inline void StartNoSharedReading() {}
+
+  /*!
+   * \brief End the "no shared reading" adjoint evaluation mode.
+   */
+  inline void EndNoSharedReading() {}
 
 #else
   using CheckpointHandler = codi::DataStore;
@@ -271,17 +293,10 @@ namespace AD{
 
   extern ExtFuncHelper* FuncHelper;
 
-  /*--- Stores the indices of the input variables (they might be overwritten) ---*/
-
-  extern std::vector<su2double::GradientData> inputValues;
-
-  /*--- Current position inside the adjoint vector ---*/
-
-  extern int adjointVectorPosition;
-
-  extern bool Status;
-
   extern bool PreaccActive;
+#ifdef HAVE_OPDI
+  SU2_OMP(threadprivate(PreaccActive))
+#endif
 
   extern bool PreaccEnabled;
 
@@ -297,28 +312,20 @@ namespace AD{
 
   extern std::vector<TapePosition> TapePositions;
 
-  extern std::vector<su2double::GradientData> localInputValues;
-
-  extern std::vector<su2double*> localOutputValues;
-
   extern codi::PreaccumulationHelper<su2double> PreaccHelper;
+#ifdef HAVE_OPDI
+  SU2_OMP(threadprivate(PreaccHelper))
+#endif
 
   /*--- Reference to the tape. ---*/
 
-  FORCEINLINE su2double::TapeType& getGlobalTape() {
-    return su2double::getGlobalTape();
-  }
+  FORCEINLINE su2double::TapeType& getGlobalTape() {return su2double::getGlobalTape();}
 
-  FORCEINLINE void RegisterInput(su2double &data, bool push_index = true) {
-    AD::getGlobalTape().registerInput(data);
-    if (push_index) {
-      inputValues.push_back(data.getGradientData());
-    }
-  }
+  FORCEINLINE void RegisterInput(su2double &data) {AD::getGlobalTape().registerInput(data);}
 
   FORCEINLINE void RegisterOutput(su2double& data) {AD::getGlobalTape().registerOutput(data);}
 
-  FORCEINLINE void ResetInput(su2double &data) {data.getGradientData() = su2double::GradientData();}
+  FORCEINLINE void ResetInput(su2double &data) {data = data.getValue();}
 
   FORCEINLINE void StartRecording() {AD::getGlobalTape().setActive();}
 
@@ -335,7 +342,6 @@ namespace AD{
     opdi::logic->prepareEvaluate();
   #endif
     AD::getGlobalTape().evaluate();
-    adjointVectorPosition = 0;
   }
 
   FORCEINLINE void ComputeAdjoint(unsigned short enter, unsigned short leave) {
@@ -346,8 +352,6 @@ namespace AD{
   #else
     AD::getGlobalTape().evaluate(TapePositions[enter], TapePositions[leave]);
   #endif
-    if (leave == 0)
-      adjointVectorPosition = 0;
   }
 
   FORCEINLINE void Reset() {
@@ -355,10 +359,6 @@ namespace AD{
   #if defined(HAVE_OPDI)
     opdi::logic->reset();
   #endif
-    if (inputValues.size() != 0) {
-      adjointVectorPosition = 0;
-      inputValues.clear();
-    }
     if (TapePositions.size() != 0) {
     #if defined(HAVE_OPDI)
       for (TapePosition& pos : TapePositions) {
@@ -472,6 +472,7 @@ namespace AD{
   FORCEINLINE void EndPreacc(){
     if (PreaccActive) {
       PreaccHelper.finish(false);
+      PreaccActive = false;
     }
   }
 
@@ -548,6 +549,39 @@ namespace AD{
 
   FORCEINLINE void EndPassive(bool wasActive) { if(wasActive) StartRecording(); }
 
+  FORCEINLINE bool PausePreaccumulation() {
+    const auto current = PreaccEnabled;
+    if (!current) return false;
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    PreaccEnabled = false;
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+    return true;
+  }
+
+  FORCEINLINE void ResumePreaccumulation(bool wasActive) {
+    if (!wasActive) return;
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    PreaccEnabled = true;
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
+
+  FORCEINLINE void StartNoSharedReading() {
+#ifdef HAVE_OPDI
+    opdi::logic->setAdjointAccessMode(opdi::LogicInterface::AdjointAccessMode::Classical);
+    opdi::logic->addReverseBarrier();
+#endif
+  }
+
+  FORCEINLINE void EndNoSharedReading() {
+#ifdef HAVE_OPDI
+    opdi::logic->setAdjointAccessMode(opdi::LogicInterface::AdjointAccessMode::Atomic);
+    opdi::logic->addReverseBarrier();
+#endif
+  }
 #endif // CODI_REVERSE_TYPE
 
 } // namespace AD

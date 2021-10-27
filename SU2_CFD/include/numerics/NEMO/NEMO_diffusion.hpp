@@ -38,8 +38,9 @@
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar;    /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
+
+  unsigned short iDim, iVar;  /*!< \brief Iterators in dimension an variable. */
+  su2double *Mean_PrimVar,    /*!< \brief Mean primitive variables. */
   *Mean_U,
   **Mean_GU,
   *Mean_dTdU,

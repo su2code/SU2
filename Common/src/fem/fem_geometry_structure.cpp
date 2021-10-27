@@ -6128,7 +6128,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -6235,19 +6235,19 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* An LES wall model is used for this boundary marker. Determine
              which wall model and allocate the memory for the member variable. */
           switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
-            case EQUILIBRIUM_WALL_MODEL: {
+            case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
               boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
               break;
             }
-            case LOGARITHMIC_WALL_MODEL: {
+            case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
 
@@ -6589,7 +6589,7 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 }
 
-void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
+void CMeshFEM_DG::InitStaticMeshMovement(const CConfig        *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 

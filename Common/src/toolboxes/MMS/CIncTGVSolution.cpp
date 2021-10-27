@@ -82,7 +82,7 @@ CIncTGVSolution::CIncTGVSolution(unsigned short val_nDim,
     SU2_MPI::Error("Constant density fluid model must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Constant viscosity must be selected for the incompressible Taylor Green Vortex",
                    CURRENT_FUNCTION);
 

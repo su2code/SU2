@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_comp.cpp
+ * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
  * \version 7.2.0 "Blackbird"
@@ -25,17 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
-  lastInnerIter = curInnerIter;
-  gridMovement = config->GetGrid_Movement();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -58,8 +55,15 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (config->GetDynamic_Grid()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
+  }
+
+  if (gridMovement) {
+    auto notFound = requestedVolumeFields.end();
+    if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
+      requestedVolumeFields.emplace_back("GRID_VELOCITY");
+      nRequestedVolumeFields ++;
+    }
   }
 
   stringstream ss;
@@ -97,10 +101,6 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     }
   }
 }
-
-CFlowCompOutput::~CFlowCompOutput(void) {}
-
-
 
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
@@ -223,8 +223,6 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
@@ -289,17 +287,18 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /*--- Add Cp diff fields ---*/
 
-  Add_CpInverseDesignOutput(config);
+  Add_CpInverseDesignOutput();
+
+  /*--- Add nearfield diff fields ---*/
+
+  Add_NearfieldInverseDesignOutput();
 
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+  AddCoordinates();
 
   // Solution variables
   AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
@@ -324,7 +323,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Grid velocity
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -427,13 +426,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
-  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
-
-  // MPI-Rank
-  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
+  AddCommonFVMOutputs(config);
 
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
@@ -444,17 +437,13 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Turb = nullptr;
+  const auto Node_Geo  = geometry->nodes;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
 
-  CPoint*    Node_Geo  = geometry->nodes;
-
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
+  LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
   SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -480,7 +469,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
@@ -576,18 +565,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetGradient_Primitive(iPoint,1)));
   }
 
-  // Mesh quality metrics
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
-  }
-
-  // MPI-Rank
-  SetVolumeOutputValue("RANK", iPoint, rank);
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
@@ -729,69 +710,25 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   Set_CpInverseDesign(flow_solver, geometry, config);
 
+  /*--- Set nearfield diff fields ---*/
+  if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
+
 }
 
-bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
+bool CFlowCompOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
 
 }
 
-bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
-
-  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
-
-}
-
-
-void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
+void CFlowCompOutput::SetAdditionalScreenOutput(const CConfig *config){
 
   if (config->GetFixed_CL_Mode()){
     SetFixedCLScreenOutput(config);
   }
 }
 
-void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
-  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
-
-  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
-    FixedCLSummary.AddColumn("Fixed CL Mode", 40);
-    FixedCLSummary.AddColumn("Value", 30);
-    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-    FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
-    FixedCLSummary << "Target CL" << config->GetTarget_CL();
-    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
-    if (config->GetFinite_Difference_Mode()){
-      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
-      lastInnerIter = curInnerIter - 1;
-    }
-    else
-      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
-    FixedCLSummary.PrintFooter();
-    SetScreen_Header(config);
-  }
-
-  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
-    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
-    FixedCLSummary.AddColumn("Value", 30);
-    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-    FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
-    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
-    if (nDim == 3){
-      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
-      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
-    }
-    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
-    FixedCLSummary.PrintFooter();
-    curInnerIter = lastInnerIter;
-    WriteMetaData(config);
-    curInnerIter = config->GetInnerIter();
-  }
-}
-
-bool CFlowCompOutput::WriteHistoryFile_Output(CConfig *config) {
+bool CFlowCompOutput::WriteHistoryFile_Output(const CConfig *config) {
   return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
 }
