@@ -139,13 +139,8 @@ public:
                           su2double val_therm_conductivity_ve,
                           const CConfig *config);
 
-
-  /*--- Template matrix creation for code optimization ---*/
-  template <int nRows, int nCols>
-  using Matrix = C2DContainer<unsigned short, su2double, StorageType::RowMajor, 8, nRows, nCols>;
-
   /*!
-   * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
+   * \brief Staging function to compute viscous Jacobians.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
    * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
@@ -160,20 +155,113 @@ public:
    * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
-  template <unsigned short NVAR, unsigned short NSPECIES>
-  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
-                          su2double **val_Mean_GradPrimVar,
-                          su2double *val_Mean_Eve,
-                          su2double *val_Mean_Cvve,
-                          su2double *val_diffusion_coeff,
-                          su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity,
-                          su2double val_thermal_conductivity,
+  void GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double **val_Mean_GradPrimVar,
+                          su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                          su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                          su2double val_eddy_viscosity, su2double val_thermal_conductivity,
                           su2double val_thermal_conductivity_ve,
                           su2double val_dist_ij, su2double *val_normal,
                           su2double val_dS, su2double *val_Fv,
                           su2double **val_Jac_i, su2double **val_Jac_j,
                           const CConfig *config){
+
+    switch (nVar) {
+      case 5:
+        return ComputeViscousJacs_impl<5, 1>(su2double *val_Mean_PrimVar, su2double **val_Mean_GradPrimVar,
+                                             su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                                             su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                                             su2double val_eddy_viscosity, su2double val_thermal_conductivity,
+                                             su2double val_thermal_conductivity_ve,
+                                             su2double val_dist_ij, su2double *val_normal,
+                                             su2double val_dS, su2double *val_Fv,
+                                             su2double **val_Jac_i, su2double **val_Jac_j,
+                                             const CConfig *config);
+
+      case 6:
+        switch (nSpecies) {
+          case 1: return ComputeViscousJacobians_impl<6, 1>(su2double *val_Mean_PrimVar,
+                           su2double **val_Mean_GradPrimVar,
+                           su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                           su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                           su2double val_eddy_viscosity, su2double val_thermal_conductivity,
+                           su2double val_thermal_conductivity_ve,
+                           su2double val_dist_ij, su2double *val_normal,
+                           su2double val_dS, su2double *val_Fv,
+                           su2double **val_Jac_i, su2double **val_Jac_j,
+                           const CConfig *config);
+
+          case 2: return ComputeViscousJacobians_impl<6, 2>(su2double *val_Mean_PrimVar,
+                           su2double **val_Mean_GradPrimVar,
+                           su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                           su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                           su2double val_eddy_viscosity, su2double val_thermal_conductivity,
+                           su2double val_thermal_conductivity_ve,
+                           su2double val_dist_ij, su2double *val_normal,
+                           su2double val_dS, su2double *val_Fv,
+                           su2double **val_Jac_i, su2double **val_Jac_j,
+                           const CConfig *config);
+
+          default: SU2_MPI::Error("nVar and nSpecies mismatch.", CURRENT_FUNCTION);
+        }
+
+      case 7:
+        return ComputeViscousJacs_impl<7, 2>(su2double *val_Mean_PrimVar,
+                 su2double **val_Mean_GradPrimVar,
+                 su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                 su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                 su2double val_eddy_viscosity, su2double val_thermal_conductivity,
+                 su2double val_thermal_conductivity_ve,
+                 su2double val_dist_ij, su2double *val_normal,
+                 su2double val_dS, su2double *val_Fv,
+                 su2double **val_Jac_i, su2double **val_Jac_j,
+                 const CConfig *config);
+
+      case 9:
+        return ComputeViscousJacs_impl<9, 5>(su2double *val_Mean_PrimVar,
+                 su2double **val_Mean_GradPrimVar,
+                 su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                 su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                 su2double val_eddy_viscosity, su2double val_thermal_conductivity,
+                 su2double val_thermal_conductivity_ve,
+                 su2double val_dist_ij, su2double *val_normal,
+                 su2double val_dS, su2double *val_Fv,
+                 su2double **val_Jac_i, su2double **val_Jac_j,
+                 const CConfig *config);
+
+      case 10:
+        return ComputeViscousJacs_impl<10, 5>(su2double *val_Mean_PrimVar,
+                 su2double **val_Mean_GradPrimVar,
+                 su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
+                 su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+                 su2double val_eddy_viscosity, su2double val_thermal_conductivity,
+                 su2double val_thermal_conductivity_ve,
+                 su2double val_dist_ij, su2double *val_normal,
+                 su2double val_dS, su2double *val_Fv,
+                 su2double **val_Jac_i, su2double **val_Jac_j,
+                 const CConfig *config);
+
+      default:
+        SU2_MPI::Error("Implicit solver not setup for seleced Gas Model.", CURRENT_FUNCTION);
+    }
+  }
+
+  /*!
+   * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
+   */
+  template <unsigned short NVAR, unsigned short NSPECIES>
+  void ComputeViscousJacs_impl(su2double *val_Mean_PrimVar,
+                               su2double **val_Mean_GradPrimVar,
+                               su2double *val_Mean_Eve,
+                               su2double *val_Mean_Cvve,
+                               su2double *val_diffusion_coeff,
+                               su2double val_laminar_viscosity,
+                               su2double val_eddy_viscosity,
+                               su2double val_thermal_conductivity,
+                               su2double val_thermal_conductivity_ve,
+                               su2double val_dist_ij, su2double *val_normal,
+                               su2double val_dS, su2double *val_Fv,
+                               su2double **val_Jac_i, su2double **val_Jac_j,
+                               const CConfig *config){
 
     /*--- Initialize matrices ---*/
     Matrix<NVAR, NVAR> dFdVi, dFdVj, dVdUi, dVdUj;
@@ -425,6 +513,9 @@ public:
           val_Jac_j[iVar][jVar] += dFdVj[iVar][kVar]*dVdUj[kVar][jVar];
         }
   }
+  /*--- Template matrix creation for code optimization ---*/
+  template <int nRows, int nCols>
+  using Matrix = C2DContainer<unsigned short, su2double, StorageType::RowMajor, 8, nRows, nCols>;
 
   /*!
    * \overload
