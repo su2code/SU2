@@ -5112,6 +5112,56 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (GetGasModel() == "ARGON") {monoatomic = true;}
   else {monoatomic = false;}
 
+  /*--- Checks for additional species transport. ---*/
+  // TK:: what should be the master option to switch on species transport? How will that interact with flamelet?
+  if (Kind_Species_Model != SPECIES_MODEL::NONE) {
+    if (Kind_Solver != INC_NAVIER_STOKES &&
+        Kind_Solver != INC_RANS) //TK:: DISC_ADJ_* ?
+      SU2_MPI::Error("Species transport currently only avaialble for incompressible flow.", CURRENT_FUNCTION);
+
+    // Helper function that checks scalar variable bounds,
+    auto checkScalarBounds = [&](su2double scalar, string name, su2double lowerBound, su2double upperBound) {
+      if (scalar < lowerBound || scalar > upperBound)
+        SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
+    };
+
+    /*--- Some options have to provide as many entries as there are additional species equations. ---*/
+    /*--- Fill a vector with the entires and then check if each element is equal to the first one. ---*/
+    std::vector<unsigned short> nSpecies_options;
+    nSpecies_options.push_back(nSpecies_Init);
+    if (Species_Clipping)
+      nSpecies_options.insert(nSpecies_options.end(), {nSpecies_Clipping_Min, nSpecies_Clipping_Max});
+    if (nMarker_Inlet_Species > 0)
+      nSpecies_options.push_back(nSpecies_per_Inlet);
+    // Add more options for size check here.
+
+    /*--- nSpecies_Init is the master, but it simply checks for consistency. ---*/
+    for (auto elem : nSpecies_options)
+      if (nSpecies_options[0] != elem)
+        SU2_MPI::Error("Make sure all species inputs have the same size.", CURRENT_FUNCTION);
+
+    /*--- Once consistency is checked set the var that is used throughout the code. ---*/
+    nSpecies = nSpecies_Init;
+
+    /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
+    su2double Species_Init_Sum = 0.0;
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
+      Species_Init_Sum += Species_Init[iSpecies];
+    }
+    checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
+
+    for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+      su2double Inlet_SpeciesVal_Sum = 0.0;
+      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_SPECIES_INLET individual", 0.0, 1.0);
+        Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+      }
+      checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_SPECIES_INLET sum", 0.0, 1.0);
+    }
+
+  } // species transport checks
+
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
     cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
