@@ -780,6 +780,45 @@ vector<passivedouble> CDeformationDriver::GetVertexNormal(unsigned short iMarker
   return ret_Normal_passive;
 }
 
+vector<passivedouble> CDeformationDriver::GetSurfaceCoordinates(unsigned short iMarker) {
+
+    CGeometry *geometry = geometry_container[MESH_0];
+
+    su2double *Coord;
+    auto nVertex = geometry->GetnVertex(iMarker);
+    vector<passivedouble> coords(nVertex*nDim, 0.0);
+
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord = geometry->nodes->GetCoord(iPoint);
+
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+            coords[nDim*iVertex + iDim] = SU2_TYPE::GetValue(Coord[iDim]);
+        }
+    }
+
+    return coords;
+}
+
+vector<passivedouble> CDeformationDriver::GetVolumeCoordinates() {
+
+    CGeometry *geometry = geometry_container[MESH_0];
+
+    su2double *Coord;
+    const auto nPoints = geometry->GetnPoint();
+    vector<passivedouble> coords(nPoints*nDim, 0.0);
+
+    for (auto iPoint = 0ul; iPoint < nPoints; iPoint++) {
+        Coord = geometry->nodes->GetCoord(iPoint);
+
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+            coords[nDim*iPoint + iDim] = SU2_TYPE::GetValue(Coord[iDim]);
+        }
+    }
+
+    return coords;
+}
+
 void CDeformationDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
 
   unsigned long iPoint;

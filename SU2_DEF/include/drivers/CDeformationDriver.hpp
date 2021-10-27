@@ -51,7 +51,7 @@ protected:
             UsedTimePreproc,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking preprocessing phase.*/
             UsedTimeCompute,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
-  unsigned short iZone, nZone = SINGLE_ZONE;
+  unsigned short nDim, iZone, nZone = SINGLE_ZONE;
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CGeometry **geometry_container;             /*!< \brief Geometrical definition of the problem. */
@@ -156,7 +156,20 @@ public:
   inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
     return GetVertexNormal(iMarker, iVertex, true);
   }
-  
+
+  /*!
+   * \brief Get surface coordinates of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return XYZ coordinates (vector) of the marker.
+   */
+  vector<passivedouble> GetSurfaceCoordinates(unsigned short iMarker);
+
+  /*!
+   * \brief Get volume coordinates of the fluid mesh.
+   * \return XYZ coordinates (vector) of the fluid mesh.
+   */
+  vector<passivedouble> GetVolumeCoordinates();
+
   /*!
    * \brief Set the mesh displacement for the elasticity mesh solver.
    * \param[in] iMarker - Marker identifier.
