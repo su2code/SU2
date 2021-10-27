@@ -107,6 +107,7 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
    /*--- Add the production terms to the residuals. ---*/
 
    /*--- Contribution due to 2D axisymmetric formulation ---*/
+   
    if (axisymmetric) ResidualAxisymmetric();
 
    /*--- Implicit part ---*/

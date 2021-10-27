@@ -104,7 +104,7 @@ private:
           if (flame)
             Residual[iVar] += yinv*Volume*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
           else
-            Residual[iVar] += yinv*Volume*Density_i*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
+            Residual[iVar] += yinv*Volume*(Density_i*Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
         } 
       }
 

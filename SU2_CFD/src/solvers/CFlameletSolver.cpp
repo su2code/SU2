@@ -557,7 +557,9 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     if (axisymmetric){
       /*--- Set y coordinate ---*/
       first_numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
-    }
+      /*-- gradients necessary for axisymmetric flows only? ---*/
+      first_numerics->SetScalarVarGradient(nodes->GetGradient(i_point), nullptr);
+   }
 
     fluid_model_local->SetScalarSources(nodes->GetSolution(i_point));
 
