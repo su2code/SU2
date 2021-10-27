@@ -477,10 +477,10 @@ void CConfig::addInletOption(const string name, unsigned short & nMarker_Inlet, 
 }
 
 void CConfig::addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
-                                    su2double** & inlet_species_val) {
+                                    su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionInletSpecies(name, nMarker_Inlet_Species, Marker_Inlet_Species, inlet_species_val);
+  COptionBase* val = new COptionInletSpecies(name, nMarker_Inlet_Species, Marker_Inlet_Species, inlet_species_val, nSpecies_per_Inlet);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1480,7 +1480,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Scalar: (inlet_marker, Species1, Species2, ...) */
    /// NOTE TK:: We need to check that the sum is 0<=sum<=1 to be correct. Also check that multiple species must be specified.
-  addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal);
+  addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
 
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/

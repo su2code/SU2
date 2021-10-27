@@ -198,6 +198,7 @@ private:
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
+  nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,                  /*!< \brief Number of Giles flow markers. */
   nRelaxFactor_Giles,             /*!< \brief Number of relaxation factors for Giles markers. */
@@ -1268,7 +1269,7 @@ private:
                       su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir);
 
   void addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
-                             su2double** & inlet_species_val);
+                             su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
 
   template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,

@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "parallelization/mpi_structure.hpp"
 using namespace std;
 
 template <class Tenum, class TField>
@@ -1103,12 +1104,19 @@ public:
 
 class COptionInletSpecies : public COptionBase {
   string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double ** & inletspeciesval;
+  unsigned short & size; // number of inlets for that options
+  string * & marker; // contains marker names
+  su2double ** & inletspeciesval; // contains all values specified for each inlet
+  unsigned short & nSpecies; // contains how many species are defined per inlet
 
 public:
-  COptionInletSpecies(string option_field_name, unsigned short & nMarker_Inlet_Species, string* & Marker_Inlet_Species, su2double** & option_field) : size(nMarker_Inlet_Species), marker(Marker_Inlet_Species), inletspeciesval(option_field) {
+  COptionInletSpecies(string option_field_name, unsigned short & nMarker_Inlet_Species, string* & Marker_Inlet_Species,
+                      su2double** & option_field, unsigned short & nSpecies_per_Inlet) :
+    size(nMarker_Inlet_Species),
+    marker(Marker_Inlet_Species),
+    inletspeciesval(option_field),
+    nSpecies(nSpecies_per_Inlet) {
+
     this->name = option_field_name;
   }
 
@@ -1119,38 +1127,46 @@ public:
     unsigned short option_size = option_value.size();
     if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker = NULL;
-      this->inletspeciesval = NULL;
+      this->marker = nullptr;
+      this->inletspeciesval = nullptr;
+      this->nSpecies = 0;
       return "";
     }
 
-    // at this point we need to know how many inlets we have. We count the number of strings
-    // in the list. We assume that the name of the inlet does not start with a number
-    unsigned short nVals=0;
-    unsigned short nSpecies=0;
+    /*--- Determine the number of inlets: A new inlet is found if the first char in the string is a letter.
+     * This will fail in if a marker starts with a number!
+     * Additionally, determine the number of values that are prescribed per inlet. ---*/
+    unsigned short nInlets = 0;
+    vector<unsigned short> nSpecies_per_Inlet;
+    /*--- Loop through the fields of the marker. ---*/
     for (unsigned long i = 0; i < option_size; i++) {
-      // get the next entry in the inlet list
+      /*--- If the string starts with a letter, a new marker tag is found. ---*/
       if (isalpha(option_value[i][0])) {
-        nVals++;
+        nSpecies_per_Inlet.push_back(0);
+        nInlets++;
       } else {
-        nSpecies++;
+        /*-- Else, a species fractions values is found and the respective counter is incremented. ---*/
+        nSpecies_per_Inlet[nInlets-1]++;
       }
     }
 
-    nSpecies = nSpecies/nVals;
+    /*--- Check that the same amount of values are defined per marker. ---*/
+    for (auto elem : nSpecies_per_Inlet)
+      if (nSpecies_per_Inlet[0] != elem)
+        SU2_MPI::Error("Unequal number of species defined for MARKER_INLET_SPECIES.", CURRENT_FUNCTION);
+    this->nSpecies = nSpecies_per_Inlet[0];
 
-    // nVals is the number of inlets
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->inletspeciesval = new su2double*[nVals];
-    for (unsigned long i = 0; i < nVals; i++) {
+    this->size = nInlets;
+    this->marker = new string[nInlets];
+    this->inletspeciesval = new su2double*[nInlets];
+    for (unsigned long i = 0; i < nInlets; i++) {
       this->inletspeciesval[i] = new su2double[nSpecies];
     }
 
-    for (unsigned long i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nInlets; i++) {
       this->marker[i].assign(option_value[(1+nSpecies)*i]);
 
-      for (unsigned long j=0;j<nSpecies;j++){
+      for (unsigned long j = 0; j < nSpecies; j++){
         istringstream ss_nd(option_value[(1+nSpecies)*i + 1+j]);
         if (!(ss_nd >> this->inletspeciesval[i][j])) {
           return badValue(option_value, "inlet", this->name);
@@ -1166,6 +1182,7 @@ public:
     this->marker = nullptr;
     this->inletspeciesval = nullptr;
     this->size = 0; // There is no default value for list
+    this->nSpecies = 0;
   }
 };
 
