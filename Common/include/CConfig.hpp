@@ -2020,11 +2020,7 @@ public:
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
 
-  void SetNSpecies(unsigned short n_species) { this->n_species = n_species; }
-  unsigned short GetNSpecies() const { return n_species; }
-
   unsigned short GetNSpeciesInit() const { return nSpecies_Init; }
-  void SetNSpeciesInit(unsigned short nSpecies_Init) { this->nSpecies_Init = nSpecies_Init; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
