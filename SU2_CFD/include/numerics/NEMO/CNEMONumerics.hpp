@@ -176,19 +176,19 @@ public:
 
       case 6:
         switch (nSpecies) {
-          case 1: return ComputeViscousJacobians_impl<6, 1>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                                            val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                                            val_laminar_viscosity, val_eddy_viscosity,
-                                                            val_thermal_conductivity, val_thermal_conductivity_ve,
-                                                            val_dist_ij, val_normal, val_dS, val_Fv,
-                                                            val_Jac_i, val_Jac_j, config);
+          case 1: return ComputeViscousJacs_impl<6, 1>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                                       val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                                       val_laminar_viscosity, val_eddy_viscosity,
+                                                       val_thermal_conductivity, val_thermal_conductivity_ve,
+                                                       val_dist_ij, val_normal, val_dS, val_Fv,
+                                                       val_Jac_i, val_Jac_j, config);
 
-          case 2: return ComputeViscousJacobians_impl<6, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                                            val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                                            val_laminar_viscosity, val_eddy_viscosity,
-                                                            val_thermal_conductivity, val_thermal_conductivity_ve,
-                                                            val_dist_ij, val_normal, val_dS, val_Fv,
-                                                            val_Jac_i, val_Jac_j, config);
+          case 2: return ComputeViscousJacs_impl<6, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
+                                                       val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
+                                                       val_laminar_viscosity, val_eddy_viscosity,
+                                                       val_thermal_conductivity, val_thermal_conductivity_ve,
+                                                       val_dist_ij, val_normal, val_dS, val_Fv,
+                                                       val_Jac_i, val_Jac_j, config);
 
           default: SU2_MPI::Error("nVar and nSpecies mismatch.", CURRENT_FUNCTION);
         }
