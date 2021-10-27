@@ -443,8 +443,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   /*--- Wall shear stress values (wall functions) ---*/
 
-  numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(jPoint));
+  numerics->SetTau_Wall(nodes->GetTau_Wall(iPoint),
+                        nodes->GetTau_Wall(jPoint));
 
   /*--- Compute and update residual ---*/
 
@@ -2393,10 +2393,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, Density = 0.0, GradTemperature = 0.0,
-            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
+  su2double Viscosity = 0.0, Area, Density = 0.0, GradTemperature = 0.0, WallDistMod, FrictionVel,
+            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
+  const su2double minYPlus = config->GetwallModel_MinYPlus();
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -2526,30 +2527,37 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux
        * on the wall ---*/
 
-      su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
+      su2double TauTangent[MAXNDIM] = {0.0};
+      GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
+
+      WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+
+      /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
+      su2double Tau_Wall, scale;
+      if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
+        Tau_Wall = nodes->GetTau_Wall(iPoint);
+        scale = Tau_Wall / WallShearStress[iMarker][iVertex];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          TauTangent[iDim] *= scale;
+          TauElem[iDim] *= scale;
+        }
+
+        WallShearStress[iMarker][iVertex] = Tau_Wall;
+      }
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
-        /* --- Note that in the wall model, we switch off the computation when the computed y+ < 5    --- */
-        /* --- We put YPlus to 1.0 so we have to compute skinfriction and the actual y+ in that case as well --- */
-        if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < 5.0))
-          CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
+        CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
-      WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(nDim, TauTangent);
 
-      for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+      WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
+
+      /*--- Compute non-dimensional velocity and y+ ---*/
+
+      FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
       
-      su2double WallDistMod = GeometryToolbox::Norm(nDim, WallDist);
-
-      /*--- Compute y+ and non-dimensional velocity ---*/
-
-      su2double FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
-
-      /* --- in case of wall functions, we have computed YPlus in the turbulence class --- */
-      /* --- Note that we do not recompute y+ when y+<5 because y+ can become > 5 again --- */
-      if (!wallfunctions)
+      if (!wallfunctions) {
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+      }
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 

@@ -52,7 +52,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   size(SU2_MPI::GetSize()),
   nDim(ndim),
   multiZone(config->GetMultizone_Problem()),
-  gridMovement(config->GetGrid_Movement()),
+  gridMovement(config->GetDynamic_Grid()),
   femOutput(fem_output),
   si_units(config->GetSystemMeasurements() == SI),
   us_units(config->GetSystemMeasurements() == US) {

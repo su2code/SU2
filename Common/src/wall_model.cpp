@@ -41,7 +41,7 @@ CWallModel::CWallModel(CConfig *config) {
   Pr_lam  = config->GetPrandtl_Lam();
   Pr_turb = config->GetPrandtl_Turb();
 
-  karman = config->GetwallModelKappa(); // von Karman constant -> k = 0.41; or 0.38;
+  karman = config->GetwallModel_Kappa(); // von Karman constant -> k = 0.41; or 0.38;
 }
 
 void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,

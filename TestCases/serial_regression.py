@@ -316,6 +316,28 @@ def main():
     turb_flatplate.tol       = 0.00001
     test_list.append(turb_flatplate)
 
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
+    turb_wallfunction_flatplate_sst           = TestCase('turb_sst_wallfunction_flatplate')
+    turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
+    turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
+    turb_wallfunction_flatplate_sst.test_iter = 10
+    turb_wallfunction_flatplate_sst.test_vals = [-4.229955, -1.930560, -1.998477, 1.250383, -1.635663, 1.462396, 10.000000, -2.151959, 0.072873, 0.002514] #last 10 columns
+    turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
+    turb_wallfunction_flatplate_sst.timeout   = 1600
+    turb_wallfunction_flatplate_sst.tol       = 0.00001
+    test_list.append(turb_wallfunction_flatplate_sst)
+
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
+    turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
+    turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
+    turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
+    turb_wallfunction_flatplate_sa.test_iter = 10
+    turb_wallfunction_flatplate_sa.test_vals = [-4.436048, -2.044706, -2.114644, 0.979771, -5.393729, 10, -1.589465, 0.069744, 0.002686] #last 9 columns
+    turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
+    turb_wallfunction_flatplate_sa.timeout   = 1600
+    turb_wallfunction_flatplate_sa.tol       = 0.00001
+    test_list.append(turb_wallfunction_flatplate_sa)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
@@ -547,6 +569,28 @@ def main():
     inc_turb_naca0012_sst_sust.timeout   = 1600
     inc_turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(inc_turb_naca0012_sst_sust)
+
+    # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
+    inc_turb_wallfunction_flatplate_sst           = TestCase('inc_turb_sst_wallfunction_flatplate')
+    inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
+    inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
+    inc_turb_wallfunction_flatplate_sst.test_iter = 10
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.561293, -5.730190, -6.305916, -4.230297, -7.164083, -2.047256, 10, -2.941818, 0.000974, 0.003195] #last 10 columns
+    inc_turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
+    inc_turb_wallfunction_flatplate_sst.timeout   = 1600
+    inc_turb_wallfunction_flatplate_sst.tol       = 0.00001
+    test_list.append(inc_turb_wallfunction_flatplate_sst)
+
+    # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SA
+    inc_turb_wallfunction_flatplate_sa           = TestCase('inc_turb_sa_wallfunction_flatplate')
+    inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
+    inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
+    inc_turb_wallfunction_flatplate_sa.test_iter = 10
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.561221, -5.718427, -6.306321, -4.230222, -9.586624, 10, -2.927239, 0.000858, 0.003794 ] #last 9 columns
+    inc_turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
+    inc_turb_wallfunction_flatplate_sa.timeout   = 1600
+    inc_turb_wallfunction_flatplate_sa.tol       = 0.00001
+    test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
     ### DG-FEM Euler ###
