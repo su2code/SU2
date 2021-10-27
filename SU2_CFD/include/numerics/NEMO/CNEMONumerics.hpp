@@ -246,8 +246,8 @@ public:
 
     /*--- Play tricks on the compiler, in static mode use NVAR from the template, in dynamic mode
           use nVar from the class or from the arguments (if you make it static it needs to be an argument). ---*/
-    const auto nVar = NVAR != DynamicSize ? NVAR : nVarRuntime;
-    const auto nSpecies = NSPECIES != DynamicSize ? NSPECIES : nSpecies;
+    const auto nVar = NVAR;// != DynamicSize ? NVAR : nVar;
+    const auto nSpecies = NSPECIES;// != DynamicSize ? NSPECIES : nSpecies;
 
     // Allocate and initialize, for the static case the compiler optimizes this away.
     dFdVi.resize(nVar, nVar) = su2double(0.0);
