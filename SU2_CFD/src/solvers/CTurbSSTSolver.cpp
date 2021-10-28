@@ -208,19 +208,17 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Upwind second order reconstruction and gradients ---*/
 
   if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
+    switch(config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+    }
   }
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-    SetSolution_Gradient_GG(geometry, config);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-    SetSolution_Gradient_LS(geometry, config);
+  switch(config->GetKind_Gradient_Method()) {
+    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
+    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
+  }
 
   if (limiter && muscl) SetSolution_Limiter(geometry, config);
 
