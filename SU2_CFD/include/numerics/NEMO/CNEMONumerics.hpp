@@ -192,7 +192,7 @@ public:
 
           default: SU2_MPI::Error("nVar and nSpecies mismatch.", CURRENT_FUNCTION);
         }
-
+      break;
       case 7:
         return ComputeViscousJacs_impl<7, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
                                              val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
