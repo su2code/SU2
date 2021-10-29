@@ -242,7 +242,9 @@ public:
 
     /*--- Initialize matrices ---*/
     Matrix<NVAR, NVAR> dFdVi, dFdVj, dVdUi, dVdUj;
-    Matrix<NSPECIES, NSPECIES> dJdr_i, dJdr_j;
+    /*--- Need to avoid size of 1 otherwise the type becomes a vector (without [i][j]). ---*/
+    constexpr unsigned short nSpeciesDummy = (NSPECIES == 1) ? 2 : NSPECIES;
+    Matrix<nSpeciesDummy, nSpeciesDummy> dJdr_i, dJdr_j;
 
     /*--- Play tricks on the compiler, in static mode use NVAR from the template, in dynamic mode
           use nVar from the class or from the arguments (if you make it static it needs to be an argument). ---*/
@@ -254,8 +256,10 @@ public:
     dFdVj.resize(nVar, nVar) = su2double(0.0);
     dVdUi.resize(nVar, nVar) = su2double(0.0);
     dVdUj.resize(nVar, nVar) = su2double(0.0);
-    dJdr_i.resize(nSpecies,nSpecies) = su2double(0.0);
-    dJdr_j.resize(nSpecies,nSpecies) = su2double(0.0);
+    if (NSPECIES == DynamicSize) {
+      dJdr_i.resize(nSpecies,nSpecies) = su2double(0.0);
+      dJdr_j.resize(nSpecies,nSpecies) = su2double(0.0);
+    }
 
     /*--- Calculate preliminary geometric quantities ---*/
     su2double dij = val_dist_ij;
