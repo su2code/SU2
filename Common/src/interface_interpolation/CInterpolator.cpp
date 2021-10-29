@@ -2,7 +2,7 @@
  * \file CInterpolator.cpp
  * \brief Definition of the base class for interface interpolation.
  * \author H. Kline
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -153,8 +153,8 @@ unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short n
 }
 
 void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) {
-  CGeometry* geom = Geometry[val_zone][INST_0][MESH_0];
 
+  const CGeometry* geom = Geometry[val_zone][INST_0][MESH_0];
   const auto nDim = geom->GetnDim();
 
   /*--- If this zone has no parts of the marker, it will not participate
@@ -204,7 +204,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
 
   /*--- Define the neighbors map. ---*/
   for (unsigned long iElem = 0; iElem < nElems; iElem++) {
-    CPrimalGrid* elem = geom->bound[val_marker][iElem];
+    const CPrimalGrid* elem = geom->bound[val_marker][iElem];
     for (unsigned short iNode = 0; iNode < elem->GetnNodes(); iNode++) {
       const auto iPoint = elem->GetNode(iNode);
       if (geom->nodes->GetDomain(iPoint)) {

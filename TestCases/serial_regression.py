@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.2.0 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -64,12 +64,12 @@ def main():
     thermalbath_frozen.tol       = 0.00001
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge
+    # Inviscid single wedge, implicit
     invwedge           = TestCase('invwedge')
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.956173,-1.480936,-16.738781,-17.063703,-17.011887,2.371977,1.732488, 5.399642,0.953492]
+    invwedge.test_vals = [-1.013753, -1.538402, -18.301793, -18.629176, -18.575221, 2.303329, 2.004449, 5.351111, 0.904297]
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -81,7 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.173082, -5.697844, -20.831292, -20.719160, -23.419769, -1.564064, -2.069008, 2.203919, -2.590729]
+    visc_cone.test_vals = [-5.175741, -5.700504, -20.706185, -20.612638, -22.855655, -1.539882, -2.104390, 2.197875, -2.576097]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -316,6 +316,28 @@ def main():
     turb_flatplate.tol       = 0.00001
     test_list.append(turb_flatplate)
 
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
+    turb_wallfunction_flatplate_sst           = TestCase('turb_sst_wallfunction_flatplate')
+    turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
+    turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
+    turb_wallfunction_flatplate_sst.test_iter = 10
+    turb_wallfunction_flatplate_sst.test_vals = [-4.229955, -1.930560, -1.998477, 1.250383, -1.635663, 1.462396, 10.000000, -2.151959, 0.072873, 0.002514] #last 10 columns
+    turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
+    turb_wallfunction_flatplate_sst.timeout   = 1600
+    turb_wallfunction_flatplate_sst.tol       = 0.00001
+    test_list.append(turb_wallfunction_flatplate_sst)
+
+    # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
+    turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
+    turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
+    turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
+    turb_wallfunction_flatplate_sa.test_iter = 10
+    turb_wallfunction_flatplate_sa.test_vals = [-4.436048, -2.044706, -2.114644, 0.979771, -5.393729, 10, -1.589465, 0.069744, 0.002686] #last 9 columns
+    turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
+    turb_wallfunction_flatplate_sa.timeout   = 1600
+    turb_wallfunction_flatplate_sa.tol       = 0.00001
+    test_list.append(turb_wallfunction_flatplate_sa)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
@@ -333,7 +355,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.133933, -14.498178, 1.064330, 0.019756]
+    turb_naca0012_sa.test_vals = [-11.133933, -14.498178, 1.064330, 0.019756, 20, -1.898609, 20, -2.719825]
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.new_output = True
     turb_naca0012_sa.timeout   = 3200
@@ -395,7 +417,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [ -6.279299, -0.747627, -2.237638, 2.321596]
+    axi_rans_air_nozzle.test_vals = [-12.097563, -6.650115, -8.875944, -2.393285]
     axi_rans_air_nozzle.su2_exec  = "SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
@@ -547,6 +569,28 @@ def main():
     inc_turb_naca0012_sst_sust.timeout   = 1600
     inc_turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(inc_turb_naca0012_sst_sust)
+
+    # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SST
+    inc_turb_wallfunction_flatplate_sst           = TestCase('inc_turb_sst_wallfunction_flatplate')
+    inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
+    inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
+    inc_turb_wallfunction_flatplate_sst.test_iter = 10
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.561293, -5.730190, -6.305916, -4.230297, -7.164083, -2.047256, 10, -2.941818, 0.000974, 0.003195] #last 10 columns
+    inc_turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
+    inc_turb_wallfunction_flatplate_sst.timeout   = 1600
+    inc_turb_wallfunction_flatplate_sst.tol       = 0.00001
+    test_list.append(inc_turb_wallfunction_flatplate_sst)
+
+    # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SA
+    inc_turb_wallfunction_flatplate_sa           = TestCase('inc_turb_sa_wallfunction_flatplate')
+    inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
+    inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
+    inc_turb_wallfunction_flatplate_sa.test_iter = 10
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.561221, -5.718427, -6.306321, -4.230222, -9.586624, 10, -2.927239, 0.000858, 0.003794 ] #last 9 columns
+    inc_turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
+    inc_turb_wallfunction_flatplate_sa.timeout   = 1600
+    inc_turb_wallfunction_flatplate_sa.tol       = 0.00001
+    test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
     ### DG-FEM Euler ###

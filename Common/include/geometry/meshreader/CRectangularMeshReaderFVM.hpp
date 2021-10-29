@@ -3,7 +3,7 @@
  * \brief Header file for the class CRectangularMeshReaderFVM.
  *        The implementations are in the <i>CRectangularMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,13 +71,8 @@ public:
   /*!
    * \brief Constructor of the CRectangularMeshReaderFVM class.
    */
-  CRectangularMeshReaderFVM(CConfig        *val_config,
+  CRectangularMeshReaderFVM(const CConfig *val_config,
                             unsigned short val_iZone,
                             unsigned short val_nZone);
-
-  /*!
-   * \brief Destructor of the CRectangularMeshReaderFVM class.
-   */
-  ~CRectangularMeshReaderFVM(void);
 
 };

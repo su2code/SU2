@@ -2,7 +2,7 @@
  * \file CPrism.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,53 +26,28 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrism.hpp"
+#include "../../../include/option_structure.hpp"
 
-unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
-
-unsigned short CPrism::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
-
-unsigned short CPrism::nNodesFace[5] = {4,4,4,3,3};
-
-unsigned short CPrism::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
-
-unsigned short CPrism::nFaces = 5;
-
-unsigned short CPrism::nNodes = 6;
-
-unsigned short CPrism::nNeighbor_Elements = 5;
-
-unsigned short CPrism::VTK_Type = 13;
-
-unsigned short CPrism::maxNodesFace = 4;
+constexpr unsigned short CPrismConnectivity::nNodesFace[5];
+constexpr unsigned short CPrismConnectivity::Faces[5][4];
+constexpr unsigned short CPrismConnectivity::nNeighbor_Nodes[6];
+constexpr unsigned short CPrismConnectivity::Neighbor_Nodes[6][3];
 
 CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_2, unsigned long val_point_3,
-         unsigned long val_point_4, unsigned long val_point_5) : CPrimalGrid() {
-  unsigned short iNeighbor_Elements;
-
-  nDim = 3;
-
-  /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+         unsigned long val_point_4, unsigned long val_point_5):
+  CPrimalGridWithConnectivity<CPrismConnectivity>(false)
+{
+  /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
   Nodes[4] = val_point_4;
   Nodes[5] = val_point_5;
-
-  /*--- Allocate and define neighbor elements to a element ---*/
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
-    Neighbor_Elements[iNeighbor_Elements]=-1;
-  }
-
 }
 
-CPrism::~CPrism() {}
-
 void CPrism::Change_Orientation(void) {
-  swap(Nodes[0], Nodes[1]);
-  swap(Nodes[3], Nodes[4]);
+  std::swap(Nodes[0], Nodes[1]);
+  std::swap(Nodes[3], Nodes[4]);
 }

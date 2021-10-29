@@ -2,7 +2,7 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,19 +44,28 @@ public:
   su2double *rhos_j, *u_j;
   su2double a_i, P_i, h_i;
   su2double a_j, P_j, h_j;
+  su2double rho_i, rho_j;
+  su2double e_ve_i, e_ve_j;
+  su2double rhoCvtr_i, rhoCvtr_j;
+  su2double rhoCvve_i, rhoCvve_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
+  su2double** Jacobian_i = nullptr;
+  su2double** Jacobian_j = nullptr;
 
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
 
+  /*--- Graidents w.r.t. conservative variables. ---*/
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
   su2double Gamma_i, Gamma_j;
 
   vector<su2double> hs;
+  vector<su2double> Cvtr;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
+  su2double *Ys, *Ys_i, *Ys_j;
 
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,

@@ -2,7 +2,7 @@
  * \file ndflattener_tests.cpp
  * \brief Unit tests for NdFlattener template classes.
  * \author M. Aehle
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -3,7 +3,7 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
 
-CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
+CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(const CConfig *val_config,
                                                      unsigned short val_iZone,
                                                      unsigned short val_nZone)
 : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
@@ -63,8 +63,6 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
   ComputeRectangularSurfaceConnectivity();
 
 }
-
-CRectangularMeshReaderFVM::~CRectangularMeshReaderFVM(void) { }
 
 void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
 
