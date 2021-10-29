@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.hpp
  * \brief Class for defining the common variables of flow solvers.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
