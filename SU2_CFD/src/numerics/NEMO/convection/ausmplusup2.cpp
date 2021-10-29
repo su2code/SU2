@@ -2,7 +2,7 @@
  * \file ausmplusup2.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
