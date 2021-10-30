@@ -102,7 +102,7 @@ private:
   **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
   *Mean_Eve,                    /*!< \brief Mean value of eve. */
   *Mean_Cvve,                   /*!< \brief Mean value of cvve. */
-  *Edge_Vector,                 /*!< \brief Vector from point i to point j. */
+  Edge_Vector[MAXNDIM]={0.0},   /*!< \brief Vector from point i to point j. */
   *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Mean_Diffusion_Coeff,        /*!< \brief Mean value of the species diffusion coefficient. */
   Mean_Laminar_Viscosity,       /*!< \brief Mean value of the viscosity. */

@@ -128,11 +128,11 @@ public:
    * \param[in] val_thermal_conductivity_ve - Thermal conductivity of Vibe-Elec modes.
    * \param[in] config - Definition of the particular problem.
    */
-  void GetViscousProjFlux(su2double *val_primvar,
-                          su2double **val_gradprimvar,
+  void GetViscousProjFlux(const su2double *val_primvar,
+                          const su2double* const* val_gradprimvar,
                           su2double *val_eve,
                           const su2double *val_normal,
-                          su2double *val_diffusioncoeff,
+                          const su2double *val_diffusioncoeff,
                           su2double val_lam_viscosity,
                           su2double val_eddy_viscosity,
                           su2double val_therm_conductivity,
@@ -142,7 +142,6 @@ public:
   /*!
    * \brief Staging function to compute viscous Jacobians.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
    * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
    * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
    * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
@@ -155,88 +154,31 @@ public:
    * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
-  void GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double **val_Mean_GradPrimVar,
-                          su2double *val_Mean_Eve, su2double *val_Mean_Cvve,
-                          su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
+  void GetViscousProjJacs(const su2double *val_Mean_PrimVar,
+                          su2double *val_Mean_Eve, const su2double *val_Mean_Cvve,
+                          const su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
                           su2double val_eddy_viscosity, su2double val_thermal_conductivity,
                           su2double val_thermal_conductivity_ve,
-                          su2double val_dist_ij, su2double *val_normal,
-                          su2double val_dS, su2double *val_Fv,
+                          su2double val_dist_ij, 
+			  const su2double *val_normal,
+                          su2double val_dS, const su2double *val_Fv,
                           su2double **val_Jac_i, su2double **val_Jac_j,
-                          const CConfig *config){
-
-    switch (nVar) {
-      case 5:
-        return ComputeViscousJacs_impl<5, 1>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                             val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                             val_laminar_viscosity, val_eddy_viscosity,
-                                             val_thermal_conductivity, val_thermal_conductivity_ve,
-                                             val_dist_ij, val_normal, val_dS, val_Fv,
-                                             val_Jac_i, val_Jac_j, config);
-
-      case 6:
-        switch (nSpecies) {
-          case 1: return ComputeViscousJacs_impl<6, 1>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                                       val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                                       val_laminar_viscosity, val_eddy_viscosity,
-                                                       val_thermal_conductivity, val_thermal_conductivity_ve,
-                                                       val_dist_ij, val_normal, val_dS, val_Fv,
-                                                       val_Jac_i, val_Jac_j, config);
-
-          case 2: return ComputeViscousJacs_impl<6, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                                       val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                                       val_laminar_viscosity, val_eddy_viscosity,
-                                                       val_thermal_conductivity, val_thermal_conductivity_ve,
-                                                       val_dist_ij, val_normal, val_dS, val_Fv,
-                                                       val_Jac_i, val_Jac_j, config);
-
-          default: SU2_MPI::Error("nVar and nSpecies mismatch.", CURRENT_FUNCTION);
-        }
-      break;
-      case 7:
-        return ComputeViscousJacs_impl<7, 2>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                             val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                             val_laminar_viscosity, val_eddy_viscosity,
-                                             val_thermal_conductivity, val_thermal_conductivity_ve,
-                                             val_dist_ij, val_normal, val_dS, val_Fv,
-                                             val_Jac_i, val_Jac_j, config);
-
-      case 9:
-        return ComputeViscousJacs_impl<9, 5>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                             val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                             val_laminar_viscosity, val_eddy_viscosity,
-                                             val_thermal_conductivity, val_thermal_conductivity_ve,
-                                             val_dist_ij, val_normal, val_dS, val_Fv,
-                                             val_Jac_i, val_Jac_j, config);
-
-      case 10:
-        return ComputeViscousJacs_impl<10, 5>(val_Mean_PrimVar, val_Mean_GradPrimVar,
-                                              val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                              val_laminar_viscosity, val_eddy_viscosity,
-                                              val_thermal_conductivity, val_thermal_conductivity_ve,
-                                              val_dist_ij, val_normal, val_dS, val_Fv,
-                                              val_Jac_i, val_Jac_j, config);
-
-      default:
-        SU2_MPI::Error("Implicit solver not setup for seleced Gas Model.", CURRENT_FUNCTION);
-    }
-  }
+                          const CConfig *config);
 
   /*!
    * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
    */
   template <unsigned short NVAR, unsigned short NSPECIES>
-  void ComputeViscousJacs_impl(su2double *val_Mean_PrimVar,
-                               su2double **val_Mean_GradPrimVar,
+  void ComputeViscousJacs_impl(const su2double *val_Mean_PrimVar,
                                su2double *val_Mean_Eve,
-                               su2double *val_Mean_Cvve,
-                               su2double *val_diffusion_coeff,
+                               const su2double *val_Mean_Cvve,
+                               const su2double *val_diffusion_coeff,
                                su2double val_laminar_viscosity,
                                su2double val_eddy_viscosity,
                                su2double val_thermal_conductivity,
                                su2double val_thermal_conductivity_ve,
-                               su2double val_dist_ij, su2double *val_normal,
-                               su2double val_dS, su2double *val_Fv,
+                               su2double val_dist_ij, const su2double *val_normal,
+                               su2double val_dS, const su2double *val_Fv,
                                su2double **val_Jac_i, su2double **val_Jac_j,
                                const CConfig *config){
 
@@ -248,8 +190,9 @@ public:
 
     /*--- Play tricks on the compiler, in static mode use NVAR from the template, in dynamic mode
           use nVar from the class or from the arguments (if you make it static it needs to be an argument). ---*/
-    const auto nVar = NVAR;// != DynamicSize ? NVAR : nVar;
-    const auto nSpecies = NSPECIES;// != DynamicSize ? NSPECIES : nSpecies;
+    const auto nVar = NVAR;
+    const auto nSpecies = NSPECIES;
+    const auto nDim = nVar - nSpecies - 2;
 
     // Allocate and initialize, for the static case the compiler optimizes this away.
     dFdVi.resize(nVar, nVar) = su2double(0.0);
