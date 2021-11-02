@@ -185,9 +185,14 @@ endif
 
 # add Eigen library
 if get_option('enable-eigen')
-  eigen_dep = [declare_dependency(include_directories: '/usr/include/eigen3')]
-  su2_deps += eigen_dep
+
+  assert(get_option('eigen_root')!='',
+    'Must specify eigen folder (-Deigen_root=path/to/eigen)')
+  eigen_root = get_option('eigen_root')
+  eigen_dep = [declare_dependency(include_directories: eigen_root)]
+
   su2_cpp_args += '-DHAVE_EIGEN'
+  su2_deps += eigen_dep
 endif
 
 if get_option('enable-librom')
