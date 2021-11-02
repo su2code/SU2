@@ -733,7 +733,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *Yj, *dYdn, **GradY, **dVdU;
+  dij, *Di, *Vi, *Vj, *dYdn, **GradY, **dVdU;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
@@ -754,8 +754,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   const unsigned short TVE_INDEX   = nodes->GetTveIndex();
 
   /*--- Allocate arrays ---*/
-  Yj    = new su2double[nSpecies];
-  dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     GradY[iSpecies] = new su2double[nDim];
@@ -798,8 +796,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Di   = nodes->GetDiffusionCoeff(iPoint);
       eves = nodes->GetEve(iPoint);
       hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
@@ -808,20 +804,17 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
         const auto& Yst = config->GetSupercatalytic_Wall_Composition();
 
-        /*--- Calculate normal derivative of mass fraction ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
-        }
-
         /*--- Calculate supplementary quantities ---*/
         su2double SdYdn = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
+          su2double dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
+          SdYdn += rho*Di[iSpecies]*dYdn;
         }
 
         /*--- Calculate species residual at wall ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Res_Visc[iSpecies]  = -(-rho*Di[iSpecies]*dYdn[iSpecies]+Yst[iSpecies]*SdYdn)*Area;
+          dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
+          Res_Visc[iSpecies]  = -(-rho*Di[iSpecies]*dYdn+Yst[iSpecies]*SdYdn)*Area;
         }
 
         if (implicit) {
@@ -933,8 +926,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] GradY[iSpecies];
   delete [] GradY;
-  delete [] dYdn;
-  delete [] Yj;
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] dVdU[iVar];
   delete [] dVdU;
