@@ -1131,14 +1131,16 @@ private:
   
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
-  iWall_Catalytic,
+  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls */
   nWall_Catalytic;                          /*!< \brief No of catalytic walls */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless] */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
   vt_transfer_res_limit,                    /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
-  monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
+  monoatomic,                               /*!< \brief Flag for monoatomic mixture. */
+  Supercatalytic_Wall;                      /*!< \brief Flag for supercatalytic wall. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
@@ -5071,10 +5073,16 @@ public:
   const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
 
   /*!
-   * \brief Provides the gas mass fractions of the flow
-   * \return: Gas Mass fractions
+   * \brief Provides the gas mass fractions of the flow.
+   * \return: Gas Mass fractions.
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
+
+  /*!
+   * \brief Provides the gas mass fractions at the wall for supercat wall.
+   * \return: Supercat wall gas mass fractions.
+   */
+  const su2double *GetSupercatalytic_Wall_Composition(void) const { return Supercatalytic_Wall_Composition; }
 
   /*!
    * \brief Provides the restart information.
@@ -5133,6 +5141,11 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
+
+  /*!
+   * \brief Indicates whether supercatalytic wall is used.
+   */
+  bool GetSupercatalytic_Wall(void) const { return Supercatalytic_Wall; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.

@@ -2572,32 +2572,51 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       } else {
 
-        unsigned short iSpecies, nSpecies = config->GetnSpecies();
-
+        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-        const auto& PrimVar                 = nodes->GetPrimitive(iPoint);
-        const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
-        const auto& hs                      = nodes->GetEnthalpys(iPoint);
-
-        su2double rho                       = PrimVar[nSpecies+nDim+3];
-
-        /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
-        su2double sumJhs = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (iDim = 0; iDim < nDim; iDim++) {
-            su2double dYdn = 1.0/rho*(Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies]*Grad_PrimVar[nSpecies+nDim+3][iDim]/rho);
-            sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
-          }
-        }
         
         su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
         su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
-        
-        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
-        enthalpy transport due to mass diffusion ---*/ 
-        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven + sumJhs;
+                
+        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/ 
+        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+
+        //TODO: CHECK ME
+        bool catalytic = false;
+        unsigned short iMarker_Catalytic = 0;
+        while( iMarker_Catalytic < config->GetnWall_Catalytic()){
+
+          string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
+
+          if (Marker_Tag == Catalytic_Tag){
+            catalytic = true;
+            break;
+          } else {
+            iMarker_Catalytic++;
+          }
+        }
+
+        if (catalytic){
+
+          unsigned short iSpecies, nSpecies   = config->GetnSpecies();
+          const auto& PrimVar                 = nodes->GetPrimitive(iPoint);
+          const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
+          const auto& hs                      = nodes->GetEnthalpys(iPoint);
+          su2double rho                       = PrimVar[nSpecies+nDim+3];
+
+          /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
+          su2double sumJhs = 0.0;
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              su2double dYdn = 1.0/rho*(Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies]*Grad_PrimVar[nSpecies+nDim+3][iDim]/rho);
+              sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
+            }
+          }
+          /*--- Surface energy balance: mass diffusion ---*/ 
+          HeatFlux[iMarker][iVertex] += sumJhs;
+
+        }
       }
 
       /*--- Note that y+, and heat are computed at the

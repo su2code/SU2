@@ -729,12 +729,11 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
-  bool implicit;
+  bool implicit, Supercatalytic_Wall;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
-  const su2double *Yst;
+  dij, *Di, *Vi, *Vj, *Yj, *dYdn, **GradY, **dVdU;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
@@ -742,9 +741,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Set "Proportional control" coefficient ---*/
   //su2double pcontrol = 0.6;
-
-  /*--- Get species mass fractions at the wall ---*/
-  Yst = config->GetGas_Composition();
 
   /*--- Get universal information ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;
@@ -808,108 +804,129 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
 
-      /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        if (iSpecies == 3) {
-          dYdn[iSpecies] = (0.7586-Yj[iSpecies])/dij;
-        } else if (iSpecies == 4) {
-          dYdn[iSpecies] = (0.2414-Yj[iSpecies])/dij;
+      if (config->GetSupercatalytic_Wall()) {
+
+        const auto& Yst = config->GetSupercatalytic_Wall_Composition();
+
+        /*--- Calculate normal derivative of mass fraction ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
+        }
+
+        /*--- Calculate supplementary quantities ---*/
+        su2double SdYdn = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
+        }
+
+        /*--- Calculate species residual at wall ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Res_Visc[iSpecies]  = -(-rho*Di[iSpecies]*dYdn[iSpecies]+Yst[iSpecies]*SdYdn)*Area;
+        }
+
+        if (implicit) {
+          /*--- Initialize the transformation matrix ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++) {
+              dVdU[iVar][jVar] = 0.0;
+              Jacobian_j[iVar][jVar] = 0.0;
+              Jacobian_i[iVar][jVar] = 0.0;
+            }
+
+          /*--- Populate transformation matrix ---*/
+          // dYsdrk
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+              dVdU[iSpecies][jSpecies] += -1.0/rho*Yst[iSpecies];
+            dVdU[iSpecies][iSpecies] += 1.0/rho;
+          }
+          for (iVar = 0; iVar < nVar; iVar++) {
+            dVdU[nSpecies+nDim][iVar]   = dTdU[iVar];
+            dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
+          }
+
+          /*--- Calculate supplementary quantities ---*/
+          Cvtrs = FluidModel->GetSpeciesCvTraRot();
+          Cvve = nodes->GetCvve(iPoint);
+
+          /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
+          // Species mass fraction
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+              Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
+            Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
+          }
+
+          // Temperature
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+              Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
+            }
+            Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
+                                                                                 Cvtrs[iSpecies]  );
+            Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+          }
+
+          // Vib.-El. Temperature
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+              Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
+            Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+          }
+
+          /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              for (kVar = 0; kVar < nVar; kVar++)
+                Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
+
+          /*--- Apply to the linear system ---*/
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+
+      } else {
+
+        if (implicit) {
+          SU2_MPI::Error("Implicit not currently available for partially catalytic wall.",CURRENT_FUNCTION);
+        }
+
+        /*--- Identify the boundary ---*/
+        string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+        /*--- Get isothermal wall temp ----*/
+        su2double Tw = config->GetIsothermal_Temperature(Marker_Tag);
+
+        /*--- Get wall catalytic efficiency ----*/
+        su2double gam = config->GetCatalytic_Efficiency();
+
+        /*--- Get gas model ---*/
+        string gas_model = config->GetGasModel();
+
+        if (gas_model == string("N2")) {
+          Res_Visc[0] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+          Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+        } else if (gas_model == string("AIR-5")) {
+          Res_Visc[0] = gam*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+          Res_Visc[1] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+          Res_Visc[3] = -gam*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+          Res_Visc[4] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+        } else if (gas_model == string("air_5") | gas_model == string("air_6")) {
+          Res_Visc[0] = -gam*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+          Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+          Res_Visc[3] = gam*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+          Res_Visc[4] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
         } else {
-          dYdn[iSpecies] = (0-Yj[iSpecies])/dij;
+          SU2_MPI::Error("Use of gamma model only valid for N2, AIR-5, air_5, and air_6 gas models.",CURRENT_FUNCTION);
         }
       }
 
-      /*--- Identify the boundary ---*/
-      string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-      /*--- Get isothermal wall temp ----*/
-      su2double Tw = config->GetIsothermal_Temperature(Marker_Tag);
-
-      su2double gam = config->GetCatalytic_Efficiency();
-      cout << "catalytic efficiency: " << gam << endl;
-
-      //Set up for SU2 TC lib
-      //Figure out why Yi and Vi[RHOS]/Vi[RHO] give different answers
-      Res_Visc[0] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
-      Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
-      //Res_Visc[3] = gam*Vi[RHOS_INDEX+0]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
-      //Res_Visc[4] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
-
-      /*--- Calculate supplementary quantities ---*/
-      SdYdn = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
-
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        //Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
-        //                               +Yst[iSpecies]*SdYdn            )*Area;
         Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }
 
       /*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-      if (implicit) {
-
-        /*--- Initialize the transformation matrix ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++) {
-            dVdU[iVar][jVar] = 0.0;
-            Jacobian_j[iVar][jVar] = 0.0;
-            Jacobian_i[iVar][jVar] = 0.0;
-          }
-
-        /*--- Populate transformation matrix ---*/
-        // dYsdrk
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-            dVdU[iSpecies][jSpecies] += -1.0/rho*Yst[iSpecies];
-          dVdU[iSpecies][iSpecies] += 1.0/rho;
-        }
-        for (iVar = 0; iVar < nVar; iVar++) {
-          dVdU[nSpecies+nDim][iVar]   = dTdU[iVar];
-          dVdU[nSpecies+nDim+1][iVar] = dTvedU[iVar];
-        }
-
-        /*--- Calculate supplementary quantities ---*/
-        Cvtrs = FluidModel->GetSpeciesCvTraRot();
-        Cvve = nodes->GetCvve(iPoint);
-
-        /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
-        // Species mass fraction
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-            Jacobian_j[iSpecies][jSpecies] += -Yst[iSpecies]*rho*Di[jSpecies]/dij;
-          Jacobian_j[iSpecies][iSpecies] += rho*Di[iSpecies]/dij - SdYdn;
-        }
-
-        // Temperature
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Jacobian_j[nSpecies+nDim][iSpecies] += Jacobian_j[jSpecies][iSpecies]*hs[iSpecies];
-          }
-          Jacobian_j[nSpecies+nDim][nSpecies+nDim] += Res_Visc[iSpecies]/Area*(Ru/Ms[iSpecies] +
-                                                                               Cvtrs[iSpecies]  );
-          Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
-        }
-
-        // Vib.-El. Temperature
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-            Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
-          Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
-        }
-
-        /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            for (kVar = 0; kVar < nVar; kVar++)
-              Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
-
-        /*--- Apply to the linear system ---*/
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
     }
   }
 
