@@ -340,7 +340,7 @@ void CNEMONumerics::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        su2double val_eddy_viscosity, su2double val_thermal_conductivity,
                                        su2double val_thermal_conductivity_ve,
                                        su2double val_dist_ij, 
-				       const su2double *val_normal,
+                                       const su2double *val_normal,
                                        su2double val_dS, const su2double *val_Fv,
                                        su2double **val_Jac_i, su2double **val_Jac_j,
                                        const CConfig *config){
