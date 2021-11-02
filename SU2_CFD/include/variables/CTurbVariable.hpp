@@ -2,7 +2,7 @@
  * \file CTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CVariable.hpp"
+#include "CScalarVariable.hpp"
 
 /*!
  * \class CTurbVariable
@@ -35,14 +35,9 @@
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-class CTurbVariable : public CVariable {
+class CTurbVariable : public CScalarVariable {
 protected:
-  VectorType muT;         /*!< \brief Eddy viscosity. */
-  MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
-  CVectorOfMatrix ReynoldsStressTensor;
-
-  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  VectorType muT; /*!< \brief Eddy viscosity. */
 
 public:
   /*!
@@ -72,20 +67,6 @@ public:
    * \param[in] val_muT - Value of the eddy viscosity.
    */
   inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
-
-  /*!
-   * \brief Get the array of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \return Array of the reconstruction variables gradient at a node.
-   */
-  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-
-  /*!
-   * \brief Get the reconstruction gradient for primitive variable at all points.
-   * \return Reference to variable reconstruction gradient.
-   */
-  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
-  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
 };
 

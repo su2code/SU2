@@ -1,8 +1,8 @@
-/*!
+﻿/*!
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,47 +27,33 @@
 
 #pragma once
 
-#include "CVariable.hpp"
+#include "CFlowVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CNEMOEulerVariable
  * \brief Main class for defining the variables of the NEMO Euler's solver.
+ * \note Primitive variables (rhos_s, T, Tve, vx, vy, vw, P, rho, h, rhoCvtr, rhoCvve)
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
  */
-class CNEMOEulerVariable : public CVariable {
-public:
+class CNEMOEulerVariable : public CFlowVariable {
+ public:
   static constexpr size_t MAXNVAR = 25;
 
-protected:
-
+ protected:
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
   bool monoatomic = false;  /*!< \brief Presence of single species gas. */
 
-  VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
-  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-
   /*--- Primitive variable definition ---*/
-  MatrixType Primitive;                /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
   MatrixType Primitive_Aux;            /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
-  CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (rhos_s, T, Tve, ...). */
-  MatrixType Limiter_Primitive;        /*!< \brief Limiter of the primitive variables  (rhos_s, T, Tve, ...). */
 
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;                /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   CVectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-
-  /*--- New solution container for Classical RK4 ---*/
-  MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */
-
-  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
-  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
 
   /*--- Other Necessary Variable Definition ---*/
   MatrixType dPdU;   /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
@@ -87,8 +73,7 @@ protected:
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
   const bool implicit;      /*!< \brief Implicit flag. */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_pressure - Value of the flow pressure (initialization value).
@@ -104,80 +89,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOEulerVariable(su2double val_pressure, const su2double *val_massfrac,
-                     su2double *val_mach, su2double val_temperature,
+                     const su2double *val_mach, su2double val_temperature,
                      su2double val_temperature_ve, unsigned long npoint,
                      unsigned long ndim,
                      unsigned long nvar, unsigned long nvalprim,
-                     unsigned long nvarprimgrad, CConfig *config, CNEMOGas *fluidmodel);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CNEMOEulerVariable() override = default;
+                     unsigned long nvarprimgrad, const CConfig *config, CNEMOGas *fluidmodel);
 
   /*---------------------------------------*/
   /*---          U,V,S Routines         ---*/
   /*---------------------------------------*/
-
-  /*!
-   * \brief Get the new solution of the problem (Classical RK4).
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_New(unsigned long iPoint, unsigned long iVar) const final { return Solution_New(iPoint,iVar); }
-
-  /*!
-   * \brief Set the new solution container for Classical RK4.
-   */
-  void SetSolution_New() final;
-
-  /*!
-   * \brief Add a value to the new solution container for Classical RK4.
-   * \param[in] iVar - Number of the variable.
-   * \param[in] val_solution - Value that we want to add to the solution.
-   */
-  inline void AddSolution_New(unsigned long iPoint, unsigned long iVar, su2double val_solution) final {
-    Solution_New(iPoint,iVar) += val_solution;
-  }
-
-  /*!
-   * \brief Set the value of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iVar - Index of the variable.
-   * \return Set the value of the primitive variable for the index <i>iVar</i>.
-   */
-  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
-
-  /*!
-   * \brief Set the value of the primitive variables.
-   * \param[in] val_prim - Primitive variables.
-   * \return Set the value of the primitive variable for the index <i>iVar</i>.
-   */
-  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
-    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++)
-      Primitive(iPoint,iVar) = val_prim[iVar];
-  }
-
-  /*!
-   * \brief Get the primitive variables limiter.
-   * \return Primitive variables limiter for the entire domain.
-   */
-  inline MatrixType& GetLimiter_Primitive() final {return Limiter_Primitive; }
-  inline const MatrixType& GetLimiter_Primitive() const final {return Limiter_Primitive; }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {return Limiter_Primitive(iPoint,iVar); }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -205,32 +125,11 @@ public:
    */
   inline void SetPrimitive_Aux(unsigned long iPoint, unsigned long iVar, su2double val_prim) { Primitive_Aux(iPoint,iVar) = val_prim; }
 
-
-  /*!
-   * \brief Get the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the primitive variable for the index <i>iVar</i>.
-   */
-  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
-
-  /*!
-   * \brief Get the primitive variables of the problem.
-   * \return Pointer to the primitive variable vector.
-   */
-  inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
-
   /*!
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive() const final { return Primitive; }
-
-   /*!
-   * \brief Get the primitive variables for all points.
-   * \return Reference to primitives.
-   */
-  inline const MatrixType& GetPrimitive_Aux(void) const { return Primitive_Aux; }
-
+  inline const MatrixType& GetPrimitive_Aux() const { return Primitive_Aux; }
 
   /*!
    * \brief Get the primitive variables.
@@ -244,59 +143,6 @@ public:
    * \return Pointer to the primitive variable vector.
    */
   inline su2double *GetSecondary(unsigned long iPoint) final { return Secondary[iPoint]; }
-
-  /*---------------------------------------*/
-  /*---  Gradient Routines  ---*/
-  /*---------------------------------------*/
-
- /*!
-   * \brief Get the reconstruction gradient for primitive variable at all points.
-   * \return Reference to variable reconstruction gradient.
-   */
-  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
-  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
-
-  /*!
-   * \brief Get the array of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \return Array of the reconstruction variables gradient at a node.
-   */
-  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-
-  /*!
-   * \brief Subtract <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to subtract to the gradient of the primitive variables.
-   */
-  inline void SubtractGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {
-    Gradient_Primitive(iPoint,iVar,iDim) -= value;
-  }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Primitive(iPoint,iVar,iDim);
-  }
-
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
-    return Gradient_Primitive(iPoint,iVar);
-  }
-
-  /*!
-   * \brief Get the primitive variable gradients for all points.
-   * \return Reference to primitive variable gradient.
-   */
-  inline CVectorOfMatrix& GetGradient_Primitive() final { return Gradient_Primitive; }
-  inline const CVectorOfMatrix& GetGradient_Primitive() const final { return Gradient_Primitive; }
 
   /*!
    * \brief Set all the primitive variables for compressible flows.
@@ -319,12 +165,6 @@ public:
    * \return Norm 2 of the velocity vector.
    */
   void SetVelocity2(unsigned long iPoint) final;
-
-  /*!
-   * \brief Get the norm 2 of the velocity.
-   * \return Norm 2 of the velocity vector.
-   */
-  inline su2double GetVelocity2(unsigned long iPoint) const final { return Velocity2(iPoint); }
 
   /*!
    * \brief Get the flow pressure.
@@ -483,52 +323,52 @@ public:
   /*!
    * \brief Retrieves the value of the species density in the primitive variable vector.
    */
-  inline unsigned short GetRhosIndex(void) { return RHOS_INDEX; }
+  inline unsigned short GetRhosIndex() const { return RHOS_INDEX; }
 
   /*!
    * \brief Retrieves the value of the total density in the primitive variable vector.
    */
-  inline unsigned short GetRhoIndex(void) { return RHO_INDEX; }
+  inline unsigned short GetRhoIndex() const { return RHO_INDEX; }
 
   /*!
    * \brief Retrieves the value of the pressure in the primitive variable vector.
    */
-  inline unsigned short GetPIndex(void) { return P_INDEX; }
+  inline unsigned short GetPIndex() const { return P_INDEX; }
 
   /*!
    * \brief Retrieves the value of the in temperature the primitive variable vector.
    */
-  inline unsigned short GetTIndex(void) { return T_INDEX; }
+  inline unsigned short GetTIndex() const { return T_INDEX; }
 
   /*!
    * \brief Retrieves the value of the vibe-elec temperature in the primitive variable vector.
    */
-  inline unsigned short GetTveIndex(void) { return TVE_INDEX; }
+  inline unsigned short GetTveIndex() const { return TVE_INDEX; }
 
   /*!
    * \brief Retrieves the value of the velocity  in the primitive variable vector.
    */
-  inline unsigned short GetVelIndex(void) { return VEL_INDEX; }
+  inline unsigned short GetVelIndex() const { return VEL_INDEX; }
 
   /*!
    * \brief Retrieves the value of the enthalpy in the primitive variable vector.
    */
-  inline unsigned short GetHIndex(void) { return H_INDEX; }
+  inline unsigned short GetHIndex() const { return H_INDEX; }
 
   /*!
    * \brief Retrieves the value of the soundspeed in the primitive variable vector.
    */
-  inline unsigned short GetAIndex(void) { return A_INDEX; }
+  inline unsigned short GetAIndex() const { return A_INDEX; }
 
   /*!
    * \brief Retrieves the value of the RhoCvtr in the primitive variable vector.
    */
-  inline unsigned short GetRhoCvtrIndex(void) { return RHOCVTR_INDEX; }
+  inline unsigned short GetRhoCvtrIndex() const { return RHOCVTR_INDEX; }
 
   /*!
    * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
    */
-  inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
+  inline unsigned short GetRhoCvveIndex() const { return RHOCVVE_INDEX; }
 
   /*!
    * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
@@ -539,19 +379,6 @@ public:
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Solution(iPoint, nSpecies+iDim) = Primitive(iPoint,RHO_INDEX) * val_vector[iDim];
   }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
-
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
-  inline su2activevector& GetStrainMag() { return StrainMag; }
 
   /*!
    * \brief Set the momentum part of the truncation error to zero.

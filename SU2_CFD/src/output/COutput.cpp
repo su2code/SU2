@@ -2,7 +2,7 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,9 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/solvers/CSolver.hpp"
+
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
+#include "../../include/output/filewriter/CCGNSFileWriter.hpp"
 #include "../../include/output/filewriter/CSurfaceFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CParaviewFileWriter.hpp"
@@ -43,15 +47,12 @@
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
 
-#include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../include/solvers/CSolver.hpp"
-
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
   nDim(ndim),
   multiZone(config->GetMultizone_Problem()),
-  gridMovement(config->GetGrid_Movement()),
+  gridMovement(config->GetDynamic_Grid()),
   femOutput(fem_output),
   si_units(config->GetSystemMeasurements() == SI),
   us_units(config->GetSystemMeasurements() == US) {
@@ -676,6 +677,39 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       }
 
       fileWriter = new CSTLFileWriter(fileName, surfaceDataSorter);
+
+      break;
+
+    case CGNS:
+
+      if (fileName.empty()) fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+
+      /*--- Write CGNS ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "CGNS" << fileName + CCGNSFileWriter::fileExt;
+      }
+
+      fileWriter = new CCGNSFileWriter(fileName, volumeDataSorter);
+
+      break;
+
+    case SURFACE_CGNS:
+
+      if (fileName.empty()) fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+      surfaceDataSorter->SortConnectivity(config, geometry);
+      surfaceDataSorter->SortOutputData();
+
+      /*--- Write SURFACE_CGNS ---*/
+      if (rank == MASTER_NODE) {
+        (*fileWritingTable) << "CGNS surface" << fileName + CCGNSFileWriter::fileExt;
+      }
+
+      fileWriter = new CCGNSFileWriter(fileName, surfaceDataSorter, true);
 
       break;
 

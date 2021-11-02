@@ -2,7 +2,7 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,7 +44,10 @@ public:
   su2double *rhos_j, *u_j;
   su2double a_i, P_i, h_i;
   su2double a_j, P_j, h_j;
+  su2double rho_i, rho_j;
+  su2double e_ve_i, e_ve_j;
   su2double rhoCvtr_i, rhoCvtr_j;
+  su2double rhoCvve_i, rhoCvve_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
@@ -58,11 +61,6 @@ public:
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
   su2double Gamma_i, Gamma_j;
-  su2double **dFdVi, **dFdVj;
-  su2double **dVdUi, **dVdUj;
-  su2double *sumdFdYjh, *sumdFdYjeve;
-  su2double **dFdYi, **dFdYj;
-  su2double **dJdr_i,**dJdr_j;
 
   vector<su2double> hs;
   vector<su2double> Cvtr;

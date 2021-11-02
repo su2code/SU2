@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -75,6 +75,9 @@
 #include "../../include/numerics/continuous_adjoint/adj_convection.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_diffusion.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_sources.hpp"
+#include "../../include/numerics/scalar/scalar_convection.hpp"
+#include "../../include/numerics/scalar/scalar_diffusion.hpp"
+#include "../../include/numerics/scalar/scalar_sources.hpp"
 #include "../../include/numerics/turbulent/turb_convection.hpp"
 #include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
@@ -825,7 +828,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
     /*--- Create main agglomeration structure ---*/
 
-    geometry[iMGlevel] = new CMultiGridGeometry(geometry, config, iMGlevel);
+    geometry[iMGlevel] = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
 
     /*--- Compute points surrounding points. ---*/
 
@@ -838,8 +841,8 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
     /*--- Create the control volume structures ---*/
 
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGlevel-1], ALLOCATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest neighbor to a surface point ---*/
@@ -1304,7 +1307,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     case ADJ_NAVIER_STOKES:
       adj_ns = ns = compressible = true;
-      turbulent = (config->GetKind_Turb_Model() != NONE); break;
+      turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE); break;
 
     case ADJ_RANS:
       adj_ns = ns = compressible = turbulent = true;
@@ -1316,16 +1319,16 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:        spalart_allmaras = true;        break;
-      case SA_NEG:    neg_spalart_allmaras = true;    break;
-      case SA_E:      e_spalart_allmaras = true;      break;
-      case SA_COMP:   comp_spalart_allmaras = true;   break;
-      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-      case SST:       menter_sst = true;              break;
-      case SST_SUST:  menter_sst = true;              break;
-      default:
-        SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
+      case TURB_MODEL::NONE:
+        SU2_MPI::Error("No turbulence model selected.", CURRENT_FUNCTION);
         break;
+      case TURB_MODEL::SA:        spalart_allmaras = true;        break;
+      case TURB_MODEL::SA_NEG:    neg_spalart_allmaras = true;    break;
+      case TURB_MODEL::SA_E:      e_spalart_allmaras = true;      break;
+      case TURB_MODEL::SA_COMP:   comp_spalart_allmaras = true;   break;
+      case TURB_MODEL::SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      case TURB_MODEL::SST:       menter_sst = true;              break;
+      case TURB_MODEL::SST_SUST:  menter_sst = true;              break;
     }
 
   /*--- If the Menter SST model is used, store the constants of the model and determine the
@@ -2463,7 +2466,7 @@ void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geomet
         setting the moving wall velocities for the finest mesh. ---*/
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
         iMGfine = iMGlevel-1;
-        geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+        geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine]);
       }
     }
   } else {
@@ -2658,6 +2661,111 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
 
 CDriver::~CDriver(void) {}
 
+void CDriver::Print_DirectResidual(RECORDING kind_recording) {
+
+  if (!(rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES)) return;
+
+  const bool multizone = config_container[ZONE_0]->GetMultizone_Problem();
+
+  /*--- Helper lambda func to return lenghty [iVar][iZone] string.  ---*/
+  auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
+    if (multizone)
+      return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
+    else
+      return "[" + std::to_string(ivar) + "]";
+  };
+
+  /*--- Print residuals in the first iteration ---*/
+
+  const unsigned short fieldWidth = 15;
+  PrintingToolbox::CTablePrinter RMSTable(&std::cout);
+  RMSTable.SetPrecision(config_container[ZONE_0]->GetOutput_Precision());
+
+  /*--- The CTablePrinter requires two sweeps:
+    *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()
+    *--- 1. Add the RMS-residual values (addVals=1=true) plus CTablePrinter.PrintFooter() ---*/
+  for (int addVals = 0; addVals < 2; addVals++) {
+
+    for (unsigned short iZone = 0; iZone < nZone; iZone++) {
+
+      auto solvers = solver_container[iZone][INST_0][MESH_0];
+      auto configs = config_container[iZone];
+
+      /*--- Note: the FEM-Flow solvers are availalbe for disc. adjoint runs only for SingleZone. ---*/
+      if (configs->GetFluidProblem() || configs->GetFEMSolver()) {
+
+        for (unsigned short iVar = 0; iVar < solvers[FLOW_SOL]->GetnVar(); iVar++) {
+          if (!addVals)
+            RMSTable.AddColumn("rms_Flow" + iVar_iZone2string(iVar, iZone), fieldWidth);
+          else
+            RMSTable << log10(solvers[FLOW_SOL]->GetRes_RMS(iVar));
+        }
+
+        if (configs->GetKind_Turb_Model() != TURB_MODEL::NONE && !configs->GetFrozen_Visc_Disc()) {
+          for (unsigned short iVar = 0; iVar < solvers[TURB_SOL]->GetnVar(); iVar++) {
+            if (!addVals)
+              RMSTable.AddColumn("rms_Turb" + iVar_iZone2string(iVar, iZone), fieldWidth);
+            else
+              RMSTable << log10(solvers[TURB_SOL]->GetRes_RMS(iVar));
+          }
+        }
+
+        if (!multizone && configs->GetWeakly_Coupled_Heat()){
+          if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
+          else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
+        }
+
+        if (configs->AddRadiation()) {
+          if (!addVals) RMSTable.AddColumn("rms_Rad" + iVar_iZone2string(0, iZone), fieldWidth);
+          else RMSTable << log10(solvers[RAD_SOL]->GetRes_RMS(0));
+        }
+
+      }
+      else if (configs->GetStructuralProblem()) {
+
+        if (configs->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
+          if (!addVals) {
+            RMSTable.AddColumn("UTOL-A", fieldWidth);
+            RMSTable.AddColumn("RTOL-A", fieldWidth);
+            RMSTable.AddColumn("ETOL-A", fieldWidth);
+          }
+          else {
+            RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
+                     << log10(solvers[FEA_SOL]->GetRes_FEM(1))
+                     << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+          }
+        }
+        else{
+          if (!addVals) {
+            RMSTable.AddColumn("log10[RMS Ux]", fieldWidth);
+            RMSTable.AddColumn("log10[RMS Uy]", fieldWidth);
+            if (nDim == 3) RMSTable.AddColumn("log10[RMS Uz]", fieldWidth);
+          }
+          else {
+            RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
+                     << log10(solvers[FEA_SOL]->GetRes_FEM(1));
+            if (nDim == 3) RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+          }
+        }
+
+      }
+      else if (configs->GetHeatProblem()) {
+
+        if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
+        else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
+      } else {
+        SU2_MPI::Error("Invalid KindSolver for CDiscAdj-MultiZone/SingleZone-Driver.", CURRENT_FUNCTION);
+      }
+    } // loop iZone
+
+    if (!addVals) RMSTable.PrintHeader();
+    else RMSTable.PrintFooter();
+
+  } // for addVals
+
+  cout << "\n-------------------------------------------------------------------------\n" << endl;
+
+}
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) {
   Max_Iter = config_container[ZONE_0]->GetnInner_Iter();

@@ -2,7 +2,7 @@
  * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,7 +55,7 @@ private:
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Tcb_b,                          /*!< \brief Rate controlling temperature exponent (bkw) */
-  taus,
+  taus,                           /*!< \brief Relaxtion time scales */
   Diss,                           /*!< \brief Dissociation potential. */
   MassFrac_FreeStream,            /*!< \brief Mixture mass fractions of the fluid. */
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
@@ -78,16 +78,16 @@ private:
   *dPdU, *dTdU, *dTvedU;
 
   su2double fwdRxn, bkwRxn,
-	kf,kfb,kb,
-	coeff, eta, epsilon, T_min,
-	Trxnf, Trxnb,
-	Thf, Thb, dThf, dThb,
-	theta, af, bf, ab, bb;
+  kf,kfb,kb,
+  coeff, eta, epsilon, T_min,
+  Trxnf, Trxnb,
+  Thf, Thb, dThf, dThb,
+  theta, af, bf, ab, bb;
 
   vector<su2double>
   dkf, dkb,
   dRfok, dRbok,
-	eve, eve_eq, cvve, cvve_eq;
+  eve, eve_eq, cvve, cvve_eq;
 
   vector<int>
   alphak, betak;
@@ -140,15 +140,15 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                               su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
   /*!
    * \brief Compute chemical source term jacobian. 
    */
-  void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
-                         su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
+                         const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                          su2double **val_jacobian) final;
 
   /*!
@@ -159,8 +159,8 @@ public:
   /*!
    * \brief Compute relaxation source term jacobian.
    */
-  void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
-                                su2double *dTdU, su2double* dTvedU,
+  void GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve,
+                                const su2double *dTdU, const su2double* dTvedU,
                                 su2double **val_jacobian) final;
 
   /*!

@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -685,12 +685,6 @@ public:
                          unsigned short val_marker) final;
 
   /*!
-   * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
-
-  /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -787,9 +781,9 @@ public:
                                CConfig *config) final;
   
   /*!
-   * \brief Compute the pressure forces and all the adimensional coefficients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Provide the mass flow rate.
+   * \param val_marker Surface where the coeficient is going to be computed.
+   * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
   inline su2double GetInflow_MassFlow(unsigned short val_marker) const final { return Inflow_MassFlow[val_marker]; }
 

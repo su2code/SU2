@@ -2,7 +2,7 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,6 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   eves.resize(nSpecies,0.0);
   hs.resize(2*nSpecies,0.0);
   ws.resize(nSpecies,0.0);
-  taus.resize(nSpecies,0.0);
   DiffusionCoeff.resize(nSpecies,0.0);
   Enthalpy_Formation.resize(nSpecies,0.0);
   Ref_Temperature.resize(nSpecies,0.0);
@@ -156,7 +155,7 @@ su2double CNEMOGas::ComputerhoCvve() {
     return rhoCvve;
 }
 
-void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
+void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dPdU){
 
   // Note: Electron energy not included properly.
 
@@ -239,7 +238,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 
 }
 
-void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
+void CNEMOGas::ComputedTdU(const su2double *V, su2double *val_dTdU){
 
   /*--- Necessary indexes to assess primitive variables ---*/
   const unsigned long T_INDEX       = nSpecies;
@@ -277,7 +276,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
 }
 
-void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
+void CNEMOGas::ComputedTvedU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dTvedU){
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
@@ -298,4 +297,3 @@ void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2doubl
   val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
 
 }
-

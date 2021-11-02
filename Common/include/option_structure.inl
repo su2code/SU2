@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -458,7 +458,6 @@ class COptionMathProblem : public COptionBase {
   bool rom_def;
 
 public:
-
   COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default, bool & rom_field, bool rom_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field), rom(rom_field) {
     name = option_field_name;
     cont_adjoint_def = cont_adjoint_default;
@@ -1903,7 +1902,7 @@ public:
           this->doubleInfo[i] = new su2double[1];
 
           /* Check for a valid RANS turbulence model. */
-          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          map<string, TURB_MODEL>::const_iterator iit;
           iit = Turb_Model_Map.find(option_value[counter++]);
           if(iit == Turb_Model_Map.end()) {
             string newstring;
@@ -1917,8 +1916,6 @@ public:
             newstring.append(", specified");
             return newstring;
           }
-
-          this->intInfo[i][0] = iit->second;
 
           /* Extract the exchange distance. */
           istringstream ss_1st(option_value[counter++]);

@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.hpp
  * \brief  Headers of the compressible flow output.
  * \author R. Sanchez, T. Albring.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@ class CVariable;
 class CFlowCompOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; //!< Kind of turbulence model
+  TURB_MODEL turb_model; //!< Kind of turbulence model
 
 public:
 

@@ -2,7 +2,7 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,21 +92,14 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                               su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
-
-//  /*!
-//   * \brief Get vibration enery source term jacobian.
-//   */
-//  void GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double *cvve,
-//                                su2double *dTdU, su2double* dTvedU,
-//                                su2double **val_jacobian) final;
 
   /*!
    * \brief Compute species enthalpies.

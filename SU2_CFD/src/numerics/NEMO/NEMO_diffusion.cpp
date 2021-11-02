@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -60,12 +60,7 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
   Flux   = new su2double[nVar];
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-  }
+
 }
 
 CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
@@ -89,20 +84,11 @@ CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
   delete [] Flux;
-
-  if (Jacobian_i != nullptr) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      delete [] Jacobian_i[iVar];
-      delete [] Jacobian_j[iVar];
-    }
-    delete [] Jacobian_i;
-    delete [] Jacobian_j;
-  }
 }
 
 CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) {
 
-  unsigned short iSpecies, iVar, jVar, iDim;
+  unsigned short iSpecies, iVar, iDim;
 
   /*--- Normalized normal vector ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -175,20 +161,14 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
       dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
     dist_ij = sqrt(dist_ij);
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
-    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,Mean_Eddy_Viscosity,
-                       Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
-                       Jacobian_i, Jacobian_j, config);
+    //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+    //                   Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
+    //                   dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
+    //                   val_Jacobian_i, val_Jacobian_j, config);
   }
 
-  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
 
 CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
@@ -225,12 +205,7 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
   Edge_Vector = new su2double[3];
 
   Flux   = new su2double[nVar];
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-  }
+
 }
 
 CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
@@ -253,20 +228,11 @@ CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
 
   delete [] Flux;
 
-  if (Jacobian_i != nullptr) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      delete [] Jacobian_i[iVar];
-      delete [] Jacobian_j[iVar];
-    }
-  delete [] Jacobian_i;
-  delete [] Jacobian_j;
-  }
 }
 
 CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iSpecies;
-  su2double dist_ij_2;
 
   /*--- Normalized normal vector ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -275,11 +241,10 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-  dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
+  su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
 
   /*--- Make a local copy of the primitive variables ---*/
   // NOTE: We are transforming the species density terms to species mass fractions
@@ -310,7 +275,6 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
                                           PrimVar_Grad_j[iVar][iDim]);
     }
   }
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
@@ -331,9 +295,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+    Proj_Mean_GradPrimVar_Edge[iVar] = GeometryToolbox::DotProduct(nDim, Mean_GradPrimVar[iVar], Edge_Vector);
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
@@ -355,25 +317,15 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
-    dist_ij = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-    dist_ij = sqrt(dist_ij);
+    dist_ij = sqrt(dist_ij_2);
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
-    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
-                       Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
-                       Jacobian_i, Jacobian_j, config);
+    //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+    //                   Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
+    //                   dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
+    //                   val_Jacobian_i, val_Jacobian_j, config);
 
   }
 
-  return ResidualType<>(Flux, Jacobian_j, Jacobian_j);
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
-
