@@ -629,7 +629,7 @@ def main():
     turbmod_sa_bsl_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_bsl_rae2822.cfg_file  = "turb_SA_BSL_RAE2822.cfg"
     turbmod_sa_bsl_rae2822.test_iter = 20
-    turbmod_sa_bsl_rae2822.test_vals = [-2.092502, 0.683609, 0.410988, -5.288406, 0.819402, 0.060832]
+    turbmod_sa_bsl_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
     turbmod_sa_bsl_rae2822.su2_exec  = "parallel_computation.py -f"
     turbmod_sa_bsl_rae2822.timeout   = 1600
     turbmod_sa_bsl_rae2822.new_output = True
@@ -641,7 +641,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 20
-    turbmod_sa_neg_rae2822.test_vals = [-2.092502, 0.683609, 0.410988, -5.288406, 0.819402, 0.060832]
+    turbmod_sa_neg_rae2822.test_vals = [-2.004688, 0.742320, 0.497307, -5.265640, 0.809478, 0.061986]
     turbmod_sa_neg_rae2822.su2_exec  = "parallel_computation.py -f"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -653,7 +653,7 @@ def main():
     turbmod_sa_comp_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_rae2822.cfg_file  = "turb_SA_COMP_RAE2822.cfg"
     turbmod_sa_comp_rae2822.test_iter = 20
-    turbmod_sa_comp_rae2822.test_vals = [-2.092502, 0.683609, 0.410988, -5.288406, 0.819402, 0.060832]
+    turbmod_sa_comp_rae2822.test_vals = [-2.004687, 0.742304, 0.497309, -5.266081, 0.809467, 0.062029]
     turbmod_sa_comp_rae2822.su2_exec  = "parallel_computation.py -f"
     turbmod_sa_comp_rae2822.timeout   = 1600
     turbmod_sa_comp_rae2822.new_output = True
@@ -665,7 +665,7 @@ def main():
     turbmod_sa_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_edw_rae2822.cfg_file  = "turb_SA_EDW_RAE2822.cfg"
     turbmod_sa_edw_rae2822.test_iter = 20
-    turbmod_sa_edw_rae2822.test_vals = [-2.092502, 0.683609, 0.410988, -5.288406, 0.819402, 0.060832]
+    turbmod_sa_edw_rae2822.test_vals = [-2.004687, 0.742306, 0.497310, -5.290769, 0.809485, 0.062036]
     turbmod_sa_edw_rae2822.su2_exec  = "parallel_computation.py -f"
     turbmod_sa_edw_rae2822.timeout   = 1600
     turbmod_sa_edw_rae2822.new_output = True
@@ -677,7 +677,7 @@ def main():
     turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
     turbmod_sa_comp_edw_rae2822.test_iter = 20
-    turbmod_sa_comp_edw_rae2822.test_vals = [-2.092502, 0.683609, 0.410988, -5.288406, 0.819402, 0.060832]
+    turbmod_sa_comp_edw_rae2822.test_vals = [-2.004687, 0.742306, 0.497310, -5.290769, 0.809485, 0.062036]
     turbmod_sa_comp_edw_rae2822.su2_exec  = "parallel_computation.py -f"
     turbmod_sa_comp_edw_rae2822.timeout   = 1600
     turbmod_sa_comp_edw_rae2822.new_output = True
@@ -689,7 +689,7 @@ def main():
     turbmod_sa_qcr_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_qcr_rae2822.cfg_file  = "turb_SA_QCR_RAE2822.cfg"
     turbmod_sa_qcr_rae2822.test_iter = 20
-    turbmod_sa_qcr_rae2822.test_vals = [-2.092502, 0.683609, 0.410988, -5.288406, 0.819402, 0.060832]
+    turbmod_sa_qcr_rae2822.test_vals = [-2.004793, 0.742353, 0.497315, -5.265974, 0.807841, 0.062027]
     turbmod_sa_qcr_rae2822.su2_exec  = "parallel_computation.py -f"
     turbmod_sa_qcr_rae2822.timeout   = 1600
     turbmod_sa_qcr_rae2822.new_output = True
