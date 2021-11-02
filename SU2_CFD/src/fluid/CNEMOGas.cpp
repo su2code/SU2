@@ -112,7 +112,6 @@ su2double CNEMOGas::ComputePressure(){
   Pressure = P;
 
   return P;
-
 }
 
 su2double CNEMOGas::ComputeGasConstant(){

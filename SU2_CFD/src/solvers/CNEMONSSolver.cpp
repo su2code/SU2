@@ -733,14 +733,11 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *dYdn, **GradY, **dVdU;
+  dij, *Di, *Vi, *Vj, **GradY, **dVdU;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Set "Proportional control" coefficient ---*/
-  //su2double pcontrol = 0.6;
 
   /*--- Get universal information ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;
@@ -781,7 +778,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       }
       dij = sqrt(dij);
 
-
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       Area = GeometryToolbox::Norm(nDim, Normal);
@@ -805,9 +801,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         const auto& Yst = config->GetSupercatalytic_Wall_Composition();
 
         /*--- Calculate supplementary quantities ---*/
+        su2double dYdn;
         su2double SdYdn = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          su2double dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
+          dYdn = (Yst[iSpecies]-Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX])/dij;
           SdYdn += rho*Di[iSpecies]*dYdn;
         }
 
