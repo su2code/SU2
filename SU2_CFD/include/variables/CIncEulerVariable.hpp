@@ -41,20 +41,21 @@ class CIncEulerVariable : public CFlowVariable {
 public:
   static constexpr size_t MAXNVAR = 12;
 
-  struct CSolverIndices{
-    CIncFlowIndices(nDim){
-      inline unsigned short GetPIndex()        const {return 0;}
-      inline unsigned short GetVelIndex()      const {return 1;}
-      inline unsigned short GetTIndex()        const {return nDim+1;}
-      inline unsigned short GetRhoIndex()      const {return nDim+2;}
-      inline unsigned short GetBetaIndex()     const {return nDim+3;}
-      inline unsigned short GetLamViscIndex()  const {return nDim+4;}
-      inline unsigned short GetEddyViscIndex() const {return nDim+5;}
-      inline unsigned short GetKIndex()        const {return nDim+6;}
-      inline unsigned short GetCpTotalIndex()  const {return nDim+7;}
-      inline unsigned short GetCvTotalIndex()  const {return nDim+8;}
-    }
-  }
+  template <class IndexType>
+  struct CIndices {
+    const IndexType nDim;
+    CIndices(IndexType ndim, IndexType) : nDim(ndim) {}
+    inline IndexType Pressure() const {return 0;}
+    inline IndexType Velocity() const {return 1;}
+    inline IndexType Temperature() const {return nDim+1;}
+    inline IndexType Density() const {return nDim+2;}
+    inline IndexType Beta() const {return nDim+3;}
+    inline IndexType LamViscosity() const {return nDim+4;}
+    inline IndexType EddyViscosity() const {return nDim+5;}
+    inline IndexType ThemalConduct() const {return nDim+6;}
+    inline IndexType CpTotal() const {return nDim+7;}
+    inline IndexType CvTotal() const {return nDim+8;}
+  };
 
  protected:
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */

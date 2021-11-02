@@ -42,22 +42,23 @@ class CNEMOEulerVariable : public CFlowVariable {
  public:
   static constexpr size_t MAXNVAR = 25;
 
-  struct CSolverIndices{
-    CNEMOIndices(nDim, nSpecies){
-      inline unsigned short GetRhosIndex()     const {return 0;}
-      inline unsigned short GetTIndex()        const {return nSpecies;}
-      inline unsigned short GetTveIndex()      const {return nSpecies+1;}
-      inline unsigned short GetVelIndex()      const {return nSpecies+2}
-      inline unsigned short GetPIndex()        const {return nSpecies+nDim+2;}
-      inline unsigned short GetRhoIndex()      const {return nSpecies+nDim+3;}
-      inline unsigned short GetHIndex()        const {return nSpecies+nDim+4;}
-      inline unsigned short GetAIndex()        const {return nSpecies+nDim+5;}
-      inline unsigned short GetRhoCvtrIndex()  const {return nSpecies+nDim+6;}
-      inline unsigned short GetRhoCvveIndex()  const {return nSpecies+nDim+7;}
-      inline unsigned short GetLamViscIndex()  const {return nSpecies+nDim+8;}
-      inline unsigned short GetEddyViscIndex() const {return nSpecies+nDim+9;}
-    }
-  }
+  template <class IndexType>
+  struct CIndices {
+    const IndexType nDim, nSpecies;
+    CIndices(IndexType ndim, IndexType nSpecies, IndexType) : nDim(ndim), nSpecies(nspecies) {}
+    inline IndexType SpeciesDensities() const {return 0; }
+    inline IndexType Temperature() const { return nSpecies; }
+    inline IndexType Temperature_ve() const { return nSpecies+1; }
+    inline IndexType Velocity() const { return nSpecies+2; }
+    inline IndexType Pressure() const {return nSpecies+nDim+2;}
+    inline IndexType Density() const {return nSpecies+nDim+3;}
+    inline IndexType Enthalpy() const {return nSpecies+nDim+4;}
+    inline IndexType SoundSpeed() const {return nSpecies+nDim+5;}
+    inline IndexType RhoCvtr() const {return nSpecies+nDim+6;}
+    inline IndexType RhoCvve() const {return nSpecies+nDim+7;}
+    inline IndexType LamViscosity() const {return nSpecies+nDim+8;}
+    inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
+  };
 
  protected:
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
