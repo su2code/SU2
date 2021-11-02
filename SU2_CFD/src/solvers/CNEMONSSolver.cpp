@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -99,7 +99,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   ComputeVorticityAndStrainMag(*config, iMesh, offset);
 
   if (wall_functions) {
-    SetTauWall_WF(geometry, solver_container, config);
+    SetTau_Wall_WF(geometry, solver_container, config);
   }
 }
 
@@ -109,8 +109,8 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
    *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
-  const unsigned short turb_model = config->GetKind_Turb_Model();
-  //const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+  const TURB_MODEL turb_model = config->GetKind_Turb_Model();
+  //const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -119,7 +119,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     su2double eddy_visc = 0.0; //su2double turb_ke = 0.0;
 
-    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
+    if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       //if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
@@ -1068,7 +1068,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   END_SU2_OMP_FOR
 }
 
-void CNEMONSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+void CNEMONSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
     SU2_MPI::Error("Wall Functions not yet operational in NEMO.", CURRENT_FUNCTION);
 }
 

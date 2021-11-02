@@ -2,7 +2,7 @@
  * \file CNSVariable.hpp
  * \brief Class for defining the variables of the compressible Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -158,14 +158,14 @@ public:
   /*!
    * \brief Set the value of the wall shear stress computed by a wall function.
    */
-  inline void SetTauWall(unsigned long iPoint, su2double val_tau_wall) override { Tau_Wall(iPoint) = val_tau_wall; }
+  inline void SetTau_Wall(unsigned long iPoint, su2double tau_wall) override { Tau_Wall(iPoint) = tau_wall; }
 
   /*!
    * \brief Get the value of the wall shear stress computed by a wall function.
    * \return Value of the wall shear stress computed by a wall function.
    */
-  inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
-  inline const VectorType& GetTauWall() const  { return Tau_Wall; }
+  inline su2double GetTau_Wall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  inline const VectorType& GetTau_Wall() const  { return Tau_Wall; }
 
   /*!
    * \brief Get the DES length scale

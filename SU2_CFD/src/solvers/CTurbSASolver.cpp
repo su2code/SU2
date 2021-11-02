@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -251,7 +251,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
-  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
+  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
 
   /*--- Compute eddy viscosity ---*/
 
@@ -295,7 +295,7 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Roughness heights. ---*/
-    if (config->GetKind_Turb_Model() == SA)
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SA)
       numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
 
@@ -1273,11 +1273,11 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
-  constexpr unsigned short max_iter = 200;
+  const unsigned short max_iter = config->GetwallModel_MaxIter();
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
-  su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -1298,9 +1298,9 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
-      /*--- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition ---*/
+      /*--- Do not use wall model at the ipoint when y+ < "limit" ---*/
 
-      if (Y_Plus < 5.0) continue;
+      if (Y_Plus < config->GetwallModel_MinYPlus()) continue;
 
       su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
       su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
@@ -1316,7 +1316,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       unsigned short counter = 0;
       su2double diff = 1.0;
-      relax = 0.5;
+      su2double relax = config->GetwallModel_RelFac();
       while (diff > tol) {
         // note the error in Nichols and Nelson
         su2double func = pow(nu_til_old,4) - (Eddy_Visc/Density_Normal)*(pow(nu_til_old,3) + pow(Kin_Visc_Normal,3)*cv1_3);
@@ -1607,7 +1607,7 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    SA_NEG model is more robust due to allowing for negative nu_tilde,
    so the under-relaxation is not applied to that variant. */
 
-  if (config->GetKind_Turb_Model() == SA_NEG) return;
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG) return;
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
