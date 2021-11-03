@@ -81,7 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.175741, -5.700504, -20.706185, -20.612638, -22.855655, -1.539882, -2.104390, 2.197875, -2.576097]
+    visc_cone.test_vals = [-5.201033, -5.724805, -20.545008, -20.618742, -20.502301, -1.918879, -2.261076, 1.257763, -3.190647]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
