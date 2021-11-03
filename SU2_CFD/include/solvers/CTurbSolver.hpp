@@ -49,12 +49,6 @@ protected:
 
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSolver(bool conservative);
-
   /*!
    * \brief Destructor of the class.
    */
