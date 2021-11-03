@@ -2603,7 +2603,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           const auto& PrimVar                 = nodes->GetPrimitive(iPoint);
           const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
           const auto& hs                      = nodes->GetEnthalpys(iPoint);
-          su2double rho                       = PrimVar[nSpecies+nDim+3];
+          const su2double rho                 = PrimVar[RHO_INDEX];
 
           /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
           su2double sumJhs = 0.0;
