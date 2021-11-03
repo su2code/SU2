@@ -49,7 +49,7 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 }
 
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint, iVertex, iMarker, iMarker;
+  unsigned long iPoint, iVertex, iMarker, jMarker;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, nLineLets;
   ifstream restart_file;
