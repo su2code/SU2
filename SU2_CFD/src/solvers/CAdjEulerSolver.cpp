@@ -124,8 +124,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Solution_j = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar]   = 0.0;
 
   /*--- Define some auxiliary arrays related to the flow solution ---*/
-  FlowPrimVar_i = new su2double[nDim+7]; for (int iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_i[iVar] = 0.0;
-  FlowPrimVar_j = new su2double[nDim+7]; for (int iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_j[iVar] = 0.0;
+  FlowPrimVar_i = new su2double[nDim+7]();
+  FlowPrimVar_j = new su2double[nDim+7]();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
   Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;

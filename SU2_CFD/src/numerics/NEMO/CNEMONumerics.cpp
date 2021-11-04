@@ -334,6 +334,15 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   }
 }
 
+#define COMPUTE_VISCOUS_JACS(NVAR, NSPECIES) \
+ComputeViscousJacs_impl<NVAR, NSPECIES>(val_Mean_PrimVar, \
+                                        val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff, \
+                                        val_laminar_viscosity, val_eddy_viscosity, \
+                                        val_thermal_conductivity, val_thermal_conductivity_ve, \
+                                        val_dist_ij, val_normal, val_dS, val_Fv, \
+                                        val_Jac_i, val_Jac_j, config);
+
+
 void CNEMONumerics::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        su2double *val_Mean_Eve, const su2double *val_Mean_Cvve,
                                        const su2double *val_diffusion_coeff, su2double val_laminar_viscosity,
@@ -347,60 +356,32 @@ void CNEMONumerics::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
   switch (nVar) {
     case 5:
-      return ComputeViscousJacs_impl<5, 1>(val_Mean_PrimVar,
-                                           val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                           val_laminar_viscosity, val_eddy_viscosity,
-                                           val_thermal_conductivity, val_thermal_conductivity_ve,
-                                           val_dist_ij, val_normal, val_dS, val_Fv,
-                                           val_Jac_i, val_Jac_j, config);
+      return COMPUTE_VISCOUS_JACS(5, 1);
 
     case 6:
       switch (nSpecies) {
-        case 1: return ComputeViscousJacs_impl<6, 1>(val_Mean_PrimVar,
-                                                     val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                                     val_laminar_viscosity, val_eddy_viscosity,
-                                                     val_thermal_conductivity, val_thermal_conductivity_ve,
-                                                     val_dist_ij, val_normal, val_dS, val_Fv,
-                                                     val_Jac_i, val_Jac_j, config);
+        case 1: return COMPUTE_VISCOUS_JACS(6, 1);
 
-        case 2: return ComputeViscousJacs_impl<6, 2>(val_Mean_PrimVar,
-                                                     val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                                     val_laminar_viscosity, val_eddy_viscosity,
-                                                     val_thermal_conductivity, val_thermal_conductivity_ve,
-                                                     val_dist_ij, val_normal, val_dS, val_Fv,
-                                                     val_Jac_i, val_Jac_j, config);
+        case 2: return COMPUTE_VISCOUS_JACS(6, 2);
 
         default: SU2_MPI::Error("nVar and nSpecies mismatch.", CURRENT_FUNCTION);
       }
     break;
     case 7:
-      return ComputeViscousJacs_impl<7, 2>(val_Mean_PrimVar,
-                                           val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                           val_laminar_viscosity, val_eddy_viscosity,
-                                           val_thermal_conductivity, val_thermal_conductivity_ve,
-                                           val_dist_ij, val_normal, val_dS, val_Fv,
-                                           val_Jac_i, val_Jac_j, config);
+      return COMPUTE_VISCOUS_JACS(7, 2);
 
      case 9:
-      return ComputeViscousJacs_impl<9, 5>(val_Mean_PrimVar,
-                                           val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                           val_laminar_viscosity, val_eddy_viscosity,
-                                           val_thermal_conductivity, val_thermal_conductivity_ve,
-                                           val_dist_ij, val_normal, val_dS, val_Fv,
-                                           val_Jac_i, val_Jac_j, config);
+      return COMPUTE_VISCOUS_JACS(9, 5);
 
     case 10:
-      return ComputeViscousJacs_impl<10, 5>(val_Mean_PrimVar,
-                                            val_Mean_Eve, val_Mean_Cvve, val_diffusion_coeff,
-                                            val_laminar_viscosity, val_eddy_viscosity,
-                                            val_thermal_conductivity, val_thermal_conductivity_ve,
-                                            val_dist_ij, val_normal, val_dS, val_Fv,
-                                            val_Jac_i, val_Jac_j, config);
+      return COMPUTE_VISCOUS_JACS(10, 5);
 
     default:
-      SU2_MPI::Error("Implicit solver not setup for seleced Gas Model.", CURRENT_FUNCTION);
+      return COMPUTE_VISCOUS_JACS(DynamicSize,DynamicSize);
+
   }
 }
+#undef COMPUTE_VISCOUS_JACS
 
 void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2double *val_dPdU,
                                const su2double *val_normal, const su2double *l, const su2double *m,
