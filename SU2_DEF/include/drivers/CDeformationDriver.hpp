@@ -159,6 +159,25 @@ public:
   }
 
   /*!
+   * \brief Get the global IDs of the mesh elements.
+   * \return Element IDs (nElem).
+   */
+  vector<unsigned long> GetMeshElemIDs() const;
+
+  /*!
+   * \brief Get the connected point IDs of the mesh elements.
+   * \return Element connectivities (nElem, nNode)
+   */
+  vector<vector<unsigned long>> GetMeshConnectivity() const;
+
+  /*!
+   * \brief Get the connected point IDs of the mesh elements on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Element connectivities (nBound, nNode).
+   */
+  vector<vector<unsigned long>> GetMeshConnectivity_Marker(unsigned short iMarker) const;
+
+  /*!
    * \brief Get the coordinates of the mesh points.
    * \return Point coordinates (nPoint, nDim).
    */

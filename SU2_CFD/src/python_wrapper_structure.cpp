@@ -241,7 +241,7 @@ vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsig
     vector<passivedouble> coord_passive(3, 0.0);
     
     auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    for (auto iDim = 0 ; iDim < nDim ; iDim++){
+    for (auto iDim = 0u ; iDim < nDim ; iDim++){
         coord[iDim] = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint,iDim);
     }
     
@@ -328,7 +328,7 @@ void CDriver::SetAoA(passivedouble value) {
     //  apply the angle of attack to the free-stream velocity vector
     su2double velocity_inf_vec[nDim];
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
         velocity_inf_vec[iDim] = config->GetVelocity_FreeStreamND()[iDim];
     }
 
@@ -347,7 +347,7 @@ void CDriver::SetAoA(passivedouble value) {
         velocity_inf_vec[1] = sin(alpha)*velocity_inf_mag;
     }
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
         config->SetVelocity_FreeStreamND(velocity_inf_vec[iDim], iDim);
     }
 
@@ -380,6 +380,53 @@ void CDriver::SetReynoldsNumber(passivedouble value) {
 
 /* --- Functions related to the geometry and mesh solver.                 --- */
 
+vector<unsigned long> CDriver::GetMeshElemIDs() const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nElem    = geometry->GetnElem();
+
+    vector<unsigned long> values;
+
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+        values.push_back(geometry->elem[iElem]->GetGlobalIndex());
+    }
+
+    return values;
+}
+
+vector<vector<unsigned long>> CDriver::GetMeshConnectivity() const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nElem    = geometry->GetnElem();
+
+    vector<vector<unsigned long>> values(nElem);
+
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+        unsigned short nNode = geometry->elem[iElem]->GetnNodes();
+
+        for (auto iNode = 0u; iNode < nNode; iNode++) {
+            values[iElem].push_back(geometry->elem[iElem]->GetNode(iNode));
+        }
+    }
+
+    return values;
+}
+
+vector<vector<unsigned long>> CDriver::GetMeshConnectivity_Marker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nBound   = geometry->GetnElem_Bound(iMarker);
+
+    vector<vector<unsigned long>> values(nBound);
+
+    for (auto iBound = 0ul; iBound < nBound; iBound++) {
+        unsigned short nNode = geometry->bound[iMarker][iBound]->GetnNodes();
+
+        for (auto iNode = 0u; iNode < nNode; iNode++) {
+            values[iBound].push_back(geometry->bound[iMarker][iBound]->GetNode(iNode));
+        }
+    }
+
+    return values;
+}
+
 vector<passivedouble> CDriver::GetMeshCoordinates() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
@@ -387,8 +434,8 @@ vector<passivedouble> CDriver::GetMeshCoordinates() const {
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = geometry->nodes->GetCoord(iPoint, iDim);
 
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -405,13 +452,13 @@ vector<passivedouble> CDriver::GetMeshCoordinates_Marker(unsigned short iMarker)
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = geometry->nodes->GetCoord(iPoint, iDim);
 
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
+            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
     
@@ -426,8 +473,8 @@ void CDriver::SetMeshCoordinates(vector<passivedouble> values) {
         SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             geometry->nodes->SetCoord(iPoint, iDim, values[iPoint*nDim + iDim]);
         }
     }
@@ -441,10 +488,10 @@ void CDriver::SetMeshCoordinates_Marker(unsigned short iMarker, vector<passivedo
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             geometry->nodes->SetCoord(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
@@ -465,10 +512,10 @@ vector<passivedouble> CDriver::GetMeshDisplacements_Marker(unsigned short iMarke
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetBound_Disp(iPoint, iDim);
 
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -494,10 +541,10 @@ void CDriver::SetMeshDisplacements_Marker(unsigned short iMarker, vector<passive
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetBound_Disp(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
@@ -518,10 +565,10 @@ vector<passivedouble> CDriver::GetMeshVelocities_Marker(unsigned short iMarker) 
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetBound_Vel(iPoint, iDim);
 
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -547,10 +594,10 @@ void CDriver::SetMeshVelocities_Marker(unsigned short iMarker, vector<passivedou
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetBound_Vel(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
@@ -574,11 +621,11 @@ vector<passivedouble> CDriver::GetFlowResiduals() const {
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->LinSysRes(iPoint, iVar);
 
-            values[nVar*iPoint + iVar] = SU2_TYPE::GetValue(value);
+            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -601,10 +648,10 @@ vector<passivedouble> CDriver::GetFlowResiduals_Marker(unsigned short iMarker) c
     vector<passivedouble> values(nVertex*nVar, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->LinSysRes(iPoint, iVar);
 
             values[nVar*iVertex + iVar] = SU2_TYPE::GetValue(value);
@@ -630,11 +677,11 @@ vector<passivedouble> CDriver::GetFlowStates() const {
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
-            values[nVar*iPoint + iVar] = SU2_TYPE::GetValue(value);
+            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -657,10 +704,10 @@ vector<passivedouble> CDriver::GetFlowStates_Marker(unsigned short iMarker) cons
     vector<passivedouble> values(nVertex*nVar, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
             values[nVar*iVertex + iVar] = SU2_TYPE::GetValue(value);
@@ -687,9 +734,9 @@ void CDriver::SetFlowStates(vector<passivedouble> values) {
         SU2_MPI::Error("Size does not match nPoint * nVar !", CURRENT_FUNCTION);
     }
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[nVar*iPoint + iVar]);
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+            solver->GetNodes()->SetSolution(iPoint, iVar, values[iPoint*nVar + iVar]);
         }
     }
 }
@@ -711,10 +758,10 @@ void CDriver::SetFlowStates_Marker(unsigned short iMarker, vector<passivedouble>
         SU2_MPI::Error("Size does not match nVertex * nVar !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             solver->GetNodes()->SetSolution(iPoint, iVar, values[nVar*iVertex + iVar]);
         }
     }
@@ -736,7 +783,7 @@ vector<passivedouble> CDriver::GetFlowQuantities() const {
     vector<passivedouble> values(nPoint*nPrim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
         //  density
         value = solver->GetNodes()->GetDensity(iPoint);
         values[nPrim*iPoint]     = SU2_TYPE::GetValue(value);
@@ -781,7 +828,7 @@ vector<passivedouble> CDriver::GetFlowQuantities_Marker(unsigned short iMarker) 
     vector<passivedouble> values(nVertex*nPrim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++){
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++){
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         //  density
@@ -827,8 +874,8 @@ vector<passivedouble> CDriver::GetFlowTractions_Marker(unsigned short iMarker) c
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetVertexTractions(iMarker, iVertex, iDim);
 
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -855,8 +902,8 @@ vector<passivedouble> CDriver::GetAdjMeshCoordinates() const {
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetSolution(iPoint, iDim);
             //  solver->GetNodes()->GetAdjoint_MeshCoord(iPoint, Coord);
 
@@ -882,10 +929,10 @@ vector<passivedouble> CDriver::GetAdjMeshCoordinates_Marker(unsigned short iMark
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetSolution(iPoint, iDim);
             //  solver->GetNodes()->GetAdjoint_MeshCoord(iPoint, Coord);
 
@@ -912,8 +959,8 @@ void CDriver::SetAdjMeshCoordinates(vector<passivedouble> values) {
         SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetSolution(iPoint, iDim, values[iPoint*nDim + iDim]);
         }
     }
@@ -935,10 +982,10 @@ void CDriver::SetAdjMeshCoordinates_Marker(unsigned short iMarker, vector<passiv
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetSolution(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
@@ -962,11 +1009,11 @@ vector<passivedouble> CDriver::GetAdjFlowStates() const {
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
-            values[nVar*iPoint + iVar] = SU2_TYPE::GetValue(value);
+            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
     
@@ -989,10 +1036,10 @@ vector<passivedouble> CDriver::GetAdjFlowStates_Marker(unsigned short iMarker) c
     vector<passivedouble> values(nVertex*nVar, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
             values[nVar*iVertex + iVar] = SU2_TYPE::GetValue(value);
@@ -1019,9 +1066,9 @@ void CDriver::SetAdjFlowStates(vector<passivedouble> values) {
         SU2_MPI::Error("Size does not match nPoint * nVar !", CURRENT_FUNCTION);
     }
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[nVar*iPoint + iVar]);
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+            solver->GetNodes()->SetSolution(iPoint, iVar, values[iPoint*nVar + iVar]);
         }
     }
 }
@@ -1043,10 +1090,10 @@ void CDriver::SetAdjFlowStates_Marker(unsigned short iMarker, vector<passivedoub
         SU2_MPI::Error("Size does not match nVertex * nVar !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             solver->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
         }
     }
@@ -1068,8 +1115,8 @@ vector<passivedouble> CDriver::GetAdjFlowTractions_Marker(unsigned short iMarker
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetAdjointVertexTractions(iMarker, iVertex, iDim);
 
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -1096,8 +1143,8 @@ void CDriver::SetAdjFlowTractions_Marker(unsigned short iMarker, vector<passived
         SU2_MPI::Error("Size does not match nVertex * nVar !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, values[iVertex*nDim + iDim]);
         }
     }
@@ -1118,8 +1165,8 @@ vector<passivedouble> CDriver::GetProd_dMeshCoordinates_dMeshDisplacements_Marke
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dMeshCoordinates_dMeshDisplacements(iMarker, iVertex, iDim);
 
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
@@ -1189,11 +1236,11 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowStates() const {
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetSens_dFlowObjective_dFlowStates(iPoint, iVar);
 
-            values[nVar*iPoint + iVar] = SU2_TYPE::GetValue(value);
+            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
     
@@ -1216,11 +1263,11 @@ vector<passivedouble> CDriver::GetProd_dFlowResiduals_dFlowStates() const {
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetProd_dFlowResiduals_dFlowStates(iPoint, iVar);
 
-            values[nVar*iPoint + iVar] = SU2_TYPE::GetValue(value);
+            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -1243,11 +1290,11 @@ vector<passivedouble> CDriver::GetProd_dFlowTractions_dFlowStates() const {
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetProd_dFlowTractions_dFlowStates(iPoint, iVar);
 
-            values[nVar*iPoint + iVar] = SU2_TYPE::GetValue(value);
+            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -1269,8 +1316,8 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dMeshDisplacements_Marker(
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetSens_dFlowObjective_dMeshDisplacements(iMarker, iVertex, iDim);
 
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
@@ -1295,8 +1342,8 @@ vector<passivedouble> CDriver::GetProd_dFlowResiduals_dMeshDisplacements_Marker(
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dFlowResiduals_dMeshDisplacements(iMarker, iVertex, iDim);
 
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
@@ -1321,8 +1368,8 @@ vector<passivedouble> CDriver::GetProd_dFlowTractions_dMeshDisplacements_Marker(
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dFlowTractions_dMeshDisplacements(iMarker, iVertex, iDim);
 
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);

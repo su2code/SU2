@@ -61,6 +61,8 @@ threads="1"
 #endif
 
 namespace std {
+   %template() vector<unsigned long>;
+   %template() vector<vector<unsigned long>>;
    %template() vector<int>;
    %template() vector<double>;
    %template() vector<string>;

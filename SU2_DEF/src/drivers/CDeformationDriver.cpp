@@ -780,6 +780,54 @@ vector<passivedouble> CDeformationDriver::GetVertexNormal(unsigned short iMarker
   return ret_Normal_passive;
 }
 
+vector<unsigned long> CDeformationDriver::GetMeshElemIDs() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nElem    = geometry->GetnElem();
+
+    vector<unsigned long> values;
+
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+        values.push_back(geometry->elem[iElem]->GetGlobalIndex());
+    }
+
+    return values;
+}
+
+vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivity() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nElem    = geometry->GetnElem();
+
+    vector<vector<unsigned long>> values(nElem);
+
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+        unsigned short nNode = geometry->elem[iElem]->GetnNodes();
+
+        for (auto iNode = 0u; iNode < nNode; iNode++) {
+            values[iElem].push_back(geometry->elem[iElem]->GetNode(iNode));
+        }
+    }
+
+    return values;
+}
+
+vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivity_Marker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nBound   = geometry->GetnElem_Bound(iMarker);
+
+    vector<vector<unsigned long>> values(nBound);
+
+    for (auto iBound = 0ul; iBound < nBound; iBound++) {
+        unsigned short nNode = geometry->bound[iMarker][iBound]->GetnNodes();
+
+        for (auto iNode = 0u; iNode < nNode; iNode++) {
+            values[iBound].push_back(geometry->bound[iMarker][iBound]->GetNode(iNode));
+        }
+    }
+
+    return values;
+}
+
+
 vector<passivedouble> CDeformationDriver::GetMeshCoordinates() const {
     CGeometry* geometry = geometry_container[ZONE_0];
     const auto nPoint   = geometry->GetnPoint();
@@ -787,8 +835,8 @@ vector<passivedouble> CDeformationDriver::GetMeshCoordinates() const {
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
 
-    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = geometry->nodes->GetCoord(iPoint, iDim);
 
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -805,10 +853,10 @@ vector<passivedouble> CDeformationDriver::GetMeshCoordinates_Marker(unsigned sho
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = geometry->nodes->GetCoord(iPoint, iDim);
 
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -833,10 +881,10 @@ vector<passivedouble> CDeformationDriver::GetMeshDisplacements_Marker(unsigned s
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetBound_Disp(iPoint, iDim);
 
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
@@ -862,10 +910,10 @@ void CDeformationDriver::SetMeshDisplacements_Marker(unsigned short iMarker, vec
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
-    for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetBound_Disp(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
