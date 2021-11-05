@@ -51,7 +51,8 @@ protected:
             UsedTimePreproc,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking preprocessing phase.*/
             UsedTimeCompute,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
-  unsigned short nDim, iZone, nZone = SINGLE_ZONE;
+  unsigned short nDim;
+  unsigned short iZone, nZone = SINGLE_ZONE;
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CGeometry **geometry_container;             /*!< \brief Geometrical definition of the problem. */
@@ -158,27 +159,31 @@ public:
   }
 
   /*!
-   * \brief Get surface coordinates of a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \return XYZ coordinates (vector) of the marker.
+   * \brief Get the coordinates of the mesh points.
+   * \return Point coordinates (nPoint, nDim).
    */
-  vector<passivedouble> GetSurfaceCoordinates(unsigned short iMarker);
+  vector<passivedouble> GetMeshCoordinates() const;
 
   /*!
-   * \brief Get volume coordinates of the fluid mesh.
-   * \return XYZ coordinates (vector) of the fluid mesh.
+   * \brief Get the coordinates of the mesh points on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Point coordinates (nVertex, nDim).
    */
-  vector<passivedouble> GetVolumeCoordinates();
+  vector<passivedouble> GetMeshCoordinates_Marker(unsigned short iMarker) const;
 
   /*!
-   * \brief Set the mesh displacement for the elasticity mesh solver.
+   * \brief Get the vertex displacements on the specified marker.
    * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] DispX - Value of the mesh displacement in the direction X.
-   * \param[in] DispY - Value of the mesh displacement in the direction Y.
-   * \param[in] DispZ - Value of the mesh displacement in the direction Z.
+   * \return Vertex displacements (nVertex, nDim).
    */
-  void SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+  vector<passivedouble> GetMeshDisplacements_Marker(unsigned short iMarker) const;
+
+  /*!
+   * \brief Set the vertex displacements on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] values - Vertex displacements (nVertex, nDim).
+   */
+  void SetMeshDisplacements_Marker(unsigned short iMarker, vector<passivedouble> values);
 
   /*!
    * \brief Communicate the boundary mesh displacements in a python call

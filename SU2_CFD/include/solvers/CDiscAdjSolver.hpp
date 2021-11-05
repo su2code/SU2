@@ -48,7 +48,7 @@ private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
 
-  const int nTrim = 2;
+  const unsigned short nTrim = 2;
   vector<su2matrix<su2double>> Partial_Prod_dMeshCoordinates_dMeshDisplacements;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   su2vector<su2double>         Partial_Sens_dFlowObjective_dFlowVariables;    /*!< \brief Partial sensitivity of the objective w.r.t. the input variables. */
   su2vector<su2double>         Partial_Prod_dFlowResiduals_dFlowVariables;    /*!< \brief Partial sensitivity of the residuals w.r.t. the input variables (matrix-vector product with adjoint vector). */

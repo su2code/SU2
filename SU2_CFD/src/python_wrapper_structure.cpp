@@ -385,13 +385,13 @@ vector<passivedouble> CDriver::GetMeshCoordinates() const {
     const auto nPoint   = geometry->GetnPoint();
 
     vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double* value;
+    su2double value;
 
     for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-        value = geometry->nodes->GetCoord(iPoint);
-
         for (auto iDim = 0; iDim < nDim; iDim++) {
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value[iDim]);
+            value = geometry->nodes->GetCoord(iPoint, iDim);
+
+            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -403,15 +403,15 @@ vector<passivedouble> CDriver::GetMeshCoordinates_Marker(unsigned short iMarker)
     const auto nVertex  = geometry->GetnVertex(iMarker);
 
     vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double* value;
+    su2double value;
 
     for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        value = geometry->nodes->GetCoord(iPoint);
-        
         for (auto iDim = 0; iDim < nDim; iDim++) {
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value[iDim]);
+            value = geometry->nodes->GetCoord(iPoint, iDim);
+
+            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
     
@@ -912,14 +912,10 @@ void CDriver::SetAdjMeshCoordinates(vector<passivedouble> values) {
         SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
     }
 
-    su2double value[nDim];
-
     for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0; iDim < nDim; iDim++) {
-            value[iDim] = values[iPoint*nDim + iDim];
+            solver->GetNodes()->SetSolution(iPoint, iDim, values[iPoint*nDim + iDim]);
         }
-
-        solver->GetNodes()->SetSolution(iPoint, value);
     }
 }
 
@@ -939,16 +935,12 @@ void CDriver::SetAdjMeshCoordinates_Marker(unsigned short iMarker, vector<passiv
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
-    su2double value[nDim];
-
     for (auto iVertex = 0; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         for (auto iDim = 0; iDim < nDim; iDim++) {
-            value[iDim] = values[iVertex*nDim + iDim];
+            solver->GetNodes()->SetSolution(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
-
-        solver->GetNodes()->SetSolution(iPoint, value);
     }
 }
 
