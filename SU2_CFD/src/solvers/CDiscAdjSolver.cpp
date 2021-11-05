@@ -36,7 +36,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     
     nVar = direct_solver->GetnVar();
     nDim = geometry->GetnDim();
-    
+
     /*--- Initialize arrays to NULL ---*/
     
     /*-- Store some information about direct solver ---*/
@@ -69,33 +69,32 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
     
     if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-        Partial_Prod_dAdq.resize(nPoint, nVar) = su2double(0.0);
-        Partial_Sens_dIdq.resize(nPoint, nVar) = su2double(0.0);
-        Partial_Prod_dfadq.resize(nPoint, nVar) = su2double(0.0);
-        
-        if (!config->GetDeform_Mesh()) {  // these are only used with the legacy mesh deformation
-            Partial_Prod_dAdxv.resize(nPoint, nDim) = su2double(0.0);
-            Partial_Sens_dIdxv.resize(nPoint, nDim) = su2double(0.0);
-            Partial_Prod_dfadxv.resize(nPoint, nDim) = su2double(0.0);
-            Partial_Prod_dxvdxv.resize(nPoint, nDim) = su2double(0.0);
-        }
-        
-        Partial_Prod_dAdua.resize(nMarker);
-        Partial_Sens_dIdua.resize(nMarker);
-        Partial_Prod_dfadua.resize(nMarker);
-        Partial_Prod_dxvdua.resize(nMarker);
+        //  derivatives w.r.t. flow variables
+        Partial_Prod_dFlowResiduals_dFlowVariables.resize(nTrim) = su2double(0.0);
+        Partial_Sens_dFlowObjective_dFlowVariables.resize(nTrim) = su2double(0.0);
+
+        //  derivatives w.r.t. flow states
+        Partial_Prod_dFlowResiduals_dFlowStates.resize(nPoint, nVar) = su2double(0.0);
+        Partial_Sens_dFlowObjective_dFlowStates.resize(nPoint, nVar) = su2double(0.0);
+        Partial_Prod_dFlowTractions_dFlowStates.resize(nPoint, nVar) = su2double(0.0);
+
+        //  derivatives w.r.t. mesh displacements on each marker
+        Partial_Prod_dMeshCoordinates_dMeshDisplacements.resize(nMarker);
+
+        Partial_Prod_dFlowResiduals_dMeshDisplacements.resize(nMarker);
+        Partial_Sens_dFlowObjective_dMeshDisplacements.resize(nMarker);
+        Partial_Prod_dFlowTractions_dMeshDisplacements.resize(nMarker);
+
         for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
-            const auto nVertex = geometry->nVertex[iMarker];
-            
-            Partial_Prod_dAdua[iMarker].resize(nVertex, 0.0);
-            Partial_Sens_dIdua[iMarker].resize(nVertex, 0.0);
-            Partial_Prod_dfadua[iMarker].resize(nVertex, 0.0);
-            Partial_Prod_dxvdua[iMarker].resize(nVertex, 0.0);
+            const auto nVertex = geometry->GetnVertex(iMarker);
+
+            Partial_Prod_dMeshCoordinates_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
+
+            Partial_Prod_dFlowResiduals_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
+            Partial_Sens_dFlowObjective_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
+            Partial_Prod_dFlowTractions_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
         }
-        
-        Partial_Prod_dAdxt.resize(MAXNINP) = su2double(0.0);
-        Partial_Sens_dIdxt.resize(MAXNINP) = su2double(0.0);
-        
+
         AD_ResidualIndex.resize(nPoint, nVar) = -1;
     }
     
@@ -441,13 +440,13 @@ void CDiscAdjSolver::ExtractAdjoint_Solution_Residual(CGeometry *geometry, CConf
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         if (variable == ENUM_VARIABLE::OBJECTIVE) {
-            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Sens_dIdq[iPoint]);
+            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Sens_dFlowObjective_dFlowStates[iPoint]);
         }
         else if (variable == ENUM_VARIABLE::RESIDUALS) {
-            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dAdq[iPoint]);
+            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dFlowResiduals_dFlowStates[iPoint]);
         }
         else if (variable == ENUM_VARIABLE::TRACTIONS) {
-            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dfadq[iPoint]);
+            direct_solver->GetNodes()->GetAdjointSolution(iPoint, Partial_Prod_dFlowTractions_dFlowStates[iPoint]);
         }
         else {
             SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
@@ -540,12 +539,12 @@ void CDiscAdjSolver::ExtractAdjoint_Variables_Residual(CGeometry *geometry, CCon
         
         if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
             if (variable == ENUM_VARIABLE::OBJECTIVE) {
-                Partial_Sens_dIdxt[0] = Total_Sens_Mach;
-                Partial_Sens_dIdxt[1] = Total_Sens_AoA;
+                Partial_Sens_dFlowObjective_dFlowVariables[0] = Total_Sens_Mach;
+                Partial_Sens_dFlowObjective_dFlowVariables[1] = Total_Sens_AoA;
             }
             else if (variable == ENUM_VARIABLE::RESIDUALS) {
-                Partial_Prod_dAdxt[0] = Total_Sens_Mach;
-                Partial_Prod_dAdxt[1] = Total_Sens_AoA;
+                Partial_Prod_dFlowResiduals_dFlowVariables[0] = Total_Sens_Mach;
+                Partial_Prod_dFlowResiduals_dFlowVariables[1] = Total_Sens_AoA;
             }
             else {
                 SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
@@ -561,92 +560,56 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry_Residual(CGeometry *geometry, CConf
     
     SU2_OMP_PARALLEL {
         const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
-        
-        su2matrix<su2double>* VolumeSensitivity;
-        
+
+        vector<su2matrix<su2double>>* Sensitivity;
+
         if (variable == ENUM_VARIABLE::OBJECTIVE)
-            VolumeSensitivity = &Partial_Sens_dIdxv;
+            Sensitivity = &Partial_Sens_dFlowObjective_dMeshDisplacements;
         else if (variable == ENUM_VARIABLE::RESIDUALS)
-            VolumeSensitivity = &Partial_Prod_dAdxv;
+            Sensitivity = &Partial_Prod_dFlowResiduals_dMeshDisplacements;
         else if (variable == ENUM_VARIABLE::TRACTIONS)
-            VolumeSensitivity = &Partial_Prod_dfadxv;
+            Sensitivity = &Partial_Prod_dFlowTractions_dMeshDisplacements;
         else if (variable == ENUM_VARIABLE::COORDINATES)
-            VolumeSensitivity = &Partial_Prod_dxvdxv;
+            Sensitivity = &Partial_Prod_dMeshCoordinates_dMeshDisplacements;
         else
             SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
-        
-        vector<vector<su2double>>* SurfaceSensitivity;
-        
-        if (variable == ENUM_VARIABLE::OBJECTIVE)
-            SurfaceSensitivity = &Partial_Sens_dIdua;
-        else if (variable == ENUM_VARIABLE::RESIDUALS)
-            SurfaceSensitivity = &Partial_Prod_dAdua;
-        else if (variable == ENUM_VARIABLE::TRACTIONS)
-            SurfaceSensitivity = &Partial_Prod_dfadua;
-        else if (variable == ENUM_VARIABLE::COORDINATES)
-            SurfaceSensitivity = &Partial_Prod_dxvdua;
-        else
-            SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
-        
+
         /*--- If the mesh solver is used, extract the discrete-adjoint sensitivities of the boundary displacements ---*/
         if (mesh_solver) {
-            mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
+            // mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
             mesh_solver->ExtractAdjoint_Variables(geometry, config);
         }
-        
-        /*--- If legacy mesh solver is used, extract the discrete-adjoint sensitivities of the volume coordinates ---*/
-        else {
-            SU2_OMP_FOR_STAT(omp_chunk_size)
-            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-                for (auto iDim = 0u; iDim < nDim; iDim++) {
-                    su2double Value = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-                    
-                    auto Coord = geometry->nodes->GetCoord(iPoint, iDim);
-                    AD::ResetInput(Coord);
-                    
-                    (*VolumeSensitivity)(iPoint, iDim) = Value;
-                }
-            }
-            END_SU2_OMP_FOR
-        }
-        
-        /*--- Loop over boundary markers to select those for Euler walls and NS walls,
-         * and get boundary displacement sensitivities ---*/
-        
+
         for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
-            
             if (!config->GetSolid_Wall(iMarker)) continue;
-            
+
             /*--- Sensitivities w.r.t aerodynamic boundary displacements ---*/
-            
+
             SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
             for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-                
-                /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
-                
                 const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-                
-                su2double Value = 0.0;
-                
-                for (auto iDim = 0u; iDim < nDim; iDim++) {
-                    if (mesh_solver) {
-                        Value += mesh_solver->GetNodes()->GetBoundDisp_Sens(iPoint, iDim);
-                    }
-                    else {
-                        Value += Normal[iDim] * (*VolumeSensitivity)(iPoint, iDim);
-                    }
-                }
-                Value /= GeometryToolbox::Norm(nDim, Normal);
-                
-                /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-                
+
+                /*--- If sharp edge, set the sensitivity to 0 ---*/
                 su2double limiter = 1.0;
                 if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
                     limiter = 0.0;
                 }
-                
-                (*SurfaceSensitivity)[iMarker][iVertex] = -limiter * Value;
+
+                /*--- Get the gradient from the mesh solver if available, else from legacy implementation ---*/
+                su2double value;
+
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                    if (mesh_solver) {
+                        value = -limiter * mesh_solver->GetNodes()->GetBoundDisp_Sens(iPoint, iDim);
+                    } else {
+                        value = +limiter * geometry->nodes->GetAdjointSolution(iPoint, iDim);
+
+                        auto Coord = geometry->nodes->GetCoord(iPoint, iDim);
+                        AD::ResetInput(Coord);
+                    }
+
+                    (*Sensitivity)[iMarker](iVertex, iDim) = value;
+                }
             }
             END_SU2_OMP_FOR
         }
@@ -795,52 +758,40 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     
 }
 
-su2double CDiscAdjSolver::GetDerivative_dIdq(unsigned long iPoint, unsigned long iVar) const {
-    return Partial_Sens_dIdq(iPoint, iVar);
+su2double CDiscAdjSolver::GetProd_dMeshCoordinates_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return Partial_Prod_dMeshCoordinates_dMeshDisplacements[iMarker](iVertex, iDim);
 }
 
-su2double CDiscAdjSolver::GetDerivative_dIdxv(unsigned long iPoint, unsigned long iDim) const {
-    return Partial_Sens_dIdxv(iPoint, iDim);
+su2double CDiscAdjSolver::GetSens_dFlowObjective_dFlowVariables(unsigned short iTrim) const {
+    return Partial_Sens_dFlowObjective_dFlowVariables(iTrim);
 }
 
-su2double CDiscAdjSolver::GetDerivative_dIdxt(unsigned long iVar) const {
-    return Partial_Sens_dIdxt(iVar);
+su2double CDiscAdjSolver::GetProd_dFlowResiduals_dFlowVariables(unsigned short iTrim) const {
+    return Partial_Prod_dFlowResiduals_dFlowVariables(iTrim);
 }
 
-vector<su2double> CDiscAdjSolver::GetDerivative_dIdua(unsigned short iMarker) const {
-    return Partial_Sens_dIdua[iMarker];
+su2double CDiscAdjSolver::GetSens_dFlowObjective_dFlowStates(unsigned long iPoint, unsigned short iVar) const {
+    return Partial_Sens_dFlowObjective_dFlowStates(iPoint, iVar);
 }
 
-su2double CDiscAdjSolver::GetDerivative_dAdq(unsigned long iPoint, unsigned long iVar) const {
-    return Partial_Prod_dAdq(iPoint, iVar);
+su2double CDiscAdjSolver::GetProd_dFlowResiduals_dFlowStates(unsigned long iPoint, unsigned short iVar) const {
+    return Partial_Prod_dFlowResiduals_dFlowStates(iPoint, iVar);
 }
 
-su2double CDiscAdjSolver::GetDerivative_dAdxv(unsigned long iPoint, unsigned long iDim) const {
-    return Partial_Prod_dAdxv(iPoint, iDim);
+su2double CDiscAdjSolver::GetProd_dFlowTractions_dFlowStates(unsigned long iPoint, unsigned short iVar) const {
+    return Partial_Prod_dFlowTractions_dFlowStates(iPoint, iVar);
 }
 
-su2double CDiscAdjSolver::GetDerivative_dAdxt(unsigned long iVar) const {
-    return Partial_Prod_dAdxt(iVar);
+su2double CDiscAdjSolver::GetSens_dFlowObjective_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return Partial_Sens_dFlowObjective_dMeshDisplacements[iMarker](iVertex, iDim);
 }
 
-vector<su2double> CDiscAdjSolver::GetDerivative_dAdua(unsigned short iMarker) const {
-    return Partial_Prod_dAdua[iMarker];
+su2double CDiscAdjSolver::GetProd_dFlowResiduals_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return Partial_Prod_dFlowResiduals_dMeshDisplacements[iMarker](iVertex, iDim);
 }
 
-su2double CDiscAdjSolver::GetDerivative_dfadq(unsigned long iPoint, unsigned long iVar) const {
-    return Partial_Prod_dfadq(iPoint, iVar);
-}
-
-su2double CDiscAdjSolver::GetDerivative_dfadxv(unsigned long iPoint, unsigned long iDim) const {
-    return Partial_Prod_dfadxv(iPoint, iDim);
-}
-
-vector<su2double> CDiscAdjSolver::GetDerivative_dfadua(unsigned short iMarker) const {
-    return Partial_Prod_dAdua[iMarker];
-}
-
-vector<su2double> CDiscAdjSolver::GetDerivative_dxvdua(unsigned short iMarker) const {
-    return Partial_Prod_dxvdua[iMarker];
+su2double CDiscAdjSolver::GetProd_dFlowTractions_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return Partial_Prod_dFlowTractions_dMeshDisplacements[iMarker](iVertex, iDim);
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,

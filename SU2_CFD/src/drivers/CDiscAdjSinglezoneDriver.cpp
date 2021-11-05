@@ -743,14 +743,15 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
 
     if (SecondaryVariables == RECORDING::MESH_COORDS) return;
 
+    std::cout << "Computing Mesh Solver discrete-adjoint sensitivities ... " << std::endl;
+
     /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
 
     SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
 
-        /*--- Initialize the adjoints the conservative variables ---*/
+        /*--- Initialize the adjoints of the volume coordinates ---*/
 
         solver[ADJMESH_SOL]->SetAdjoint_Output(geometry, config);
-
     }
     END_SU2_OMP_PARALLEL
 
@@ -801,7 +802,7 @@ void CDiscAdjSinglezoneDriver::Update_DirectSolution() {
 
     /*--- Mesh movement ---*/
 
-    direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, RecordingState);
+    // direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, RecordingState);
 
     /*--- Flow and turbulent conservative state variables ---*/
 

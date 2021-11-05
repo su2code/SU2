@@ -1833,95 +1833,74 @@ public:
                                             CSolver **solver_container,
                                             CNumerics *numerics,
                                             CConfig *config) { }
-    
+
+    /*!
+     * \brief Get matrix-vector product dxvdua^T x psi.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iPoint - Marker point index.
+     * \param[in] iVar   - Variable index.
+     */
+    inline virtual su2double GetProd_dMeshCoordinates_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const { return 0.0; }
+
+    /*!
+     * \brief Get partial derivative dIdxt.
+     * \param[in] iVar - Variable index.
+     * \return Sensitivitiy of aero funcs wrt design variables (Mach and AoA for now).
+     */
+    inline virtual su2double GetSens_dFlowObjective_dFlowVariables(unsigned short iTrim) const { return 0.0; }
+
+    /*!
+     * \brief Get matrix-vector product dAdxt^T x psi.
+     * \param[in] iVar - Variable index.
+     * \return Sensitivitiy of aero resids wrt design variables (Mach and AoA for now).
+     */
+    inline virtual su2double GetProd_dFlowResiduals_dFlowVariables(unsigned short iTrim) const { return 0.0; }
+
     /*!
      * \brief Get partial derivative dIdq.
      * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
      * \param[in] iVar   - Variable index.
      * \return Sensitivitiy of aero funcs wrt flow states.
      */
-    inline virtual su2double GetDerivative_dIdq(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-    
-    /*!
-     * \brief Get partial derivative dIdxv.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim   - Dimension
-     * \return Sensitivitiy of aero funcs wrt volume coordinates.
-     */
-    inline virtual su2double GetDerivative_dIdxv(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
-    
-    /*!
-     * \brief Get partial derivative dIdxt.
-     * \param[in] iVar - Variable index.
-     * \return Sensitivitiy of aero funcs wrt design variables (Mach and AoA for now).
-     */
-    inline virtual su2double GetDerivative_dIdxt(unsigned long iVar) const { return 0.0; }
-    
-    /*!
-     * \brief Get partial derivative dIdua.
-     * \param[in] iMarker - Marker identifier.
-     * \return Sensitivitiy of aero funcs wrt FSI boundary displacements.
-     */
-    inline virtual vector<su2double> GetDerivative_dIdua(unsigned short iMarker) const { return vector<su2double>{}; }
-    
+    inline virtual su2double GetSens_dFlowObjective_dFlowStates(unsigned long iPoint, unsigned short iVar) const { return 0.0; }
+
     /*!
      * \brief Get matrix-vector product dAdq^T x psi.
      * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
      * \param[in] iVar   - Variable index.
      * \return Sensitivitiy of aero resids wrt flow states.
      */
-    inline virtual su2double GetDerivative_dAdq(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-    
-    /*!
-     * \brief Get matrix-vector product dAdxv^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim   - Dimension
-     * \return Sensitivitiy of aero resids wrt volume coordinates.
-     */
-    inline virtual su2double GetDerivative_dAdxv(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
-    
-    /*!
-     * \brief Get matrix-vector product dAdxt^T x psi.
-     * \param[in] iVar - Variable index.
-     * \return Sensitivitiy of aero resids wrt design variables (Mach and AoA for now).
-     */
-    inline virtual su2double GetDerivative_dAdxt(unsigned long iVar) const { return 0.0; }
-    
-    /*!
-     * \brief Get matrix-vector product dAdua^T x psi.
-     * \param[in] iMarker - Marker identifier.
-     * \return Sensitivitiy of aero resids wrt FSI boundary displacements.
-     */
-    inline virtual vector<su2double> GetDerivative_dAdua(unsigned short iMarker) const { return vector<su2double>{}; }
-    
+    inline virtual su2double GetProd_dFlowResiduals_dFlowStates(unsigned long iPoint, unsigned short iVar) const { return 0.0; }
+
     /*!
      * \brief Get matrix-vector product dfadq^T x psi.
      * \param[in] iMarker - Marker identifier.
      * \return Sensitivitiy of aero tractions wrt wrt flow states.
      */
-    inline virtual su2double GetDerivative_dfadq(unsigned long iPoint, unsigned long iVar) const { return 0.0; } ;
-    
+    inline virtual su2double GetProd_dFlowTractions_dFlowStates(unsigned long iPoint, unsigned short iVar) const { return 0.0; } ;
+
+
     /*!
-     * \brief Get matrix-vector product dfadxv^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     * \return Sensitivitiy of aero tractions wrt volume coordinates.
+     * \brief Get partial derivative dIdua.
+     * \param[in] iMarker - Marker identifier.
+     * \return Sensitivitiy of aero funcs wrt FSI boundary displacements.
      */
-    inline virtual su2double GetDerivative_dfadxv(unsigned long iPoint, unsigned long iDim) const { return 0.0; } ;
-    
+    inline virtual su2double GetSens_dFlowObjective_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const { return 0.0; }
+
+    /*!
+     * \brief Get matrix-vector product dAdua^T x psi.
+     * \param[in] iMarker - Marker identifier.
+     * \return Sensitivitiy of aero resids wrt FSI boundary displacements.
+     */
+    inline virtual su2double GetProd_dFlowResiduals_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const { return 0.0; }
+
     /*!
      * \brief Get matrix-vector product dfadua^T x psi.
      * \param[in] iMarker - Marker identifier.
      * \return Sensitivitiy of aero tractions wrt FSI boundary displacements.
      */
-    inline virtual vector<su2double> GetDerivative_dfadua(unsigned short iMarker) const { return vector<su2double>{}; }
-    
-    /*!
-     * \brief Get matrix-vector product dxvdua^T x psi.
-     * \param[in] iMarker - Marker identifier.
-     */
-    inline virtual vector<su2double> GetDerivative_dxvdua(unsigned short iMarker) const { return vector<su2double>{}; }
-    
+    inline virtual su2double GetProd_dFlowTractions_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const { return 0.0; }
+
     /*!
      * \brief A virtual member.
      * \param[in] val_marker - Surface marker where the coefficient is computed.

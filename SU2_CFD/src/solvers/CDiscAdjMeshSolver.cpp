@@ -130,6 +130,7 @@ void CDiscAdjMeshSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
         for (iVar = 0; iVar < nVar; iVar++)
             Solution[iVar] = nodes->GetSolution(iPoint,iVar);
+            std::cout << Solution[iVar] << std::endl;
 
         direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
     }
@@ -167,8 +168,9 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
 
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjoint_BoundDisp(iPoint,Solution);
+      std::cout << Solution << std::endl;
 
-    nodes->SetBoundDisp_Sens(iPoint,Solution);
+      nodes->SetBoundDisp_Sens(iPoint,Solution);
 
   }
   END_SU2_OMP_FOR
