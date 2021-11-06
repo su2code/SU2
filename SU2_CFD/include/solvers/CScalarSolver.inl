@@ -30,9 +30,6 @@
 #include "../../include/variables/CFlowVariable.hpp"
 
 template <class VariableType>
-CScalarSolver<VariableType>::CScalarSolver(bool conservative) : CSolver(), Conservative(conservative) {}
-
-template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
     : CSolver(), Conservative(conservative) {
   nMarker = config->GetnMarker_All();

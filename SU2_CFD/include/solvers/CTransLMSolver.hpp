@@ -39,12 +39,8 @@
 class CTransLMSolver final : public CTurbSolver {
 private:
   su2double Intermittency_Inf, REth_Inf;
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTransLMSolver(void);
 
+public:
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.

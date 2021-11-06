@@ -32,8 +32,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver(false) { }
-
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config, false) {
 
