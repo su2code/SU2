@@ -37,18 +37,41 @@
  * \author A. Bueno.
  */
 template <class FlowIndices>
-class CUpwSca_TurbSA_generic final : public CUpwScalar<FlowIndices> {
+class CUpwSca_TurbSA final : public CUpwScalar<FlowIndices> {
 private:
+  using Base = CUpwScalar<FlowIndices>;
+  using Base::nDim;
+  using Base::V_i;
+  using Base::V_j;
+  using Base::a0;
+  using Base::a1;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::implicit;
+
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override;
+  void ExtraADPreaccIn() override {
+    AD::SetPreaccIn(V_i, nDim+1);
+    AD::SetPreaccIn(V_j, nDim+1);
+  }
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) override {
+    Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
+
+    if (implicit) {
+      Jacobian_i[0][0] = a0;
+      Jacobian_j[0][0] = a1;
+    }
+  }
 
 public:
   /*!
@@ -57,12 +80,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
+  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
 };
-using CUpwSca_TurbSA = CUpwSca_TurbSA_generic<CEulerVariable::Indices>;
-using CUpwSca_IncTurbSA = CUpwSca_TurbSA_generic<CIncEulerVariable::Indices>;
-using CUpwSca_NEMOTurbSA = CUpwSca_TurbSA_generic<CNEMOEulerVariable::Indices>;
 
 /*!
  * \class CUpwSca_TurbSST
@@ -71,18 +91,47 @@ using CUpwSca_NEMOTurbSA = CUpwSca_TurbSA_generic<CNEMOEulerVariable::Indices>;
  * \author A. Campos.
  */
 template <class FlowIndices>
-class CUpwSca_TurbSST_generic final : public CUpwScalar<FlowIndices> {
+class CUpwSca_TurbSST final : public CUpwScalar<FlowIndices> {
 private:
+  using Base = CUpwScalar<FlowIndices>;
+  using Base::nDim;
+  using Base::V_i;
+  using Base::V_j;
+  using Base::a0;
+  using Base::a1;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::Density_i;
+  using Base::Density_j;
+  using Base::implicit;
+
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override;
+  void ExtraADPreaccIn() override {
+    AD::SetPreaccIn(V_i, nDim+3);
+    AD::SetPreaccIn(V_j, nDim+3);
+  }
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) override {
+    Flux[0] = a0*Density_i*ScalarVar_i[0] + a1*Density_j*ScalarVar_j[0];
+    Flux[1] = a0*Density_i*ScalarVar_i[1] + a1*Density_j*ScalarVar_j[1];
+
+    if (implicit) {
+      Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
+
+      Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+      Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
+    }
+  }
 
 public:
   /*!
@@ -91,9 +140,6 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
+  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
 };
-using CUpwSca_TurbSST = CUpwSca_TurbSST_generic<CEulerVariable::Indices>;
-using CUpwSca_IncTurbSST = CUpwSca_TurbSST_generic<CIncEulerVariable::Indices>;
-using CUpwSca_NEMOTurbSST = CUpwSca_TurbSST_generic<CNEMOEulerVariable::Indices>;

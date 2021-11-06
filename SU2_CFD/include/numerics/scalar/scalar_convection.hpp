@@ -44,6 +44,7 @@
  * \ingroup ConvDiscr
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
+template <class FlowIndices>
 class CUpwScalar : public CNumerics {
  protected:
   su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0 */
@@ -69,21 +70,80 @@ class CUpwScalar : public CNumerics {
  public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwScalar(unsigned short ndim, unsigned short nvar, const CConfig* config)
+    : CNumerics(ndim, nvar, config),
+      implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
+      incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
+      dynamic_grid(config->GetDynamic_Grid()) {
+    Flux = new su2double[nVar];
+    Jacobian_i = new su2double*[nVar];
+    Jacobian_j = new su2double*[nVar];
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = new su2double[nVar];
+      Jacobian_j[iVar] = new su2double[nVar];
+    }
+  }
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwScalar(void) override;
+  ~CUpwScalar() override {
+    delete[] Flux;
+    if (Jacobian_i != nullptr) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        delete[] Jacobian_i[iVar];
+        delete[] Jacobian_j[iVar];
+      }
+      delete[] Jacobian_i;
+      delete[] Jacobian_j;
+    }
+  }
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
+  CNumerics::ResidualType<> ComputeResidual(const CConfig* config) final {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Normal, nDim);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
+    AD::SetPreaccIn(ScalarVar_j, nVar);
+    if (dynamic_grid) {
+      AD::SetPreaccIn(GridVel_i, nDim);
+      AD::SetPreaccIn(GridVel_j, nDim);
+    }
+
+    ExtraADPreaccIn();
+
+    Density_i = V_i[nDim + 2];
+    Density_j = V_j[nDim + 2];
+
+    su2double q_ij = 0.0;
+    if (dynamic_grid) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        su2double Velocity_i = V_i[iDim + 1] - GridVel_i[iDim];
+        su2double Velocity_j = V_j[iDim + 1] - GridVel_j[iDim];
+        q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
+      }
+    } else {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        q_ij += 0.5 * (V_i[iDim + 1] + V_j[iDim + 1]) * Normal[iDim];
+      }
+    }
+
+    a0 = 0.5 * (q_ij + fabs(q_ij));
+    a1 = 0.5 * (q_ij - fabs(q_ij));
+
+    FinishResidualCalc(config);
+
+    AD::SetPreaccOut(Flux, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  }
 };

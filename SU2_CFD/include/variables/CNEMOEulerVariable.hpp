@@ -45,11 +45,11 @@ class CNEMOEulerVariable : public CFlowVariable {
   template <class IndexType>
   struct CIndices {
     const IndexType nDim, nSpecies;
-    CIndices(IndexType ndim, IndexType nSpecies, IndexType) : nDim(ndim), nSpecies(nspecies) {}
-    inline IndexType SpeciesDensities() const {return 0; }
-    inline IndexType Temperature() const { return nSpecies; }
-    inline IndexType Temperature_ve() const { return nSpecies+1; }
-    inline IndexType Velocity() const { return nSpecies+2; }
+    CIndices(IndexType ndim, IndexType nspecies) : nDim(ndim), nSpecies(nspecies) {}
+    inline IndexType SpeciesDensities() const {return 0;}
+    inline IndexType Temperature() const {return nSpecies;}
+    inline IndexType Temperature_ve() const {return nSpecies+1;}
+    inline IndexType Velocity() const {return nSpecies+2;}
     inline IndexType Pressure() const {return nSpecies+nDim+2;}
     inline IndexType Density() const {return nSpecies+nDim+3;}
     inline IndexType Enthalpy() const {return nSpecies+nDim+4;}
