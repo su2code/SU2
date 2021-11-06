@@ -85,6 +85,14 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
         Partial_Sens_dFlowObjective_dMeshDisplacements.resize(nMarker);
         Partial_Prod_dFlowTractions_dMeshDisplacements.resize(nMarker);
 
+        if (!config->GetDeform_Mesh()) {
+            Partial_Prod_dMeshCoordinates_dMeshCoordinates.resize(nMarker);
+
+            Partial_Prod_dFlowResiduals_dMeshCoordinates.resize(nMarker);
+            Partial_Sens_dFlowObjective_dMeshCoordinates.resize(nMarker);
+            Partial_Prod_dFlowTractions_dMeshCoordinates.resize(nMarker);
+        }
+
         for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
             const auto nVertex = geometry->GetnVertex(iMarker);
 

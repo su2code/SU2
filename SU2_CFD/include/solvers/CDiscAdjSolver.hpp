@@ -50,6 +50,7 @@ private:
 
   const unsigned short nTrim = 2;
   vector<su2matrix<su2double>> Partial_Prod_dMeshCoordinates_dMeshDisplacements;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+  vector<su2matrix<su2double>> Partial_Prod_dMeshCoordinates_dMeshCoordinates;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   su2vector<su2double>         Partial_Sens_dFlowObjective_dFlowVariables;    /*!< \brief Partial sensitivity of the objective w.r.t. the input variables. */
   su2vector<su2double>         Partial_Prod_dFlowResiduals_dFlowVariables;    /*!< \brief Partial sensitivity of the residuals w.r.t. the input variables (matrix-vector product with adjoint vector). */
   su2matrix<su2double>         Partial_Sens_dFlowObjective_dFlowStates;    /*!< \brief Partial sensitivity of the objective w.r.t. the solution. */
@@ -58,6 +59,9 @@ private:
   vector<su2matrix<su2double>> Partial_Sens_dFlowObjective_dMeshDisplacements;    /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
   vector<su2matrix<su2double>> Partial_Prod_dFlowResiduals_dMeshDisplacements;    /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   vector<su2matrix<su2double>> Partial_Prod_dFlowTractions_dMeshDisplacements;   /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
+  vector<su2matrix<su2double>> Partial_Sens_dFlowObjective_dMeshCoordinates;   /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
+  vector<su2matrix<su2double>> Partial_Prod_dFlowResiduals_dMeshCoordinates;   /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+  vector<su2matrix<su2double>> Partial_Prod_dFlowTractions_dMeshCoordinates;   /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
   su2matrix<int> AD_ResidualIndex;    /*!< \brief Indices of Residual variables in the adjoint vector. */
 
   vector<vector<su2double> > CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */

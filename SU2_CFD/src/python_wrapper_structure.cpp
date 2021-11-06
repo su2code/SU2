@@ -654,7 +654,7 @@ vector<passivedouble> CDriver::GetFlowResiduals_Marker(unsigned short iMarker) c
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->LinSysRes(iPoint, iVar);
 
-            values[nVar*iVertex + iVar] = SU2_TYPE::GetValue(value);
+            values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -710,7 +710,7 @@ vector<passivedouble> CDriver::GetFlowStates_Marker(unsigned short iMarker) cons
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
-            values[nVar*iVertex + iVar] = SU2_TYPE::GetValue(value);
+            values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
 
@@ -762,7 +762,7 @@ void CDriver::SetFlowStates_Marker(unsigned short iMarker, vector<passivedouble>
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[nVar*iVertex + iVar]);
+            solver->GetNodes()->SetSolution(iPoint, iVar, values[iVertex*nVar + iVar]);
         }
     }
 }
@@ -823,7 +823,7 @@ vector<passivedouble> CDriver::GetFlowQuantities_Marker(unsigned short iMarker) 
     const auto nVertex  = geometry->GetnVertex(iMarker);
 
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    const auto nPrim  = solver->GetnVar();
+    const auto nPrim  = 7;
 
     vector<passivedouble> values(nVertex*nPrim, 0.0);
     su2double value;
@@ -1042,7 +1042,7 @@ vector<passivedouble> CDriver::GetAdjFlowStates_Marker(unsigned short iMarker) c
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
-            values[nVar*iVertex + iVar] = SU2_TYPE::GetValue(value);
+            values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
     
@@ -1110,7 +1110,6 @@ vector<passivedouble> CDriver::GetAdjFlowTractions_Marker(unsigned short iMarker
     const auto nVertex  = geometry->GetnVertex(iMarker);
 
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    const auto nPrim  = solver->GetnVar();
 
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
@@ -1137,10 +1136,9 @@ void CDriver::SetAdjFlowTractions_Marker(unsigned short iMarker, vector<passived
     const auto nVertex  = geometry->GetnVertex(iMarker);
 
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    const auto nVar   = solver->GetnVar();
 
-    if (values.size() != nVertex*nVar) {
-        SU2_MPI::Error("Size does not match nVertex * nVar !", CURRENT_FUNCTION);
+    if (values.size() != nVertex*nDim) {
+        SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
 
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
@@ -1233,7 +1231,7 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowStates() const {
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
 
-    vector<passivedouble> values(nPoint*nDim, 0.0);
+    vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
 
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -1260,7 +1258,7 @@ vector<passivedouble> CDriver::GetProd_dFlowResiduals_dFlowStates() const {
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
 
-    vector<passivedouble> values(nPoint*nDim, 0.0);
+    vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
 
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -1287,7 +1285,7 @@ vector<passivedouble> CDriver::GetProd_dFlowTractions_dFlowStates() const {
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
 
-    vector<passivedouble> values(nPoint*nDim, 0.0);
+    vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
 
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
