@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subrotuines of CScalarSolver class
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,9 +28,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
-
-template <class VariableType>
-CScalarSolver<VariableType>::CScalarSolver(bool conservative) : CSolver(), Conservative(conservative) {}
 
 template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)

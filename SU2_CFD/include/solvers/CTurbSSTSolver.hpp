@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,10 +37,7 @@
  */
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double
-  constants[10] = {0.0}; /*!< \brief Constants for the model. */
-
-
+  su2double constants[10] = {0.0}; /*!< \brief Constants for the model. */
 
   /*!
    * \brief Compute nu tilde from the wall functions.
@@ -56,15 +53,9 @@ private:
                      const CConfig *config,
                      unsigned short val_marker);
 
-
 public:
   /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSSTSolver(void);
-
-  /*!
-   * \overload
+   * \brief Constructor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -311,5 +302,5 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
-  
+
 };

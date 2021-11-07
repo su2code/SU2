@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,16 +33,12 @@
 /*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
 template class CScalarSolver<CTurbVariable>;
 
-CTurbSolver::CTurbSolver(bool conservative) : CScalarSolver<CTurbVariable>(conservative) { }
-
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative) : CScalarSolver<CTurbVariable>(geometry, config, conservative) { }
 
 CTurbSolver::~CTurbSolver() {
-
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
   }
-
 }
 
 void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

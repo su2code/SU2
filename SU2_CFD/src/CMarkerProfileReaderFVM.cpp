@@ -2,7 +2,7 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
