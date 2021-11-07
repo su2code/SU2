@@ -37,6 +37,8 @@
  */
 class CAvgGrad_Species final : public CAvgGrad_Scalar {
  private:
+  bool turbulence;
+
   /*!
    * \brief Adds any extra variables to AD
    */

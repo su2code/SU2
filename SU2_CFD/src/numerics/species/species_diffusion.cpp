@@ -30,7 +30,9 @@
 
 CAvgGrad_Species::CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad,
                                    const CConfig* config)
-    : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {}
+    : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {
+  turbulence = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
+}
 
 void CAvgGrad_Species::ExtraADPreaccIn() {
   AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
@@ -49,9 +51,6 @@ void CAvgGrad_Species::FinishResidualCalc(const CConfig* config) {
     const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
     su2double Diffusivity_Turb = 0.0;
 
-    const bool turbulence =
-        (config->GetKind_Solver() == INC_RANS) ||
-        (config->GetKind_Solver() == DISC_ADJ_INC_RANS);  // TODO TK:: this should be general for inc and comp
     if (turbulence) {
       const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
       Diffusivity_Turb = 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t);
