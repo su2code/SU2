@@ -34,8 +34,6 @@
 /*--- Explicit instantiation of the parent class of CSpeciesSolver. ---*/
 template class CScalarSolver<CSpeciesVariable>;
 
-CSpeciesSolver::CSpeciesSolver() : CScalarSolver<CSpeciesVariable>(true) {}
-
 CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CScalarSolver<CSpeciesVariable>(geometry, config, true) {
   unsigned short nLineLets;
