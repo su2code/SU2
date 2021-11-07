@@ -70,7 +70,6 @@ private:
     su2double nu_j = Laminar_Viscosity_j/Density_j;
     su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
 
-    /// TODO: I smell bug...
     Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
@@ -111,7 +110,6 @@ private:
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
-  using Base::Proj_Mean_GradScalarVar_Normal;
   using Base::proj_vector_ij;
   using Base::implicit;
   using Base::Flux;
@@ -150,7 +148,7 @@ private:
       nu_e = nu_ij + fn*nu_tilde_ij;
     }
 
-    Flux[0] = nu_e*Proj_Mean_GradScalarVar_Normal[0]/sigma;
+    Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 

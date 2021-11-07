@@ -3984,7 +3984,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         if (viscous_flow) {
           su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
           su2double Tau[3][3];
-          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
           }

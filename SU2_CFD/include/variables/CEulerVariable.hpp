@@ -230,6 +230,14 @@ public:
   }
 
   /*!
+   * \brief Get the velocity gradient.
+   * \return Value of the velocity gradient.
+   */
+  inline CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const final {
+    return Gradient_Primitive(iPoint, indices.Velocity());
+  }
+
+  /*!
    * \brief Get the projected velocity in a unitary vector direction (compressible solver).
    * \param[in] val_vector - Direction of projection.
    * \return Value of the projected velocity.

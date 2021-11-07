@@ -1045,6 +1045,15 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the velocity gradient.
+   */
+  inline virtual CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const {
+    return CMatrixView<const su2double>();
+  }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Norm 2 of the velocity vector.
    */
   inline virtual su2double GetVelocity2(unsigned long iPoint) const { return 0.0; }
