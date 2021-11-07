@@ -1280,17 +1280,18 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     auto& turb_source_first_term = numerics[iMGlevel][TURB_SOL][source_first_term];
 
     if (spalart_allmaras)
-      turb_source_first_term = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
+      turb_source_first_term = new CSourcePieceWise_TurbSA<Indices>(nDim, nVar_Turb, config);
     else if (e_spalart_allmaras)
-      turb_source_first_term = new CSourcePieceWise_TurbSA_E(nDim, nVar_Turb, config);
+      turb_source_first_term = new CSourcePieceWise_TurbSA_E<Indices>(nDim, nVar_Turb, config);
     else if (comp_spalart_allmaras)
-      turb_source_first_term = new CSourcePieceWise_TurbSA_COMP(nDim, nVar_Turb, config);
+      turb_source_first_term = new CSourcePieceWise_TurbSA_COMP<Indices>(nDim, nVar_Turb, config);
     else if (e_comp_spalart_allmaras)
-      turb_source_first_term = new CSourcePieceWise_TurbSA_E_COMP(nDim, nVar_Turb, config);
+      turb_source_first_term = new CSourcePieceWise_TurbSA_E_COMP<Indices>(nDim, nVar_Turb, config);
     else if (neg_spalart_allmaras)
-      turb_source_first_term = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
+      turb_source_first_term = new CSourcePieceWise_TurbSA_Neg<Indices>(nDim, nVar_Turb, config);
     else if (menter_sst)
-      turb_source_first_term = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, kine_Inf, omega_Inf, config);
+      turb_source_first_term = new CSourcePieceWise_TurbSST<Indices>(nDim, nVar_Turb, constants, kine_Inf, omega_Inf,
+                                                                     config);
 
     numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
   }
