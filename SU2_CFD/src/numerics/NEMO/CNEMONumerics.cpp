@@ -55,10 +55,6 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Read from CConfig ---*/
     implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-    Ys   = new su2double[nSpecies];
-    Ys_i = new su2double[nSpecies];
-    Ys_j = new su2double[nSpecies];
-
     ionization = config->GetIonization();
     if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
     else            { nHeavy = nSpecies;   nEl = 0; }
@@ -81,9 +77,6 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNEMONumerics::~CNEMONumerics(void) {
 
-  delete [] Ys;
-  delete [] Ys_i;
-  delete [] Ys_j;
   delete fluidmodel;
 }
 

@@ -64,7 +64,6 @@ public:
   su2double Gamma_i, Gamma_j;
 
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
-  su2double *Ys, *Ys_i, *Ys_j;
 
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
@@ -184,14 +183,18 @@ public:
 
     /*--- Initialize matrices ---*/
     Matrix<NVAR, NVAR> dFdVi, dFdVj, dVdUi, dVdUj;
+
     /*--- Need to avoid size of 1 otherwise the type becomes a vector (without [i][j]). ---*/
     constexpr unsigned short nSpeciesDummy = (NSPECIES == 1) ? 2 : NSPECIES;
     Matrix<nSpeciesDummy, nSpeciesDummy> dJdr_i, dJdr_j;
+    Matrix<nSpeciesDummy,1> Ys, Ys_i, Ys_j;
 
     /*--- Play tricks on the compiler, in static mode use NVAR from the template, in dynamic mode
-          use nVar from the class or from the arguments (if you make it static it needs to be an argument). ---*/
-    const auto nVar = NVAR;
-    const auto nSpecies = NSPECIES;
+          use nVar from the class or from the arguments. ---*/
+    const auto nVar = (NVAR != DynamicSize) ? NVAR : this->nVar;
+    const auto nSpecies = (NSPECIES != DynamicSize) ? NSPECIES : this->nSpecies;
+
+    /*--- Deduce nDim from the other variables to allow the compiler to also unroll the loops over nDim. ---*/
     const auto nDim = nVar - nSpecies - 2;
 
     // Allocate and initialize, for the static case the compiler optimizes this away.
@@ -202,6 +205,9 @@ public:
     if (NSPECIES == DynamicSize) {
       dJdr_i.resize(nSpecies,nSpecies) = su2double(0.0);
       dJdr_j.resize(nSpecies,nSpecies) = su2double(0.0);
+      Ys.resize(nSpecies,1) = su2double(0.0);
+      Ys_i.resize(nSpecies,1) = su2double(0.0);
+      Ys_j.resize(nSpecies,1) = su2double(0.0);
     }
 
     /*--- Calculate preliminary geometric quantities ---*/
