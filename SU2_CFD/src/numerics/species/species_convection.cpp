@@ -32,7 +32,7 @@ CUpwSca_Species::CUpwSca_Species(unsigned short val_nDim, unsigned short val_nVa
     : CUpwScalar(val_nDim, val_nVar, config) {}
 
 void CUpwSca_Species::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim + 3);  /// Note TK::Check the +3 addition!
+  AD::SetPreaccIn(V_i, nDim + 3);
   AD::SetPreaccIn(V_j, nDim + 3);
 }
 
