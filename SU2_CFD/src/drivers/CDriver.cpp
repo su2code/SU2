@@ -51,6 +51,10 @@
 #include "../../include/interfaces/fsi/CFlowTractionInterface.hpp"
 #include "../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
 
+#include "../../include/variables/CEulerVariable.hpp"
+#include "../../include/variables/CIncEulerVariable.hpp"
+#include "../../include/variables/CNEMOEulerVariable.hpp"
+
 #include "../../include/numerics/template.hpp"
 #include "../../include/numerics/transition.hpp"
 #include "../../include/numerics/radiation.hpp"
@@ -1309,8 +1313,14 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
   }
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
-template void CDriver::InstantiateTurbulentNumerics<int>(unsigned short, int, const CConfig*,
-                                                         const CSolver*, CNumerics****&) const;
+template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
 
@@ -1765,7 +1775,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
    /*--- Solver definition for the Potential, Euler, Navier-Stokes NEMO problems ---*/
 
-  if ((NEMO_euler) || (NEMO_ns)) {
+  if (NEMO_euler || NEMO_ns) {
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
@@ -1918,11 +1928,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   /*--- Solver definition for the turbulent model problem ---*/
 
   if (turbulent) {
-    /// TODO: Replace the dummy int type here for the real thing commented below.
-    InstantiateTurbulentNumerics<int>(nVar_Turb, offset, config, solver[MESH_0][TURB_SOL], numerics);
-//    if (incompressible) InstantiateTurbulentNumerics<CIncEulerVariable::Indices>(...);
-//    else if (nemo) InstantiateTurbulentNumerics<CNEMOEulerVariable::Indices>(...);
-//    else InstantiateTurbulentNumerics<CEulerVariable::Indices>(...);
+    if (incompressible)
+      InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
+                                                                                 solver[MESH_0][TURB_SOL], numerics);
+    else if (NEMO_ns)
+      InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
+                                                                                  solver[MESH_0][TURB_SOL], numerics);
+    else
+      InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
+                                                                              solver[MESH_0][TURB_SOL], numerics);
   }
 
   /*--- Solver definition for the transition model problem ---*/

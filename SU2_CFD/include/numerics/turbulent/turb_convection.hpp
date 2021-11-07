@@ -40,9 +40,6 @@ template <class FlowIndices>
 class CUpwSca_TurbSA final : public CUpwScalar<FlowIndices> {
 private:
   using Base = CUpwScalar<FlowIndices>;
-  using Base::nDim;
-  using Base::V_i;
-  using Base::V_j;
   using Base::a0;
   using Base::a1;
   using Base::Flux;
@@ -53,12 +50,9 @@ private:
   using Base::implicit;
 
   /*!
-   * \brief Adds any extra variables to AD
+   * \brief Adds any extra variables to AD.
    */
-  void ExtraADPreaccIn() override {
-    AD::SetPreaccIn(V_i, nDim+1);
-    AD::SetPreaccIn(V_j, nDim+1);
-  }
+  void ExtraADPreaccIn() override {}
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
@@ -104,16 +98,15 @@ private:
   using Base::Jacobian_j;
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
-  using Base::Density_i;
-  using Base::Density_j;
   using Base::implicit;
+  using Base::idx;
 
   /*!
    * \brief Adds any extra variables to AD
    */
   void ExtraADPreaccIn() override {
-    AD::SetPreaccIn(V_i, nDim+3);
-    AD::SetPreaccIn(V_j, nDim+3);
+    AD::SetPreaccIn(V_i[idx.Density()]);
+    AD::SetPreaccIn(V_j[idx.Density()]);
   }
 
   /*!
@@ -121,8 +114,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
-    Flux[0] = a0*Density_i*ScalarVar_i[0] + a1*Density_j*ScalarVar_j[0];
-    Flux[1] = a0*Density_i*ScalarVar_i[1] + a1*Density_j*ScalarVar_j[1];
+    Flux[0] = a0*V_i[idx.Density()]*ScalarVar_i[0] + a1*V_j[idx.Density()]*ScalarVar_j[0];
+    Flux[1] = a0*V_i[idx.Density()]*ScalarVar_i[1] + a1*V_j[idx.Density()]*ScalarVar_j[1];
 
     if (implicit) {
       Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;

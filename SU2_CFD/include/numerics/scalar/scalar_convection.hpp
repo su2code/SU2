@@ -47,8 +47,9 @@
 template <class FlowIndices>
 class CUpwScalar : public CNumerics {
  protected:
-  su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0 */
-  su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0 */
+  const FlowIndices idx;            /*!< \brief Object to manage the access to the flow primitives. */
+  su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0. */
+  su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0. */
   su2double* Flux = nullptr;        /*!< \brief Final result, diffusive flux/residual. */
   su2double** Jacobian_i = nullptr; /*!< \brief Flux Jacobian w.r.t. node i. */
   su2double** Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
@@ -56,7 +57,8 @@ class CUpwScalar : public CNumerics {
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
   /*!
-   * \brief A pure virtual function; Adds any extra variables to AD
+   * \brief A pure virtual function. Derived classes must use it to register the additional
+   *        variables they use as preaccumulation inputs, e.g. the density for SST.
    */
   virtual void ExtraADPreaccIn() = 0;
 
@@ -76,6 +78,7 @@ class CUpwScalar : public CNumerics {
    */
   CUpwScalar(unsigned short ndim, unsigned short nvar, const CConfig* config)
     : CNumerics(ndim, nvar, config),
+      idx(ndim, config->GetnSpecies()),
       implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
       incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
       dynamic_grid(config->GetDynamic_Grid()) {
@@ -117,22 +120,21 @@ class CUpwScalar : public CNumerics {
       AD::SetPreaccIn(GridVel_i, nDim);
       AD::SetPreaccIn(GridVel_j, nDim);
     }
+    AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
+    AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
 
     ExtraADPreaccIn();
-
-    Density_i = V_i[nDim + 2];
-    Density_j = V_j[nDim + 2];
 
     su2double q_ij = 0.0;
     if (dynamic_grid) {
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        su2double Velocity_i = V_i[iDim + 1] - GridVel_i[iDim];
-        su2double Velocity_j = V_j[iDim + 1] - GridVel_j[iDim];
+        su2double Velocity_i = V_i[iDim + idx.Velocity()] - GridVel_i[iDim];
+        su2double Velocity_j = V_j[iDim + idx.Velocity()] - GridVel_j[iDim];
         q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
       }
     } else {
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        q_ij += 0.5 * (V_i[iDim + 1] + V_j[iDim + 1]) * Normal[iDim];
+        q_ij += 0.5 * (V_i[iDim + idx.Velocity()] + V_j[iDim + idx.Velocity()]) * Normal[iDim];
       }
     }
 
