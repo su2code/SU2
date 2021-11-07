@@ -56,11 +56,13 @@ class CNEMOEulerVariable : public CFlowVariable {
     inline IndexType SoundSpeed() const {return nSpecies+nDim+5;}
     inline IndexType RhoCvtr() const {return nSpecies+nDim+6;}
     inline IndexType RhoCvve() const {return nSpecies+nDim+7;}
-    inline IndexType LamViscosity() const {return nSpecies+nDim+8;}
+    inline IndexType LaminarViscosity() const {return nSpecies+nDim+8;}
     inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
   };
 
  protected:
+  const CIndices<unsigned long> indices;
+
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
   bool monoatomic = false;  /*!< \brief Presence of single species gas. */
 

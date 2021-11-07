@@ -51,11 +51,15 @@ public:
     inline IndexType Density() const { return nDim+2; }
     inline IndexType Enthalpy() const { return nDim+3; }
     inline IndexType SoundSpeed() const { return nDim+4; }
-    inline IndexType LamViscosity() const { return nDim+5; }
+    inline IndexType LaminarViscosity() const { return nDim+5; }
     inline IndexType EddyViscosity() const { return nDim+6; }
+    inline IndexType ThermalConductivity() const { return nDim+7; }
+    inline IndexType CpTotal() const { return nDim+8; }
   };
 
  protected:
+  const CIndices<unsigned long> indices;
+
   /*!< \brief Secondary variables (dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho)
    *          in compressible (Euler: 2, NS: 8) flows. */
   MatrixType Secondary;
@@ -111,7 +115,8 @@ public:
    * \brief Set the value of the enthalpy.
    */
   inline void SetEnthalpy(unsigned long iPoint) final {
-    Primitive(iPoint,nDim+3) = (Solution(iPoint,nVar-1) + Primitive(iPoint,nDim+1)) / Solution(iPoint,0);
+    Primitive(iPoint, indices.Enthalpy()) =
+      (Solution(iPoint,nVar-1) + Primitive(iPoint, indices.Pressure())) / Solution(iPoint,0);
   }
 
   /*!
@@ -166,8 +171,8 @@ public:
    * \brief Set the value of the density for the incompressible flows.
    */
   inline bool SetDensity(unsigned long iPoint) final {
-    Primitive(iPoint,nDim+2) = Solution(iPoint,0);
-    return Primitive(iPoint,nDim+2) <= 0.0;
+    Primitive(iPoint, indices.Density()) = Solution(iPoint,0);
+    return Primitive(iPoint, indices.Density()) <= 0.0;
   }
 
   /*!
@@ -175,7 +180,7 @@ public:
    * \param[in] temperature - how agitated the particles are :)
    */
   inline bool SetTemperature(unsigned long iPoint, su2double temperature) final {
-    Primitive(iPoint,0) = temperature;
+    Primitive(iPoint, indices.Temperature()) = temperature;
     return temperature <= 0.0;
   }
 
@@ -183,19 +188,19 @@ public:
    * \brief Get the flow pressure.
    * \return Value of the flow pressure.
    */
-  inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint,nDim+1); }
+  inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint, indices.Pressure()); }
 
   /*!
    * \brief Get the speed of the sound.
    * \return Value of speed of the sound.
    */
-  inline su2double GetSoundSpeed(unsigned long iPoint) const final { return Primitive(iPoint,nDim+4); }
+  inline su2double GetSoundSpeed(unsigned long iPoint) const final { return Primitive(iPoint, indices.SoundSpeed()); }
 
   /*!
    * \brief Get the enthalpy of the flow.
    * \return Value of the enthalpy of the flow.
    */
-  inline su2double GetEnthalpy(unsigned long iPoint) const final { return Primitive(iPoint,nDim+3); }
+  inline su2double GetEnthalpy(unsigned long iPoint) const final { return Primitive(iPoint, indices.Enthalpy()); }
 
   /*!
    * \brief Get the density of the flow.
@@ -213,14 +218,16 @@ public:
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
-  inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint,0); }
+  inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint,indices.Temperature()); }
 
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] iDim - Index of the dimension.
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
-  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final { return Primitive(iPoint,iDim+1); }
+  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
+    return Primitive(iPoint,iDim+indices.Velocity());
+  }
 
   /*!
    * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -230,7 +237,7 @@ public:
   inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const final {
     su2double ProjVel = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      ProjVel += Primitive(iPoint,iDim+1)*val_vector[iDim];
+      ProjVel += Primitive(iPoint,iDim+indices.Velocity())*val_vector[iDim];
     return ProjVel;
   }
 
@@ -241,8 +248,8 @@ public:
   inline void SetVelocity(unsigned long iPoint) final {
     Velocity2(iPoint) = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      Primitive(iPoint,iDim+1) = Solution(iPoint,iDim+1) / Solution(iPoint,0);
-      Velocity2(iPoint) += pow(Primitive(iPoint,iDim+1),2);
+      Primitive(iPoint,iDim+indices.Velocity()) = Solution(iPoint,iDim+1) / Solution(iPoint,0);
+      Velocity2(iPoint) += pow(Primitive(iPoint,iDim+indices.Velocity()),2);
     }
   }
 

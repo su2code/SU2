@@ -1414,18 +1414,6 @@ public:
   inline virtual void SetPrimitive(unsigned long iPoint, CConfig *config) {}
 
   /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double Temperature_Wall) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double* Temperature_Wall) {}
-
-  /*!
    * \brief Set the thermal coefficient.
    * \param[in] config - Configuration parameters.
    */
