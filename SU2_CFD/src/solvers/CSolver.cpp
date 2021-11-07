@@ -3526,8 +3526,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   auto profile_filename = config->GetInlet_FileName();
 
-  unsigned short nVar_Turb = 0;
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  const auto turbulence = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
+  const unsigned short nVar_Turb = turbulence ? solver[MESH_0][TURB_SOL]->GetnVar() : 0;
+
+  const auto species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const unsigned short nVar_Species = species ? solver[MESH_0][SPECIES_SOL]->GetnVar() : 0;
 
   /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
@@ -3540,7 +3543,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    necessary in case we are writing a template profile file or for Inlet
    Interpolation purposes. ---*/
 
-  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb + nVar_Species;
 
   /*--- for incompressible flow, we can switch the energy equation off ---*/
   /*--- for now, we write the temperature even if we are not using it ---*/
@@ -3621,8 +3624,21 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
       case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
         /*--- 2-equation turbulence model (SST) ---*/
-        columnName << "TKE        " << setw(24) << "DISSIPATION";
+        columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
+        break;
+    }
+
+    switch (config->GetKind_Species_Model()) {
+      case SPECIES_MODEL::NONE: break;
+      case SPECIES_MODEL::PASSIVE_SCALAR:
+        for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
+          columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
+        }
+        break;
+      case SPECIES_MODEL::CUSTOM_SCALAR: case SPECIES_MODEL::PROGRESS_VARIABLE:
+        SU2_MPI::Error("Unsupported Species model for inlet files.", CURRENT_FUNCTION);
         break;
     }
 

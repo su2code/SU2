@@ -152,20 +152,11 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
    (not CScalarLegacySolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
 
-  const bool turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-  const bool turb_SST = turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SST);
-  const bool turb_SA = turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SA);
-
-  /// NOTE TK:: Make inlet files possible. Note that we have to count for turb as well! See also CDriver.cpp for the
-  /// loading
-
-  Inlet_Position = nDim * 2 + 2;
-  if (turbulent) {
-    if (turb_SA)
-      Inlet_Position += 1;
-    else if (turb_SST)
-      Inlet_Position += 2;
-  }
+  Inlet_Position = nDim + 2 + nDim; // Coords(nDim), T(1), velocity_mag(1), Normal(nDim), Turb(1 or 2), species
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA)
+    Inlet_Position += 1;
+  else if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+    Inlet_Position += 2;
 
   /*-- Allocation of inlets has to happen in derived classes
     (not CScalarLegacySolver), due to arbitrary number of scalar variables.
@@ -183,8 +174,9 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
     }
   }
 
-  /*--- The turbulence models are always solved implicitly, so set the
+  /*--- The species models are always solved implicitly, so set the
   implicit flag in case we have periodic BCs. ---*/
+  //TK:: Is that true
 
   SetImplicitPeriodic(true);
 
@@ -443,8 +435,6 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
   /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
   // bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  // su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
-  const su2double* inlet_species = config->GetInlet_SpeciesVal(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -457,7 +447,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     if (use_strong_BC) {
-      nodes->SetSolution_Old(iPoint, inlet_species);
+      nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
       LinSysRes.SetBlock_Zero(iPoint);
 
@@ -493,7 +483,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       values for the turbulent state at the inflow. ---*/
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), inlet_species);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
 
       /*--- Set various other quantities in the solver class ---*/
 
@@ -541,6 +531,82 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
     }
   }
   END_SU2_OMP_FOR
+}
+
+void CSpeciesSolver::SetInletAtVertex(const su2double *val_inlet,
+                                      unsigned short iMarker,
+                                      unsigned long iVertex) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Inlet_SpeciesVars[iMarker][iVertex][iVar] = val_inlet[Inlet_Position+iVar];
+
+}
+
+su2double CSpeciesSolver::GetInletAtVertex(su2double *val_inlet,
+                                           unsigned long val_inlet_point,
+                                           unsigned short val_kind_marker,
+                                           string val_marker,
+                                           const CGeometry *geometry,
+                                           const CConfig *config) const {
+  /*--- Local variables ---*/
+
+  unsigned short iMarker;
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+
+  /*--- Alias positions within inlet file for readability ---*/
+
+  if (val_kind_marker == INLET_FLOW) {
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = GeometryToolbox::Norm(nDim, Normal);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+            for (unsigned short iVar = 0; iVar < nVar; iVar++)
+              val_inlet[Inlet_Position + iVar] = Inlet_SpeciesVars[iMarker][iVertex][iVar];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
+      }
+    }
+
+  }
+
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+
+  return Area;
+
+}
+
+void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+  /*--- Find BC string to the numeric-identifier. ---*/
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        Inlet_SpeciesVars[iMarker][iVertex][iVar] = config->GetInlet_SpeciesVal(Marker_Tag)[iVar];
+      }
+    }
+  }
 }
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
@@ -652,10 +718,4 @@ void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_cont
 void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                         CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-}
-
-void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-  for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) Inlet_SpeciesVars[iMarker][iVertex][iVar] = Species_Inf[iVar];
-  }
 }

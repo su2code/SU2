@@ -1080,8 +1080,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
     }
     /// NOTE TK:: currently not working, see SpeciesSolver Constructor
-    if (solver[MESH_0][SPECIES_SOL] && false) { /// NOTE TK:: this evaluated true for slinc_steady case, therefore the quick fix false.
-      SU2_MPI::Error("Inlet profiles with species need to be implemented!", CURRENT_FUNCTION);
+    if (solver[MESH_0][SPECIES_SOL]) { /// NOTE TK:: this evaluated true for slinc_steady case, therefore the quick fix false.
       solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
     }
 
