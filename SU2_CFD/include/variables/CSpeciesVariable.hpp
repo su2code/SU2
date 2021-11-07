@@ -32,8 +32,6 @@
 /*!
  * \class CSpeciesVariable
  * \brief Base class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
  */
 class CSpeciesVariable : public CScalarVariable {
  protected:
