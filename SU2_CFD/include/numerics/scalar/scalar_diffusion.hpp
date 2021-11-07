@@ -44,14 +44,18 @@
  * \ingroup ViscDiscr
  * \author C. Pederson, A. Bueno, and F. Palacios
  */
+template <class FlowIndices>
 class CAvgGrad_Scalar : public CNumerics {
  protected:
-  su2double* Proj_Mean_GradScalarVar_Normal = nullptr; /*!< \brief Mean_gradScalarVar DOT normal. */
-  su2double* Proj_Mean_GradScalarVar = nullptr; /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
-  su2double proj_vector_ij = 0.0;               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  su2double* Flux = nullptr;                    /*!< \brief Final result, diffusive flux/residual. */
-  su2double** Jacobian_i = nullptr;             /*!< \brief Flux Jacobian w.r.t. node i. */
-  su2double** Jacobian_j = nullptr;             /*!< \brief Flux Jacobian w.r.t. node j. */
+  enum : unsigned short {MAXNVAR = 8};
+
+  const FlowIndices idx;
+  su2double Proj_Mean_GradScalarVar_Normal[MAXNVAR]; /*!< \brief Mean_gradScalarVar DOT normal. */
+  su2double Proj_Mean_GradScalarVar[MAXNVAR];        /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
+  su2double proj_vector_ij = 0.0;             /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  su2double Flux[MAXNVAR];                    /*!< \brief Final result, diffusive flux/residual. */
+  su2double* Jacobian_i[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node i. */
+  su2double* Jacobian_j[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node j. */
 
   const bool correct_gradient = false, implicit = false, incompressible = false;
 
@@ -75,17 +79,68 @@ class CAvgGrad_Scalar : public CNumerics {
    * \param[in] correct_gradient - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar, bool correct_gradient, const CConfig* config);
+  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad,
+                  const CConfig* config)
+    : CNumerics(val_nDim, val_nVar, config),
+      idx(val_nDim, config->GetnSpecies()),
+      correct_gradient(correct_grad),
+      implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
+      incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+    if (nVar > MAXNVAR) {
+      SU2_MPI::Error("Static arrays are too small.", CURRENT_FUNCTION);
+    }
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = new su2double[nVar]();
+      Jacobian_j[iVar] = new su2double[nVar]();
+    }
+  }
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_Scalar(void) override;
+  ~CAvgGrad_Scalar() override {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      delete[] Jacobian_i[iVar];
+      delete[] Jacobian_j[iVar];
+    }
+  }
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
+  ResidualType<> ComputeResidual(const CConfig* config) final {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Coord_i, nDim);
+    AD::SetPreaccIn(Coord_j, nDim);
+    AD::SetPreaccIn(Normal, nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
+    if (correct_gradient) {
+      AD::SetPreaccIn(ScalarVar_i, nVar);
+      AD::SetPreaccIn(ScalarVar_j, nVar);
+    }
+    AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
+    AD::SetPreaccIn(V_j[idx.Density()], V_j[idx.LaminarViscosity()], V_j[idx.EddyViscosity()]);
+
+    Density_i = V_i[idx.Density()];
+    Density_j = V_j[idx.Density()];
+    Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+    Laminar_Viscosity_j = V_j[idx.LaminarViscosity()];
+    Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
+    Eddy_Viscosity_j = V_j[idx.EddyViscosity()];
+
+    ExtraADPreaccIn();
+
+    proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, ScalarVar_Grad_i, ScalarVar_Grad_j,
+                                              correct_gradient, ScalarVar_i, ScalarVar_j,
+                                              Proj_Mean_GradScalarVar_Normal, Proj_Mean_GradScalarVar);
+    FinishResidualCalc(config);
+
+    AD::SetPreaccOut(Flux, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  }
 };
