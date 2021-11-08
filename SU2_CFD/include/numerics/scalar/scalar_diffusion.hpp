@@ -49,13 +49,13 @@ class CAvgGrad_Scalar : public CNumerics {
  protected:
   enum : unsigned short {MAXNVAR = 8};
 
-  const FlowIndices idx;
-  su2double Proj_Mean_GradScalarVar_Normal[MAXNVAR]; /*!< \brief Mean_gradScalarVar DOT normal. */
-  su2double Proj_Mean_GradScalarVar[MAXNVAR];        /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
+  const FlowIndices idx;                      /*!< \brief Object to manage the access to the flow primitives. */
+  su2double Proj_Mean_GradScalarVar[MAXNVAR]; /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */
   su2double proj_vector_ij = 0.0;             /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   su2double Flux[MAXNVAR];                    /*!< \brief Final result, diffusive flux/residual. */
   su2double* Jacobian_i[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node i. */
   su2double* Jacobian_j[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];/*!< \brief Static storage for the two Jacobians. */
 
   const bool correct_gradient = false, implicit = false, incompressible = false;
 
@@ -90,18 +90,8 @@ class CAvgGrad_Scalar : public CNumerics {
       SU2_MPI::Error("Static arrays are too small.", CURRENT_FUNCTION);
     }
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double[nVar]();
-      Jacobian_j[iVar] = new su2double[nVar]();
-    }
-  }
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGrad_Scalar() override {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      delete[] Jacobian_i[iVar];
-      delete[] Jacobian_j[iVar];
+      Jacobian_i[iVar] = &JacobianBuffer[iVar * nVar];
+      Jacobian_j[iVar] = &JacobianBuffer[iVar * nVar + MAXNVAR * MAXNVAR];
     }
   }
 
@@ -133,9 +123,10 @@ class CAvgGrad_Scalar : public CNumerics {
 
     ExtraADPreaccIn();
 
+    su2double ProjGradScalarVarNoCorr[MAXNVAR];
     proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, ScalarVar_Grad_i, ScalarVar_Grad_j,
-                                              correct_gradient, ScalarVar_i, ScalarVar_j,
-                                              Proj_Mean_GradScalarVar_Normal, Proj_Mean_GradScalarVar);
+                                              correct_gradient, ScalarVar_i, ScalarVar_j, ProjGradScalarVarNoCorr,
+                                              Proj_Mean_GradScalarVar);
     FinishResidualCalc(config);
 
     AD::SetPreaccOut(Flux, nVar);

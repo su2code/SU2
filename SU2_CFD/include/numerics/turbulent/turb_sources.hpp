@@ -128,7 +128,7 @@ public:
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA final : public CSourceBase_TurbSA {
 private:
-  const FlowIndices idx;
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -167,7 +167,7 @@ public:
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_COMP final : public CSourceBase_TurbSA {
 private:
-  const FlowIndices idx;
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -205,7 +205,7 @@ public:
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_E final : public CSourceBase_TurbSA {
 private:
-  const FlowIndices idx;
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -241,7 +241,7 @@ public:
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_E_COMP : public CSourceBase_TurbSA {
 private:
-  const FlowIndices idx;
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -277,7 +277,7 @@ public:
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_Neg : public CSourceBase_TurbSA {
 private:
-  const FlowIndices idx;
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -312,7 +312,7 @@ public:
 template <class FlowIndices>
 class CSourcePieceWise_TurbSST final : public CNumerics {
 private:
-  const FlowIndices idx;
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
   su2double F1_i,
   F1_j,

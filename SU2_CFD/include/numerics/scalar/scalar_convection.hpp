@@ -47,12 +47,15 @@
 template <class FlowIndices>
 class CUpwScalar : public CNumerics {
  protected:
+  enum : unsigned short {MAXNVAR = 8};
+
   const FlowIndices idx;            /*!< \brief Object to manage the access to the flow primitives. */
   su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0. */
   su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0. */
-  su2double* Flux = nullptr;        /*!< \brief Final result, diffusive flux/residual. */
-  su2double** Jacobian_i = nullptr; /*!< \brief Flux Jacobian w.r.t. node i. */
-  su2double** Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double Flux[MAXNVAR];          /*!< \brief Final result, diffusive flux/residual. */
+  su2double* Jacobian_i[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node i. */
+  su2double* Jacobian_j[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];  /*!< \brief Static storage for the two Jacobians. */
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
@@ -82,27 +85,12 @@ class CUpwScalar : public CNumerics {
       implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
       incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
       dynamic_grid(config->GetDynamic_Grid()) {
-    Flux = new su2double[nVar];
-    Jacobian_i = new su2double*[nVar];
-    Jacobian_j = new su2double*[nVar];
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double[nVar];
-      Jacobian_j[iVar] = new su2double[nVar];
+    if (nVar > MAXNVAR) {
+      SU2_MPI::Error("Static arrays are too small.", CURRENT_FUNCTION);
     }
-  }
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwScalar() override {
-    delete[] Flux;
-    if (Jacobian_i != nullptr) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        delete[] Jacobian_i[iVar];
-        delete[] Jacobian_j[iVar];
-      }
-      delete[] Jacobian_i;
-      delete[] Jacobian_j;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = &JacobianBuffer[iVar * nVar];
+      Jacobian_j[iVar] = &JacobianBuffer[iVar * nVar + MAXNVAR * MAXNVAR];
     }
   }
 
