@@ -66,9 +66,9 @@ private:
   void FinishResidualCalc(const CConfig* config) override {
     /*--- Compute mean effective viscosity ---*/
 
-    su2double nu_i = Laminar_Viscosity_i/Density_i;
-    su2double nu_j = Laminar_Viscosity_j/Density_j;
-    su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
+    const su2double nu_i = Laminar_Viscosity_i/Density_i;
+    const su2double nu_j = Laminar_Viscosity_j/Density_j;
+    const su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
 
     Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
 
@@ -131,11 +131,11 @@ private:
   void FinishResidualCalc(const CConfig* config) override {
     /*--- Compute mean effective viscosity ---*/
 
-    su2double nu_i = Laminar_Viscosity_i/Density_i;
-    su2double nu_j = Laminar_Viscosity_j/Density_j;
+    const su2double nu_i = Laminar_Viscosity_i/Density_i;
+    const su2double nu_j = Laminar_Viscosity_j/Density_j;
 
-    su2double nu_ij = 0.5*(nu_i+nu_j);
-    su2double nu_tilde_ij = 0.5*(ScalarVar_i[0] + ScalarVar_j[0]);
+    const su2double nu_ij = 0.5*(nu_i+nu_j);
+    const su2double nu_tilde_ij = 0.5*(ScalarVar_i[0] + ScalarVar_j[0]);
 
     su2double nu_e;
 
@@ -143,8 +143,8 @@ private:
       nu_e = nu_ij + nu_tilde_ij;
     }
     else {
-      su2double Xi = nu_tilde_ij/nu_ij;
-      su2double fn = (cn1 + Xi*Xi*Xi)/(cn1 - Xi*Xi*Xi);
+      const su2double Xi = nu_tilde_ij/nu_ij;
+      const su2double fn = (cn1 + Xi*Xi*Xi)/(cn1 - Xi*Xi*Xi);
       nu_e = nu_ij + fn*nu_tilde_ij;
     }
 
