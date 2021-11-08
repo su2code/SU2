@@ -187,7 +187,7 @@ public:
     /*--- Need to avoid size of 1 otherwise the type becomes a vector (without [i][j]). ---*/
     constexpr unsigned short nSpeciesDummy = (NSPECIES == 1) ? 2 : NSPECIES;
     Matrix<nSpeciesDummy, nSpeciesDummy> dJdr_i, dJdr_j;
-    Matrix<nSpeciesDummy,1> Ys, Ys_i, Ys_j;
+    Matrix<1,NSPECIES> Ys, Ys_i, Ys_j;
 
     /*--- Play tricks on the compiler, in static mode use NVAR from the template, in dynamic mode
           use nVar from the class or from the arguments. ---*/
@@ -205,9 +205,9 @@ public:
     if (NSPECIES == DynamicSize) {
       dJdr_i.resize(nSpecies,nSpecies) = su2double(0.0);
       dJdr_j.resize(nSpecies,nSpecies) = su2double(0.0);
-      Ys.resize(nSpecies,1) = su2double(0.0);
-      Ys_i.resize(nSpecies,1) = su2double(0.0);
-      Ys_j.resize(nSpecies,1) = su2double(0.0);
+      Ys.resize(1,nSpecies) = su2double(0.0);
+      Ys_i.resize(1,nSpecies) = su2double(0.0);
+      Ys_j.resize(1,nSpecies) = su2double(0.0);
     }
 
     /*--- Calculate preliminary geometric quantities ---*/
