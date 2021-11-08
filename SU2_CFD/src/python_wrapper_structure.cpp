@@ -291,6 +291,7 @@ passivedouble CDriver::GetFlowObjective() const {
     if (config->GetFluidProblem()) {
         CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
 
+        solver->Evaluate_ObjFunc(config);
         return SU2_TYPE::GetValue(solver->GetTotal_ComboObj());
     }
     else {
@@ -786,27 +787,27 @@ vector<passivedouble> CDriver::GetFlowQuantities() const {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
         //  density
         value = solver->GetNodes()->GetDensity(iPoint);
-        values[nPrim*iPoint]     = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim]     = SU2_TYPE::GetValue(value);
 
         //  velocity
         value = solver->GetNodes()->GetVelocity(iPoint, 0);
-        values[nPrim*iPoint + 1] = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim + 1] = SU2_TYPE::GetValue(value);
         value = solver->GetNodes()->GetVelocity(iPoint, 1);
-        values[nPrim*iPoint + 2] = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim + 2] = SU2_TYPE::GetValue(value);
         value = solver->GetNodes()->GetVelocity(iPoint, 2);
-        values[nPrim*iPoint + 3] = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim + 3] = SU2_TYPE::GetValue(value);
 
         //  pressure
         value = solver->GetNodes()->GetPressure(iPoint);
-        values[nPrim*iPoint + 4] = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim + 4] = SU2_TYPE::GetValue(value);
 
         //  velocity of sound
         value = solver->GetNodes()->GetSoundSpeed(iPoint);
-        values[nPrim*iPoint + 5] = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim + 5] = SU2_TYPE::GetValue(value);
 
         //  temperature
         value = solver->GetNodes()->GetTemperature(iPoint);
-        values[nPrim*iPoint + 6] = SU2_TYPE::GetValue(value);
+        values[iPoint*nPrim + 6] = SU2_TYPE::GetValue(value);
     }
 
     return values;
@@ -833,23 +834,23 @@ vector<passivedouble> CDriver::GetFlowQuantities_Marker(unsigned short iMarker) 
 
         //  density
         value = solver->GetNodes()->GetDensity(iPoint);
-        values[nPrim*iPoint]     = SU2_TYPE::GetValue(value);
+        values[iVertex*nPrim]     = SU2_TYPE::GetValue(value);
 
         //  velocity
         value = solver->GetNodes()->GetVelocity(iPoint, 0);
-        values[nPrim*iPoint + 1] = SU2_TYPE::GetValue(value);
+        values[iVertex*nPrim + 1] = SU2_TYPE::GetValue(value);
         value = solver->GetNodes()->GetVelocity(iPoint, 1);
-        values[nPrim*iPoint + 2] = SU2_TYPE::GetValue(value);
+        values[iVertex*nPrim + 2] = SU2_TYPE::GetValue(value);
         value = solver->GetNodes()->GetVelocity(iPoint, 2);
-        values[nPrim*iPoint + 3] = SU2_TYPE::GetValue(value);
+        values[iVertex*nPrim + 3] = SU2_TYPE::GetValue(value);
 
         //  pressure
         value = solver->GetNodes()->GetPressure(iPoint);
-        values[nPrim*iPoint + 4] = SU2_TYPE::GetValue(value);
+        values[iVertex*nPrim + 4] = SU2_TYPE::GetValue(value);
 
         //  velocity of sound
         value = solver->GetNodes()->GetSoundSpeed(iPoint);
-        values[nPrim*iPoint + 5] = SU2_TYPE::GetValue(value);
+        values[iVertex*nPrim + 5] = SU2_TYPE::GetValue(value);
 
         //  temperature
         value = solver->GetNodes()->GetTemperature(iPoint);

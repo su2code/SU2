@@ -654,7 +654,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         
         if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
             /*--- Set the adjoint values of the primal solution. ---*/
-            std::cout << "Setting residual derivative for " << iPoint << std::endl;
             
             for (unsigned long iVar = 0; iVar < nVar; iVar++)
                 AD::SetDerivative(AD_ResidualIndex(iPoint, iVar), SU2_TYPE::GetValue(Solution[iVar]));
