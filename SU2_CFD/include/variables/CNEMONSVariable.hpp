@@ -128,11 +128,4 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity_ve(unsigned long iPoint) const override { return ThermalCond_ve(iPoint); }
-
-  /*!
-   * \brief Set the temperature at the wall
-   */
-  inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
-    Primitive(iPoint,T_INDEX) = temperature_wall;
-  }
 };

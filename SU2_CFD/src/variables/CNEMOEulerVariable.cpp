@@ -41,6 +41,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const CConfig *config,
                                        CNEMOGas *fluidmodel)
   : CFlowVariable(npoint, ndim, nvar, nvarprim, nvarprimgrad, config),
+    indices(ndim, config->GetnSpecies()),
     implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
   unsigned short iDim, iSpecies;
