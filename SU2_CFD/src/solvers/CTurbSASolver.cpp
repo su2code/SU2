@@ -32,8 +32,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver(false) { }
-
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config, false) {
 
@@ -1250,7 +1248,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), &nu_tilde);
 
       visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
-                                        nodes->GetGradient(iPoint));
+                                          nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
@@ -1366,7 +1364,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     const auto coord_i       = geometry->nodes->GetCoord(iPoint);
     const auto nNeigh        = geometry->nodes->GetnPoint(iPoint);
     const auto wallDistance  = geometry->nodes->GetWall_Distance(iPoint);
-    const auto primVarGrad   = flowNodes->GetGradient_Primitive(iPoint);
+    const auto velocityGrad  = flowNodes->GetVelocityGradient(iPoint);
     const auto vorticity     = flowNodes->GetVorticity(iPoint);
     const auto density       = flowNodes->GetDensity(iPoint);
     const auto laminarViscosity = flowNodes->GetLaminarViscosity(iPoint);
@@ -1377,7 +1375,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     su2double uijuij = 0.0;
     for(auto iDim = 0u; iDim < nDim; iDim++){
       for(auto jDim = 0u; jDim < nDim; jDim++){
-        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
+        uijuij += pow(velocityGrad[iDim][jDim], 2);
       }
     }
     uijuij = sqrt(fabs(uijuij));

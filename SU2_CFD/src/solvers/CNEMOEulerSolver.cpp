@@ -60,7 +60,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
-  unsigned short iMarker, nLineLets;
+  unsigned long iMarker;
+  unsigned short nLineLets;
   su2double *Mvec_Inf, Alpha, Beta;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -135,7 +136,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   Allocate(*config);
 
   /*--- Allocate Jacobians for implicit time-stepping or for ROM solution ---*/
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT or config->GetReduced_Model()) {
+  if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT or config->GetReduced_Model()) {
 
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;

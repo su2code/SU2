@@ -74,12 +74,7 @@ private:
 
 public:
   /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSASolver();
-
-  /*!
-   * \overload
+   * \brief Constructor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
