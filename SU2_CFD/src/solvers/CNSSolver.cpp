@@ -179,8 +179,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
 void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
 
-  unsigned long iVertex;
-  unsigned short iMarker, iMarker_Monitoring;
+  unsigned long iVertex, iMarker;
+  unsigned short iMarker_Monitoring;
   const su2double* Vel_FS = Velocity_Inf;
   const su2double k = config->GetBuffet_k(), lam = config->GetBuffet_lambda(), Sref = config->GetRefArea();
 
