@@ -330,7 +330,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.0197560, 20, -1.741326, 20, -4.864272]
+    turb_naca0012_sa.test_vals = [-8.621456, -10.378269, 1.064502, 0.019710, 20.000000, -1.811700, 20.000000, -5.171326]
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -641,7 +641,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 20
-    turbmod_sa_neg_rae2822.test_vals = [-2.004688, 0.742320, 0.497307, -5.265640, 0.809478, 0.061986]
+    turbmod_sa_neg_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True

@@ -44,18 +44,24 @@
  * \ingroup ConvDiscr
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
+template <class FlowIndices>
 class CUpwScalar : public CNumerics {
  protected:
-  su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0 */
-  su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0 */
-  su2double* Flux = nullptr;        /*!< \brief Final result, diffusive flux/residual. */
-  su2double** Jacobian_i = nullptr; /*!< \brief Flux Jacobian w.r.t. node i. */
-  su2double** Jacobian_j = nullptr; /*!< \brief Flux Jacobian w.r.t. node j. */
+  enum : unsigned short {MAXNVAR = 8};
+
+  const FlowIndices idx;            /*!< \brief Object to manage the access to the flow primitives. */
+  su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0. */
+  su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0. */
+  su2double Flux[MAXNVAR];          /*!< \brief Final result, diffusive flux/residual. */
+  su2double* Jacobian_i[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node i. */
+  su2double* Jacobian_j[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node j. */
+  su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];  /*!< \brief Static storage for the two Jacobians. */
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
   /*!
-   * \brief A pure virtual function; Adds any extra variables to AD
+   * \brief A pure virtual function. Derived classes must use it to register the additional
+   *        variables they use as preaccumulation inputs, e.g. the density for SST.
    */
   virtual void ExtraADPreaccIn() = 0;
 
@@ -69,21 +75,65 @@ class CUpwScalar : public CNumerics {
  public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwScalar(void) override;
+  CUpwScalar(unsigned short ndim, unsigned short nvar, const CConfig* config)
+    : CNumerics(ndim, nvar, config),
+      idx(ndim, config->GetnSpecies()),
+      implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
+      incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
+      dynamic_grid(config->GetDynamic_Grid()) {
+    if (nVar > MAXNVAR) {
+      SU2_MPI::Error("Static arrays are too small.", CURRENT_FUNCTION);
+    }
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = &JacobianBuffer[iVar * nVar];
+      Jacobian_j[iVar] = &JacobianBuffer[iVar * nVar + MAXNVAR * MAXNVAR];
+    }
+  }
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
+  CNumerics::ResidualType<> ComputeResidual(const CConfig* config) final {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Normal, nDim);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
+    AD::SetPreaccIn(ScalarVar_j, nVar);
+    if (dynamic_grid) {
+      AD::SetPreaccIn(GridVel_i, nDim);
+      AD::SetPreaccIn(GridVel_j, nDim);
+    }
+    AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
+    AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
+
+    ExtraADPreaccIn();
+
+    su2double q_ij = 0.0;
+    if (dynamic_grid) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        su2double Velocity_i = V_i[iDim + idx.Velocity()] - GridVel_i[iDim];
+        su2double Velocity_j = V_j[iDim + idx.Velocity()] - GridVel_j[iDim];
+        q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
+      }
+    } else {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        q_ij += 0.5 * (V_i[iDim + idx.Velocity()] + V_j[iDim + idx.Velocity()]) * Normal[iDim];
+      }
+    }
+
+    a0 = 0.5 * (q_ij + fabs(q_ij));
+    a1 = 0.5 * (q_ij - fabs(q_ij));
+
+    FinishResidualCalc(config);
+
+    AD::SetPreaccOut(Flux, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  }
 };
