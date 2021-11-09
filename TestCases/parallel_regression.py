@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.2.0 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -66,12 +66,12 @@ def main():
     thermalbath_frozen.tol       = 0.00001
     test_list.append(thermalbath_frozen)
 
-    # Inviscid single wedge
+    # Inviscid single wedge, implicit
     invwedge           = TestCase('invwedge')
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.956173,-1.480936,-16.738781,-17.063703,-17.011887,2.371977,1.732488,5.399642,0.953492]
+    invwedge.test_vals = [-0.998812, -1.524371, -18.301794, -18.629156, -18.575201, 2.318954, 2.011581,  5.366905, 0.919345]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -83,7 +83,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.173078, -5.697841, -20.831296, -20.719164, -23.419769, -1.564084, -2.069040, 2.203924, -2.590729]
+    visc_cone.test_vals = [-5.175785, -5.700548, -20.705025, -20.592408, -22.851499, -1.540045, -2.104353, 2.197906, -2.576183]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -330,7 +330,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.019756]
+    turb_naca0012_sa.test_vals = [-8.621456, -10.378269, 1.064502, 0.019710, 20.000000, -1.811700, 20.000000, -5.171326]
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -619,6 +619,82 @@ def main():
     fem_ns_unsteady_cylinder_ader.unsteady  = True
     fem_ns_unsteady_cylinder_ader.tol       = 0.00001
     test_list.append(fem_ns_unsteady_cylinder_ader)
+
+    ###########################
+    ### Turbulence modeling ###
+    ###########################
+
+    # SA Baseline (Identical to RANS SA RAE2822)
+    turbmod_sa_bsl_rae2822           = TestCase('turbmod_sa_bsl_rae2822')
+    turbmod_sa_bsl_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_bsl_rae2822.cfg_file  = "turb_SA_BSL_RAE2822.cfg"
+    turbmod_sa_bsl_rae2822.test_iter = 20
+    turbmod_sa_bsl_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
+    turbmod_sa_bsl_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turbmod_sa_bsl_rae2822.timeout   = 1600
+    turbmod_sa_bsl_rae2822.new_output = True
+    turbmod_sa_bsl_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_bsl_rae2822)
+
+    # SA Negative
+    turbmod_sa_neg_rae2822           = TestCase('turbmod_sa_neg_rae2822')
+    turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
+    turbmod_sa_neg_rae2822.test_iter = 20
+    turbmod_sa_neg_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
+    turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turbmod_sa_neg_rae2822.timeout   = 1600
+    turbmod_sa_neg_rae2822.new_output = True
+    turbmod_sa_neg_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_neg_rae2822)
+
+    # SA Compressibility Correction
+    turbmod_sa_comp_rae2822           = TestCase('turbmod_sa_comp_rae2822')
+    turbmod_sa_comp_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_comp_rae2822.cfg_file  = "turb_SA_COMP_RAE2822.cfg"
+    turbmod_sa_comp_rae2822.test_iter = 20
+    turbmod_sa_comp_rae2822.test_vals = [-2.004687, 0.742304, 0.497309, -5.266081, 0.809467, 0.062029]
+    turbmod_sa_comp_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turbmod_sa_comp_rae2822.timeout   = 1600
+    turbmod_sa_comp_rae2822.new_output = True
+    turbmod_sa_comp_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_comp_rae2822)
+
+    # SA Edwards
+    turbmod_sa_edw_rae2822           = TestCase('turbmod_sa_edw_rae2822')
+    turbmod_sa_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_edw_rae2822.cfg_file  = "turb_SA_EDW_RAE2822.cfg"
+    turbmod_sa_edw_rae2822.test_iter = 20
+    turbmod_sa_edw_rae2822.test_vals = [-2.004687, 0.742306, 0.497310, -5.290769, 0.809485, 0.062036]
+    turbmod_sa_edw_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turbmod_sa_edw_rae2822.timeout   = 1600
+    turbmod_sa_edw_rae2822.new_output = True
+    turbmod_sa_edw_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_edw_rae2822)
+
+    # SA Compressibility and Edwards
+    turbmod_sa_comp_edw_rae2822           = TestCase('turbmod_sa_comp_edw_rae2822')
+    turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
+    turbmod_sa_comp_edw_rae2822.test_iter = 20
+    turbmod_sa_comp_edw_rae2822.test_vals = [-2.004687, 0.742306, 0.497310, -5.290769, 0.809485, 0.062036]
+    turbmod_sa_comp_edw_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turbmod_sa_comp_edw_rae2822.timeout   = 1600
+    turbmod_sa_comp_edw_rae2822.new_output = True
+    turbmod_sa_comp_edw_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_comp_edw_rae2822)
+
+    # SA QCR
+    turbmod_sa_qcr_rae2822           = TestCase('turbmod_sa_qcr_rae2822')
+    turbmod_sa_qcr_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
+    turbmod_sa_qcr_rae2822.cfg_file  = "turb_SA_QCR_RAE2822.cfg"
+    turbmod_sa_qcr_rae2822.test_iter = 20
+    turbmod_sa_qcr_rae2822.test_vals = [-2.004793, 0.742353, 0.497315, -5.265974, 0.807841, 0.062027]
+    turbmod_sa_qcr_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turbmod_sa_qcr_rae2822.timeout   = 1600
+    turbmod_sa_qcr_rae2822.new_output = True
+    turbmod_sa_qcr_rae2822.tol       = 0.00001
+    test_list.append(turbmod_sa_qcr_rae2822)
 
     ############################
     ###      Transition      ###
@@ -1257,6 +1333,22 @@ def main():
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
     test_list.append(p1rad)
+
+
+    # #############################
+    # ### Solid Heat Conduction ###
+    # #############################
+
+    # 2D pins, periodically connected
+    solid_periodic_pins           = TestCase('solid_periodic_pins')
+    solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
+    solid_periodic_pins.cfg_file  = "configSolid.cfg"
+    solid_periodic_pins.test_iter = 750
+    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
+    solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
+    solid_periodic_pins.timeout   = 1600
+    solid_periodic_pins.tol       = 0.00001
+    test_list.append(solid_periodic_pins)
 
     # ###############################
     # ### Conjugate heat transfer ###

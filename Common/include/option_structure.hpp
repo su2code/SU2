@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -895,25 +895,25 @@ static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
 /*!
  * \brief Types of turbulent models
  */
-enum ENUM_TURB_MODEL {
-  NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
-  SA        = 1,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG    = 2,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_E      = 3,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP   = 4,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP = 5,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
-  SST       = 6,     /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST  = 7      /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
+enum class TURB_MODEL {
+  NONE,      /*!< \brief No turbulence model. */
+  SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
+  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
-static const MapType<std::string, ENUM_TURB_MODEL> Turb_Model_Map = {
-  MakePair("NONE", NO_TURB_MODEL)
-  MakePair("SA", SA)
-  MakePair("SA_NEG", SA_NEG)
-  MakePair("SA_E", SA_E)
-  MakePair("SA_COMP", SA_COMP)
-  MakePair("SA_E_COMP", SA_E_COMP)
-  MakePair("SST", SST)
-  MakePair("SST_SUST", SST_SUST)
+static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
+  MakePair("NONE", TURB_MODEL::NONE)
+  MakePair("SA", TURB_MODEL::SA)
+  MakePair("SA_NEG", TURB_MODEL::SA_NEG)
+  MakePair("SA_E", TURB_MODEL::SA_E)
+  MakePair("SA_COMP", TURB_MODEL::SA_COMP)
+  MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
+  MakePair("SST", TURB_MODEL::SST)
+  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -1658,12 +1658,13 @@ enum ENUM_OUTPUT {
   MESH                    = 11, /*!< \brief SU2 mesh format. */
   RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
   RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
-  CGNS                    = 14, /*!< \brief CGNS format. */
-  STL                     = 15, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 16, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
-  PARAVIEW_XML            = 17, /*!< \brief Paraview XML with binary data format */
-  SURFACE_PARAVIEW_XML    = 18, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 19  /*!< \brief Paraview XML Multiblock */
+  STL                     = 14, /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY              = 15, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  PARAVIEW_XML            = 16, /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML    = 17, /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK     = 18, /*!< \brief Paraview XML Multiblock */
+  CGNS                    = 19, /*!< \brief CGNS format. */
+  SURFACE_CGNS            = 20  /*!< \brief CGNS format. */
 };
 static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("TECPLOT_ASCII", TECPLOT)
@@ -1682,6 +1683,7 @@ static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("RESTART_ASCII", RESTART_ASCII)
   MakePair("RESTART", RESTART_BINARY)
   MakePair("CGNS", CGNS)
+  MakePair("SURFACE_CGNS", SURFACE_CGNS)
   MakePair("STL", STL)
   MakePair("STL_BINARY", STL_BINARY)
 };

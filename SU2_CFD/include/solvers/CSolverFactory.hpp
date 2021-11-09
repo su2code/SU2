@@ -2,7 +2,7 @@
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -100,7 +100,7 @@ private:
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
    * \return                  - A pointer to the allocated turbulent solver
    */
-  static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
+  static CSolver* CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
 
   /*!
    * \brief Create a heat solver
