@@ -2764,7 +2764,7 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
         if (configs->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
           for (unsigned short iVar = 0; iVar < solvers[SPECIES_SOL]->GetnVar(); iVar++) {
             if (!addVals)
-              RMSTable.AddColumn("rms_Scal" + iVar_iZone2string(iVar, iZone), fieldWidth);
+              RMSTable.AddColumn("rms_Spec" + iVar_iZone2string(iVar, iZone), fieldWidth);
             else
               RMSTable << log10(solvers[SPECIES_SOL]->GetRes_RMS(iVar));
           }
