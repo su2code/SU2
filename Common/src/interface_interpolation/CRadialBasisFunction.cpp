@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -143,10 +143,10 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                                     Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
     /*--- Gather coordinates and global point indices. ---*/
-    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
+    Buffer_Send_GlobalPoint.resize(MaxLocalVertex_Donor);
+    Buffer_Receive_Coord.resize(nProcessor * MaxLocalVertex_Donor, nDim);
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
 
@@ -163,18 +163,13 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       auto offset = iProcessor * MaxLocalVertex_Donor;
       for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
         for (int iDim = 0; iDim < nDim; ++iDim)
-          donorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord(offset+iVertex, iDim);
         donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
         donorProc[iCount] = iProcessor;
         ++iCount;
       }
     }
     assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_GlobalPoint;
 
     /*--- Give an MPI-independent order to the points (required due to high condition
      *    number of the RBF matrix, avoids diff results with diff number of ranks. ---*/

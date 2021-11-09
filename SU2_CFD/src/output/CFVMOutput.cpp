@@ -2,7 +2,7 @@
  * \file CFVMOutput.cpp
  * \brief Main subroutines for Finite Volume Method output
  * \author T. Kattmann
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 
 
-CFVMOutput::CFVMOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){ }
+CFVMOutput::CFVMOutput(const CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){ }
 
 void CFVMOutput::AddCoordinates() {
 

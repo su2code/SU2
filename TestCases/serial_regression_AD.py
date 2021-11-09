@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -84,7 +84,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230556, 0.696586, 0.180740, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.230555, 0.645023, 0.180740, -0.000018, 5.000000, -4.275184, 5.000000, -8.892454] #last 8 columns
     discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001

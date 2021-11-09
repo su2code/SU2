@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,17 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/variables/CBFMVariable.hpp"
 
-CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
-  gridMovement = config->GetDynamic_Grid();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -121,17 +119,17 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
     /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
     AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
     AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
     AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
   /// END_GROUP
 
@@ -148,17 +146,17 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
     AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
     break;
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
     AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
     AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
   /// END_GROUP
 
@@ -175,17 +173,17 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
 
   switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
     /// DESCRIPTION: Maximum residual of nu tilde (SA model).
     AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  HistoryFieldType::RESIDUAL);
     break;
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
     AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
     AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
   /// END_GROUP
 
@@ -204,6 +202,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  if (turb_model != TURB_MODEL::NONE) {
+    AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
+  }
 
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
@@ -226,8 +228,6 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
@@ -282,6 +282,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   Add_CpInverseDesignOutput();
 
+  /*--- Add nearfield diff fields ---*/
+
+  Add_NearfieldInverseDesignOutput();
+
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -299,15 +303,15 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   // Turbulent Residuals
   switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
     AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
     break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
     AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
     break;
-  case NONE:
+  case TURB_MODEL::NONE:
     break;
   }
 
@@ -355,15 +359,15 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL", "Residual of the energy");
 
   switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
     AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
     break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
     AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
     break;
-  case NONE:
+  case TURB_MODEL::NONE:
     break;
   }
 
@@ -380,15 +384,15 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
     switch(config->GetKind_Turb_Model()){
-    case SST: case SST_SUST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
       AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
       break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
       AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
       break;
-    case NONE:
+    case TURB_MODEL::NONE:
       break;
     }
   }
@@ -450,7 +454,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
   CVariable* Node_BFM = nullptr;
-  if (config->GetKind_Turb_Model() != NONE){
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
   if(config->GetBFM()){
@@ -469,15 +473,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   // Turbulent Residuals
   switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     SetVolumeOutputValue("TKE",         iPoint, Node_Turb->GetSolution(iPoint, 0));
     SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
     break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
     SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
     break;
-  case NONE:
+  case TURB_MODEL::NONE:
     break;
   }
 
@@ -522,15 +526,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
     SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
     break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
     SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
     break;
-  case NONE:
+  case TURB_MODEL::NONE:
     break;
   }
 
@@ -547,15 +551,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
     switch(config->GetKind_Turb_Model()){
-    case SST: case SST_SUST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
       SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
       break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
       SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
       break;
-    case NONE:
+    case TURB_MODEL::NONE:
       break;
     }
   }
@@ -577,7 +581,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetGradient_Primitive(iPoint,1)));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
@@ -635,14 +639,14 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   }
 
   switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
     SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
 
   SetHistoryOutputValue("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
@@ -656,14 +660,14 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   }
 
   switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
     SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
     break;
-  case SST: case SST_SUST:
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
     SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
-  default: break;
+  case TURB_MODEL::NONE: break;
   }
 
   if (multiZone){
@@ -679,14 +683,14 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 
     switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
       break;
-    case SST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
       SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
       break;
-    default: break;
+    case TURB_MODEL::NONE: break;
     }
   }
 
@@ -702,6 +706,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
+  if (turb_model != TURB_MODEL::NONE) {
+    SetHistoryOutputValue("LINSOL_ITER_TURB", turb_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(turb_solver->GetResLinSolver()));
+  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -737,6 +745,9 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(flow_solver, geometry, config);
+
+  /*--- Set nearfield diff fields ---*/
+  if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
 }
 

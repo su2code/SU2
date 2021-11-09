@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,7 +54,7 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
-  rans = (config->GetKind_Turb_Model() != NONE);
+  rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
 }
 
@@ -154,7 +154,7 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
   residual[2] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[2][1]-v*yinv)
                          -TWO3*AuxVar_Grad_i[0][1]);
   residual[3] -= Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
-                                                 +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
+                                                 +v*TWO3*(2*PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0]
                                                  -v*yinv+U_i[0]*turb_ke_i))
                                                  +total_conductivity_i*PrimVar_Grad_i[0][1])
                                                  -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
@@ -716,7 +716,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
                                                              CConfig        *config) :
                                CSourceBase_Flow(val_nDim, val_nVar, config) {
 
-  turbulent = (config->GetKind_Turb_Model() != NONE);
+  turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   energy    = config->GetEnergy_Equation();
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
 

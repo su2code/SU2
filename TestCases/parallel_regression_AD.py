@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -75,6 +75,17 @@ def main():
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
     
+    # Equivalent area NACA64-206
+    ea_naca64206              = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file     = "NACA64206.cfg"
+    ea_naca64206.test_iter    = 10
+    ea_naca64206.test_vals    = [3.181093, 2.471539, -5487700.0, 8.3604]
+    ea_naca64206.su2_exec     = "mpirun -n 2 SU2_CFD_AD"
+    ea_naca64206.timeout      = 1600
+    ea_naca64206.tol          = 0.00001
+    test_list.append(ea_naca64206)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -84,7 +95,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.696567, 0.181590, -0.000018]
+    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.645001, 0.181590, -0.000018, 5.000000, -3.421214, 5.000000, -6.769609]
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001

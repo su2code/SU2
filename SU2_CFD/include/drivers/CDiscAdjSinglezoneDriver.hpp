@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CDiscAdjSinglezoneDriver
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
@@ -111,12 +111,6 @@ public:
    * \brief Initialize the adjoint value of the objective function.
    */
   void SetAdj_ObjFunction(void);
-
-  /*!
-   * \brief Print out the direct residuals.
-   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
-   */
-  void Print_DirectResidual(RECORDING kind_recording);
 
   /*!
    * \brief Record the main computational path.

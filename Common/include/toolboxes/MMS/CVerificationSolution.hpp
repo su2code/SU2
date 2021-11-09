@@ -3,7 +3,7 @@
  * \brief Header file for the base class CVerificationSolution.
  *        The implementations are in the <i>CVerificationSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

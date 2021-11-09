@@ -2,7 +2,7 @@
  * \file CNEMOCompOutput.hpp
  * \brief  Headers of the compressible flow output.
  * \author R. Sanchez, W. Maier.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,9 +38,9 @@ class CVariable;
 class CNEMOCompOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model, /*!< \brief Kind of turbulence model */
-                 iSpecies,   /*!< \brief Species index */
-                 nSpecies;   /*!< \brief Number of species */
+  TURB_MODEL turb_model;   /*!< \brief Kind of turbulence model */
+  unsigned short iSpecies, /*!< \brief Species index */
+                 nSpecies; /*!< \brief Number of species */
 public:
 
   /*!

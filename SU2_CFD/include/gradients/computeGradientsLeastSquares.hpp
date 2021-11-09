@@ -3,7 +3,7 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -203,7 +203,8 @@ void computeGradientsLeastSquares(CSolver* solver,
     auto nodes = geometry.nodes;
     const auto coord_i = nodes->GetCoord(iPoint);
 
-    AD::StartPreacc();
+    /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+    if (omp_get_num_threads() == 1) AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)

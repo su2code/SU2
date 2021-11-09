@@ -3,7 +3,7 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -749,7 +749,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6,6,3> {
 private:

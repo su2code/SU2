@@ -2,7 +2,7 @@
  * \file CNumerics_tests.cpp
  * \brief Unit tests for the numerics classes.
  * \author C. Pederson
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

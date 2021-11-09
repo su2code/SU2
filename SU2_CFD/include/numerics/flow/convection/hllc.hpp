@@ -2,7 +2,7 @@
  * \file hllc.hpp
  * \brief Declaration of HLLC numerics classes, implemented in hllc.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CUpwHLLC_Flow final : public CNumerics {
 private:
@@ -86,7 +86,7 @@ public:
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:

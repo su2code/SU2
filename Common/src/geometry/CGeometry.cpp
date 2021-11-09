@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@ CGeometry::CGeometry(void) :
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iFace, iVertex;
+  unsigned long iElem, iElem_Bound, iVertex;
   unsigned short iMarker;
 
   if (elem != nullptr) {
@@ -56,12 +56,6 @@ CGeometry::~CGeometry(void) {
       delete [] bound[iMarker];
     }
     delete [] bound;
-  }
-
-  if (face != nullptr) {
-    for (iFace = 0; iFace < nFace; iFace ++)
-      delete face[iFace];
-    delete[] face;
   }
 
   delete nodes;
@@ -1493,7 +1487,7 @@ void CGeometry::TestGeometry(void) const {
 }
 
 bool CGeometry::SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                                                           const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
+                                       const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
   su2double epsilon = 1E-6; // An epsilon is added to eliminate, as much as possible, the posibility of a line that intersects a point
   unsigned short iDim;
@@ -2436,8 +2430,8 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
 
-    geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
-    geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh-1], UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
   }

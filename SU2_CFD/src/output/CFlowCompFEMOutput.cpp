@@ -2,7 +2,7 @@
  * \file CFlowCompFEMOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,8 +34,6 @@
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, true) {
 
   turb_model = config->GetKind_Turb_Model();
-
-  gridMovement = config->GetGrid_Movement();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

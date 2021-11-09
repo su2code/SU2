@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1889,7 +1889,7 @@ public:
           this->doubleInfo[i] = new su2double[1];
 
           /* Check for a valid RANS turbulence model. */
-          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          map<string, TURB_MODEL>::const_iterator iit;
           iit = Turb_Model_Map.find(option_value[counter++]);
           if(iit == Turb_Model_Map.end()) {
             string newstring;
@@ -1903,8 +1903,6 @@ public:
             newstring.append(", specified");
             return newstring;
           }
-
-          this->intInfo[i][0] = iit->second;
 
           /* Extract the exchange distance. */
           istringstream ss_1st(option_value[counter++]);

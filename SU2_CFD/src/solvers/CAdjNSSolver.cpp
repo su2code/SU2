@@ -2,7 +2,7 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -485,9 +485,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
 
-      numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
+      numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint), nullptr);
 
-      numerics->SetTurbVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
+      numerics->SetScalarVarGradient(solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint), nullptr);
 
       /*--- Turbulent adjoint variables w/o reconstruction and its gradient ---*/
 
@@ -540,7 +540,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Turbulent variables w/o reconstruction ---*/
 
-      second_numerics->SetTurbVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint),
+      second_numerics->SetScalarVar(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint),
                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint));
 
       /*--- Turbulent adjoint variables w/o reconstruction ---*/
@@ -772,7 +772,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
             /*--- Turbulent kinetic energy ---*/
 
-            if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+            if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
               val_turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
             else
               val_turb_ke = 0.0;

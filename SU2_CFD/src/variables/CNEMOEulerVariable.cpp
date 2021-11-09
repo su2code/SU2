@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,7 @@
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
-                                       su2double *val_mach,
+                                       const su2double *val_mach,
                                        su2double val_temperature,
                                        su2double val_temperature_ve,
                                        unsigned long npoint,
@@ -38,19 +38,15 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        unsigned long nvar,
                                        unsigned long nvarprim,
                                        unsigned long nvarprimgrad,
-                                       CConfig *config,
-                                       CNEMOGas *fluidmodel) : CVariable(npoint,
-                                                                         ndim,
-                                                                         nvar,
-                                                                         config ),
-                                       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
+                                       const CConfig *config,
+                                       CNEMOGas *fluidmodel)
+  : CFlowVariable(npoint, ndim, nvar, nvarprim, nvarprimgrad, config),
+    indices(ndim, config->GetnSpecies()),
+    implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
   unsigned short iDim, iSpecies;
 
   /*--- Setting variable amounts ---*/
-  nDim            = ndim;
-  nPrimVar        = nvarprim;
-  nPrimVarGrad    = nvarprimgrad;
 
   nSpecies        = config->GetnSpecies();
   RHOS_INDEX      = 0;
@@ -72,9 +68,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     Tve_Freestream = config->GetTemperature_ve_FreeStream();
   }
 
-  /*--- Allocate & initialize residual vectors ---*/
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
-
   /*--- Size Grad_AuxVar for axiysmmetric ---*/
   if (config->GetAxisymmetric()){
     nAuxVar = 3;
@@ -82,29 +75,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
   }
 
-  /*--- Only for residual smoothing (multigrid) ---*/
-  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
-      Residual_Sum.resize(nPoint,nVar);
-      Residual_Old.resize(nPoint,nVar);
-      break;
-    }
-  }
-
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-    Undivided_Laplacian.resize(nPoint,nVar);
-
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-
-  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-
   /*--- Primitive and secondary variables ---*/
-  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
   Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
   Secondary.resize(nPoint,nPrimVar) = su2double(0.0);
 
@@ -115,32 +86,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   Gamma.resize(nPoint)           = su2double(0.0);
 
-  /*--- Compressible flow, gradients primitive variables ---*/
-  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  Gradient.resize(nPoint,nVar,nDim,0.0);
-
-  if (config->GetReconstructionGradientRequired()) {
-    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
-  }
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
-  }
-
-  Velocity2.resize(nPoint) = su2double(0.0);
-  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
-  Delta_Time.resize(nPoint) = su2double(0.0);
-  Lambda.resize(nPoint) = su2double(0.0);
-  Sensor.resize(nPoint) = su2double(0.0);
-
-  /* Non-physical point (first-order) initialization. */
-  Non_Physical.resize(nPoint) = false;
-  Non_Physical_Counter.resize(nPoint) = 0;
-
-  /* Under-relaxation parameter. */
-  UnderRelaxation.resize(nPoint) = su2double(1.0);
-  LocalCFL.resize(nPoint) = su2double(0.0);
-
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
 
@@ -149,7 +94,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   const su2double soundspeed = fluidmodel->ComputeSoundSpeed();
   const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, val_mach) * pow(soundspeed,2);
   const auto& energies = fluidmodel->ComputeMixtureEnergies();
-  
+
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
 
@@ -267,42 +212,21 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[TVE_INDEX] = T[1];
 
   // Determine if the temperature lies within the acceptable range
-  if (V[T_INDEX] <= Tmin)      { nonPhys = true;}
-  else if (V[T_INDEX] >= Tmax) { nonPhys = true;}
-  else if (V[T_INDEX] != V[T_INDEX] || V[TVE_INDEX] != V[TVE_INDEX]){
-    nonPhys = true;}
+  if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
+  else if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
+  else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
 
-  /*--- Vibrational-Electronic Temperature ---*/
-  vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);
-  vector<su2double> eves_max = fluidmodel->ComputeSpeciesEve(Tvemax);
-
-  // Check for non-physical solutions
   if (!monoatomic){
-    su2double rhoEve_min = 0.0;
-    su2double rhoEve_max = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      rhoEve_min += U[iSpecies] * eves_min[iSpecies];
-      rhoEve_max += U[iSpecies] * eves_max[iSpecies];
-    }
-
-    if (rhoEve < rhoEve_min) {
-
-      nonPhys      = true;
-      V[TVE_INDEX] = Tvemin;
-      U[nSpecies+nDim+1] = rhoEve_min;
-    } else if (rhoEve > rhoEve_max) {
-      nonPhys      = true;
-      V[TVE_INDEX] = Tvemax;
-      U[nSpecies+nDim+1] = rhoEve_max;
-    }
-  } else {
-    //TODO: can e-modes/vibe modes be active?
-    V[TVE_INDEX] = Tve_Freestream;
+    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
   }
+  else {V[TVE_INDEX] = Tve_Freestream;}
 
   // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
-  const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle();
+
+  const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle(V[TVE_INDEX]);
   vector<su2double> eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -310,11 +234,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     val_Cvves[iSpecies] = cvves[iSpecies];
   }
 
-  su2double rhoCvtr = fluidmodel->ComputerhoCvtr();
-  su2double rhoCvve = fluidmodel->ComputerhoCvve();
-
-  V[RHOCVTR_INDEX] = rhoCvtr;
-  V[RHOCVVE_INDEX] = rhoCvve;
+  V[RHOCVTR_INDEX] = fluidmodel->ComputerhoCvtr();
+  V[RHOCVVE_INDEX] = fluidmodel->ComputerhoCvve();
 
   /*--- Pressure ---*/
   V[P_INDEX] = fluidmodel->ComputePressure();
@@ -325,9 +246,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Partial derivatives of pressure and temperature ---*/
-  fluidmodel->ComputedPdU  (V, eves, val_dPdU  );
-  fluidmodel->ComputedTdU  (V, val_dTdU );
-  fluidmodel->ComputedTvedU(V, eves, val_dTvedU);
+  if(implicit){
+    fluidmodel->ComputedPdU  (V, eves, val_dPdU  );
+    fluidmodel->ComputedTdU  (V, val_dTdU );
+    fluidmodel->ComputedTvedU(V, eves, val_dTvedU);
+  }
 
   /*--- Sound speed ---*/
   V[A_INDEX] = fluidmodel->ComputeSoundSpeed();
@@ -337,5 +260,3 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   return nonPhys;
 }
-
-void CNEMOEulerVariable::SetSolution_New() { Solution_New = Solution; }

@@ -2,7 +2,7 @@
  * \file fem_cgns_elements.cpp
  * \brief CGNS element definitions and conversions to the SU2 standard.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,8 @@
 #include <cmath>
 #include <climits>
 #include <algorithm>
+
+using namespace std;
 
 #if CGNS_VERSION >= 3300
 

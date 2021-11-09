@@ -2,7 +2,7 @@
  * \file CPrimalGrid.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,59 +27,25 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
 
-unsigned short CPrimalGrid::nDim;
+CPrimalGrid::CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements) :
+  Nodes(new unsigned long[nNodes]),
+  Neighbor_Elements(new long[nNeighbor_Elements]),
+  FEM(FEM) {
 
-CPrimalGrid::CPrimalGrid(void) {
-
-  /*--- Set the default values for the pointers ---*/
-  Nodes = nullptr;
-  Neighbor_Elements = nullptr;
-  ElementOwnsFace = nullptr;
-  PeriodIndexNeighbors = nullptr;
-  JacobianFaceIsConstant = nullptr;
-  GlobalIndex = 0;
-
-}
-
-CPrimalGrid::~CPrimalGrid() {
-
- delete[] Nodes;
- delete[] Neighbor_Elements;
- delete[] ElementOwnsFace;
- delete[] PeriodIndexNeighbors;
- delete[] JacobianFaceIsConstant;
-}
-
-void CPrimalGrid::GetAllNeighbor_Elements() {
-  cout << "( ";
-  for (unsigned short iFace = 0; iFace < GetnFaces(); iFace++)
-  {
-    cout << GetNeighbor_Elements(iFace) << ", ";
-  }
-  cout << ")"  << endl;
-}
-
-void CPrimalGrid::InitializeJacobianConstantFaces(unsigned short val_nFaces) {
-
-  /*--- Allocate the memory for JacobianFaceIsConstant and initialize
-        its values to false.     ---*/
-  JacobianFaceIsConstant = new bool[val_nFaces];
-  for(unsigned short i=0; i<val_nFaces; ++i)
-    JacobianFaceIsConstant[i] = false;
+  GlobalIndex_DomainElement = 0;
+  for(unsigned short i = 0; i < nNeighbor_Elements; i++)
+    Neighbor_Elements[i] = -1;
 }
 
 void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {
 
-  /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
-        initialize the arrays to -1 to indicate that no neighbor is present and
+  /*--- Initialize arrays to -1/false to indicate that no neighbor is present and
         that no periodic transformation is needed to the neighbor. ---*/
-  Neighbor_Elements    = new long[val_nFaces];
-  ElementOwnsFace      = new bool[val_nFaces];
-  PeriodIndexNeighbors = new short[val_nFaces];
-
-  for(unsigned short i=0; i<val_nFaces; ++i) {
-    Neighbor_Elements[i]    = -1;
-    ElementOwnsFace[i]      =  false;
+  for (size_t i = 0; i < val_nFaces; i++) {
+    Neighbor_Elements[i] = -1;
     PeriodIndexNeighbors[i] = -1;
   }
+
+  for (auto i = 0; i < N_FACES_MAXIMUM; ++i)
+    ElementOwnsFace[i] = false;
 }

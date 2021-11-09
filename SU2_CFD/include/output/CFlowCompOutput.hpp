@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.hpp
  * \brief  Headers of the compressible flow output.
  * \author R. Sanchez, T. Albring.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@ class CVariable;
 class CFlowCompOutput final: public CFlowOutput {
 private:
 
-  unsigned short turb_model; //!< Kind of turbulence model
+  TURB_MODEL turb_model; //!< Kind of turbulence model
 
 public:
 
@@ -47,7 +47,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowCompOutput(CConfig *config, unsigned short nDim);
+  CFlowCompOutput(const CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Load the history output field values

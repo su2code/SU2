@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,12 +39,8 @@
 class CTransLMSolver final : public CTurbSolver {
 private:
   su2double Intermittency_Inf, REth_Inf;
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTransLMSolver(void);
 
+public:
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.

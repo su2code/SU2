@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_SOL
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.1.1 "Blackbird"
+# \version 7.2.1 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

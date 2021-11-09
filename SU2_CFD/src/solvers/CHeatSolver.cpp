@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -158,6 +158,19 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   nodes = new CHeatVariable(config->GetTemperature_FreeStreamND(), nPoint, nDim, nVar, config);
 
   SetBaseClassPointerToNodes();
+
+  /*--- Communicate and store volume and the number of neighbors for any dual CVs that lie on on periodic markers. ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  /*--- Store if implicit scheme is used. This has implications on the Residual and Jacobian handling for periodic
+   * boundaries  ---*/
+  const bool euler_implicit = (config->GetKind_TimeIntScheme_Heat() == EULER_IMPLICIT);
+  SetImplicitPeriodic(euler_implicit);
+
 
   /*--- MPI solution ---*/
 
@@ -893,6 +906,20 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
   }
 }
 
+void CHeatSolver::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                                           CConfig* config) {
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. For implicit calculations
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+}
+
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned long iPointNormal;
@@ -1274,11 +1301,12 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
+    const su2double dt = nodes->GetDelta_Time(iPoint);
+    if (dt != 0.0) {
+      /*--- For nodes on periodic boundaries, add the respective partner volume. ---*/
       // Identical for flow and heat
-      const su2double Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Vol / dt);
 
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -1324,6 +1352,12 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint,iVar, LinSysSol[iPoint*nVar+iVar]);
     }
+  }
+
+  /*--- Synchronize the solution between master and passive periodic nodes after the linear solve. ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
   /*--- MPI solution ---*/

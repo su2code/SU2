@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2082,7 +2082,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
   /*--- Loop boundary edges ---*/
 
   for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -3544,7 +3545,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   auto profile_filename = config->GetInlet_FileName();
 
   unsigned short nVar_Turb = 0;
-  if (config->GetKind_Turb_Model() != NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
@@ -3630,15 +3631,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
 
     switch (config->GetKind_Turb_Model()) {
-      case NO_TURB_MODEL:
-        /*--- no turbulence model---*/
-        break;
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case TURB_MODEL::NONE: break;
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE   " << setw(24);
         columnValue << config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND() <<"\t";
         break;
-      case SST: case SST_SUST:
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
         /*--- 2-equation turbulence model (SST) ---*/
         columnName << "TKE        " << setw(24) << "DISSIPATION";
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
@@ -4003,7 +4002,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         if (viscous_flow) {
           su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
           su2double Tau[3][3];
-          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
           }
@@ -4231,7 +4230,7 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 }
 
 void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
-  
+
 #if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   const bool unsteady            = config->GetTime_Domain();
   const string filename          = config->GetlibROMbase_FileName();
@@ -4243,38 +4242,38 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
   bool incremental = false;
 
   if (!u_basis_generator) {
-    
+
     /*--- Define SVD basis generator ---*/
     auto timesteps = static_cast<int>(nTimeIter - TimeIter);
     CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
                                                 false, true).setMaxBasisDimension(int(maxBasisDim));
-    
+
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
       if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
-      
+
       if (unsteady) {
         if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
       }
     }
     else {
       if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
-      
+
       svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
                                     1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
       incremental = true;
     }
-    
+
     u_basis_generator.reset(new CAROM::BasisGenerator(
       svd_options, incremental,
       filename));
-    
+
     // Save mesh ordering
     std::ofstream f;
     f.open(filename + "_mesh_" + to_string(rank) + ".csv");
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
-        
+
         for (unsigned long iDim; iDim < nDim; iDim++) {
           f << Coord[iDim] << ", ";
         }
@@ -4289,31 +4288,31 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
     su2double t =  config->GetCurrent_UnstTime();
     u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
   }
-   
+
   /*--- End collection of data and save POD ---*/
-  
+
   if (converged) {
-  
+
     if (!unsteady) {
        // dt is different for each node, so just use a placeholder dt
        su2double dt = base_nodes->GetDelta_Time(0);
        su2double t = dt*TimeIter;
        u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
     }
-    
+
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
       u_basis_generator->writeSnapshot();
     }
-    
+
     if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
     int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
-    
+
     if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
     u_basis_generator->endSamples();
-    
+
     if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
   }
-  
+
 #else
   SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
 #endif

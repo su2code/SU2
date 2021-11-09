@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.hpp
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

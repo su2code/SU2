@@ -2,7 +2,7 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,10 +42,12 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
   /*--- Define transport model ---*/
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     transport_model = "Wilke";
-  else if (Kind_TransCoeffModel == GUPTAYOS)
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     transport_model = "Gupta-Yos";
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
+    transport_model = "Chapmann-Enskog_LDLT";
 
   opt.setStateModel("ChemNonEqTTv");
   if (frozen) opt.setMechanism("none");
@@ -101,7 +103,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
 }
 
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){
+vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
    mix->getCvsMass(Cv_ks.data());
 
@@ -130,7 +132,9 @@ vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_
   return eves;
 }
 
-vector<su2double>& CMutationTCLib::ComputeNetProductionRates(){
+vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                               su2double **val_jacobian){
 
   mix->netProductionRates(ws.data());
 

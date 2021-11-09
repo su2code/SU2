@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2129,7 +2129,6 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
   nPoint       = nLocal_Point;
   nPointDomain = nLocal_PointDomain;
-  nPointNode   = nPoint;
 
   nodes = new CPoint(nPoint, nDim, MESH_0, config);
 
@@ -2309,7 +2308,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
     elem[jElem] = new CTriangle(Local_Nodes[0],
                                 Local_Nodes[1],
-                                Local_Nodes[2], 2);
+                                Local_Nodes[2]);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2342,7 +2341,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     elem[jElem] = new CQuadrilateral(Local_Nodes[0],
                                      Local_Nodes[1],
                                      Local_Nodes[2],
-                                     Local_Nodes[3], 2);
+                                     Local_Nodes[3]);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2724,7 +2723,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
       /*--- Create the geometry object for this element. ---*/
 
       bound[iMarker][nElemBound_Local[iMarker]] = new CLine(Local_Nodes[0],
-                                                            Local_Nodes[1], 2);
+                                                            Local_Nodes[1]);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -2757,7 +2756,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
       bound[iMarker][nElemBound_Local[iMarker]] = new CTriangle(Local_Nodes[0],
                                                                 Local_Nodes[1],
-                                                                Local_Nodes[2], 3);
+                                                                Local_Nodes[2]);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -2791,7 +2790,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
       bound[iMarker][nElemBound_Local[iMarker]] = new CQuadrilateral(Local_Nodes[0],
                                                                      Local_Nodes[1],
                                                                      Local_Nodes[2],
-                                                                     Local_Nodes[3], 3);
+                                                                     Local_Nodes[3]);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -3328,7 +3327,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
     if (SendDomainLocal[iDomain].size() != 0) {
       for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerSend); iVertex++) {
         LocalNode = SendDomainLocal[iDomain][iVertex];
-        bound[iMarkerSend][iVertex] = new CVertexMPI(LocalNode, nDim);
+        bound[iMarkerSend][iVertex] = new CVertexMPI(LocalNode);
         bound[iMarkerSend][iVertex]->SetRotation_Type(SendTransfLocal[iDomain][iVertex]);
       }
       Marker_All_SendRecv[iMarkerSend] = iDomain+1;
@@ -3341,7 +3340,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerReceive); iVertex++) {
         LocalNode = ReceivedDomainLocal[iDomain][iVertex];
-        bound[iMarkerReceive][iVertex] = new CVertexMPI(LocalNode, nDim);
+        bound[iMarkerReceive][iVertex] = new CVertexMPI(LocalNode);
         bound[iMarkerReceive][iVertex]->SetRotation_Type(ReceivedTransfLocal[iDomain][iVertex]);
       }
       Marker_All_SendRecv[iMarkerReceive] = -(iDomain+1);
@@ -3458,17 +3457,17 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == LINE)
           bound_Copy[iMarker][iElem_Bound] = new CLine(bound[iMarker][iElem_Bound]->GetNode(0),
-                                                       bound[iMarker][iElem_Bound]->GetNode(1), 2);
+                                                       bound[iMarker][iElem_Bound]->GetNode(1));
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == TRIANGLE)
 
           bound_Copy[iMarker][iElem_Bound] = new CTriangle(bound[iMarker][iElem_Bound]->GetNode(0),
                                                            bound[iMarker][iElem_Bound]->GetNode(1),
-                                                           bound[iMarker][iElem_Bound]->GetNode(2), 3);
+                                                           bound[iMarker][iElem_Bound]->GetNode(2));
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == QUADRILATERAL)
           bound_Copy[iMarker][iElem_Bound] = new CQuadrilateral(bound[iMarker][iElem_Bound]->GetNode(0),
                                                             bound[iMarker][iElem_Bound]->GetNode(1),
                                                             bound[iMarker][iElem_Bound]->GetNode(2),
-                                                            bound[iMarker][iElem_Bound]->GetNode(3), 3);
+                                                            bound[iMarker][iElem_Bound]->GetNode(3));
       }
     }
   }
@@ -3497,7 +3496,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       Marker_All_SendRecv_Copy[iMarker_] = Marker_All_SendRecv[iMarker];
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0), nDim);
+        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0));
         bound_Copy[iMarker_][iVertex_]->SetRotation_Type(bound[iMarker][iElem_Bound]->GetRotation_Type());
         iVertex_++;
       }
@@ -3526,7 +3525,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       Marker_All_SendRecv_Copy[iMarker_] = Marker_All_SendRecv[iMarker];
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0), nDim);
+        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0));
         bound_Copy[iMarker_][iVertex_]->SetRotation_Type(bound[iMarker][iElem_Bound]->GetRotation_Type());
         iVertex_++;
       }
@@ -3640,7 +3639,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
         nodes->SetBoundary(Point_Surface, nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           nodes->SetPhysicalBoundary(Point_Surface, true);
@@ -3763,7 +3762,6 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
 
   /*--- Initialize point counts and the grid node data structure. ---*/
 
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
@@ -3824,7 +3822,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case TRIANGLE:
         elem[iElem] = new CTriangle(connectivity[0],
                                     connectivity[1],
-                                    connectivity[2], nDim);
+                                    connectivity[2]);
         nelem_triangle++;
         break;
 
@@ -3832,7 +3830,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
         elem[iElem] = new CQuadrilateral(connectivity[0],
                                          connectivity[1],
                                          connectivity[2],
-                                         connectivity[3], nDim);
+                                         connectivity[3]);
         nelem_quad++;
         break;
 
@@ -3985,18 +3983,18 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
         switch(vtk_type) {
           case LINE:
             bound[iMarker][iElem] = new CLine(connectivity[0],
-                                              connectivity[1],2);
+                                              connectivity[1]);
             iElem++; nelem_edge_bound++; break;
           case TRIANGLE:
             bound[iMarker][iElem] = new CTriangle(connectivity[0],
                                                   connectivity[1],
-                                                  connectivity[2],3);
+                                                  connectivity[2]);
             iElem++; nelem_triangle_bound++; break;
           case QUADRILATERAL:
             bound[iMarker][iElem] = new CQuadrilateral(connectivity[0],
                                                        connectivity[1],
                                                        connectivity[2],
-                                                       connectivity[3],3);
+                                                       connectivity[3]);
             iElem++; nelem_quad_bound++; break;
         }
 
@@ -4888,7 +4886,6 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
         nodes->SetBoundary(InvResult[iPoint], nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
             config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           nodes->SetPhysicalBoundary(InvResult[iPoint], true);
@@ -4977,7 +4974,7 @@ void CPhysicalGeometry::SetBoundVolume(void) {
     }
 }
 
-void CPhysicalGeometry::SetVertex(CConfig *config) {
+void CPhysicalGeometry::SetVertex(const CConfig *config) {
   unsigned long  iPoint, iVertex, iElem;
   unsigned short iMarker, iNode;
 
@@ -6653,184 +6650,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
 }
 
-void CPhysicalGeometry::MatchNearField(CConfig *config) {
-
-  su2double epsilon = 1e-1;
-
-  unsigned short nMarker_NearFieldBound = config->GetnMarker_NearFieldBound();
-
-  if (nMarker_NearFieldBound != 0) {
-
-    unsigned short iMarker, iDim, jMarker, pMarker = 0;
-    unsigned long iVertex, iPoint, pVertex = 0, pPoint = 0, jVertex, jPoint, iPointGlobal, jPointGlobal, jVertex_, pPointGlobal = 0;
-    su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
-    int iProcessor, pProcessor = 0;
-    unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-    int nProcessor = size;
-
-    unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-    unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-    if (rank == MASTER_NODE) cout << "Set NearField boundary conditions (if any)." << endl;
-
-    /*--- Compute the number of vertex that have interfase boundary condition
-     without including the ghost nodes ---*/
-
-    nLocalVertex_NearField = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          if (nodes->GetDomain(iPoint)) nLocalVertex_NearField ++;
-        }
-
-    Buffer_Send_nVertex[0] = nLocalVertex_NearField;
-
-    /*--- Send NearField vertex information --*/
-
-    SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
-    su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_NearField*nDim];
-    unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
-    unsigned long *Buffer_Send_GlobalIndex  = new unsigned long [MaxLocalVertex_NearField];
-    unsigned long *Buffer_Send_Vertex  = new unsigned long [MaxLocalVertex_NearField];
-    unsigned long *Buffer_Send_Marker  = new unsigned long [MaxLocalVertex_NearField];
-
-    su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_NearField*nDim];
-    unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_NearField];
-    unsigned long *Buffer_Receive_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_NearField];
-    unsigned long *Buffer_Receive_Vertex = new unsigned long [nProcessor*MaxLocalVertex_NearField];
-    unsigned long *Buffer_Receive_Marker = new unsigned long [nProcessor*MaxLocalVertex_NearField];
-
-    unsigned long nBuffer_Coord = MaxLocalVertex_NearField*nDim;
-    unsigned long nBuffer_Point = MaxLocalVertex_NearField;
-    unsigned long nBuffer_GlobalIndex = MaxLocalVertex_NearField;
-    unsigned long nBuffer_Vertex = MaxLocalVertex_NearField;
-    unsigned long nBuffer_Marker = MaxLocalVertex_NearField;
-
-    for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
-      Buffer_Send_Point[iVertex] = 0;
-      Buffer_Send_GlobalIndex[iVertex] = 0;
-      Buffer_Send_Vertex[iVertex] = 0;
-      Buffer_Send_Marker[iVertex] = 0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-    }
-
-    /*--- Copy coordinates and point to the auxiliar vector --*/
-
-    nLocalVertex_NearField = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = nodes->GetGlobalIndex(iPoint);
-          if (nodes->GetDomain(iPoint)) {
-            Buffer_Send_Point[nLocalVertex_NearField] = iPoint;
-            Buffer_Send_GlobalIndex[nLocalVertex_NearField] = iPointGlobal;
-            Buffer_Send_Vertex[nLocalVertex_NearField] = iVertex;
-            Buffer_Send_Marker[nLocalVertex_NearField] = iMarker;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
-            nLocalVertex_NearField++;
-          }
-        }
-
-    SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
-
-    /*--- Compute the closest point to a Near-Field boundary point ---*/
-
-    maxdist_local = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = nodes->GetGlobalIndex(iPoint);
-
-          if (nodes->GetDomain(iPoint)) {
-
-            /*--- Coordinates of the boundary point ---*/
-
-            Coord_i = nodes->GetCoord(iPoint); mindist = 1E6; pProcessor = 0; pPoint = 0;
-
-            /*--- Loop over all the boundaries to find the pair ---*/
-            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-              for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_NearField+jVertex];
-                jPointGlobal = Buffer_Receive_GlobalIndex[iProcessor*MaxLocalVertex_NearField+jVertex];
-                jVertex_ = Buffer_Receive_Vertex[iProcessor*MaxLocalVertex_NearField+jVertex];
-                jMarker = Buffer_Receive_Marker[iProcessor*MaxLocalVertex_NearField+jVertex];
-
-                if (jPointGlobal != iPointGlobal) {
-
-                  /*--- Compute the distance ---*/
-
-                  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
-                    dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-                  } dist = sqrt(dist);
-
-                  if (((dist < mindist) && (iProcessor != rank)) ||
-                      ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; pPointGlobal = jPointGlobal;
-                    pVertex = jVertex_; pMarker = jMarker;
-                    if (dist == 0.0) break;
-                  }
-                }
-              }
-
-            /*--- Store the value of the pair ---*/
-
-            maxdist_local = max(maxdist_local, mindist);
-            vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
-
-            if (mindist > epsilon) {
-              cout.precision(10);
-              cout << endl;
-              cout << "   Bad match for point " << iPoint << ".\tNearest";
-              cout << " donor distance: " << scientific << mindist << ".";
-              vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iPointGlobal, pVertex, pMarker, pProcessor);
-              maxdist_local = min(maxdist_local, 0.0);
-            }
-
-          }
-        }
-      }
-    }
-
-    SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
-
-    if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_Point;
-
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_Point;
-
-    delete[] Buffer_Send_nVertex;
-    delete[] Buffer_Receive_nVertex;
-
-    delete [] Buffer_Send_GlobalIndex;
-    delete [] Buffer_Send_Vertex;
-    delete [] Buffer_Send_Marker;
-
-    delete [] Buffer_Receive_GlobalIndex;
-    delete [] Buffer_Receive_Vertex;
-    delete [] Buffer_Receive_Marker;
-
-  }
-
-}
-
-void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
+void CPhysicalGeometry::MatchActuator_Disk(const CConfig *config) {
 
   su2double epsilon = 1e-1;
 
@@ -7033,7 +6853,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
+void CPhysicalGeometry::MatchPeriodic(const CConfig *config,
                                       unsigned short val_periodic) {
 
   unsigned short iMarker, iDim, jMarker, pMarker = 0;
@@ -7566,7 +7386,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     AD::SetPreaccIn(Coord, nNodes, nDim);
 
     /*--- Compute the element median CG coordinates ---*/
-    auto Coord_Elem_CG = elem[iElem]->SetCoord_CG(Coord);
+    auto Coord_Elem_CG = elem[iElem]->SetCoord_CG(nDim, Coord);
     AD::SetPreaccOut(Coord_Elem_CG, nDim);
 
     for (unsigned short iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
@@ -7701,7 +7521,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
 
       const auto nNodes = bound[iMarker][iElem]->GetnNodes();
 
-      AD::StartPreacc();
+      /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+      if (omp_get_num_threads() == 1) AD::StartPreacc();
 
       /*--- Get pointers to the coordinates of all the element nodes ---*/
       array<const su2double*, N_POINTS_MAXIMUM> Coord;
@@ -7715,7 +7536,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
       AD::SetPreaccIn(Coord, nNodes, nDim);
 
       /*--- Compute the element CG coordinates ---*/
-      auto Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(Coord);
+      auto Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(nDim, Coord);
       AD::SetPreaccOut(Coord_Elem_CG, nDim);
 
       /*--- Loop over all the nodes of the boundary element ---*/
@@ -8608,7 +8429,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
 
 }
 
-void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
+void CPhysicalGeometry::FindNormal_Neighbor(const CConfig *config) {
   su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
   unsigned short iNeigh, iMarker, iDim;
@@ -8617,7 +8438,7 @@ void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {

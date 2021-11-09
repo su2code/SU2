@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

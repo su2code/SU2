@@ -2,7 +2,7 @@
  * \file adj_sources.cpp
  * \brief Implementation of adjoint source numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -140,15 +140,15 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
   if (dist_i > 0) {
     dist_sq = dist_i*dist_i;
     nu = Laminar_Viscosity_i/rho;
-    Ji = TurbVar_i[0]/nu;
+    Ji = ScalarVar_i[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-    Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
+    Shat = max(Omega + ScalarVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
 
-    r = min(TurbVar_i[0]/(Shat*k2*dist_sq),10.);
+    r = min(ScalarVar_i[0]/(Shat*k2*dist_sq),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
@@ -156,9 +156,9 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
     dfw_g  = glim*cw3_6/(g_6+cw3_6);
     dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
     dr_nuhat = 1.0/(Shat*k2*dist_sq);
-    dr_Shat = -dr_nuhat*TurbVar_i[0]/Shat;
+    dr_Shat = -dr_nuhat*ScalarVar_i[0]/Shat;
 
-    Ms_coeff = (cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_sq*dfw_g*dg_r*dr_Shat);
+    Ms_coeff = (cb1*ScalarVar_i[0]-cw1*ScalarVar_i[0]*ScalarVar_i[0]/dist_sq*dfw_g*dg_r*dr_Shat);
   }
   Ms_coeff *= TurbPsi_i[0]*invOmega/rho;
 
@@ -195,15 +195,15 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
   if (dist_j > 0) {
     dist_sq = dist_j*dist_j;
     nu = Laminar_Viscosity_j/rho;
-    Ji = TurbVar_j[0]/nu;
+    Ji = ScalarVar_j[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-    Shat = max(Omega + TurbVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
+    Shat = max(Omega + ScalarVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
 
-    r = min(TurbVar_j[0]/(Shat*k2*dist_sq),10.);
+    r = min(ScalarVar_j[0]/(Shat*k2*dist_sq),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
@@ -211,9 +211,9 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
     dfw_g  = glim*cw3_6/(g_6+cw3_6);
     dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
     dr_nuhat = 1.0/(Shat*k2*dist_sq);
-    dr_Shat = -dr_nuhat*TurbVar_j[0]/Shat;
+    dr_Shat = -dr_nuhat*ScalarVar_j[0]/Shat;
 
-    Ms_coeff = (cb1*TurbVar_j[0]-cw1*TurbVar_j[0]*TurbVar_j[0]/dist_sq*dfw_g*dg_r*dr_Shat);
+    Ms_coeff = (cb1*ScalarVar_j[0]-cw1*ScalarVar_j[0]*ScalarVar_j[0]/dist_sq*dfw_g*dg_r*dr_Shat);
   }
   Ms_coeff *= TurbPsi_j[0]*invOmega/rho;
 
@@ -506,7 +506,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //
 //    su2double nu, Ji, Ji_2, Ji_3, fv1;
 //    nu = Laminar_Viscosity/Density;
-//    Ji = TurbVar_i[0]/nu;
+//    Ji = ScalarVar_i[0]/nu;
 //    Ji_2 = Ji*Ji;
 //    Ji_3 = Ji_2*Ji;
 //    fv1 = Ji_3/(Ji_3+cv1_3);
@@ -550,9 +550,9 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //      dist_0_2 = dist_i*dist_i;
 //      one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
 //      fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-//      Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
+//      Shat = max(Omega + ScalarVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
 //
-//      r = min(TurbVar_i[0]/(Shat*k2*dist_0_2), 10.);
+//      r = min(ScalarVar_i[0]/(Shat*k2*dist_0_2), 10.);
 //      g = r + cw2*(pow(r,6.)-r);
 //      g_6 = pow(g,6.);
 //      glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
@@ -561,9 +561,9 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //      dfw_g  = glim*cw3_6/(g_6+cw3_6);
 //      dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
 //      dr_nuhat = 1.0/(Shat*k2*dist_0_2);
-//      dr_Shat = -dr_nuhat*TurbVar_i[0]/Shat;
+//      dr_Shat = -dr_nuhat*ScalarVar_i[0]/Shat;
 //
-//      dShat_fv2 = TurbVar_i[0]/(k2*dist_0_2);
+//      dShat_fv2 = ScalarVar_i[0]/(k2*dist_0_2);
 //      dfv2_fv1 = Ji_2*one_o_oneplusJifv1*one_o_oneplusJifv1;
 //      dfv1_Ji = 3.0*cv1_3*Ji_2/((Ji_3+cv1_3)*(Ji_3+cv1_3));
 //      dJi_nuhat = 1.0/nu;
@@ -574,24 +574,24 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //
 //      su2double gradTurbVar_gradTurbPsi = 0, vel_gradTurbPsi = 0;
 //      for (iDim = 0; iDim < nDim; iDim++) {
-//        gradTurbVar_gradTurbPsi += TurbVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
+//        gradTurbVar_gradTurbPsi += ScalarVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
 //        vel_gradTurbPsi += V_i[iDim+1]*TurbPsi_Grad_i[0][iDim];
 //      }
 //
 //      su2double alpha_coeff = Gamma_Minus_One/(Gas_Constant*Density)*dVisc_T;
 //      su2double beta_coeff = alpha_coeff*(sq_vel-Energy)-Laminar_Viscosity_i/Density;
-//      su2double Fs_coeff = TurbPsi_i[0]*(cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat)*
+//      su2double Fs_coeff = TurbPsi_i[0]*(cb1*ScalarVar_i[0]-cw1*ScalarVar_i[0]*ScalarVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat)*
 //      dShat_fv2*(dfv2_Ji+dfv2_fv1*dfv1_Ji)*dJi_nu;
 //      su2double Gamma = Fs_coeff - gradTurbVar_gradTurbPsi/sigma;
 //
-//      val_residual[0] -= (Gamma*beta_coeff - TurbVar_i[0]*vel_gradTurbPsi)/Density*Volume;
+//      val_residual[0] -= (Gamma*beta_coeff - ScalarVar_i[0]*vel_gradTurbPsi)/Density*Volume;
 //      for (iDim = 0; iDim < nDim; iDim++)
-//        val_residual[iDim+1] += (Gamma*alpha_coeff*V_i[iDim+1] - TurbVar_i[0]*TurbPsi_Grad_i[0][iDim])/Density*Volume;
+//        val_residual[iDim+1] += (Gamma*alpha_coeff*V_i[iDim+1] - ScalarVar_i[0]*TurbPsi_Grad_i[0][iDim])/Density*Volume;
 //      val_residual[nVar-1] -= (Gamma*alpha_coeff)/Density*Volume;
 //
 //      // this should improve stability (when commented):
 //      /*--- Terms 3: -partial{T^s}_GradVel x GradN ---*/
-//      //      su2double Ms_coeff = (cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat);
+//      //      su2double Ms_coeff = (cb1*ScalarVar_i[0]-cw1*ScalarVar_i[0]*ScalarVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat);
 //      //      Ms_coeff *= TurbPsi_i[0]/(Omega + TURB_EPS);
 //      //
 //      //      for (iDim = 0; iDim < nDim; iDim++) {
@@ -633,8 +633,8 @@ void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2do
 
   E_ij = 0.0;  proj_TurbVar_Grad_i = 0.0; proj_TurbVar_Grad_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    proj_TurbVar_Grad_i += coeff*TurbVar_Grad_i[0][iDim]*Normal[iDim];
-    proj_TurbVar_Grad_j += coeff*TurbVar_Grad_j[0][iDim]*Normal[iDim];
+    proj_TurbVar_Grad_i += coeff*ScalarVar_Grad_i[0][iDim]*Normal[iDim];
+    proj_TurbVar_Grad_j += coeff*ScalarVar_Grad_j[0][iDim]*Normal[iDim];
     E_ij += 0.5*(TurbPsi_i[0]*proj_TurbVar_Grad_i + TurbPsi_j[0]*proj_TurbVar_Grad_j);
   }
 
@@ -712,31 +712,31 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
 
     dist_0_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/U_i[0];
-    Ji = TurbVar_i[0]/nu;
+    Ji = ScalarVar_i[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-    Shat = max(Vorticity + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
+    Shat = max(Vorticity + ScalarVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
 
-    //    r = TurbVar_i[0]/(Shat*k2*dist_0_2);
-    r = min(TurbVar_i[0]/(Shat*k2*dist_0_2),10.);
+    //    r = ScalarVar_i[0]/(Shat*k2*dist_0_2);
+    r = min(ScalarVar_i[0]/(Shat*k2*dist_0_2),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
     fw = g*glim;
 
-    dTs_nuhat = cb1*Shat-2.0*cw1*fw*TurbVar_i[0]/dist_0_2;
-    dTs_Shat = cb1*TurbVar_i[0];
-    dTs_fw = -cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2;
+    dTs_nuhat = cb1*Shat-2.0*cw1*fw*ScalarVar_i[0]/dist_0_2;
+    dTs_Shat = cb1*ScalarVar_i[0];
+    dTs_fw = -cw1*ScalarVar_i[0]*ScalarVar_i[0]/dist_0_2;
     dfw_g  = glim*cw3_6/(g_6+cw3_6);
     dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
     dr_nuhat = 1.0/(Shat*k2*dist_0_2);
-    dr_Shat = -dr_nuhat*TurbVar_i[0]/Shat;
+    dr_Shat = -dr_nuhat*ScalarVar_i[0]/Shat;
 
     dShat_nuhat = fv2/(k2*dist_0_2);
-    dShat_fv2 = TurbVar_i[0]/(k2*dist_0_2);
+    dShat_fv2 = ScalarVar_i[0]/(k2*dist_0_2);
     dfv2_fv1 = Ji_2*one_o_oneplusJifv1*one_o_oneplusJifv1;
     dfv1_Ji = 3.0*cv1_3*Ji_2/((Ji_3+cv1_3)*(Ji_3+cv1_3));
     dJi_nuhat = 1.0/nu;
