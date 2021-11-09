@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,7 @@
 #include <map>
 #include <cstdlib>
 #include <algorithm>
+#include <cassert>
 
 /*!
  * \class CEmptyMap
@@ -118,15 +119,74 @@ const unsigned short COMM_TYPE_CHAR           = 5;  /*!< \brief Communication ty
 const unsigned short COMM_TYPE_SHORT          = 6;  /*!< \brief Communication type for short. */
 const unsigned short COMM_TYPE_INT            = 7;  /*!< \brief Communication type for int. */
 
-const unsigned short N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
-const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
-enum: unsigned short{N_POINTS_MAXIMUM = 8};      /*!< \brief Max. out of the above, used for static arrays, keep it up to date. */
+/*!
+ * \brief Types of geometric entities based on VTK nomenclature
+ */
+enum GEO_TYPE {
+  VERTEX = 1,         /*!< \brief VTK nomenclature for defining a vertex element. */
+  LINE = 3,           /*!< \brief VTK nomenclature for defining a line element. */
+  TRIANGLE = 5,       /*!< \brief VTK nomenclature for defining a triangle element. */
+  QUADRILATERAL = 9,  /*!< \brief VTK nomenclature for defining a quadrilateral element. */
+  TETRAHEDRON = 10,   /*!< \brief VTK nomenclature for defining a tetrahedron element. */
+  HEXAHEDRON = 12,    /*!< \brief VTK nomenclature for defining a hexahedron element. */
+  PRISM = 13,         /*!< \brief VTK nomenclature for defining a prism element. */
+  PYRAMID = 14        /*!< \brief VTK nomenclature for defining a pyramid element. */
+};
+constexpr unsigned short N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
+
+constexpr unsigned short N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_QUADRILATERAL = 4; /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_TETRAHEDRON = 4;   /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_POINTS_MAXIMUM = 8;       /*!< \brief Max. out of the above, used for static arrays, keep it up to date. */
+
+constexpr unsigned short N_FACES_LINE = 1;           /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_TRIANGLE = 3;       /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_QUADRILATERAL = 4;  /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_TETRAHEDRON = 4;    /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_PYRAMID = 5;        /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_PRISM = 5;          /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_HEXAHEDRON = 6;     /*!< \brief General output & CGNS defines. */
+constexpr unsigned short N_FACES_MAXIMUM = 6;        /*!< \brief Max. out of the above, used for static arrays, keep it up to date. */
+
+/*!
+ * \brief Get the number of faces of the element.
+ * \param[in] elementType - element type
+ * \return number of faces
+ */
+inline unsigned short nFacesOfElementType(unsigned short elementType) {
+  switch (elementType) {
+    case LINE: return N_FACES_LINE;
+    case TRIANGLE: return N_FACES_TRIANGLE;
+    case QUADRILATERAL: return N_FACES_QUADRILATERAL;
+    case TETRAHEDRON: return N_FACES_TETRAHEDRON;
+    case HEXAHEDRON: return N_FACES_HEXAHEDRON;
+    case PYRAMID: return N_FACES_PYRAMID;
+    case PRISM: return N_FACES_PRISM;
+    default: assert(false && "Invalid element type."); return 0;
+  }
+}
+
+/*!
+ * \brief Get the number of points of the element.
+ * \param[in] elementType - element type
+ * \return number of points
+ */
+inline unsigned short nPointsOfElementType(unsigned short elementType) {
+  switch (elementType) {
+    case LINE: return N_POINTS_LINE;
+    case TRIANGLE: return N_POINTS_TRIANGLE;
+    case QUADRILATERAL: return N_POINTS_QUADRILATERAL;
+    case TETRAHEDRON: return N_POINTS_TETRAHEDRON;
+    case HEXAHEDRON: return N_POINTS_HEXAHEDRON;
+    case PYRAMID: return N_POINTS_PYRAMID;
+    case PRISM: return N_POINTS_PRISM;
+    default: assert(false && "Invalid element type."); return 0;
+  }
+}
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
@@ -828,25 +888,25 @@ static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
 /*!
  * \brief Types of turbulent models
  */
-enum ENUM_TURB_MODEL {
-  NO_TURB_MODEL = 0, /*!< \brief No turbulence model. */
-  SA        = 1,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG    = 2,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_E      = 3,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP   = 4,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP = 5,     /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
-  SST       = 6,     /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST  = 7      /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
+enum class TURB_MODEL {
+  NONE,      /*!< \brief No turbulence model. */
+  SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
+  SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
+  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
-static const MapType<std::string, ENUM_TURB_MODEL> Turb_Model_Map = {
-  MakePair("NONE", NO_TURB_MODEL)
-  MakePair("SA", SA)
-  MakePair("SA_NEG", SA_NEG)
-  MakePair("SA_E", SA_E)
-  MakePair("SA_COMP", SA_COMP)
-  MakePair("SA_E_COMP", SA_E_COMP)
-  MakePair("SST", SST)
-  MakePair("SST_SUST", SST_SUST)
+static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
+  MakePair("NONE", TURB_MODEL::NONE)
+  MakePair("SA", TURB_MODEL::SA)
+  MakePair("SA_NEG", TURB_MODEL::SA_NEG)
+  MakePair("SA_E", TURB_MODEL::SA_E)
+  MakePair("SA_COMP", TURB_MODEL::SA_COMP)
+  MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
+  MakePair("SST", TURB_MODEL::SST)
+  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -1410,20 +1470,6 @@ static const MapType<std::string, WALL_TYPE> WallType_Map = {
 };
 
 /*!
- * \brief Types of geometric entities based on VTK nomenclature
- */
-enum GEO_TYPE {
-  VERTEX = 1,         /*!< \brief VTK nomenclature for defining a vertex element. */
-  LINE = 3,           /*!< \brief VTK nomenclature for defining a line element. */
-  TRIANGLE = 5,       /*!< \brief VTK nomenclature for defining a triangle element. */
-  QUADRILATERAL = 9,  /*!< \brief VTK nomenclature for defining a quadrilateral element. */
-  TETRAHEDRON = 10,   /*!< \brief VTK nomenclature for defining a tetrahedron element. */
-  HEXAHEDRON = 12,    /*!< \brief VTK nomenclature for defining a hexahedron element. */
-  PRISM = 13,         /*!< \brief VTK nomenclature for defining a prism element. */
-  PYRAMID = 14        /*!< \brief VTK nomenclature for defining a pyramid element. */
-};
-
-/*!
  * \brief Types of objective functions
  */
 enum ENUM_OBJECTIVE {
@@ -1604,12 +1650,13 @@ enum ENUM_OUTPUT {
   MESH                    = 11, /*!< \brief SU2 mesh format. */
   RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
   RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
-  CGNS                    = 14, /*!< \brief CGNS format. */
-  STL                     = 15, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 16, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
-  PARAVIEW_XML            = 17, /*!< \brief Paraview XML with binary data format */
-  SURFACE_PARAVIEW_XML    = 18, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 19  /*!< \brief Paraview XML Multiblock */
+  STL                     = 14, /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY              = 15, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  PARAVIEW_XML            = 16, /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML    = 17, /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK     = 18, /*!< \brief Paraview XML Multiblock */
+  CGNS                    = 19, /*!< \brief CGNS format. */
+  SURFACE_CGNS            = 20  /*!< \brief CGNS format. */
 };
 static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("TECPLOT_ASCII", TECPLOT)
@@ -1628,6 +1675,7 @@ static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("RESTART_ASCII", RESTART_ASCII)
   MakePair("RESTART", RESTART_BINARY)
   MakePair("CGNS", CGNS)
+  MakePair("SURFACE_CGNS", SURFACE_CGNS)
   MakePair("STL", STL)
   MakePair("STL_BINARY", STL_BINARY)
 };

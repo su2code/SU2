@@ -2,7 +2,7 @@
  * \file CGeometry_tests.cpp
  * \brief Unit tests for CGeometry.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,7 +90,7 @@ TEST_CASE("Set elem connectivity", "[Geometry]"){
 
   TestCase->geometry->SetElement_Connectivity();
 
-  CHECK(TestCase->geometry->elem[14]->GetnNeighbor_Elements() == 6);
+  CHECK(TestCase->geometry->elem[14]->GetnFaces() == 6);
   CHECK(TestCase->geometry->elem[14]->GetNeighbor_Elements(1) == 15);
 
 }

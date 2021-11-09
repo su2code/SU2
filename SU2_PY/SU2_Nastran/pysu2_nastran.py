@@ -3,7 +3,7 @@
 ## \file pysu2_nastran.py
 #  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
-#  \version 7.2.0 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -855,7 +855,8 @@ class Solver:
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
       if self.ImposedMotionToSet:
-        if self.Config["RESTART_SOL"] == "NO":                                   # If yes we already set it in the __setRestart function
+        if self.Config["RESTART_SOL"] == "NO":
+          # If yes we already set it in the __setRestart function
           self.timeStartCoupling = time
         iImposedFunc = 0
         for imode in self.Config["IMPOSED_MODES"].keys():
@@ -1004,8 +1005,9 @@ class Solver:
 
     return len(self.markers[markerID])
 
-  def getVertexGlobalIndex(self, markerID, iVertex):   # TODO This solver is serial, thus global=local
+  def getVertexGlobalIndex(self, markerID, iVertex):
 
+    # This solver is serial, thus global=local
     return self.markers[markerID][iVertex]
 
   def getInterfaceNodePosInit(self, markerID, iVertex):
@@ -1035,6 +1037,7 @@ class Solver:
 
   def IsAHaloNode(self, markerID, iVertex):
 
+    # There are no halo nodes in this solver as it is serial
     iPoint = self.markers[markerID][iVertex]
-    halo = False  # TODO when in parallel we will need to define this
+    halo = False
     return halo

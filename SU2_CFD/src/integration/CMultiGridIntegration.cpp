@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -185,8 +185,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         solver_fine->Set_OldSolution();
 
-        if (classical_rk4)
-          solver_fine->Set_NewSolution();
+        if (classical_rk4) solver_fine->Set_NewSolution();
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
 

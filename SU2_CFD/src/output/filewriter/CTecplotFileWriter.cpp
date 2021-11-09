@@ -2,7 +2,7 @@
  * \file CTecplotFileWriter.cpp
  * \brief Filewriter class for Tecplot ASCII format.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

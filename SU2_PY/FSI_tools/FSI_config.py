@@ -3,7 +3,7 @@
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.2.0 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -54,8 +54,9 @@ class FSIConfig:
     Read the file and store all the options into a dictionary.
     """
 
-    def __init__(self,FileName):
+    def __init__(self,FileName,comm):
         self.ConfigFileName = FileName
+        self.comm = comm
         self._ConfigContent = {}
         self.readConfig()
         self.applyDefaults()
@@ -112,20 +113,47 @@ class FSIConfig:
                  (this_param == "MESH_INTERP_METHOD") or \
                  (this_param == "DISP_PRED") or \
                  (this_param == "AITKEN_RELAX") or \
-                 (this_param == "TIME_MARCHING") :
+                 (this_param == "TIME_MARCHING") or \
+                 (this_param == "IMPOSED_MOTION") or \
+                 (this_param == "MAPPING_MODES"):
                 self._ConfigContent[this_param] = this_value
 
             else :
-                print(this_param + " is an invalid option !")
+                self.MPIPrint(this_param + " is an invalid option !",False)
 
     def applyDefaults(self):
-        if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
+
+        if "MAPPING_MODES" not in self._ConfigContent:
+            self._ConfigContent["MAPPING_MODES"] = "NO"
+            self.MPIPrint("MAPPING_MODES keyword was not found in the configuration file of the interface, setting to NO",False)
+
+        if "IMPOSED_MOTION" not in self._ConfigContent:
+            self._ConfigContent["IMPOSED_MOTION"] = "NO"
+            self.MPIPrint("IMPOSED_MOTION keyword was not found in the configuration file of the interface, setting to NO",False)
+
+        if self._ConfigContent["IMPOSED_MOTION"] == "YES":
             if self._ConfigContent["AITKEN_RELAX"] != "STATIC" or self._ConfigContent["AITKEN_PARAM"] != 1.0:
-                print("WARNING: Setting the Aitken parameter as static and equal to 1 for IMPOSED solver")
-                self._ConfigContent["AITKEN_RELAX"] = "STATIC"
-                self._ConfigContent["AITKEN_PARAM"] = 1.0
+                self.MPIPrint("When imposing motion, the Aitken parameter must be static and equal to 1",True)
 
         if self._ConfigContent["RESTART_SOL"] == "YES":
             if self._ConfigContent["TIME_TRESHOLD"] != -1:
-                print("WARNING: Setting the time threshold to -1 for immediate coupling when using restart")
-                self._ConfigContent["TIME_TRESHOLD"] = -1
+                self.MPIPrint("When restarting a simulation, the time threshold must be -1 for immediate coupling",True)
+
+        if self._ConfigContent["MAPPING_MODES"] == "YES" and self._ConfigContent["CSD_SOLVER"]!="NATIVE":
+            self.MPIPrint("Mapping modes only works with the native solver",True)
+
+    def MPIPrint(self, message, error):
+        """
+        Print a message, or raise error, on screen only from the master process.
+        """
+
+        if self.comm:
+            myid = self.comm.Get_rank()
+        else:
+            myid = 0
+
+        if not myid:
+            if error:
+                raise Exception(message)
+            else:
+                print(message)

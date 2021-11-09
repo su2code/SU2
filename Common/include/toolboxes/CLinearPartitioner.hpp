@@ -3,7 +3,7 @@
  * \brief Header file for the class CLinearPartitioner.
  *        The implementations are in the <i>CLinearPartitioner.cpp</i> file.
  * \author T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -114,6 +114,16 @@ public:
    */
   inline unsigned long GetCumulativeSizeBeforeRank(int rank) const {
     return cumulativeSizeBeforeRank[rank];
+  }
+
+  /*!
+   * \brief Checks if an index belongs to a rank.
+   * \param[in] index - Current index.
+   * \param[in] rank - MPI rank identifier.
+   * \returns True if index is owned by rank.
+   */
+  bool IndexBelongsToRank(unsigned long index, int rank) const {
+    return index >= cumulativeSizeBeforeRank[rank] && index < cumulativeSizeBeforeRank[rank+1];
   }
 
 };

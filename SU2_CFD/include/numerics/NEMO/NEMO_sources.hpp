@@ -2,7 +2,7 @@
  * \file NEMO_sources.hpp
  * \brief Delarations of numerics classes for source-term integration.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,19 +34,15 @@
  * \brief Class for two-temperature model source terms.
  * \ingroup SourceDiscr
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CSource_NEMO : public CNEMONumerics {
 private:
 
-  int    *alphak, *betak;
-  su2double *X; // Mole fraction
-  su2double *Y, **dYdr; // Mass fraction
-  su2double *dkf, *dkb, *dRfok, *dRbok;
-  vector<su2double> Cvvsst, ws;
+  su2double *Y, **dYdr;                  // Mass fraction
 
-  su2double* residual = nullptr;        /*!< \brief The source residual. */
-
+  su2double*  residual = nullptr;        /*!< \brief The source residual. */
+  su2double** jacobian = nullptr;
 public:
 
   /*!
