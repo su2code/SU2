@@ -1332,6 +1332,61 @@ template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<
 template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
+template <class Indices>
+void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
+                                         const CSolver* species_solver, CNumerics ****&numerics) const {
+  const int conv_term = CONV_TERM + offset;
+  const int visc_term = VISC_TERM + offset;
+
+  const int source_first_term = SOURCE_FIRST_TERM + offset;
+  const int source_second_term = SOURCE_SECOND_TERM + offset;
+
+  const int conv_bound_term = CONV_BOUND_TERM + offset;
+  const int visc_bound_term = VISC_BOUND_TERM + offset;
+
+  /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
+
+  switch (config->GetKind_ConvNumScheme_Species()) {
+    case NONE :
+      break;
+    case SPACE_UPWIND :
+      for (auto iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+        numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
+        numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
+      }
+      break;
+    default :
+      SU2_MPI::Error("Convective scheme not implemented (scalar transport).", CURRENT_FUNCTION);
+      break;
+  }
+
+  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    /// NOTE TK:: understand the "true" input. Correction of the gradient when to apply and when not. True for now as Turb does that as well. Maybe no correction available on boundaries.
+    numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, true, config);
+    numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, false, config);
+  }
+
+  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    if (config->GetAxisymmetric() == YES) { //TK:: not implemented yet
+      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config); //TK::how to get nVarFLow
+    }
+    else {
+      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
+    }
+    numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+  }
+}
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
 void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
 
   if (rank == MASTER_NODE)
@@ -1991,45 +2046,18 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     }
   }
 
+    /*--- Solver definition for the species transport problem ---*/
+
   if (species) {
-
-    /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
-
-    switch (config->GetKind_ConvNumScheme_Species()) {
-      case NONE :
-        break;
-      case SPACE_UPWIND :
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species(nDim, nVar_Species, config);
-          numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species(nDim, nVar_Species, config);
-        }
-        break;
-      default :
-        SU2_MPI::Error("Convective scheme not implemented (scalar transport).", CURRENT_FUNCTION);
-        break;
-    }
-
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      /// NOTE TK:: understand the "true" input. Correction of the gradient when to apply and when not. True for now as Turb does that as well. Maybe no correction available on boundaries.
-      numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species(nDim, nVar_Species, true, config);
-      numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species(nDim, nVar_Species, false, config);
-    }
-
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      if (config->GetAxisymmetric() == YES) { //TK:: not implemented yet
-        numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species(nDim, nVar_Flow, config);
-      }
-      else {
-        numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
-      }
-      numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
-    }
-
-  } // if species
+    if (incompressible)
+      InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
+                                                                               solver[MESH_0][SPECIES_SOL], numerics);
+    else if (compressible)
+      InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
+                                                                            solver[MESH_0][SPECIES_SOL], numerics);
+    else
+      SU2_MPI::Error("Species transport only available for standard compressible and incompressible flow.", CURRENT_FUNCTION);
+  }
 
   /*--- Solver definition of the finite volume heat solver  ---*/
   if (heat) {

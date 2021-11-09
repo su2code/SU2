@@ -107,8 +107,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
   ../src/numerics/scalar/scalar_sources.cpp \
-  ../src/numerics/species/species_convection.cpp \
-  ../src/numerics/species/species_diffusion.cpp \
   ../src/numerics/species/species_sources.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \

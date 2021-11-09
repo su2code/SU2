@@ -30,6 +30,9 @@
 
 #include "../../../include/numerics/CNumerics.hpp"
 
+#include "../../../include/variables/CEulerVariable.hpp"
+#include "../../../include/variables/CIncEulerVariable.hpp"
+
 CSourceBase_Species::CSourceBase_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config) {
   residual = new su2double[nVar]();
@@ -49,13 +52,16 @@ CSourceBase_Species::~CSourceBase_Species() {
   }
 }
 
-CSourceAxisymmetric_Species::CSourceAxisymmetric_Species(unsigned short val_nDim, unsigned short val_nVar,
+template <class T>
+CSourceAxisymmetric_Species<T>::CSourceAxisymmetric_Species(unsigned short val_nDim, unsigned short val_nVar,
                                                          const CConfig* config)
-    : CSourceBase_Species(val_nDim, val_nVar, config) {
+    : CSourceBase_Species(val_nDim, val_nVar, config),
+    idx(val_nDim, config->GetnSpecies()) {
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 }
 
-CNumerics::ResidualType<> CSourceAxisymmetric_Species::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const CConfig* config) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 
   if (implicit) {
@@ -66,3 +72,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species::ComputeResidual(const CCo
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
+
+/*--- Explicit instantiations until we don't move this to the hpp. ---*/
+template class CSourceAxisymmetric_Species<CEulerVariable::CIndices<unsigned short> >;
+template class CSourceAxisymmetric_Species<CIncEulerVariable::CIndices<unsigned short> >;

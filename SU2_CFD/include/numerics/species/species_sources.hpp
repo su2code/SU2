@@ -64,8 +64,10 @@ class CSourceBase_Species : public CNumerics {
  * \ingroup SourceDiscr
  * \author T. Kattmann
  */
+template <class FlowIndices>
 class CSourceAxisymmetric_Species : public CSourceBase_Species {
  protected:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
   bool implicit;
 
  public:

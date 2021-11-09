@@ -35,20 +35,71 @@
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  */
-class CAvgGrad_Species final : public CAvgGrad_Scalar {
+template <class FlowIndices>
+class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
  private:
-  bool turbulence;
+  using Base = CAvgGrad_Scalar<FlowIndices>;
+  using Base::nVar;
+  using Base::Eddy_Viscosity_i;
+  using Base::Eddy_Viscosity_j;
+  using Base::Diffusion_Coeff_i;
+  using Base::Diffusion_Coeff_j;
+  using Base::Density_i;
+  using Base::Density_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::Proj_Mean_GradScalarVar;
+  using Base::proj_vector_ij;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+
+  const bool turbulence;
 
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn(void) override;
+  void ExtraADPreaccIn(void) override {
+    AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+    AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
+  }
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) override {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      const bool flame = false;  // const bool flame = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+      if (flame) {
+        /*--- For combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D ---*/
+        Density_i = 1.0;
+        Density_j = 1.0;
+      }
+      /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
+      const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+      su2double Diffusivity_Turb = 0.0;
+
+      if (turbulence) {
+        const su2double Sc_t = config->GetSchmidt_Number_Turbulent();
+        Diffusivity_Turb = 0.5 * (Eddy_Viscosity_i / Sc_t + Eddy_Viscosity_j / Sc_t);
+      }
+
+      const su2double Diffusivity = Diffusivity_Lam + Diffusivity_Turb;
+
+      Flux[iVar] = Diffusivity * Proj_Mean_GradScalarVar[iVar];
+
+      /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
+
+      /*--- Off-diagonal entries are all zero. ---*/
+      const su2double proj_on_rhoi = proj_vector_ij / Density_i;
+      Jacobian_i[iVar][iVar] = -Diffusivity * proj_on_rhoi;
+
+      const su2double proj_on_rhoj = proj_vector_ij / Density_j;
+      Jacobian_j[iVar][iVar] = Diffusivity * proj_on_rhoj;
+
+    }  // iVar
+  }
 
  public:
   /*!
@@ -58,5 +109,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar {
    * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config);
+  CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
+      turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE) {}
 };

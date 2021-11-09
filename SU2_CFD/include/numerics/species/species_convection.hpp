@@ -35,18 +35,44 @@
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
  * \ingroup ConvDiscr
  */
-class CUpwSca_Species final : public CUpwScalar {
+template <class FlowIndices>
+class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
  private:
+  using Base = CUpwScalar<FlowIndices>;
+  using Base::nVar;
+  using Base::nDim;
+  using Base::V_i;
+  using Base::V_j;
+  using Base::a0;
+  using Base::a1;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::idx;
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn() override;
+  void ExtraADPreaccIn() override {
+    AD::SetPreaccIn(V_i[idx.Density()]);
+    AD::SetPreaccIn(V_j[idx.Density()]);
+  };
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig* config) override;
+  void FinishResidualCalc(const CConfig* config) override {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      Flux[iVar] = a0 * V_i[idx.Density()] * ScalarVar_i[iVar] + a1 * V_j[idx.Density()] * ScalarVar_j[iVar];
+
+      /*--- Jacobians are taken wrt rho*Y not Y alone in the species solver. ---*/
+      /*--- Off-diagonal entries are zero. ---*/
+      Jacobian_i[iVar][iVar] = a0;
+      Jacobian_j[iVar][iVar] = a1;
+    }  // iVar
+  }
 
  public:
   /*!
@@ -55,5 +81,6 @@ class CUpwSca_Species final : public CUpwScalar {
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwSca_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) {}
 };
