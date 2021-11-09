@@ -106,6 +106,8 @@ private:
   */
   void ComputeBlockageSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources);
 
+  void ComputeBlockageSources(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl, vector<su2double>&BFM_sources);
+
   /*!
    * \brief Computes the compressibility factor in Thollets BFM
    * \param[in] solver_container - pointer to solver container.

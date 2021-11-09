@@ -141,26 +141,6 @@ void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPo
             BFM_sources[iDim] = 0;
         }
     }
-    
-    // if(bffac == 1){
-    //     // Selection of the BFM stated in the config file.
-    //     switch (BFM_formulation)
-    //     {
-    //     case HALL:
-    //         ComputeBFMSources_Hall(solver_container, iPoint, BFM_sources, W_cyl);
-    //         break;
-    //     case THOLLET:
-    //         ComputeBFMSources_Thollet(solver_container, iPoint, BFM_sources, W_cyl);
-    //         break;
-    //     default:
-    //         break;
-    //     }
-    // }else{
-    //     // If the BFM is inactive at the current node, the BFM source terms are set to zero.
-    //     for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
-    //         BFM_sources[iDim] = 0;
-    //     }
-    // }
 }
 
 void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double> & BFM_sources, vector< su2double*>&W_cyl){
@@ -565,7 +545,7 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
         // Getting metal blockage gradient
         blockage_gradient = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
 
-        source_momentum[iDim] = -pressure * blockage_gradient / b;
+        source_momentum[iDim] = 0;
         // Updating density and energy source terms
         source_density += density * velocity * blockage_gradient / b;
         source_energy += density * energy * velocity * blockage_gradient / b;
@@ -609,11 +589,6 @@ void CBFMSolver::ComputeCylProjections(const CGeometry *geometry, const CConfig 
 
 		// Computing axial dot products
         rot_dot_x = GeometryToolbox::DotProduct(nDim, BFM_axis, Coord);
-        // rot_dot_x = 0;
-		// for(int iDim = 0; iDim < nDim; iDim ++){
-		// 	rot_dot_x += config->GetBFM_Axis(iDim)*Coord[iDim];
-		// 	//rot_dot_rot += (config->GetBFM_Axis(iDim)) * (config->GetBFM_Axis(iDim));
-		// }
         ax = 0;
         radius = 0;
 		for(int iDim = 0; iDim < nDim; iDim ++){
@@ -632,15 +607,10 @@ void CBFMSolver::ComputeCylProjections(const CGeometry *geometry, const CConfig 
         }
         
 		// Computing absolute values for cylindrical coordinates
-		//radius = sqrt(radius);	// Computing radial coordinate
-		//ax = sqrt(ax);	// Computing axial coordinate
 		if(rot_dot_x < 0.0){ax = -ax;}	// In case the coordinate parallel projection is negative, the axial coordinate is flipped
 
         nodes->SetAuxVar(iPoint, I_AXIAL_COORDINATE, ax);
         nodes->SetAuxVar(iPoint, I_RADIAL_COORDINATE, radius);
-		// Storing cylindrical coordinates in class property
-		// cyl_coordinates[iPoint][0] = ax;
-		// cyl_coordinates[iPoint][1] = radius;
 
 		// Computation of tangential and radial projection vectors
         if(nDim == 2){
