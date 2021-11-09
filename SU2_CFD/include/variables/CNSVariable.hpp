@@ -62,56 +62,61 @@ public:
    * \brief Set the laminar viscosity.
    */
   inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
-    Primitive(iPoint,nDim+5) = laminarViscosity;
+    Primitive(iPoint, indices.LaminarViscosity()) = laminarViscosity;
   }
 
   /*!
    * \brief Set the laminar viscosity.
    */
   inline void SetThermalConductivity(unsigned long iPoint, su2double thermalConductivity) override {
-    Primitive(iPoint,nDim+7) = thermalConductivity;
+    Primitive(iPoint, indices.ThermalConductivity()) = thermalConductivity;
   }
 
   /*!
    * \brief Set the specific heat Cp.
    */
-  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override { Primitive(iPoint,nDim+8) = val_Cp; }
+  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override {
+    Primitive(iPoint, indices.CpTotal()) = val_Cp;
+  }
 
   /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
-  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override { Primitive(iPoint,nDim+6) = eddy_visc; }
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override {
+    Primitive(iPoint, indices.EddyViscosity()) = eddy_visc;
+  }
 
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+5); }
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.LaminarViscosity());
+  }
 
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+7); }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.ThermalConductivity());
+  }
 
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
-  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+6); }
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.EddyViscosity());
+  }
 
   /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P  of the flow.
    */
-  inline su2double GetSpecificHeatCp(unsigned long iPoint) const override { return Primitive(iPoint,nDim+8); }
-
-  /*!
-   * \brief Set the temperature at the wall
-   */
-  inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
-    Primitive(iPoint,0) = temperature_wall;
+  inline su2double GetSpecificHeatCp(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.CpTotal());
   }
 
   /*!
