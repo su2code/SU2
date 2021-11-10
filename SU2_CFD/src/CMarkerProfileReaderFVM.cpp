@@ -357,7 +357,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       }
     }
 
-    /*--- Sort and remove the duplicate profile marker strings. ---*/
+    /*--- Remove the duplicate profile marker strings. From 1 per point to 1 per marker. ---*/
 
     profileTags.erase(unique(profileTags.begin(),
                              profileTags.end()),
