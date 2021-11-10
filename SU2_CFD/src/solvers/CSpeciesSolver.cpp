@@ -428,7 +428,6 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  const bool use_strong_BC = !config->GetMUSCL_AdjFlow();  // hook to cfg
 
   /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
   // bool grid_movement  = config->GetGrid_Movement();
@@ -444,7 +443,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (use_strong_BC) {
+    if (config->GetSpecies_StrongBC()) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
       LinSysRes.SetBlock_Zero(iPoint);
@@ -609,7 +608,6 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  const bool use_strong_BC = !config->GetMUSCL_AdjFlow();  // hook to cfg
   /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -622,7 +620,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (use_strong_BC) {
+    if (config->GetSpecies_StrongBC()) {
       /*--- Allocate the value at the outlet ---*/
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 

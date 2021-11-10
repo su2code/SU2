@@ -1169,6 +1169,7 @@ private:
   su2double* Species_Clipping_Max; /*!< \brief Maximum value of clipping for scalar transport. */
   su2double* Species_Clipping_Min; /*!< \brief Minimum value of clipping for scalar transport. */
   unsigned short nSpecies_Clipping_Max, nSpecies_Clipping_Min; /* TK:: nijso: this should be the same as nScalar (or nVar for the scalar)*/
+  bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /* TK:: There should only be one nSpecies / nVar for the whole species solver */
   unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
@@ -2066,6 +2067,12 @@ public:
    * \return Initial species value/concentration
    */
   su2double GetSpecies_Init(unsigned short iVar) const { return Species_Init[iVar]; }
+
+  /*!
+   * \brief Get the flag for using strong BC's for in- and outlets in the species solver.
+   * \return Flag for strong BC's.
+   */
+  bool GetSpecies_StrongBC() { return Species_StrongBC; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
