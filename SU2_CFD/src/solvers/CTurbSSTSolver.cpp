@@ -633,8 +633,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
       Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
       if (config->GetInlet_Profile_From_File()) {
-        Inlet_Vars[0] *= 1 / (config->GetVelocity_Ref() * config->GetVelocity_Ref());
-        Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref());
+        Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
+        Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));
       }
 
       /*--- Set the turbulent variable states. Use free-stream SST
