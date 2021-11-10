@@ -155,5 +155,5 @@ class FSIConfig:
         if not myid:
             if error:
                 raise Exception(message)
-            else:
-                print(message)
+
+            print(message)
