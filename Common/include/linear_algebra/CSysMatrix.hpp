@@ -32,8 +32,6 @@
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
-#include "../eigen_structure.hpp"
-
 #include <cstdlib>
 #include <vector>
 #include <cassert>
@@ -873,12 +871,6 @@ public:
    * \param[in] file - the putput location
    */
   void printMat(ofstream &file);
-
-  /*!
-   * \brief convert the matrix into a sparse eigen matrix
-   * \param[out] the type of eigen matrix used.
-   */
-  Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>  ConvertToEigen();
 
   /*!
    * \brief Factorize matrix using PaStiX.

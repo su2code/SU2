@@ -30,8 +30,6 @@
 
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
-#include "../../../Common/include/eigen_structure.hpp"
-
 #include "../integration/CIntegration.hpp"
 #include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"

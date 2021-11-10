@@ -21,8 +21,7 @@ install_data(['SU2/__init__.py'], install_dir: join_paths(get_option('bindir'), 
 install_data(['SU2/eval/design.py',
     	      'SU2/eval/functions.py',
     	      'SU2/eval/gradients.py',
-              'SU2/eval/hessian.py',
-              'SU2/eval/__init__.py'],
+    	      'SU2/eval/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/eval'))
 
 install_data(['SU2/io/config.py',
@@ -38,8 +37,6 @@ install_data(['SU2/io/config.py',
 
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
-              'SU2/opt/reducedSQP.py',
-              'SU2/opt/reducedSQP_handmade.py',
               'SU2/opt/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 

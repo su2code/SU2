@@ -668,8 +668,6 @@ def read_config(filename):
         data_dict['OPT_RELAX_FACTOR'] = 1.0
     if 'OPT_GRADIENT_FACTOR' not in data_dict:
         data_dict['OPT_GRADIENT_FACTOR'] = 1.0
-    if 'OPT_HESSIAN_FACTOR' not in data_dict:
-        data_dict['OPT_HESSIAN_FACTOR'] = 1.0
     if 'OPT_BOUND_UPPER' not in data_dict:
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if 'OPT_BOUND_LOWER' not in data_dict:

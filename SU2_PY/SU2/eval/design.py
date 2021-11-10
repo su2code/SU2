@@ -33,7 +33,6 @@ import os, copy
 from .. import io   as su2io
 from .  import func as su2func
 from .  import grad as su2grad
-from .  import hess as su2hess
 from ..io import redirect_folder, save_data
 
 # todo:
@@ -165,10 +164,6 @@ class Design(object):
     def obj_df(self,dvs):
         """ Evaluates SU2 Design Objective Gradients """
         return self._eval(obj_df,dvs)
-
-    def obj_ddf(self,dvs):
-        """ Evaluates SU2 Design Objective Hessian """
-        return self._eval(obj_ddf,dvs)
 
     def con_ceq(self,dvs):
         """ Evaluates SU2 Design Equality Constraints """
@@ -398,60 +393,6 @@ def obj_df(dvs,config,state=None):
     return vals_out
 
 #: def obj_df()
-
-def obj_ddf(dvs,config,state=None):
-    """ vals = SU2.eval.obj_ddf(dvs,config,state=None)
-
-        Evaluates SU2 Objective Hessian
-        Wraps SU2.eval.hess()
-
-        Takes a design vector for input as a list (shape n)
-        or numpy array (shape n or nx1 or 1xn), a config
-        and optionally a state.
-
-        Outputs a list of hessian entries.
-    """
-
-    # unpack config and state
-    config.unpack_dvs(dvs)
-    state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','DISCRETE_ADJOINT')
-
-    def_objs    = config['OPT_OBJECTIVE']
-    objectives  = def_objs.keys()
-
-    # Number of objective functionals, supposed to be 1 at the moment!
-    n_obj       = 1
-
-    n_dv = sum(config['DEFINITION_DV']['SIZE'])
-
-    # evaluate the objective
-    vals_out = []
-
-    # Evaluate objective
-    for i_obj,this_obj in enumerate(objectives):
-        # For multiple objectives are evaluated one-by-one rather than combined
-        # MARKER_MONITORING should be updated to only include the marker for i_obj
-        # For single objectives, multiple markers can be used
-        scale = def_objs[this_obj]['SCALE']
-        global_factor = float(config['OPT_HESSIAN_FACTOR'])
-        sign  = su2io.get_objectiveSign(this_obj)
-
-        # Evaluate Objective Hessian
-        hess = su2hess(this_obj,grad_method,config,state)
-
-        # scaling and sign
-        for i_dv in range(n_dv):
-            for j_dv in range(n_dv):
-                hess[i_dv][j_dv] = hess[i_dv][j_dv] * global_factor * sign
-
-        vals_out.append(hess)
-
-    #: for each objective
-
-    return vals_out
-
-#: def obj_ddf()
 
 def con_ceq(dvs,config,state=None):
     """ vals = SU2.eval.con_ceq(dvs,config,state=None)

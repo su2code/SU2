@@ -74,7 +74,7 @@ public:
 
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
-  MatrixType hessian;                        /*!< \brief The approximated Hessian with respect to the design variables. */
+  std::vector<std::vector<su2double>> hessian;                        /*!< \brief The approximated Hessian with respect to the design variables. */
 
   /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
   vector<unsigned long> ExtraVerticesToEliminate;
@@ -101,7 +101,7 @@ public:
   void ApplyGradientSmoothingVolume(CGeometry *geometry,
                                     CSolver *solver,
                                     CNumerics **numerics,
-                                    CConfig *config);
+                                    CConfig *config) override;
 
   /*!
    * \brief Main routine to apply the method only on the surface for mesh sensitivities
@@ -111,7 +111,7 @@ public:
                                        CSolver *solver,
                                        CNumerics **numerics,
                                        CConfig *config,
-                                       unsigned long val_marker);
+                                       unsigned long val_marker) override;
 
   /*!
    * \brief All steps required for smoothing the whole system on DV level in an iterative way
@@ -122,7 +122,7 @@ public:
                                 CSurfaceMovement *surface_movement,
                                 CVolumetricMovement *grid_movement,
                                 CConfig *config,
-                                vector<su2double> additionalGrad);
+                                vector<su2double> additionalGrad) override;
 
 
   /*!
@@ -205,17 +205,17 @@ public:
   void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
                                               CSurfaceMovement *surface_movement,
                                               CVolumetricMovement *grid_movement,
-                                              CConfig *config);
+                                              CConfig *config) override;
 
   /*!
    * \brief Return current parameter gradient.
    */
-  inline vector<su2double> GetDeltaP() { return deltaP; }
+  inline vector<su2double> GetDeltaP() override { return deltaP; }
 
   /*!
    * \brief Return a handle for the Hessian.
    */
-  void GetHessianMatrix() {}
+  void GetHessianMatrix() override {}
 
   /*!
    * \brief write the DV gradient into a file
@@ -265,7 +265,7 @@ public:
    */
   void SetSensitivity(CGeometry *geometry,
                       CConfig *config,
-                      CSolver *solver);
+                      CSolver *solver) override;
 
   /*!
    * \brief Store smoothed sensitivties back into the adjoint solver.
@@ -275,7 +275,7 @@ public:
    */
   void OutputSensitivity(CGeometry *geometry,
                          CConfig *config,
-                         CSolver *solver);
+                         CSolver *solver) override;
 
   /*!
    * \brief Write the solution of the linear solver into the sensitivities of the nodes

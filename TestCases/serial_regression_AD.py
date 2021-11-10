@@ -292,6 +292,22 @@ def main():
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)
 
+    ###################################
+    ### Sobolev Gradient Smoothing  ###
+    ###################################
+
+    grad_smooth_naca0012           = TestCase('grad_smooth_naca0012')
+    grad_smooth_naca0012.cfg_dir   = "grad_smooth/naca0012"
+    grad_smooth_naca0012.cfg_file  = "inv_NACA0012_gradsmooth.cfg"
+    grad_smooth_naca0012.test_iter = 1
+    grad_smooth_naca0012.test_vals = [-4.055339, -8.750185, 0.00000, 0.00000]
+    grad_smooth_naca0012.su2_exec  = "SU2_CFD_AD"
+    grad_smooth_naca0012.timeout   = 1600
+    grad_smooth_naca0012.tol       = 0.00001
+    grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
+    grad_smooth_naca0012.test_file = "of_hess.dat.ref"
+    test_list.append(grad_smooth_naca0012)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################  

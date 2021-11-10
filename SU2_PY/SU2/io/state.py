@@ -107,7 +107,7 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','HESSIAN','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA']:
         NewClass[key] = ordered_bunch()
             
     if config:

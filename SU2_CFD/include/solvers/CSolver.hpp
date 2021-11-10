@@ -56,8 +56,6 @@
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
 
-#include "../../../Common/include/eigen_structure.hpp"
-
 #ifdef HAVE_LIBROM
 #include "BasisGenerator.h"
 #include "QDEIM.h"

@@ -33,7 +33,6 @@ import os
 import shutil, glob
 from SU2.util import ordered_bunch
 from .historyMap import history_header_map as historyOutFields
-import numpy as np
 
 # -------------------------------------------------------------------
 #  Read SU2_DOT Gradient Values
@@ -61,25 +60,6 @@ def read_gradients( Grad_filename , scale = 1.0):
 
 #: def read_gradients()
 
-
-# -------------------------------------------------------------------
-#  Read SU2_CFD_AD Hessian Approximation Values
-# -------------------------------------------------------------------
-
-def read_hessian( Hess_filename ):
-    """ reads the raw hessian from the hessian file
-        returns a list of floats
-    """
-
-    # open file and skip first line
-    hessfile = open(Hess_filename)
-
-    # read values
-    hess_vals = np.loadtxt(hessfile,delimiter=",")
-
-    return hess_vals
-
-#: def read_hessian()
 
 # -------------------------------------------------------------------
 #  Read All Data from a Plot File
