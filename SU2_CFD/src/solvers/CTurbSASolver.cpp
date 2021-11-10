@@ -598,9 +598,16 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
+      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+      su2double Inlet_Vars[MAXNVAR];
+      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      if (config->GetInlet_Profile_From_File()) {
+        Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
+      }
+
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_Vars);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
