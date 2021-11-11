@@ -259,6 +259,11 @@ class CScalarSolver : public CSolver {
    */
   void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
+  void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
+                                                         CConfig* config);
+
+  void PrepareExplicitIteration(CGeometry* geometry, CSolver** solver_container,
+                                                          CConfig* config);
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.

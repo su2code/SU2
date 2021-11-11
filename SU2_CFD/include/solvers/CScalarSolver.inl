@@ -405,6 +405,74 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 }
 
 template <class VariableType>
+void CScalarSolver<VariableType>::PrepareExplicitIteration(CGeometry* geometry, CSolver** solver_container,
+                                                        CConfig* config) {
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Set shared residual variables to 0 and declare
+   *    local ones for current thread to work on. ---*/
+
+  SetResToZero();
+
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
+
+  /*--- No need to build implicit system, but compute residuals ---*/
+
+  SU2_OMP_FOR_(schedule(static, omp_chunk_size) SU2_NOWAIT)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    /// TODO: This could be the SetTime_Step of this solver.
+    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint * nVar + iVar;
+      su2double Res = fabs(LinSysRes[total_index]);
+      resRMS[iVar] += Res * Res;
+      if (Res > resMax[iVar]) {
+        resMax[iVar] = Res;
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Residual_RMS[iVar] += resRMS[iVar];
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+  }
+  END_SU2_OMP_CRITICAL
+  SU2_OMP_BARRIER
+
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+}
+
+template <class VariableType>
+void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
+                                                       CConfig* config) {
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  PrepareExplicitIteration(geometry,solver_container,config);
+
+  SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE))
+  for(unsigned long iPoint=0; iPoint<nPointDomain; iPoint++) {
+    const su2double dt = nodes->GetDelta_Time(iPoint);
+    const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+    const su2double* local_Residual = LinSysRes.GetBlock(iPoint);
+    su2double* local_Update = LinSysSol.GetBlock(iPoint);
+    for(auto iVar=0u; iVar < nVar; iVar++){
+      local_Update[iVar] = -dt/Vol * local_Residual[iVar];
+    }
+  }
+  END_SU2_OMP_FOR
+
+  CompleteImplicitIteration(geometry, solver_container, config);
+}
+
+template <class VariableType>
 void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                                     unsigned short iRKStep, unsigned short iMesh,
                                                     unsigned short RunTime_EqSystem) {
