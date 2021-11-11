@@ -180,11 +180,6 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     deltaP.push_back(0.0);
   }
 
-  /*--- Hessian matrix ---*/
-  for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++){
-    hessian.push_back(deltaP);
-  }
-
   /*--- set the solver name for output purposes ---*/
   SolverName = "SOBOLEV";
 }
@@ -312,6 +307,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
   unsigned nDVtotal=config->GetnDV_Total();
   unsigned column, row;
   vector<su2double> seedvector(nDVtotal, 0.0);
+  hessian = MatrixType::Zero(nDVtotal, nDVtotal);
 
   /// get matrix vector product for this
   auto mat_vec = GetStiffnessMatrixVectorProduct(geometry, numerics, config);
@@ -383,32 +379,21 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     ProjectMeshToDV(geometry, helperVecOut, seedvector, activeCoord, config);
 
     /// extract projected direction
-    for (row=0; row<nDVtotal; row++) {
-      hessian[row][column] = seedvector[row];
-    }
+    hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
   }
 
   /// output the matrix
   if (rank == MASTER_NODE) {
     ofstream SysMatrix(config->GetObjFunc_Hess_FileName());
-    SysMatrix.precision(15);
-    for (row=0; row<nDVtotal; row++) {
-      for (column=0; column<nDVtotal; column++) {
-        if (column>0) { SysMatrix << ", "; }
-        SysMatrix << hessian[row][column];
-      }
-      SysMatrix << std::endl;
-    }
+    SysMatrix << hessian.format(CSVFormat);
     SysMatrix.close();
   }
 
   /// calculate and output the treated gradient
-  /*
   QRdecomposition QR(hessian);
   VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
   VectorType x = QR.solve(b);
   deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
-  */
 
   OutputDVGradient();
 
