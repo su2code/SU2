@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -214,6 +214,13 @@ protected:
   void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const;
 
   /*!
+   * \brief Helper to instantiate turbulence numerics specialized for different flow solvers.
+   */
+  template <class FlowIndices>
+  void InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig *config,
+                                    const CSolver* turb_solver, CNumerics ****&numerics) const;
+
+  /*!
    * \brief Definition and allocation of all solver classes.
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] solver_container - Container vector with all the solutions.
@@ -312,6 +319,12 @@ protected:
    * \brief A virtual member.
    */
   virtual void Update() {}
+
+  /*!
+   * \brief Print out the direct residuals.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   */
+  void Print_DirectResidual(RECORDING kind_recording);
 
 public:
 

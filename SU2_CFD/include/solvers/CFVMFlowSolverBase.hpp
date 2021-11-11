@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -224,7 +224,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
-  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
 
   /*!
    * \brief Default constructor, this class is not directly instantiable.
@@ -309,7 +308,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
    * iteration for stability.
    */
-  void ComputeUnderRelaxationFactor(const CConfig* config);
+  virtual void ComputeUnderRelaxationFactor(const CConfig* config);
 
   /*!
    * \brief General implementation to load a flow solution from a restart file.
@@ -1102,6 +1101,11 @@ class CFVMFlowSolverBase : public CSolver {
   ~CFVMFlowSolverBase();
 
  public:
+
+  /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   */
+  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
 
   /*!
    * \brief Load a solution from a restart file.

@@ -1,8 +1,8 @@
-﻿/*!
- * \file CNEMOTurbVariable.hpp
- * \brief Base class for defining the variables of the turbulence model.
+/*!
+ * \file CScalarVariable.hpp
+ * \brief Base class for defining the shared variables of scalar solvers.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,24 +30,19 @@
 #include "CVariable.hpp"
 
 /*!
- * \class CNEMOTurbVariable
- * \brief Base class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \class CScalarVariable
+ * \brief Base class for defining the shared variables of scalar solvers.
  */
-class CNEMOTurbVariable : public CVariable {
-protected:
-  VectorType muT;         /*!< \brief Eddy viscosity. */
-  MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
+class CScalarVariable : public CVariable {
+ protected:
+  MatrixType HB_Source; /*!< \brief Harmonic Balance source term. */
 
-  CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL
+                                               reconstruction for the convective term */
+  CVectorOfMatrix
+      Gradient_Aux; /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
 
-  /*!< \brief Index definition for NEMO pritimive variables. */
-  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX, nSpecies;
-
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -55,33 +50,16 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CNEMOTurbVariable() override = default;
-
-  /*!
-   * \brief Get the value of the eddy viscosity.
-   * \param[in] iPoint - Point index.
-   * \return the value of the eddy viscosity.
-   */
-  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
-
-  /*!
-   * \brief Set the value of the eddy viscosity.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_muT - Value of the eddy viscosity.
-   */
-  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
+  CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config);
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final {
+    return Gradient_Reconstruction[iPoint];
+  }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
@@ -90,5 +68,23 @@ public:
   inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
   inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
-};
+  /*!
+   * \brief Set the harmonic balance source term.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] source - Value of the harmonic balance source term. for the index <i>iVar</i>.
+   */
+  inline void SetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar, su2double source) final {
+    HB_Source(iPoint, iVar) = source;
+  }
 
+  /*!
+   * \brief Get the harmonic balance source term.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
+   */
+  inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const final {
+    return HB_Source(iPoint, iVar);
+  }
+};

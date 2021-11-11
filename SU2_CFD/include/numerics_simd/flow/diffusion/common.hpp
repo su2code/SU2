@@ -2,7 +2,7 @@
  * \file common.hpp
  * \brief Helper functions for viscous methods.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -151,7 +151,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
 
 /*!
  * \brief Scale the stress tensor according to the target (from a
- *        wall function) magnitute in the tangential direction.
+ *        wall function) magnitude in the tangential direction.
  */
 template<class Container, size_t nDim>
 FORCEINLINE void addTauWall(Int iPoint, Int jPoint,

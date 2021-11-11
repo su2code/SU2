@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,7 +142,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CVariable(unsigned long npoint, unsigned long nvar, CConfig *config);
+  CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config);
 
   /*!
    * \overload
@@ -152,7 +152,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] adjoint - True if derived class is an adjoint variable.
    */
-  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint = false);
+  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config, bool adjoint = false);
 
   /*!
    * \brief Destructor of the class.
@@ -407,35 +407,20 @@ public:
   }
 
   /*!
-   * \brief Add a value to the solution, clipping the values.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the solution change.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
-   */
-  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                 su2double lowerlimit, su2double upperlimit) {
-
-    su2double val_new = Solution_Old(iPoint, iVar) + solution;
-    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
-  }
-
-  /*!
    * \brief Update the variables using a conservative format.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Index of the variable.
    * \param[in] solution - Value of the solution change.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_density_old - Value of the old density.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
+   * \param[in] lowerlimit - Lower value for Solution clipping.
+   * \param[in] upperlimit - Upper value for Solution clipping.
+   * \param[in] Sol2Conservative - Factor multiplied to Solution to get transported variable.
+   * \param[in] Sol2Conservative_old - Factor multiplied to Solution to get transported variable, of the previous Iteration.
    */
-  inline void AddConservativeSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                      su2double val_density, su2double val_density_old,
-                                      su2double lowerlimit, su2double upperlimit) {
+  inline void AddClippedSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
+                                 su2double lowerlimit, su2double upperlimit,
+                                 su2double Sol2Conservative = 1.0, su2double Sol2Conservative_old = 1.0) {
 
-    su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
+    su2double val_new = (Solution_Old(iPoint,iVar)*Sol2Conservative_old + solution)/Sol2Conservative;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
   }
 
@@ -953,6 +938,12 @@ public:
   inline virtual su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const { return 0.0; }
 
   /*!
+   * \brief Get the species enthalpy.
+   * \return Value of the species enthalpy.
+   */
+  inline virtual su2double* GetEnthalpys(unsigned long iPoint) { return nullptr; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \return Value of the flow energy.
@@ -1050,6 +1041,15 @@ public:
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
   inline virtual su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of the velocity gradient.
+   */
+  inline virtual CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const {
+    return CMatrixView<const su2double>();
+  }
 
   /*!
    * \brief A virtual member.
@@ -1421,18 +1421,6 @@ public:
    * \param[in] config - Configuration parameters.
    */
   inline virtual void SetPrimitive(unsigned long iPoint, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double Temperature_Wall) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double* Temperature_Wall) {}
 
   /*!
    * \brief Set the thermal coefficient.
@@ -2168,9 +2156,9 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
-  inline virtual void SetTauWall(unsigned long iPoint, su2double val_tau_wall) {}
+  inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
-  inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }
 
   inline virtual void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}

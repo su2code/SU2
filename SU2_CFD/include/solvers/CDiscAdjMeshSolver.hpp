@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,7 +54,6 @@ private:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
 
 public:
 

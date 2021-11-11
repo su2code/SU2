@@ -2,7 +2,7 @@
  * \file CEdge.cpp
  * \brief Implementation of the edge class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

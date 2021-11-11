@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,24 +37,23 @@
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
+  VectorType Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
+  VectorType Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
+  VectorType Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
+  VectorType Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
+  MatrixType DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
+  CVectorOfMatrix Dij;          /*!< \brief Binary diffusion coefficients. */
+  VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
+  VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
+  VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
+  MatrixType Enthalpys;         /*!< \brief Species enthalpies of the mixture. */
+
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
   VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
-
-  VectorType Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
-  VectorType Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
-  VectorType Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
-  VectorType Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
-  MatrixType DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
-  CVectorOfMatrix Dij;            /*!< \brief Binary diffusion coefficients. */
-  VectorType LaminarViscosity;  /*!< \brief Viscosity of the fluid. */
-  VectorType ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
-  VectorType ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
-  vector<su2double> thermalconductivities;
-  vector<su2double> Ds;
 
 public:
 
@@ -72,30 +71,12 @@ public:
    * \param[in] val_nPrimVargrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMONSVariable(su2double val_density, const su2double *val_massfrac, su2double *val_velocity,
+  CNEMONSVariable(su2double val_density, const su2double *val_massfrac, const su2double *val_velocity,
                   su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
                   unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
-                  unsigned long val_nPrimVarGrad, CConfig *config, CNEMOGas *fluidmodel);
+                  unsigned long val_nPrimVarGrad, const CConfig *config, CNEMOGas *fluidmodel);
 
   /*!
-   * \brief Constructor of the class.
-   * \param[in] val_solution - Pointer to the flow value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of conserved variables.
-   * \param[in] val_nPrimVar - Number of primitive variables.
-   * \param[in] val_nPrimgVarGrad - Number of primitive gradient variables.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CNEMONSVariable(su2double *val_solution, unsigned long val_nDim, unsigned long val_nVar,
-                  unsigned long val_nPrimVar, unsigned long val_nPrimVarGrad, unsigned long npoint,
-                  CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CNEMONSVariable() = default;
-
-    /*!
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
@@ -104,13 +85,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
-  using CVariable::SetPrimVar;
-
-  /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity(void);
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
 
   /*!
    * \overload
@@ -123,6 +98,12 @@ public:
    * \return Value of the species diffusion coefficient.
    */
   inline su2double* GetDiffusionCoeff(unsigned long iPoint) override { return DiffusionCoeff[iPoint]; }
+
+  /*!
+   * \brief Get the species enthalpy.
+   * \return Value of the species enthalpy.
+   */
+  inline su2double* GetEnthalpys(unsigned long iPoint) override { return Enthalpys[iPoint]; }
 
   /*!
    * \brief Get the laminar viscosity of the flow.
@@ -147,11 +128,4 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity_ve(unsigned long iPoint) const override { return ThermalCond_ve(iPoint); }
-
-  /*!
-   * \brief Set the temperature at the wall
-   */
-  inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
-    Primitive(iPoint,T_INDEX) = temperature_wall;
-  }
 };

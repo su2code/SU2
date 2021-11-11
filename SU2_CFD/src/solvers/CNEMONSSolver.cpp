@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,7 +105,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    SetTauWall_WF(geometry, solver_container, config);
+    SetTau_Wall_WF(geometry, solver_container, config);
   }
 }
 
@@ -115,8 +115,8 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
    *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
-  const unsigned short turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+  const TURB_MODEL turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -125,7 +125,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     su2double eddy_visc = 0.0, turb_ke = 0.0;
 
-    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
+    if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       nodes->SetEddyViscosity(iPoint, eddy_visc);
@@ -178,17 +178,14 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
 
-  bool err;
-  unsigned short iVar;
-  unsigned long iPoint, jPoint, iEdge;
-
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   CNumerics* numerics = numerics_container[VISC_TERM];
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points, coordinates and normal vector in edge ---*/
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                        geometry->nodes->GetCoord(jPoint) );
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
@@ -196,8 +193,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Primitive variables, and gradient ---*/
     numerics->SetConservative   (nodes->GetSolution(iPoint),
                                  nodes->GetSolution(jPoint) );
-    numerics->SetConsVarGradient(nodes->GetGradient(iPoint),
-                                 nodes->GetGradient(jPoint) );
     numerics->SetPrimitive      (nodes->GetPrimitive(iPoint),
                                  nodes->GetPrimitive(jPoint) );
     numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -234,26 +229,15 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (residual[iVar] != residual[iVar]) err = true;
-    //if (implicit)
-    //  for (iVar = 0; iVar < nVar; iVar++)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-    //          (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-    //        err = true;
+    bool err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
-      //if (implicit) {
-      //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      //  Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      //  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      //  Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-      //}
+      if (implicit) {
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      }
     }
   } //iEdge
 }
@@ -266,13 +250,12 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  unsigned short val_marker) {
 
   /*--- Local variables ---*/
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
-  su2double pcontrol = 1.0;
+  const su2double pcontrol = 1.0;
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX       = nodes->GetTIndex();
@@ -308,7 +291,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
       dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
     }
-
     su2double ktr = nodes->GetThermalConductivity(iPoint);
     su2double kve = nodes->GetThermalConductivity_ve(iPoint);
 
@@ -342,12 +324,21 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++){
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-    nodes->SetVel_ResTruncError_Zero(iPoint);
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+    if (implicit) {
+      /*--- Enforce the no-slip boundary condition in a strong way ---*/
+      for (int iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+        auto total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+    }
 
   }
   END_SU2_OMP_FOR
@@ -386,7 +377,6 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                               sour_numerics, config, val_marker);
 
-
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -407,7 +397,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   su2double **GradY;
 
   /*--- Assign booleans ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool catalytic = false;
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -534,7 +524,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       //      sour_numerics->ComputeChemistry(Res_Sour, Jacobian_i, config);
       //      LinSysRes.AddBlock(iPoint, Res_Sour);
       //      if (implicit)
-      //        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      //        Jacobian.AddBlock2Diag(iPoint, iPoint, Jacobian_i);
 
       /*--- Only change velocity-rows of the Jacobian (includes 1 in the diagonal)/
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
@@ -593,6 +583,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
+  su2double UnitNormal[MAXNDIM] = {0.0};
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
@@ -629,6 +620,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Compute dual-grid area and boundary normal ---*/
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
     su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
 
     /*--- Compute closest normal neighbor ---*/
     const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -647,9 +640,10 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize viscous residual to zero ---*/
     for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++){
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-    nodes->SetVel_ResTruncError_Zero(iPoint);
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
 
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
@@ -688,28 +682,33 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     //Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dist_ij;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
-    //if (implicit) {
-    //
-    /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
-    //su2double Density = nodes->GetDensity(iPoint);
-    //su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[1]);
-    //su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
-    //Jacobian_i[nDim+1][0] = thermal_conductivity/dist_ij * dTdrho * Area;
+    if (implicit) {
 
-    //for (auto jDim = 0u; jDim < nDim; jDim++)
-    //  Jacobian_i[nDim+1][jDim+1] = 0.0;
+      /*--- Initialize Jacobian to zero ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        for (auto jVar = 0u; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
 
-    //Jacobian_i[nDim+1][nDim+1] = thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
-    //}
+      /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
+      const auto dTdU   = nodes->GetdTdU(iPoint);
+      const auto dTvedU = nodes->GetdTvedU(iPoint);
+      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal); 
 
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +
+                                              kve*theta/dist_ij*dTvedU[iVar])*Area;
+        Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dist_ij*dTvedU[iVar]*Area;
+      }
+    } // implicit
+
+    /*--- Convective and viscous contributions to the residual at the wall ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
     /*--- Enforce the no-slip boundary condition in a strong way by
-    modifying the velocity-rows of the Jacobian (1 on the diagonal).
-    And add the contributions to the Jacobian due to energy. ---*/
-
+     modifying the velocity-rows of the Jacobian (1 on the diagonal).
+     And add the contributions to the Jacobian due to energy. ---*/
     if (implicit) {
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
         auto total_index = iPoint*nVar+iVar;
@@ -750,7 +749,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
   //su2double pcontrol = 0.6;
@@ -897,7 +896,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
               Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
 
         /*--- Apply to the linear system ---*/
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -1078,6 +1077,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   END_SU2_OMP_FOR
 }
 
-void CNEMONSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+void CNEMONSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
     SU2_MPI::Error("Wall Functions not yet operational in NEMO.", CURRENT_FUNCTION);
 }
+

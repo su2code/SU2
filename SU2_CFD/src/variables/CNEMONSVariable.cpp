@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,13 +26,11 @@
  */
 
 #include "../../include/variables/CNEMONSVariable.hpp"
-#include "../../../Common/include/parallelization/omp_structure.hpp"
-#include "../../include/fluid/CFluidModel.hpp"
 #include <math.h>
 
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                  const su2double *val_massfrac,
-                                 su2double *val_mach,
+                                 const su2double *val_mach,
                                  su2double val_temperature,
                                  su2double val_temperature_ve,
                                  unsigned long npoint,
@@ -40,7 +38,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                  unsigned long val_nvar,
                                  unsigned long val_nvarprim,
                                  unsigned long val_nvarprimgrad,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  CNEMOGas *fluidmodel) : CNEMOEulerVariable(val_pressure,
                                                                        val_massfrac,
                                                                        val_mach,
@@ -54,6 +52,18 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                                                        config,
                                                                        fluidmodel) {
 
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+
+  DiffusionCoeff.resize(nPoint, nSpecies)  = su2double(0.0);
+  LaminarViscosity.resize(nPoint)          = su2double(0.0);
+  ThermalCond.resize(nPoint)               = su2double(0.0);
+  ThermalCond_ve.resize(nPoint)            = su2double(0.0);
+  Enthalpys.resize(nPoint, nSpecies)       = su2double(0.0);
+
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
   inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
 
   Vorticity.resize(nPoint,3)     = su2double(0.0);
@@ -64,59 +74,24 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   Vortex_Tilting.resize(nPoint)  = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-
-  DiffusionCoeff.resize(nPoint, nSpecies)  = su2double(0.0);
-  LaminarViscosity.resize(nPoint)          = su2double(0.0);
-  ThermalCond.resize(nPoint)               = su2double(0.0);
-  ThermalCond_ve.resize(nPoint)            = su2double(0.0);
 }
 
-bool CNEMONSVariable::SetVorticity(void) {
+bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint) {
-
-    su2double u_y = Gradient_Primitive(iPoint, VEL_INDEX  , 1);
-    su2double v_x = Gradient_Primitive(iPoint, VEL_INDEX+1, 0);
-    su2double u_z = 0.0;
-    su2double v_z = 0.0;
-    su2double w_x = 0.0;
-    su2double w_y = 0.0;
-
-    if (nDim == 3) {
-      u_z = Gradient_Primitive(iPoint,VEL_INDEX, 2);
-      v_z = Gradient_Primitive(iPoint,VEL_INDEX+1, 2);
-      w_x = Gradient_Primitive(iPoint,VEL_INDEX+2, 0);
-      w_y = Gradient_Primitive(iPoint,VEL_INDEX+2, 1);
-    }
-
-    Vorticity(iPoint,0) = w_y-v_z;
-    Vorticity(iPoint,1) = -(w_x-u_z);
-    Vorticity(iPoint,2) = v_x-u_y;
-
-  }
-  return false;
-}
-
-bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+  unsigned long iVar, iSpecies;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
-                              Cvves[iPoint], turb_ke);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
-    for (auto iVar = 0u; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute Primitive from previous solution ---*/
-    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
-                 Cvves[iPoint], turb_ke);
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   /*--- Set additional point quantities ---*/
@@ -124,13 +99,21 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
   SetVelocity2(iPoint);
 
-  Ds = fluidmodel->GetDiffusionCoeff();
-  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+  const auto& Ds = fluidmodel->GetDiffusionCoeff();
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
 
+  su2double T   =  Primitive(iPoint,nSpecies);
+  su2double Tve =  Primitive(iPoint,nSpecies+1);
+
+  su2double* val_eves = GetEve(iPoint);
+  const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eves);
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Enthalpys(iPoint, iSpecies) = hs[iSpecies];
+  
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
-  thermalconductivities    = fluidmodel->GetThermalConductivities();
+  const auto& thermalconductivities = fluidmodel->GetThermalConductivities();
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
@@ -138,6 +121,3 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
   return nonPhys;
 }
-
-
-

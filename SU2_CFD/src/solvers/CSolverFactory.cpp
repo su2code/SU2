@@ -2,7 +2,7 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,8 +35,6 @@
 #include "../../include/solvers/CNEMONSSolver.hpp"
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/solvers/CTurbSSTSolver.hpp"
-#include "../../include/solvers/CNEMOTurbSASolver.hpp"
-#include "../../include/solvers/CNEMOTurbSSTSolver.hpp"
 #include "../../include/solvers/CTransLMSolver.hpp"
 #include "../../include/solvers/CAdjEulerSolver.hpp"
 #include "../../include/solvers/CAdjNSSolver.hpp"
@@ -216,7 +214,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
   CSolver *genericSolver = nullptr;
 
-  ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
+  TURB_MODEL kindTurbModel = static_cast<TURB_MODEL>(config->GetKind_Turb_Model());
 
   SolverMetaData metaData;
 
@@ -232,11 +230,11 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::CONT_ADJ_TURB:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true, false);
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_TURB:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true, false );
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, true);
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::BASELINE:
@@ -299,11 +297,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
     case SUB_SOLVER_TYPE::TURB:
     case SUB_SOLVER_TYPE::TURB_SA:
     case SUB_SOLVER_TYPE::TURB_SST:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false, false);
-      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
-      break;
-    case SUB_SOLVER_TYPE::NEMO_TURB:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false, true);
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::TEMPLATE:
@@ -334,31 +328,25 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
 }
 
-CSolver* CSolverFactory::CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint, int nemo){
+CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
 
   CSolver *turbSolver = nullptr;
 
   if (!adjoint){
     switch (kindTurbModel) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        if (nemo){
-          turbSolver = new CNEMOTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());}
-        else {
-          turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());}
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+        turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
-      case SST: case SST_SUST:
-        if (nemo){
-          turbSolver = new CNEMOTurbSSTSolver(geometry, config, iMGLevel);}
-        else{
-          turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);}
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+        turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         break;
-      default:
-        SU2_MPI::Error("Unknown turbulence model", CURRENT_FUNCTION);
+      case TURB_MODEL::NONE:
+        SU2_MPI::Error("Trying to create TurbSolver container but TURB_MODEL=NONE.", CURRENT_FUNCTION);
         break;
     }
   } else {

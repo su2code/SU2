@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -163,19 +163,6 @@ protected:
   inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
 
   /*!
-   * \brief Pure virtual function, NEMO_RANS solver MUST implement a method returning their "node_infty".
-   * \note Don't forget to call SetBaseClassPointerToNodeInfty() in the constructor of the derived CSolver.
-   * \return Nodes of the solver, upcast to their base class (CVariable).
-   */
-  virtual CVariable* GetBaseClassPointerToNodeInfty() = 0;
-
-  /*!
-   * \brief Call this method to set "base_nodes_infty" after the "node_infty" variable of the derived solver is instantiated.
-   * \note One could set base_node_infty directly if it were not private but that could lead to confusion
-   */
-  inline void SetBaseClassPointerToNodeInfty() { base_node_infty = GetBaseClassPointerToNodeInfty(); }
-
-  /*1
    * \brief Compute the undivided laplacian for the solution variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -196,7 +183,7 @@ private:
    This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
    directly instead of calling GetBaseClassPointerToNodes() or doing something equivalent. ---*/
   CVariable* base_nodes;  /*!< \brief Pointer to CVariable to allow polymorphic access to solver nodes. */
-  CVariable* base_node_infty;  /*!< \brief Pointer to CVariable to allow acces to NEMO solver node_infty */
+
 public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -229,15 +216,6 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CSolver(void);
-
-  /*!
-   * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
-   * \return Nodes of the solver.
-   */
-  inline CVariable* GetNode_Infty() {
-    assert(base_node_infty!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
-    return base_node_infty;
-  }
 
   /*!
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
