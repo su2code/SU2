@@ -2,7 +2,7 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,18 +25,18 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CTransLMSolver.hpp"
 #include "../../include/variables/CTransLMVariable.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
 
 /*---  This is the implementation of the Langtry-Menter transition model.
-       The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 
+       The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009
        DOI: https://doi.org/10.2514/1.42362 ---*/
-       
-CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
-CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+// Note: TransLM seems to use rho*gamma, rho*Re_sigma as Solution variables, thus Conservative=true
+
+CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+    : CTurbSolver(geometry, config, true) {
   unsigned short iVar, nLineLets;
   unsigned long iPoint, index;
   su2double tu_Inf, dull_val, rey;
@@ -47,8 +47,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
   cout << "Entered constructor for CTransLMSolver -AA\n";
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Define geometry constans in the solver structure ---*/
   nDim = geometry->GetnDim();

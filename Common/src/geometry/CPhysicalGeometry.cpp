@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2129,7 +2129,6 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
   nPoint       = nLocal_Point;
   nPointDomain = nLocal_PointDomain;
-  nPointNode   = nPoint;
 
   nodes = new CPoint(nPoint, nDim, MESH_0, config);
 
@@ -2309,7 +2308,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
     elem[jElem] = new CTriangle(Local_Nodes[0],
                                 Local_Nodes[1],
-                                Local_Nodes[2], 2);
+                                Local_Nodes[2]);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2342,7 +2341,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
     elem[jElem] = new CQuadrilateral(Local_Nodes[0],
                                      Local_Nodes[1],
                                      Local_Nodes[2],
-                                     Local_Nodes[3], 2);
+                                     Local_Nodes[3]);
 
     elem[jElem]->SetGlobalIndex(kElem);
 
@@ -2724,7 +2723,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
       /*--- Create the geometry object for this element. ---*/
 
       bound[iMarker][nElemBound_Local[iMarker]] = new CLine(Local_Nodes[0],
-                                                            Local_Nodes[1], 2);
+                                                            Local_Nodes[1]);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -2757,7 +2756,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
       bound[iMarker][nElemBound_Local[iMarker]] = new CTriangle(Local_Nodes[0],
                                                                 Local_Nodes[1],
-                                                                Local_Nodes[2], 3);
+                                                                Local_Nodes[2]);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -2791,7 +2790,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
       bound[iMarker][nElemBound_Local[iMarker]] = new CQuadrilateral(Local_Nodes[0],
                                                                      Local_Nodes[1],
                                                                      Local_Nodes[2],
-                                                                     Local_Nodes[3], 3);
+                                                                     Local_Nodes[3]);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -3328,7 +3327,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
     if (SendDomainLocal[iDomain].size() != 0) {
       for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerSend); iVertex++) {
         LocalNode = SendDomainLocal[iDomain][iVertex];
-        bound[iMarkerSend][iVertex] = new CVertexMPI(LocalNode, nDim);
+        bound[iMarkerSend][iVertex] = new CVertexMPI(LocalNode);
         bound[iMarkerSend][iVertex]->SetRotation_Type(SendTransfLocal[iDomain][iVertex]);
       }
       Marker_All_SendRecv[iMarkerSend] = iDomain+1;
@@ -3341,7 +3340,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       for (iVertex = 0; iVertex < GetnElem_Bound(iMarkerReceive); iVertex++) {
         LocalNode = ReceivedDomainLocal[iDomain][iVertex];
-        bound[iMarkerReceive][iVertex] = new CVertexMPI(LocalNode, nDim);
+        bound[iMarkerReceive][iVertex] = new CVertexMPI(LocalNode);
         bound[iMarkerReceive][iVertex]->SetRotation_Type(ReceivedTransfLocal[iDomain][iVertex]);
       }
       Marker_All_SendRecv[iMarkerReceive] = -(iDomain+1);
@@ -3458,17 +3457,17 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == LINE)
           bound_Copy[iMarker][iElem_Bound] = new CLine(bound[iMarker][iElem_Bound]->GetNode(0),
-                                                       bound[iMarker][iElem_Bound]->GetNode(1), 2);
+                                                       bound[iMarker][iElem_Bound]->GetNode(1));
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == TRIANGLE)
 
           bound_Copy[iMarker][iElem_Bound] = new CTriangle(bound[iMarker][iElem_Bound]->GetNode(0),
                                                            bound[iMarker][iElem_Bound]->GetNode(1),
-                                                           bound[iMarker][iElem_Bound]->GetNode(2), 3);
+                                                           bound[iMarker][iElem_Bound]->GetNode(2));
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == QUADRILATERAL)
           bound_Copy[iMarker][iElem_Bound] = new CQuadrilateral(bound[iMarker][iElem_Bound]->GetNode(0),
                                                             bound[iMarker][iElem_Bound]->GetNode(1),
                                                             bound[iMarker][iElem_Bound]->GetNode(2),
-                                                            bound[iMarker][iElem_Bound]->GetNode(3), 3);
+                                                            bound[iMarker][iElem_Bound]->GetNode(3));
       }
     }
   }
@@ -3497,7 +3496,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       Marker_All_SendRecv_Copy[iMarker_] = Marker_All_SendRecv[iMarker];
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0), nDim);
+        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0));
         bound_Copy[iMarker_][iVertex_]->SetRotation_Type(bound[iMarker][iElem_Bound]->GetRotation_Type());
         iVertex_++;
       }
@@ -3526,7 +3525,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       Marker_All_SendRecv_Copy[iMarker_] = Marker_All_SendRecv[iMarker];
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0), nDim);
+        bound_Copy[iMarker_][iVertex_] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0));
         bound_Copy[iMarker_][iVertex_]->SetRotation_Type(bound[iMarker][iElem_Bound]->GetRotation_Type());
         iVertex_++;
       }
@@ -3763,7 +3762,6 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
 
   /*--- Initialize point counts and the grid node data structure. ---*/
 
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
@@ -3824,7 +3822,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
       case TRIANGLE:
         elem[iElem] = new CTriangle(connectivity[0],
                                     connectivity[1],
-                                    connectivity[2], nDim);
+                                    connectivity[2]);
         nelem_triangle++;
         break;
 
@@ -3832,7 +3830,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
         elem[iElem] = new CQuadrilateral(connectivity[0],
                                          connectivity[1],
                                          connectivity[2],
-                                         connectivity[3], nDim);
+                                         connectivity[3]);
         nelem_quad++;
         break;
 
@@ -3985,18 +3983,18 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
         switch(vtk_type) {
           case LINE:
             bound[iMarker][iElem] = new CLine(connectivity[0],
-                                              connectivity[1],2);
+                                              connectivity[1]);
             iElem++; nelem_edge_bound++; break;
           case TRIANGLE:
             bound[iMarker][iElem] = new CTriangle(connectivity[0],
                                                   connectivity[1],
-                                                  connectivity[2],3);
+                                                  connectivity[2]);
             iElem++; nelem_triangle_bound++; break;
           case QUADRILATERAL:
             bound[iMarker][iElem] = new CQuadrilateral(connectivity[0],
                                                        connectivity[1],
                                                        connectivity[2],
-                                                       connectivity[3],3);
+                                                       connectivity[3]);
             iElem++; nelem_quad_bound++; break;
         }
 
@@ -4976,7 +4974,7 @@ void CPhysicalGeometry::SetBoundVolume(void) {
     }
 }
 
-void CPhysicalGeometry::SetVertex(CConfig *config) {
+void CPhysicalGeometry::SetVertex(const CConfig *config) {
   unsigned long  iPoint, iVertex, iElem;
   unsigned short iMarker, iNode;
 
@@ -6652,7 +6650,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
 }
 
-void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
+void CPhysicalGeometry::MatchActuator_Disk(const CConfig *config) {
 
   su2double epsilon = 1e-1;
 
@@ -6855,7 +6853,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
+void CPhysicalGeometry::MatchPeriodic(const CConfig *config,
                                       unsigned short val_periodic) {
 
   unsigned short iMarker, iDim, jMarker, pMarker = 0;
@@ -7388,7 +7386,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     AD::SetPreaccIn(Coord, nNodes, nDim);
 
     /*--- Compute the element median CG coordinates ---*/
-    auto Coord_Elem_CG = elem[iElem]->SetCoord_CG(Coord);
+    auto Coord_Elem_CG = elem[iElem]->SetCoord_CG(nDim, Coord);
     AD::SetPreaccOut(Coord_Elem_CG, nDim);
 
     for (unsigned short iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
@@ -7538,7 +7536,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
       AD::SetPreaccIn(Coord, nNodes, nDim);
 
       /*--- Compute the element CG coordinates ---*/
-      auto Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(Coord);
+      auto Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(nDim, Coord);
       AD::SetPreaccOut(Coord_Elem_CG, nDim);
 
       /*--- Loop over all the nodes of the boundary element ---*/
@@ -8431,7 +8429,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
 
 }
 
-void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
+void CPhysicalGeometry::FindNormal_Neighbor(const CConfig *config) {
   su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
   unsigned short iNeigh, iMarker, iDim;

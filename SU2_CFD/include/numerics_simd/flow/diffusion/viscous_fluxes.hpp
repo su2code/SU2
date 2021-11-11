@@ -2,7 +2,7 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -159,7 +159,8 @@ protected:
       addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
                       uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
     }
-    if(wallFun) addTauWall(iPoint, jPoint, solution.GetTauWall(), unitNormal, tau);
+
+    if(wallFun) addTauWall(iPoint, jPoint, solution.GetTau_Wall(), unitNormal, tau);
 
     Double cond = derived->thermalConductivity(avgV);
     VectorDbl<nDim> heatFlux;

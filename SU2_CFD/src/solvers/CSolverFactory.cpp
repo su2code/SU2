@@ -2,7 +2,7 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -196,7 +196,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
   CSolver *genericSolver = nullptr;
 
-  ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
+  TURB_MODEL kindTurbModel = static_cast<TURB_MODEL>(config->GetKind_Turb_Model());
 
   SolverMetaData metaData;
 
@@ -310,25 +310,25 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
 }
 
-CSolver* CSolverFactory::CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
+CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
 
   CSolver *turbSolver = nullptr;
 
   if (!adjoint){
     switch (kindTurbModel) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
         turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
-      case SST: case SST_SUST:
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
         turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         break;
-      default:
-        SU2_MPI::Error("Unknown turbulence model", CURRENT_FUNCTION);
+      case TURB_MODEL::NONE:
+        SU2_MPI::Error("Trying to create TurbSolver container but TURB_MODEL=NONE.", CURRENT_FUNCTION);
         break;
     }
   } else {

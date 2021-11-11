@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,7 +82,6 @@ protected:
   unsigned long nPoint{0},        /*!< \brief Number of points of the mesh. */
   nPointDomain{0},                /*!< \brief Number of real points of the mesh. */
   nPointGhost{0},                 /*!< \brief Number of ghost points of the mesh. */
-  nPointNode{0},                  /*!< \brief Size of the node array allocated to hold CPoint objects. */
   Global_nPoint{0},               /*!< \brief Total number of nodes in a simulation across all processors (including halos). */
   Global_nPointDomain{0},         /*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
   nElem{0},                       /*!< \brief Number of elements of the mesh. */
@@ -134,7 +133,7 @@ protected:
   vector<vector<su2double> > FaceArea_plane;   /*!< \brief Vector containing area/volume associated with  new points appearing on a single plane */
   vector<vector<unsigned long> > Plane_points; /*!< \brief Vector containing points appearing on a single plane */
 
-  vector<su2double> XCoordList;	          /*!< \brief Vector containing points appearing on a single plane */
+  vector<su2double> XCoordList;              /*!< \brief Vector containing points appearing on a single plane */
 
 #if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
   vector<vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
@@ -191,7 +190,6 @@ public:
   /*--- Main geometric elements of the grid. ---*/
 
   CPrimalGrid** elem{nullptr};           /*!< \brief Element vector (primal grid information). */
-  CPrimalGrid** face{nullptr};           /*!< \brief Face vector (primal grid information). */
   CPrimalGrid*** bound{nullptr};         /*!< \brief Boundary vector (primal grid information). */
   CPoint* nodes{nullptr};                /*!< \brief Node vector (dual grid information). */
   CEdge* edges{nullptr};                 /*!< \brief Edge vector (dual grid information). */
@@ -265,7 +263,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CGeometry(void);
+  CGeometry();
 
   /*!
    * \brief Constructor of the class.
@@ -275,7 +273,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CGeometry(void);
+  virtual ~CGeometry();
 
   /*!
    * \brief Routine to launch non-blocking recvs only for all periodic communications.
@@ -386,55 +384,55 @@ public:
    * \brief Get number of coordinates.
    * \return Number of coordinates.
    */
-  inline unsigned short GetnDim(void) const {return nDim;}
+  inline unsigned short GetnDim() const {return nDim;}
 
   /*!
    * \brief Get number of zones.
    * \return Number of zones.
    */
-  inline unsigned short GetnZone(void) const {return nZone;}
+  inline unsigned short GetnZone() const {return nZone;}
 
   /*!
    * \brief Get number of points.
    * \return Number of points.
    */
-  inline unsigned long GetnPoint(void) const {return nPoint;}
+  inline unsigned long GetnPoint() const {return nPoint;}
 
   /*!
    * \brief Get number of real points (that belong to the domain).
    * \return Number of real points.
    */
-  inline unsigned long GetnPointDomain(void) const {return nPointDomain;}
+  inline unsigned long GetnPointDomain() const {return nPointDomain;}
 
   /*!
    * \brief Retrieve total number of nodes in a simulation across all processors (including halos).
    * \return Total number of nodes in a simulation across all processors (including halos).
    */
-  inline unsigned long GetGlobal_nPoint(void) const { return Global_nPoint; }
+  inline unsigned long GetGlobal_nPoint() const { return Global_nPoint; }
 
   /*!
    * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
    * \return Total number of nodes in a simulation across all processors (excluding halos).
    */
-  inline unsigned long GetGlobal_nPointDomain(void) const { return Global_nPointDomain; }
+  inline unsigned long GetGlobal_nPointDomain() const { return Global_nPointDomain; }
 
   /*!
    * \brief Get number of elements.
    * \return Number of elements.
    */
-  inline unsigned long GetnElem(void) const {return nElem;}
+  inline unsigned long GetnElem() const {return nElem;}
 
   /*!
    * \brief Get number of edges.
    * \return Number of edges.
    */
-  inline unsigned long GetnEdge(void) const {return nEdge;}
+  inline unsigned long GetnEdge() const {return nEdge;}
 
   /*!
    * \brief Get number of markers.
    * \return Number of markers.
    */
-  inline unsigned short GetnMarker(void) const {return nMarker;}
+  inline unsigned short GetnMarker() const {return nMarker;}
 
   /*!
    * \brief Get number of vertices.
@@ -535,7 +533,7 @@ public:
   /*!
    * \brief Create a file for testing the geometry.
    */
-  void TestGeometry(void) const;
+  void TestGeometry() const;
 
   /*!
    * \brief A virtual member.
@@ -605,7 +603,7 @@ public:
   /*!
    * \brief Get the number of elements in vtk fortmat.
    */
-  inline unsigned long GetMax_GlobalPoint(void) const { return Max_GlobalPoint; }
+  inline unsigned long GetMax_GlobalPoint() const { return Max_GlobalPoint; }
 
   /*!
    * \brief Finds face of element.
@@ -637,28 +635,28 @@ public:
   /*!
    * \brief Connects elements  .
    */
-  inline virtual void SetElement_Connectivity(void) {}
+  inline virtual void SetElement_Connectivity() {}
 
   /*!
    * \brief Sets the edges of an elemment.
    */
-  void SetEdges(void);
+  void SetEdges();
 
   /*!
    * \brief Sets the faces of an element..
    */
-  void SetFaces(void);
+  void SetFaces();
 
   /*!
    * \brief Sets the boundary volume.
    */
-  inline virtual void SetBoundVolume(void) {}
+  inline virtual void SetBoundVolume() {}
 
   /*!
    * \brief Sets the vertices.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetVertex(CConfig *config) {}
+  inline virtual void SetVertex(const CConfig *config) {}
 
   /*!
    * \brief Computes the N span.
@@ -725,13 +723,13 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void MatchActuator_Disk(CConfig *config) {}
+  inline virtual void MatchActuator_Disk(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void MatchPeriodic(CConfig *config, unsigned short val_periodic) {}
+  inline virtual void MatchPeriodic(const CConfig *config, unsigned short val_periodic) {}
 
   /*!
    * \brief A virtual member.
@@ -808,23 +806,23 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the problem.
    */
-  inline virtual void SetCoord(CGeometry *geometry) {}
+  inline virtual void SetCoord(const CGeometry *fine_grid) {}
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] val_marker - Index of the boundary marker.
    */
-  inline virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker) {}
+  inline virtual void SetMultiGridWallHeatFlux(const CGeometry *fine_grid, unsigned short val_marker) {}
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] val_marker - Index of the boundary marker.
    */
-  inline virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker) {}
+  inline virtual void SetMultiGridWallTemperature(const CGeometry *fine_grid, unsigned short val_marker) {}
 
   /*!
    * \brief A virtual member.
@@ -836,32 +834,30 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the child grid (for multigrid).
    */
-  inline virtual void SetPoint_Connectivity(CGeometry *geometry) {}
+  inline virtual void SetPoint_Connectivity(const CGeometry *fine_grid) {}
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetVertex(CGeometry *geometry, CConfig *config) {}
+  inline virtual void SetVertex(const CGeometry *fine_grid, const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) {}
+  inline virtual void SetControlVolume(const CGeometry *fine_grid, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry *fine_grid, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -910,10 +906,9 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometry of the fine mesh.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] fine_grid - Geometry of the fine mesh.
    */
-  inline virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {}
+  inline virtual void SetRestricted_GridVelocity(const CGeometry *fine_grid) {}
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
@@ -1062,7 +1057,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void FindNormal_Neighbor(CConfig *config) {}
+  inline virtual void FindNormal_Neighbor(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
@@ -1080,97 +1075,97 @@ public:
    * \brief Retrieve total number of elements in a simulation across all processors.
    * \return Total number of elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElem(void) const { return Global_nElem; }
+  inline unsigned long GetGlobal_nElem() const { return Global_nElem; }
 
   /*!
    * \brief  Retrieve total number of elements in a simulation across all processors (excluding halos).
    * \return Total number of elements in a simulation across all processors (excluding halos).
    */
-  inline unsigned long GetGlobal_nElemDomain(void) const { return Global_nElemDomain; }
+  inline unsigned long GetGlobal_nElemDomain() const { return Global_nElemDomain; }
 
   /*!
    * \brief Retrieve total number of triangular elements in a simulation across all processors.
    * \return Total number of line elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemLine(void) const { return Global_nelem_edge; }
+  inline unsigned long GetGlobal_nElemLine() const { return Global_nelem_edge; }
 
   /*!
    * \brief Retrieve total number of triangular elements in a simulation across all processors.
    * \return Total number of triangular elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemTria(void) const { return Global_nelem_triangle; }
+  inline unsigned long GetGlobal_nElemTria() const { return Global_nelem_triangle; }
 
   /*!
    * \brief Retrieve total number of quadrilateral elements in a simulation across all processors.
    * \return Total number of quadrilateral elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemQuad(void) const { return Global_nelem_quad; }
+  inline unsigned long GetGlobal_nElemQuad() const { return Global_nelem_quad; }
 
   /*!
    * \brief Retrieve total number of tetrahedral elements in a simulation across all processors.
    * \return Total number of tetrahedral elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemTetr(void) const { return Global_nelem_tetra; }
+  inline unsigned long GetGlobal_nElemTetr() const { return Global_nelem_tetra; }
 
   /*!
    * \brief Retrieve total number of hexahedral elements in a simulation across all processors.
    * \return Total number of hexahedral elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemHexa(void) const { return Global_nelem_hexa; }
+  inline unsigned long GetGlobal_nElemHexa() const { return Global_nelem_hexa; }
 
   /*!
    * \brief Retrieve total number of prism elements in a simulation across all processors.
    * \return Total number of prism elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemPris(void) const { return Global_nelem_prism; }
+  inline unsigned long GetGlobal_nElemPris() const { return Global_nelem_prism; }
 
   /*!
    * \brief Retrieve total number of pyramid elements in a simulation across all processors.
    * \return Total number of pyramid elements in a simulation across all processors.
    */
-  inline unsigned long GetGlobal_nElemPyra(void) const { return Global_nelem_pyramid; }
+  inline unsigned long GetGlobal_nElemPyra() const { return Global_nelem_pyramid; }
 
   /*!
    * \brief Get number of triangular elements.
    * \return Number of line elements.
    */
-  inline unsigned long GetnElemLine(void) const { return nelem_edge; }
+  inline unsigned long GetnElemLine() const { return nelem_edge; }
 
   /*!
    * \brief Get number of triangular elements.
    * \return Number of triangular elements.
    */
-  inline unsigned long GetnElemTria(void) const { return nelem_triangle; }
+  inline unsigned long GetnElemTria() const { return nelem_triangle; }
 
   /*!
    * \brief Get number of quadrilateral elements.
    * \return Number of quadrilateral elements.
    */
-  inline unsigned long GetnElemQuad(void) const { return nelem_quad; }
+  inline unsigned long GetnElemQuad() const { return nelem_quad; }
 
   /*!
    * \brief Get number of tetrahedral elements.
    * \return Number of tetrahedral elements.
    */
-  inline unsigned long GetnElemTetr(void) const { return nelem_tetra; }
+  inline unsigned long GetnElemTetr() const { return nelem_tetra; }
 
   /*!
    * \brief Get number of hexahedral elements.
    * \return Number of hexahedral elements.
    */
-  inline unsigned long GetnElemHexa(void) const { return nelem_hexa; }
+  inline unsigned long GetnElemHexa() const { return nelem_hexa; }
 
   /*!
    * \brief Get number of prism elements.
    * \return Number of prism elements.
    */
-  inline unsigned long GetnElemPris(void) const { return nelem_prism; }
+  inline unsigned long GetnElemPris() const { return nelem_prism; }
 
   /*!
    * \brief Get number of pyramid elements.
    * \return Number of pyramid elements.
    */
-  inline unsigned long GetnElemPyra(void) const { return nelem_pyramid; }
+  inline unsigned long GetnElemPyra() const { return nelem_pyramid; }
 
   /*!
    * \brief Get x coords of geometrical planes in the mesh
@@ -1572,7 +1567,7 @@ public:
    * \brief Get the multigrid index for the current geometry object.
    * \return Multigrid index for current geometry object.
    */
-  inline unsigned short GetMGLevel(void) const { return MGLevel; }
+  inline unsigned short GetMGLevel() const { return MGLevel; }
 
   /*!
    * \brief A virtual member.
@@ -1601,7 +1596,7 @@ public:
    * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
    * \return Reference to the map.
    */
-  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
+  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap();
 
   /*!
    * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
@@ -1627,7 +1622,7 @@ public:
    * \brief Get the group size used in edge coloring.
    * \return Group size.
    */
-  inline unsigned long GetEdgeColorGroupSize(void) const { return edgeColorGroupSize; }
+  inline unsigned long GetEdgeColorGroupSize() const { return edgeColorGroupSize; }
 
   /*!
    * \brief Get the element coloring.
@@ -1646,7 +1641,7 @@ public:
    * \brief Get the group size used in element coloring.
    * \return Group size.
    */
-  inline unsigned long GetElementColorGroupSize(void) const { return elemColorGroupSize; }
+  inline unsigned long GetElementColorGroupSize() const { return elemColorGroupSize; }
 
   /*!
    * \brief Compute an ADT including the coordinates of all viscous markers
@@ -1700,6 +1695,6 @@ public:
    * \brief Get a pointer to the reference node coordinate vector.
    * \return A pointer to the reference node coordinate vector.
    */
-  inline virtual const su2double* GetStreamwise_Periodic_RefNode(void) const { return nullptr; }
+  inline virtual const su2double* GetStreamwise_Periodic_RefNode() const { return nullptr; }
 };
 
