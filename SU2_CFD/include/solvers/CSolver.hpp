@@ -57,9 +57,7 @@
 #include "../variables/CVariable.hpp"
 
 #ifdef HAVE_LIBROM
-#include "BasisGenerator.h"
-#include "QDEIM.h"
-#include "DEIM.h"
+#include "librom.h"
 #endif
 
 using namespace std;
