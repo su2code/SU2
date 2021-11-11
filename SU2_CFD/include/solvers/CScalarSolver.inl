@@ -453,7 +453,6 @@ void CScalarSolver<VariableType>::PrepareExplicitIteration(CGeometry* geometry, 
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                        CConfig* config) {
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
   PrepareExplicitIteration(geometry,solver_container,config);
 
   SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE))
