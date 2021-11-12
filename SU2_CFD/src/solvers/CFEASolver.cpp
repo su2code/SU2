@@ -1847,41 +1847,23 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
 
     const auto ResidualAux = computeLinearResidual(Jacobian, LinSysSol, LinSysRes);
 
-    /*--- Set maximum residual to zero. ---*/
-
-    SetResToZero();
-
     SU2_OMP_PARALLEL {
 
     /*--- Compute the residual. ---*/
-
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        su2double Res = fabs(ResidualAux(iPoint, iVar));
-        resRMS[iVar] += Res*Res;
-        if (Res > resMax[iVar]) {
-          resMax[iVar] = Res;
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
       }
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      Residual_RMS[iVar] += resRMS[iVar];
-      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-    }
-    END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    /*--- Compute the root mean square residual. ---*/
-    SetResidual_RMS(geometry, config);
+    /*--- "Add" residuals from all threads to global residual variables. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
 
     }
     END_SU2_OMP_PARALLEL

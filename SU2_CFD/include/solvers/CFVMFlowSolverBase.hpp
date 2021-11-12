@@ -775,13 +775,8 @@ class CFVMFlowSolverBase : public CSolver {
     const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
     const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
 
-    /*--- Set shared residual variables to 0 and declare
-     *    local ones for current thread to work on. ---*/
-
-    SetResToZero();
-
+    /*--- Local residual variables for current thread ---*/
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     /*--- Update the solution and residuals ---*/
@@ -832,23 +827,13 @@ class CFVMFlowSolverBase : public CSolver {
           }
 
           /*--- Update residual information for current thread. ---*/
-          resRMS[iVar] += Res*Res;
-          if (fabs(Res) > resMax[iVar]) {
-            resMax[iVar] = fabs(Res);
-            idxMax[iVar] = iPoint;
-            coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-          }
+          ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
         }
       }
       END_SU2_OMP_FOR
       /*--- Reduce residual information over all threads in this rank. ---*/
-      SU2_OMP_CRITICAL
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Residual_RMS[iVar] += resRMS[iVar];
-        AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-      }
-      END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
+      ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
+
     }
 
     /*--- MPI solution ---*/
@@ -857,9 +842,6 @@ class CFVMFlowSolverBase : public CSolver {
     CompleteComms(geometry, config, SOLUTION);
 
     if (!adjoint) {
-      /*--- Compute the root mean square residual ---*/
-      SetResidual_RMS(geometry, config);
-
       /*--- For verification cases, compute the global error metrics. ---*/
       ComputeVerificationError(geometry, config);
     }
@@ -893,12 +875,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-    /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
-
-    SetResToZero();
-
+    /*--- Local residual variables for current thread ---*/
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     /*--- Add pseudotime term to Jacobian. ---*/
@@ -948,26 +926,15 @@ class CFVMFlowSolverBase : public CSolver {
         LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
         LinSysSol[total_index] = 0.0;
 
-        su2double Res = fabs(LinSysRes[total_index]);
-        resRMS[iVar] += Res*Res;
-        if (Res > resMax[iVar]) {
-          resMax[iVar] = Res;
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
       }
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Residual_RMS[iVar] += resRMS[iVar];
-      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-    }
-    END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    /*--- Compute the root mean square residual ---*/
-    SetResidual_RMS(geometry, config);
+    /*--- "Add" residuals from all threads to global residual variables. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
+
   }
 
   /*!

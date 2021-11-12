@@ -391,32 +391,6 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
   CompleteImplicitIteration(geometry, solver_container, config);
 }
 
-template<class VariableType>
-void CScalarSolver<VariableType>::ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double* resRMS, su2double* resMax, unsigned long* idxMax) const {
-  su2double Res = fabs(LinSysRes(iPoint,iVar));
-  resRMS[iVar] += Res * Res;
-  if (Res > resMax[iVar]) {
-    resMax[iVar] = Res;
-    idxMax[iVar] = iPoint;
-  }
-}
-
-template<class VariableType>
-void CScalarSolver<VariableType>::ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax, const unsigned long* idxMax) {
-  SetResToZero();
-
-  SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), geometry->nodes->GetCoord(idxMax[iVar]));
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
-
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
-}
-
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                        CConfig* config) {
