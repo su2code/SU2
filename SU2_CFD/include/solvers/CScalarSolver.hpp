@@ -260,7 +260,7 @@ class CScalarSolver : public CSolver {
   void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
-                                                         CConfig* config);
+                                                         CConfig* config) final;
 
   void PrepareExplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                           CConfig* config);

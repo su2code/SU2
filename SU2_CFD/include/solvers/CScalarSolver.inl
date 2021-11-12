@@ -455,15 +455,13 @@ void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, C
                                                        CConfig* config) {
   PrepareExplicitIteration(geometry,solver_container,config);
 
-  SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE))
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for(unsigned long iPoint=0; iPoint<nPointDomain; iPoint++) {
     const su2double dt = nodes->GetDelta_Time(iPoint);
     const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
 
-    const su2double* local_Residual = LinSysRes.GetBlock(iPoint);
-    su2double* local_Update = LinSysSol.GetBlock(iPoint);
     for(auto iVar=0u; iVar < nVar; iVar++){
-      local_Update[iVar] = -dt/Vol * local_Residual[iVar];
+      LinSysSol(iPoint, iVar) = -dt/Vol * LinSysRes(iPoint, iVar);
     }
   }
   END_SU2_OMP_FOR
