@@ -374,7 +374,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [ -5.216685, -9.562448, -1.565778, 1.022393, 0.040542, -3.729648]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532228, -3.157766, 3.364025, 1.124824, 0.501717, -float("inf")]
     turb_naca0012_sst_expliciteuler.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     turb_naca0012_sst_expliciteuler.tol       = 0.00001
