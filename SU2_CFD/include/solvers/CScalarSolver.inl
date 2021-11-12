@@ -308,7 +308,7 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
       LinSysSol[total_index] = 0.0;
 
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
+      ResidualReductions_PerThread(iPoint,iVar,LinSysRes[total_index],resRMS,resMax,idxMax);
     }
   }
   END_SU2_OMP_FOR
@@ -409,7 +409,7 @@ void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, C
 
     for(auto iVar=0u; iVar < nVar; iVar++){
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
+      ResidualReductions_PerThread(iPoint,iVar,LinSysRes(iPoint, iVar),resRMS,resMax,idxMax);
       /*--- Explicit Euler step: ---*/
       LinSysSol(iPoint, iVar) = -dt/Vol * LinSysRes(iPoint, iVar);
     }

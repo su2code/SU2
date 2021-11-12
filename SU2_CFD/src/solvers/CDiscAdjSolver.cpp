@@ -328,7 +328,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       if (iPoint < nPointDomain) {
         /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-        ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
+        ResidualReductions_PerThread(iPoint,iVar,residual,resRMS,resMax,idxMax);
       }
     }
   }
