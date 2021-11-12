@@ -243,6 +243,19 @@ class CScalarSolver : public CSolver {
     END_SU2_OMP_FOR
   }
 
+  /*! "Add" residual at (iPoint,iVar) to residual variables local to the thread.
+   *  \param[in] iPoint - Point index.
+   *  \param[in] iVar - Variable index.
+   *  \param[in,out] resRMS - increases by pow(Residual, 2)
+   *  \param[in,out] resMax - increases to max(resMax, Residual)
+   *  \param[in,out] idxMax - changes when resMax increases
+   */
+  void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double* resRMS, su2double* resMax, unsigned long* idxMax) const;
+
+  /*! "Add" local residual variables of all threads to compute global residual variables.
+   */
+  void ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax, const unsigned long* idxMax);
+
   /*!
    * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -259,11 +272,15 @@ class CScalarSolver : public CSolver {
    */
   void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
+  /*!
+   * \brief Update the solution using the explicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
   void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                          CConfig* config) final;
 
-  void PrepareExplicitIteration(CGeometry* geometry, CSolver** solver_container,
-                                                          CConfig* config);
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.

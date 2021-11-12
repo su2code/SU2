@@ -280,7 +280,6 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
   SetResToZero();
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Build implicit system ---*/
@@ -308,26 +307,14 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
 
-      su2double Res = fabs(LinSysRes[total_index]);
-      resRMS[iVar] += Res * Res;
-      if (Res > resMax[iVar]) {
-        resMax[iVar] = Res;
-        idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-      }
+      /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+      ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
     }
   }
   END_SU2_OMP_FOR
-  SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
 
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry,config,resRMS,resMax,idxMax);
 }
 
 template <class VariableType>
@@ -404,44 +391,24 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
   CompleteImplicitIteration(geometry, solver_container, config);
 }
 
-template <class VariableType>
-void CScalarSolver<VariableType>::PrepareExplicitIteration(CGeometry* geometry, CSolver** solver_container,
-                                                        CConfig* config) {
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+template<class VariableType>
+void CScalarSolver<VariableType>::ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double* resRMS, su2double* resMax, unsigned long* idxMax) const {
+  su2double Res = fabs(LinSysRes(iPoint,iVar));
+  resRMS[iVar] += Res * Res;
+  if (Res > resMax[iVar]) {
+    resMax[iVar] = Res;
+    idxMax[iVar] = iPoint;
+  }
+}
 
-  /*--- Set shared residual variables to 0 and declare
-   *    local ones for current thread to work on. ---*/
-
+template<class VariableType>
+void CScalarSolver<VariableType>::ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax, const unsigned long* idxMax) {
   SetResToZero();
 
-  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
-  unsigned long idxMax[MAXNVAR] = {0};
-
-  /*--- No need to build implicit system, but compute residuals ---*/
-
-  SU2_OMP_FOR_(schedule(static, omp_chunk_size) SU2_NOWAIT)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    /// TODO: This could be the SetTime_Step of this solver.
-    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-    nodes->SetDelta_Time(iPoint, dt);
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      unsigned long total_index = iPoint * nVar + iVar;
-      su2double Res = fabs(LinSysRes[total_index]);
-      resRMS[iVar] += Res * Res;
-      if (Res > resMax[iVar]) {
-        resMax[iVar] = Res;
-        idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-      }
-    }
-  }
-  END_SU2_OMP_FOR
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), geometry->nodes->GetCoord(idxMax[iVar]));
   }
   END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
@@ -453,19 +420,32 @@ void CScalarSolver<VariableType>::PrepareExplicitIteration(CGeometry* geometry, 
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                        CConfig* config) {
-  PrepareExplicitIteration(geometry,solver_container,config);
+
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Local residual variables for current thread ---*/
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  unsigned long idxMax[MAXNVAR] = {0};
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for(unsigned long iPoint=0; iPoint<nPointDomain; iPoint++) {
-    const su2double dt = nodes->GetDelta_Time(iPoint);
+    const su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
     const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
 
     for(auto iVar=0u; iVar < nVar; iVar++){
+      /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+      ResidualReductions_PerThread(iPoint,iVar,resRMS,resMax,idxMax);
+      /*--- Explicit Euler step: ---*/
       LinSysSol(iPoint, iVar) = -dt/Vol * LinSysRes(iPoint, iVar);
     }
   }
   END_SU2_OMP_FOR
 
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
+
+  /*--- Use LinSysSol for solution update. ---*/
   CompleteImplicitIteration(geometry, solver_container, config);
 }
 
