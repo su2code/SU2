@@ -55,7 +55,7 @@ class CUpwScalar : public CNumerics {
   su2double Flux[MAXNVAR];          /*!< \brief Final result, diffusive flux/residual. */
   su2double* Jacobian_i[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node i. */
   su2double* Jacobian_j[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node j. */
-  su2double JacobianBuffer[2*MAXNVAR*MAXNVAR] = {0.0};  /*!< \brief Static storage for the two Jacobians. */
+  su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];  /*!< \brief Static storage for the two Jacobians. */
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
@@ -91,6 +91,11 @@ class CUpwScalar : public CNumerics {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       Jacobian_i[iVar] = &JacobianBuffer[iVar * nVar];
       Jacobian_j[iVar] = &JacobianBuffer[iVar * nVar + MAXNVAR * MAXNVAR];
+    }
+
+    /*--- Initialize the JacobianBuffer to zero. ---*/
+    for (unsigned short iVar = 0; iVar < 2*MAXNVAR*MAXNVAR; iVar++) {
+      JacobianBuffer[iVar] = 0.0;
     }
   }
 
