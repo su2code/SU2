@@ -66,6 +66,19 @@ def main():
     species3_primitiveVenturi.tol       = 0.00001
     test_list.append(species3_primitiveVenturi)
 
+    # 3 species (2 eq) primitive venturi mixing with inlet files.
+    # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file. 
+    species3_primitiveVenturi_inletFile           = TestCase('species3_primitiveVenturi_inletFile')
+    species3_primitiveVenturi_inletFile.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species3_primitiveVenturi_inletFile.cfg_file  = "species3_primitiveVenturi_inletFile.cfg"
+    species3_primitiveVenturi_inletFile.test_iter = 50
+    species3_primitiveVenturi_inletFile.test_vals = [-5.957517,   -5.187476,   -5.037298,   -5.851420,   -1.511976,  -14.376397,  -14.647066,           5,   -0.808614,           5,   -2.351161,           5,   -0.288302]
+    species3_primitiveVenturi_inletFile.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species3_primitiveVenturi_inletFile.timeout   = 1600
+    species3_primitiveVenturi_inletFile.new_output = True
+    species3_primitiveVenturi_inletFile.tol       = 0.00001
+    test_list.append(species3_primitiveVenturi_inletFile)
+
     # rectangle passive transport validation
     species_passive_val           = TestCase('species_passive_val')
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
