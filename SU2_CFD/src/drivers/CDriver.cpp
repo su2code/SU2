@@ -1083,8 +1083,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     if (solver[MESH_0][TURB_SOL]) {
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
     }
-    /// NOTE TK:: currently not working, see SpeciesSolver Constructor
-    if (solver[MESH_0][SPECIES_SOL]) { /// NOTE TK:: this evaluated true for slinc_steady case, therefore the quick fix false.
+    if (solver[MESH_0][SPECIES_SOL]) { /// NOTE TK:: this evaluated true for some cases where no species are present
       solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
     }
 
@@ -1356,7 +1355,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
       }
       break;
     default :
-      SU2_MPI::Error("Convective scheme not implemented (scalar transport).", CURRENT_FUNCTION);
+      SU2_MPI::Error("Invalid convective scheme for the species transport equations. Use SCALAR_UPWIND.", CURRENT_FUNCTION);
       break;
   }
 

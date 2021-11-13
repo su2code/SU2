@@ -67,7 +67,7 @@ def main():
     test_list.append(species3_primitiveVenturi)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.
-    # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file. 
+    # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
     species3_primitiveVenturi_inletFile           = TestCase('species3_primitiveVenturi_inletFile')
     species3_primitiveVenturi_inletFile.cfg_dir   = "species_transport/venturi_primitive_3species"
     species3_primitiveVenturi_inletFile.cfg_file  = "species3_primitiveVenturi_inletFile.cfg"

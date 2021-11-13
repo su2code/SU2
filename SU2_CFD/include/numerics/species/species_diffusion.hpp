@@ -65,7 +65,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   }
 
   /*!
-   * \brief SA specific steps in the ComputeResidual method
+   * \brief Species transport specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
