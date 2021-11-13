@@ -308,13 +308,13 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
       LinSysSol[total_index] = 0.0;
 
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint,iVar,LinSysRes[total_index],resRMS,resMax,idxMax);
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
     }
   }
   END_SU2_OMP_FOR
 
   /*--- "Add" residuals from all threads to global residual variables. ---*/
-  ResidualReductions_FromAllThreads(geometry,config,resRMS,resMax,idxMax);
+  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 }
 
 template <class VariableType>
@@ -393,7 +393,7 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
-                                                       CConfig* config) {
+                                                          CConfig* config) {
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -409,7 +409,7 @@ void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, C
 
     for(auto iVar=0u; iVar < nVar; iVar++){
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint,iVar,LinSysRes(iPoint, iVar),resRMS,resMax,idxMax);
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
       /*--- Explicit Euler step: ---*/
       LinSysSol(iPoint, iVar) = -dt/Vol * LinSysRes(iPoint, iVar);
     }
@@ -417,7 +417,7 @@ void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, C
   END_SU2_OMP_FOR
 
   /*--- "Add" residuals from all threads to global residual variables. ---*/
-  ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
+  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 
   /*--- Use LinSysSol for solution update. ---*/
   CompleteImplicitIteration(geometry, solver_container, config);

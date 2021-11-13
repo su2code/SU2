@@ -437,7 +437,8 @@ public:
                                            unsigned short iMesh,
                                            unsigned short RunTime_EqSystem) { }
 
-  /*! "Add" residual at (iPoint,iVar) to residual variables local to the thread.
+  /*!
+   * \brief "Add" residual at (iPoint,iVar) to residual variables local to the thread.
    *  \param[in] iPoint - Point index.
    *  \param[in] iVar - Variable index.
    *  \param[in] res - Residual at (iPoint,iVar), e.g. LinSysRes(iPoint,iVar)
@@ -445,7 +446,8 @@ public:
    *  \param[in,out] resMax - increases to max(resMax, Residual)
    *  \param[in,out] idxMax - changes when resMax increases
    */
-  static inline void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double res, su2double* resRMS, su2double* resMax, unsigned long* idxMax) {
+  static inline void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double res, su2double* resRMS, su2double* resMax,
+                                                  unsigned long* idxMax) {
     res = fabs(res);
     resRMS[iVar] += res * res;
     if (res > resMax[iVar]) {
@@ -454,9 +456,11 @@ public:
     }
   }
 
-  /*! "Add" local residual variables of all threads to compute global residual variables.
+  /*!
+   * \brief "Add" local residual variables of all threads to compute global residual variables.
    */
-  inline void ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax, const unsigned long* idxMax){
+  inline void ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax,
+                                                const unsigned long* idxMax){
     SetResToZero();
 
     SU2_OMP_CRITICAL

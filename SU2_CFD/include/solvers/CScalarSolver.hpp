@@ -266,7 +266,7 @@ class CScalarSolver : public CSolver {
    * \param[in] config - Definition of the particular problem.
    */
   void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
-                                                         CConfig* config) final;
+                               CConfig* config) final;
 
   /*!
    * \brief Update the solution using an implicit solver.
