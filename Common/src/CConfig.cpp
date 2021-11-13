@@ -7942,7 +7942,6 @@ CConfig::~CConfig(void) {
           delete[] Marker_Fluid_Load;
       delete[] Marker_Fluid_InterfaceBound;
                delete[] Marker_Inlet;
-  delete[] Marker_Inlet_Species;
     delete[] Marker_Supersonic_Inlet;
     delete[] Marker_Supersonic_Outlet;
               delete[] Marker_Outlet;

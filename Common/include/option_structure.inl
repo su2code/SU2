@@ -1108,6 +1108,7 @@ class COptionInletSpecies : public COptionBase {
   string * & marker; // contains marker names
   su2double ** & inletspeciesval; // contains all values specified for each inlet
   unsigned short & nSpecies; // contains how many species are defined per inlet
+  unsigned short nInlets; // number of inlets, needed in dtor
 
 public:
   COptionInletSpecies(string option_field_name, unsigned short & nMarker_Inlet_Species, string* & Marker_Inlet_Species,
@@ -1120,7 +1121,17 @@ public:
     this->name = option_field_name;
   }
 
-  ~COptionInletSpecies() override {};
+  ~COptionInletSpecies() override {
+    if (this->marker != nullptr)
+      delete[] this->marker;
+
+    for (unsigned long i = 0; i < nInlets; i++) {
+      if (this->inletspeciesval[i] != nullptr)
+        delete[] this->inletspeciesval[i];
+    }
+    if (this->inletspeciesval != nullptr)
+      delete[] this->inletspeciesval;
+  };
 
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
@@ -1136,7 +1147,7 @@ public:
     /*--- Determine the number of inlets: A new inlet is found if the first char in the string is a letter.
      * This will fail in if a marker starts with a number!
      * Additionally, determine the number of values that are prescribed per inlet. ---*/
-    unsigned short nInlets = 0;
+    nInlets = 0;
     vector<unsigned short> nSpecies_per_Inlet;
     /*--- Loop through the fields of the marker. ---*/
     for (unsigned long i = 0; i < option_size; i++) {
@@ -1181,6 +1192,7 @@ public:
   void SetDefault() {
     this->marker = nullptr;
     this->inletspeciesval = nullptr;
+    this->nInlets = 0;
     this->size = 0; // There is no default value for list
     this->nSpecies = 0;
   }
