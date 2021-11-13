@@ -445,7 +445,7 @@ public:
    *  \param[in,out] resMax - increases to max(resMax, Residual)
    *  \param[in,out] idxMax - changes when resMax increases
    */
-  inline void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double res, su2double* resRMS, su2double* resMax, unsigned long* idxMax) const {
+  static inline void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double res, su2double* resRMS, su2double* resMax, unsigned long* idxMax) {
     res = fabs(res);
     resRMS[iVar] += res * res;
     if (res > resMax[iVar]) {
