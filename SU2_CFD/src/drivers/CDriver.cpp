@@ -2045,7 +2045,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     }
   }
 
-    /*--- Solver definition for the species transport problem ---*/
+  /*--- Solver definition for the species transport problem ---*/
 
   if (species) {
     if (incompressible)
