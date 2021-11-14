@@ -2072,7 +2072,7 @@ public:
    * \brief Get the flag for using strong BC's for in- and outlets in the species solver.
    * \return Flag for strong BC's.
    */
-  bool GetSpecies_StrongBC() { return Species_StrongBC; }
+  bool GetSpecies_StrongBC() const { return Species_StrongBC; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.

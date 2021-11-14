@@ -1122,15 +1122,14 @@ public:
   }
 
   ~COptionInletSpecies() override {
-    if (this->marker != nullptr)
-      delete[] this->marker;
+    delete[] this->marker;
 
-    for (unsigned long i = 0; i < nInlets; i++) {
-      if (this->inletspeciesval[i] != nullptr)
+    if (this->inletspeciesval != nullptr) {
+      for (unsigned long i = 0; i < nInlets; i++) {
         delete[] this->inletspeciesval[i];
+      }
     }
-    if (this->inletspeciesval != nullptr)
-      delete[] this->inletspeciesval;
+    delete[] this->inletspeciesval;
   };
 
   string SetValue(vector<string> option_value) {
