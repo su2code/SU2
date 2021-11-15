@@ -814,7 +814,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Evaluate_ObjFunc(const CConfig *config) {}
+  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
 
   /*!
    * \brief A virtual member.

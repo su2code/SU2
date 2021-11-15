@@ -508,16 +508,13 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
 }
 
+/*--- Main routine to call the Sobolev smoothing solver and postprocess the derivatives. ---*/
 
-/* development comments:
- * Main routine to call the Sobolev smoothing solver and postprocess the derivatives.
- * 17.02.2020 T. Dick
- */
 void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
   if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
 
-  /*--- get the sensitivities from the adjoint solver to work with ---*/
+  /*--- Get the sensitivities from the adjoint solver to work with. ---*/
   solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[MainSolver]);
 
   /*--- Apply the smoothing procedure on the mesh level. ---*/
@@ -539,13 +536,12 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
       solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config);
     }
 
-    /// After appling the solver write the results back
+    /*--- After appling the solver write the results back ---*/
     solver[GRADIENT_SMOOTHING]->OutputSensitivity(geometry,config,solver[ADJFLOW_SOL]);
 
   /*--- Apply the smoothing procedure on the DV level. ---*/
   } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
 
-    /// new layout for this
     solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
 
   /*--- in some OneShot applications we might only need the original gradient. ---*/

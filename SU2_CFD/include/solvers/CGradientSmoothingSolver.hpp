@@ -199,8 +199,9 @@ public:
    * \brief Get the matrix vector product with the StiffnessMatrix
    * \note This always applies the stiffness matrix for all dimensions independent of each other!
    */
-  CSysMatrixVectorProduct<su2matvecscalar> GetStiffnessMatrixVectorProduct(CGeometry *geometry,                                                                        CNumerics **numerics,
-                                                                         CConfig *config);
+  CSysMatrixVectorProduct<su2matvecscalar> GetStiffnessMatrixVectorProduct(CGeometry *geometry,
+                                                                           CNumerics **numerics,
+                                                                           CConfig *config);
 
   /*!
    * \brief calculate the original DV gradient similar to SU2_DOT_AD

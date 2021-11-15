@@ -53,7 +53,6 @@ protected:
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
-  MatrixType Solution_Store; /*!< \brief Store solution from previous design */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
 
