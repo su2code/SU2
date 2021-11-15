@@ -204,3 +204,4 @@ void CPoint::SetCoord_Old() {
 }
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
+

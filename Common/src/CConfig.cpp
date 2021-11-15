@@ -2688,15 +2688,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Optimization gradient factor */
   addPythonOption("OPT_GRADIENT_FACTOR");
   
-  /* DESCRIPTION: Optimization hessian factor */
-  addPythonOption("OPT_HESSIAN_FACTOR");
-
-  /* DESCRIPTION: Optimization hessian factor */
-  addPythonOption("SQP_MODE");
-
-  /* DESCRIPTION: Optimization hessian factor */
-  addPythonOption("LINESEARCH_MODE");
-
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
 

@@ -783,7 +783,7 @@ public:
   void ComputeGrad_NonLinear(void) final { ComputeGrad_impl<CURRENT>(); }
 
   /*!
-   * \brief Overload needed for deformed 2D elements on a surface in 3D.
+   * \brief Overload needed for deformed 2D elements on a surface in 3D or 1D elements on a 2D curve.
    */
   void ComputeGrad_Linear(su2activematrix& Coord) final { ComputeGrad_impl_embedded<REFERENCE>(Coord); }
 

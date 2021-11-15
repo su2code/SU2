@@ -867,12 +867,6 @@ public:
                        CSysVector<ScalarType> & res) const;
 
   /*!
-   * \brief print this matrix to an output stream for debugging purposes
-   * \param[in] file - the putput location
-   */
-  void printMat(ofstream &file);
-
-  /*!
    * \brief Factorize matrix using PaStiX.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

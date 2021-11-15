@@ -451,10 +451,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     }
   }
 
-  // changes for debugging only
-  void printVec(std::ofstream& file);
-  void printVec(std::ofstream& file) const;
-
 };
 
 #undef CSYSVEC_PARFOR

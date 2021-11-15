@@ -967,7 +967,7 @@ void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim=0; iDim<nDim; iDim++) {
-          result(iPoint,iDim) = AD::GetDerivativeValue(registeredCoord(iPoint,iDim));
+          result(iPoint,iDim) = SU2_TYPE::GetDerivative(registeredCoord(iPoint,iDim));
         }
       }
     }
@@ -1012,7 +1012,7 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      my_Gradient = AD::GetDerivativeValue(DV_Value[iDV][iDV_Value]);
+      my_Gradient = SU2_TYPE::GetDerivative(DV_Value[iDV][iDV_Value]);
       #ifdef HAVE_MPI
         SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       #else

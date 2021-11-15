@@ -68,25 +68,6 @@ CSysVector<ScalarType>::~CSysVector() {
   MemoryAllocation::aligned_free(vec_val);
 }
 
-// changes for debugging the gradient smoothing solver
-template<class ScalarType>
-void CSysVector<ScalarType>::printVec(std::ofstream& file) {
-
-  for (unsigned long i = 0; i < nElm; i++) {
-    file << (*this)[i];
-    if (i!=nElm-1) { file << std::endl; }
-  }
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::printVec(std::ofstream& file) const {
-
-  for (unsigned long i = 0; i < nElm; i++) {
-    file << (*this)[i];
-    if (i!=nElm-1) { file << std::endl; }
-  }
-}
-
 /*--- Explicit instantiations ---*/
 /*--- We allways need su2double (regardless if it is passive or active). ---*/
 template class CSysVector<su2double>;
