@@ -371,7 +371,7 @@ private:
     sigma_w_i = F1_i*sigma_w_1+(1.0-F1_i)*sigma_w_2;
 
     /*--- Production ---*/
-    pk_axi = max(0.0,2.0/3.0*rhov*k*(2.0/zeta*(yinv*V_i[2]-PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0])-1.0));
+    pk_axi = max(0.0,2.0/3.0*rhov*k*((2.0*yinv*V_i[2]-PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0])/zeta-1.0));
     pw_axi = alfa_blended*zeta/k*pk_axi;
 
     /*--- Convection-Diffusion ---*/

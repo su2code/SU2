@@ -49,9 +49,9 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 }
 
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex, iMarker, jMarker;
   string text_line, mesh_filename;
-  unsigned short iDim, iVar, iMarker, nLineLets;
+  unsigned short iDim, iVar, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, *Normal;
@@ -69,7 +69,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
   su2double *Velocity_Inf;
   string Marker_Tag, Monitoring_Tag;
-  unsigned short iMarker_Monitoring, jMarker, ObjFunc;
+  unsigned short iMarker_Monitoring, ObjFunc;
   bool grid_movement  = config->GetGrid_Movement();
 
   /*--- Array initialization ---*/
@@ -124,8 +124,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Solution_j = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar]   = 0.0;
 
   /*--- Define some auxiliary arrays related to the flow solution ---*/
-  FlowPrimVar_i = new su2double[nDim+7]; for (iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_i[iVar] = 0.0;
-  FlowPrimVar_j = new su2double[nDim+7]; for (iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_j[iVar] = 0.0;
+  FlowPrimVar_i = new su2double[nDim+7]();
+  FlowPrimVar_j = new su2double[nDim+7]();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
   Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;

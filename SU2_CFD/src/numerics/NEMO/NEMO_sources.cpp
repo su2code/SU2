@@ -194,6 +194,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   su2double H = V_i[H_INDEX];
   su2double rhoEve = U_i[nVar-1];
   const auto& Ms = fluidmodel->GetSpeciesMolarMass();
+  const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(V_i[T_INDEX], V_i[TVE_INDEX], eve_i );
 
   bool viscous = config->GetViscous();
   bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
