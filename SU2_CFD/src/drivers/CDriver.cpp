@@ -1386,7 +1386,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     case NEMO_RANS:
     case DISC_ADJ_NEMO_RANS:
-      NEMO_ns = compressible = NEMO_turbulent = true;
+      NEMO_ns = compressible = turbulent = true;
       transition = (config->GetKind_Trans_Model() == LM); break;
 
     case INC_EULER:
@@ -1451,7 +1451,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (NEMO_euler)   nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (NEMO_ns)      nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
-  if (NEMO_turbulent)  nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver[MESH_0][TRANS_SOL]->GetnVar();
 
   if (fem_euler)    nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();

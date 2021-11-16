@@ -217,7 +217,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-  node_infty->SetPrimVar(0, FluidModel);
+  node_infty->SetPrimVar(0, 0.0, 0.0, FluidModel);
 
   /*--- Initial comms. ---*/
 
@@ -1015,7 +1015,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   bool viscous            = config->GetViscous();
   bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = (config->GetKind_Turb_Model() != TUREB_MODEL::NONE);
+  bool turbulent          = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
@@ -1923,7 +1923,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+//      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution ---*/
 //      if (viscous) {
@@ -2108,7 +2108,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
 
         const auto& energies = FluidModel->ComputeMixtureEnergies();
-        if (tkeNeeded) energies[0] += GetTke_Inf();
+        //if (tkeNeeded) energies[0] += GetTke_Inf();
         //TODO
         /*--- Conservative variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
