@@ -191,7 +191,7 @@ if get_option('enable-librom')
    su2_cpp_args += '-DHAVE_LIBROM'
 
    librom_root = get_option('librom_root')
-   librom_dep = declare_dependency(include_directories: librom_root,
+   librom_dep = declare_dependency(include_directories: librom_root+'/lib',
                                    link_args: ['-L'+librom_root+'/build', '-lROM'])
 
    su2_deps += librom_dep
