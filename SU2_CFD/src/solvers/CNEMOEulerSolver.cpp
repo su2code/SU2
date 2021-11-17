@@ -538,9 +538,11 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       /*--- Set and extract limiters ---*/
       su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-      if (limiter){
+      if (limiter && !van_albada){
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      } else {
+
       }
 
       su2double lim_i = 2.0;
@@ -557,25 +559,16 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         if (limiter) {
           if (van_albada) {
             su2double V_ij = V_j[iVar] - V_i[iVar];
-            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i[iVar] + V_ij) / (4*pow(Project_Grad_i[iVar], 2) + pow(V_ij, 2) + EPS);
-            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j[iVar] + V_ij) / (4*pow(Project_Grad_j[iVar], 2) + pow(V_ij, 2) + EPS);
+            su2double va_lim_i = V_ij*( 2.0*Project_Grad_i[iVar] + V_ij) / (4*pow(Project_Grad_i[iVar], 2) + pow(V_ij, 2) + EPS);
+            su2double va_lim_j = V_ij*(-2.0*Project_Grad_j[iVar] + V_ij) / (4*pow(Project_Grad_j[iVar], 2) + pow(V_ij, 2) + EPS);
+            if (lim_i > va_lim_i && va_lim_i != 0) lim_i = va_lim_i;
+            if (lim_j > va_lim_j && va_lim_j != 0) lim_j = va_lim_j;
+
+          } else {
+            if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
+            if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
           }
-          //else if (minmod) {
-          //  su2double r_i=Project_Grad_j[iVar]/Project_Grad_i[iVar];
-          //  su2double r_j=Project_Grad_i[iVar]/Project_Grad_j[iVar];
-
-          //  if(r_i >= 1)               {Limiter_i[iVar] = 1;  }
-          //  else if(r_i >= 0 && r_i<1) {Limiter_i[iVar] = r_i;}
-          //  else                       {Limiter_i[iVar] = 0;  }
-
-          //  if(r_j >= 1)               {Limiter_j[iVar] = 1;  }
-          //  else if(r_j >= 0 && r_j<1) {Limiter_j[iVar] = r_j;}
-          //  else                       {Limiter_j[iVar] = 0;  }
-
-          //}
-          if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
-          if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
-          }
+         }
         else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i[iVar];
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j[iVar];
@@ -585,14 +578,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         if (limiter){
-          //if (minmod){
-          //  Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i[iVar];
-          //  Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j[iVar];
-          //}
-          //else{
-            Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-            Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
-          //}
+          Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
+          Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
         }
       }
 
@@ -610,6 +597,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       chk_err_j = nodes->GetNon_Physical(jPoint);
 
       counter_local += chk_err_i + chk_err_j;
+
+      cout << counter_local << endl;
 
       /*--- Compute Secondary variables in a thermaodynamically consistent way. ---*/
       if (!chk_err_i) Gamma_i = ComputeConsistentExtrapolation(GetFluidModel(), nSpecies, Primitive_i, dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
