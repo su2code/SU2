@@ -27,6 +27,7 @@
 
 
 #include "../../include/output/CFlowIncOutput.hpp"
+#include <string>
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
@@ -430,9 +431,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddVolumeOutput("SPECIES",   "Species", "SOLUTION", "Species mass fraction");
-    if (config->GetNSpeciesInit() > 1)
-      AddVolumeOutput("SPECIES_1", "Species1", "SOLUTION", "Species mass fraction");
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
   }
 
   // Radiation variables
@@ -495,9 +495,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddVolumeOutput("RES_SPECIES",   "Residual_Species1", "RESIDUAL", "Residual of the transported species");
-    if (config->GetNSpeciesInit() > 1)
-      AddVolumeOutput("RES_SPECIES_1", "Residual_Species", "RESIDUAL", "Residual of the transported species");
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar),   "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
@@ -601,9 +600,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    SetVolumeOutputValue("SPECIES", iPoint, Node_Species->GetSolution(iPoint, 0));
-    if (solver[SPECIES_SOL]->GetnVar() > 1)
-      SetVolumeOutputValue("SPECIES_1", iPoint, Node_Species->GetSolution(iPoint, 1));
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
   }
 
   // Radiation solver
@@ -661,9 +659,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    SetVolumeOutputValue("RES_SPECIES", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
-    if (solver[SPECIES_SOL]->GetnVar() > 1)
-      SetVolumeOutputValue("RES_SPECIES_1", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 1));
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
