@@ -107,7 +107,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 
 }
 
-void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output){
+void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry *geometry, CConfig *config, bool output){
 
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
@@ -128,6 +128,9 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geom
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
+
+  const auto flow_nodes = solver[FLOW_SOL]->GetNodes();
+  const auto species_nodes = solver[SPECIES_SOL]->GetNodes();
 
   vector<su2double> Surface_MassFlow          (nMarker,0.0);
   vector<su2double> Surface_Mach              (nMarker,0.0);
@@ -190,12 +193,12 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geom
             AxiFactor = 1.0;
           }
 
-          Density = solver->GetNodes()->GetDensity(iPoint);
+          Density = flow_nodes->GetDensity(iPoint);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
 
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->GetNodes()->GetVelocity(iPoint,iDim);
+            Velocity[iDim] = flow_nodes->GetVelocity(iPoint,iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim] * AxiFactor;
             MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
@@ -204,10 +207,10 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geom
           Area       = sqrt (Area);
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
-          Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          Pressure   = flow_nodes->GetPressure(iPoint);
           /*--- Use recovered pressure here as pressure difference between in and outlet is zero otherwise  ---*/
-          if(streamwisePeriodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
-          SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
+          if(streamwisePeriodic) Pressure = flow_nodes->GetStreamwise_Periodic_RecoveredPressure(iPoint);
+          SoundSpeed = flow_nodes->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
             TangVel[iDim] = Velocity[iDim] - Vn*Vector[iDim]*AxiFactor/Area;
@@ -216,21 +219,21 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geom
 
           if (incompressible){
             if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
-              Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
-              sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
+              Mach = sqrt(flow_nodes->GetVelocity2(iPoint))/
+              sqrt(flow_nodes->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(flow_nodes->GetSpecificHeatCv(iPoint)*flow_nodes->GetDensity(iPoint)));
             } else {
-              Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
-              sqrt(config->GetBulk_Modulus()/(solver->GetNodes()->GetDensity(iPoint)));
+              Mach = sqrt(flow_nodes->GetVelocity2(iPoint))/
+              sqrt(config->GetBulk_Modulus()/(flow_nodes->GetDensity(iPoint)));
             }
-            Temperature       = solver->GetNodes()->GetTemperature(iPoint);
-            Enthalpy          = solver->GetNodes()->GetSpecificHeatCp(iPoint)*Temperature;
-            TotalTemperature  = Temperature + 0.5*Velocity2/solver->GetNodes()->GetSpecificHeatCp(iPoint);
+            Temperature       = flow_nodes->GetTemperature(iPoint);
+            Enthalpy          = flow_nodes->GetSpecificHeatCp(iPoint)*Temperature;
+            TotalTemperature  = Temperature + 0.5*Velocity2/flow_nodes->GetSpecificHeatCp(iPoint);
             TotalPressure     = Pressure + 0.5*Density*Velocity2;
           }
           else{
             Mach              = sqrt(Velocity2)/SoundSpeed;
             Temperature       = Pressure / (Gas_Constant * Density);
-            Enthalpy          = solver->GetNodes()->GetEnthalpy(iPoint);
+            Enthalpy          = flow_nodes->GetEnthalpy(iPoint);
             TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
           }
