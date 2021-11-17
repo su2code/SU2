@@ -130,10 +130,9 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    /// NOTE TK:: currently only 1 equation (or 2 species) possible
-    AddHistoryOutput("RMS_SPECIES",    "rms[rho*Y]",    ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
-    if (config->GetNSpeciesInit() > 1)
-      AddHistoryOutput("RMS_SPECIES_1",  "rms[rho*Y_1]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("RMS_SPECIES_"+std::to_string(iVar), "rms[rho*Y_"+std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
   }
   /// END_GROUP
 
@@ -286,9 +285,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    SetHistoryOutputValue("RMS_SPECIES", log(species_solver->GetRes_RMS(0)));
-    if (species_solver->GetnVar() > 1)
-      SetHistoryOutputValue("RMS_SPECIES_1", log(species_solver->GetRes_RMS(1)));
+    for (unsigned short iVar = 0; iVar < species_solver->GetnVar(); iVar++) {
+      SetHistoryOutputValue("RMS_SPECIES_"+std::to_string(iVar), log(species_solver->GetRes_RMS(iVar)));
+    }
   }
 
   if (config->AddRadiation())
