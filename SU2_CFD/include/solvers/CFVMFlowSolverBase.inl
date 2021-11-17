@@ -2554,7 +2554,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
-      
+
       if (!wallfunctions) {
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
@@ -2583,12 +2583,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
         const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-        
+
         su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
         su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
-        
+
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
-        enthalpy transport due to mass diffusion ---*/ 
+        enthalpy transport due to mass diffusion ---*/
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
       }
 
