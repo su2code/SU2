@@ -554,6 +554,7 @@ private:
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_DV_FEA;              /*!< \brief Kind of Design Variable for FEA problems.*/
 
+  unsigned short nTurbVar;          /*!< \brief Number of Turbulence variables, i.e. 1 for SA-types, 2 for SST. */
   TURB_MODEL Kind_Turb_Model;       /*!< \brief Turbulent model definition. */
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
@@ -4178,6 +4179,12 @@ public:
    * \return Kind of the SU2 software component.
    */
   void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
+
+  /*!
+   * \brief Get the number of Turbulence Variables.
+   * \return Number of Turbulence Variables.
+   */
+  unsigned short GetnTurbVar(void) const { return nTurbVar; }
 
   /*!
    * \brief Get the kind of the turbulence model.
