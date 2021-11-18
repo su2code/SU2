@@ -288,7 +288,6 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    SU2_MPI::Error("Untested code: Remove error and proceed at own risk!", CURRENT_FUNCTION);
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
@@ -308,9 +307,13 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     solver[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
-    /// NOTE TK:: This probably need to be adapted like above
+    /*--- These solver Pre- Postprocessing calls should be consistent with the MESH_0 part above ---*/
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
                                            false);
+
+    if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+      solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+
     solver[iMesh][SPECIES_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
 
