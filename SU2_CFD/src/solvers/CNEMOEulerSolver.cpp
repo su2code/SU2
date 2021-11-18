@@ -573,10 +573,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_ij = min(lim_i, lim_j);
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        if (limiter){
-          Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-          Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
-        }
+        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
