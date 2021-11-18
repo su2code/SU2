@@ -630,6 +630,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     if (config->GetSpecies_StrongBC()) {
+      //TK:: document how this works
       /*--- Allocate the value at the outlet ---*/
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -679,6 +680,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
+      // TK:: The inc mean flow adds this contribution so this should be maybe given a try
       //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
       //
       //      su2double Coord_Reflected[MAXNDIM];

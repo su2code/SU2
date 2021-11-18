@@ -286,7 +286,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < species_solver->GetnVar(); iVar++) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetHistoryOutputValue("RMS_SPECIES_"+std::to_string(iVar), log(species_solver->GetRes_RMS(iVar)));
     }
   }
