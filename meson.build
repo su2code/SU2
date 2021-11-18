@@ -198,8 +198,9 @@ if get_option('enable-librom')
 
 endif
 
-# Eigen library for linear algebra
+# Eigen library dependencies
 if get_option('enable-eigen')
+  su2_cpp_args += '-DHAVE_EIGEN'
   su2_deps += [declare_dependency(include_directories: 'externals/eigen')]
 endif
 
@@ -300,10 +301,5 @@ if get_option('enable-librom')
           export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
           
           '''.format(get_option('librom_root')))
-
-endif
-
-if get_option('enable-eigen')
-  message(''' To run SU2 with Eigen, make sure you added Eigen to externals/eigen/. ''')
 
 endif
