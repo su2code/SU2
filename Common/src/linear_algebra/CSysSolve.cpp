@@ -49,9 +49,10 @@ namespace {
 }
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) :
+CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode, const bool gradient_smooth_mode) :
   eps(linSolEpsilon<ScalarType>()),
   mesh_deform(mesh_deform_mode),
+  gradient_mode(gradient_smooth_mode),
   cg_ready(false),
   bcg_ready(false),
   smooth_ready(false),
@@ -830,20 +831,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   ScalarType SolverTol;
   bool ScreenOutput;
 
-  /*--- Normal mode ---*/
-
-  if(!mesh_deform) {
-
-    KindSolver   = config->GetKind_Linear_Solver();
-    KindPrecond  = config->GetKind_Linear_Solver_Prec();
-    MaxIter      = config->GetLinear_Solver_Iter();
-    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-    ScreenOutput = false;
-  }
-
   /*--- Mesh Deformation mode ---*/
 
-  else {
+  if(mesh_deform) {
 
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
@@ -852,8 +842,29 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     ScreenOutput = config->GetDeform_Output();
   }
 
-  /*--- Stop the recording for the linear solver ---*/
+  /*--- gradient smoothing mode ---*/
 
+  else if (gradient_mode) {
+
+    KindSolver   = config->GetKind_Grad_Linear_Solver();
+    KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+    MaxIter      = config->GetGrad_Linear_Solver_Iter();
+    SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
+    ScreenOutput = true;
+  }
+
+  /*--- Normal mode ---*/
+
+  else {
+
+    KindSolver   = config->GetKind_Linear_Solver();
+    KindPrecond  = config->GetKind_Linear_Solver_Prec();
+    MaxIter      = config->GetLinear_Solver_Iter();
+    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+    ScreenOutput = false;
+  }
+
+  /*--- Stop the recording for the linear solver ---*/
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()) {
@@ -934,6 +945,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     const bool RequiresTranspose = !mesh_deform || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT);
 
     if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+    else if (gradient_mode) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
     else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
 
     /*--- Build preconditioner for the transposed Jacobian ---*/
@@ -1031,6 +1043,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     Jacobian.TransposeInPlace();
     precond->Build();
   }
+
+  /*--- The gradient treatment needs to build the preconditioner here. ---*/
+  if (config->GetSmoothGradient()) precond->Build();
 
   auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 

@@ -50,7 +50,7 @@
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
-CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
+CSolver::CSolver(bool mesh_deform_mode, bool gradient_smooth_mode) : System(mesh_deform_mode, gradient_smooth_mode) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();

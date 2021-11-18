@@ -368,7 +368,7 @@ public:
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry *geometry,
-                  const CConfig *config, bool needTranspPtr = false);
+                  const CConfig *config, bool needTranspPtr = false, bool grad_mode = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.

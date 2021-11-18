@@ -76,6 +76,7 @@ public:
 private:
   const ScalarType eps;      /*!< \brief Machine epsilon used in this class. */
   bool mesh_deform;          /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  bool gradient_mode;        /*!< \brief Operate in gradient smoothing mode, changes the source of solver options. */
   ScalarType Residual=1e-20; /*!< \brief Residual at the end of a call to Solve or Solve_b. */
   unsigned long Iterations=0;/*!< \brief Iterations done in Solve or Solve_b. */
 
@@ -292,7 +293,7 @@ public:
    * \brief default constructor of the class.
    * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
    */
-  CSysSolve(const bool mesh_deform_mode = false);
+  CSysSolve(const bool mesh_deform_mode = false, const bool gradient_smooth_mode = false);
 
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector

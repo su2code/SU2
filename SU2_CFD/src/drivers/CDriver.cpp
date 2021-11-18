@@ -89,6 +89,7 @@
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEANonlinearElasticity.hpp"
 #include "../../include/numerics/elasticity/nonlinear_models.hpp"
+#include "../../include/numerics/CGradSmoothing.hpp"
 
 #include "../../include/integration/CIntegrationFactory.hpp"
 
@@ -229,6 +230,13 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
     }
 
+  }
+
+  /*--- For gradient smoothing we need to calculate the projections between volume, surface and design parameters ---*/
+  if ( config_container[ZONE_0]->GetSmoothGradient() ) {
+    grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+    surface_movement[ZONE_0] = new CSurfaceMovement();
+    surface_movement[ZONE_0]->CopyBoundary(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
   }
 
   /*! --- Compute the wall distance again to correctly compute the derivatives if we are running direct diff mode --- */
@@ -2246,6 +2254,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     numerics[MESH_0][MESH_SOL][fea_term] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
   } // end "per-thread" allocation loop
+
+  /*--- If we want to apply the gradient smoothing we must initialize the numerics here ---*/
+  if(config->GetSmoothGradient()) {
+    if (config->GetSmoothOnSurface()) {
+      numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim-1, config);
+    } else {
+      numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim, config);
+    }
+  }
 
 }
 

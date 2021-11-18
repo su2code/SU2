@@ -1118,7 +1118,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
       if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
           ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF)) ||
           ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_GEO)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT || config->GetSmoothGradient())) ||
           ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
 
         for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
@@ -2979,7 +2979,7 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 
         /*--- CST computation ---*/
         su2double fact_n = 1;
-  su2double fact_cst = 1;
+        su2double fact_cst = 1;
         su2double fact_cst_n = 1;
 
   for (int i = 1; i <= maxKulfanNum; i++) {

@@ -59,7 +59,11 @@ public:
   CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes)
     : J_X(0.0), J_x(0.0), iGaussPoint(val_iGauss)
   {
-    GradNi_Xj.resize(val_nNodes,val_nDim) = su2double(0.0);
+
+    /* --- For the structural mechanics solver the dimensions (nNodes x nDim) are sufficient.
+     * For the Sobolev smoothing solver dimensions (nNodes x (nDim+1)) are necessary
+     * when working on a curved design surface embedded in 3D. ---*/
+    GradNi_Xj.resize(val_nNodes,val_nDim+1) = su2double(0.0);
     GradNi_xj = GradNi_Xj;
 
     Ni.resize(val_nNodes) = su2double(0.0);

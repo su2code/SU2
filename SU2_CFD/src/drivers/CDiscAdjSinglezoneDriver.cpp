@@ -500,4 +500,57 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+  /*--- If necessary smooth the calculated geometry sensitivities ---*/
+
+  if (config->GetSmoothGradient()) {
+    DerivativeTreatment();
+  }
+
+}
+
+/*--- Main routine to call the Sobolev smoothing solver and postprocess the derivatives. ---*/
+
+void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
+
+  if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
+
+  /*--- Get the sensitivities from the adjoint solver to work with. ---*/
+  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[MainSolver]);
+
+  /*--- Apply the smoothing procedure on the mesh level. ---*/
+  if (config->GetSobMode()==MESH_LEVEL || config->GetSobMode()==DEBUG ) {
+
+    if (rank == MASTER_NODE)  cout << "  working on mesh level (including debug mode)" << endl;
+
+    if (config->GetSmoothOnSurface()) {
+
+      unsigned long  dvMarker = 1000;
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ( config->GetMarker_All_DV(iMarker) == YES ) {
+          dvMarker = iMarker;
+        }
+      }
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config, dvMarker);
+
+    } else {
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config);
+    }
+
+    /*--- After appling the solver write the results back ---*/
+    solver[GRADIENT_SMOOTHING]->OutputSensitivity(geometry,config,solver[ADJFLOW_SOL]);
+
+  /*--- Apply the smoothing procedure on the DV level. ---*/
+  } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
+
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+
+  /*--- in some OneShot applications we might only need the original gradient. ---*/
+  } else if (config->GetSobMode()==ONLY_GRAD) {
+    solver[GRADIENT_SMOOTHING]->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+
+  /*--- warning if choose mode is unsupported. ---*/
+  } else {
+    if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
+  }
+
 }

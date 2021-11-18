@@ -36,6 +36,8 @@
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
+#include "../../../Common/include/containers/C2DContainer.hpp"
+
 class CElement;
 class CFluidModel;
 
@@ -831,6 +833,12 @@ public:
     Coord_i = val_coord_i;
     Coord_j = val_coord_j;
   }
+
+  /*!
+   * \brief A virtual member
+   * \param[in] val_coord - vector of coordinates.
+   */
+  virtual void SetCoord(su2activematrix& val_coord) {}
 
   /*!
    * \brief Set the velocity of the computational grid.

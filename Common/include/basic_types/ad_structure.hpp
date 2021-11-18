@@ -106,6 +106,11 @@ namespace AD{
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
 
   /*!
+   * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables, using forward tape evaluation.
+   */
+  inline void ComputeAdjointForward() {}
+
+  /*!
    * \brief Reset the tape structure to be ready for a new recording.
    */
   inline void Reset() {}
@@ -353,6 +358,8 @@ namespace AD{
     AD::getGlobalTape().evaluate(TapePositions[enter], TapePositions[leave]);
   #endif
   }
+
+  FORCEINLINE void ComputeAdjointForward() {AD::getGlobalTape().evaluateForward();}
 
   FORCEINLINE void Reset() {
     AD::getGlobalTape().reset();

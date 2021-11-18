@@ -76,10 +76,10 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4;    /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -498,6 +498,8 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
 
+const int GRADIENT_SMOOTHING = 11; /*!< \brief Position of the gradient smoothing equation in the solution solver array. */
+
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
@@ -509,6 +511,7 @@ const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+const int GRAD_TERM = 6;  /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
 
 const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */
@@ -518,16 +521,20 @@ const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 /*!
- * \brief Types of finite elements (in 2D or 3D)
+ * \brief Types of finite elements (in 1D or 2D or 3D)
  */
+const int EL_LINE = 6;    /*!< \brief Elements of two nodes, with second order gauss quadrature (1D). */
+
 const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;   /*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;   /*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;   /*!< \brief Elements of eight nodes (3D). */
 const int EL_PYRAM = 2;   /*!< \brief Elements of five nodes (3D). */
 const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
-
+const int EL_TETRA2 = 4;		/*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;		/*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
 
 /*!
  * \brief Types of spatial discretizations
@@ -1160,6 +1167,7 @@ enum BC_TYPE {
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
+  NOT_AVAILABLE = 1000,       /*!< \brief Boundary not on this MPI rank. */
 };
 
 /*!
@@ -2283,6 +2291,24 @@ enum class POD_KIND {
 static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("STATIC_POD",      POD_KIND::STATIC)
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
+};
+
+/*!
+ * \brief modus of operation for the sobolev smoothing solver.
+ */
+enum ENUM_SOBOLEV_MODUS {
+ NO_MODUS = 0,                    /*!< \brief Default option if none is choosen. */
+ PARAM_LEVEL_COMPLETE   = 1,      /*!< \brief Operate on parameter level. */
+ MESH_LEVEL  = 3,                 /*!< \brief Operate on mesh level. */
+ DEBUG = 4,                       /*!< \brief Special flag for debugging. */
+ ONLY_GRAD = 5,                   /*!< \brief Flag for OneShot to only compute the original gradient. */
+};
+static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
+ MakePair("NONE", NO_MODUS)
+ MakePair("PARAM_LEVEL_COMPLETE"  , PARAM_LEVEL_COMPLETE)
+ MakePair("MESH_LEVEL" , MESH_LEVEL)
+ MakePair("DEBUG" , DEBUG)
+ MakePair("ONLY_GRADIENT" , ONLY_GRAD)
 };
 
 #undef MakePair

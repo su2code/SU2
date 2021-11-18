@@ -50,7 +50,7 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
   nIterMesh = 0;
 
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-  if (config->GetVolumetric_Movement()){
+  if (config->GetVolumetric_Movement() || config->GetSmoothGradient()){
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
@@ -114,7 +114,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 }
 
-void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
+void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative, bool ForwardProjectionDerivative) {
 
   unsigned long Tot_Iter = 0;
   su2double MinVolume, MaxVolume;
@@ -127,6 +127,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   /*--- Disable the screen output if we're running SU2_CFD ---*/
 
   if (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD && !Derivative) Screen_Output = false;
+  if (config->GetSmoothGradient()) Screen_Output=true;
 
   /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
 
@@ -162,7 +163,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
 
-    if (Derivative) { SetBoundaryDerivatives(geometry, config); }
+    if (Derivative) { SetBoundaryDerivatives(geometry, config, ForwardProjectionDerivative); }
 
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
@@ -182,11 +183,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- If we want no derivatives or the direct derivatives, we solve the system using the
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) && Derivative)) {
+    if (!Derivative || ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) && Derivative && !config->GetSmoothGradient()) || ForwardProjectionDerivative) {
 
       Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
-    } else if (Derivative && (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT)) {
+    } else if (Derivative && ((config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT) || config->GetSmoothGradient())) {
 
       Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     }
@@ -196,7 +197,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      of the linear system (usol contains the x, y, z displacements). ---*/
 
     if (!Derivative) { UpdateGridCoord(geometry, config); }
-    else { UpdateGridCoord_Derivatives(geometry, config); }
+    else { UpdateGridCoord_Derivatives(geometry, config, ForwardProjectionDerivative); }
     if (UpdateGeo) { UpdateDualGrid(geometry, config); }
 
     if (!Derivative) {
@@ -1602,7 +1603,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF)) ||
         ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT || config->GetSmoothGradient()))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1692,7 +1693,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
 }
 
-void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config) {
+void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config, bool ForwardProjectionDerivative) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
 
@@ -1713,7 +1714,7 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
       }
     }
     if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
-  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT) {
+  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT || (config->GetSmoothGradient() && !ForwardProjectionDerivative) ) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1722,10 +1723,24 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
         LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
       }
     }
+  } else if (config->GetSmoothGradient() && ForwardProjectionDerivative) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_DV(iMarker) == YES)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++) {
+            total_index = iPoint*nDim + iDim;
+            LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+            LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+          }
+        }
+      }
+    }
+    if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
   }
 }
 
-void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config) {
+void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config, bool ForwardProjectionDerivative) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
   su2double *new_coord = new su2double[3];
@@ -1744,7 +1759,16 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
       geometry->nodes->SetCoord(iPoint, new_coord);
     }
-  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT) {
+  } else if ((Kind_SU2 == SU2_COMPONENT::SU2_DOT) || (config->GetSmoothGradient() && !ForwardProjectionDerivative)) {
+    // need to reset here, since we read out the whole vector, but are only interested in boundary derivatives.
+    if (config->GetSmoothGradient() && !ForwardProjectionDerivative) {
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          geometry->SetSensitivity(iPoint,iDim, 0.0);
+        }
+      }
+    }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if(config->GetSolid_Wall(iMarker) || (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1756,6 +1780,13 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
             }
           }
         }
+      }
+    }
+  } else if (config->GetSmoothGradient() && ForwardProjectionDerivative) {
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        total_index = iPoint*nDim + iDim;
+        geometry->SetSensitivity(iPoint,iDim, LinSysSol[total_index]);
       }
     }
   }

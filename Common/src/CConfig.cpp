@@ -798,6 +798,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
   Marker_CfgFile_Deform_Mesh_Sym_Plane   = nullptr;  Marker_All_Deform_Mesh_Sym_Plane   = nullptr;
   Marker_CfgFile_Fluid_Load    = nullptr;  Marker_All_Fluid_Load    = nullptr;
+  Marker_CfgFile_SobolevBC     = nullptr;  Marker_All_SobolevBC     = nullptr;
 
   Marker_CfgFile_Turbomachinery       = nullptr; Marker_All_Turbomachinery       = nullptr;
   Marker_CfgFile_TurbomachineryFlag   = nullptr; Marker_All_TurbomachineryFlag   = nullptr;
@@ -808,7 +809,7 @@ void CConfig::SetPointersNull(void) {
   Marker_DV                   = nullptr;   Marker_Moving            = nullptr;    Marker_Monitoring = nullptr;
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
-  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_SobolevBC  = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -1937,6 +1938,38 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /*!\par CONFIG_CATEGORY: Sobolev Gradient Solver Parameters \ingroup Config */
+  /*--- Options related to the Sobolev smoothing solver ---*/
+
+  /* DESCRIPTION: Switch to activate gradient smoothing */
+  addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
+  /* DESCRIPTION: Epsilon of the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_EPSILON1",SmoothingEps1, 1.0);
+  /* DESCRIPTION: Zeta of the identity term in the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
+  /* DESCRIPTION: Switch to calculate dimensions separated */
+  addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
+  /* DESCRIPTION: Switch to calculate dimensions separated */
+  addBoolOption("SECOND_ORDER_INTEGRATION",SecOrdQuad, true);
+  /* DESCRIPTION: Switch to activate working on the surface only */
+  addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
+  /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
+  addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
+  /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
+  addEnumOption("SOBOLEV_MODE",NumMode, Sobolev_Modus_Map,NO_MODUS);
+  /*!\brief HESS_OBJFUNC_FILENAME
+   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
+  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
+
+  /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
+
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
@@ -2026,6 +2059,8 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("SURFACE_MOVEMENT",nKind_SurfaceMovement, Kind_SurfaceMovement, SurfaceMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  /* DESCRIPTION: Marker(s) of gradient problem boundaries. */
+  addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_SobolevBC);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -2652,7 +2687,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Optimization gradient factor */
   addPythonOption("OPT_GRADIENT_FACTOR");
-
+  
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
 
@@ -2779,25 +2814,25 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
-  
+
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
-  
+
   /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
   addBoolOption("SAVE_LIBROM", libROM, false);
-  
+
   /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
   addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
-  
+
   /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
   addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
-  
+
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
-  
+
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
-  
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -5093,7 +5128,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_DV, iMarker_Moving, iMarker_SobolevBC, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
@@ -5143,6 +5178,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
+  Marker_All_SobolevBC      = new unsigned short[nMarker_All] ();	// Store wether the boundary should apply to the gradient smoothing.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
@@ -5168,6 +5204,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = "SEND_RECEIVE";
@@ -5588,6 +5625,13 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_SobolevBC[iMarker_CfgFile] = NO;
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_SobolevBC[iMarker_SobolevBC])
+        Marker_CfgFile_SobolevBC[iMarker_CfgFile] = YES;
+  }
+
 }
 
 void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
@@ -5604,7 +5648,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_Emissivity,
-  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
+  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
+  iMarker_SobolevBC;
 
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
 
@@ -7100,6 +7145,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_SobolevBC != 0) {
+    BoundaryTable << "Sobolev boundary";
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++) {
+      BoundaryTable << Marker_SobolevBC[iMarker_SobolevBC];
+      if (iMarker_SobolevBC < nMarker_SobolevBC-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_ActDiskOutlet != 0) {
     if (GetKind_ActDisk() == VARIABLE_LOAD) {
       cout << endl << "Actuator disk with variable load." << endl;
@@ -7404,6 +7458,13 @@ unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_SobolevBC(string val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
+}
+
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
@@ -7569,6 +7630,9 @@ CConfig::~CConfig(void) {
   delete [] Marker_CfgFile_MixingPlaneInterface;
   delete [] Marker_All_MixingPlaneInterface;
 
+  delete [] Marker_CfgFile_SobolevBC;
+  delete [] Marker_All_SobolevBC;
+
   delete[] Marker_DV;
   delete[] Marker_Moving;
   delete[] Marker_Monitoring;
@@ -7581,6 +7645,7 @@ CConfig::~CConfig(void) {
   delete[] Marker_CHTInterface;
   delete [] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
+  delete[] Marker_SobolevBC;
 
   delete[] Kind_Inc_Inlet;
   delete[] Kind_Inc_Outlet;
@@ -8483,6 +8548,10 @@ bool CConfig::GetVolumetric_Movement() const {
       Kind_SU2 == SU2_COMPONENT::SU2_DOT ||
       DirectDiff)
   { volumetric_movement = true;}
+
+  if (GetSmoothGradient())
+  { volumetric_movement=true; }
+
   return volumetric_movement;
 }
 
@@ -8543,6 +8612,16 @@ unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
     if (Marker_Fluid_Load[iMarker_Fluid_Load] == val_marker) break;
 
   return iMarker_Fluid_Load;
+}
+
+unsigned short CConfig::GetMarker_SobolevBC(string val_marker) const {
+  unsigned short iMarker_Sobolev;
+
+  /*--- Find the marker for this moving boundary. ---*/
+  for (iMarker_Sobolev = 0; iMarker_Sobolev < nMarker_SobolevBC; iMarker_Sobolev++)
+    if (Marker_SobolevBC[iMarker_Sobolev] == val_marker) break;
+
+  return iMarker_Sobolev;
 }
 
 su2double CConfig::GetExhaust_Temperature_Target(string val_marker) const {

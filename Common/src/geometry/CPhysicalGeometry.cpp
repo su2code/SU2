@@ -180,6 +180,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   }
 
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  if (config->GetSmoothGradient()) {
+    Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  }
+
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
@@ -268,6 +273,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   LoadPoints(config, geometry);
   LoadVolumeElements(config, geometry);
   LoadSurfaceElements(config, geometry);
+
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  if (config->GetSmoothGradient()) {
+    Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  }
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
@@ -3598,6 +3608,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
+
     }
 
     /*--- Send-Receive boundaries definition ---*/
@@ -3621,6 +3633,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
       config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
+      config->SetMarker_All_SobolevBC(iMarker, NO);
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
@@ -4023,6 +4036,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
 
     }
   }

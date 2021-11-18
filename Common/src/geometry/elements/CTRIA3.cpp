@@ -1,7 +1,7 @@
 /*!
- * \file CTRIA1.cpp
- * \brief Definition of the 3-node triangular element with one Gauss point.
- * \author R. Sanchez
+ * \file CTRIA3.cpp
+ * \brief Definition of the 3-node triangular element with three Gauss points.
+ * \author T. Dick
  * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,19 +27,20 @@
 
 #include "../../../include/geometry/elements/CElement.hpp"
 
-
-CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
+CTRIA3::CTRIA3() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 1.0/3.0;  GaussCoord[0][1] = 1.0/3.0;  GaussWeight(0) = 0.5;
+  GaussCoord[0][0] = 0.66666666666666666667; GaussCoord[0][1] = 0.16666666666666666667; GaussWeight(0) = 0.33333333333333333333;
+  GaussCoord[1][0] = 0.16666666666666666667; GaussCoord[1][1] = 0.66666666666666666667; GaussWeight(1) = 0.33333333333333333333;
+  GaussCoord[2][0] = 0.16666666666666666667; GaussCoord[2][1] = 0.16666666666666666667; GaussWeight(2) = 0.33333333333333333333;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
   unsigned short iGauss;
   su2double Xi, Eta, val_Ni;
 
-  for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
 
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
@@ -65,17 +66,17 @@ CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
 }
 
-su2double CTRIA1::ComputeArea(const FrameType mode) const {
+su2double CTRIA3::ComputeArea(const FrameType mode) const {
 
   unsigned short iDim;
-  su2double a[2] = {0.0,0.0}, b[2] = {0.0,0.0};
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
   su2double Area = 0.0;
 
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
   const su2activematrix& Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
-  for (iDim = 0; iDim < NDIM; iDim++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     a[iDim] = Coord[0][iDim]-Coord[2][iDim];
     b[iDim] = Coord[1][iDim]-Coord[2][iDim];
   }
@@ -85,4 +86,3 @@ su2double CTRIA1::ComputeArea(const FrameType mode) const {
   return Area;
 
 }
-

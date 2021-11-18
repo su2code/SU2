@@ -87,7 +87,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain,
                                         unsigned short nvar, unsigned short neqn,
                                         bool EdgeConnect, CGeometry *geometry,
-                                        const CConfig *config, bool needTranspPtr) {
+                                        const CConfig *config, bool needTranspPtr, bool grad_mode) {
 
   assert(omp_get_thread_num()==0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -111,11 +111,16 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT)) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
-  }
-  else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
+  } else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
     /*--- Else "upgrade" primal solver settings. ---*/
     prec = config->GetKind_DiscAdj_Linear_Prec();
   }
+
+  /*--- No else, but separat if case! ---*/
+  if (config->GetSmoothGradient() && grad_mode) {
+    prec = config->GetKind_Grad_Linear_Solver_Prec();
+  }
+
   const bool ilu_needed = (prec==ILU);
   const bool diag_needed = ilu_needed || (prec==JACOBI) || (prec==LINELET);
 

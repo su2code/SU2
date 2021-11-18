@@ -210,7 +210,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(bool mesh_deform_mode = false);
+  CSolver(bool mesh_deform_mode = false, bool gradient_smooth_mode = false);
 
   /*!
    * \brief Destructor of the class.
@@ -4208,6 +4208,73 @@ public:
   inline virtual void SetMesh_Stiffness(CGeometry **geometry,
                                         CNumerics **numerics,
                                         CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ApplyGradientSmoothingVolume(CGeometry *geometry,
+                                            CSolver *solver,
+                                            CNumerics **numerics,
+                                            CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   *
+   */
+  virtual void ApplyGradientSmoothingSurface(CGeometry *geometry,
+                                               CSolver *solver,
+                                               CNumerics **numerics,
+                                               CConfig *config,
+                                               unsigned long val_marker) { }
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
+   */
+  virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
+                                        CSolver *solver,
+                                        CNumerics **numerics,
+                                        CSurfaceMovement *surface_movement,
+                                        CVolumetricMovement *grid_movement,
+                                        CConfig *config,
+                                        vector<su2double> additionalGrad={}) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
+                                                     CSurfaceMovement *surface_movement,
+                                                     CVolumetricMovement *grid_movement,
+                                                     CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The solver container holding all terms of the solution.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void OutputSensitivity(CGeometry *geometry,
+                                 CConfig *config,
+                                 CSolver *solver) { }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual vector<su2double> GetDeltaP() { return vector<su2double>(); }
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetHessianMatrix() {}
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

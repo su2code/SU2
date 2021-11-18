@@ -198,6 +198,11 @@ if get_option('enable-librom')
 
 endif
 
+# Eigen library for linear algebra
+if get_option('enable-eigen')
+  su2_deps += [declare_dependency(include_directories: 'externals/eigen')]
+endif
+
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
   if dep != ''
@@ -278,7 +283,7 @@ message('''---------------------------------------------------------------------
          Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-eigen'), meson.build_root().split('/')[-1]))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
@@ -295,5 +300,10 @@ if get_option('enable-librom')
           export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
           
           '''.format(get_option('librom_root')))
+
+endif
+
+if get_option('enable-eigen')
+  message(''' To run SU2 with Eigen, make sure you added Eigen to externals/eigen/. ''')
 
 endif
