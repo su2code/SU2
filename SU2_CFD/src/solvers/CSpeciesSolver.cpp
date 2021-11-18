@@ -490,35 +490,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-      //
-      //      su2double Coord_Reflected[MAXNDIM];
-      //      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-      //                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      //      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      //      visc_numerics->SetNormal(Normal);
-      //
-      //      /*--- Conservative variables w/o reconstruction ---*/
-      //
-      //      visc_numerics->SetPrimitive(V_domain, V_inlet);
-      //
-      //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      //
-      //     visc_numerics->SetScalarVar(Solution_i, Solution_j);
-      //     visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      //
-      //      /*--- Menter's first blending function ---*/
-      //
-      //      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      //
-      //      /*--- Compute residual, and Jacobians ---*/
-      //
-      //      auto residual = visc_numerics->ComputeResidual(config);
-      //
-      //      /*--- Subtract residual, and update Jacobians ---*/
-      //
-      //      LinSysRes.SubtractBlock(iPoint, residual);
-      //      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+      // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
     }
   }
   END_SU2_OMP_FOR
@@ -665,36 +637,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      // TK:: The inc mean flow adds this contribution so this should be maybe given a try
-      //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-      //
-      //      su2double Coord_Reflected[MAXNDIM];
-      //      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-      //                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      //      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-      //      visc_numerics->SetNormal(Normal);
-      //
-      //      /*--- Conservative variables w/o reconstruction ---*/
-      //
-      //      visc_numerics->SetPrimitive(V_domain, V_outlet);
-      //
-      //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      //
-      //      visc_numerics->SetScalarVar(Solution_i, Solution_j);
-      //      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      //
-      //      /*--- Menter's first blending function ---*/
-      //
-      //      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      //
-      //      /*--- Compute residual, and Jacobians ---*/
-      //
-      //      auto residual = visc_numerics->ComputeResidual(config);
-      //
-      //      /*--- Subtract residual, and update Jacobians ---*/
-      //
-      //      LinSysRes.SubtractBlock(iPoint, residual);
-      //      Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+      // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
     }
   }
   END_SU2_OMP_FOR
