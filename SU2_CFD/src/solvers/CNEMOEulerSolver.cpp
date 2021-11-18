@@ -541,9 +541,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       if (limiter && !van_albada){
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-      } else {
-
-      }
+      } 
 
       su2double lim_i = 2.0;
       su2double lim_j = 2.0;
