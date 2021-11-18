@@ -334,9 +334,9 @@ private:
 
   su2double kAmb, omegaAmb;
 
-  su2double Residual[2],
-  *Jacobian_i[2] = {nullptr},
-  Jacobian_Buffer[4] = {0.0}; /// Static storage for the Jacobian (which needs to be pointer for return type).
+  su2double Residual[2];
+  su2double* Jacobian_i[2];
+  su2double Jacobian_Buffer[4]; /// Static storage for the Jacobian (which needs to be pointer for return type).
 
   bool incompressible;
   bool sustaining_terms;
