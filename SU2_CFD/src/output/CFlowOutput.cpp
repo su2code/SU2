@@ -156,7 +156,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_VelocityIdeal     (nMarker,0.0);
   vector<su2double> Surface_Area              (nMarker,0.0);
   vector<su2double> Surface_MassFlow_Abs      (nMarker,0.0);
-  vector<su2double> Surface_Species           (nMarker*nSpecies,0.0); // (Y0_bound0, Y0_bound1,... , Y1_bound0, Y1_bound1,...)
+  su2activematrix Surface_Species(nMarker, nSpecies);
+  Surface_Species = su2double(0.0);
 
   su2double  Tot_Surface_MassFlow          = 0.0;
   su2double  Tot_Surface_Mach              = 0.0;
@@ -270,7 +271,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_TotalPressure[iMarker]    += TotalPressure*Weight;
           if (species)
             for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-              Surface_Species[iVar*nMarker + iMarker] += species_nodes->GetSolution(iPoint, iVar)*Weight;
+              Surface_Species(iMarker, iVar) += species_nodes->GetSolution(iPoint, iVar)*Weight;
 
           /*--- For now, always used the area to weight the uniformities. ---*/
 
@@ -299,7 +300,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_TotalPressure_Local     (nMarker_Analyze,0.0);
   vector<su2double> Surface_Area_Local              (nMarker_Analyze,0.0);
   vector<su2double> Surface_MassFlow_Abs_Local      (nMarker_Analyze,0.0);
-  vector<su2double> Surface_Species_Local           (nMarker_Analyze*nSpecies,0.0);
+  su2activematrix Surface_Species_Local(nMarker_Analyze,nSpecies);
+  Surface_Species_Local = su2double(0.0);
 
   vector<su2double> Surface_MassFlow_Total          (nMarker_Analyze,0.0);
   vector<su2double> Surface_Mach_Total              (nMarker_Analyze,0.0);
@@ -314,7 +316,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   vector<su2double> Surface_TotalPressure_Total     (nMarker_Analyze,0.0);
   vector<su2double> Surface_Area_Total              (nMarker_Analyze,0.0);
   vector<su2double> Surface_MassFlow_Abs_Total      (nMarker_Analyze,0.0);
-  vector<su2double> Surface_Species_Total           (nMarker_Analyze*nSpecies,0.0);
+  su2activematrix Surface_Species_Total(nMarker_Analyze,nSpecies);
+  Surface_Species_Total = su2double(0.0);
 
   vector<su2double> Surface_MomentumDistortion_Total (nMarker_Analyze,0.0);
 
@@ -343,7 +346,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
           Surface_Area_Local[iMarker_Analyze]              += Surface_Area[iMarker];
           Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
           for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-            Surface_Species_Local[iVar*nMarker_Analyze + iMarker_Analyze] += Surface_Species[iVar*nMarker + iMarker];
+            Surface_Species_Local(iMarker_Analyze, iVar) += Surface_Species(iMarker, iVar);
         }
 
       }
@@ -353,6 +356,10 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   }
 
   auto Allreduce = [](const vector<su2double>& src, vector<su2double>& dst) {
+    SU2_MPI::Allreduce(src.data(), dst.data(), src.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  };
+
+  auto Allreduce_su2activematrix = [](const su2activematrix& src, su2activematrix& dst) {
     SU2_MPI::Allreduce(src.data(), dst.data(), src.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   };
 
@@ -369,7 +376,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total);
   Allreduce(Surface_Area_Local, Surface_Area_Total);
   Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
-  Allreduce(Surface_Species_Local, Surface_Species_Total);
+  Allreduce_su2activematrix(Surface_Species_Local, Surface_Species_Total);
+
 
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
@@ -390,7 +398,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-        Surface_Species_Total[iVar*nMarker_Analyze + iMarker_Analyze] /= Weight;
+        Surface_Species_Total(iMarker_Analyze, iVar) /= Weight;
     }
     else {
       Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -402,7 +410,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
       Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-        Surface_Species_Total[iVar*nMarker_Analyze + iMarker_Analyze] = 0.0;
+        Surface_Species_Total(iMarker_Analyze, iVar) = 0.0;
     }
 
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
@@ -494,7 +502,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
     for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
-      su2double Species = Surface_Species_Total[iVar*nMarker_Analyze + iMarker_Analyze];
+      su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
       SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
       Tot_Surface_Species[iVar] += Species;
       //config->SetSurface_Temperature( ); //TK:: Necessary for Obj Func
