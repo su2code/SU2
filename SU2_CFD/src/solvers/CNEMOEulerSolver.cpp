@@ -559,8 +559,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         if (limiter) {
           if (van_albada) {
             su2double V_ij = V_j[iVar] - V_i[iVar];
-            su2double va_lim_i = V_ij*( 2.0*Project_Grad_i[iVar] + V_ij) / (4*pow(Project_Grad_i[iVar], 2) + pow(V_ij, 2) + EPS);
-            su2double va_lim_j = V_ij*(-2.0*Project_Grad_j[iVar] + V_ij) / (4*pow(Project_Grad_j[iVar], 2) + pow(V_ij, 2) + EPS);
+            su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
+            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
             if (lim_i > va_lim_i && va_lim_i != 0) lim_i = va_lim_i;
             if (lim_j > va_lim_j && va_lim_j != 0) lim_j = va_lim_j;
 
