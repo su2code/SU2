@@ -448,10 +448,6 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       LinSysRes.SetBlock_Zero(iPoint);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
-      }
-
       /*--- Includes 1 in the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         auto total_index = iPoint * nVar + iVar;
@@ -628,11 +624,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       LinSysRes.SetBlock_Zero(iPoint);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
-      }
-
-      /*--- Includes 1 in the diagonal ---*/
+      /*--- Includes 1 on the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         auto total_index = iPoint * nVar + iVar;
         Jacobian.DeleteValsRowi(total_index);
