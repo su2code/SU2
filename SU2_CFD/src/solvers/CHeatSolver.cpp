@@ -218,15 +218,15 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
 
-void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-
+void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter,
+                              bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- Skip coordinates ---*/
 
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  unsigned short skipVars = nDim;
 
   if (flow) {
     // P, vx, vy (,vz)
@@ -243,36 +243,29 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Load data from the restart into correct containers. ---*/
-  long iPoint_Local = 0;
-  unsigned long iPoint_Global_Local = 0;
   unsigned long counter = 0;
-  su2double Solution[MAXNVAR];
   for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      auto index = counter*Restart_Vars[1] + skipVars;
-      for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
-      iPoint_Global_Local++;
+      const auto index = counter*Restart_Vars[1] + skipVars;
+      for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
-
   }
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local != nPointDomain) {
+  if (counter != nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
@@ -288,31 +281,37 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+
     for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const auto Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double Solution_Coarse[MAXNVAR] = {0.0};
+
       for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const auto Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        const auto Solution_Fine = solver[iMesh-1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
+        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(Point_Fine);
+
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
-      solver[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution);
+      solver[iMesh][HEAT_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+
     solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  delete[] Restart_Vars;
+  Restart_Vars = nullptr;
+  delete[] Restart_Data;
+  Restart_Data = nullptr;
 }
 
 void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,

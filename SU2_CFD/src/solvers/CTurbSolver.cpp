@@ -206,15 +206,10 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
-                                           bool val_update_geo) {
+                              bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent;
-  const su2double* Solution_Fine = nullptr;
-
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   SU2_OMP_MASTER {
@@ -236,27 +231,27 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
      Therefore, we must reduce skipVars here if energy is inactive so that
      the turbulent variables are read correctly. ---*/
 
-    bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    bool energy = config->GetEnergy_Equation();
-    bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
+    const bool energy = config->GetEnergy_Equation();
+    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
     if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
-    unsigned long counter = 0, iPoint_Global = 0;
-    for (; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+    unsigned long counter = 0;
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
       /*--- Retrieve local index. If this node from the restart file lives
        on the current processor, we will load and instantiate the vars. ---*/
 
-      auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
       if (iPoint_Local > -1) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        index = counter * Restart_Vars[1] + skipVars;
-        for (iVar = 0; iVar < nVar; ++iVar) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        const auto index = counter * Restart_Vars[1] + skipVars;
+        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -286,16 +281,19 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       su2double Solution_Coarse[MAXNVAR] = {0.0};
-      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
+
+      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
+        const su2double* Solution_Fine = solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
+
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
         }
       }
