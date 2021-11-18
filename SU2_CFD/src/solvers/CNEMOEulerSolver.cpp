@@ -563,13 +563,11 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
             su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
             if (lim_i > va_lim_i && va_lim_i != 0) lim_i = va_lim_i;
             if (lim_j > va_lim_j && va_lim_j != 0) lim_j = va_lim_j;
-
           } else {
             if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
             if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
           }
-         }
-        else {
+        } else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i[iVar];
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j[iVar];
         }
@@ -597,8 +595,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       chk_err_j = nodes->GetNon_Physical(jPoint);
 
       counter_local += chk_err_i + chk_err_j;
-
-      cout << counter_local << endl;
 
       /*--- Compute Secondary variables in a thermaodynamically consistent way. ---*/
       if (!chk_err_i) Gamma_i = ComputeConsistentExtrapolation(GetFluidModel(), nSpecies, Primitive_i, dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
