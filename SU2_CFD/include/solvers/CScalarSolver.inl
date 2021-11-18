@@ -402,12 +402,12 @@ void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, C
   unsigned long idxMax[MAXNVAR] = {0};
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for(unsigned long iPoint=0; iPoint<nPointDomain; iPoint++) {
+  for(unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
     nodes->SetDelta_Time(iPoint, dt);
     const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
 
-    for(auto iVar=0u; iVar < nVar; iVar++){
+    for(auto iVar = 0u; iVar < nVar; iVar++){
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
       ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
       /*--- Explicit Euler step: ---*/

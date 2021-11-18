@@ -4330,7 +4330,7 @@ protected:
   }
 
   /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history (overload).
+   * \brief Adds the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
    * \param[in] val_point - Value of the point index for the max residual.

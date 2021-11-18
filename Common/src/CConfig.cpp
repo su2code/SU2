@@ -4332,9 +4332,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  if(Kind_TimeIntScheme_Turb==RUNGE_KUTTA_EXPLICIT ||
-     Kind_TimeIntScheme_Turb==CLASSICAL_RK4_EXPLICIT ||
-     Kind_TimeIntScheme_Turb==ADER_DG){
+  if(Kind_TimeIntScheme_Turb != EULER_IMPLICIT &&
+     Kind_TimeIntScheme_Turb != EULER_EXPLICIT){
     SU2_MPI::Error("Only TIME_DISCRE_TURB = EULER_IMPLICIT, EULER_EXPLICIT have been implemented.", CURRENT_FUNCTION);
   }
 

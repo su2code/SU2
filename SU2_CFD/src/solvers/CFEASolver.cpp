@@ -1857,7 +1857,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
         /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-        ResidualReductions_PerThread(iPoint,iVar,ResidualAux(iPoint, iVar),resRMS,resMax,idxMax);
+        ResidualReductions_PerThread(iPoint, iVar, ResidualAux(iPoint, iVar), resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
