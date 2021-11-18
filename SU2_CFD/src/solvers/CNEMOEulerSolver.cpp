@@ -562,8 +562,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
             lim_i = min(lim_i, va_lim_i);
             lim_j = min(lim_j, va_lim_j);
           } else {
-            if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
-            if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
+            lim_i = min(lim_i, Limiter_i[iVar]);
+            lim_j = min(lim_j, Limiter_j[iVar]);
           }
         } else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i[iVar];
