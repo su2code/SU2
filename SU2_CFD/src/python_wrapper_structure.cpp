@@ -1149,11 +1149,43 @@ void CDriver::SetAdjFlowTractions_Marker(unsigned short iMarker, vector<passived
     }
 }
 
+vector<passivedouble> CDriver::GetProd_dMeshCoordinates_dMeshCoordinates() const {
+    CConfig* config = config_container[ZONE_0];
+
+    if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
+
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+
+    CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+
+    vector<passivedouble> values(nPoint*nDim, 0.0);
+    su2double value;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = solver->GetProd_dMeshCoordinates_dMeshCoordinates(iPoint, iDim);
+
+            values[iPoint*nDim + nDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+
+    return values;
+}
+
 vector<passivedouble> CDriver::GetProd_dMeshCoordinates_dMeshDisplacements_Marker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
 
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
@@ -1181,6 +1213,9 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowVariables() const {
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
 
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const int nTrim = 2;
@@ -1203,6 +1238,9 @@ vector<passivedouble> CDriver::GetProd_dFlowResiduals_dFlowVariables() const {
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
 
     CSolver*  solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const int nTrim  = 2;
@@ -1224,6 +1262,9 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowStates() const {
 
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
@@ -1252,6 +1293,9 @@ vector<passivedouble> CDriver::GetProd_dFlowResiduals_dFlowStates() const {
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
@@ -1279,6 +1323,9 @@ vector<passivedouble> CDriver::GetProd_dFlowTractions_dFlowStates() const {
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
@@ -1300,11 +1347,101 @@ vector<passivedouble> CDriver::GetProd_dFlowTractions_dFlowStates() const {
     return values;
 }
 
+vector<passivedouble> CDriver::GetSens_dFlowObjective_dMeshCoordinates() const {
+    CConfig* config = config_container[ZONE_0];
+
+    if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
+
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+
+    CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+
+    vector<passivedouble> values(nPoint*nDim, 0.0);
+    su2double value;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = solver->GetSens_dFlowObjective_dMeshCoordinates(iPoint, iDim);
+
+            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetProd_dFlowResiduals_dMeshCoordinates() const {
+    CConfig* config = config_container[ZONE_0];
+
+    if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
+
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+
+    CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+
+    vector<passivedouble> values(nPoint*nDim, 0.0);
+    su2double value;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = solver->GetProd_dFlowResiduals_dMeshCoordinates(iPoint, iDim);
+
+            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+
+    return values;
+}
+
+vector<passivedouble> CDriver::GetProd_dFlowTractions_dMeshCoordinates() const {
+    CConfig* config = config_container[ZONE_0];
+
+    if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
+
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+
+    CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+
+    vector<passivedouble> values(nPoint*nDim, 0.0);
+    su2double value;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = solver->GetProd_dFlowTractions_dMeshCoordinates(iPoint, iDim);
+
+            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+
+    return values;
+}
+
 vector<passivedouble> CDriver::GetSens_dFlowObjective_dMeshDisplacements_Marker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
 
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
@@ -1332,6 +1469,9 @@ vector<passivedouble> CDriver::GetProd_dFlowResiduals_dMeshDisplacements_Marker(
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
+    }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
@@ -1357,6 +1497,9 @@ vector<passivedouble> CDriver::GetProd_dFlowTractions_dMeshDisplacements_Marker(
 
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
+    }
+    if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
 
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];

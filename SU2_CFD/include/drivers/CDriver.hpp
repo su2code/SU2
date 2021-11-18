@@ -812,8 +812,14 @@ public:
 
     /*!
      * \brief Get sens of volume coordinates wrt boundary disps.
+     * \return Sensitivity of the deformed mesh coordinates w.r.t. the initial coordinates (nPoint*nDim).
+     */
+    vector<passivedouble> GetProd_dMeshCoordinates_dMeshCoordinates() const;
+    
+    /*!
+     * \brief Get sens of volume coordinates wrt boundary disps.
      * \param[in] iMarker - Marker identifier.
-     * \return Sensitivity of the deformed mesh coordinates w.r.t. the boundary displacements (nPoint*nDim).
+     * \return Sensitivity of the deformed mesh coordinates w.r.t. the boundary displacements (nVertex*nDim).
      */
     vector<passivedouble> GetProd_dMeshCoordinates_dMeshDisplacements_Marker(unsigned short iMarker) const;
 
@@ -846,6 +852,24 @@ public:
      * \return Sensitivity of the flow tractions w.r.t. the flow states (nPoint*nVar).
      */
     vector<passivedouble> GetProd_dFlowTractions_dFlowStates() const;
+    
+    /*!
+     * \brief Get the (partial) sensitivity of the objective function w.r.t. the un-deformed coordinates.
+     * \return Sensitivity of the objective function w.r.t. the flow states (nPoint*nDim).
+     */
+    vector<passivedouble> GetSens_dFlowObjective_dMeshCoordinates() const;
+
+    /*!
+     * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the un-deformed mesh coordinates.
+     * \return Sensitivity of the flow residuals w.r.t. the flow states (nPoint*nDim)
+     */
+    vector<passivedouble> GetProd_dFlowResiduals_dMeshCoordinates() const;
+
+    /*!
+     * \brief Get the (partial) sensitivity of the flow tractions w.r.t. the un-deformed coordinates.
+     * \return Sensitivity of the flow tractions w.r.t. the flow states (nPoint*nDim).
+     */
+    vector<passivedouble> GetProd_dFlowTractions_dMeshCoordinates() const;
 
     /*!
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the mesh displacements or coordinates.

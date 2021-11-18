@@ -347,8 +347,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Set the dependencies of the iteration ---*/
 
-  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
-                             INST_0, kind_recording);
+  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver ---*/
 
@@ -358,10 +357,6 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   else {
       DirectRun_FixedPoint(kind_recording);
   }
-
-  /*--- Store the recording state ---*/
-
-  RecordingState = kind_recording;
 
   /*--- Register Output of the iteration ---*/
 
@@ -373,6 +368,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     if (rank == MASTER_NODE) AD::PrintStatistics();
+
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
       su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
@@ -536,7 +532,7 @@ void CDiscAdjSinglezoneDriver::DirectRun_Residual(RECORDING kind_recording) {
 
     /*--- Residuals calculation ---*/
 
-    Update_DirectSolution();
+    Update_DirectSolution(false);
 
     /*--- Print the direct residual to screen ---*/
 
@@ -743,8 +739,6 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
 
     if (SecondaryVariables == RECORDING::MESH_COORDS) return;
 
-    std::cout << "Computing Mesh Solver discrete-adjoint sensitivities ... " << std::endl;
-
     /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
 
     SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
@@ -770,7 +764,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
     AD::ClearAdjoints();
 }
 
-void CDiscAdjSinglezoneDriver::Update_DirectSolution() {
+void CDiscAdjSinglezoneDriver::Update_DirectSolution(bool deform) {
 
     //  TODO:   Update/set Far-field conditions here instead of in the setter for AoA and Mach
     su2double Velocity_Ref = config->GetVelocity_Ref();
@@ -801,8 +795,9 @@ void CDiscAdjSinglezoneDriver::Update_DirectSolution() {
     geometry->SetMaxLength(config);
 
     /*--- Mesh movement ---*/
-
-    // direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, RecordingState);
+    if (deform) {
+      direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, RecordingState);
+    }
 
     /*--- Flow and turbulent conservative state variables ---*/
 

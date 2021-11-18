@@ -79,28 +79,26 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
         Partial_Prod_dFlowTractions_dFlowStates.resize(nPoint, nVar) = su2double(0.0);
 
         //  derivatives w.r.t. mesh displacements on each marker
-        Partial_Prod_dMeshCoordinates_dMeshDisplacements.resize(nMarker);
+        Partial_Prod_dFlowResiduals_dMeshCoordinates.resize(nPoint, nDim) = su2double(0.0);
+        Partial_Sens_dFlowObjective_dMeshCoordinates.resize(nPoint, nDim) = su2double(0.0);
+        Partial_Prod_dFlowTractions_dMeshCoordinates.resize(nPoint, nDim) = su2double(0.0);
 
+        Partial_Prod_dMeshCoordinates_dMeshCoordinates.resize(nPoint, nDim) = su2double(0.0);
+        
         Partial_Prod_dFlowResiduals_dMeshDisplacements.resize(nMarker);
         Partial_Sens_dFlowObjective_dMeshDisplacements.resize(nMarker);
-        Partial_Prod_dFlowTractions_dMeshDisplacements.resize(nMarker);
+        Partial_Prod_dFlowTractions_dMeshDisplacements.resize(nMarker);        
 
-        if (!config->GetDeform_Mesh()) {
-            Partial_Prod_dMeshCoordinates_dMeshCoordinates.resize(nMarker);
-
-            Partial_Prod_dFlowResiduals_dMeshCoordinates.resize(nMarker);
-            Partial_Sens_dFlowObjective_dMeshCoordinates.resize(nMarker);
-            Partial_Prod_dFlowTractions_dMeshCoordinates.resize(nMarker);
-        }
+        Partial_Prod_dMeshCoordinates_dMeshDisplacements.resize(nMarker);
 
         for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
             const auto nVertex = geometry->GetnVertex(iMarker);
 
-            Partial_Prod_dMeshCoordinates_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
-
             Partial_Prod_dFlowResiduals_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
             Partial_Sens_dFlowObjective_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
             Partial_Prod_dFlowTractions_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
+
+            Partial_Prod_dMeshCoordinates_dMeshDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
         }
 
         AD_ResidualIndex.resize(nPoint, nVar) = -1;
@@ -542,7 +540,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables_Residual(CGeometry *geometry, CCon
             SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         }
         else {
-            SU2_MPI::Error("The residual-based discrete adjoint solver is currently implemented for compressible flows only.\n", CURRENT_FUNCTION);
+            SU2_MPI::Error("The residual-based discrete adjoint is currently implemented for compressible flows only.\n", CURRENT_FUNCTION);
         }
         
         if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
@@ -555,7 +553,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables_Residual(CGeometry *geometry, CCon
                 Partial_Prod_dFlowResiduals_dFlowVariables[1] = Total_Sens_AoA;
             }
             else {
-                SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
+                return;
             }
         }
         
@@ -569,57 +567,108 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry_Residual(CGeometry *geometry, CConf
     SU2_OMP_PARALLEL {
         const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
-        vector<su2matrix<su2double>>* Sensitivity;
+        //  TODO:   Clean up implementation: some duplicate values for volume and marker data in the legacy mesh deformation, in the mesh solver coordinate sens are empty
 
-        if (variable == ENUM_VARIABLE::OBJECTIVE)
-            Sensitivity = &Partial_Sens_dFlowObjective_dMeshDisplacements;
+        vector<su2matrix<su2double>>* MarkerSensitivity;
+
+        if (variable == ENUM_VARIABLE::COORDINATES)
+            MarkerSensitivity = &Partial_Prod_dMeshCoordinates_dMeshDisplacements;
+        else if (variable == ENUM_VARIABLE::OBJECTIVE)
+            MarkerSensitivity = &Partial_Sens_dFlowObjective_dMeshDisplacements;
         else if (variable == ENUM_VARIABLE::RESIDUALS)
-            Sensitivity = &Partial_Prod_dFlowResiduals_dMeshDisplacements;
+            MarkerSensitivity = &Partial_Prod_dFlowResiduals_dMeshDisplacements;
         else if (variable == ENUM_VARIABLE::TRACTIONS)
-            Sensitivity = &Partial_Prod_dFlowTractions_dMeshDisplacements;
-        else if (variable == ENUM_VARIABLE::COORDINATES)
-            Sensitivity = &Partial_Prod_dMeshCoordinates_dMeshDisplacements;
+            MarkerSensitivity = &Partial_Prod_dFlowTractions_dMeshDisplacements;
+        
         else
-            SU2_MPI::Error("The discrete adjoint solver does not support this as an output variable.\n", CURRENT_FUNCTION);
+            return;
+        
+        su2matrix<su2double>* VolumeSensitivity;
+
+        if (variable == ENUM_VARIABLE::COORDINATES)
+            VolumeSensitivity = &Partial_Prod_dMeshCoordinates_dMeshCoordinates;
+        else if (variable == ENUM_VARIABLE::OBJECTIVE)
+            VolumeSensitivity = &Partial_Sens_dFlowObjective_dMeshCoordinates;
+        else if (variable == ENUM_VARIABLE::RESIDUALS)
+            VolumeSensitivity = &Partial_Prod_dFlowResiduals_dMeshCoordinates;
+        else if (variable == ENUM_VARIABLE::TRACTIONS)
+            VolumeSensitivity = &Partial_Prod_dFlowTractions_dMeshCoordinates;
+        else
+            return;
 
         /*--- If the mesh solver is used, extract the discrete-adjoint sensitivities of the boundary displacements ---*/
         if (mesh_solver) {
-            // mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
+            mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
             mesh_solver->ExtractAdjoint_Variables(geometry, config);
-        }
 
-        for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
-            if (!config->GetSolid_Wall(iMarker)) continue;
+            for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
+                if (!config->GetSolid_Wall(iMarker)) continue;
 
-            /*--- Sensitivities w.r.t aerodynamic boundary displacements ---*/
+                /*--- Sensitivities w.r.t aerodynamic boundary displacements ---*/
 
-            SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-            for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-                const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+                for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+                    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-                /*--- If sharp edge, set the sensitivity to 0 ---*/
-                su2double limiter = 1.0;
-                if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
-                    limiter = 0.0;
-                }
+                    /*--- If sharp edge, set the sensitivity to 0 ---*/
 
-                /*--- Get the gradient from the mesh solver if available, else from legacy implementation ---*/
-                su2double value;
-
-                for (auto iDim = 0u; iDim < nDim; iDim++) {
-                    if (mesh_solver) {
-                        value = -limiter * mesh_solver->GetNodes()->GetBoundDisp_Sens(iPoint, iDim);
-                    } else {
-                        value = +limiter * geometry->nodes->GetAdjointSolution(iPoint, iDim);
-
-                        auto Coord = geometry->nodes->GetCoord(iPoint, iDim);
-                        AD::ResetInput(Coord);
+                    su2double limiter;
+                    if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
+                        limiter = 0.0;
+                    }
+                    else {
+                        limiter = 1.0;
                     }
 
-                    (*Sensitivity)[iMarker](iVertex, iDim) = value;
+                    /*--- Get the gradient from the mesh solver if available, else from legacy implementation ---*/
+
+                    for (auto iDim = 0u; iDim < nDim; iDim++) {
+                        (*MarkerSensitivity)[iMarker](iVertex, iDim) = -limiter * mesh_solver->GetNodes()->GetBoundDisp_Sens(iPoint, iDim);
+                    }
+                }
+                END_SU2_OMP_FOR
+            }
+        }
+
+        else {
+            SU2_OMP_FOR_STAT(omp_chunk_size)
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+                auto coord = geometry->nodes->GetCoord(iPoint);
+
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                    
+                    /*--- Sensitivities w.r.t all mesh coordinates ---*/
+                    
+                    (*VolumeSensitivity)(iPoint, iDim) = geometry->nodes->GetAdjointSolution(iPoint, iDim);
+                    AD::ResetInput(coord[iDim]);
                 }
             }
             END_SU2_OMP_FOR
+
+            
+            for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
+                if (!config->GetSolid_Wall(iMarker)) continue;
+
+                SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+                for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+                    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    
+                    /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+                    
+                    su2double limiter;
+                    if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
+                        limiter = 0.0;
+                    }
+                    else {
+                        limiter = 1.0;
+                    }
+                     
+                    for (auto iDim = 0u; iDim < nDim; iDim++) {
+                        (*MarkerSensitivity)[iMarker](iVertex, iDim) = -limiter * (*VolumeSensitivity)(iPoint, iDim);
+                    }
+                }
+                END_SU2_OMP_FOR
+            }
         }
     }
     END_SU2_OMP_PARALLEL
@@ -765,6 +814,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     
 }
 
+su2double CDiscAdjSolver::GetProd_dMeshCoordinates_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const {
+    return Partial_Prod_dMeshCoordinates_dMeshCoordinates(iPoint, iDim);
+}
+
 su2double CDiscAdjSolver::GetProd_dMeshCoordinates_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
     return Partial_Prod_dMeshCoordinates_dMeshDisplacements[iMarker](iVertex, iDim);
 }
@@ -787,6 +840,18 @@ su2double CDiscAdjSolver::GetProd_dFlowResiduals_dFlowStates(unsigned long iPoin
 
 su2double CDiscAdjSolver::GetProd_dFlowTractions_dFlowStates(unsigned long iPoint, unsigned short iVar) const {
     return Partial_Prod_dFlowTractions_dFlowStates(iPoint, iVar);
+}
+
+su2double CDiscAdjSolver::GetSens_dFlowObjective_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const {
+    return Partial_Sens_dFlowObjective_dMeshCoordinates(iPoint, iDim);
+}
+
+su2double CDiscAdjSolver::GetProd_dFlowResiduals_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const {
+    return Partial_Prod_dFlowResiduals_dMeshCoordinates(iPoint, iDim);
+}
+
+su2double CDiscAdjSolver::GetProd_dFlowTractions_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const {
+    return Partial_Prod_dFlowTractions_dMeshCoordinates(iPoint, iDim);
 }
 
 su2double CDiscAdjSolver::GetSens_dFlowObjective_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {

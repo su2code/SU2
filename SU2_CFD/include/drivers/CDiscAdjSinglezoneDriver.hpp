@@ -88,7 +88,7 @@ public:
   /*!
    * \brief Update the current solution (residuals, tractions, etc.)
    */
-  void Update_DirectSolution(void);
+  void Update_DirectSolution(bool deform = false);
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.

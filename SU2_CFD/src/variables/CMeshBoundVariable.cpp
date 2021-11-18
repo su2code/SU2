@@ -32,8 +32,8 @@ CMeshBoundVariable::CMeshBoundVariable(unsigned long npoint, unsigned long ndim,
 
   VertexMap.Reset(nPoint);
 
-  /*--- Allocate the AD indices for the residual-based discrete adjoint solver ---*/
-  if (config->GetDiscrete_Adjoint() && config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+  /*--- Allocate the AD indices ---*/
+  if (config->GetDiscrete_Adjoint()) {
     AD_InputIndex.resize(nPoint,nDim) = -1;
     AD_OutputIndex.resize(nPoint,nDim) = -1;
   }

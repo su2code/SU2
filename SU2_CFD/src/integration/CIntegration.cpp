@@ -292,7 +292,7 @@ void CIntegration::ComputeResiduals(CGeometry ****geometry_container, CSolver **
     /*--- Space integration computes the residuals ---*/
 
     Space_Integration(geometry, solvers, numerics, config, MESH_0, NO_RK_ITER, EqSystem);
-
+    
     solvers[EqSystem]->ComputeResidual_RMS(geometry, config);
 
     /*--- Post-processing  ---*/

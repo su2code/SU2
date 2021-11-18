@@ -49,19 +49,19 @@ private:
   CSolver *direct_solver;
 
   const unsigned short nTrim = 2;
+  su2matrix<su2double>         Partial_Prod_dMeshCoordinates_dMeshCoordinates;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   vector<su2matrix<su2double>> Partial_Prod_dMeshCoordinates_dMeshDisplacements;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
-  vector<su2matrix<su2double>> Partial_Prod_dMeshCoordinates_dMeshCoordinates;   /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   su2vector<su2double>         Partial_Sens_dFlowObjective_dFlowVariables;    /*!< \brief Partial sensitivity of the objective w.r.t. the input variables. */
   su2vector<su2double>         Partial_Prod_dFlowResiduals_dFlowVariables;    /*!< \brief Partial sensitivity of the residuals w.r.t. the input variables (matrix-vector product with adjoint vector). */
   su2matrix<su2double>         Partial_Sens_dFlowObjective_dFlowStates;    /*!< \brief Partial sensitivity of the objective w.r.t. the solution. */
   su2matrix<su2double>         Partial_Prod_dFlowResiduals_dFlowStates;    /*!< \brief Partial sensitivity of the residuals w.r.t. the solution (matrix-vector product with adjoint vector). */
   su2matrix<su2double>         Partial_Prod_dFlowTractions_dFlowStates;    /*!< \brief Partial sensitivity of the surface tractions w.r.t. the solution (matrix-vector product with adjoint vector). */
+  su2matrix<su2double>         Partial_Sens_dFlowObjective_dMeshCoordinates;   /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
+  su2matrix<su2double>         Partial_Prod_dFlowResiduals_dMeshCoordinates;   /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+  su2matrix<su2double>         Partial_Prod_dFlowTractions_dMeshCoordinates;   /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
   vector<su2matrix<su2double>> Partial_Sens_dFlowObjective_dMeshDisplacements;    /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
   vector<su2matrix<su2double>> Partial_Prod_dFlowResiduals_dMeshDisplacements;    /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
   vector<su2matrix<su2double>> Partial_Prod_dFlowTractions_dMeshDisplacements;   /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
-  vector<su2matrix<su2double>> Partial_Sens_dFlowObjective_dMeshCoordinates;   /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
-  vector<su2matrix<su2double>> Partial_Prod_dFlowResiduals_dMeshCoordinates;   /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
-  vector<su2matrix<su2double>> Partial_Prod_dFlowTractions_dMeshCoordinates;   /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
   su2matrix<int> AD_ResidualIndex;    /*!< \brief Indices of Residual variables in the adjoint vector. */
 
   vector<vector<su2double> > CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
@@ -229,58 +229,95 @@ public:
   }
 
   /*!
+   * \brief Get matrix-vector product dxvdxv^T x psi.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iDim   - Dimension index.  
+   */
+  su2double GetProd_dMeshCoordinates_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+  
+  /*!
    * \brief Get matrix-vector product dxvdua^T x psi.
    * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+   * \param[in] iDim    - Dimension index.  
    */
   su2double GetProd_dMeshCoordinates_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
 
   /*!
    * \brief Get partial derivative dIdxt.
-   * \param[in] iVar - Design variable index.
+   * \param[in] iTrim - Trim variable index.
    */
   su2double GetSens_dFlowObjective_dFlowVariables(unsigned short iTrim) const override;
 
   /*!
    * \brief Get matrix-vector product dAdxt^T x psi.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iTrim - Trim variable index.
    */
   su2double GetProd_dFlowResiduals_dFlowVariables(unsigned short iTrim) const override;
 
   /*!
    * \brief Get partial derivative dIdq.
    * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-   * \param[in] iVar - Variable index.
+   * \param[in] iVar   - Variable index.
    */
   su2double GetSens_dFlowObjective_dFlowStates(unsigned long iPoint, unsigned short iVar) const override;
 
   /*!
    * \brief Get matrix-vector product dAdq^T x psi.
    * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-   * \param[in] iVar - Variable index.
+   * \param[in] iVar   - Variable index.
    */
   su2double GetProd_dFlowResiduals_dFlowStates(unsigned long iPoint, unsigned short iVar) const override;
 
   /*!
    * \brief Get matrix-vector product dfadq^T x psi.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iVar   - Variable index.
    */
   su2double GetProd_dFlowTractions_dFlowStates(unsigned long iPoint, unsigned short iVar) const override;
 
   /*!
+   * \brief Get partial derivative dIdx.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iDim   - Dimension index.
+   */
+  su2double GetSens_dFlowObjective_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+
+  /*!
+   * \brief Get matrix-vector product dAdx^T x psi.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iDim   - Dimension index.
+   */
+  su2double GetProd_dFlowResiduals_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+
+  /*!
+   * \brief Get matrix-vector product dfadx^T x psi.
+   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \param[in] iDim   - Dimension index.
+   */
+  su2double GetProd_dFlowTractions_dMeshCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+
+  /*!
    * \brief Get partial derivative dIdua.
    * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+   * \param[in] iDim    - Dimension index.  
    */
   su2double GetSens_dFlowObjective_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
 
   /*!
    * \brief Get matrix-vector product dAdua^T x psi.
    * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+   * \param[in] iDim    - Dimension index.  
    */
   su2double GetProd_dFlowResiduals_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
 
   /*!
    * \brief Get matrix-vector product dfadua^T x psi.
    * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+   * \param[in] iDim    - Dimension index.  
    */
   su2double GetProd_dFlowTractions_dMeshDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
 
