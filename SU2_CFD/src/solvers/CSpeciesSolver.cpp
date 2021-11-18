@@ -134,11 +134,14 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   /// NOTE TK:: This should use a MassDiff model!
   /*--- initialize the mass diffusivity ---*/
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       const auto massDiffusivity = config->GetDiffusivity_Constant();  // TK this should be ND
       nodes->SetDiffusivity(iPoint, massDiffusivity, iVar);
     }
+  }
+  END_SU2_OMP_FOR
 
   /*--- MPI solution ---*/
 
@@ -182,9 +185,11 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Species();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     nodes->SetLocalCFL(iPoint, CFL);
   }
+  END_SU2_OMP_FOR
   Min_CFL_Local = CFL;
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
@@ -339,6 +344,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   const bool limiter =
       (config->GetKind_SlopeLimit_Species() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     /// NOTE TK:: needs to be value by a model
     const su2double mass_diffusivity = config->GetDiffusivity_Constant();
@@ -348,6 +354,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     }
 
   }  // iPoint
+  END_SU2_OMP_FOR
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -395,6 +402,7 @@ void CSpeciesSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver
     su2double scalar_init[MAXNVAR] = {1234.0};
 
     for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
         for (int iVar = 0; iVar < nVar; iVar++) {
@@ -403,6 +411,7 @@ void CSpeciesSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver
 
         solver_container[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, scalar_init);
       }
+      END_SU2_OMP_FOR
 
       solver_container[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);

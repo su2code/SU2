@@ -34,11 +34,12 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
   Diffusivity.resize(nPoint, nVar) = su2double(0.0);  /// TK:: more appropriate init here possible?
 
   /// NOTE TK: Consistent with SST and SA.
-
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint, iVar) = species_inf[iVar];
-    }
+  END_SU2_OMP_FOR
+
   Solution_Old = Solution;
 
   /// NOTE TK:: check everything below whether that is necessary. SA does it, but SST not. Maybe put into ScalarVar
