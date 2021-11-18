@@ -295,7 +295,7 @@ class CScalarSolver : public CSolver {
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  virtual void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                            bool val_update_geo) override = 0;
 
   /*!
