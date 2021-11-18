@@ -5131,6 +5131,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (GetGasModel() == "ARGON") {monoatomic = true;}
   else {monoatomic = false;}
 
+  /*--- Set number of Turbulence Variables. ---*/
+  switch(Kind_Turb_Model) {
+    case TURB_MODEL::NONE:
+      nTurbVar = 0; break;
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_NEG:
+      nTurbVar = 1; break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      nTurbVar = 2; break;
+  }
+
   /*--- Checks for additional species transport. ---*/
   // TK:: what should be the master option to switch on species transport? How will that interact with flamelet?
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {

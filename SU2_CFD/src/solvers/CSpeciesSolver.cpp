@@ -110,10 +110,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
       upperlimit[iVar] = 1.0e15;
     }
   }
-  /*--- Far-field flow state quantities and initialization. ---*/
-  // su2double Density_Inf, Viscosity_Inf;
-  // Density_Inf   = config->GetDensity_FreeStreamND();
-  // Viscosity_Inf = config->GetViscosity_FreeStreamND();
 
   /*--- Set up fluid model for the diffusivity ---*/
 
@@ -133,7 +129,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   SetBaseClassPointerToNodes();
 
   /// NOTE TK:: This should use a MassDiff model!
-  /*--- initialize the mass diffusivity ---*/
+  /*--- Initialize the mass diffusivity ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -150,21 +146,13 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   /// NOTE TK:: Hinder sliding mesh in cfg postprocessing
 
-  /*-- Allocation of inlets has to happen in derived classes
-   (not CScalarLegacySolver), due to arbitrary number of scalar variables.
-   First, we also set the column index for any inlet profiles. ---*/
+  /*--- Set the column number for species in inlet-files.
+   * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
+  Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
 
-  Inlet_Position = nDim + 2 + nDim; // Coords(nDim), T(1), velocity_mag(1), Normal(nDim), Turb(1 or 2), species
-  if (config->GetKind_Turb_Model() == TURB_MODEL::SA)
-    Inlet_Position += 1;
-  else if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-    Inlet_Position += 2;
 
-  /*-- Allocation of inlets has to happen in derived classes
-    (not CScalarLegacySolver), due to arbitrary number of scalar variables.
-    First, we also set the column index for any inlet profiles. ---*/
-  /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
-   * due to arbitrary number of turbulence variables ---*/
+  /*-- Allocation of inlet-values. Will be filled either by an inlet files,
+   * or uniformly by a uniform boundary condition. ---*/
 
   Inlet_SpeciesVars.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -178,7 +166,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   /*--- The species models are always solved implicitly, so set the
   implicit flag in case we have periodic BCs. ---*/
-  //TK:: Is that true
 
   SetImplicitPeriodic(true);
 
@@ -224,9 +211,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
 
     /*--- Skip turbulence variables ---*/
-    const bool turbulent =
-        ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == INC_RANS) ||
-         (config->GetKind_Solver() == DISC_ADJ_INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+    const bool turbulent = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
 
     if (turbulent) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
 
