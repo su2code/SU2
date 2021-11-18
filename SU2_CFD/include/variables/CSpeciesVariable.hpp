@@ -38,6 +38,8 @@ class CSpeciesVariable : public CScalarVariable {
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
 
  public:
+  static constexpr size_t MAXNVAR = 4; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
+
   /*!
    * \brief Constructor of the class.
    * \param[in] species_inf - species variable values (initialization value).

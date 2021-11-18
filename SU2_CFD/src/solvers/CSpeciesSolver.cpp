@@ -40,12 +40,13 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   bool multizone = config->GetMultizone_Problem();
 
-  /*--- Dimension of the problem --> passive scalar will only ever
-   have a single equation. Other child classes of CScalarLegacySolver
-   can have variable numbers of equations. ---*/
+  /*--- Dimension of the problem. ---*/
 
-  nVar = config->GetNSpeciesInit();
+  nVar = config->GetnSpecies();
   nPrimVar = nVar;
+
+  if (nVar > MAXNVAR)
+    SU2_MPI::Error("Increase static array size MAXNVAR for CSpeciesVariable and proceed.", CURRENT_FUNCTION);
 
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
