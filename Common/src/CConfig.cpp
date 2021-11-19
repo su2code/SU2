@@ -5075,6 +5075,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (GetGasModel() == "ARGON") {monoatomic = true;}
   else {monoatomic = false;}
 
+  /*--- Set number of Turbulence Variables. ---*/
+  switch(Kind_Turb_Model) {
+    case TURB_MODEL::NONE:
+      nTurbVar = 0; break;
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_NEG:
+      nTurbVar = 1; break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      nTurbVar = 2; break;
+  }
+
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
     cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
