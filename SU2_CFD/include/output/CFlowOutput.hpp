@@ -55,6 +55,16 @@ protected:
    */
   void SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output);
 
+  void AddHistoryOutputFields_Turb(const CConfig* config);
+  
+  void LoadHistoryData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver);
+  
+  void SetVolumeOutputFields_Turb(const CConfig* config);
+  
+  void LoadVolumeData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver, const unsigned long iPoint);
+  
+  
+
   /*!
    * \brief Add aerodynamic coefficients as output fields
    * \param[in] config - Definition of the particular problem.

@@ -114,20 +114,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
-    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
-    AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
-    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::NONE: break;
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -143,20 +129,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat)
     AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::NONE: break;
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables.
@@ -174,20 +146,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Multizone residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::NONE: break;
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
@@ -214,10 +172,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  if (turb_model != TURB_MODEL::NONE) {
-    AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
-    AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
-  }
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
@@ -238,6 +192,9 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("STREAMWISE_DP",       "SWDeltaP",   ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Pressure drop in streamwise periodic flow");
     AddHistoryOutput("STREAMWISE_HEAT",     "SWHeat",     ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Integrated heat for streamwise periodic flow");
   }
+
+  AddHistoryOutputFields_Turb(config);
+
   /*--- Add analyze surface history fields --- */
 
   AddAnalyzeSurfaceOutput(config);
@@ -251,7 +208,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* flow_solver = solver[FLOW_SOL];
-  CSolver* turb_solver = solver[TURB_SOL];
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
@@ -260,17 +216,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
   if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
-    break;
-  case TURB_MODEL::NONE: break;
-  }
 
   if (config->AddRadiation())
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
@@ -281,37 +226,14 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
   if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
 
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
-    break;
-  case TURB_MODEL::NONE: break;
-  }
-
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
     SetHistoryOutputValue("BGS_VELOCITY-Y", log10(flow_solver->GetRes_BGS(2)));
     if (nDim == 3) SetHistoryOutputValue("BGS_VELOCITY-Z", log10(flow_solver->GetRes_BGS(3)));
 
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
-      SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
-      break;
-    case TURB_MODEL::NONE: break;
-    }
-
     if (config->AddRadiation())
       SetHistoryOutputValue("BGS_RAD_ENERGY", log10(rad_solver->GetRes_BGS(0)));
-
   }
 
   if (weakly_coupled_heat){
@@ -340,10 +262,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
-  if (turb_model != TURB_MODEL::NONE) {
-    SetHistoryOutputValue("LINSOL_ITER_TURB", turb_solver->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(turb_solver->GetResLinSolver()));
-  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -364,6 +282,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("STREAMWISE_DP", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_PressureDrop);
     SetHistoryOutputValue("STREAMWISE_HEAT", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_IntegratedHeatFlow);
   }
+
+  LoadHistoryData_Turb(config, geometry, solver);
+
 
   /*--- Set the analyse surface history values --- */
 

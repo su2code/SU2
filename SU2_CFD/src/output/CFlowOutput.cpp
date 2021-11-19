@@ -580,6 +580,80 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geom
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
+void CFlowOutput::AddHistoryOutputFields_Turb(const CConfig* config) {
+  const auto turb_model = config->GetKind_Turb_Model();
+
+  switch(turb_model) {
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+      /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
+      AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of nu tilde (SA model).
+      AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of nu tilde (SA model).
+      AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  HistoryFieldType::RESIDUAL);
+    break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
+      AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
+      AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
+      AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of the dissipation (SST model).
+      AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
+      AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  HistoryFieldType::RESIDUAL);
+      /// DESCRIPTION: Maximum residual of the dissipation (SST model).
+      AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
+    break;
+    case TURB_MODEL::NONE: break;
+  }
+
+  if (turb_model != TURB_MODEL::NONE) {
+    AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
+  }
+}
+
+void CFlowOutput::LoadHistoryData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver) {
+  const auto turb_model = config->GetKind_Turb_Model();
+
+  const CSolver* turb_solver = solver[TURB_SOL];
+  switch(turb_model){
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+      SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
+      SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
+      if (multiZone)
+        SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
+      break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+      SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
+      SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
+      if (multiZone) {
+        SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
+        SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
+      }
+      break;
+    case TURB_MODEL::NONE: break;
+  }
+
+  if (turb_model != TURB_MODEL::NONE) {
+    SetHistoryOutputValue("LINSOL_ITER_TURB", turb_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(turb_solver->GetResLinSolver()));
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFields_Turb(const CConfig* config) {
+
+}
+
+void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver, const unsigned long iPoint) {
+
+}
+
+
 void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.

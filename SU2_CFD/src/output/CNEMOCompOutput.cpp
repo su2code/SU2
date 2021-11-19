@@ -130,20 +130,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
   AddHistoryOutput("RMS_ENERGY_VE",  "rms[RhoEve]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
-    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
-    AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
-    AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::NONE: break;
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -157,20 +143,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED,"MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::NONE: break;
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -184,20 +156,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  case TURB_MODEL::NONE: break;
-  }
   /// END_GROUP
 
   vector<string> Marker_Monitoring;
@@ -270,6 +228,9 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
+
+  AddHistoryOutputFields_Turb(config);
+
 
   /*--- Add analyze surface history fields --- */
 
@@ -575,7 +536,6 @@ void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSol
 void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
   CSolver* NEMO_solver = solver[FLOW_SOL];
-  CSolver* turb_solver = solver[TURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
   unsigned short nSpecies = config->GetnSpecies();
 
@@ -593,17 +553,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("RMS_ENERGY_VE",  log10(NEMO_solver->GetRes_RMS(nSpecies+4)));
   }
 
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
-    break;
-  case TURB_MODEL::NONE: break;
-  }
-
   SetHistoryOutputValue("MAX_DENSITY", log10(NEMO_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_MOMENTUM-X", log10(NEMO_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_MOMENTUM-Y", log10(NEMO_solver->GetRes_Max(2)));
@@ -612,17 +561,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   else {
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(NEMO_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(NEMO_solver->GetRes_Max(4)));
-  }
-
-  switch(turb_model){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
-    break;
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
-    break;
-  case TURB_MODEL::NONE: break;
   }
 
   if (multiZone){
@@ -634,18 +572,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     else {
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(NEMO_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(NEMO_solver->GetRes_BGS(4)));
-    }
-
-
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
-      SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
-      break;
-    case TURB_MODEL::NONE: break;
     }
   }
 
@@ -673,6 +599,9 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", NEMO_solver->GetAoA_inc());
 
   }
+
+  LoadHistoryData_Turb(config, geometry, solver);
+
 
   /*--- Set the analyse surface history values --- */
 
