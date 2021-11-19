@@ -668,7 +668,7 @@ void CFlowOutput::SetVolumeOutputFields_Turb(const CConfig* config) {
       break;
   }
 
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == INC_RANS) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
