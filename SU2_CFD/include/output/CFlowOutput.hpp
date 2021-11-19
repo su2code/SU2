@@ -69,6 +69,23 @@ protected:
   void LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver);
 
   /*!
+   * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFields_TurbSolution(const CConfig* config);
+
+  /*!
+   * \brief Set turbulence volume field values for a point.
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadVolumeData_TurbSolution(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
+
+  /*!
    * \brief Add turbulence volume fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */

@@ -314,6 +314,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
+  SetVolumeOutputFields_TurbSolution(config);
+
   // Radiation variables
   if (config->AddRadiation())
     AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
@@ -415,6 +417,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+
+  LoadVolumeData_TurbSolution(config, solver, iPoint);
 
   // Radiation solver
   if (config->AddRadiation()){
