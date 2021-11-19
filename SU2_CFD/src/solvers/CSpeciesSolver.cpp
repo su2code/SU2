@@ -317,10 +317,6 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Species();
-  const bool limiter =
-      (config->GetKind_SlopeLimit_Species() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
@@ -334,33 +330,8 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   }  // iPoint
   END_SU2_OMP_FOR
 
-  /*--- Clear residual and system matrix, not needed for
-   * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy && !Output) {
-    LinSysRes.SetValZero();
-    if (implicit)
-      Jacobian.SetValZero();
-    else {
-      SU2_OMP_BARRIER
-    }
-  }
-
-  /*--- Upwind second order reconstruction and gradients ---*/
-
-  if (config->GetReconstructionGradientRequired()) {
-    switch(config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
-      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
-      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
-    }
-  }
-
-  switch(config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
-    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
-  }
-
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+  /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
+  CommonPreprocessing(geometry, config, Output);
 }
 
 void CSpeciesSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,

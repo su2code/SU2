@@ -76,6 +76,42 @@ template <class VariableType>
 CScalarSolver<VariableType>::~CScalarSolver() {
   delete nodes;
 }
+template <class VariableType>
+void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  /*--- Clear residual and system matrix, not needed for
+   * reducer strategy as we write over the entire matrix. ---*/
+  if (!ReducerStrategy && !Output) {
+    LinSysRes.SetValZero();
+    if (implicit)
+      Jacobian.SetValZero();
+    else {
+      SU2_OMP_BARRIER
+    }
+  }
+
+  const bool muscl = config->GetMUSCL_Turb();
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                       (config->GetInnerIter() <= config->GetLimiterIter());
+
+  /*--- Upwind second order reconstruction and gradients ---*/
+
+  if (config->GetReconstructionGradientRequired()) {
+    switch(config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+    }
+  }
+
+  switch(config->GetKind_Gradient_Method()) {
+    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
+    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
+  }
+
+  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+}
 
 template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,

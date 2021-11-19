@@ -135,6 +135,14 @@ class CScalarSolver : public CSolver {
     }
   }
 
+  /*!
+   * \brief Gradient and Limiter computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether the residual+jacobian should be zeroed.
+   */
+  void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
+
  private:
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
