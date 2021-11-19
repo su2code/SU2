@@ -256,20 +256,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
   AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
 
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
-    break;
-  case TURB_MODEL::NONE:
-    break;
-  }
-
   // Grid velocity
   if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
@@ -297,14 +283,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
-  if (config->GetKind_Solver() == RANS) {
-    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
-  }
-
-  if (config->GetKind_Trans_Model() == BC){
-    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
-  }
-
   //Residuals
   AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL", "Residual of the density");
   AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
@@ -312,19 +290,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("RES_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL", "Residual of the z-momentum component");
   AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL", "Residual of the energy");
-
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
-    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
-    break;
-  case TURB_MODEL::NONE:
-    break;
-  }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
@@ -335,27 +300,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
     AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
     AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
-  }
-
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-    switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
-      AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
-      break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-      AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
-      break;
-    case TURB_MODEL::NONE:
-      break;
-    }
-  }
-
-  // Hybrid RANS-LES
-  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
-    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
   }
 
   // Roe Low Dissipation
@@ -374,6 +318,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
+  SetVolumeOutputFields_Turb(config);
+
   AddCommonFVMOutputs(config);
 
   if (config->GetTime_Domain()){
@@ -384,12 +330,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb = nullptr;
   const auto Node_Geo  = geometry->nodes;
-
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE){
-    Node_Turb = solver[TURB_SOL]->GetNodes();
-  }
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
@@ -401,20 +342,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 4));
   } else {
     SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 3));
-  }
-
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetVolumeOutputValue("TKE",         iPoint, Node_Turb->GetSolution(iPoint, 0));
-    SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
-    break;
-  case TURB_MODEL::NONE:
-    break;
   }
 
   if (gridMovement){
@@ -439,14 +366,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   }
 
-  if (config->GetKind_Solver() == RANS) {
-    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
-  }
-
-  if (config->GetKind_Trans_Model() == BC){
-    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
-  }
-
   SetVolumeOutputValue("RES_DENSITY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
   SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
   SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
@@ -455,19 +374,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 4));
   } else {
     SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-  }
-
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    break;
-  case TURB_MODEL::NONE:
-    break;
   }
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
@@ -479,26 +385,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+1));
     SetVolumeOutputValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+2));
     SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+3));
-  }
-
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-    switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
-      break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-      SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      break;
-    case TURB_MODEL::NONE:
-      break;
-    }
-  }
-
-  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-    SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
-    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
@@ -515,6 +401,8 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
+
+  LoadVolumeData_Turb(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
@@ -601,7 +489,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   }
 
-  LoadHistoryData_Turb(config, geometry, solver);
+  LoadHistoryData_Turb(config, solver);
 
   /*--- Set the analyse surface history values --- */
 

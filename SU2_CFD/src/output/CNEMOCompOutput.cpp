@@ -268,20 +268,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
-    break;
-  case TURB_MODEL::NONE:
-    break;
-  }
-
   // Grid velocity
   if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
@@ -311,10 +297,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
-  if (config->GetKind_Trans_Model() == BC){
-    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
-  }
-
   //Residuals
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("RES_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
@@ -325,19 +307,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ENERGY",    "Residual_Energy",    "RESIDUAL", "Residual of the energy");
   AddVolumeOutput("RES_ENERGY_VE", "Residual_Energy_ve", "RESIDUAL", "Residual of the energy_ve");
 
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
-    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
-    break;
-  case TURB_MODEL::NONE:
-    break;
-  }
-
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     // Limiter values
     AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
@@ -346,21 +315,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     if (nDim == 3)
       AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
     AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
-  }
-
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-    switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
-      AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
-      break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-      AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
-      break;
-    case TURB_MODEL::NONE:
-      break;
-    }
   }
 
   // Roe Low Dissipation
@@ -377,6 +331,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
+  SetVolumeOutputFields_Turb(config);
+
   AddCommonFVMOutputs(config);
 
   if (config->GetTime_Domain()){
@@ -387,13 +343,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb = NULL;
   unsigned short nSpecies = config->GetnSpecies();
   const auto Node_Geo = geometry->nodes;
-
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE){
-    Node_Turb = solver[TURB_SOL]->GetNodes();
-  }
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
@@ -413,20 +364,6 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("MASSFRAC_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
-
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetVolumeOutputValue("TKE",         iPoint, Node_Turb->GetSolution(iPoint, 0));
-    SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
-    break;
-  case TURB_MODEL::NONE:
-    break;
-  }
 
   if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
@@ -451,10 +388,6 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   }
 
-  if (config->GetKind_Trans_Model() == BC){
-    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
-  }
-
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("RES_DENSITY_" + std::to_string(iSpecies), iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, iSpecies));
 
@@ -469,19 +402,6 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("RES_ENERGY_VE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+3));
   }
 
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
-    break;
-  case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-  case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    break;
-  case TURB_MODEL::NONE:
-    break;
-  }
-
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_DENSITY",    iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
     SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
@@ -494,24 +414,11 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
   }
 
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-    switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
-      break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_NEG:
-      SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      break;
-    case TURB_MODEL::NONE:
-      break;
-    }
-  }
-
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
+
+  LoadVolumeData_Turb(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
@@ -600,8 +507,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   }
 
-  LoadHistoryData_Turb(config, geometry, solver);
-
+  LoadHistoryData_Turb(config, solver);
 
   /*--- Set the analyse surface history values --- */
 

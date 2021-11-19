@@ -55,15 +55,33 @@ protected:
    */
   void SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output);
 
+  /*!
+   * \brief Add turbulence history fields (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
   void AddHistoryOutputFields_Turb(const CConfig* config);
-  
-  void LoadHistoryData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver);
-  
+
+  /*!
+   * \brief Set turbulence history field values.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add turbulence volume fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetVolumeOutputFields_Turb(const CConfig* config);
-  
-  void LoadVolumeData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver, const unsigned long iPoint);
-  
-  
+
+  /*!
+   * \brief Set turbulence volume field values for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint);
 
   /*!
    * \brief Add aerodynamic coefficients as output fields

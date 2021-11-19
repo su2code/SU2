@@ -615,16 +615,16 @@ void CFlowOutput::AddHistoryOutputFields_Turb(const CConfig* config) {
   }
 }
 
-void CFlowOutput::LoadHistoryData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver) {
-  const auto turb_model = config->GetKind_Turb_Model();
+void CFlowOutput::LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver) {
+  const auto turb_solver = solver[TURB_SOL];
 
-  const CSolver* turb_solver = solver[TURB_SOL];
-  switch(turb_model){
+  switch(config->GetKind_Turb_Model()){
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
-      if (multiZone)
+      if (multiZone) {
         SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
+      }
       break;
     case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
@@ -639,18 +639,91 @@ void CFlowOutput::LoadHistoryData_Turb(const CConfig* config, const CGeometry* g
     case TURB_MODEL::NONE: break;
   }
 
-  if (turb_model != TURB_MODEL::NONE) {
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     SetHistoryOutputValue("LINSOL_ITER_TURB", turb_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(turb_solver->GetResLinSolver()));
   }
 }
 
 void CFlowOutput::SetVolumeOutputFields_Turb(const CConfig* config) {
+  switch(config->GetKind_Turb_Model()){
+    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+      AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
+      AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
+      if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+        AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
+      }
+      break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
+      AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
+      AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
+      if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+        AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
+        AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
+      }
+      break;
+    case TURB_MODEL::NONE:
+      break;
+  }
 
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+  }
+
+  if (config->GetKind_Trans_Model() == BC){
+    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
+  }
+
+  // Hybrid RANS-LES
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+  }
 }
 
-void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CGeometry* geometry, const CSolver* const* solver, const unsigned long iPoint) {
+void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint) {
+  const auto Node_Flow = solver[FLOW_SOL]->GetNodes();
+  const auto Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? solver[TURB_SOL]->GetNodes() : nullptr;
+  const auto Node_Geo  = geometry->nodes;
 
+
+  switch(config->GetKind_Turb_Model()){
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
+    if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+      SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
+    }
+    break;
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    SetVolumeOutputValue("TKE",         iPoint, Node_Turb->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
+    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
+    if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+      SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
+      SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
+    }
+    break;
+
+  case TURB_MODEL::NONE:
+    break;
+  }
+
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == INC_RANS) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+  }
+
+  if (config->GetKind_Trans_Model() == BC){
+    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
+  }
+
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+  }
 }
 
 
