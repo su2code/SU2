@@ -792,7 +792,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
           /*--- Rewind the index to retrieve the Coords. ---*/
           index = counter * Restart_Vars[1];
-          const passivedouble* Coord = &Restart_Data[index];
+          const auto* Coord = &Restart_Data[index];
 
           su2double GridVel[MAXNDIM] = {0.0};
           if (!steady_restart) {
@@ -813,7 +813,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
         if (static_fsi && update_geo) {
         /*--- Rewind the index to retrieve the Coords. ---*/
           index = counter*Restart_Vars[1];
-          const passivedouble* Coord = &Restart_Data[index];
+          const auto* Coord = &Restart_Data[index];
 
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
@@ -828,8 +828,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     /*--- Detect a wrong solution file ---*/
 
     if (counter != nPointDomain) {
-      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" does not match with the mesh file.\n") +
+                     string("This can be caused by empty lines at the end of the file."), CURRENT_FUNCTION);
     }
   }
   END_SU2_OMP_MASTER
