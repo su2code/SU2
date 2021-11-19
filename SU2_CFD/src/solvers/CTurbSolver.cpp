@@ -261,8 +261,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     /*--- Detect a wrong solution file ---*/
 
     if (counter != nPointDomain) {
-      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                         string("It could be empty lines at the end of the file."),
+      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" does not match with the mesh file!\n") +
+                         string("This can be caused by empty lines at the end of the file."),
                      CURRENT_FUNCTION);
     }
 
