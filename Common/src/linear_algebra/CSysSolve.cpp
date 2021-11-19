@@ -1044,9 +1044,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     precond->Build();
   }
 
-  /*--- The gradient treatment needs to build the preconditioner here. ---*/
-  if (config->GetSmoothGradient()) precond->Build();
-
   auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
   /*--- Solve the system ---*/

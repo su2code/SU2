@@ -437,7 +437,6 @@ private:
   su2double SmoothingEps1;        /*!< \brief Parameter for the identity part in gradient smoothing. */
   su2double SmoothingEps2;        /*!< \brief Parameter for the Laplace part in gradient smoothing. */
   bool SepDim;                    /*!< \brief Flag for enabling separated calculation for every dimension. */
-  bool SecOrdQuad;                /*!< \brief Flag for using second order quadrature rules in numerical integration. */
   bool SmoothOnSurface;           /*!< \brief Flag for assembling the system only on the surface. */
   bool DirichletSurfaceBound;     /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
   unsigned short NumMode;         /*!< \brief temporary flag for some debuging stuff */
@@ -9455,12 +9454,6 @@ public:
    * \return returns on what level we operate
    */
   unsigned short GetSobMode(void) const { return NumMode; }
-
-  /*!
-   * \brief Check if we use second order numerical integration in FE
-   * \return true means that we use second order accurate methods
-   */
-  bool GetSecOrdQuad(void) const { return SecOrdQuad; }
 
   /*!
    * \brief Get the name of the file with the hessian of the objective function.

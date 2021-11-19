@@ -46,6 +46,9 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   unsigned int iDim, jDim, marker_count=0;
   unsigned long iPoint;
 
+  /*--- This solver does not perform recording operations --*/
+  adjoint = false;
+
   /*--- general geometric settings ---*/
   nDim         = geometry->GetnDim();
   nPoint       = geometry->GetnPoint();
@@ -67,19 +70,15 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   if (nDim == 2) {
     element_container[GRAD_TERM][EL_TRIA] = new CTRIA1();
     element_container[GRAD_TERM][EL_QUAD] = new CQUAD4();
-    if (config->GetSecOrdQuad()) {
-      element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
-    }
+    element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
   }
   else if (nDim == 3) {
     element_container[GRAD_TERM][EL_TETRA] = new CTETRA1();
     element_container[GRAD_TERM][EL_HEXA]  = new CHEXA8();
     element_container[GRAD_TERM][EL_PYRAM] = new CPYRAM5();
     element_container[GRAD_TERM][EL_PRISM] = new CPRISM6();
-    if (config->GetSecOrdQuad()) {
-      element_container[GRAD_TERM][EL_TETRA2] = new CTETRA4();
-      element_container[GRAD_TERM][EL_PYRAM2] = new CPYRAM6();
-    }
+    element_container[GRAD_TERM][EL_TETRA2] = new CTETRA4();
+    element_container[GRAD_TERM][EL_PYRAM2] = new CPYRAM6();
   }
 
   /*--- for operations on surfaces we initalize the structures for nDim-1 ---*/
@@ -90,9 +89,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     else if (nDim == 3) {
       element_container[GRAD_TERM][EL_TRIA] = new CTRIA1();
       element_container[GRAD_TERM][EL_QUAD] = new CQUAD4();
-      if (config->GetSecOrdQuad()) {
-        element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
-      }
+      element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
     }
   }
 
@@ -415,7 +412,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
-    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), config->GetSecOrdQuad(), EL_KIND, nNodes);
+    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
     for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -487,7 +484,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
       /*--- Identify the kind of boundary element ---*/
-      GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), config->GetSecOrdQuad(), EL_KIND, nNodes);
+      GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
       /*--- Retrieve the boundary reference and current coordinates ---*/
 
@@ -554,7 +551,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
-    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), config->GetSecOrdQuad(), EL_KIND, nNodes);
+    GetElemKindAndNumNodes(geometry->elem[iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
     for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -633,7 +630,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
       /*--- Identify the kind of boundary element ---*/
-      GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), config->GetSecOrdQuad(), EL_KIND, nNodes);
+      GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
       /*--- Retrieve the boundary reference and current coordinates ---*/
       for (iNode = 0; iNode < nNodes; iNode++) {

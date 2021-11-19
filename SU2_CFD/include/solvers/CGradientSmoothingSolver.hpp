@@ -358,29 +358,17 @@ public:
    * \param[out] EL_KIND - Element container index.
    * \param[out] nNodes - Number of nodes.
    */
-  static void GetElemKindAndNumNodes(unsigned short VTK_Type, bool second, int& EL_KIND, unsigned int& nNodes) {
+  static void GetElemKindAndNumNodes(unsigned short VTK_Type, int& EL_KIND, unsigned int& nNodes) {
     /*--- if we need higher order quadrature rules overide some of the element kinds ---*/
-    if (second) {
-      switch (VTK_Type) {
-        case LINE:          nNodes = 2; EL_KIND = EL_LINE;  break;
-        case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA2;  break;
-        case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
-        case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA2; break;
-        case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM2; break;
-        case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-        case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
-      }
-    } else {
-      switch (VTK_Type) {
-        case LINE:          nNodes = 2; EL_KIND = EL_LINE;  break;
-        case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA;  break;
-        case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
-        case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA; break;
-        case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM; break;
-        case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
-        case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
-        default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
-      }
+    switch (VTK_Type) {
+      case LINE:          nNodes = 2; EL_KIND = EL_LINE;  break;
+      case TRIANGLE:      nNodes = 3; EL_KIND = EL_TRIA2;  break;
+      case QUADRILATERAL: nNodes = 4; EL_KIND = EL_QUAD;  break;
+      case TETRAHEDRON:   nNodes = 4; EL_KIND = EL_TETRA2; break;
+      case PYRAMID:       nNodes = 5; EL_KIND = EL_PYRAM2; break;
+      case PRISM:         nNodes = 6; EL_KIND = EL_PRISM; break;
+      case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
+      default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
     }
   }
 

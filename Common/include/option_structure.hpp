@@ -2294,7 +2294,7 @@ static const MapType<std::string, POD_KIND> POD_Map = {
 };
 
 /*!
- * \brief modus of operation for the sobolev smoothing solver.
+ * \brief mode of operation for the sobolev smoothing solver.
  */
 enum ENUM_SOBOLEV_MODUS {
  NO_MODUS = 0,                    /*!< \brief Default option if none is choosen. */

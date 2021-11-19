@@ -1949,8 +1949,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
   /* DESCRIPTION: Switch to calculate dimensions separated */
   addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
-  /* DESCRIPTION: Switch to calculate dimensions separated */
-  addBoolOption("SECOND_ORDER_INTEGRATION",SecOrdQuad, true);
   /* DESCRIPTION: Switch to activate working on the surface only */
   addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
   /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
