@@ -130,6 +130,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
   AddHistoryOutput("RMS_ENERGY_VE",  "rms[RhoEve]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutputFields_TurbRMS_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -143,6 +144,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED,"MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutputFields_TurbMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -156,6 +158,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
+  AddHistoryOutputFields_TurbBGS_RES(config);
   /// END_GROUP
 
   vector<string> Marker_Monitoring;
@@ -173,6 +176,8 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  AddHistoryOutputFields_TurbLinsol(config);
+
 
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
@@ -228,8 +233,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
-
-  AddHistoryOutputFields_Turb(config);
 
   /*--- Add analyze surface history fields --- */
 
@@ -466,6 +469,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("RMS_ENERGY",     log10(NEMO_solver->GetRes_RMS(nSpecies+3)));
     SetHistoryOutputValue("RMS_ENERGY_VE",  log10(NEMO_solver->GetRes_RMS(nSpecies+4)));
   }
+  LoadHistoryData_TurbRMS_RES(config, solver);
 
   SetHistoryOutputValue("MAX_DENSITY", log10(NEMO_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_MOMENTUM-X", log10(NEMO_solver->GetRes_Max(1)));
@@ -476,6 +480,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(NEMO_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(NEMO_solver->GetRes_Max(4)));
   }
+  LoadHistoryData_TurbMAX_RES(config, solver);
 
   if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(NEMO_solver->GetRes_BGS(0)));
@@ -487,6 +492,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(NEMO_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(NEMO_solver->GetRes_BGS(4)));
     }
+    LoadHistoryData_TurbBGS_RES(config, solver);
   }
 
   SetHistoryOutputValue("TOTAL_HEATFLUX",   NEMO_solver->GetTotal_HeatFlux());
@@ -498,6 +504,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetHistoryOutputValue("LINSOL_ITER", NEMO_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(NEMO_solver->GetResLinSolver()));
+  LoadHistoryData_TurbLinsol(config, solver);
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -513,8 +520,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", NEMO_solver->GetAoA_inc());
 
   }
-
-  LoadHistoryData_Turb(config, solver);
 
   /*--- Set the analyse surface history values --- */
 

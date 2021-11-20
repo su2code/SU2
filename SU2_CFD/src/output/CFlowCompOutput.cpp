@@ -116,6 +116,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutputFields_TurbRMS_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -129,6 +130,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED,"MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutputFields_TurbMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -142,6 +144,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
+  AddHistoryOutputFields_TurbBGS_RES(config);
   /// END_GROUP
 
   vector<string> Marker_Monitoring;
@@ -159,6 +162,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  AddHistoryOutputFields_TurbLinsol(config);
 
   /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
   /// DESCRIPTION: Aero CD drag
@@ -218,8 +222,6 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
-
-  AddHistoryOutputFields_Turb(config);
 
   /*--- Add analyze surface history fields --- */
 
@@ -447,6 +449,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("RMS_MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
     SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
   }
+  LoadHistoryData_TurbRMS_RES(config, solver);
 
   SetHistoryOutputValue("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_MOMENTUM-X", log10(flow_solver->GetRes_Max(1)));
@@ -457,6 +460,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
   }
+  LoadHistoryData_TurbMAX_RES(config, solver);
 
   if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
@@ -468,6 +472,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
     }
+    LoadHistoryData_TurbBGS_RES(config, solver);
   }
 
   SetHistoryOutputValue("TOTAL_HEATFLUX",   flow_solver->GetTotal_HeatFlux());
@@ -482,6 +487,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
+  LoadHistoryData_TurbLinsol(config, solver);
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -497,8 +503,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("CL_DRIVER_COMMAND", flow_solver->GetAoA_inc());
 
   }
-
-  LoadHistoryData_Turb(config, solver);
 
   /*--- Set the analyse surface history values --- */
 

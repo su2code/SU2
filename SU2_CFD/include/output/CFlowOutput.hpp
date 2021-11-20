@@ -56,17 +56,44 @@ protected:
   void SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output);
 
   /*!
-   * \brief Add turbulence history fields (FVMComp, FVMInc, FVMNEMO).
-   * \param[in] config - Definition of the particular problem.
+   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void AddHistoryOutputFields_Turb(const CConfig* config);
+  void AddHistoryOutputFields_TurbRMS_RES(const CConfig* config);
 
   /*!
-   * \brief Set turbulence history field values.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Set turbulence history field values for the linear solver.
    */
-  void LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver);
+  void LoadHistoryData_TurbRMS_RES(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_TurbMAX_RES(const CConfig* config);
+
+  /*!
+   * \brief Set turbulence history field values for the linear solver.
+   */
+  void LoadHistoryData_TurbMAX_RES(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_TurbBGS_RES(const CConfig* config);
+
+  /*!
+   * \brief Set turbulence history field values for the linear solver.
+   */
+  void LoadHistoryData_TurbBGS_RES(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_TurbLinsol(const CConfig* config);
+
+  /*!
+   * \brief Set turbulence history field values for the linear solver.
+   */
+  void LoadHistoryData_TurbLinsol(const CConfig* config, const CSolver* const* solver);
 
   /*!
    * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
