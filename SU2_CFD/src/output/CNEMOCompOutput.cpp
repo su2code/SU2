@@ -231,7 +231,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddHistoryOutputFields_Turb(config);
 
-
   /*--- Add analyze surface history fields --- */
 
   AddAnalyzeSurfaceOutput(config);
