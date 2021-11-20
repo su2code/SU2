@@ -605,8 +605,8 @@ void CFlowOutput::LoadHistoryData_TurbRMS_RES(const CConfig* config, const CSolv
       break;
 
     case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetHistoryOutputValue("RMS_TKE",         solver[TURB_SOL]->GetRes_RMS(0));
-      SetHistoryOutputValue("RMS_DISSIPATION", solver[TURB_SOL]->GetRes_RMS(1));
+      SetHistoryOutputValue("RMS_TKE",         log10(solver[TURB_SOL]->GetRes_RMS(0)));
+      SetHistoryOutputValue("RMS_DISSIPATION", log10(solver[TURB_SOL]->GetRes_RMS(1)));
       break;
 
     case TURB_MODEL::NONE: break;
