@@ -76,29 +76,44 @@ protected:
   void SetVolumeOutputFields_TurbSolution(const CConfig* config);
 
   /*!
-   * \brief Set turbulence volume field values for a point.
+   * \brief Set turbulence volume solution field values for a point.
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - The container holding all solution data.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of the point.
    */
   void LoadVolumeData_TurbSolution(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
 
   /*!
-   * \brief Add turbulence volume fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_Turb(const CConfig* config);
+  void SetVolumeOutputFields_TurbResidual(const CConfig* config);
 
   /*!
-   * \brief Set turbulence volume field values for a point.
+   * \brief Set turbulence volume residual field values for a point.
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadVolumeData_TurbResidual(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
+
+  /*!
+   * \brief Add turbulence volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFields_TurbLimiter(const CConfig* config);
+
+  /*!
+   * \brief Set turbulence volume limiter field values (and more) for a point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint);
+  void LoadVolumeData_TurbLimiter(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint);
 
   /*!
    * \brief Add aerodynamic coefficients as output fields

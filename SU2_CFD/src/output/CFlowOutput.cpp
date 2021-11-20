@@ -681,24 +681,54 @@ void CFlowOutput::LoadVolumeData_TurbSolution(const CConfig* config, const CSolv
   }
 }
 
-void CFlowOutput::SetVolumeOutputFields_Turb(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFields_TurbResidual(const CConfig* config) {
   switch(config->GetKind_Turb_Model()){
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
-      if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-        AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
-      }
       break;
+
     case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
       AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
-      if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-        AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
-        AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
-      }
       break;
+
     case TURB_MODEL::NONE:
       break;
+  }
+}
+
+void CFlowOutput::LoadVolumeData_TurbResidual(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint) {
+  const auto turb_solver = solver[TURB_SOL];
+  
+  switch(config->GetKind_Turb_Model()){
+  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    SetVolumeOutputValue("RES_NU_TILDE", iPoint, turb_solver->LinSysRes(iPoint, 0));
+    break;
+
+  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
+    SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
+    break;
+
+  case TURB_MODEL::NONE: break;
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFields_TurbLimiter(const CConfig* config) {
+  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+    switch(config->GetKind_Turb_Model()){
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+        AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
+        break;
+
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+        AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
+        AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
+        break;
+
+      case TURB_MODEL::NONE:
+        break;
+    }
   }
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == INC_RANS) {
@@ -716,29 +746,25 @@ void CFlowOutput::SetVolumeOutputFields_Turb(const CConfig* config) {
   }
 }
 
-void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint) {
+void CFlowOutput::LoadVolumeData_TurbLimiter(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint) {
   const auto Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? solver[TURB_SOL]->GetNodes() : nullptr;
   const auto Node_Geo  = geometry->nodes;
 
-  switch(config->GetKind_Turb_Model()){
-  case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-      SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
-    }
-    break;
+  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+    switch(config->GetKind_Turb_Model()){
+      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+       SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
+        break;
 
-  case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
-    if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-      SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
-    }
-    break;
+      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+        SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
+        SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
+        break;
 
-  case TURB_MODEL::NONE: break;
+      case TURB_MODEL::NONE:
+        break;
+    }
   }
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == INC_RANS) {
