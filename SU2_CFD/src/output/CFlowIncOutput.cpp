@@ -278,6 +278,8 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
+  LoadHistoryData_Turb(config, solver);
+
   if(streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_MassFlow);
     SetHistoryOutputValue("STREAMWISE_DP", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_PressureDrop);
