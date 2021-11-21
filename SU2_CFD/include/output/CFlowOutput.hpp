@@ -41,6 +41,18 @@ protected:
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
+   * \brief Set the values of the volume output fields for a surface point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Index of the vertex on the marker.
+   */
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
+                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
+
+  /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
    */
@@ -61,19 +73,9 @@ protected:
   void AddHistoryOutputFields_TurbRMS_RES(const CConfig* config);
 
   /*!
-   * \brief Set turbulence history field values for the linear solver.
-   */
-  void LoadHistoryData_TurbRMS_RES(const CConfig* config, const CSolver* const* solver);
-
-  /*!
    * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_TurbMAX_RES(const CConfig* config);
-
-  /*!
-   * \brief Set turbulence history field values for the linear solver.
-   */
-  void LoadHistoryData_TurbMAX_RES(const CConfig* config, const CSolver* const* solver);
 
   /*!
    * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
@@ -81,19 +83,14 @@ protected:
   void AddHistoryOutputFields_TurbBGS_RES(const CConfig* config);
 
   /*!
-   * \brief Set turbulence history field values for the linear solver.
-   */
-  void LoadHistoryData_TurbBGS_RES(const CConfig* config, const CSolver* const* solver);
-
-  /*!
    * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_TurbLinsol(const CConfig* config);
 
   /*!
-   * \brief Set turbulence history field values for the linear solver.
+   * \brief Set all turbulence history field values.
    */
-  void LoadHistoryData_TurbLinsol(const CConfig* config, const CSolver* const* solver);
+  void LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver);
 
   /*!
    * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
@@ -103,29 +100,11 @@ protected:
   void SetVolumeOutputFields_TurbSolution(const CConfig* config);
 
   /*!
-   * \brief Set turbulence volume solution field values for a point.
-   * \note The order of fields in restart files is fixed. Therefore the split-up.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   */
-  void LoadVolumeData_TurbSolution(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
-
-  /*!
    * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFields_TurbResidual(const CConfig* config);
-
-  /*!
-   * \brief Set turbulence volume residual field values for a point.
-   * \note The order of fields in restart files is fixed. Therefore the split-up.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   */
-  void LoadVolumeData_TurbResidual(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
 
   /*!
    * \brief Add turbulence volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
@@ -134,13 +113,14 @@ protected:
   void SetVolumeOutputFields_TurbLimiter(const CConfig* config);
 
   /*!
-   * \brief Set turbulence volume limiter field values (and more) for a point.
+   * \brief Set all turbulence volume field values for a point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData_TurbLimiter(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry, const unsigned long iPoint);
+  void LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+                           const unsigned long iPoint);
 
   /*!
    * \brief Add aerodynamic coefficients as output fields
@@ -266,7 +246,7 @@ protected:
    * \param iPoint
    * \param node_flow
    */
-  void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
+  void LoadTimeAveragedData(unsigned long iPoint, const CVariable *node_flow);
 
   /*!
    * \brief Write additional output for fixed CL mode.
