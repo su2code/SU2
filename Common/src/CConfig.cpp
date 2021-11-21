@@ -2795,7 +2795,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
   
-  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
   
   /* END_CONFIG_OPTIONS */
@@ -5079,6 +5079,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (GetGasModel() == "ARGON") {monoatomic = true;}
   else {monoatomic = false;}
+
+  /*--- Set number of Turbulence Variables. ---*/
+  switch(Kind_Turb_Model) {
+    case TURB_MODEL::NONE:
+      nTurbVar = 0; break;
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_NEG:
+      nTurbVar = 1; break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      nTurbVar = 2; break;
+  }
 
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
