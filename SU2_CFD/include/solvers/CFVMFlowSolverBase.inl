@@ -593,6 +593,94 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+
+  auto& StrainMag = nodes->GetStrainMag();
+
+  ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
+
+  su2double strainMax = 0.0, omegaMax = 0.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    const auto VelocityGradient = nodes->GetVelocityGradient(iPoint);
+    auto Vorticity = nodes->GetVorticity(iPoint);
+
+    /*--- Vorticity ---*/
+
+    Vorticity[0] = 0.0;
+    Vorticity[1] = 0.0;
+    Vorticity[2] = VelocityGradient(1,0)-VelocityGradient(0,1);
+
+    if (nDim == 3) {
+      Vorticity[0] = VelocityGradient(2,1)-VelocityGradient(1,2);
+      Vorticity[1] = -(VelocityGradient(2,0)-VelocityGradient(0,2));
+    }
+
+    /*--- Strain Magnitude ---*/
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(VelocityGradient, nDim, nDim);
+
+    su2double Div = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Div += VelocityGradient(iDim, iDim);
+    Div /= 3.0;
+
+    StrainMag(iPoint) = 0.0;
+
+    /*--- Add diagonal part ---*/
+
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
+    }
+    if (nDim == 2) {
+      StrainMag(iPoint) += pow(Div, 2);
+    }
+
+    /*--- Add off diagonals ---*/
+
+    StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
+
+    if (nDim == 3) {
+      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
+    }
+
+    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+    AD::SetPreaccOut(StrainMag(iPoint));
+
+    /*--- Max is not differentiable, so we not register them for preacc. ---*/
+    strainMax = max(strainMax, StrainMag(iPoint));
+    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
+
+    AD::EndPreacc();
+  }
+  END_SU2_OMP_FOR
+
+  if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_CRITICAL {
+      StrainMag_Max = max(StrainMag_Max, strainMax);
+      Omega_Max = max(Omega_Max, omegaMax);
+    }
+    END_SU2_OMP_CRITICAL
+
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      su2double MyOmega_Max = Omega_Max;
+      su2double MyStrainMag_Max = StrainMag_Max;
+
+      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
+
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsigned short iMarker,
                                                 unsigned long iVertex) {
   /*--- Alias positions within inlet file for readability ---*/
