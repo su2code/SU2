@@ -33,7 +33,11 @@
 /*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
 template class CScalarSolver<CTurbVariable>;
 
-CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative) : CScalarSolver<CTurbVariable>(geometry, config, conservative) { }
+CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative)
+  : CScalarSolver<CTurbVariable>(geometry, config, conservative) {
+  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
+  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+}
 
 CTurbSolver::~CTurbSolver() {
   for (auto& mat : SlidingState) {
