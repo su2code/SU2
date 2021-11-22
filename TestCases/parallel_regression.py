@@ -71,7 +71,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.998812, -1.524371, -18.301794, -18.629156, -18.575201, 2.318954, 2.011581,  5.366905, 0.919345]
+    invwedge.test_vals = [-1.042843, -1.567606, -18.300689, -18.628064, -18.574092, 2.275192, 1.879772,  5.319420, 0.873699]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -83,7 +83,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.175785, -5.700548, -20.705025, -20.592408, -22.851499, -1.540045, -2.104353, 2.197906, -2.576183]
+    visc_cone.test_vals = [-5.171795, -5.696558, -20.720852, -20.641337, -22.851561, -1.563858, -2.065998, 2.203926, -2.590466]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
