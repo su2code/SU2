@@ -455,7 +455,7 @@ def main():
     # Sobolev gradient smoothing solver
     grad_smooth_oneram6           = TestCase('grad_smooth_sob')
     grad_smooth_oneram6.cfg_dir   = "grad_smooth/oneram6"
-    grad_smooth_oneram6.cfg_file  = "config.cfg"
+    grad_smooth_oneram6.cfg_file  = "ONERAM6_gradsmooth.cfg"
     grad_smooth_oneram6.test_iter = 2
     grad_smooth_oneram6.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     grad_smooth_oneram6.timeout   = 1600

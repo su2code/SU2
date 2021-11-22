@@ -1961,7 +1961,7 @@ void CConfig::SetConfig_Options() {
 
   /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
-  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: ILU \ingroup Config*/
   addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);

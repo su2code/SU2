@@ -947,7 +947,7 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value[iDV][iDV_Value]);
       #ifdef HAVE_MPI
-        SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       #else
         localGradient = my_Gradient;
       #endif
@@ -1171,7 +1171,7 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry
 
   vector<unsigned long> numPoints(size);
   unsigned long num = myPoints.size();
-  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
   unordered_map<unsigned long, unsigned long> Global2Local;
@@ -1185,13 +1185,13 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry
   for (int i = 0; i < size; ++i) {
     /*--- Send our point list. ---*/
     if (rank == i) {
-      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, SU2_MPI::GetComm());
       continue;
     }
 
     /*--- Receive point list. ---*/
     vector<unsigned long> theirPoints(numPoints[i]);
-    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, SU2_MPI::GetComm());
 
     for (auto iPointGlobal : theirPoints) {
       /*--- Check if the rank has the point. ---*/
