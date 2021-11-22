@@ -56,7 +56,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
-  unsigned short iMarker, nLineLets;
+  unsigned long iMarker;
+  unsigned short nLineLets;
   su2double *Mvec_Inf, Alpha, Beta;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/

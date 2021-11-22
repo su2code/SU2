@@ -183,7 +183,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.531271, -14.899968, 1.064330, 0.019756, 20, -1.825644, 0, -12.818150]
+    turb_naca0012_sa.test_vals = [-8.627052, -10.377936, 1.064491, 0.019710, 20.000000, -1.763095, 20.000000, -4.794176]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -227,7 +227,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-12.094009, -6.643017, -8.900656, -2.393294]
+    axi_rans_air_nozzle.test_vals = [-12.093575, -6.630426, -8.798725, -2.399130]
     test_list.append(axi_rans_air_nozzle)
 
     #################################

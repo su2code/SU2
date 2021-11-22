@@ -81,7 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.171780, -5.696543, -20.699788, -20.666621, -20.666621, -1.563859, -2.065967, 2.203926, -2.590465]                                                                                                                             # new
+    visc_cone.test_vals = [-5.171780, -5.696543, -20.699788, -20.666621, -20.666621, -1.563859, -2.065967, 2.203926, -2.590465]                                                                                                                             
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -355,7 +355,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-11.133933, -14.498178, 1.064330, 0.019756, 20, -1.898609, 20, -2.719825]
+    turb_naca0012_sa.test_vals = [-8.629583, -10.377793, 1.064488, 0.019711, 20.000000, -2.173971, 20.000000, -5.213344]
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.new_output = True
     turb_naca0012_sa.timeout   = 3200
@@ -417,7 +417,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-12.097563, -6.650115, -8.875944, -2.393285]
+    axi_rans_air_nozzle.test_vals = [ -12.092891, -6.630495, -8.784840, -2.399099]
     axi_rans_air_nozzle.su2_exec  = "SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001

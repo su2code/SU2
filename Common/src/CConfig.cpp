@@ -2795,7 +2795,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
   
-  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
   
   /* END_CONFIG_OPTIONS */
@@ -5075,6 +5075,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (GetGasModel() == "ARGON") {monoatomic = true;}
   else {monoatomic = false;}
 
+  /*--- Set number of Turbulence Variables. ---*/
+  switch(Kind_Turb_Model) {
+    case TURB_MODEL::NONE:
+      nTurbVar = 0; break;
+    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_NEG:
+      nTurbVar = 1; break;
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      nTurbVar = 2; break;
+  }
+
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
     cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
@@ -6474,8 +6485,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
-          if (Kind_Solver == NEMO_NAVIER_STOKES)
-            SU2_MPI::Error("Implicit time scheme is not working with NEMO for viscous problems. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
+          if (Kind_FluidModel == MUTATIONPP)
+            SU2_MPI::Error("Implicit time scheme is not yet implemented with Mutation++. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:
