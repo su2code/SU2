@@ -123,6 +123,60 @@ protected:
                            const unsigned long iPoint);
 
   /*!
+   * \brief Add species history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_SpeciesRMS_RES(const CConfig* config);
+
+  /*!
+   * \brief Add species history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_SpeciesMAX_RES(const CConfig* config);
+
+  /*!
+   * \brief Add species history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_SpeciesBGS_RES(const CConfig* config);
+
+  /*!
+   * \brief Add species history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_SpeciesLinsol(const CConfig* config);
+
+  /*!
+   * \brief Set all species history field values.
+   */
+  void LoadHistoryData_Species(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add species volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFields_SpeciesSolution(const CConfig* config);
+
+  /*!
+   * \brief Add species volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFields_SpeciesResidual(const CConfig* config);
+
+  /*!
+   * \brief Add species volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFields_SpeciesLimiter(const CConfig* config);
+
+  /*!
+   * \brief Set all species volume field values for a point.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadVolumeData_Species(const CConfig* config, const CSolver* const* solver,
+                              const unsigned long iPoint);
+
+  /*!
    * \brief Add aerodynamic coefficients as output fields
    * \param[in] config - Definition of the particular problem.
    */

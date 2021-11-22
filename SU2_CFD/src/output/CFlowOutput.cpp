@@ -849,6 +849,79 @@ void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* cons
   }
 }
 
+void CFlowOutput::AddHistoryOutputFields_SpeciesRMS_RES(const CConfig* config) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
+}
+
+void CFlowOutput::AddHistoryOutputFields_SpeciesMAX_RES(const CConfig* config) {
+  // TK:: tbd
+}
+
+void CFlowOutput::AddHistoryOutputFields_SpeciesBGS_RES(const CConfig* config) {
+  // TK:: tbd
+}
+
+void CFlowOutput::AddHistoryOutputFields_SpeciesLinsol(const CConfig* config) {
+    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+  }
+}
+
+void CFlowOutput::LoadHistoryData_Species(const CConfig* config, const CSolver* const* solver) {
+  const CSolver* species_solver = solver[SPECIES_SOL];
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log(species_solver->GetRes_RMS(iVar)));
+    }
+  }
+  // TK:: add max and bgs res
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    SetHistoryOutputValue("LINSOL_ITER_SPECIES", species_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(species_solver->GetResLinSolver()));
+  }
+
+}
+
+void CFlowOutput::SetVolumeOutputFields_SpeciesSolution(const CConfig* config){
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFields_SpeciesResidual(const CConfig* config) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+  }
+}
+
+void CFlowOutput::SetVolumeOutputFields_SpeciesLimiter(const CConfig* config) {
+  //TK:: tbd species limiter
+}
+
+void CFlowOutput::LoadVolumeData_Species(const CConfig* config, const CSolver* const* solver,
+                                         const unsigned long iPoint) {
+  /*--- Early return if no species solver is present ---*/
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE)
+    return;
+
+  const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+
+  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
+
+  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+
+  // TK:: tbd limiter
+}
+
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
   if (!config->GetViscous()) return;

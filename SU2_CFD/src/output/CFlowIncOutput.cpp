@@ -112,15 +112,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_TurbRMS_RES(config);
+  AddHistoryOutputFields_SpeciesRMS_RES(config);
 
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("RMS_SPECIES_"+std::to_string(iVar), "rms[rho*Y_"+std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
-    }
-  }
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -138,6 +133,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_TurbMAX_RES(config);
+  AddHistoryOutputFields_SpeciesMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables.
@@ -155,6 +151,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_TurbBGS_RES(config);
+  AddHistoryOutputFields_SpeciesBGS_RES(config);
 
   /// DESCRIPTION: Multizone residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
@@ -185,11 +182,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
   AddHistoryOutputFields_TurbLinsol(config);
+  AddHistoryOutputFields_SpeciesLinsol(config);
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
-    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
-  }
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
@@ -224,7 +218,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* flow_solver = solver[FLOW_SOL];
-  CSolver* species_solver = solver[SPECIES_SOL];
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
@@ -233,12 +226,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
   if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_SPECIES_"+std::to_string(iVar), log(species_solver->GetRes_RMS(iVar)));
-    }
-  }
 
   if (config->AddRadiation())
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
@@ -283,11 +270,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    SetHistoryOutputValue("LINSOL_ITER_SPECIES", species_solver->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(species_solver->GetResLinSolver()));
-  }
-
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
     SetHistoryOutputValue("DEFORM_MAX_VOLUME", mesh_solver->GetMaximum_Volume());
@@ -303,6 +285,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
   LoadHistoryData_Turb(config, solver);
+  LoadHistoryData_Species(config, solver);
 
   if(streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_MassFlow);
@@ -339,11 +322,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
   SetVolumeOutputFields_TurbSolution(config);
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
-  }
+  SetVolumeOutputFields_SpeciesSolution(config);
 
   // Radiation variables
   if (config->AddRadiation())
@@ -388,11 +367,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
   SetVolumeOutputFields_TurbResidual(config);
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar),   "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-  }
+  SetVolumeOutputFields_SpeciesResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
@@ -405,6 +380,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   SetVolumeOutputFields_TurbLimiter(config);
+  SetVolumeOutputFields_SpeciesLimiter(config);
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {
@@ -420,16 +396,13 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const CVariable* Node_Heat = nullptr;
-  const CVariable* Node_Species = nullptr;
   const CVariable* Node_Rad = nullptr;
   auto* Node_Geo = geometry->nodes;
 
   if (weakly_coupled_heat){
     Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    Node_Species = solver[SPECIES_SOL]->GetNodes();
-  }
+
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
@@ -441,11 +414,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
-
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-  }
 
   // Radiation solver
   if (config->AddRadiation()){
@@ -480,11 +448,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (config->GetEnergy_Equation())
     SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-  }
-
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
     SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
@@ -497,6 +460,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   // All turbulence outputs.
   LoadVolumeData_Turb(config, solver, geometry, iPoint);
+  LoadVolumeData_Species(config, solver, iPoint);
+
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {
