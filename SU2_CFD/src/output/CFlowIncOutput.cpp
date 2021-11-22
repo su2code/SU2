@@ -27,7 +27,6 @@
 
 
 #include "../../include/output/CFlowIncOutput.hpp"
-#include <string>
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"

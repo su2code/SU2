@@ -104,30 +104,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                         CConfig* config) final;
 
   /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final;
-
-  /*!
    * \brief Impose the inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -181,4 +157,10 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) final;
+
+   /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
+    * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.
+    * If a specified mass-fractions flux (like BC_HeatFlux_Wall) or a constant mass-fraction on the boundary
+    * (like BC_Isothermal_Wall) are implemented the respective CHeatSolver implementations can act as a  starting
+    * point ---*/
 };
