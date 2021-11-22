@@ -522,9 +522,11 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
     if (rank == MASTER_NODE)  cout << "  working on mesh level (including debug mode)" << endl;
 
+    /*--- Work with the surface derivatives. ---*/
     if (config->GetSmoothOnSurface()) {
 
-      unsigned long  dvMarker = 1000;
+      /*--- Select DV marker, or NOT_AVAILABLE if none is specified. ---*/
+      unsigned long  dvMarker = BC_TYPE::NOT_AVAILABLE;
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if ( config->GetMarker_All_DV(iMarker) == YES ) {
           dvMarker = iMarker;
@@ -532,6 +534,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
       }
       solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config, dvMarker);
 
+    /*--- Work with the volume derivatives. ---*/
     } else {
       solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config);
     }
@@ -544,12 +547,12 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
     solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
 
-  /*--- in some OneShot applications we might only need the original gradient. ---*/
+  /*--- For some application, e.g. OneShot, we might only need the original gradient. ---*/
   } else if (config->GetSobMode()==ONLY_GRAD) {
     solver[GRADIENT_SMOOTHING]->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
 
-  /*--- warning if choose mode is unsupported. ---*/
-  } else {
+  /*--- Warning if choose mode is unsupported. ---*/
+  } else if (config->GetSobMode()==NO_MODUS) {
     if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
   }
 

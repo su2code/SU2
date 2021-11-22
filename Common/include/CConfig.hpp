@@ -713,7 +713,7 @@ private:
   *Marker_All_Fluid_Load,            /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,              /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,             /*!< \brief Global index for moving using the grid information. */
-  *Marker_All_SobolevBC,          /*!< \brief Global index for boundary condition applied to gradient smoothing. */
+  *Marker_All_SobolevBC,             /*!< \brief Global index for boundary condition applied to gradient smoothing. */
   *Marker_CfgFile_Monitoring,            /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,             /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,               /*!< \brief Global index for monitoring using the config information. */
@@ -775,7 +775,7 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName;         /*!< \brief Hessian of the objective function. */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -2948,8 +2948,8 @@ public:
   unsigned short GetnMarker_Moving(void) const { return nMarker_Moving; }
 
   /*!
-   * \brief Get the total number of gradient markers.
-   * \return Total number of gradient markers.
+   * \brief Get the total number of markers for gradient treatment.
+   * \return Total number of markers for gradient treatment.
    */
   unsigned short GetnMarker_SobolevBC(void) { return nMarker_SobolevBC; }
 
@@ -3316,9 +3316,9 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
   /*!
-   * \brief Set if a marker how <i>val_marker</i> is going to be treated.
+   * \brief Set if a marker how <i>val_marker</i> is going to be applied in gradient treatment.
    * \param[in] val_marker - Index of the marker in which we are interested.
-   * \param[in] val_sobolev - depending on the boundary condition applied
+   * \param[in] val_sobolev - 0 or 1 depending if the marker is selected.
    */
   void SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev) { Marker_All_SobolevBC[val_marker] = val_sobolev; }
 
@@ -3467,9 +3467,9 @@ public:
   unsigned short GetMarker_All_Moving(unsigned short val_marker) const { return Marker_All_Moving[val_marker]; }
 
   /*!
-   * \brief Get the information what boundary to apply for a marker <i>val_marker</i>.
+   * \brief Get the information if gradient treatment uses a marker <i>val_marker</i>.
    * \param[in] val_marker
-   * \return Number Depending on BC
+   * \return 0 or 1 depending if the marker is going to be selected.
    */
   unsigned short GetMarker_All_SobolevBC(unsigned short val_marker) const { return Marker_All_SobolevBC[val_marker]; }
 
@@ -6035,7 +6035,7 @@ public:
 
   /*!
    * \brief Get the gradient boundary information from the config definition for the marker <i>val_marker</i>.
-   * \return gradient boundary information of the boundary in the config information for the marker <i>val_marker</i>.
+   * \return Gradient boundary information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_SobolevBC(string val_marker) const;
 
@@ -6397,7 +6397,7 @@ public:
   unsigned short GetMarker_Fluid_Load(string val_marker) const;
 
   /*!
-   * \brief Get the internal index for a gradient boundary  condition <i>val_marker</i>.
+   * \brief Get the internal index for a gradient boundary condition <i>val_marker</i>.
    * \return Internal index for a gradient boundary  condition <i>val_marker</i>.
    */
   unsigned short GetMarker_SobolevBC(string val_marker) const;
@@ -9410,8 +9410,6 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
-
-  /** Config functions related to the gradient smoothing solver. **/
 
   /*!
    * \brief Check if the gradient smoothing is active

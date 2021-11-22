@@ -111,12 +111,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT)) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
-  } else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
+  }
+  else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
     /*--- Else "upgrade" primal solver settings. ---*/
     prec = config->GetKind_DiscAdj_Linear_Prec();
   }
 
-  /*--- No else, but separat if case! ---*/
+  /*--- No else if, but separat if case! ---*/
   if (config->GetSmoothGradient() && grad_mode) {
     prec = config->GetKind_Grad_Linear_Solver_Prec();
   }

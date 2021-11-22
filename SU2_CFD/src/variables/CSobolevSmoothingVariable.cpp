@@ -46,7 +46,7 @@ CSobolevSmoothingVariable::CSobolevSmoothingVariable(unsigned long npoint, unsig
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   boundary_vertex = new bool[nPoint];
-  for (auto iPoint=0; iPoint<nPoint; iPoint++) {
+  for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
     boundary_vertex[iPoint] = false;
   }
   nBoundPoints = 0;

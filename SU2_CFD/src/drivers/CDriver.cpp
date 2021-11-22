@@ -232,7 +232,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   }
 
-  /*--- For gradient smoothing we need to calculate the projections between volume, surface and design parameters ---*/
+  /*--- For gradient smoothing we need to initialize the mesh deformation classes.
+   * This is in order to calculate the projections between volume, surface and design parameters ---*/
   if ( config_container[ZONE_0]->GetSmoothGradient() ) {
     grid_movement[ZONE_0][INST_0] = new CVolumetricMovement(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
     surface_movement[ZONE_0] = new CSurfaceMovement();
@@ -2255,7 +2256,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   } // end "per-thread" allocation loop
 
-  /*--- If we want to apply the gradient smoothing we must initialize the numerics here ---*/
+  /*--- If we want to apply the gradient smoothing solver we must initialize the numerics classes. ---*/
   if(config->GetSmoothGradient()) {
     if (config->GetSmoothOnSurface()) {
       numerics[MESH_0][GRADIENT_SMOOTHING][GRAD_TERM] = new CGradSmoothing(nDim-1, config);

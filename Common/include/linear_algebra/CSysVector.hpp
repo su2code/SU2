@@ -33,9 +33,6 @@
 #include "../parallelization/vectorization.hpp"
 #include "vector_expressions.hpp"
 
-#include <iostream>
-#include <fstream>
-
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
  * \note The loop will only run in parallel if methods are called from a
@@ -450,7 +447,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       }
     }
   }
-
 };
 
 #undef CSYSVEC_PARFOR

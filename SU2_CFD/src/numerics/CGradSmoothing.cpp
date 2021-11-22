@@ -79,7 +79,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
 
   unsigned int iDim, jDim, iGauss, nGauss, iShape, jShape, nNode;
 
-  /*--- need a different number of dimensions if we are on a curved surface --*/
+  /*--- If we are on a curved design surface, everything is embedded in one dimension higher. --*/
   unsigned int nDimGlobal = nDim;
   if (config->GetSmoothOnSurface()) nDimGlobal=nDim+1;
 
@@ -88,7 +88,8 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
   su2double epsilon1 = config->GetSmoothingEps1();
   su2double epsilon2 = config->GetSmoothingEps2();
 
-  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
   if (config->GetSmoothOnSurface()) {
@@ -97,7 +98,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
     element->ComputeGrad_Linear();
   }
 
-  /*--- contribution from the gradients of the shape functions ---*/
+  /*--- Contribution from the gradients of the shape functions, representing the Laplace term. ---*/
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
@@ -137,7 +138,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
 
   }
 
-  /*--- contribution from the shape functions themselfes --*/
+  /*--- Contribution from the shape functions themselves, representing the indentity term. --*/
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 

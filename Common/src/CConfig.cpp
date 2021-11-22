@@ -1943,20 +1943,20 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Switch to activate gradient smoothing */
   addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
-  /* DESCRIPTION: Epsilon of the Laplace Beltrami Operator */
+  /* DESCRIPTION: Epsilon of the identity term in the Laplace Beltrami Operator */
   addDoubleOption("SMOOTHING_EPSILON1",SmoothingEps1, 1.0);
-  /* DESCRIPTION: Zeta of the identity term in the Laplace Beltrami Operator */
+  /* DESCRIPTION: Epsilon of the Laplace term in the Laplace Beltrami Operator */
   addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
-  /* DESCRIPTION: Switch to calculate dimensions separated */
+  /* DESCRIPTION: Switch to calculate for each dimension separately */
   addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
-  /* DESCRIPTION: Switch to activate working on the surface only */
+  /* DESCRIPTION: Switch to activate working on the design surfaces only */
   addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
   /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
   addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
-  /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
+  /* DESCRIPTION: Switch to activate the debbuging modus */
   addEnumOption("SOBOLEV_MODE",NumMode, Sobolev_Modus_Map,NO_MODUS);
   /*!\brief HESS_OBJFUNC_FILENAME
-   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
+   *  \n DESCRIPTION: Output filename for the Sobolev Hessian approximation.  \ingroup Config*/
   addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
 
   /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
@@ -2685,7 +2685,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Optimization gradient factor */
   addPythonOption("OPT_GRADIENT_FACTOR");
-  
+
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
 
@@ -2827,7 +2827,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
-  
+
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 

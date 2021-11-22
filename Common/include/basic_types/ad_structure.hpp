@@ -106,7 +106,7 @@ namespace AD{
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
 
   /*!
-   * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables, using forward tape evaluation.
+   * \brief Computes the adjoints, i.e., the derivatives of the output with respect to the input variables, using forward tape evaluation.
    */
   inline void ComputeAdjointForward() {}
 

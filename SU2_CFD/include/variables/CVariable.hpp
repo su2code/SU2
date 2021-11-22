@@ -2242,12 +2242,12 @@ public:
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
-   * \brief Mark a point as boundary of a boundary
+   * \brief Mark a point as boundary of a design surface boundary
    */
   virtual void MarkAsBoundaryPoint(unsigned long iPoint) {}
 
   /*!
-   * \brief return wether a point is a boundary of a boundary
+   * \brief return wether a point is a boundary of a design surface boundary
    */
   virtual bool IsBoundaryPoint(unsigned long iPoint) { return false;}
 

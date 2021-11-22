@@ -35,7 +35,6 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
-
 #include "../../../Common/include/containers/C2DContainer.hpp"
 
 class CElement;

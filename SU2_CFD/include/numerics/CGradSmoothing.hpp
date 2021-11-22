@@ -65,7 +65,7 @@ public:
   void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config);
 
   /*!
-   * \brief set coordinates to a given vector
+   * \brief Set coordinates to given values.
    */
   void SetCoord(su2activematrix &val_coord);
 

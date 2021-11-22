@@ -81,8 +81,8 @@ protected:
   unsigned short nNodes;              /*!< \brief Number of geometric points. */
   unsigned short nDim;                /*!< \brief Number of dimension of the problem. */
 
-  su2activematrix HiHj = 0.0;                     /*!< \brief Scalar product of 2 ansatz functions. */
-  std::vector<std::vector<su2activematrix>> DHiDHj;             /*!< \brief Scalar product of the gradients of 2 ansatz functions. */
+  su2activematrix HiHj = 0.0;                        /*!< \brief Scalar product of 2 ansatz functions. */
+  std::vector<std::vector<su2activematrix>> DHiDHj;  /*!< \brief Scalar product of the gradients of 2 ansatz functions. */
 
 public:
   enum FrameType {REFERENCE=1, CURRENT=2}; /*!< \brief Type of nodal coordinates. */
@@ -565,7 +565,6 @@ private:
     return Jacobian[0][0];
   }
 
-
   FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][2], su2double ad[][2]) {
     ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
     ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
@@ -697,7 +696,7 @@ protected:
     } else if (NDIM==2) {
 
       su2double Jacobian[NDIM+1][NDIM], JTJ[NDIM][NDIM];
-      su2double volJacobian, GradN_Xi;
+      su2double volJacobian;
       unsigned short iShape, iDim, jDim, jVertex, kDim, iGauss;
 
       for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
@@ -765,11 +764,8 @@ protected:
         }
 
       }
-
     }
-
   }
-
 
 public:
   /*!
@@ -786,7 +782,6 @@ public:
    * \brief Overload needed for deformed 2D elements on a surface in 3D or 1D elements on a 2D curve.
    */
   void ComputeGrad_Linear(su2activematrix& Coord) final { ComputeGrad_impl_embedded<REFERENCE>(Coord); }
-
 
 };
 

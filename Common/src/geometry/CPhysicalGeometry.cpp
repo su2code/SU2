@@ -180,7 +180,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   }
 
-  /*--- Allocate space for the sensitivity and initialize. ---*/
+  /*--- If the gradient smoothing solver is active, allocate space for the sensitivity and initialize. ---*/
   if (config->GetSmoothGradient()) {
     Sensitivity.resize(nPoint,nDim) = su2double(0.0);
   }
@@ -274,7 +274,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   LoadVolumeElements(config, geometry);
   LoadSurfaceElements(config, geometry);
 
-  /*--- Allocate space for the sensitivity and initialize. ---*/
+  /*--- If the gradient smoothing solver is active, allocate space for the sensitivity and initialize. ---*/
   if (config->GetSmoothGradient()) {
     Sensitivity.resize(nPoint,nDim) = su2double(0.0);
   }
