@@ -36,9 +36,8 @@ template class CScalarSolver<CSpeciesVariable>;
 
 CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CScalarSolver<CSpeciesVariable>(geometry, config, true) {
-  unsigned short nLineLets;
-
-  bool multizone = config->GetMultizone_Problem();
+  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
+  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
   /*--- Dimension of the problem. ---*/
 
@@ -70,13 +69,21 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   Point_Max.resize(nVar, 0);
   Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
 
+  /*--- Initialize the BGS residuals in multizone problems. ---*/
+  if (config->GetMultizone_Problem()) {
+    Residual_BGS.resize(nVar, 0.0);
+    Residual_Max_BGS.resize(nVar, 0.0);
+    Point_Max_BGS.resize(nVar, 0);
+    Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
+  }
+
   /*--- Initialization of the structure of the whole Jacobian ---*/
 
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (passive scalar model)." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
   if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+    const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
     if (rank == MASTER_NODE)
       cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
   }
@@ -86,14 +93,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   System.SetxIsZero(true);
 
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-
-  /*--- Initialize the BGS residuals in multizone problems. ---*/
-  if (multizone) {
-    Residual_BGS.resize(nVar, 0.0);
-    Residual_Max_BGS.resize(nVar, 0.0);
-    Point_Max_BGS.resize(nVar, 0);
-    Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
-  }
 
   //} //iMESH_0
 
