@@ -96,7 +96,6 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
               (config->GetInnerIter() <= config->GetLimiterIter());
   }
 
-
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy && !Output) {

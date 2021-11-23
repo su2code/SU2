@@ -505,7 +505,6 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
       SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
       Tot_Surface_Species[iVar] += Species;
-      //config->SetSurface_Temperature( ); //TK:: Necessary for Obj Func
     }
 
   }

@@ -1307,7 +1307,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPECIES_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
   addDoubleListOption("SPECIES_INIT", nSpecies_Init, Species_Init);
   /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Activate clipping for scalar transport equations \n DEFAULT: false \ingroup Config*/
-  addBoolOption("SPECIES_CLIPPING", Species_Clipping, false); // TODO TK:: require user to set min+max if set to true
+  addBoolOption("SPECIES_CLIPPING", Species_Clipping, false);
   /*!\brief SPECIES_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MAX", nSpecies_Clipping_Max, Species_Clipping_Max);
   /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
@@ -1491,7 +1491,6 @@ void CConfig::SetConfig_Options() {
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Scalar: (inlet_marker, Species1, Species2, ...) */
-   /// NOTE TK:: We need to check that the sum is 0<=sum<=1 to be correct. Also check that multiple species must be specified.
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
 
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
@@ -5148,10 +5147,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Checks for additional species transport. ---*/
-  // TK:: what should be the master option to switch on species transport? How will that interact with flamelet?
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
     if (Kind_Solver != INC_NAVIER_STOKES &&
-        Kind_Solver != INC_RANS) //TK:: DISC_ADJ_* ?
+        Kind_Solver != INC_RANS &&
+        Kind_Solver != DISC_ADJ_INC_NAVIER_STOKES &&
+        Kind_Solver != DISC_ADJ_INC_RANS)
       SU2_MPI::Error("Species transport currently only avaialble for incompressible flow.", CURRENT_FUNCTION);
 
     // For now, do not allow axisymmetric simulations
@@ -5161,6 +5161,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        Kind_TimeIntScheme_Species != EULER_EXPLICIT){
       SU2_MPI::Error("Only TIME_DISCRE_TURB = EULER_IMPLICIT, EULER_EXPLICIT have been implemented in the scalar solver.", CURRENT_FUNCTION);
     }
+
+    /*--- If Species clipping is on, make sure bounds are given by the user. ---*/
+    if (OptionIsSet("SPECIES_CLIPPING"))
+      if (!(OptionIsSet("SPECIES_CLIPPING_MIN") && OptionIsSet("SPECIES_CLIPPING_MAX")))
+        SU2_MPI::Error("SPECIES_CLIPPING= YES requires the options SPECIES_CLIPPING_MIN/MAX to set the clipping values.", CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
     auto checkScalarBounds = [&](su2double scalar, string name, su2double lowerBound, su2double upperBound) {
@@ -7014,7 +7019,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
-  /// NOTE TK:: of course the situation is not ideal to not incorporate this into the usual inlet bc but let see
   if (nMarker_Inlet_Species != 0) {
     BoundaryTable << "Species Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Species; iMarker_Inlet++) {
