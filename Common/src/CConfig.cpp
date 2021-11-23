@@ -5060,7 +5060,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    gradients for uwpind reconstruction. Set additional booleans to
    minimize overhead as appropriate. */
 
-  if (MUSCL_Flow || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
+  if (MUSCL_Flow || MUSCL_Turb || MUSCL_Species || MUSCL_Heat || MUSCL_AdjFlow) {
 
     ReconstructionGradientRequired = true;
 
