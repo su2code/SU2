@@ -78,7 +78,23 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 }
 template <class VariableType>
 void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  /*--- Set booleans depending on the calling solver, alternatively one could add the bools to the func input. ---*/
+  bool implicit = false;
+  bool muscl = false;
+  bool limiter = false;
+  if (SolverName == "SA" || SolverName == "SST") {
+    implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+    muscl = config->GetMUSCL_Turb();
+    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+              (config->GetInnerIter() <= config->GetLimiterIter());
+  }
+  else if (SolverName == "SPECIES") {
+    implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+    muscl = config->GetMUSCL_Species();
+    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
+              (config->GetInnerIter() <= config->GetLimiterIter());
+  }
+
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -90,10 +106,6 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
       SU2_OMP_BARRIER
     }
   }
-
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
