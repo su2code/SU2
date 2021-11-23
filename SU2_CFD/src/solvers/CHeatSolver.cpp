@@ -171,7 +171,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   const bool euler_implicit = (config->GetKind_TimeIntScheme_Heat() == EULER_IMPLICIT);
   SetImplicitPeriodic(euler_implicit);
 
-
   /*--- MPI solution ---*/
 
   InitiateComms(geometry, config, SOLUTION);

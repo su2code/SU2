@@ -268,6 +268,14 @@ class CScalarSolver : public CSolver {
   void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
+   * \brief Update the solution using the explicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -295,7 +303,8 @@ class CScalarSolver : public CSolver {
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  virtual void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) override = 0;
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                           bool val_update_geo) override = 0;
 
   /*!
    * \brief Scalar solvers support OpenMP+MPI.
