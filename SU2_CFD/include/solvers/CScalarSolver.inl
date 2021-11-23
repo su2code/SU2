@@ -83,7 +83,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   bool implicit = false;
   bool muscl = false;
   bool limiter = false;
-  if (SolverName == "SA" || SolverName == "SST") {
+  if (SolverName == "SA" || SolverName == "K-W SST") {
     implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
     muscl = config->GetMUSCL_Turb();
     limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
