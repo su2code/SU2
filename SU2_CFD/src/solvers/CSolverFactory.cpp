@@ -364,12 +364,13 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
 
   CSolver *speciesSolver = nullptr;
 
-  if (adjoint){
-    speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
-  } else {
-    speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    if (adjoint){
+      speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
+    } else {
+      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+    }
   }
-
   return speciesSolver;
 }
 

@@ -1083,7 +1083,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     if (solver[MESH_0][TURB_SOL]) {
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
     }
-    if (solver[MESH_0][SPECIES_SOL]) { /// NOTE TK:: this evaluated true for some cases where no species are present
+    if (solver[MESH_0][SPECIES_SOL]) {
       solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
     }
 
