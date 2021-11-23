@@ -4332,6 +4332,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  if(Kind_TimeIntScheme_Turb != EULER_IMPLICIT &&
+     Kind_TimeIntScheme_Turb != EULER_EXPLICIT){
+    SU2_MPI::Error("Only TIME_DISCRE_TURB = EULER_IMPLICIT, EULER_EXPLICIT have been implemented.", CURRENT_FUNCTION);
+  }
+
   if (nIntCoeffs == 0) {
     nIntCoeffs = 2;
     Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
