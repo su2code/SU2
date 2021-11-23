@@ -2110,6 +2110,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
+  /* DESCRIPTION: Parameter for sigmoid gust slope */
+  addDoubleOption("GUST_SIGMOID_SLOPE", Gust_Sigmoid_Slope, 1.0);
 
   /* Fixed values for turbulence quantities to keep them at inflow conditions. */
   /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
@@ -5096,6 +5098,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
             "That is, RESIDUAL for any RMS_* BGS_* value, and CAUCHY for coefficients such as DRAG etc.\n" << endl;
   }
+
+  if(Gust_Type == SIGMOID) Gust_WaveLength = 1.0;
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {

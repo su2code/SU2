@@ -737,7 +737,8 @@ enum ENUM_GUST_TYPE {
   SINE = 2,         /*!< \brief Sine shaped gust */
   ONE_M_COSINE = 3, /*!< \brief 1-cosine shaped gust */
   VORTEX = 4,       /*!< \brief A gust made from vortices */
-  EOG = 5           /*!< \brief An extreme operating gust */
+  EOG = 5,           /*!< \brief An extreme operating gust */
+  SIGMOID = 6           /*!< \brief Sigmoid shaped gust */
 };
 static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
   MakePair("NONE", NO_GUST)
@@ -746,6 +747,7 @@ static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
   MakePair("ONE_M_COSINE", ONE_M_COSINE)
   MakePair("VORTEX", VORTEX)
   MakePair("EOG", EOG)
+  MakePair("SIGMOID", SIGMOID)  
 };
 
 /*!

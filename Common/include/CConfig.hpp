@@ -925,7 +925,8 @@ private:
   Gust_Periods,               /*!< \brief Number of gust periods. */
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
-  Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
+  Gust_Begin_Loc,             /*!< \brief Location at which the gust begins. */
+  Gust_Sigmoid_Slope;         /*!< \brief Parameter for sigmoid gust slope. */
   /*! \brief Maximal scalar product of the normed far-field velocity vector and a space coordinate where fixed turbulence quantities are set. */
   su2double Turb_Fixed_Values_MaxScalarProd;
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
@@ -8093,6 +8094,11 @@ public:
    * \brief Value of the location ath which the gust begins.
    */
   su2double GetGust_Begin_Loc(void) const { return Gust_Begin_Loc; }
+
+  /*!
+   * \brief Value of the parameter for the sigmoid slope.
+   */
+  su2double GetGust_Sigmoid_Slope(void) const { return Gust_Sigmoid_Slope; }
 
   /*!
    * \brief Get whether fixed values for turbulence quantities are applied.

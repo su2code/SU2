@@ -342,6 +342,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   su2double gust_amp = config->GetGust_Ampl();      // Gust amplitude
   su2double n = config->GetGust_Periods();          // Number of gust periods
   unsigned short GustDir = config->GetGust_Dir();   // Gust direction
+  su2double k = config->GetGust_Sigmoid_Slope();
 
   /*--- Variables needed to compute the gust ---*/
   unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
@@ -463,6 +464,13 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
               su2double v_theta = vort_strenth[i] / (2 * PI_NUMBER) * r / (r2 + pow(r_core[i], 2));
               Gust[0] = Gust[0] + v_theta * (y - y0[i]) / r;
               Gust[1] = Gust[1] - v_theta * (x - (x0[i] + Uinf * (Physical_t - tbegin))) / r;
+            }
+            break;
+
+          case SIGMOID:
+            // Check if we are in the region where the gust is active
+            if (x_gust < 0) {
+              Gust[GustDir] = gust_amp/(1 + exp(k*x_gust));
             }
             break;
 
