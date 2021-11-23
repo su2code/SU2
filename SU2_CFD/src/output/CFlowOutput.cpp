@@ -866,7 +866,7 @@ void CFlowOutput::AddHistoryOutputFields_SpeciesBGS_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_SpeciesLinsol(const CConfig* config) {
-    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
   }
@@ -878,9 +878,7 @@ void CFlowOutput::LoadHistoryData_Species(const CConfig* config, const CSolver* 
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log(species_solver->GetRes_RMS(iVar)));
     }
-  }
-  // TK:: add max and bgs res
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    // TK:: add max and bgs res
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", species_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(species_solver->GetResLinSolver()));
   }
