@@ -100,9 +100,9 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit)
+    if (implicit) {
       Jacobian.SetValZero();
-    else {
+    } else {
       SU2_OMP_BARRIER
     }
   }
