@@ -1102,61 +1102,57 @@ public:
   }
 };
 
-class COptionInletSpecies : public COptionBase {
-  string name; // identifier for the option
+class COptionInletSpecies final : public COptionBase {
+  const string name; // identifier for the option
   unsigned short & size; // number of inlets for that options
   string * & marker; // contains marker names
   su2double ** & inletspeciesval; // contains all values specified for each inlet
   unsigned short & nSpecies; // contains how many species are defined per inlet
-  unsigned short nInlets; // number of inlets, needed in dtor
 
 public:
   COptionInletSpecies(string option_field_name, unsigned short & nMarker_Inlet_Species, string* & Marker_Inlet_Species,
                       su2double** & option_field, unsigned short & nSpecies_per_Inlet) :
+    name(option_field_name),
     size(nMarker_Inlet_Species),
     marker(Marker_Inlet_Species),
     inletspeciesval(option_field),
     nSpecies(nSpecies_per_Inlet) {
-
-    this->name = option_field_name;
   }
 
   ~COptionInletSpecies() override {
-    delete[] this->marker;
+    delete[] marker;
 
-    if (this->inletspeciesval != nullptr) {
-      for (unsigned long i = 0; i < nInlets; i++) {
-        delete[] this->inletspeciesval[i];
+    if (inletspeciesval != nullptr) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] inletspeciesval[i];
       }
     }
-    delete[] this->inletspeciesval;
+    delete[] inletspeciesval;
   };
 
-  string SetValue(vector<string> option_value) {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short option_size = option_value.size();
     if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = nullptr;
-      this->inletspeciesval = nullptr;
-      this->nSpecies = 0;
+      size = 0;
+      marker = nullptr;
+      inletspeciesval = nullptr;
+      nSpecies = 0;
       return "";
     }
 
     /*--- Determine the number of inlets: A new inlet is found if the first char in the string is a letter.
      * This will fail in if a marker starts with a number!
      * Additionally, determine the number of values that are prescribed per inlet. ---*/
-    nInlets = 0;
     vector<unsigned short> nSpecies_per_Inlet;
     /*--- Loop through the fields of the marker. ---*/
     for (unsigned long i = 0; i < option_size; i++) {
       /*--- If the string starts with a letter, a new marker tag is found. ---*/
       if (isalpha(option_value[i][0])) {
         nSpecies_per_Inlet.push_back(0);
-        nInlets++;
       } else {
         /*-- Else, a species fractions values is found and the respective counter is incremented. ---*/
-        nSpecies_per_Inlet[nInlets-1]++;
+        nSpecies_per_Inlet.back()++;
       }
     }
 
@@ -1164,36 +1160,33 @@ public:
     for (auto elem : nSpecies_per_Inlet)
       if (nSpecies_per_Inlet[0] != elem)
         SU2_MPI::Error("Unequal number of species defined for MARKER_INLET_SPECIES.", CURRENT_FUNCTION);
-    this->nSpecies = nSpecies_per_Inlet[0];
 
-    this->size = nInlets;
-    this->marker = new string[nInlets];
-    this->inletspeciesval = new su2double*[nInlets];
-    for (unsigned long i = 0; i < nInlets; i++) {
-      this->inletspeciesval[i] = new su2double[nSpecies];
-    }
+    nSpecies = nSpecies_per_Inlet[0];
+    size = nSpecies_per_Inlet.size();
 
-    for (unsigned long i = 0; i < nInlets; i++) {
-      this->marker[i].assign(option_value[(1+nSpecies)*i]);
+    marker = new string[size];
+    inletspeciesval = new su2double*[size];
+    for (unsigned short i = 0; i < size; i++) {
+      inletspeciesval[i] = new su2double[nSpecies];
 
-      for (unsigned long j = 0; j < nSpecies; j++){
+      marker[i].assign(option_value[(1+nSpecies)*i]);
+
+      for (unsigned short j = 0; j < nSpecies; j++){
         istringstream ss_nd(option_value[(1+nSpecies)*i + 1+j]);
-        if (!(ss_nd >> this->inletspeciesval[i][j])) {
-          return badValue(option_value, "inlet", this->name);
+        if (!(ss_nd >> inletspeciesval[i][j])) {
+          return badValue(option_value, "inlet", name);
         }
       }
-
     }
 
     return "";
   }
 
-  void SetDefault() {
-    this->marker = nullptr;
-    this->inletspeciesval = nullptr;
-    this->nInlets = 0;
-    this->size = 0; // There is no default value for list
-    this->nSpecies = 0;
+  void SetDefault() override {
+    marker = nullptr;
+    inletspeciesval = nullptr;
+    size = 0; // There is no default value for list
+    nSpecies = 0;
   }
 };
 
