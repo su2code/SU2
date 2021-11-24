@@ -369,6 +369,17 @@ def main():
     turb_naca0012_sst_fixedvalues.tol       = 0.00001
     test_list.append(turb_naca0012_sst_fixedvalues)
 
+    # NACA0012 (SST, explicit Euler for flow and turbulence equations)
+    turb_naca0012_sst_expliciteuler           = TestCase('turb_naca0012_sst_expliciteuler')
+    turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
+    turb_naca0012_sst_expliciteuler.test_iter = 10
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532228, -3.157766, 3.364025, 1.124824, 0.501717, -float("inf")]
+    turb_naca0012_sst_expliciteuler.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_expliciteuler.timeout   = 3200
+    turb_naca0012_sst_expliciteuler.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_expliciteuler)
+
     # PROPELLER
     propeller           = TestCase('propeller')
     propeller.cfg_dir   = "rans/propeller"
