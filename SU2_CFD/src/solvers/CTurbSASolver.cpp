@@ -164,11 +164,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar) = nu_tilde_Inf;
 
-  /*--- The turbulence models are always solved implicitly, so set the
-   implicit flag in case we have periodic BCs. ---*/
-
-  SetImplicitPeriodic(true);
-
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
