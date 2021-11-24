@@ -98,7 +98,7 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY_0");
 
   if (config->GetFixed_CL_Mode()) {
     bool found = false;
