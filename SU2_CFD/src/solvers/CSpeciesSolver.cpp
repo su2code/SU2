@@ -119,7 +119,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   /*--- Scalar variable state at the far-field. ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Species_Inf[iVar] = config->GetSpecies_Init(iVar);
+    Species_Inf[iVar] = config->GetSpecies_Init()[iVar];
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -149,7 +149,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
    * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
   Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
 
-
   /*-- Allocation of inlet-values. Will be filled either by an inlet files,
    * or uniformly by a uniform boundary condition. ---*/
 
@@ -162,11 +161,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
       }
     }
   }
-
-  /*--- The species models are always solved implicitly, so set the
-  implicit flag in case we have periodic BCs. ---*/
-
-  SetImplicitPeriodic(true);
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -341,23 +335,10 @@ void CSpeciesSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver
   /// does not do this!
   /*--- For a restart do nothing here. Otherwise initialize the solution with the Init value. ---*/
   if ((!Restart) && ExtIter == 0) {
-    if (rank == MASTER_NODE) {
-      cout << "Initializing passive scalar (initial condition)." << endl;
-      cout << "initialization = " << nVar << " " << config->GetSpecies_Init(0) << endl;
-    }
-
-    // TK:: arbitrary number which would be easy to recognize during debugging
-    su2double scalar_init[MAXNVAR] = {1234.0};
-
     for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-
-        for (int iVar = 0; iVar < nVar; iVar++) {
-          scalar_init[iVar] = config->GetSpecies_Init(iVar);
-        }
-
-        solver_container[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, scalar_init);
+        solver_container[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, config->GetSpecies_Init());
       }
       END_SU2_OMP_FOR
 
@@ -537,7 +518,6 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)

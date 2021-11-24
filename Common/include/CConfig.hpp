@@ -1169,10 +1169,10 @@ private:
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
   su2double* Species_Clipping_Max; /*!< \brief Maximum value of clipping for scalar transport. */
   su2double* Species_Clipping_Min; /*!< \brief Minimum value of clipping for scalar transport. */
-  unsigned short nSpecies_Clipping_Max, nSpecies_Clipping_Min; /* TK:: nijso: this should be the same as nScalar (or nVar for the scalar)*/
+  unsigned short nSpecies_Clipping_Max, nSpecies_Clipping_Min; /*!< \brief Number of entries of SPECIES_CLIPPING_MIN/MAX */
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
-  unsigned short nSpecies_Init;    /* TK:: There should only be one nSpecies / nVar for the whole species solver */
+  unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
   unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
 
   /*!
@@ -2064,10 +2064,10 @@ public:
   su2double GetSpecies_Clipping_Min(unsigned short iVar) const { return Species_Clipping_Min[iVar]; }
 
   /*!
-   * \brief Get initial species value/concentration in the range [0,1]. ///NOTE TK:: needs cfg checking
+   * \brief Get initial species value/concentration in the range [0,1].
    * \return Initial species value/concentration
    */
-  su2double GetSpecies_Init(unsigned short iVar) const { return Species_Init[iVar]; }
+  const su2double* GetSpecies_Init() const { return Species_Init; }
 
   /*!
    * \brief Get the flag for using strong BC's for in- and outlets in the species solver.

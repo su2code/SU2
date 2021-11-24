@@ -76,24 +76,36 @@ template <class VariableType>
 CScalarSolver<VariableType>::~CScalarSolver() {
   delete nodes;
 }
+
 template <class VariableType>
 void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  /*--- Set booleans depending on the calling solver, alternatively one could add the bools to the func input. ---*/
+  bool implicit = false;
+  bool muscl = false;
+  bool limiter = false;
+  if (SolverName == "SA" || SolverName == "K-W SST") {
+    implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+    muscl = config->GetMUSCL_Turb();
+    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+              (config->GetInnerIter() <= config->GetLimiterIter());
+  }
+  else if (SolverName == "SPECIES") {
+    implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+    muscl = config->GetMUSCL_Species();
+    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
+              (config->GetInnerIter() <= config->GetLimiterIter());
+  }
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit)
+    if (implicit) {
       Jacobian.SetValZero();
-    else {
+    } else {
       SU2_OMP_BARRIER
     }
   }
-
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
@@ -115,7 +127,8 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
 
 template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
-                                                  CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
+                                                  CNumerics** numerics_container, CConfig* config,
+                                                  unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
@@ -292,7 +305,7 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
 
 template <class VariableType>
 void CScalarSolver<VariableType>::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                                           CConfig* config) {
+                                              CConfig* config) {
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
@@ -307,7 +320,7 @@ void CScalarSolver<VariableType>::BC_Periodic(CGeometry* geometry, CSolver** sol
 
 template <class VariableType>
 void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
-                                                        CConfig* config) {
+                                                           CConfig* config) {
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Set shared residual variables to 0 and declare
@@ -316,7 +329,6 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
   SetResToZero();
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Build implicit system ---*/
@@ -344,31 +356,19 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
 
-      su2double Res = fabs(LinSysRes[total_index]);
-      resRMS[iVar] += Res * Res;
-      if (Res > resMax[iVar]) {
-        resMax[iVar] = Res;
-        idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-      }
+      /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
     }
   }
   END_SU2_OMP_FOR
-  SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
 
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 }
 
 template <class VariableType>
 void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container,
-                                                         CConfig* config) {
+                                                            CConfig* config) {
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
@@ -416,7 +416,7 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
 
 template <class VariableType>
 void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
-                                                       CConfig* config) {
+                                                          CConfig* config) {
   PrepareImplicitIteration(geometry, solver_container, config);
 
   /*--- Solve or smooth the linear system. ---*/
@@ -441,9 +441,40 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 }
 
 template <class VariableType>
+void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
+                                                          CConfig* config) {
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Local residual variables for current thread ---*/
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  unsigned long idxMax[MAXNVAR] = {0};
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    const su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
+    const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
+      /*--- Explicit Euler step: ---*/
+      LinSysSol(iPoint, iVar) = -dt / Vol * LinSysRes(iPoint, iVar);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+
+  /*--- Use LinSysSol for solution update. ---*/
+  CompleteImplicitIteration(geometry, solver_container, config);
+}
+
+template <class VariableType>
 void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
-                                                    unsigned short iRKStep, unsigned short iMesh,
-                                                    unsigned short RunTime_EqSystem) {
+                                                       unsigned short iRKStep, unsigned short iMesh,
+                                                       unsigned short RunTime_EqSystem) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
