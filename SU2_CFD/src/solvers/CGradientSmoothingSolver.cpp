@@ -279,11 +279,12 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
 void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
 
   unsigned nDVtotal=config->GetnDV_Total();
-  unsigned column;
+  unsigned column, row;
   unsigned long iPoint;
   unsigned short iDim;
   vector<su2double> seedvector(nDVtotal, 0.0);
-  hessian = MatrixType::Zero(nDVtotal, nDVtotal);
+  vector<su2double> x(nDVtotal, 0.0);
+  hessian.Initialize(nDVtotal);
 
   /*--- Reset the Jacobian to 0 ---*/
   Jacobian.SetValZero();
@@ -360,21 +361,29 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     ProjectMeshToDV(geometry, helperVecOut, seedvector, activeCoord, config);
 
     /*--- Extract the projected direction ---*/
-    hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
+    for (row=0; row<nDVtotal; row++) {
+      hessian(row,column) = SU2_TYPE::GetValue(seedvector[row]);
+    }
   }
 
   /*--- Output the complete system matrix. ---*/
   if (rank == MASTER_NODE) {
     ofstream SysMatrix(config->GetObjFunc_Hess_FileName());
-    SysMatrix << hessian.format(CSVFormat);
+    SysMatrix.precision(15);
+    for (row=0; row<nDVtotal; row++) {
+      for (column=0; column<nDVtotal; column++) {
+        SysMatrix << hessian(row,column);
+        if (column!=nDVtotal-1) SysMatrix << ", ";
+      }
+      if (row!=nDVtotal-1) SysMatrix << std::endl;
+    }
     SysMatrix.close();
   }
 
   /*--- Calculate and output the treated gradient. ---*/
-  QRdecomposition QR(hessian);
-  VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
-  VectorType x = QR.solve(b);
-  deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
+  hessian.Invert();
+  hessian.MatVecMult(deltaP.begin(), x.begin());
+  deltaP = x;
 
   OutputDVGradient();
 

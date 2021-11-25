@@ -18,6 +18,3 @@
 [submodule "externals/opdi"]
 	path = externals/opdi
 	url = https://github.com/SciCompKL/OpDiLib
-[submodule "externals/eigen"]
-	path = externals/eigen
-	url = https://gitlab.com/libeigen/eigen.git

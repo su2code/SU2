@@ -16,7 +16,6 @@ option('scotch_root', type : 'string', value : 'externals/scotch/', description:
 option('custom-mpi',  type : 'boolean', value : false, description: 'enable MPI assuming the compiler and/or env vars give the correct include dirs and linker args.')
 option('enable-tests',  type : 'boolean', value : false, description: 'compile Unit Tests')
 option('enable-mixedprec', type : 'boolean', value : false, description: 'use single precision floating point arithmetic for sparse algebra')
-option('enable-eigen', type : 'boolean', value : true, description: 'Include of the Eigen linear algebra library')
 option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
 option('enable-mpp',  type : 'boolean', value : false, description: 'enable Mutation++ support')
 option('opdi-backend', type : 'combo', choices : ['auto', 'macro', 'ompt'], value : 'auto', description: 'OpDiLib backend choice')

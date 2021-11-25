@@ -30,16 +30,7 @@
 #include "CSolver.hpp"
 #include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
-
-/** minimal include of Eigen for linear system */
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-
-using MatrixType = Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic>;
-using VectorType = Eigen::Matrix<su2double, Eigen::Dynamic, 1>;
-using QRdecomposition = Eigen::ColPivHouseholderQR<MatrixType>;
-// define the output format you want, you only need one instance of this...
-const static Eigen::IOFormat CSVFormat(15, 0, ", ", "\n");
+#include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
 /** Introduction of a new data type to allow compilation with forward mode.
   *
@@ -85,7 +76,7 @@ public:
 
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
-  MatrixType hessian;                        /*!< \brief The approximated Hessian with respect to the design variables. */
+  CSquareMatrixCM hessian;                   /*!< \brief The approximated Hessian with respect to the design variables. */
 
   /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
   vector<unsigned long> ExtraVerticesToEliminate;
