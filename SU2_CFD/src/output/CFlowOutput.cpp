@@ -585,6 +585,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
             AxiFactor = 1.0;
           }
 
+          Density = flow_nodes->GetDensity(iPoint);
           Area = 0.0; MassFlow = 0.0;
 
           for (iDim = 0; iDim < nDim; iDim++) {
