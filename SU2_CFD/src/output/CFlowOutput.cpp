@@ -665,7 +665,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
   }
 
-  // TK:: tbd species
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
@@ -685,7 +689,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_MODEL::NONE: break;
   }
 
-  // TK:: tbd species
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
@@ -721,7 +729,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       }
       break;
 
-    case TURB_MODEL::NONE: break;  
+    case TURB_MODEL::NONE: break;
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -732,8 +740,12 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+      if (multiZone) {
+        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+      }
     }
-    // TK:: add max and bgs res
+
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
   }
@@ -798,7 +810,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
     }
   }
 
-  //TK:: tbd species limiter
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+  }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
@@ -886,13 +901,11 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
 
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-
-    // TK:: tbd limiter
+      SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+    }
   }
 }
 
