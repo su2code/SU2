@@ -638,11 +638,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       break;
 
     case TURB_MODEL::NONE: break;
+  }
 
-    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
-      }
+   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
     }
   }
 }
@@ -663,9 +663,9 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
 
     case TURB_MODEL::NONE:
       break;
-
-    // TK:: tbd species
   }
+
+  // TK:: tbd species
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
@@ -683,9 +683,9 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       break;
 
     case TURB_MODEL::NONE: break;
-
-    // TK:: tbd species
   }
+
+  // TK:: tbd species
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
@@ -702,10 +702,6 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
 
 void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::NONE:
-      /*--- Early return if there is no turbulence model in use. ---*/
-      return;
-
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
@@ -724,10 +720,14 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
         SetHistoryOutputValue("BGS_DISSIPATION", log10(solver[TURB_SOL]->GetRes_BGS(1)));
       }
       break;
+
+    case TURB_MODEL::NONE: break;  
   }
 
-  SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
+  }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
@@ -752,11 +752,11 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
 
     case TURB_MODEL::NONE:
       break;
+  }
 
-    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
-    }
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
   }
 }
 
@@ -773,11 +773,11 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
 
     case TURB_MODEL::NONE:
       break;
+  }
 
-    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-    }
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
   }
 }
 
@@ -870,7 +870,9 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
   }
 
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
-  SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+  }
 
   if (config->GetKind_Trans_Model() == BC) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
