@@ -36,8 +36,10 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
 
   /*--- Allocate structures. ---*/
 
-  CurrentCoord.resize(nNodes, nDim) = su2double(0.0);
-  RefCoord.resize(nNodes, nDim) = su2double(0.0);
+  /*--- Always allocate MAXNDIM to have enough space in all cases.
+   * e.g. elements embedded on a curved surfaces. ---*/
+  CurrentCoord.resize(nNodes, MAXNDIM) = su2double(0.0);
+  RefCoord.resize(nNodes, MAXNDIM) = su2double(0.0);
 
   GaussPoint.reserve(nGaussPoints);
   for(unsigned short iGauss = 0; iGauss < nGaussPoints; ++iGauss)

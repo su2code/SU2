@@ -324,8 +324,8 @@ public:
    * \param[in] iDim - Dimension required.
    */
   inline su2double Get_ValCoord(CGeometry *geometry,
-                         unsigned long indexNode,
-                         unsigned int iDim)  {
+                                unsigned long indexNode,
+                                unsigned int iDim)  {
     return geometry->nodes->GetCoord(indexNode, iDim);
   }
 

@@ -93,7 +93,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
   nNode = element->GetnNodes();
   nGauss = element->GetnGaussPoints();
   if (config->GetSmoothOnSurface()) {
-    element->ComputeGrad_Linear(Coord);
+    element->ComputeGrad_SurfaceEmbedded();
   } else {
     element->ComputeGrad_Linear();
   }
@@ -158,8 +158,4 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
 
   }
 
-}
-
-void CGradSmoothing::SetCoord(su2activematrix& val_coord) {
-  Coord = val_coord;
 }

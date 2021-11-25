@@ -511,7 +511,7 @@ const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
-const int GRAD_TERM = 6;  /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
+const int GRAD_TERM = 6;           /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
 
 const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */

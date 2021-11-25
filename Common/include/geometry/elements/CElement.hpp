@@ -56,6 +56,8 @@
  */
 class CElement {
 protected:
+  enum : size_t {MAXNDIM = 3};
+
   std::vector<CGaussVariable> GaussPoint;  /*!< \brief Vector of Gaussian Points. */
 
   su2activematrix CurrentCoord;       /*!< \brief Coordinates in the current frame. */
@@ -119,10 +121,10 @@ public:
   virtual void ComputeGrad_NonLinear(void) = 0;
 
   /*!
-   * \brief Overload needed for deformed 2D elements on a surface in 3D.
-   * \note The Coord are handed down from the numerics.
+   * \brief Set the value of the gradient of the shape functions wrt the reference configuration.
+   * \note This method assumes that we have a surface element embedded in higher dimensions.
    */
-  virtual void ComputeGrad_Linear(su2activematrix& Coord) = 0;
+  virtual void ComputeGrad_SurfaceEmbedded(void) = 0;
 
   /*!
    * \brief Sets matrices to 0.
@@ -466,9 +468,9 @@ public:
    * because inactive variables are ignored.
    */
   inline void SetPreaccIn_Coords(bool nonlinear = true) {
-    AD::SetPreaccIn(RefCoord.data(), nNodes*nDim);
+    AD::SetPreaccIn(RefCoord.data(), nNodes*MAXNDIM);
     if (nonlinear)
-      AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
+      AD::SetPreaccIn(CurrentCoord.data(), nNodes*MAXNDIM);
   }
 
   /*!
@@ -667,9 +669,13 @@ protected:
   }
 
   template<FrameType FRAME>
-  void ComputeGrad_impl_embedded(su2activematrix& Coord) {
+  void ComputeGrad_impl_surf_embedded() {
 
     unsigned short iNode, iDim, iGauss;
+
+    /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+          for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
+    const su2activematrix& Coord = (FRAME==REFERENCE) ? RefCoord : CurrentCoord;
 
     if (NDIM==1) {
 
@@ -781,7 +787,7 @@ public:
   /*!
    * \brief Overload needed for deformed 2D elements on a surface in 3D or 1D elements on a 2D curve.
    */
-  void ComputeGrad_Linear(su2activematrix& Coord) final { ComputeGrad_impl_embedded<REFERENCE>(Coord); }
+  void ComputeGrad_SurfaceEmbedded() final { ComputeGrad_impl_surf_embedded<REFERENCE>(); }
 
 };
 

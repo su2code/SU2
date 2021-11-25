@@ -452,11 +452,12 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
 void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker, unsigned int nSurfDim){
 
-  unsigned long iElem, iPoint, iVertex, iSurfDim;
+  unsigned long iElem, iPoint, iVertex, iDim, iSurfDim;
   unsigned int iNode, jNode, nNodes = 0, NelNodes;
   std::vector<unsigned long> indexNode(MAXNNODE_2D, 0.0);
   std::vector<unsigned long> indexVertex(MAXNNODE_2D, 0.0);
   int EL_KIND = 0;
+  su2double val_Coord;
 
   bool* visited = new bool[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
@@ -465,8 +466,6 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
   su2activematrix DHiDHj;
   su2double HiHj = 0.0;
-
-  su2activematrix Coord;
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
   if (val_marker!=NOT_AVAILABLE) {
@@ -481,9 +480,12 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
       for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
-      }
 
-      Coord = GetElementCoordinates(geometry, indexNode, EL_KIND);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+          element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+        }
+      }
 
       /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -494,7 +496,6 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
       }
 
       /*--- compute the contributions of the single elements inside the numerics container ---*/
-      numerics[GRAD_TERM]->SetCoord(Coord);
       numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
 
       NelNodes = element_container[GRAD_TERM][EL_KIND]->GetnNodes();
@@ -536,7 +537,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
   std::vector<unsigned long> indexNode(MAXNNODE_3D, 0.0);
-  su2double Weight, Jac_X;
+  su2double Weight, Jac_X, val_Coord;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
@@ -547,7 +548,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        auto val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
 
@@ -608,9 +609,8 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   int EL_KIND = 0;
   std::vector<unsigned long> indexNode(MAXNNODE_2D, 0.0);
   std::vector<unsigned long> indexVertex(MAXNNODE_2D, 0.0);
-  su2double Weight, Jac_X, normalSens = 0.0, norm;
+  su2double Weight, Jac_X, normalSens = 0.0, norm, val_Coord;
   su2double* normal = NULL;
-  su2activematrix Coord;
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
   if (val_marker!=NOT_AVAILABLE) {
@@ -623,9 +623,12 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
       /*--- Retrieve the boundary reference and current coordinates ---*/
       for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
-      }
 
-      Coord = GetElementCoordinates(geometry, indexNode, EL_KIND);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+          element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+        }
+      }
 
       /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -636,7 +639,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
       }
 
       element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
-      element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear(Coord);
+      element_container[GRAD_TERM][EL_KIND]->ComputeGrad_SurfaceEmbedded();
       unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
       for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
@@ -1069,61 +1072,6 @@ void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig 
       vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
     }
   }
-}
-
-su2activematrix CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geometry, std::vector<unsigned long>& indexNode, int EL_KIND) {
-
-  su2activematrix Coord;
-
-  switch (EL_KIND) {
-
-  case EL_LINE:
-
-    Coord.resize(2,2);
-    for(auto iNode=0; iNode<2; iNode++) {
-      for(auto iDim=0; iDim<2; iDim++) {
-        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
-      }
-    }
-    break;
-
-  case EL_TRIA:
-
-    Coord.resize(3,3);
-    for(auto iNode=0; iNode<3; iNode++) {
-      for(auto iDim=0; iDim<3; iDim++) {
-        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
-      }
-    }
-    break;
-
-  case EL_TRIA2:
-
-    Coord.resize(3,3);
-    for(auto iNode=0; iNode<3; iNode++) {
-      for(auto iDim=0; iDim<3; iDim++) {
-        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
-      }
-    }
-    break;
-
-  case EL_QUAD:
-
-    Coord.resize(4,3);
-    for(auto iNode=0; iNode<4; iNode++) {
-      for(auto iDim=0; iDim<3; iDim++) {
-        Coord[iNode][iDim] = Get_ValCoord(geometry, indexNode[iNode], iDim);
-      }
-    }
-    break;
-
-  default:
-    std::cout << "Type of element is not supported. " <<std::endl;
-
-  }
-
-  return Coord;
-
 }
 
 void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry, CConfig *config) {

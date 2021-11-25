@@ -40,7 +40,6 @@ class CGradSmoothing : public CNumerics {
 
     su2double **val_DHiDHj;
     su2double *Ni_Vec;
-    su2activematrix Coord;
 
 public:
 
@@ -63,10 +62,5 @@ public:
   ~CGradSmoothing(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config);
-
-  /*!
-   * \brief Set coordinates to given values.
-   */
-  void SetCoord(su2activematrix &val_coord);
 
 };
