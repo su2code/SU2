@@ -74,6 +74,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
     AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   }
+  /// DESCRIPTION: Average Species
+  AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -112,6 +114,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
     AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
+  /// DESCRIPTION: Average Species
+  AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 }
 
@@ -505,6 +509,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
       SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
       Tot_Surface_Species[iVar] += Species;
+      // Set value into config. Necessary to access as an OF.
     }
 
   }
@@ -538,6 +543,110 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
     SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
+
+  /*--- Compute Variance of species on the analyze markers. This is done after the rest as the average species value is
+   * necessary. The variance is computed for all species together and not for each species alone. ---*/
+  vector<su2double> Surface_SpeciesVariance(nMarker,0.0);
+  su2double Tot_Surface_SpeciesVariance = 0.0;
+
+  /*--- sum += (Yj_i - mu_Yj)^2 * weight_i with i representing the node and j the species. ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_Analyze(iMarker) == YES) {
+
+      /*--- Find iMarkerAnalyze to iMarker. As SpeciesAvg is accessed via iMarkerAnalyze. ---*/
+      for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++)
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze))
+          break;
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->nodes->GetDomain(iPoint)) {
+
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+
+          if (axisymmetric) {
+            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
+            else {
+              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
+              AxiFactor = 0.0;
+              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
+                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
+                  break;
+                }
+              }
+            }
+          } else {
+            AxiFactor = 1.0;
+          }
+
+          Area = 0.0; MassFlow = 0.0;
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+          }
+          Area= sqrt(Area);
+
+          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+          else Weight = 1.0;
+
+          for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+            Surface_SpeciesVariance[iMarker] += pow(species_nodes->GetSolution(iPoint, iVar) - Surface_Species_Total(iMarker_Analyze, iVar), 2) * Weight;
+        }
+      }
+    }
+  }
+
+  /*--- MPI Communication ---*/
+  vector<su2double> Surface_SpeciesVariance_Local(nMarker_Analyze,0.0);
+  vector<su2double> Surface_SpeciesVariance_Total(nMarker_Analyze,0.0);
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_Analyze(iMarker) == YES)  {
+
+      for (iMarker_Analyze= 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+        /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
+
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
+          Surface_SpeciesVariance_Local[iMarker_Analyze] += Surface_SpeciesVariance[iMarker];
+        }
+      }
+    }
+  }
+  Allreduce(Surface_SpeciesVariance_Local, Surface_SpeciesVariance_Total);
+
+  /*--- Divide quantity by weight. ---*/
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
+    else Weight = 1.0;
+
+    if (Weight != 0.0) {
+      Surface_SpeciesVariance_Total[iMarker_Analyze] /= Weight;
+    }
+    else {
+      Surface_SpeciesVariance[iMarker_Analyze] = 0.0;
+    }
+  }
+
+  /*--- Set values on markers ---*/
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+    su2double SpeciesVariance = Surface_SpeciesVariance_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_VARIANCE", SpeciesVariance, iMarker_Analyze);
+    Tot_Surface_SpeciesVariance += SpeciesVariance;
+    // Set value into config. Necessary to access as an OF.
+  }
+  SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 

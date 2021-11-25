@@ -47,7 +47,7 @@ def main():
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi.cfg_file  = "species2_primitiveVenturi.cfg"
     species2_primitiveVenturi.test_iter = 50
-    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -13.921433, 5, -0.808614, 5 , -2.351161, 5, -0.247992]
+    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -13.921433, 5, -0.808614, 5 , -2.351161, 5, -0.247992, 0.000140, 0.000140, 0.000000, 0.000000]
     species2_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi.timeout   = 1600
     species2_primitiveVenturi.new_output = True
