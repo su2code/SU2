@@ -32,6 +32,7 @@
 
 #include "../../../include/variables/CEulerVariable.hpp"
 #include "../../../include/variables/CIncEulerVariable.hpp"
+#include "../../../include/variables/CNEMOEulerVariable.hpp"
 
 CSourceBase_Species::CSourceBase_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config) {
@@ -76,3 +77,4 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 /*--- Explicit instantiations until we don't move this to the hpp. ---*/
 template class CSourceAxisymmetric_Species<CEulerVariable::CIndices<unsigned short> >;
 template class CSourceAxisymmetric_Species<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourceAxisymmetric_Species<CNEMOEulerVariable::CIndices<unsigned short> >;
