@@ -265,11 +265,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- and must be generalized later. As this number is also needed   ---*/
   /*--- in the solver, it is worthwhile to create a separate function  ---*/
   /*--- for this purpose.                                              ---*/
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  const bool compressible = (Kind_Solver == FEM_EULER) ||
-                            (Kind_Solver == FEM_NAVIER_STOKES) ||
-                            (Kind_Solver == FEM_RANS) ||
-                            (Kind_Solver == FEM_LES);
+  ENUM_MAIN_SOLVER Kind_Solver = config->GetKind_Solver();
+  const bool compressible = (Kind_Solver == ENUM_MAIN_SOLVER::FEM_EULER) ||
+                            (Kind_Solver == ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES) ||
+                            (Kind_Solver == ENUM_MAIN_SOLVER::FEM_RANS) ||
+                            (Kind_Solver == ENUM_MAIN_SOLVER::FEM_LES);
 
   unsigned short nVar;
   if( compressible ) nVar = nDim + 2;
@@ -2308,7 +2308,7 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
                                         CConfig      *config) {
 
   /* Determine whether or not the viscous terms are needed. */
-  const bool viscousTerms = (config->GetKind_Solver() != FEM_EULER && config->GetKind_Solver() != DISC_ADJ_FEM_EULER);
+  const bool viscousTerms = (config->GetKind_Solver() != ENUM_MAIN_SOLVER::FEM_EULER && config->GetKind_Solver() != ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER);
 
   /*--- Loop over the boundary faces stored on this rank. ---*/
   for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
@@ -5015,7 +5015,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
 void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
   /* Determine whether or not the viscous terms are needed. */
-  bool viscousTerms = (config->GetKind_Solver() != FEM_EULER && config->GetKind_Solver() != DISC_ADJ_FEM_EULER);
+  bool viscousTerms = (config->GetKind_Solver() != ENUM_MAIN_SOLVER::FEM_EULER && config->GetKind_Solver() != ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER);
 
   /* Loop over the internal matching faces. */
   for(unsigned long i=0; i<matchingFaces.size(); ++i) {
@@ -5389,8 +5389,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
     /* For ADER-DG, check if the derivative of the metric terms are needed. */
     if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
-      unsigned short solver = config->GetKind_Solver();
-      if(solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
+      ENUM_MAIN_SOLVER solver = config->GetKind_Solver();
+      if(solver == ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES || solver == ENUM_MAIN_SOLVER::FEM_RANS || solver == ENUM_MAIN_SOLVER::FEM_LES) {
         if(config->GetKind_ADER_Predictor() == ADER_NON_ALIASED_PREDICTOR)
           DerMetricTerms = true;
       }

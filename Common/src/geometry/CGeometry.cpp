@@ -3824,12 +3824,12 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       /*--- Check if a zone needs the wall distance and store a boolean ---*/
 
       ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
-      if (kindSolver == RANS ||
-          kindSolver == INC_RANS ||
-          kindSolver == DISC_ADJ_RANS ||
-          kindSolver == DISC_ADJ_INC_RANS ||
-          kindSolver == FEM_LES ||
-          kindSolver == FEM_RANS){
+      if (kindSolver == ENUM_MAIN_SOLVER::RANS ||
+          kindSolver == ENUM_MAIN_SOLVER::INC_RANS ||
+          kindSolver == ENUM_MAIN_SOLVER::DISC_ADJ_RANS ||
+          kindSolver == ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS ||
+          kindSolver == ENUM_MAIN_SOLVER::FEM_LES ||
+          kindSolver == ENUM_MAIN_SOLVER::FEM_RANS){
         wallDistanceNeeded[iZone] = true;
       }
 

@@ -73,27 +73,27 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   /*--- Update global parameters ---*/
 
   switch (config[val_iZone]->GetKind_Solver()) {
-    case EULER:
-    case DISC_ADJ_EULER:
-    case INC_EULER:
-    case DISC_ADJ_INC_EULER:
-    case NEMO_EULER:
-      config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
+    case ENUM_MAIN_SOLVER::EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_EULER:
+    case ENUM_MAIN_SOLVER::INC_EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER:
+    case ENUM_MAIN_SOLVER::NEMO_EULER:
+      config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::EULER, RUNTIME_FLOW_SYS);
       break;
 
-    case NAVIER_STOKES:
-    case DISC_ADJ_NAVIER_STOKES:
-    case INC_NAVIER_STOKES:
-    case DISC_ADJ_INC_NAVIER_STOKES:
-    case NEMO_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
+    case ENUM_MAIN_SOLVER::NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::NAVIER_STOKES, RUNTIME_FLOW_SYS);
       break;
 
-    case RANS:
-    case DISC_ADJ_RANS:
-    case INC_RANS:
-    case DISC_ADJ_INC_RANS:
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS);
+    case ENUM_MAIN_SOLVER::RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
+    case ENUM_MAIN_SOLVER::INC_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
+      config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::RANS, RUNTIME_FLOW_SYS);
       break;
   }
 
@@ -104,33 +104,33 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
-  if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
-       config[val_iZone]->GetKind_Solver() == INC_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) &&
+  if ((config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::RANS || config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_RANS ||
+       config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::INC_RANS || config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS) &&
       !frozen_visc) {
     /*--- Solve the turbulence model ---*/
 
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS);
+    config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::RANS, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
 
     /*--- Solve transition model ---*/
 
     if (config[val_iZone]->GetKind_Trans_Model() == LM) {
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS);
+      config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::RANS, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
     }
   }
 
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
+    config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::RANS, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_HEAT_SYS, val_iZone, val_iInst);
   }
 
   /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
   if (config[val_iZone]->AddRadiation()) {
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS);
+    config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::RANS, RUNTIME_RADIATION_SYS);
     integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
@@ -187,9 +187,9 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
     /*--- Update dual time solver for the turbulence model ---*/
 
-    if ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
-        (config[val_iZone]->GetKind_Solver() == INC_RANS) ||
-        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS)) {
+    if ((config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::INC_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS)) {
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                       solver[val_iZone][val_iInst][MESH_0][TURB_SOL],
                                                                       config[val_iZone], MESH_0);
@@ -307,7 +307,7 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
 
     /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
 
-    if (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) {
+    if (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::HEAT_EQUATION) {
       integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
     }
     else {

@@ -371,7 +371,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Compute gradients adj for viscous term coupling ---*/
 
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
+  if ((config->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
   }
@@ -481,7 +481,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
 
-    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
+    if ((config->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
 
@@ -513,7 +513,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
 
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
+  if ((config->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 

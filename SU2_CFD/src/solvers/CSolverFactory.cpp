@@ -61,78 +61,78 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
   solver = new CSolver*[MAX_SOLS]();
 
   switch (kindMainSolver) {
-    case TEMPLATE_SOLVER:
+    case ENUM_MAIN_SOLVER::TEMPLATE_SOLVER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TEMPLATE, solver, geometry, config, iMGLevel);
       break;
-    case INC_EULER:
+    case ENUM_MAIN_SOLVER::INC_EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
-    case EULER:
+    case ENUM_MAIN_SOLVER::EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       break;
-    case NEMO_EULER:
+    case ENUM_MAIN_SOLVER::NEMO_EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
       break;
-    case INC_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
-    case NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
-    case NEMO_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
-    case RANS:
+    case ENUM_MAIN_SOLVER::RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       break;
-    case INC_RANS:
+    case ENUM_MAIN_SOLVER::INC_RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
-    case HEAT_EQUATION:
+    case ENUM_MAIN_SOLVER::HEAT_EQUATION:
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       break;
-    case ADJ_EULER:
+    case ENUM_MAIN_SOLVER::ADJ_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_EULER, solver, geometry, config, iMGLevel);
       break;
-    case ADJ_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::ADJ_NAVIER_STOKES:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
-    case ADJ_RANS:
+    case ENUM_MAIN_SOLVER::ADJ_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_INC_EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_INC_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -140,7 +140,7 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_INC_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -150,35 +150,35 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_HEAT:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_HEAT:
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
       break;
-    case FEM_ELASTICITY:
+    case ENUM_MAIN_SOLVER::FEM_ELASTICITY:
       solver[FEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_FEM:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM:
       solver[FEA_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
       solver[ADJFEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FEA, solver, geometry, config, iMGLevel);
       break;
-    case FEM_EULER:
+    case ENUM_MAIN_SOLVER::FEM_EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
       break;
-    case FEM_NAVIER_STOKES: case FEM_LES:
+    case ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES: case ENUM_MAIN_SOLVER::FEM_LES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
-    case FEM_RANS:
+    case ENUM_MAIN_SOLVER::FEM_RANS:
       SU2_MPI::Error("FEM RANS not available", CURRENT_FUNCTION);
       break;
-    case DISC_ADJ_FEM_EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_FEM_NS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
-    case DISC_ADJ_FEM_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       SU2_MPI::Error("Adjoint FEM RANS not available", CURRENT_FUNCTION);
       break;
      default:

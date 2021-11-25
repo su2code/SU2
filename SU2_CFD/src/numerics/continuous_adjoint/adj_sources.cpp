@@ -468,7 +468,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 
   /*--- Laminar viscosity sensitivity for NS ---*/
 
-  if (config->GetKind_Solver() != ADJ_RANS) {
+  if (config->GetKind_Solver() != ENUM_MAIN_SOLVER::ADJ_RANS) {
 
 //    su2double Temperature_Ref = config->GetTemperature_Ref();
 //    su2double Temperature_Dim = Temperature*Temperature_Ref;
@@ -491,7 +491,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 
 //  /*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
 //
-//  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
+//  if ((config->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 //
 //    /*--- Closure constants ---*/
 //

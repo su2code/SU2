@@ -46,7 +46,7 @@ protected:
   unsigned short nDim;  /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;  /*!< \brief Number of variables of the problem  */
 
-  unsigned short Kind_Solver;                  /*!< \brief The kind of solver we are running. */
+  ENUM_MAIN_SOLVER Kind_Solver;                  /*!< \brief The kind of solver we are running. */
 
 private:
 

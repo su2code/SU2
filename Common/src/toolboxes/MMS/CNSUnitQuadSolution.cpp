@@ -58,14 +58,14 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
     SU2_MPI::Error("Steady mode must be selected for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
-     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
-     Kind_Solver != FEM_LES)
+  if(Kind_Solver != ENUM_MAIN_SOLVER::EULER && Kind_Solver != ENUM_MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != ENUM_MAIN_SOLVER::RANS &&
+     Kind_Solver != ENUM_MAIN_SOLVER::FEM_EULER && Kind_Solver != ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != ENUM_MAIN_SOLVER::FEM_RANS &&
+     Kind_Solver != ENUM_MAIN_SOLVER::FEM_LES)
     SU2_MPI::Error("Compressible flow equations must be selected for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if((Kind_Solver != NAVIER_STOKES) &&
-     (Kind_Solver != FEM_NAVIER_STOKES))
+  if((Kind_Solver != ENUM_MAIN_SOLVER::NAVIER_STOKES) &&
+     (Kind_Solver != ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES))
     SU2_MPI::Error("Navier Stokes equations must be selected for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 

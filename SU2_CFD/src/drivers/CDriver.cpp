@@ -1150,8 +1150,8 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   /*--- Restart adjoint solvers. ---*/
 
   if (restart) {
-    if ((config->GetKind_Solver() == TEMPLATE_SOLVER) ||
-        (config->GetKind_Solver() == ADJ_RANS && !config->GetFrozen_Visc_Cont())) {
+    if ((config->GetKind_Solver() == ENUM_MAIN_SOLVER::TEMPLATE_SOLVER) ||
+        (config->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS && !config->GetFrozen_Visc_Cont())) {
       SU2_MPI::Error("A restart capability has not been implemented yet for this solver.\n"
                      "Please set RESTART_SOL= NO and try again.", CURRENT_FUNCTION);
     }
@@ -1360,74 +1360,74 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER:
+    case ENUM_MAIN_SOLVER::TEMPLATE_SOLVER:
       template_solver = true; break;
 
-    case EULER:
-    case DISC_ADJ_EULER:
+    case ENUM_MAIN_SOLVER::EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_EULER:
       euler = compressible = true; break;
 
-    case NAVIER_STOKES:
-    case DISC_ADJ_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
       ns = compressible = true; break;
 
-    case NEMO_EULER:
+    case ENUM_MAIN_SOLVER::NEMO_EULER:
       NEMO_euler = compressible = true; break;
 
-    case NEMO_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
       NEMO_ns = compressible = true; break;
 
-    case RANS:
-    case DISC_ADJ_RANS:
+    case ENUM_MAIN_SOLVER::RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
       transition = (config->GetKind_Trans_Model() == LM); break;
 
-    case INC_EULER:
-    case DISC_ADJ_INC_EULER:
+    case ENUM_MAIN_SOLVER::INC_EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER:
       euler = incompressible = true; break;
 
-    case INC_NAVIER_STOKES:
-    case DISC_ADJ_INC_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       ns = incompressible = true;
       heat = config->GetWeakly_Coupled_Heat(); break;
 
-    case INC_RANS:
-    case DISC_ADJ_INC_RANS:
+    case ENUM_MAIN_SOLVER::INC_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
       transition = (config->GetKind_Trans_Model() == LM); break;
 
-    case FEM_EULER:
-    case DISC_ADJ_FEM_EULER:
+    case ENUM_MAIN_SOLVER::FEM_EULER:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER:
       fem_euler = compressible = true; break;
 
-    case FEM_NAVIER_STOKES:
-    case DISC_ADJ_FEM_NS:
+    case ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS:
       fem_ns = compressible = true; break;
 
-    case FEM_RANS:
-    case DISC_ADJ_FEM_RANS:
+    case ENUM_MAIN_SOLVER::FEM_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       fem_ns = compressible = true; break;
 
-    case FEM_LES:
+    case ENUM_MAIN_SOLVER::FEM_LES:
       fem_ns = compressible = true; break;
 
-    case HEAT_EQUATION:
-    case DISC_ADJ_HEAT:
+    case ENUM_MAIN_SOLVER::HEAT_EQUATION:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_HEAT:
       heat = true; break;
 
-    case FEM_ELASTICITY:
-    case DISC_ADJ_FEM:
+    case ENUM_MAIN_SOLVER::FEM_ELASTICITY:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM:
       fem = true; break;
 
-    case ADJ_EULER:
+    case ENUM_MAIN_SOLVER::ADJ_EULER:
       adj_euler = euler = compressible = true; break;
 
-    case ADJ_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::ADJ_NAVIER_STOKES:
       adj_ns = ns = compressible = true;
       turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE); break;
 
-    case ADJ_RANS:
+    case ENUM_MAIN_SOLVER::ADJ_RANS:
       adj_ns = ns = compressible = turbulent = true;
       adj_turb = !config->GetFrozen_Visc_Cont(); break;
 
@@ -2974,7 +2974,7 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
     geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
     config_container[donorZone], config_container[targetZone]);
 
-  if (config_container[targetZone]->GetKind_Solver() == RANS) {
+  if (config_container[targetZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::RANS) {
     interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
       solver_container[donorZone][INST_0][MESH_0][TURB_SOL], solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
       geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
@@ -3025,18 +3025,18 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
    convergence criteria, and set StopCalc to true, if so. ---*/
 
   switch (config_container[ZONE_0]->GetKind_Solver()) {
-    case EULER: case NAVIER_STOKES: case RANS:
+    case ENUM_MAIN_SOLVER::EULER: case ENUM_MAIN_SOLVER::NAVIER_STOKES: case ENUM_MAIN_SOLVER::RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+    case ENUM_MAIN_SOLVER::NEMO_EULER: case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-    case HEAT_EQUATION:
+    case ENUM_MAIN_SOLVER::HEAT_EQUATION:
       StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
-    case FEM_ELASTICITY:
+    case ENUM_MAIN_SOLVER::FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-    case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+    case ENUM_MAIN_SOLVER::ADJ_EULER: case ENUM_MAIN_SOLVER::ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::ADJ_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
+    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 
@@ -3286,13 +3286,13 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
    convergence criteria, and set StopCalc to true, if so. ---*/
 
   switch (config_container[ZONE_0]->GetKind_Solver()) {
-  case EULER: case NAVIER_STOKES: case RANS:
-  case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-  case NEMO_EULER: case NEMO_NAVIER_STOKES:
+  case ENUM_MAIN_SOLVER::EULER: case ENUM_MAIN_SOLVER::NAVIER_STOKES: case ENUM_MAIN_SOLVER::RANS:
+  case ENUM_MAIN_SOLVER::INC_EULER: case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::INC_RANS:
+  case ENUM_MAIN_SOLVER::NEMO_EULER: case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
     StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-  case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-  case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+  case ENUM_MAIN_SOLVER::DISC_ADJ_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
+  case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
+  case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 
@@ -3411,19 +3411,19 @@ void CHBDriver::ResetConvergence() {
   for(iInst = 0; iInst < nZone; iInst++) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
 
-    case EULER: case NAVIER_STOKES: case RANS:
+    case ENUM_MAIN_SOLVER::EULER: case ENUM_MAIN_SOLVER::NAVIER_STOKES: case ENUM_MAIN_SOLVER::RANS:
       integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
-      if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
+      if (config_container[ZONE_0]->GetKind_Solver() == ENUM_MAIN_SOLVER::RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
       if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
       break;
 
-    case FEM_ELASTICITY:
+    case ENUM_MAIN_SOLVER::FEM_ELASTICITY:
       integration_container[ZONE_0][iInst][FEA_SOL]->SetConvergence(false);
       break;
 
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case ENUM_MAIN_SOLVER::ADJ_EULER: case ENUM_MAIN_SOLVER::ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::ADJ_RANS: case ENUM_MAIN_SOLVER::DISC_ADJ_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
       integration_container[ZONE_0][iInst][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[ZONE_0]->GetKind_Solver() == ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) )
+      if( (config_container[ZONE_0]->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_RANS) )
         integration_container[ZONE_0][iInst][ADJTURB_SOL]->SetConvergence(false);
       break;
     }
@@ -3517,7 +3517,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
   }
 
   /*--- Source term for a turbulence model ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+  if (config_container[ZONE_0]->GetKind_Solver() == ENUM_MAIN_SOLVER::RANS) {
 
     /*--- Extra variables needed if we have a turbulence model. ---*/
     unsigned short nVar_Turb = solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->GetnVar();
