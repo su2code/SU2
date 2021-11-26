@@ -2276,7 +2276,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  iteration = CIterationFactory::CreateIteration(static_cast<MAIN_SOLVER>(config->GetKind_Solver()), config);
+  iteration = CIterationFactory::CreateIteration(config->GetKind_Solver(), config);
 
 }
 
