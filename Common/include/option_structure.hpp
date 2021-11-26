@@ -226,15 +226,15 @@ static const MapType<std::string, AVERAGE_TYPE> Average_Map = {
  * \brief different solver types for the CFD component
  */
 enum class MAIN_SOLVER {
-  NONE,                    /*!< \brief Definition of no solver. */
-  EULER,                        /*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES,                /*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS,                         /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  INC_EULER,                    /*!< \brief Definition of the incompressible Euler's solver. */
-  INC_NAVIER_STOKES,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
-  INC_RANS,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION,                /*!< \brief Definition of the finite volume heat solver. */
-  FEM_ELASTICITY,               /*!< \brief Definition of a FEM solver. */
+  NONE,                        /*!< \brief Definition of no solver. */
+  EULER,                       /*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES,               /*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS,                        /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  INC_EULER,                   /*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES,           /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS,                    /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  HEAT_EQUATION,               /*!< \brief Definition of the finite volume heat solver. */
+  FEM_ELASTICITY,              /*!< \brief Definition of a FEM solver. */
   ADJ_EULER,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
@@ -256,7 +256,7 @@ enum class MAIN_SOLVER {
   FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS,
   NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES,           /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
 static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", MAIN_SOLVER::NONE)
