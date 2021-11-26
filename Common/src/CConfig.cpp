@@ -858,7 +858,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;    Inlet_MassFrac    = nullptr;
-  Outlet_Pressure = nullptr;
+  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -7930,6 +7930,13 @@ CConfig::~CConfig(void) {
      delete[] FlowLoad_Value;
      delete[] Roughness_Height;
      delete[] Wall_Emissivity;
+
+  if (Inlet_SpeciesVal != nullptr) {
+    for (auto i = 0u; i < nMarker_Inlet_Species; ++i)
+      delete[] Inlet_SpeciesVal[i];
+  }
+  delete[] Inlet_SpeciesVal;
+
   /*--- related to periodic boundary conditions ---*/
 
   for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
@@ -7986,6 +7993,7 @@ CConfig::~CConfig(void) {
              delete[] Marker_Internal;
                 delete[] Marker_HeatFlux;
           delete[] Marker_Emissivity;
+  delete[] Marker_Inlet_Species;
 
   delete [] Int_Coeffs;
 

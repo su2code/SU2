@@ -1054,7 +1054,6 @@ public:
 template <class T>
 struct CStringValuesListHelper {
   static T resize(unsigned short) { return T(); }
-  static void clear(T&) {}
   static T& access(T& val, unsigned short) { return val; }
 };
 
@@ -1062,10 +1061,6 @@ struct CStringValuesListHelper {
 template <class T>
 struct CStringValuesListHelper<T*> {
   static T* resize(unsigned short n) { return new T[n]; }
-  static void clear(T*& ptr) {
-    delete[] ptr;
-    ptr = nullptr;
-  }
   static T& access(T* ptr, unsigned short i) { return ptr[i]; }
 };
 
@@ -1088,16 +1083,6 @@ public:
   COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_) :
     name(name_), size(size_), strings(strings_), values(values_), num_vals(optional_num_vals) {
   }
-
-  ~COptionStringValuesList() override {
-    for (unsigned short i = 0; i < size; i++) {
-      CStringValuesListHelper<Type>::clear(values[i]);
-    }
-    delete[] values;
-    delete[] strings;
-    values = nullptr;
-    strings = nullptr;
-  };
 
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
