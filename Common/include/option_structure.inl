@@ -1062,7 +1062,10 @@ struct CStringValuesListHelper {
 template <class T>
 struct CStringValuesListHelper<T*> {
   static T* resize(unsigned short n) { return new T[n]; }
-  static void clear(T* ptr) { delete[] ptr; }
+  static void clear(T*& ptr) {
+    delete[] ptr;
+    ptr = nullptr;
+  }
   static T& access(T* ptr, unsigned short i) { return ptr[i]; }
 };
 
@@ -1092,6 +1095,8 @@ public:
     }
     delete[] values;
     delete[] strings;
+    values = nullptr;
+    strings = nullptr;
   };
 
   string SetValue(vector<string> option_value) override {
