@@ -70,12 +70,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    */
   void FinishResidualCalc(const CConfig* config) override {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      const bool flame = false;  // const bool flame = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
-      if (flame) {
-        /*--- For combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D ---*/
-        Density_i = 1.0;
-        Density_j = 1.0;
-      }
+
       /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
       const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
       su2double Diffusivity_Turb = 0.0;

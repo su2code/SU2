@@ -74,6 +74,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
     AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   }
+  /// DESCRIPTION: Average Species
+  AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -112,6 +114,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
     AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
+  /// DESCRIPTION: Average Species
+  AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 }
 
@@ -505,6 +509,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
       SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
       Tot_Surface_Species[iVar] += Species;
+      // Set value into config. Necessary to access as an OF.
     }
 
   }
@@ -538,6 +543,111 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
     SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
+
+  /*--- Compute Variance of species on the analyze markers. This is done after the rest as the average species value is
+   * necessary. The variance is computed for all species together and not for each species alone. ---*/
+  vector<su2double> Surface_SpeciesVariance(nMarker,0.0);
+  su2double Tot_Surface_SpeciesVariance = 0.0;
+
+  /*--- sum += (Yj_i - mu_Yj)^2 * weight_i with i representing the node and j the species. ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_Analyze(iMarker) == YES) {
+
+      /*--- Find iMarkerAnalyze to iMarker. As SpeciesAvg is accessed via iMarkerAnalyze. ---*/
+      for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++)
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze))
+          break;
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->nodes->GetDomain(iPoint)) {
+
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+
+          if (axisymmetric) {
+            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
+            else {
+              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
+              AxiFactor = 0.0;
+              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
+                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
+                  break;
+                }
+              }
+            }
+          } else {
+            AxiFactor = 1.0;
+          }
+
+          Density = flow_nodes->GetDensity(iPoint);
+          Area = 0.0; MassFlow = 0.0;
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+          }
+          Area= sqrt(Area);
+
+          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+          else Weight = 1.0;
+
+          for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+            Surface_SpeciesVariance[iMarker] += pow(species_nodes->GetSolution(iPoint, iVar) - Surface_Species_Total(iMarker_Analyze, iVar), 2) * Weight;
+        }
+      }
+    }
+  }
+
+  /*--- MPI Communication ---*/
+  vector<su2double> Surface_SpeciesVariance_Local(nMarker_Analyze,0.0);
+  vector<su2double> Surface_SpeciesVariance_Total(nMarker_Analyze,0.0);
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_Analyze(iMarker) == YES)  {
+
+      for (iMarker_Analyze= 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+        /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
+
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
+          Surface_SpeciesVariance_Local[iMarker_Analyze] += Surface_SpeciesVariance[iMarker];
+        }
+      }
+    }
+  }
+  Allreduce(Surface_SpeciesVariance_Local, Surface_SpeciesVariance_Total);
+
+  /*--- Divide quantity by weight. ---*/
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+
+    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
+    else Weight = 1.0;
+
+    if (Weight != 0.0) {
+      Surface_SpeciesVariance_Total[iMarker_Analyze] /= Weight;
+    }
+    else {
+      Surface_SpeciesVariance[iMarker_Analyze] = 0.0;
+    }
+  }
+
+  /*--- Set values on markers ---*/
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+    su2double SpeciesVariance = Surface_SpeciesVariance_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_VARIANCE", SpeciesVariance, iMarker_Analyze);
+    Tot_Surface_SpeciesVariance += SpeciesVariance;
+    // Set value into config. Necessary to access as an OF.
+  }
+  SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 
@@ -623,7 +733,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
-void CFlowOutput::AddHistoryOutputFields_TurbRMS_RES(const CConfig* config) {
+void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
   switch (config->GetKind_Turb_Model()) {
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
@@ -639,9 +749,15 @@ void CFlowOutput::AddHistoryOutputFields_TurbRMS_RES(const CConfig* config) {
 
     case TURB_MODEL::NONE: break;
   }
+
+   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
-void CFlowOutput::AddHistoryOutputFields_TurbMAX_RES(const CConfig* config) {
+void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
   switch (config->GetKind_Turb_Model()) {
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
@@ -658,9 +774,15 @@ void CFlowOutput::AddHistoryOutputFields_TurbMAX_RES(const CConfig* config) {
     case TURB_MODEL::NONE:
       break;
   }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
-void CFlowOutput::AddHistoryOutputFields_TurbBGS_RES(const CConfig* config) {
+void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   switch(config->GetKind_Turb_Model()) {
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
@@ -676,21 +798,28 @@ void CFlowOutput::AddHistoryOutputFields_TurbBGS_RES(const CConfig* config) {
 
     case TURB_MODEL::NONE: break;
   }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
-void CFlowOutput::AddHistoryOutputFields_TurbLinsol(const CConfig* config) {
+void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence solver.");
   }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+  }
 }
 
-void CFlowOutput::LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver) {
+void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::NONE:
-      /*--- Early return if there is no turbulence model in use. ---*/
-      return;
-
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
@@ -709,13 +838,30 @@ void CFlowOutput::LoadHistoryData_Turb(const CConfig* config, const CSolver* con
         SetHistoryOutputValue("BGS_DISSIPATION", log10(solver[TURB_SOL]->GetRes_BGS(1)));
       }
       break;
+
+    case TURB_MODEL::NONE: break;
   }
 
-  SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
-  SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+      if (multiZone) {
+        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+      }
+    }
+
+    SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(solver[SPECIES_SOL]->GetResLinSolver()));
+  }
 }
 
-void CFlowOutput::SetVolumeOutputFields_TurbSolution(const CConfig* config){
+void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
   switch(config->GetKind_Turb_Model()){
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
@@ -729,9 +875,14 @@ void CFlowOutput::SetVolumeOutputFields_TurbSolution(const CConfig* config){
     case TURB_MODEL::NONE:
       break;
   }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+  }
 }
 
-void CFlowOutput::SetVolumeOutputFields_TurbResidual(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
   switch(config->GetKind_Turb_Model()){
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
@@ -745,9 +896,14 @@ void CFlowOutput::SetVolumeOutputFields_TurbResidual(const CConfig* config) {
     case TURB_MODEL::NONE:
       break;
   }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+  }
 }
 
-void CFlowOutput::SetVolumeOutputFields_TurbLimiter(const CConfig* config) {
+void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
     switch (config->GetKind_Turb_Model()) {
       case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
@@ -762,6 +918,11 @@ void CFlowOutput::SetVolumeOutputFields_TurbLimiter(const CConfig* config) {
       case TURB_MODEL::NONE:
         break;
     }
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+      AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -790,7 +951,7 @@ void CFlowOutput::SetVolumeOutputFields_TurbLimiter(const CConfig* config) {
   }
 }
 
-void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
                                       const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
@@ -811,10 +972,6 @@ void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* cons
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::NONE:
-      /*--- Early return if there is no turbulence model in use. ---*/
-      return;
-
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("RES_NU_TILDE", iPoint, turb_solver->LinSysRes(iPoint, 0));
@@ -833,10 +990,14 @@ void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* cons
         SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
       }
       break;
+
+    case TURB_MODEL::NONE: break;
   }
 
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
-  SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+  }
 
   if (config->GetKind_Trans_Model() == BC) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
@@ -846,77 +1007,16 @@ void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* cons
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
-}
 
-void CFlowOutput::AddHistoryOutputFields_SpeciesRMS_RES(const CConfig* config) {
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+      SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
+      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+      SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
   }
-}
-
-void CFlowOutput::AddHistoryOutputFields_SpeciesMAX_RES(const CConfig* config) {
-  // TK:: tbd
-}
-
-void CFlowOutput::AddHistoryOutputFields_SpeciesBGS_RES(const CConfig* config) {
-  // TK:: tbd
-}
-
-void CFlowOutput::AddHistoryOutputFields_SpeciesLinsol(const CConfig* config) {
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
-    AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
-  }
-}
-
-void CFlowOutput::LoadHistoryData_Species(const CConfig* config, const CSolver* const* solver) {
-  const CSolver* species_solver = solver[SPECIES_SOL];
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log(species_solver->GetRes_RMS(iVar)));
-    }
-    // TK:: add max and bgs res
-    SetHistoryOutputValue("LINSOL_ITER_SPECIES", species_solver->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(species_solver->GetResLinSolver()));
-  }
-
-}
-
-void CFlowOutput::SetVolumeOutputFields_SpeciesSolution(const CConfig* config){
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
-  }
-}
-
-void CFlowOutput::SetVolumeOutputFields_SpeciesResidual(const CConfig* config) {
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
-  }
-}
-
-void CFlowOutput::SetVolumeOutputFields_SpeciesLimiter(const CConfig* config) {
-  //TK:: tbd species limiter
-}
-
-void CFlowOutput::LoadVolumeData_Species(const CConfig* config, const CSolver* const* solver,
-                                         const unsigned long iPoint) {
-  /*--- Early return if no species solver is present ---*/
-  if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE)
-    return;
-
-  const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
-
-  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-    SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-
-  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-    SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-
-  // TK:: tbd limiter
 }
 
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

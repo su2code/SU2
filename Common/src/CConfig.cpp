@@ -1306,13 +1306,13 @@ void CConfig::SetConfig_Options() {
 
   /*--- Options related to the species solver. ---*/
 
-  /*!\brief SPECIES_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
+  /*!\brief SPECIES_INIT \n DESCRIPTION: Initial values for scalar transport \ingroup Config*/
   addDoubleListOption("SPECIES_INIT", nSpecies_Init, Species_Init);
   /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Activate clipping for scalar transport equations \n DEFAULT: false \ingroup Config*/
   addBoolOption("SPECIES_CLIPPING", Species_Clipping, false);
-  /*!\brief SPECIES_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
+  /*!\brief SPECIES_CLIPPING_MAX \n DESCRIPTION: Maximum values for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MAX", nSpecies_Clipping_Max, Species_Clipping_Max);
-  /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
+  /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum values for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
   /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Use strong inlet and outlet BC in the species solver \n DEFAULT: false \ingroup Config*/
   addBoolOption("SPECIES_USE_STRONG_BC", Species_StrongBC, false);
@@ -1492,7 +1492,7 @@ void CConfig::SetConfig_Options() {
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
-   Inlet Scalar: (inlet_marker, Species1, Species2, ...) */
+   Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
 
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
@@ -5204,10 +5204,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
       su2double Inlet_SpeciesVal_Sum = 0.0;
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_SPECIES_INLET individual", 0.0, 1.0);
+        checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
         Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
       }
-      checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_SPECIES_INLET sum", 0.0, 1.0);
+      checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
     }
 
   } // species transport checks

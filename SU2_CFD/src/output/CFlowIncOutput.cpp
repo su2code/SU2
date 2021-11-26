@@ -110,8 +110,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the temperature.
   if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutputFields_TurbRMS_RES(config);
-  AddHistoryOutputFields_SpeciesRMS_RES(config);
+  AddHistoryOutputFields_ScalarRMS_RES(config);
 
   /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the radiative energy.", HistoryFieldType::RESIDUAL);
@@ -131,8 +130,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutputFields_TurbMAX_RES(config);
-  AddHistoryOutputFields_SpeciesMAX_RES(config);
+  AddHistoryOutputFields_ScalarMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block-gauss seidel residuals of the SOLUTION variables.
@@ -149,8 +147,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
 
-  AddHistoryOutputFields_TurbBGS_RES(config);
-  AddHistoryOutputFields_SpeciesBGS_RES(config);
+  AddHistoryOutputFields_ScalarBGS_RES(config);
 
   /// DESCRIPTION: Multizone residual of the radiative energy (P1 model).
   if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
@@ -180,9 +177,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutputFields_TurbLinsol(config);
-  AddHistoryOutputFields_SpeciesLinsol(config);
-
+  AddHistoryOutputFields_ScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
@@ -283,8 +278,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
-  LoadHistoryData_Turb(config, solver);
-  LoadHistoryData_Species(config, solver);
+  LoadHistoryData_Scalar(config, solver);
 
   if(streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwisePeriodicValues().Streamwise_Periodic_MassFlow);
@@ -320,8 +314,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (heat || weakly_coupled_heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
-  SetVolumeOutputFields_TurbSolution(config);
-  SetVolumeOutputFields_SpeciesSolution(config);
+  SetVolumeOutputFields_ScalarSolution(config);
 
   // Radiation variables
   if (config->AddRadiation())
@@ -365,8 +358,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetEnergy_Equation())
     AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
-  SetVolumeOutputFields_TurbResidual(config);
-  SetVolumeOutputFields_SpeciesResidual(config);
+  SetVolumeOutputFields_ScalarResidual(config);
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
@@ -378,8 +370,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
 
-  SetVolumeOutputFields_TurbLimiter(config);
-  SetVolumeOutputFields_SpeciesLimiter(config);
+  SetVolumeOutputFields_ScalarLimiter(config);
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {
@@ -458,9 +449,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   // All turbulence outputs.
-  LoadVolumeData_Turb(config, solver, geometry, iPoint);
-  LoadVolumeData_Species(config, solver, iPoint);
-
+  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
 
   // Streamwise Periodicity
   if(streamwisePeriodic) {
