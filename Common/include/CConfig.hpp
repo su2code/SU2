@@ -3542,13 +3542,6 @@ public:
   MAIN_SOLVER GetKind_Solver(void) const { return Kind_Solver; }
 
   /*!
-   * \brief Governing equations of the flow (it can be different from the run time equation).
-   * \param[in] val_zone - Zone where the soler is applied.
-   * \return Governing equation that we are solving.
-   */
-  //void SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
-
-  /*!
    * \brief Return true if a fluid solver is in use.
    */
   bool GetFluidProblem(void) const {
