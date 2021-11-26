@@ -468,7 +468,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 
   /*--- Laminar viscosity sensitivity for NS ---*/
 
-  if (config->GetKind_Solver() != ENUM_MAIN_SOLVER::ADJ_RANS) {
+  if (config->GetKind_Solver() != MAIN_SOLVER::ADJ_RANS) {
 
 //    su2double Temperature_Ref = config->GetTemperature_Ref();
 //    su2double Temperature_Dim = Temperature*Temperature_Ref;

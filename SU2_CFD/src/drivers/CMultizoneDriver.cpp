@@ -72,17 +72,17 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
   /*--- If there is at least a fluid and a structural zone ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
-    case ENUM_MAIN_SOLVER::EULER: case ENUM_MAIN_SOLVER::NAVIER_STOKES: case ENUM_MAIN_SOLVER::RANS:
-    case ENUM_MAIN_SOLVER::INC_EULER: case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
       fluid_zone = true;
       break;
-    case ENUM_MAIN_SOLVER::NEMO_EULER: case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;
-    case ENUM_MAIN_SOLVER::FEM_ELASTICITY:
+    case MAIN_SOLVER::FEM_ELASTICITY:
       structural_zone = true;
       break;
-    case ENUM_MAIN_SOLVER::HEAT_EQUATION:
+    case MAIN_SOLVER::HEAT_EQUATION:
       heat_zone = true;
       break;
     default:
@@ -550,8 +550,8 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       targetSolver = FLOW_SOL;
 
       /*--- Additional transfer for turbulence variables. ---*/
-      if (config_container[targetZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::RANS ||
-          config_container[targetZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::INC_RANS)
+      if (config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::RANS ||
+          config_container[targetZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
           *interpolator_container[donorZone][targetZone].get(),

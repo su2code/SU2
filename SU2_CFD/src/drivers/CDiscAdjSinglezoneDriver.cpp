@@ -59,8 +59,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   switch (config->GetKind_Solver()) {
 
-  case ENUM_MAIN_SOLVER::DISC_ADJ_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
-  case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
+  case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+  case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
 
@@ -68,12 +68,12 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       direct_iteration = new CTurboIteration(config);
       output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
-    else { direct_iteration = CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER::EULER, config); }
+    else { direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::EULER, config); }
 
     if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-      direct_output = COutputFactory::CreateOutput(ENUM_MAIN_SOLVER::EULER, config, nDim);
+      direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::EULER, config, nDim);
     }
-    else { direct_output =  COutputFactory::CreateOutput(ENUM_MAIN_SOLVER::INC_EULER, config, nDim); }
+    else { direct_output =  COutputFactory::CreateOutput(MAIN_SOLVER::INC_EULER, config, nDim); }
 
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     if (config->GetDeform_Mesh()) {
@@ -83,31 +83,31 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     MainSolver = ADJFLOW_SOL;
     break;
 
-  case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER : case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS : case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS :
+  case MAIN_SOLVER::DISC_ADJ_FEM_EULER : case MAIN_SOLVER::DISC_ADJ_FEM_NS : case MAIN_SOLVER::DISC_ADJ_FEM_RANS :
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    direct_iteration = CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER::FEM_EULER, config);
-    direct_output = COutputFactory::CreateOutput(ENUM_MAIN_SOLVER::FEM_EULER, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::FEM_EULER, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_EULER, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJFLOW_SOL;
     break;
 
-  case ENUM_MAIN_SOLVER::DISC_ADJ_FEM:
+  case MAIN_SOLVER::DISC_ADJ_FEM:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
-    direct_iteration =  CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER::FEM_ELASTICITY, config);
-    direct_output = COutputFactory::CreateOutput(ENUM_MAIN_SOLVER::FEM_ELASTICITY, config, nDim);
+    direct_iteration =  CIterationFactory::CreateIteration(MAIN_SOLVER::FEM_ELASTICITY, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_ELASTICITY, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJFEA_SOL;
     break;
 
-  case ENUM_MAIN_SOLVER::DISC_ADJ_HEAT:
+  case MAIN_SOLVER::DISC_ADJ_HEAT:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
-    direct_iteration = CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER::HEAT_EQUATION, config);
-    direct_output = COutputFactory::CreateOutput(ENUM_MAIN_SOLVER::HEAT_EQUATION, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::HEAT_EQUATION, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::HEAT_EQUATION, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJHEAT_SOL;
@@ -218,15 +218,15 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   switch(config->GetKind_Solver())
   {
-    case ENUM_MAIN_SOLVER::DISC_ADJ_EULER :     case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES :     case ENUM_MAIN_SOLVER::DISC_ADJ_RANS :
-    case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER : case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES : case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS :
-    case ENUM_MAIN_SOLVER::DISC_ADJ_HEAT :
+    case MAIN_SOLVER::DISC_ADJ_EULER :     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES :     case MAIN_SOLVER::DISC_ADJ_RANS :
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER : case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES : case MAIN_SOLVER::DISC_ADJ_INC_RANS :
+    case MAIN_SOLVER::DISC_ADJ_HEAT :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
       break;
 
-    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM :
+    case MAIN_SOLVER::DISC_ADJ_FEM :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
@@ -359,9 +359,9 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER:       case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
-  case ENUM_MAIN_SOLVER::DISC_ADJ_EULER:           case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
-  case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
+  case MAIN_SOLVER::DISC_ADJ_INC_EULER:       case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+  case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
+  case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
@@ -407,7 +407,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     }
     break;
 
-  case ENUM_MAIN_SOLVER::DISC_ADJ_HEAT:
+  case MAIN_SOLVER::DISC_ADJ_HEAT:
     switch (config->GetKind_ObjFunc()){
     case TOTAL_HEATFLUX:
       ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
@@ -420,7 +420,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     }
     break;
 
-  case ENUM_MAIN_SOLVER::DISC_ADJ_FEM:
+  case MAIN_SOLVER::DISC_ADJ_FEM:
     solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
     solver[FEA_SOL]->Evaluate_ObjFunc(config);
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();

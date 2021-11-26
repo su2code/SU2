@@ -47,17 +47,17 @@ void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Update global parameters ---*/
 
-  if (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::FEM_EULER || config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER)
-    config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::FEM_EULER, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_EULER || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_EULER)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_EULER, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES ||
-      config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS)
-    config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES ||
+      config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_NS)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::FEM_RANS || config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS)
-    config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::FEM_RANS, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_RANS)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_RANS, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::FEM_LES) config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::FEM_LES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_LES) config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_LES, RUNTIME_FLOW_SYS);
 
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
 

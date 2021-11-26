@@ -472,8 +472,8 @@ private:
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
-  ENUM_MAIN_SOLVER Kind_Solver;      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
-  unsigned short Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
+  MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
+  unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
   *Kind_SurfaceMovement,           /*!< \brief Kind of the static mesh movement. */
@@ -3539,7 +3539,7 @@ public:
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
    */
-  ENUM_MAIN_SOLVER GetKind_Solver(void) const { return Kind_Solver; }
+  MAIN_SOLVER GetKind_Solver(void) const { return Kind_Solver; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3553,11 +3553,11 @@ public:
    */
   bool GetFluidProblem(void) const {
     switch (Kind_Solver) {
-      case ENUM_MAIN_SOLVER::EULER : case ENUM_MAIN_SOLVER::NAVIER_STOKES: case ENUM_MAIN_SOLVER::RANS:
-      case ENUM_MAIN_SOLVER::INC_EULER : case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::INC_RANS:
-      case ENUM_MAIN_SOLVER::NEMO_EULER : case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
-      case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
-      case ENUM_MAIN_SOLVER::DISC_ADJ_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
+      case MAIN_SOLVER::EULER : case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+      case MAIN_SOLVER::INC_EULER : case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
+      case MAIN_SOLVER::NEMO_EULER : case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+      case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
         return true;
       default:
         return false;
@@ -3568,14 +3568,14 @@ public:
    * \brief Return true if a structural solver is in use.
    */
   bool GetStructuralProblem(void) const {
-    return (Kind_Solver == ENUM_MAIN_SOLVER::FEM_ELASTICITY) || (Kind_Solver == ENUM_MAIN_SOLVER::DISC_ADJ_FEM);
+    return (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM);
   }
 
   /*!
    * \brief Return true if a heat solver is in use.
    */
   bool GetHeatProblem(void) const {
-    return (Kind_Solver == ENUM_MAIN_SOLVER::HEAT_EQUATION) || (Kind_Solver == ENUM_MAIN_SOLVER::DISC_ADJ_HEAT);
+    return (Kind_Solver == MAIN_SOLVER::HEAT_EQUATION) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_HEAT);
   }
 
   /*!
@@ -3583,8 +3583,8 @@ public:
    */
   bool GetFEMSolver(void) const {
     switch (Kind_Solver) {
-      case ENUM_MAIN_SOLVER::FEM_EULER: case ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES: case ENUM_MAIN_SOLVER::FEM_RANS: case ENUM_MAIN_SOLVER::FEM_LES:
-      case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
+      case MAIN_SOLVER::FEM_EULER: case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_RANS: case MAIN_SOLVER::FEM_LES:
+      case MAIN_SOLVER::DISC_ADJ_FEM_EULER: case MAIN_SOLVER::DISC_ADJ_FEM_NS: case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
         return true;
       default:
         return false;
@@ -3596,7 +3596,7 @@ public:
    */
   bool GetNEMOProblem(void) const {
     switch (Kind_Solver) {
-      case ENUM_MAIN_SOLVER::NEMO_EULER : case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      case MAIN_SOLVER::NEMO_EULER : case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         return true;
       default:
         return false;
@@ -6207,7 +6207,7 @@ public:
    * \param[in] val_solver - Solver of the simulation.
    * \param[in] val_system - Runtime system that we are solving.
    */
-  void SetGlobalParam(ENUM_MAIN_SOLVER val_solver, unsigned short val_system);
+  void SetGlobalParam(MAIN_SOLVER val_solver, unsigned short val_system);
 
   /*!
    * \brief Center of rotation for a rotational periodic boundary.

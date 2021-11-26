@@ -52,7 +52,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   feaIntegration->SetConvergence(false);
 
   /*--- FEA equations ---*/
-  config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
 
   if (linear) {
     /*--- Run the (one) iteration ---*/

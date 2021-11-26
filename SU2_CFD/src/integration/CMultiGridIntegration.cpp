@@ -41,20 +41,20 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   bool direct;
   switch (config[iZone]->GetKind_Solver()) {
-    case ENUM_MAIN_SOLVER::EULER:
-    case ENUM_MAIN_SOLVER::NAVIER_STOKES:
-    case ENUM_MAIN_SOLVER::NEMO_EULER:
-    case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
-    case ENUM_MAIN_SOLVER::RANS:
-    case ENUM_MAIN_SOLVER::FEM_EULER:
-    case ENUM_MAIN_SOLVER::FEM_NAVIER_STOKES:
-    case ENUM_MAIN_SOLVER::FEM_RANS:
-    case ENUM_MAIN_SOLVER::FEM_LES:
-    case ENUM_MAIN_SOLVER::DISC_ADJ_EULER:
-    case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER:
-    case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS:
-    case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::FEM_EULER:
+    case MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_RANS:
+    case MAIN_SOLVER::FEM_LES:
+    case MAIN_SOLVER::DISC_ADJ_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
+    case MAIN_SOLVER::DISC_ADJ_FEM_NS:
+    case MAIN_SOLVER::DISC_ADJ_RANS:
       direct = true;
       break;
     default:

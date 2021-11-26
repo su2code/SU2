@@ -59,7 +59,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] config - Definition of the particular problem.
    */
   explicit CDiscAdjFluidIteration(const CConfig *config) : CIteration(config),
-    turbulent(config->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_RANS || config->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS) {}
+    turbulent(config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS || config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS) {}
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
