@@ -461,10 +461,10 @@ void CConfig::addFFDDegreeOption(const string name, unsigned short & nFFD_field,
 }
 
 void CConfig::addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
-                               su2double* & double_field) {
+                                        su2double* & double_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
+  COptionBase* val = new COptionStringValuesList<su2double>(name, list_size, string_field, double_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -476,11 +476,13 @@ void CConfig::addInletOption(const string name, unsigned short & nMarker_Inlet, 
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
-                                    su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet) {
+void CConfig::addInletSpeciesOption(const string name, unsigned short & nMarker_Inlet_Species,
+                                    string * & Marker_Inlet_Species, su2double** & inlet_species_val,
+                                    unsigned short & nSpecies_per_Inlet) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionInletSpecies(name, nMarker_Inlet_Species, Marker_Inlet_Species, inlet_species_val, nSpecies_per_Inlet);
+  COptionBase* val = new COptionStringValuesList<su2double*>(name, nMarker_Inlet_Species, Marker_Inlet_Species,
+                                                             inlet_species_val, nSpecies_per_Inlet);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -2834,25 +2836,25 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
-  
+
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
-  
+
   /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
   addBoolOption("SAVE_LIBROM", libROM, false);
-  
+
   /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
   addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
-  
+
   /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
   addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
-  
+
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
-  
+
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
-  
+
   /* END_CONFIG_OPTIONS */
 
 }
