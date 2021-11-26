@@ -1089,8 +1089,6 @@ public:
     unsigned short option_size = option_value.size();
     if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
       size = 0;
-      strings = nullptr;
-      values = nullptr;
       num_vals = 0;
       return "";
     }
@@ -1141,8 +1139,6 @@ public:
   }
 
   void SetDefault() override {
-    strings = nullptr;
-    values = nullptr;
     size = 0; // There is no default value for lists
     num_vals = 0;
   }
