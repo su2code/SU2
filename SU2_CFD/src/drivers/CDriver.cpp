@@ -1014,7 +1014,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
 
 void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
 
-  MAIN_SOLVER kindSolver = static_cast<MAIN_SOLVER>(config->GetKind_Solver());
+  MAIN_SOLVER kindSolver = config->GetKind_Solver();
 
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;
@@ -1185,7 +1185,7 @@ void CDriver::Integration_Preprocessing(CConfig *config, CSolver **solver, CInte
   if (rank == MASTER_NODE)
     cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  MAIN_SOLVER kindMainSolver = static_cast<MAIN_SOLVER>(config->GetKind_Solver());
+  MAIN_SOLVER kindMainSolver = config->GetKind_Solver();
 
   integration = CIntegrationFactory::CreateIntegrationContainer(kindMainSolver, solver);
 
@@ -2276,7 +2276,7 @@ void CDriver::Iteration_Preprocessing(CConfig* config, CIteration *&iteration) c
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
 
-  iteration = CIterationFactory::CreateIteration(static_cast<MAIN_SOLVER>(config->GetKind_Solver()), config);
+  iteration = CIterationFactory::CreateIteration(config->GetKind_Solver(), config);
 
 }
 
@@ -2549,7 +2549,7 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     if (rank == MASTER_NODE)
       cout << endl <<"-------------------- Output Preprocessing ( Zone " << iZone <<" ) --------------------" << endl;
 
-    MAIN_SOLVER kindSolver = static_cast<MAIN_SOLVER>(config[iZone]->GetKind_Solver());
+    MAIN_SOLVER kindSolver = config[iZone]->GetKind_Solver();
 
     output[iZone] = COutputFactory::CreateOutput(kindSolver, config[iZone], nDim);
 
