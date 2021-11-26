@@ -578,7 +578,9 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       ConvHist_file[0] << begin << fem_coeff;
       ConvHist_file[0] << fem_resid << endfea;
       break;
-
+      
+    default:
+      break;
   }
 
   if (config->GetTabular_FileFormat() == TECPLOT ||
@@ -668,6 +670,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           break;
+
+        default:
+          break;  
       }
 
       /*--- Output a file with the forces breakdown. ---*/
@@ -704,6 +709,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
       case ENUM_MAIN_SOLVER::EULER:                   case ENUM_MAIN_SOLVER::NAVIER_STOKES:                   case ENUM_MAIN_SOLVER::RANS:
       case ENUM_MAIN_SOLVER::INC_EULER:               case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES:               case ENUM_MAIN_SOLVER::INC_RANS:
         solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
+        break;
+      default:
         break;
       }
     }
@@ -1221,6 +1228,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
         break;
 
+      default:
+        break;
 
     }
 
@@ -1550,7 +1559,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             }
 
             break;
-
+          default:
+            break;
         }
       }
       if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
@@ -1641,7 +1651,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << Total_Sens_Geo;
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 break;
-
+              default:
+                break;  
               }
             }
             else {
@@ -1964,8 +1975,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
            break;
 
+          default:
+            break; 
           }
-
         }
       }
 
@@ -2389,6 +2401,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
 
+        default:
+          break;
       }
       cout.unsetf(ios::fixed);
 
@@ -2838,6 +2852,8 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
           default: break;
         }
         break;
+      default:
+        break;  
     }
 
 

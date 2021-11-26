@@ -1431,6 +1431,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       adj_ns = ns = compressible = turbulent = true;
       adj_turb = !config->GetFrozen_Visc_Cont(); break;
 
+    default:
+      break;
+
   }
 
   /*--- Number of variables for the template ---*/
@@ -3038,6 +3041,8 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
     case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
+    default:
+      break;
   }
 
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
@@ -3289,11 +3294,16 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case ENUM_MAIN_SOLVER::EULER: case ENUM_MAIN_SOLVER::NAVIER_STOKES: case ENUM_MAIN_SOLVER::RANS:
   case ENUM_MAIN_SOLVER::INC_EULER: case ENUM_MAIN_SOLVER::INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::INC_RANS:
   case ENUM_MAIN_SOLVER::NEMO_EULER: case ENUM_MAIN_SOLVER::NEMO_NAVIER_STOKES:
-    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); 
+    break;
   case ENUM_MAIN_SOLVER::DISC_ADJ_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_RANS:
   case ENUM_MAIN_SOLVER::DISC_ADJ_INC_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
   case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_EULER: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_NS: case ENUM_MAIN_SOLVER::DISC_ADJ_FEM_RANS:
-    StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
+    StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); 
+    break;
+  default:
+    break;
+
   }
 
   /*--- Set StopCalc to true if max. number of iterations has been reached ---*/
@@ -3426,6 +3436,9 @@ void CHBDriver::ResetConvergence() {
       if( (config_container[ZONE_0]->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_RANS) )
         integration_container[ZONE_0][iInst][ADJTURB_SOL]->SetConvergence(false);
       break;
+    
+    default:
+      SU2_MPI::Error("CHB has not been set up for this solver", CURRENT_FUNCTION);
     }
   }
 

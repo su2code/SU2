@@ -3540,7 +3540,6 @@ public:
    * \return Governing equation that we are solving.
    */
   ENUM_MAIN_SOLVER GetKind_Solver(void) const { return Kind_Solver; }
-  //ENUM_MULTIZONE GetKind_MZSolver(void) const { return Kind_MZSolver; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).

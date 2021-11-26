@@ -113,6 +113,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     MainSolver = ADJHEAT_SOL;
     break;
 
+  default:
+    break;
+
   }
 
  direct_output->PreprocessHistoryOutput(config, false);
@@ -232,6 +235,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
                              solver_container, numerics_container, config_container,
                              surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
       break;
+
+    default:
+      break;
+
   }//switch
 
 }
@@ -418,6 +425,9 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     solver[FEA_SOL]->Evaluate_ObjFunc(config);
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
+
+  default:
+    break;  
   }
 
   if (rank == MASTER_NODE){

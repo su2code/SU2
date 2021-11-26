@@ -595,6 +595,8 @@ void CDriver::ResetConvergence() {
       if( (config_container[iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == ENUM_MAIN_SOLVER::DISC_ADJ_RANS) )
         integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
       break;
+    default:
+      break;  
     }
   }
 

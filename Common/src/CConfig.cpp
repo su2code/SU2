@@ -5726,8 +5726,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
         else
           cout << "Continuous RANS adjoint equations." << endl;
-
         break;
+      case ENUM_MAIN_SOLVER::HEAT_EQUATION: case ENUM_MAIN_SOLVER::DISC_ADJ_HEAT:
+        cout << "Heat solver" << endl;
+        break;
+      case ENUM_MAIN_SOLVER::MULTIPHYSICS:
+        cout << "Multiphysics solver" << endl;
+        break;  
+      default:
+        SU2_MPI::Error("No valid solver was chosen", CURRENT_FUNCTION);
 
     }
 
@@ -8278,6 +8285,9 @@ void CConfig::SetGlobalParam(ENUM_MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(NONE);
       }
       break;
+
+    default:
+      break;  
   }
 }
 

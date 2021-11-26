@@ -139,6 +139,9 @@ void CAdjFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
     case ENUM_MAIN_SOLVER::ADJ_RANS:
       config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::ADJ_RANS, RUNTIME_ADJFLOW_SYS);
       break;
+    
+    default:
+      break;
   }
 
   /*--- Iteration of the flow adjoint problem ---*/

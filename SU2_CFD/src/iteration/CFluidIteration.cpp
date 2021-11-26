@@ -95,6 +95,9 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case ENUM_MAIN_SOLVER::DISC_ADJ_INC_RANS:
       config[val_iZone]->SetGlobalParam(ENUM_MAIN_SOLVER::RANS, RUNTIME_FLOW_SYS);
       break;
+
+    default:
+      break;
   }
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/

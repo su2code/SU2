@@ -85,6 +85,8 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     case ENUM_MAIN_SOLVER::HEAT_EQUATION:
       heat_zone = true;
       break;
+    default:
+      break;  
     }
   }
 

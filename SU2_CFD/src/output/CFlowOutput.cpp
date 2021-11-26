@@ -1794,6 +1794,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           break;
       }
       break;
+      
+    default:
+      break;  
   }
 
   /*--- Compressible version of console output ---*/

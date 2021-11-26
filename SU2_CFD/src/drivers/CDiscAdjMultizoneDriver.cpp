@@ -740,6 +740,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
       case ENUM_MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
         break;
+
+      default:
+        break;
     }
   }
 
