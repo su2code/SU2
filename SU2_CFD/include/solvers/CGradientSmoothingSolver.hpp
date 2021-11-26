@@ -222,7 +222,7 @@ public:
   /*!
    * \brief write the DV gradient into a file
    */
-  void OutputDVGradient(string out_file="delta_p.txt");
+  void OutputDVGradient(CConfig *config, string out_file="delta_p.txt");
 
   /*!
    * \brief Record a tape containing the parameter Jacobian.

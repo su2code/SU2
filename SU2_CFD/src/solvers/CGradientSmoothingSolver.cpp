@@ -41,7 +41,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
-CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(false,true) {
+CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(LINEAR_SOLVER_MODE::GRADIENT_MODE) {
 
   unsigned int iDim, jDim, marker_count=0;
   unsigned long iPoint;
@@ -369,7 +369,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
   /*--- Output the complete system matrix. ---*/
   if (rank == MASTER_NODE) {
     ofstream SysMatrix(config->GetObjFunc_Hess_FileName());
-    SysMatrix.precision(15);
+    SysMatrix.precision(config->GetOutput_Precision());
     for (row=0; row<nDVtotal; row++) {
       for (column=0; column<nDVtotal; column++) {
         SysMatrix << hessian(row,column);
@@ -385,7 +385,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
   hessian.MatVecMult(deltaP.begin(), x.begin());
   deltaP = x;
 
-  OutputDVGradient();
+  OutputDVGradient(config);
 
 }
 
@@ -794,7 +794,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
-  OutputDVGradient("orig_grad.dat");
+  OutputDVGradient(config, "orig_grad.dat");
 }
 
 void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
@@ -808,12 +808,12 @@ void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry 
 
 }
 
-void CGradientSmoothingSolver::OutputDVGradient(string out_file) {
+void CGradientSmoothingSolver::OutputDVGradient(CConfig *config, string out_file) {
 
   unsigned iDV;
   if (rank == MASTER_NODE) {
     ofstream delta_p (out_file);
-    delta_p.precision(17);
+    delta_p.precision(config->GetOutput_Precision());
     for (iDV = 0; iDV < deltaP.size(); iDV++) {
       delta_p << deltaP[iDV] << ",";
     }

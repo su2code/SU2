@@ -232,7 +232,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEASolver(bool mesh_deform_mode = false);
+  CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \overload

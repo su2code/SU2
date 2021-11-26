@@ -1940,20 +1940,6 @@ static const MapType<std::string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = {
 };
 
 /*!
- * \brief Types of sensitivity smoothing
- */
-enum ENUM_SENS_SMOOTHING {
-  NO_SMOOTH = 0,  /*!< \brief No smoothing. */
-  SOBOLEV = 1,    /*!< \brief Sobolev gradient smoothing. */
-  BIGRID = 2      /*!< \brief Bi-grid technique smoothing. */
-};
-static const MapType<std::string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
-  MakePair("NONE", NO_SMOOTH)
-  MakePair("SOBOLEV", SOBOLEV)
-  MakePair("BIGRID", BIGRID)
-};
-
-/*!
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
@@ -2294,14 +2280,23 @@ static const MapType<std::string, POD_KIND> POD_Map = {
 };
 
 /*!
+ * \brief Type of operation for the linear system solver, changes the source of solver options.
+ */
+enum class LINEAR_SOLVER_MODE {
+  STANDARD,        /*!< \brief Operate in standard mode. */
+  MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
+  GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+};
+
+/*!
  * \brief mode of operation for the sobolev smoothing solver.
  */
 enum ENUM_SOBOLEV_MODUS {
  NO_MODUS = 0,                    /*!< \brief Default option if none is choosen. */
  PARAM_LEVEL_COMPLETE   = 1,      /*!< \brief Operate on parameter level. */
- MESH_LEVEL  = 3,                 /*!< \brief Operate on mesh level. */
- DEBUG = 4,                       /*!< \brief Special flag for debugging. */
- ONLY_GRAD = 5,                   /*!< \brief Flag for OneShot to only compute the original gradient. */
+ MESH_LEVEL  = 2,                 /*!< \brief Operate on mesh level. */
+ DEBUG = 3,                       /*!< \brief Special flag for debugging. */
+ ONLY_GRAD = 4,                   /*!< \brief Flag for OneShot to only compute the original gradient. */
 };
 static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
  MakePair("NONE", NO_MODUS)

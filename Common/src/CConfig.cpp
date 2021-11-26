@@ -1919,8 +1919,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
-  /* DESCRIPTION: Sensitivity smoothing  */
-  addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
   /* DESCRIPTION: Continuous Adjoint frozen viscosity */
   addBoolOption("FROZEN_VISC_CONT", Frozen_Visc_Cont, true);
   /* DESCRIPTION: Discrete Adjoint frozen viscosity */
@@ -2955,6 +2953,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
           if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
+          if (!option_name.compare("SENS_SMOOTHING"))
+            newString.append("SENS_SMOOTHING is deprecated. Use SMOOTH_GRADIENT = (YES, NO) instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/

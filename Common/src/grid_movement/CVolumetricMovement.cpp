@@ -30,11 +30,11 @@
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
-CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(true) {
+CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
 }
 
-CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement(), System(true) {
+CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement(), System(LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();

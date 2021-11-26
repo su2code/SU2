@@ -28,7 +28,6 @@
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
-#include "../../include/option_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CSysMatrix.hpp"
@@ -49,10 +48,9 @@ namespace {
 }
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode, const bool gradient_smooth_mode) :
+CSysSolve<ScalarType>::CSysSolve(LINEAR_SOLVER_MODE linear_solver_mode) :
   eps(linSolEpsilon<ScalarType>()),
-  mesh_deform(mesh_deform_mode),
-  gradient_mode(gradient_smooth_mode),
+  lin_sol_mode(linear_solver_mode),
   cg_ready(false),
   bcg_ready(false),
   smooth_ready(false),
@@ -254,7 +252,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
-      if (master && !mesh_deform) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+      if (master && (lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM)) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
 
@@ -833,7 +831,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
   /*--- Mesh Deformation mode ---*/
 
-  if(mesh_deform) {
+  if(lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
@@ -844,7 +842,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
   /*--- gradient smoothing mode ---*/
 
-  else if (gradient_mode) {
+  else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) {
 
     KindSolver   = config->GetKind_Grad_Linear_Solver();
     KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
@@ -855,7 +853,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
   /*--- Normal mode ---*/
 
-  else {
+  else if (lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD) {
 
     KindSolver   = config->GetKind_Linear_Solver();
     KindPrecond  = config->GetKind_Linear_Solver_Prec();
@@ -942,10 +940,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if(TapeActive) {
 
     /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
-    const bool RequiresTranspose = !mesh_deform || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT);
+    const bool RequiresTranspose = lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT);
 
-    if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
-    else if (gradient_mode) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+    if (lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+    else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
     else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
 
     /*--- Build preconditioner for the transposed Jacobian ---*/
@@ -1012,7 +1010,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Normal mode ---*/
 
-  if(!mesh_deform) {
+  if (lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD || lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) {
 
     KindSolver   = config->GetKind_DiscAdj_Linear_Solver();
     KindPrecond  = config->GetKind_DiscAdj_Linear_Prec();
@@ -1023,7 +1021,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Mesh Deformation mode ---*/
 
-  else {
+  else if (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();

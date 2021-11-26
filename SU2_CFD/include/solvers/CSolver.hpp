@@ -208,7 +208,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(bool mesh_deform_mode = false, bool gradient_smooth_mode = false);
+  CSolver(LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Destructor of the class.
