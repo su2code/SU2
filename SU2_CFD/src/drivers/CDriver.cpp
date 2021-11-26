@@ -3438,7 +3438,7 @@ void CHBDriver::ResetConvergence() {
       break;
     
     default:
-      SU2_MPI::Error("CHB has not been set up for this solver", CURRENT_FUNCTION);
+      SU2_MPI::Error("Harmonic Balance has not been set up for this solver.", CURRENT_FUNCTION);
     }
   }
 
