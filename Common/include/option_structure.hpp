@@ -243,8 +243,8 @@ enum class MAIN_SOLVER {
   DISC_ADJ_RANS,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
   DISC_ADJ_NAVIER_STOKES,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
   DISC_ADJ_INC_EULER,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
-  DISC_ADJ_INC_RANS,           /*!< \brief Definition of the discrete adjoint imcompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_INC_NAVIER_STOKES,  /*!< \brief Definition of the discrete adjoint imcompressible Navier-Stokes'. */
+  DISC_ADJ_INC_RANS,           /*!< \brief Definition of the discrete adjoint incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_INC_NAVIER_STOKES,  /*!< \brief Definition of the discrete adjoint incompressible Navier-Stokes'. */
   DISC_ADJ_HEAT,               /*!< \brief Definition of the discrete adjoint heat solver. */
   DISC_ADJ_FEM_EULER,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
   DISC_ADJ_FEM_RANS,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
