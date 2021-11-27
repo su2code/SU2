@@ -410,8 +410,10 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    InitiateComms(geometry, config, SOLUTION_EDDY);
+    CompleteComms(geometry, config, SOLUTION_EDDY);
+  }
 }
 
 template <class VariableType>

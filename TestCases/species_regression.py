@@ -84,7 +84,7 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -9.939874, 10, -4.523292, 8, -5.173152]
+    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -10.608115, 10.000000, -4.523292, 7.000000, -5.010406]
     species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
     species_passive_val.timeout   = 1600
     species_passive_val.new_output = True
