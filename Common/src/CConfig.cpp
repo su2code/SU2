@@ -1719,7 +1719,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
+  /* DESCRIPTION: Time discretization for species equations */
   addEnumOption("TIME_DISCRE_SPECIES", Kind_TimeIntScheme_Species, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, STRUCT_TIME_INT::NEWMARK_IMPLICIT);
@@ -1911,7 +1911,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_SPECIES", MUSCL_Species, false);
   /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NO_LIMITER \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, NO_LIMITER);
-  /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method \ingroup Config*/
+  /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method for species transport \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_SPECIES", Kind_ConvNumScheme_Species, Kind_Centered_Species, Kind_Upwind_Species);
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
@@ -8300,7 +8300,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_SPECIES_SYS) {
-        /// NOTE TK:: Why do we need this. The old impl also has this for Euler ... does that even make sense to have species transport in invicous flow?
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
                               Kind_Upwind_Species, Kind_SlopeLimit_Species,
                               MUSCL_Species, NONE);

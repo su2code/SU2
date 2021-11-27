@@ -3637,9 +3637,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
         }
         break;
-      case SPECIES_MODEL::CUSTOM_SCALAR: case SPECIES_MODEL::PROGRESS_VARIABLE:
-        SU2_MPI::Error("Unsupported Species model for inlet files.", CURRENT_FUNCTION);
-        break;
     }
 
     columnNames.push_back(columnName.str());

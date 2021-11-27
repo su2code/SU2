@@ -31,7 +31,7 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
                                    unsigned long nvar, const CConfig* config)
     : CScalarVariable(npoint, ndim, nvar, config) {
   /*--- Allocate space for the mass diffusivity. ---*/
-  Diffusivity.resize(nPoint, nVar) = su2double(0.0);  /// TK:: more appropriate init here possible?
+  Diffusivity.resize(nPoint, nVar) = su2double(0.0);
 
   /// NOTE TK: Consistent with SST and SA.
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
@@ -39,8 +39,6 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
       Solution(iPoint, iVar) = species_inf[iVar];
 
   Solution_Old = Solution;
-
-  /// NOTE TK:: check everything below whether that is necessary. SA does it, but SST not. Maybe put into ScalarVar
 
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

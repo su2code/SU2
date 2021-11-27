@@ -127,7 +127,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   nodes = new CSpeciesVariable(Species_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  /// NOTE TK:: This should use a MassDiff model!
   /*--- Initialize the mass diffusivity ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -142,8 +141,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-
-  /// NOTE TK:: Hinder sliding mesh in cfg postprocessing
 
   /*--- Set the column number for species in inlet-files.
    * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
@@ -224,7 +221,8 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
          offset in the buffer of data from the restart file and load it. ---*/
 
         const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -289,9 +287,10 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
                                            false);
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
-      solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+      solver[iMesh][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
-    solver[iMesh][SPECIES_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+    solver[iMesh][SPECIES_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                              RUNTIME_FLOW_SYS, false);
   }
 
   /*--- Go back to single threaded execution. ---*/
@@ -313,8 +312,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    /// NOTE TK:: needs to be value by a model
-    const su2double mass_diffusivity = config->GetDiffusivity_Constant();
+    const su2double mass_diffusivity = config->GetDiffusivity_Constant(); //TK:: ND
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
@@ -370,9 +368,6 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-
-  /// NOTE TK:: This is a strong impl whereas TurbSA and inceuler implement a weak version. Testing required.
-  // bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -530,7 +525,6 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     if (config->GetSpecies_StrongBC()) {
-      //TK:: document how this works
       /*--- Allocate the value at the outlet ---*/
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 

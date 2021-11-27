@@ -1362,7 +1362,6 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    /// NOTE TK:: understand the "true" input. Correction of the gradient when to apply and when not. True for now as Turb does that as well. Maybe no correction available on boundaries.
     numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, true, config);
     numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, false, config);
   }
@@ -1370,8 +1369,8 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (config->GetAxisymmetric() == YES) { //TK:: not implemented yet
-      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config); //TK::how to get nVarFLow
+    if (config->GetAxisymmetric() == YES) {
+      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config);
     }
     else {
       numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);

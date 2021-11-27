@@ -76,7 +76,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -943,21 +943,16 @@ static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
   MakePair("BC", BC)
 };
 
-/// NOTE TK:: consolidate these options. Just copied for now.
 /*!
  * \brief types of species transport models
  */
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
   PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
-  PROGRESS_VARIABLE, /*!< \brief Progress variable combustion model. */
-  CUSTOM_SCALAR,     /*!< \brief Custom scalar transport model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
   MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
-  MakePair("PROGRESS_VARIABLE", SPECIES_MODEL::PROGRESS_VARIABLE)
-  MakePair("CUSTOM_SCALAR", SPECIES_MODEL::CUSTOM_SCALAR)
 };
 
 /*!
