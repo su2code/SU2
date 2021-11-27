@@ -1519,9 +1519,9 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
     meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
 
 
-    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
-          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-          config->GetKind_Solver() == DISC_ADJ_RANS )) {
+    if (( config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_EULER ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
       meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
     }
   }
@@ -1754,18 +1754,18 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "\n\nProblem definition:\n\n";
 
   switch (Kind_Solver) {
-    case EULER:
-    case INC_EULER:
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::INC_EULER:
       if (compressible) file << "Compressible Euler equations.\n";
       if (incompressible) file << "Incompressible Euler equations.\n";
       break;
-    case NAVIER_STOKES:
-    case INC_NAVIER_STOKES:
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::INC_NAVIER_STOKES:
       if (compressible) file << "Compressible Laminar Navier-Stokes' equations.\n";
       if (incompressible) file << "Incompressible Laminar Navier-Stokes' equations.\n";
       break;
-    case RANS:
-    case INC_RANS:
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::INC_RANS:
       if (compressible) file << "Compressible RANS equations.\n";
       if (incompressible) file << "Incompressible RANS equations.\n";
       file << "Turbulence model: ";
@@ -1794,6 +1794,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           break;
       }
       break;
+    default:
+      break;  
   }
 
   /*--- Compressible version of console output ---*/
