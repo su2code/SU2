@@ -557,8 +557,8 @@ private:
   unsigned short nTurbVar;          /*!< \brief Number of Turbulence variables, i.e. 1 for SA-types, 2 for SST. */
   TURB_MODEL Kind_Turb_Model;       /*!< \brief Turbulent model definition. */
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
-  unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
-  Kind_ActDisk, Kind_Engine_Inflow,
+  TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
+  unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
   INLET_TYPE Kind_Inlet;
@@ -4189,7 +4189,7 @@ public:
    * \brief Get the kind of the transition model.
    * \return Kind of the transion model.
    */
-  unsigned short GetKind_Trans_Model(void) const { return Kind_Trans_Model; }
+  TURB_TRANS_MODEL GetKind_Trans_Model(void) const { return Kind_Trans_Model; }
 
   /*!
    * \brief Get the kind of the subgrid scale model.
