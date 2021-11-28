@@ -243,8 +243,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   bool unsteady      = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous       = config->GetViscous();
-  bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  bool turbulent     = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
+                        (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);

@@ -47,7 +47,7 @@ public:
    * \param[in] nDim                - Number of physical dimensions
    * \return                     - Pointer to the allocated Output
    */
-  static COutput* CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig *config, int nDim);
+  static COutput* CreateOutput(MAIN_SOLVER kindSolver, CConfig *config, int nDim);
 
   /*!
    * \brief Create a multizone output

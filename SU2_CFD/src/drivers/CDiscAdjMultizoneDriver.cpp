@@ -65,17 +65,17 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
       switch (config_container[iZone]->GetKind_Solver()) {
 
-        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(EULER, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::EULER, config_container[iZone]);
           break;
-        case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(INC_EULER, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::INC_EULER, config_container[iZone]);
           break;
-        case DISC_ADJ_HEAT:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(HEAT_EQUATION, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_HEAT:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::HEAT_EQUATION, config_container[iZone]);
           break;
-        case DISC_ADJ_FEM:
-          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(FEM_ELASTICITY, config_container[iZone]);
+        case MAIN_SOLVER::DISC_ADJ_FEM:
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(MAIN_SOLVER::FEM_ELASTICITY, config_container[iZone]);
           break;
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.",
@@ -87,17 +87,17 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        direct_output[iZone] = COutputFactory::CreateOutput(EULER, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::EULER, config_container[iZone], nDim);
         break;
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        direct_output[iZone] = COutputFactory::CreateOutput(INC_EULER, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::INC_EULER, config_container[iZone], nDim);
         break;
-      case DISC_ADJ_HEAT:
-        direct_output[iZone] = COutputFactory::CreateOutput(HEAT_EQUATION, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_HEAT:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::HEAT_EQUATION, config_container[iZone], nDim);
         break;
-      case DISC_ADJ_FEM:
-        direct_output[iZone] = COutputFactory::CreateOutput(FEM_ELASTICITY, config_container[iZone], nDim);
+      case MAIN_SOLVER::DISC_ADJ_FEM:
+        direct_output[iZone] = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_ELASTICITY, config_container[iZone], nDim);
         break;
       default:
         direct_output[iZone] = nullptr;
@@ -717,8 +717,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
     switch (config->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      case MAIN_SOLVER::DISC_ADJ_EULER:     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:     case MAIN_SOLVER::DISC_ADJ_RANS:
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
 
         solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
@@ -733,12 +733,15 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         solvers[FLOW_SOL]->Evaluate_ObjFunc(config);
         break;
 
-      case DISC_ADJ_HEAT:
+      case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         break;
 
-      case DISC_ADJ_FEM:
+      case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
+        break;
+
+      default:
         break;
     }
   }
@@ -754,8 +757,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
     switch (config->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+      case MAIN_SOLVER::DISC_ADJ_EULER:     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:     case MAIN_SOLVER::DISC_ADJ_RANS:
+      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       {
         auto val = solvers[FLOW_SOL]->GetTotal_ComboObj();
 
@@ -770,7 +773,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         ObjFunc += val*Weight_ObjFunc;
         break;
       }
-      case DISC_ADJ_HEAT:
+      case MAIN_SOLVER::DISC_ADJ_HEAT:
       {
         switch(config->GetKind_ObjFunc()) {
           case TOTAL_HEATFLUX:
@@ -782,7 +785,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
         break;
       }
-      case DISC_ADJ_FEM:
+      case MAIN_SOLVER::DISC_ADJ_FEM:
       {
         solvers[FEA_SOL]->Evaluate_ObjFunc(config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj()*Weight_ObjFunc;
