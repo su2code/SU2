@@ -1078,7 +1078,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
-  addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
+  addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);
@@ -4457,11 +4457,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
-  if ((Kind_Turb_Model != TURB_MODEL::SA) && (Kind_Trans_Model == BC)){
+  if ((Kind_Turb_Model != TURB_MODEL::SA) && (Kind_Trans_Model == TURB_TRANS_MODEL::BC)){
     SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
   }
 
-  if (Kind_Trans_Model == LM) {
+  if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
@@ -5663,7 +5663,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
-        if (Kind_Trans_Model == BC) cout << "Using the revised BC transition model (2020)" << endl;
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES){
           case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;

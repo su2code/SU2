@@ -912,15 +912,15 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
 /*!
  * \brief Types of transition models
  */
-enum ENUM_TRANS_MODEL {
-  NO_TRANS_MODEL = 0,  /*!< \brief No transition model. */
-  LM = 1,              /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC = 2               /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+enum class TURB_TRANS_MODEL {
+  NONE,  /*!< \brief No transition model. */
+  LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  BC     /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
-static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
-  MakePair("NONE", NO_TRANS_MODEL)
-  MakePair("LM", LM)
-  MakePair("BC", BC)
+static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
+  MakePair("NONE", TURB_TRANS_MODEL::NONE)
+  MakePair("LM", TURB_TRANS_MODEL::LM)
+  MakePair("BC", TURB_TRANS_MODEL::BC)
 };
 
 /*!

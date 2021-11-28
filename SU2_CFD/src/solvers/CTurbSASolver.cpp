@@ -110,7 +110,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
 
@@ -119,7 +119,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
   }
 
@@ -302,8 +302,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool transition    = (config->GetKind_Trans_Model() == LM);
-  const bool transition_BC = (config->GetKind_Trans_Model() == BC);
+  const bool transition    = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+  const bool transition_BC = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
