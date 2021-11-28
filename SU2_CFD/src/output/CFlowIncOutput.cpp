@@ -345,7 +345,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
-  if (config->GetKind_Trans_Model() == BC){
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC){
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 

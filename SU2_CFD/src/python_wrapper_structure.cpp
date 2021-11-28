@@ -582,7 +582,7 @@ void CDriver::ResetConvergence() {
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
-      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
+      if(config_container[iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
       break;
 
     case FEM_ELASTICITY:

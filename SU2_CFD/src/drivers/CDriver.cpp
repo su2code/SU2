@@ -1380,7 +1380,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case RANS:
     case DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == LM); break;
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM); break;
 
     case INC_EULER:
     case DISC_ADJ_INC_EULER:
@@ -1395,7 +1395,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == LM); break;
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM); break;
 
     case FEM_EULER:
     case DISC_ADJ_FEM_EULER:
@@ -3414,7 +3414,7 @@ void CHBDriver::ResetConvergence() {
     case EULER: case NAVIER_STOKES: case RANS:
       integration_container[ZONE_0][iInst][FLOW_SOL]->SetConvergence(false);
       if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][iInst][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
+      if(config_container[ZONE_0]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) integration_container[ZONE_0][iInst][TRANS_SOL]->SetConvergence(false);
       break;
 
     case FEM_ELASTICITY:

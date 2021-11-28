@@ -142,7 +142,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
         else{
           nu = solver_container->GetNuIn(iMarkerTP, iSpan);
           NuFactorIn[iMarkerTP][iSpan]          = nu*DensityIn[iMarkerTP][iSpan]/muLam;
-          if (config->GetKind_Trans_Model() == BC) {
+          if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
             NuFactorIn[iMarkerTP][iSpan]        = nu*DensityIn[iMarkerTP][iSpan]/muLam/0.005;
           }
         }
@@ -229,7 +229,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
         else{
           nu = solver_container->GetNuOut(iMarkerTP, iSpan);
           NuFactorOut[iMarkerTP][iSpan]          = nu*DensityOut[iMarkerTP][iSpan]/muLam;
-          if (config->GetKind_Trans_Model() == BC) {
+          if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
             NuFactorOut[iMarkerTP][iSpan]        = nu*DensityOut[iMarkerTP][iSpan]/muLam/0.005;
           }
         }

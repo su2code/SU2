@@ -725,7 +725,7 @@ void CFlowOutput::SetVolumeOutputFields_TurbLimiter(const CConfig* config) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
@@ -795,7 +795,7 @@ void CFlowOutput::LoadVolumeData_Turb(const CConfig* config, const CSolver* cons
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
   SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
 
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
   }
 
