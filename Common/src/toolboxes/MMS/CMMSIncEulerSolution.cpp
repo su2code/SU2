@@ -65,11 +65,11 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER)
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER)
     SU2_MPI::Error("Euler equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 

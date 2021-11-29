@@ -42,7 +42,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
   su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2;
   relVel = new su2double[nDim];
   su2double muLam, kine, omega, nu;
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turbulent = ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS));
   bool menter_sst       = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   unsigned short nBladesRow, nStages;
@@ -142,7 +142,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
         else{
           nu = solver_container->GetNuIn(iMarkerTP, iSpan);
           NuFactorIn[iMarkerTP][iSpan]          = nu*DensityIn[iMarkerTP][iSpan]/muLam;
-          if (config->GetKind_Trans_Model() == BC) {
+          if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
             NuFactorIn[iMarkerTP][iSpan]        = nu*DensityIn[iMarkerTP][iSpan]/muLam/0.005;
           }
         }
@@ -229,7 +229,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
         else{
           nu = solver_container->GetNuOut(iMarkerTP, iSpan);
           NuFactorOut[iMarkerTP][iSpan]          = nu*DensityOut[iMarkerTP][iSpan]/muLam;
-          if (config->GetKind_Trans_Model() == BC) {
+          if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
             NuFactorOut[iMarkerTP][iSpan]        = nu*DensityOut[iMarkerTP][iSpan]/muLam/0.005;
           }
         }

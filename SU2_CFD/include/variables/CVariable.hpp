@@ -1127,6 +1127,7 @@ public:
    * \return Value of the vorticity.
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
+  inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.

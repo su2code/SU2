@@ -436,43 +436,11 @@ public:
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
-   * \brief Set the RMS and MAX residual to zero.
-   */
-  inline void SetResToZero() {
-    SU2_OMP_MASTER {
-      for (auto& r : Residual_RMS) r = 0;
-      for (auto& r : Residual_Max) r = 0;
-      for (auto& p : Point_Max) p = 0;
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
-
-  /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history (overload).
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   * \param[in] val_point - Value of the point index for the max residual.
-   * \param[in] val_coord - Location (x, y, z) of the max residual point.
-   */
-  inline void AddRes_Max(unsigned short val_var,
-                         su2double val_residual,
-                         unsigned long val_point,
-                         const su2double* val_coord) {
-    if (val_residual > Residual_Max[val_var]) {
-      Residual_Max[val_var] = val_residual;
-      Point_Max[val_var] = val_point;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Point_Max_Coord[val_var][iDim] = val_coord[iDim];
-    }
-  }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -487,25 +455,6 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_BGS(unsigned short val_var) const { return Residual_BGS[val_var]; }
-
-  /*!
-   * \brief Adds the maximal residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   * \param[in] val_point - Value of the point index for the max residual.
-   * \param[in] val_coord - Location (x, y, z) of the max residual point.
-   */
-  inline void AddRes_Max_BGS(unsigned short val_var,
-                             su2double val_residual,
-                             unsigned long val_point,
-                             const su2double* val_coord) {
-    if (val_residual > Residual_Max_BGS[val_var]) {
-    Residual_Max_BGS[val_var] = val_residual;
-    Point_Max_BGS[val_var] = val_point;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
-    }
-  }
 
   /*!
    * \brief Get the maximal residual for BGS subiterations.
@@ -4392,4 +4341,94 @@ protected:
   void SetVerificationSolution(unsigned short nDim,
                                unsigned short nVar,
                                CConfig        *config);
+
+  /*!
+   * \brief "Add" residual at (iPoint,iVar) to residual variables local to the thread.
+   *  \param[in] iPoint - Point index.
+   *  \param[in] iVar - Variable index.
+   *  \param[in] res - Residual at (iPoint,iVar), e.g. LinSysRes(iPoint,iVar)
+   *  \param[in,out] resRMS - increases by pow(Residual, 2)
+   *  \param[in,out] resMax - increases to max(resMax, Residual)
+   *  \param[in,out] idxMax - changes when resMax increases
+   */
+  static inline void ResidualReductions_PerThread(unsigned long iPoint, unsigned short iVar, su2double res, su2double* resRMS, su2double* resMax,
+                                                  unsigned long* idxMax) {
+    res = fabs(res);
+    resRMS[iVar] += res * res;
+    if (res > resMax[iVar]) {
+      resMax[iVar] = res;
+      idxMax[iVar] = iPoint;
+    }
+  }
+
+  /*!
+   * \brief "Add" local residual variables of all threads to compute global residual variables.
+   */
+  inline void ResidualReductions_FromAllThreads(const CGeometry* geometry, const CConfig* config, const su2double* resRMS, const su2double* resMax,
+                                                const unsigned long* idxMax){
+    SetResToZero();
+
+    SU2_OMP_CRITICAL
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Residual_RMS[iVar] += resRMS[iVar];
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), geometry->nodes->GetCoord(idxMax[iVar]));
+    }
+    END_SU2_OMP_CRITICAL
+    SU2_OMP_BARRIER
+
+    /*--- Compute the root mean square residual ---*/
+    SetResidual_RMS(geometry, config);
+  }
+
+  /*!
+   * \brief Set the RMS and MAX residual to zero.
+   */
+  inline void SetResToZero() {
+    SU2_OMP_MASTER {
+      for (auto& r : Residual_RMS) r = 0;
+      for (auto& r : Residual_Max) r = 0;
+      for (auto& p : Point_Max) p = 0;
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
+
+  /*!
+   * \brief Adds the maximal residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \param[in] val_point - Value of the point index for the max residual.
+   * \param[in] val_coord - Location (x, y, z) of the max residual point.
+   */
+  inline void AddRes_Max(unsigned short val_var,
+                         su2double val_residual,
+                         unsigned long val_point,
+                         const su2double* val_coord) {
+    if (val_residual > Residual_Max[val_var]) {
+      Residual_Max[val_var] = val_residual;
+      Point_Max[val_var] = val_point;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+    }
+  }
+
+  /*!
+   * \brief Adds the maximal residual for BGS subiterations.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \param[in] val_point - Value of the point index for the max residual.
+   * \param[in] val_coord - Location (x, y, z) of the max residual point.
+   */
+  inline void AddRes_Max_BGS(unsigned short val_var,
+                             su2double val_residual,
+                             unsigned long val_point,
+                             const su2double* val_coord) {
+    if (val_residual > Residual_Max_BGS[val_var]) {
+    Residual_Max_BGS[val_var] = val_residual;
+    Point_Max_BGS[val_var] = val_point;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
+    }
+  }
+
 };

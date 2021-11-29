@@ -76,7 +76,7 @@ struct UnitQuadTestCase {
    */
   void InitSolver() {
     cout.rdbuf(nullptr);
-    solver = CSolverFactory::CreateSolverContainer(static_cast<ENUM_MAIN_SOLVER>(config.get()->GetKind_Solver()),
+    solver = CSolverFactory::CreateSolverContainer(config.get()->GetKind_Solver(),
                                                    config.get(), geometry.get(), 0);
     cout.rdbuf(orig_buf);
   }

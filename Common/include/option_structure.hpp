@@ -225,71 +225,71 @@ static const MapType<std::string, AVERAGE_TYPE> Average_Map = {
 /*!
  * \brief different solver types for the CFD component
  */
-enum ENUM_MAIN_SOLVER {
-  NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
-  EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS = 3,                         /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
-  INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
-  INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
-  FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
-  ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 11,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 12,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  TEMPLATE_SOLVER = 13,             /*!< \brief Definition of template solver. */
-  DISC_ADJ_EULER = 15,              /*!< \brief Definition of the discrete adjoint Euler solver. */
-  DISC_ADJ_RANS = 16,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_NAVIER_STOKES = 17,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
-  DISC_ADJ_INC_EULER = 18,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
-  DISC_ADJ_INC_RANS = 19,           /*!< \brief Definition of the discrete adjoint imcompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_INC_NAVIER_STOKES = 20,  /*!< \brief Definition of the discrete adjoint imcompressible Navier-Stokes'. */
-  DISC_ADJ_HEAT = 21,               /*!< \brief Definition of the discrete adjoint heat solver. */
-  DISC_ADJ_FEM_EULER = 22,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
-  DISC_ADJ_FEM_RANS = 23,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_FEM_NS = 24,             /*!< \brief Definition of the discrete adjoint FEM Navier-Stokes' solver. */
-  DISC_ADJ_FEM = 25,                /*!< \brief Definition of the discrete adjoint FEM solver. */
-  FEM_EULER = 26,                   /*!< \brief Definition of the finite element Euler's solver. */
-  FEM_NAVIER_STOKES = 27,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
-  FEM_RANS = 28,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30,
-  NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
+enum class MAIN_SOLVER {
+  NONE,                        /*!< \brief Definition of no solver. */
+  EULER,                       /*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES,               /*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS,                        /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  INC_EULER,                   /*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES,           /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS,                    /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  HEAT_EQUATION,               /*!< \brief Definition of the finite volume heat solver. */
+  FEM_ELASTICITY,              /*!< \brief Definition of a FEM solver. */
+  ADJ_EULER,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TEMPLATE_SOLVER,             /*!< \brief Definition of template solver. */
+  DISC_ADJ_EULER,              /*!< \brief Definition of the discrete adjoint Euler solver. */
+  DISC_ADJ_RANS,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_NAVIER_STOKES,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
+  DISC_ADJ_INC_EULER,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
+  DISC_ADJ_INC_RANS,           /*!< \brief Definition of the discrete adjoint incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_INC_NAVIER_STOKES,  /*!< \brief Definition of the discrete adjoint incompressible Navier-Stokes'. */
+  DISC_ADJ_HEAT,               /*!< \brief Definition of the discrete adjoint heat solver. */
+  DISC_ADJ_FEM_EULER,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
+  DISC_ADJ_FEM_RANS,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_FEM_NS,             /*!< \brief Definition of the discrete adjoint FEM Navier-Stokes' solver. */
+  DISC_ADJ_FEM,                /*!< \brief Definition of the discrete adjoint FEM solver. */
+  FEM_EULER,                   /*!< \brief Definition of the finite element Euler's solver. */
+  FEM_NAVIER_STOKES,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
+  FEM_RANS,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIPHYSICS,
+  NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
+  NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
-static const MapType<std::string, ENUM_MAIN_SOLVER> Solver_Map = {
-  MakePair("NONE", NO_SOLVER)
-  MakePair("EULER", EULER)
-  MakePair("NAVIER_STOKES", NAVIER_STOKES)
-  MakePair("RANS", RANS)
-  MakePair("INC_EULER", INC_EULER)
-  MakePair("INC_NAVIER_STOKES", INC_NAVIER_STOKES)
-  MakePair("INC_RANS", INC_RANS)
-  MakePair("FEM_EULER", FEM_EULER)
-  MakePair("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
-  MakePair("FEM_RANS", FEM_RANS)
-  MakePair("FEM_LES", FEM_LES)
-  MakePair("NEMO_EULER",NEMO_EULER)
-  MakePair("NEMO_NAVIER_STOKES",NEMO_NAVIER_STOKES)
-  MakePair("ADJ_EULER", ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION", HEAT_EQUATION)
-  MakePair("ELASTICITY", FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", DISC_ADJ_FEM)
-  MakePair("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-  MakePair("MULTIPHYSICS", MULTIPHYSICS)
+static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
+  MakePair("NONE", MAIN_SOLVER::NONE)
+  MakePair("EULER", MAIN_SOLVER::EULER)
+  MakePair("NAVIER_STOKES", MAIN_SOLVER::NAVIER_STOKES)
+  MakePair("RANS", MAIN_SOLVER::RANS)
+  MakePair("INC_EULER", MAIN_SOLVER::INC_EULER)
+  MakePair("INC_NAVIER_STOKES", MAIN_SOLVER::INC_NAVIER_STOKES)
+  MakePair("INC_RANS", MAIN_SOLVER::INC_RANS)
+  MakePair("FEM_EULER", MAIN_SOLVER::FEM_EULER)
+  MakePair("FEM_NAVIER_STOKES", MAIN_SOLVER::FEM_NAVIER_STOKES)
+  MakePair("FEM_RANS", MAIN_SOLVER::FEM_RANS)
+  MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
+  MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
+  MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
+  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
+  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
+  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
+  MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
+  MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
+  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
+  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
+  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
+  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
+  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
+  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
+  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
+  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
+  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
+  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
+  MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
+  MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
 
 /*!
@@ -919,15 +919,15 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
 /*!
  * \brief Types of transition models
  */
-enum ENUM_TRANS_MODEL {
-  NO_TRANS_MODEL = 0,  /*!< \brief No transition model. */
-  LM = 1,              /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC = 2               /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+enum class TURB_TRANS_MODEL {
+  NONE,  /*!< \brief No transition model. */
+  LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
-static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
-  MakePair("NONE", NO_TRANS_MODEL)
-  MakePair("LM", LM)
-  MakePair("BC", BC)
+static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
+  MakePair("NONE", TURB_TRANS_MODEL::NONE)
+  MakePair("LM", TURB_TRANS_MODEL::LM)
+  MakePair("BC", TURB_TRANS_MODEL::BC)
 };
 
 /*!
