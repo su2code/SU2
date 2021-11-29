@@ -627,7 +627,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool dynamic = config->GetTime_Domain();
-  const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
   const bool topology_mode = config->GetTopology_Optimization();
 

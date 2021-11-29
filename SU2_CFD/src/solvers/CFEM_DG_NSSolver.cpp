@@ -111,7 +111,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Set the SGS model in case an LES simulation is carried out ---*/
 
-  if(config->GetKind_Solver() == FEM_LES) {
+  if(config->GetKind_Solver() == MAIN_SOLVER::FEM_LES) {
 
     /* Make a distinction between the SGS models used and set SGSModel and
        SGSModelUsed accordingly. */

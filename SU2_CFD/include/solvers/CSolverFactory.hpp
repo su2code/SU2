@@ -184,7 +184,7 @@ public:
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - Pointer to the allocated solver array
    */
-  static CSolver** CreateSolverContainer(ENUM_MAIN_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
+  static CSolver** CreateSolverContainer(MAIN_SOLVER kindSolver, CConfig *config, CGeometry *geometry, int iMGLevel);
 
 
   /*!

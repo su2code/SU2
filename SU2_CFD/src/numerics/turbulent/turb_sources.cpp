@@ -69,7 +69,7 @@ CSourcePieceWise_TurbSA<T>::CSourcePieceWise_TurbSA(unsigned short val_nDim,
                          CSourceBase_TurbSA(val_nDim, val_nVar, config),
                          idx(val_nDim, config->GetnSpecies()) {
 
-  transition = (config->GetKind_Trans_Model() == BC);
+  transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
 }
 
 template <class T>
