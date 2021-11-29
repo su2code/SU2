@@ -31,7 +31,7 @@
 
 /*!
  * \class CSpeciesVariable
- * \brief Base class for defining the variables of the turbulence model.
+ * \brief Base class for defining the variables of the species transport.
  */
 class CSpeciesVariable : public CScalarVariable {
  protected:

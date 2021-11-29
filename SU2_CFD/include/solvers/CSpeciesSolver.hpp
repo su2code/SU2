@@ -33,9 +33,8 @@
 
 /*!
  * \class CSpeciesSolver
- * \brief Main class for defining the turbulence model solver.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \brief Main class for defining the species transport solver.
+ * \author T. Kattmann.
  */
 class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:

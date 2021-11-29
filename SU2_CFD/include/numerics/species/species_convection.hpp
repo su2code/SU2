@@ -32,7 +32,7 @@
 
 /*!
  * \class CUpwSca_Species
- * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
+ * \brief Class for doing a scalar upwind solver for the species transport equations.
  * \ingroup ConvDiscr
  */
 template <class FlowIndices>
@@ -51,6 +51,7 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
   using Base::idx;
+
   /*!
    * \brief Adds any extra variables to AD
    */
@@ -60,7 +61,7 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
   };
 
   /*!
-   * \brief SA specific steps in the ComputeResidual method
+   * \brief Species transport specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {

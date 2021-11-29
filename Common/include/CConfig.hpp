@@ -817,7 +817,6 @@ private:
   Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
-  su2double Diffusivity_Ref;        /*!< \brief Reference mass diffusion for species equations.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
   su2double Schmidt_Number_Turbulent; /*!< \brief Turbulent Schmidt number for mass diffusion.  */
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
@@ -2043,13 +2042,11 @@ public:
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
 
-  unsigned short GetNSpeciesInit() const { return nSpecies_Init; }
-
   /*!
    * \brief Get the flag for activating species transport clipping.
    * \return Flag for species clipping.
    */
-  bool GetSpecies_Clipping() { return Species_Clipping; }
+  bool GetSpecies_Clipping() const { return Species_Clipping; }
 
   /*!
    * \brief Get the maximum bound for scalar transport clipping
@@ -3976,11 +3973,6 @@ public:
    * \brief Set the value of the non-dimensional constant mass diffusivity.
    */
   void SetDiffusivity_ConstantND(su2double diffusivity_const) { Diffusivity_ConstantND = diffusivity_const; }
-
-  /*!
-   * \brief Set the value of the reference mass diffusivity.
-   */
-  void SetDiffusivity_Ref(su2double diffusivity_ref);
 
   /*!
    * \brief Get the kind of method for computation of spatial gradients used for viscous and source terms.
@@ -6590,7 +6582,6 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet species values.
    */
-  // nijso: TODO we do not need inlet enthalpy, it is computed from temperature!
   const su2double* GetInlet_SpeciesVal(string val_index) const;
 
   /*!

@@ -32,7 +32,7 @@
 
 /*!
  * \class CAvgGrad_Species
- * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \brief Class for computing viscous term using average of gradients (species transport model).
  * \ingroup ViscDiscr
  */
 template <class FlowIndices>

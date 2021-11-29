@@ -5169,6 +5169,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (!(OptionIsSet("SPECIES_CLIPPING_MIN") && OptionIsSet("SPECIES_CLIPPING_MAX")))
         SU2_MPI::Error("SPECIES_CLIPPING= YES requires the options SPECIES_CLIPPING_MIN/MAX to set the clipping values.", CURRENT_FUNCTION);
 
+    /*--- Make sure a Diffusivity has been set for Constant Diffusivity. ---*/
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY &&
+        !(OptionIsSet("DIFFUSIVITY_CONSTANT")))
+      SU2_MPI::Error("A DIFFUSIVITY_CONSTANT=<value> has to be set with DIFFUSIVITY_MODEL= CONSTANT_DIFFUSIVITY.", CURRENT_FUNCTION);
+
     // Helper function that checks scalar variable bounds,
     auto checkScalarBounds = [&](su2double scalar, string name, su2double lowerBound, su2double upperBound) {
       if (scalar < lowerBound || scalar > upperBound)
