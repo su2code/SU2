@@ -34,6 +34,9 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                            CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();                            
+
   /*--- Allocate arrays ---*/
   Diff_U      = new su2double  [nVar];
   RoeU        = new su2double  [nVar];
@@ -91,6 +94,9 @@ CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
 
 CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
 
+  su2double ProjGridVel = 0.0;
+  unsigned short iVar, iDim;
+
   /*--- Face area (norm or the normal vector) ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -131,6 +137,14 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
  
   su2double RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
                             RoeV[P_INDEX]/RoeV[RHO_INDEX]);
+
+  if (dynamic_grid) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
+    ProjVelocity   -= ProjGridVel;
+    ProjVelocity_i -= ProjGridVel;
+    ProjVelocity_j -= ProjGridVel;
+  }  
 
   /*--- Calculate eigenvalues ---*/
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -193,6 +207,19 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
       }
     }
   }
+
+  /*--- Correct for grid motion ---*/
+
+  if (dynamic_grid) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Flux[iVar] -= ProjGridVel*Area * 0.5*(U_i[iVar]+U_j[iVar]);
+
+      if (implicit) {
+        Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel*Area;
+        Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel*Area;
+      }
+    }
+  }  
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

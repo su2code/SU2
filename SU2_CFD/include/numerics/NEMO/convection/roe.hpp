@@ -45,6 +45,7 @@ private:
     su2double **P_Tensor, **invP_Tensor;
     su2double Proj_ModJac_Tensor_ij;
     su2double *RoedPdU;
+    bool dynamic_grid;
 
 public:
 

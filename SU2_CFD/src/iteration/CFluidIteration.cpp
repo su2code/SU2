@@ -470,7 +470,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
           case SIGMOID:
             // Check if we are in the region where the gust is active
             if (x_gust < 0) {
-              Gust[GustDir] = gust_amp/(1 + exp(k*x_gust));
+              Gust[GustDir] = - gust_amp * erf(k*x_gust); ///(1 + exp(-k*x_gust));
             }
             break;
 

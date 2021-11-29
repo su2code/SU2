@@ -86,6 +86,11 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   Gamma.resize(nPoint)           = su2double(0.0);
 
+  if (config->GetWind_Gust()) {
+    WindGust.resize(nPoint,nDim);
+    WindGustDer.resize(nPoint,nDim+1);
+  }  
+
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
 

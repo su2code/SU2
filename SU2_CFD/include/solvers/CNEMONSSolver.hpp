@@ -215,4 +215,18 @@ public:
                                CNumerics *visc_numerics,
                                CConfig *config,
                                unsigned short val_marker) override;
+
+  /*!
+   * \brief Common code for wall boundaries, add the residual and Jacobian
+   * contributions due to grid motion associated with a particular boundary point.
+   */
+  void AddDynamicGridResidualContribution(unsigned long iPoint,
+                                          unsigned long Point_Normal,
+                                          const CGeometry* geometry,
+                                          const su2double* UnitNormal,
+                                          su2double Area,
+                                          const su2double* GridVel,
+                                          su2double** Jacobian_i,
+                                          su2double& Res_Conv,
+                                          su2double& Res_Visc) const;  
 };

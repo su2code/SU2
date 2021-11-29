@@ -327,3 +327,79 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
+
+CNumerics::ResidualType<> CSource_NEMO::ComputeSourceGust(const CConfig *config) {
+
+  su2double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt;
+  su2double smx, smy, se, rho, u, v, p;
+  unsigned short GustDir = config->GetGust_Dir(); //Gust direction
+
+  u_gust = WindGust_i[0];
+  v_gust = WindGust_i[1];
+// w_gust = WindGust_i[2];
+
+  if (GustDir == X_DIR) {
+    du_gust_dx = WindGustDer_i[0];
+    du_gust_dy = WindGustDer_i[1];
+    //du_gust_dz = WindGustDer_i[2];
+    du_gust_dt = WindGustDer_i[2];
+
+    dv_gust_dx = 0.0;
+    dv_gust_dy = 0.0;
+    //dv_gust_dz = 0.0;
+    dv_gust_dt = 0.0;
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
+  } else {
+    du_gust_dx = 0.0;
+    du_gust_dy = 0.0;
+    //du_gust_dz = 0.0;
+    du_gust_dt = 0.0;
+    dv_gust_dx = WindGustDer_i[0];
+    dv_gust_dy = WindGustDer_i[1];
+    //dv_gust_dz = WindGustDer_i[2]
+    dv_gust_dt = WindGustDer_i[2];
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
+    //
+
+  }
+
+  /*--- Primitive variables at point i ---*/
+  u = V_i[VEL_INDEX];
+  v = V_i[VEL_INDEX+1];
+  // w = V_i[VEL_INDEX+2]
+
+  p = V_i[P_INDEX];
+  rho = V_i[RHO_INDEX];
+
+  /*--- Source terms ---*/
+  smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
+  smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
+  //smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
+
+  se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
+  //se = u*smx + v*smy + w*smz + p*(du_gust_dx + dv_gust_dy + dw_gust_dz);
+
+  if (nDim == 2) {
+    residual[0] = 0.0;
+    residual[1] = smx*Volume;
+    residual[2] = smy*Volume;
+    //residual[3] = smz*Volume;
+    residual[3] = se*Volume;
+    residual[4] = 0.0;
+  } else {
+    SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
+  }
+
+  /*--- For now the source term Jacobian is just set to zero ---*/
+  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}

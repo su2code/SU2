@@ -87,5 +87,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   ResidualType<> ComputeAxisymmetric(const CConfig* config) final;
+
+  /*!
+   * \brief Residual of gust source term.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeSourceGust(const CConfig* config) final;  
 };
 

@@ -507,6 +507,13 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     auto Coord_i = geometry->nodes->GetCoord(iPoint);
     auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
+    /*--- Grid movement ---*/
+
+    if (dynamic_grid) {
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                           geometry->nodes->GetGridVel(jPoint));
+    }    
+
     /*--- Get conserved & primitive variables from CVariable ---*/
     auto U_i = nodes->GetSolution(iPoint);   auto U_j = nodes->GetSolution(jPoint);
     auto V_i = nodes->GetPrimitive(iPoint);  auto V_j = nodes->GetPrimitive(jPoint);
@@ -754,6 +761,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   bool axisymm    = config->GetAxisymmetric();
   bool viscous    = config->GetViscous();
   bool rans       = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool windgust         = config->GetWind_Gust();
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -876,6 +884,30 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       } else
         eAxi_local++;
     }
+
+    if (windgust) {
+  
+        /*--- Load the wind gust ---*/
+        numerics->SetWindGust(nodes->GetWindGust(iPoint), nodes->GetWindGust(iPoint));
+  
+        /*--- Load the wind gust derivatives ---*/
+        numerics->SetWindGustDer(nodes->GetWindGustDer(iPoint), nodes->GetWindGustDer(iPoint));
+  
+        /*--- Compute the rotating frame source residual ---*/
+        auto residual = numerics->ComputeSourceGust(config);
+
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
+  
+        /*--- Apply the update to the linear system ---*/
+        if (!err) {
+          LinSysRes.SubtractBlock(iPoint, residual);
+          if (implicit)
+            Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+        } else
+          eAxi_local++;  
+
+    }    
   }
   END_SU2_OMP_FOR
 
@@ -1540,7 +1572,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
 
-  su2double *V_infty, *V_domain, *U_domain,*U_infty;
+  su2double *V_infty, *V_domain, *U_domain,*U_infty, *GridVel;
 
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1581,6 +1613,11 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
       conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
       conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+
+      if (dynamic_grid) {
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
+      }      
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp

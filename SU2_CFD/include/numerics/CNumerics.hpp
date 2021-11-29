@@ -1402,6 +1402,13 @@ public:
   inline virtual ResidualType<> ComputeChemistry(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
 
   /*!
+   * \overload For numerics classes that store the residual/flux and Jacobians internally.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  inline virtual ResidualType<> ComputeSourceGust(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
+
+  /*!
    * \brief Check if residual constains a NaN value
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_residual - residual of the numeric function.

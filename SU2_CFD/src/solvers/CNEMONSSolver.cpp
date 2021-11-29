@@ -237,12 +237,108 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   } //iEdge
 }
 
+void CNEMONSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigned long Point_Normal,
+                                                   const CGeometry* geometry,  const su2double* UnitNormal,
+                                                   su2double Area, const su2double* GridVel,
+                                                   su2double** Jacobian_i, su2double& Res_Conv,
+                                                   su2double& Res_Visc) const {
+
+  su2double ProjGridVel = Area * GeometryToolbox::DotProduct(nDim, GridVel, UnitNormal);
+
+  /*--- Retrieve other primitive quantities and viscosities ---*/
+
+  su2double Density = nodes->GetDensity(iPoint);
+  su2double Pressure = nodes->GetPressure(iPoint);
+  su2double laminar_viscosity = nodes->GetLaminarViscosity(iPoint);
+  su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
+  su2double total_viscosity = laminar_viscosity + eddy_viscosity;
+
+  /*--- Compute the viscous stress tensor ---*/
+
+  su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
+  CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, total_viscosity);
+
+  /*--- Dot product of the stress tensor with the grid velocity ---*/
+
+  su2double tau_vel[MAXNDIM] = {0.0};
+  for (auto iDim = 0u; iDim < nDim; iDim++)
+    tau_vel[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], GridVel);
+
+  /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
+
+  Res_Conv += Pressure*ProjGridVel;
+  Res_Visc += GeometryToolbox::DotProduct(nDim, tau_vel, UnitNormal) * Area;
+
+//  /*--- Implicit Jacobian contributions due to moving walls ---*/
+//
+//  if (Jacobian_i != nullptr) {
+//
+//    /*--- Jacobian contribution related to the pressure term ---*/
+//
+//    su2double GridVel2 = GeometryToolbox::SquaredNorm(nDim, GridVel);
+//
+//    Jacobian_i[nDim+1][0] += 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
+//
+//    for (auto jDim = 0u; jDim < nDim; jDim++)
+//      Jacobian_i[nDim+1][jDim+1] += -(Gamma-1.0)*GridVel[jDim]*ProjGridVel;
+//
+//    Jacobian_i[nDim+1][nDim+1] += (Gamma-1.0)*ProjGridVel;
+//
+//    /*--- Now the Jacobian contribution related to the shear stress ---*/
+//
+//    /*--- Get coordinates of i & nearest normal and compute distance ---*/
+//
+//    const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+//    const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+//
+//    su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+//
+//    const su2double theta2 = 1.0;
+//
+//    su2double factor = total_viscosity*Area/(Density*dist_ij);
+//
+//    if (nDim == 2) {
+//      su2double thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+//      su2double thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+//
+//      su2double etaz = UnitNormal[0]*UnitNormal[1]/3.0;
+//
+//      su2double pix = GridVel[0]*thetax + GridVel[1]*etaz;
+//      su2double piy = GridVel[0]*etaz   + GridVel[1]*thetay;
+//
+//      Jacobian_i[nDim+1][0] += factor*(-pix*GridVel[0]+piy*GridVel[1]);
+//      Jacobian_i[nDim+1][1] += factor*pix;
+//      Jacobian_i[nDim+1][2] += factor*piy;
+//    }
+//    else {
+//      su2double thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+//      su2double thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+//      su2double thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
+//
+//      su2double etaz = UnitNormal[0]*UnitNormal[1]/3.0;
+//      su2double etax = UnitNormal[1]*UnitNormal[2]/3.0;
+//      su2double etay = UnitNormal[0]*UnitNormal[2]/3.0;
+//
+//      su2double pix = GridVel[0]*thetax + GridVel[1]*etaz   + GridVel[2]*etay;
+//      su2double piy = GridVel[0]*etaz   + GridVel[1]*thetay + GridVel[2]*etax;
+//      su2double piz = GridVel[0]*etay   + GridVel[1]*etax   + GridVel[2]*thetaz;
+//
+//      Jacobian_i[nDim+1][0] += factor*(-pix*GridVel[0]+piy*GridVel[1]+piz*GridVel[2]);
+//      Jacobian_i[nDim+1][1] += factor*pix;
+//      Jacobian_i[nDim+1][2] += factor*piy;
+//      Jacobian_i[nDim+1][3] += factor*piz;
+//    }
+//  }
+}
+
 void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  CSolver **solver_container,
                                                  CNumerics *conv_numerics,
                                                  CNumerics *sour_numerics,
                                                  CConfig *config,
                                                  unsigned short val_marker) {
+
+  su2double Res_Conv = 0.0, Res_Visc_dyn_grid = 0.0;
 
   /*--- Local variables ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -314,15 +410,44 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                     Wall_HeatFlux*Area;
 
     /*--- Impose the value of the velocity as a strong boundary
-    condition (Dirichlet). Fix the velocity and remove any
-    contribution to the residual at this node. ---*/
-    su2double zero[MAXNDIM] = {0.0};
-    nodes->SetVelocity_Old(iPoint, zero);
-
-    for (auto iDim = 0u; iDim < nDim; iDim++){
-      LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+     condition (Dirichlet). Fix the velocity and remove any
+     contribution to the residual at this node. ---*/
+  
+    if (dynamic_grid) {
+      nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
     }
+    else {
+      su2double zero[MAXNDIM] = {0.0};
+      nodes->SetVelocity_Old(iPoint, zero);
+    }
+  
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      LinSysRes(iPoint, nSpecies+iDim) = 0.0;
+    nodes->SetVel_ResTruncError_Zero(iPoint);
+  
+    /*--- If the wall is moving, there are additional residual contributions
+     due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+  
+    if (dynamic_grid) {
+      if (implicit) {
+        for (auto iVar = 0u; iVar < nVar; ++iVar)
+          Jacobian_i[nSpecies+nDim+2][iVar] = 0.0;
+      }
+  
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+      UnitNormal[iDim] = -Normal[iDim]/Area;
+  
+      AddDynamicGridResidualContribution(iPoint, Point_Normal, geometry, UnitNormal,
+                                         Area, geometry->nodes->GetGridVel(iPoint),
+                                         Jacobian_i, Res_Conv, Res_Visc_dyn_grid);
+
+      /*--- Convective contribution of dynamic grid to the residual at the wall ---*/
+      LinSysRes(iPoint, nSpecies+nDim) += Res_Conv - Res_Visc_dyn_grid;
+
+    }              
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -390,6 +515,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   su2double *Normal, Area;
   su2double *Ds, *dYdn, SdYdn;
   su2double **GradY;
+  su2double Res_Conv = 0.0, Res_Visc_dyn_grid = 0.0;
 
   /*--- Assign booleans ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -498,6 +624,46 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
           Wall_HeatFlux*Area;
 
+      /*--- Impose the value of the velocity as a strong boundary
+       condition (Dirichlet). Fix the velocity and remove any
+       contribution to the residual at this node. ---*/
+  
+      if (dynamic_grid) {
+        nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+      }
+      else {
+        su2double zero[MAXNDIM] = {0.0};
+        nodes->SetVelocity_Old(iPoint, zero);
+      }
+  
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        LinSysRes(iPoint, nSpecies+iDim) = 0.0;
+      nodes->SetVel_ResTruncError_Zero(iPoint);
+  
+      /*--- If the wall is moving, there are additional residual contributions
+       due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+  
+      if (dynamic_grid) {
+        if (implicit) {
+          for (auto iVar = 0u; iVar < nVar; ++iVar)
+            Jacobian_i[nSpecies+nDim+2][iVar] = 0.0;
+        }
+  
+        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        su2double UnitNormal[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          UnitNormal[iDim] = -Normal[iDim]/Area;
+  
+        AddDynamicGridResidualContribution(iPoint, Point_Normal, geometry, UnitNormal,
+                                           Area, geometry->nodes->GetGridVel(iPoint),
+                                           Jacobian_i, Res_Conv, Res_Visc_dyn_grid);
+
+        /*--- Convective contribution of dynamic grid to the residual at the wall ---*/
+        LinSysRes(iPoint, nSpecies+nDim) += Res_Conv - Res_Visc_dyn_grid;
+
+      }          
+
       /*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
@@ -579,6 +745,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
   su2double UnitNormal[MAXNDIM] = {0.0};
+  su2double Res_Conv = 0.0, Res_Visc_dyn_grid = 0.0;
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
@@ -693,7 +860,22 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       }
     } // implicit
 
-    /*--- Convective and viscous contributions to the residual at the wall ---*/
+
+    /*--- If the wall is moving, there are additional residual contributions
+     due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+  
+    if (dynamic_grid) {
+  
+      AddDynamicGridResidualContribution(iPoint, Point_Normal, geometry, UnitNormal,
+                                         Area, geometry->nodes->GetGridVel(iPoint),
+                                         Jacobian_i, Res_Conv, Res_Visc_dyn_grid);
+
+      /*--- Convective contribution of dynamic grid to the residual at the wall ---*/
+      LinSysRes(iPoint, nSpecies+nDim) += Res_Conv - Res_Visc_dyn_grid;
+
+    }              
+
+    /*--- Viscous contributions to the residual at the wall ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
     /*--- Enforce the no-slip boundary condition in a strong way by
@@ -723,6 +905,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CNumerics *sour_numerics,
                                                 CConfig *config,
                                                 unsigned short val_marker) {
+
+  su2double Res_Conv = 0.0, Res_Visc_dyn_grid = 0.0;
 
   SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
@@ -826,6 +1010,26 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }
+
+
+
+      /*--- If the wall is moving, there are additional residual contributions
+       due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+    
+      if (dynamic_grid) {
+
+        su2double UnitNormal[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          UnitNormal[iDim] = -Normal[iDim]/Area;        
+    
+        AddDynamicGridResidualContribution(iPoint, jPoint, geometry, UnitNormal,
+                                           Area, geometry->nodes->GetGridVel(iPoint),
+                                           Jacobian_i, Res_Conv, Res_Visc_dyn_grid);
+  
+        /*--- Convective contribution of dynamic grid to the residual at the wall ---*/
+        LinSysRes(iPoint, nSpecies+nDim) += Res_Conv - Res_Visc_dyn_grid;
+  
+      }              
 
       /*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
