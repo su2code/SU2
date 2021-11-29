@@ -821,7 +821,8 @@ private:
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
-  Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  Temperature_ve_FreeStream,       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  Soundspeed_FreeStream;           /*!< \brief Freestream speed of sound.  */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
   su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
@@ -1146,6 +1147,11 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
+
+  /* Configure options for varying freestream conditions in NEMO */
+  bool varying_freestream;                  /*!< \brief Option for activating varying freestream boundary condition. */
+  su2double new_freestream_mach,            /*!< \brief New freestream Mach number. */
+  x_upstream;                               /*!< \brief Location of the most upstream boundary. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1658,6 +1664,30 @@ public:
    * \return Non-dimensional magnitude of the free-stream velocity.
    */
   su2double GetModVel_FreeStreamND(void) const { return ModVel_FreeStreamND; }
+
+  /*!
+   * \brief Get the freestream soundspeed.
+   * \return Value of the freestream speed of sound.
+   */
+  su2double GetSoundSpeed_FreeStream(void) { return Soundspeed_FreeStream; }    
+
+  /*!
+   * \brief Get the new value of Mach number for the varying freestream boundary condition.
+   * \return New freestream Mach number.
+   */
+  su2double GetNewMach_FreeStream(void) const { return new_freestream_mach; }
+
+  /*!
+   * \brief Decide whether to apply the varying freestream boundary condition.
+   * \return <code>TRUE</code> if the varying freestream BC is to be applied, <code>FALSE</code> otherwise.
+   */
+  bool GetVarying_FreeStream(void) const { return varying_freestream; }
+
+  /*!
+   * \brief Get the x coordinate of the most-left upstream boundary.
+   * \return x coordinate of the most-left upstream boundary.
+   */
+  su2double Get_Upstream_x(void) const { return x_upstream; }  
 
   /*!
    * \brief Get the value of the laminar Prandtl number.
@@ -2539,6 +2569,12 @@ public:
    * \param[in] val_energy_freestream - Value of the freestream energy.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
+
+  /*!
+   * \brief Set the freestream soundspeed.
+   * \param[in] val_soundspeed_freestream - Value of the freestream speed of sound.
+   */
+  void SetSoundSpeed_FreeStream(su2double val_soundspeed_freestream) { Soundspeed_FreeStream = val_soundspeed_freestream; }  
 
   /*!
    * \brief Set the thermal diffusivity for solids.

@@ -1256,6 +1256,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
 
+  /*--- Options related to varying freestream boundary condition ---*/
+  addBoolOption("VARYING_FREESTREAM", varying_freestream, false);
+  /* DESCRIPTION: New freestream Mach.  */
+  addDoubleOption("NEW_FREESTREAM_MACH", new_freestream_mach, 10.0);
+  /* DESCRIPTION: x coordinate of the most-left upstream boundary.  */
+  addDoubleOption("X_UPSTREAM", x_upstream, 0.0);
 
   /*--- Options related to incompressible flow solver ---*/
 

@@ -1139,6 +1139,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   }
 
   config->SetDensity_FreeStream(Density_FreeStream);
+  config->SetSoundSpeed_FreeStream(soundspeed);
 
   /*-- Compute the freestream energy. ---*/
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
@@ -1559,6 +1560,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
+  bool varying_freestream = config->GetVarying_FreeStream();
 
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
@@ -1583,6 +1585,48 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       V_domain = nodes->GetPrimitive(iPoint);
       U_infty  = node_infty->GetSolution(0);
       V_infty  = node_infty->GetPrimitive(0);
+
+
+      // This is done assuming horizontal freestream, from left to right, increase in Mach number
+
+      if (varying_freestream) {
+
+        su2double x0             = config->Get_Upstream_x(); //from left to right
+        su2double new_mach       = config->GetNewMach_FreeStream();
+
+        su2double soundspeed     = config->GetSoundSpeed_FreeStream();
+        su2double rho_freestream = config->GetDensity_FreeStream();        
+        su2double x              = geometry->nodes->GetCoord(iPoint,0);
+        su2double Physical_dt    = config->GetDelta_UnstTime();
+        unsigned long TimeIter   = config->GetTimeIter();
+        unsigned short VEL_INDEX = nodes->GetVelIndex();
+        su2double v = 0.0;
+
+        su2double Physical_t     = TimeIter * Physical_dt;
+        su2double new_velocity   = new_mach*soundspeed; //horizontal freestream
+        su2double old_velocity   = V_infty[VEL_INDEX];  //horizontal freestream
+
+        
+
+        su2double x_new_freestream = x0 - x0 - old_velocity*Physical_t; //x - x0 - new_velocity*Physical_t;
+
+        su2double k = 1.0;
+
+        //if (x_new_freestream < 0) {
+          v = old_velocity + (new_velocity - old_velocity) * (-erf(k*Physical_t)); //old_velocity + (new_velocity - old_velocity) * (-erf(k*x_new_freestream)); //increase in Mach number
+          U_infty[nSpecies] = rho_freestream*v;
+          V_infty[VEL_INDEX] = v;
+
+          //cout << endl << "soundspeed=" << soundspeed << endl;
+          //cout << endl << "new_velocity=" << new_velocity << endl;
+          //cout << endl << "x=" << x << endl;
+          //cout << endl << "Physical_t=" << Physical_t << endl;
+          //cout << endl << "old_velocity=" << old_velocity << endl;
+          //cout << endl << "x_new_freestream=" << x_new_freestream << endl;
+          //cout << endl << "v=" << v << endl;
+        //}
+
+      }
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, U_infty);
