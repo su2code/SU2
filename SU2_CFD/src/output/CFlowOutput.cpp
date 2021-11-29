@@ -74,7 +74,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
     AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   }
-  /// DESCRIPTION: Average Species
+  /// DESCRIPTION: Species Variance
   AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
@@ -114,7 +114,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
     AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
-  /// DESCRIPTION: Average Species
+  /// DESCRIPTION: Species Variance
   AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 }
@@ -632,7 +632,10 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
-void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry, CConfig *config, su2activematrix Surface_Species_Total, vector<su2double> Surface_MassFlow_Abs_Total, vector<su2double> Surface_Area_Total) {
+void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry,
+                                                    CConfig *config, su2activematrix Surface_Species_Total,
+                                                    vector<su2double> Surface_MassFlow_Abs_Total,
+                                                    vector<su2double> Surface_Area_Total) {
 
   const unsigned short nMarker      = config->GetnMarker_All();
   const unsigned short nDim         = geometry->GetnDim();
@@ -668,9 +671,6 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
 
         if (geometry->nodes->GetDomain(iPoint)) {
 
-          su2double Vector[3];
-          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-
           su2double AxiFactor = 0.0;
           if (axisymmetric) {
             if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
@@ -691,15 +691,15 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
             AxiFactor = 1.0;
           }
 
+          su2double Vector[3];
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
           const su2double Density = flow_nodes->GetDensity(iPoint);
           su2double Area = 0.0;
           su2double MassFlow = 0.0;
-          su2double Velocity[3];
 
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = flow_nodes->GetVelocity(iPoint,iDim);
-            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+            MassFlow += Vector[iDim] * AxiFactor * Density * flow_nodes->GetVelocity(iPoint,iDim);
           }
           Area= sqrt(Area);
 

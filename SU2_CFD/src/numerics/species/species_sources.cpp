@@ -1,7 +1,7 @@
 /*!
- * \file turb_sources.cpp
+ * \file species_sources.cpp
  * \brief Implementation of numerics classes for integration of
- *        turbulence source-terms.
+ *        species transport source-terms.
  * \author T. Kattmann
  * \version 7.2.1 "Blackbird"
  *

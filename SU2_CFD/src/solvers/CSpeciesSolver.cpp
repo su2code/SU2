@@ -59,42 +59,41 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   nDim = geometry->GetnDim();
 
   /*--- Single grid simulation ---*/
-  /*--- do not see a reason to use only single grid ---*/
-  // if (iMesh == MESH_0) {
 
-  /*--- Define some auxiliary vector related with the residual ---*/
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
-  Residual_RMS.resize(nVar, 0.0);
-  Residual_Max.resize(nVar, 0.0);
-  Point_Max.resize(nVar, 0);
-  Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
+    /*--- Define some auxiliary vector related with the residual ---*/
 
-  /*--- Initialize the BGS residuals in multizone problems. ---*/
-  if (config->GetMultizone_Problem()) {
-    Residual_BGS.resize(nVar, 0.0);
-    Residual_Max_BGS.resize(nVar, 0.0);
-    Point_Max_BGS.resize(nVar, 0);
-    Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
+    Residual_RMS.resize(nVar, 0.0);
+    Residual_Max.resize(nVar, 0.0);
+    Point_Max.resize(nVar, 0);
+    Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
+
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (config->GetMultizone_Problem()) {
+      Residual_BGS.resize(nVar, 0.0);
+      Residual_Max_BGS.resize(nVar, 0.0);
+      Point_Max_BGS.resize(nVar, 0);
+      Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
+    }
+
+    /*--- Initialization of the structure of the whole Jacobian ---*/
+
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (passive scalar model)." << endl;
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE)
+        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    System.SetxIsZero(true);
+
+    if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
   }
-
-  /*--- Initialization of the structure of the whole Jacobian ---*/
-
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (passive scalar model)." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE)
-      cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
-
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  System.SetxIsZero(true);
-
-  if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-
-  //} //iMESH_0
 
   /*--- Initialize lower and upper limits---*/
 
@@ -376,9 +375,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Set the turbulent variable states. Use free-stream SST
-      values for the turbulent state at the inflow. ---*/
-      /*--- Load the inlet turbulence variables (uniform by default). ---*/
+      /*--- Set the species variable state at the inlet. ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
 

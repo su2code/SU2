@@ -33,7 +33,6 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
   /*--- Allocate space for the mass diffusivity. ---*/
   Diffusivity.resize(nPoint, nVar) = su2double(0.0);
 
-  /// NOTE TK: Consistent with SST and SA.
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint, iVar) = species_inf[iVar];

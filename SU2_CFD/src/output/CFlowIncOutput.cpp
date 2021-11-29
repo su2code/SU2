@@ -393,7 +393,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
 
-
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
@@ -448,7 +447,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+1));
   }
 
-  // All turbulence outputs.
+  // All turbulence and species outputs.
   LoadVolumeData_Scalar(config, solver, geometry, iPoint);
 
   // Streamwise Periodicity
