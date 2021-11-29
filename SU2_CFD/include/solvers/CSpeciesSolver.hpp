@@ -82,16 +82,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                      unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) final;
 
   /*!
-   * \brief Set the initial condition for the species transport problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
-                           unsigned long ExtIter) final;
-
-  /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.

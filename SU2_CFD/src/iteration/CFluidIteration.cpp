@@ -126,11 +126,11 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_SPECIES_SYS);
+    config[val_iZone]->SetGlobalParam(config[val_iZone]->GetKind_Solver(), RUNTIME_SPECIES_SYS);
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
 
-    /// NOTE TK:: THis only applies if mixture properties are used. But this also doesn't hurt if done w/out mixture properties.
+    // This only applies if mixture properties are used. But this also doesn't hurt if done w/out mixture properties.
     // In case of turbulence, the Turb-Post computes the correct eddy viscosity based on mixture-density and
     // mixture lam-visc. In order to get the correct mixture properties, based on the just updated mass-fractions, the
     // Flow-Pre has to be called upfront. The updated eddy-visc are copied into the flow-solver Primitive in another

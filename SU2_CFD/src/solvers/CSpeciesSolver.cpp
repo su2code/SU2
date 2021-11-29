@@ -319,33 +319,6 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   CommonPreprocessing(geometry, config, Output);
 }
 
-void CSpeciesSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
-                                         unsigned long ExtIter) {
-  const bool Restart = (config->GetRestart() || config->GetRestart_Flow());
-
-  /// NOTE TK:: Check whether this is done in the constructor for example and whether this is mnecessary. The TurbSolver
-  /// does not do this!
-  /*--- For a restart do nothing here. Otherwise initialize the solution with the Init value. ---*/
-  if ((!Restart) && ExtIter == 0) {
-    for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        solver_container[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, config->GetSpecies_Init());
-      }
-      END_SU2_OMP_FOR
-
-      solver_container[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-
-      solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-
-      solver_container[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh,
-                                                       NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    }
-  }
-}
-
 void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                       CNumerics* numerics, CConfig* config) {
   /*--- Define an object to set solver specific numerics contribution. ---*/
