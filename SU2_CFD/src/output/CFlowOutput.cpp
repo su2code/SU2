@@ -849,10 +849,10 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
-      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+      SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+      SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
       if (multiZone) {
-        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+        SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
       }
     }
 

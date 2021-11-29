@@ -47,7 +47,7 @@ def main():
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi.cfg_file  = "species2_primitiveVenturi.cfg"
     species2_primitiveVenturi.test_iter = 50
-    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -13.921433, 5, -0.808614, 5 , -2.351161, 5, -0.247992, 0.000140, 0.000140, 0.000000, 0.000000]
+    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -6.046002, 5, -0.808614, 5 , -2.351161, 5, -0.247992, 0.000140, 0.000140, 0.000000, 0.000000]
     species2_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi.timeout   = 1600
     species2_primitiveVenturi.new_output = True
@@ -59,7 +59,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -14.539029, -14.809699, 5, -0.808615, 5, -2.351160, 5, -0.288300, 1.645644, 0.499064, 0.601230, 0.545351]
+    species3_primitiveVenturi.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300, 1.645644, 0.499064, 0.601230, 0.545351]
     species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
     species3_primitiveVenturi.timeout   = 1600
     species3_primitiveVenturi.new_output = True
@@ -72,7 +72,7 @@ def main():
     species3_primitiveVenturi_inletFile.cfg_dir   = "species_transport/venturi_primitive_3species"
     species3_primitiveVenturi_inletFile.cfg_file  = "species3_primitiveVenturi_inletFile.cfg"
     species3_primitiveVenturi_inletFile.test_iter = 50
-    species3_primitiveVenturi_inletFile.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -14.539029, -14.809699, 5, -0.808615, 5, -2.351160, 5, -0.288300]
+    species3_primitiveVenturi_inletFile.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300]
     species3_primitiveVenturi_inletFile.su2_exec  = "mpirun -n 2 SU2_CFD"
     species3_primitiveVenturi_inletFile.timeout   = 1600
     species3_primitiveVenturi_inletFile.new_output = True
@@ -84,7 +84,7 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -10.608115, 10.000000, -4.523292, 7.000000, -5.010406]
+    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -4.607046, 10.000000, -4.523292, 7.000000, -5.010406]
     species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
     species_passive_val.timeout   = 1600
     species_passive_val.new_output = True
