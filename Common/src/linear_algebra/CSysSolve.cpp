@@ -851,9 +851,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     ScreenOutput = true;
   }
 
-  /*--- Normal mode ---*/
+  /*--- Normal mode
+   * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning. ---*/
 
-  else if (lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD) {
+  else {
 
     KindSolver   = config->GetKind_Linear_Solver();
     KindPrecond  = config->GetKind_Linear_Solver_Prec();
@@ -1010,18 +1011,15 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Normal mode ---*/
 
-  if (lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD || lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) {
-
-    KindSolver   = config->GetKind_DiscAdj_Linear_Solver();
-    KindPrecond  = config->GetKind_DiscAdj_Linear_Prec();
-    MaxIter      = config->GetLinear_Solver_Iter();
-    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-    ScreenOutput = false;
-  }
+  KindSolver   = config->GetKind_DiscAdj_Linear_Solver();
+  KindPrecond  = config->GetKind_DiscAdj_Linear_Prec();
+  MaxIter      = config->GetLinear_Solver_Iter();
+  SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+  ScreenOutput = false;
 
   /*--- Mesh Deformation mode ---*/
 
-  else if (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM) {
+  if (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
