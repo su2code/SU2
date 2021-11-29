@@ -68,6 +68,20 @@ protected:
   void SetAnalyzeSurface(const CSolver* const* solver, const CGeometry *geometry, CConfig *config, bool output);
 
   /*!
+   * \brief Compute and Set flow species variance output field values
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in,out] config - Definition of the particular problem.
+   * \param[in] Surface_Species_Total - Avg mass fraction of each species on all Marker_Analyze
+   * \param[in] Surface_MassFlow_Abs_Total - Massflow on all Marker_Analyze
+   * \param[in] Surface_Area_Total - Area of all Marker_Analyze
+   */
+  void SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry, CConfig *config,
+                                         const su2activematrix Surface_Species_Total,
+                                         const vector<su2double> Surface_MassFlow_Abs_Total,
+                                         const vector<su2double> Surface_Area_Total);
+
+  /*!
    * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config);
