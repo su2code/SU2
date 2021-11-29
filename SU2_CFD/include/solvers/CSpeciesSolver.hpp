@@ -39,8 +39,6 @@
 class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:
   unsigned short Inlet_Position;          /*!< \brief Column index for scalar variables in inlet files. */
-  su2double Species_Inf[MAXNVAR] = {0.0}; /*!< \brief Array of far-field values for the scalar variables. */
-
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
 
  public:

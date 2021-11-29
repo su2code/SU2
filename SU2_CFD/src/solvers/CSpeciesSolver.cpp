@@ -113,12 +113,12 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   /*--- Scalar variable state at the far-field. ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Species_Inf[iVar] = config->GetSpecies_Init()[iVar];
+    Solution_Inf[iVar] = config->GetSpecies_Init()[iVar];
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  nodes = new CSpeciesVariable(Species_Inf, nPoint, nDim, nVar, config);
+  nodes = new CSpeciesVariable(Solution_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   /*--- Initialize the mass diffusivity. Nondimensionalization done in the flow solver. ---*/
@@ -148,7 +148,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
     Inlet_SpeciesVars[iMarker].resize(nVertex[iMarker], nVar);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Inlet_SpeciesVars[iMarker](iVertex, iVar) = Species_Inf[iVar];
+        Inlet_SpeciesVars[iMarker](iVertex, iVar) = Solution_Inf[iVar];
       }
     }
   }
