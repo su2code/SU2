@@ -13,6 +13,13 @@ Zero indicates a uniform species distribution.
 
 - `species3_venturiPrimitive.cfg` Here, 2 additional transport equations are solved.
 In the output the `SURFACE_SPECIES_0` is tested. This is simply the surface averaged species on all `MARKER_ANALYZE` and can be weighted with `AREA` or `MASSFLOW` just like the other quantities.
+t
+- `restart_validation.sh` performs 4 simulations using `species3_venturiPrimitive.cfg` to check whether primal and primal-adjoint restarts work. This script is best used with `HISTORY_OUTPUT= RMS_RES` only as then the output is nicely comparable.
+1. Primal simulation with n+1 timesteps. This is the ground truth of the expected residual value
+2. Primal simulation with n timesteps. We will restart from this simulation.
+3. Primal simulation with 1 timestep, restarted from simulation in 2nd step.
+4. Adjoint simulation with 1 timestep, using the primal restart file from simulation in 2nd step. The printed direct residuals are taken for comparison
+
 
 - `species3_venturiPrimitive_inletFile.cfg` With the `test_inlet_files.sh` a simple sanity check for inlet files is performed.
 SU2 writes an `example_inlet_file.dat` when the specified inlet file is not available, with the values of the specified `MARKER_INLET` content.
