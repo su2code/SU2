@@ -110,12 +110,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
     }
   }
 
-  /*--- Set up fluid model for the diffusivity ---*/
-
-  su2double Diffusivity_Ref = 1.0;
-  su2double DiffusivityND = config->GetDiffusivity_Constant() / Diffusivity_Ref;
-  config->SetDiffusivity_ConstantND(DiffusivityND);
-
   /*--- Scalar variable state at the far-field. ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -127,12 +121,12 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
   nodes = new CSpeciesVariable(Species_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  /*--- Initialize the mass diffusivity ---*/
+  /*--- Initialize the mass diffusivity. Nondimensionalization done in the flow solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      const auto massDiffusivity = config->GetDiffusivity_Constant();  // TK this should be ND
-      nodes->SetDiffusivity(iPoint, massDiffusivity, iVar);
+      const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
+      nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
     }
   }
   END_SU2_OMP_FOR
@@ -309,9 +303,10 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
 
+  /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    const su2double mass_diffusivity = config->GetDiffusivity_Constant(); //TK:: ND
+    const su2double mass_diffusivity = config->GetDiffusivity_ConstantND();
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
