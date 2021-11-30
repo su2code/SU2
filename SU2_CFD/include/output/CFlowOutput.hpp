@@ -77,9 +77,9 @@ protected:
    * \param[in] Surface_Area_Total - Area of all Marker_Analyze
    */
   void SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry, CConfig *config,
-                                         const su2activematrix Surface_Species_Total,
-                                         const vector<su2double> Surface_MassFlow_Abs_Total,
-                                         const vector<su2double> Surface_Area_Total);
+                                         const su2activematrix& Surface_Species_Total,
+                                         const vector<su2double>& Surface_MassFlow_Abs_Total,
+                                         const vector<su2double>& Surface_Area_Total);
 
   /*!
    * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
