@@ -5153,8 +5153,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
-        Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_RANS)
-      SU2_MPI::Error("Species transport currently only avaialble for incompressible flow.", CURRENT_FUNCTION);
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_RANS &&
+        Kind_Solver != MAIN_SOLVER::NAVIER_STOKES &&
+        Kind_Solver != MAIN_SOLVER::RANS &&
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES &&
+        Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS)
+      SU2_MPI::Error("Species transport currently only avaialble for compressible and incompressible flow.", CURRENT_FUNCTION);
 
     // For now, do not allow axisymmetric simulations
     if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);

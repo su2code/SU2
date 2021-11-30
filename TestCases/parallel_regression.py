@@ -303,6 +303,17 @@ def main():
     turb_flatplate.tol       = 0.00001
     test_list.append(turb_flatplate)
 
+    # Flat plate (compressible) with species inlet
+    turb_flatplate_species           = TestCase('turb_flatplate_species')
+    turb_flatplate_species.cfg_dir   = "rans/flatplate"
+    turb_flatplate_species.cfg_file  = "turb_SA_flatplate_species.cfg"
+    turb_flatplate_species.test_iter = 20
+    turb_flatplate_species.test_vals = [-4.147548, -0.634735, -1.770801, 1.335176, -3.250308, 9, -6.700992, 5, -6.999234, 10, -6.033847, 0.996033, 0.996033]
+    turb_flatplate_species.su2_exec  = "parallel_computation.py -f"
+    turb_flatplate_species.timeout   = 1600
+    turb_flatplate_species.tol       = 0.00001
+    test_list.append(turb_flatplate_species)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
