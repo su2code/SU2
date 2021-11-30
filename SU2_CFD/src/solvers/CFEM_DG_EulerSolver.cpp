@@ -5756,6 +5756,10 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
   switch( config->GetKind_FEM_DG_Shock() ) {
     case FEM_SHOCK_CAPTURING_DG::NONE:
       break;
+    case FEM_SHOCK_CAPTURING_DG::PERSSON:
+      // to be done 
+      //Shock_Capturing_DG_Persson(elemBeg, elemEnd, workArray);
+      break;
   }
 }
 
