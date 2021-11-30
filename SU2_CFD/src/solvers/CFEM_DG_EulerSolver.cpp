@@ -5754,7 +5754,7 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
-    case NONE:
+    case FEM_SHOCK_CAPTURING_DG::NONE:
       break;
   }
 }
