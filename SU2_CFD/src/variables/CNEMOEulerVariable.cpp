@@ -128,7 +128,8 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
   unsigned short iVar;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
-
+  
+  //cout << endl << "cons2prim iPoint=" << iPoint << endl;
   /*--- Convert conserved to primitive variables ---*/
   bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
                               dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
@@ -204,6 +205,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
+ //cout << endl << "rhoE= " << rhoE  << endl;
+ //cout << endl << "rhoEve= " << rhoEve  << endl;
+ //cout << endl << "0.5*rho*sqvel= " << 0.5*rho*sqvel  << endl;
+
   /*--- Assign temperatures ---*/
   const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
 
@@ -212,14 +217,14 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[TVE_INDEX] = T[1];
 
   // Determine if the temperature lies within the acceptable range
-  if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
-  else if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
-  else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
+  if (V[T_INDEX] <= Tmin)      { nonPhys = true; cout << endl << "var Tmin" << endl; return nonPhys;}
+  else if (V[T_INDEX] >= Tmax) { nonPhys = true; cout << endl << "var Tmax" << endl; return nonPhys;}
+  else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; cout << endl << "var Tnan" << endl; return nonPhys;}
 
   if (!monoatomic){
-    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
-    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
-    else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; cout << endl << "var Tve min" << endl; return nonPhys;}
+    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; cout << endl << "var Tve max" << endl; return nonPhys;}
+    else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; cout << endl << "var Tve nan" << endl; return nonPhys;}
   }
   else {V[TVE_INDEX] = Tve_Freestream;}
 
@@ -241,7 +246,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[P_INDEX] = fluidmodel->ComputePressure();
 
   if (V[P_INDEX] < 0.0) {
-    V[P_INDEX] = 1E-20;
+    V[P_INDEX] = 1E-20; cout << endl << "var P" << endl;
     nonPhys = true;
   }
 

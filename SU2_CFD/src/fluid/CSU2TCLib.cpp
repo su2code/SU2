@@ -1579,6 +1579,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
+  //cout << endl << "T= " << T << endl;
+
   /*--- Set temperature clipping values ---*/
   su2double Tmin  = 50.0; su2double Tmax = 8E4;
   su2double Tve_o = 50.0; su2double Tve2 = 8E4;

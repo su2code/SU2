@@ -104,16 +104,26 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
+  //cout << endl << "before MultiGrid_Cycle" << endl;
+
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
+  //cout << endl << "after MultiGrid_Cycle" << endl;
+
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
+
+  //cout << endl << "before CMultiGridIntegration Preprocessing" << endl;
 
   solver_container[iZone][iInst][MESH_0][Solver_Position]->Preprocessing(geometry[iZone][iInst][MESH_0],
                                                                          solver_container[iZone][iInst][MESH_0],
                                                                          config[iZone], MESH_0, NO_RK_ITER,
                                                                          RunTime_EqSystem, true);
+
+  //cout << endl << "after CMultiGridIntegration Preprocessing" << endl;
+
+  //exit(0);
 
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
 
@@ -176,8 +186,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
 
+      //cout << endl << "before CMultiGridIntegration solver_fine->Preprocessing" << endl;
+
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
+      //cout << endl << "after CMultiGridIntegration solver_fine->Preprocessing" << endl;
 
       if (iRKStep == 0) {
 
