@@ -4090,31 +4090,31 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
         allocate memory for the corresponding class. ---*/
   switch( config->GetVerification_Solution() ) {
 
-    case NO_VERIFICATION_SOLUTION:
+    case VERIFICATION_SOLUTION::NONE:
       VerificationSolution = nullptr; break;
-    case INVISCID_VORTEX:
+    case VERIFICATION_SOLUTION::INVISCID_VORTEX:
       VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
-    case RINGLEB:
+    case VERIFICATION_SOLUTION::RINGLEB:
       VerificationSolution = new CRinglebSolution(nDim, nVar, MGLevel, config); break;
-    case NS_UNIT_QUAD:
+    case VERIFICATION_SOLUTION::NS_UNIT_QUAD:
       VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
-    case TAYLOR_GREEN_VORTEX:
+    case VERIFICATION_SOLUTION::TAYLOR_GREEN_VORTEX:
       VerificationSolution = new CTGVSolution(nDim, nVar, MGLevel, config); break;
-    case INC_TAYLOR_GREEN_VORTEX:
+    case VERIFICATION_SOLUTION::INC_TAYLOR_GREEN_VORTEX:
       VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_UNIT_QUAD:
+    case VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_UNIT_QUAD_WALL_BC:
+    case VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD_WALL_BC:
       VerificationSolution = new CMMSNSUnitQuadSolutionWallBC(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_TWO_HALF_CIRCLES:
+    case VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_CIRCLES:
       VerificationSolution = new CMMSNSTwoHalfCirclesSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_TWO_HALF_SPHERES:
+    case VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_SPHERES:
       VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_INC_EULER:
+    case VERIFICATION_SOLUTION::MMS_INC_EULER:
       VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_INC_NS:
+    case VERIFICATION_SOLUTION::MMS_INC_NS:
       VerificationSolution = new CMMSIncNSSolution(nDim, nVar, MGLevel, config); break;
-    case USER_DEFINED_SOLUTION:
+    case VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION:
       VerificationSolution = new CUserDefinedSolution(nDim, nVar, MGLevel, config); break;
   }
 }

@@ -427,7 +427,7 @@ CSolver* CSolverFactory::CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry 
 
   switch (kindDGSolver) {
     case SUB_SOLVER_TYPE::DG_EULER:
-      if (config->GetKind_FEM_DG_Shock() == PERSSON){
+      if (config->GetKind_FEM_DG_Shock() == FEM_SHOCK_CAPTURING_DG::PERSSON){
         DGSolver = new CFEM_DG_NSSolver(geometry, config, iMGLevel);
       } else {
         DGSolver = new CFEM_DG_EulerSolver(geometry, config, iMGLevel);

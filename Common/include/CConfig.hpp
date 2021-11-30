@@ -539,8 +539,8 @@ private:
   Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
-  Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
+  FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
   BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
@@ -569,7 +569,7 @@ private:
   unsigned short nTurbVar;          /*!< \brief Number of Turbulence variables, i.e. 1 for SA-types, 2 for SST. */
   TURB_MODEL Kind_Turb_Model;       /*!< \brief Turbulent model definition. */
   SPECIES_MODEL Kind_Species_Model; /*!< \brief Species model definition. */
-  unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
+  TURB_SGS_MODEL Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
@@ -1096,7 +1096,7 @@ private:
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
-  unsigned short Kind_Verification_Solution; /*!< \brief Verification solution for accuracy assessment. */
+  VERIFICATION_SOLUTION Kind_Verification_Solution; /*!< \brief Verification solution for accuracy assessment. */
 
   bool Time_Domain;              /*!< \brief Determines if the multizone problem is solved in time-domain */
   unsigned long nOuterIter,      /*!< \brief Determines the number of outer iterations in the multizone problem */
@@ -1197,7 +1197,7 @@ private:
   map<string, COptionBase*> option_map;
 
 
-  // All of the addXxxOptions take in the name of the option, and a refernce to the field of that option
+  // All of the addXxxOptions take in the name of the option, and a reference to the field of that option
   // in the option structure. Depending on the specific type, it may take in a default value, and may
   // take in extra options. The addXxxOptions mostly follow the same pattern, so please see addDoubleOption
   // for detailed comments.
@@ -4289,7 +4289,7 @@ public:
    * \brief Get the kind of the subgrid scale model.
    * \return Kind of the subgrid scale model.
    */
-  unsigned short GetKind_SGS_Model(void) const { return Kind_SGS_Model; }
+  TURB_SGS_MODEL GetKind_SGS_Model(void) const { return Kind_SGS_Model; }
 
   /*!
    * \brief Get the kind of time integration method.
@@ -4528,7 +4528,7 @@ public:
    *       during the computation.
    * \return Kind of shock capturing method in FEM DG solver.
    */
-  unsigned short GetKind_FEM_DG_Shock(void) const { return Kind_FEM_DG_Shock; }
+  FEM_SHOCK_CAPTURING_DG GetKind_FEM_DG_Shock(void) const { return Kind_FEM_Shock_Capturing_DG; }
 
   /*!
    * \brief Get the kind of matrix coloring used for the sparse Jacobian computation.
@@ -9041,7 +9041,7 @@ public:
    * \brief Get the verification solution.
    * \return The verification solution to be used.
    */
-  unsigned short GetVerification_Solution(void) const { return Kind_Verification_Solution;}
+  VERIFICATION_SOLUTION GetVerification_Solution(void) const { return Kind_Verification_Solution;}
 
   /*!
    * \brief Get topology optimization.

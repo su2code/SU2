@@ -151,7 +151,7 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
   }
 
-  if (config->GetKind_Solver() == MAIN_SOLVER::FEM_LES && (config->GetKind_SGS_Model() != IMPLICIT_LES)) {
+  if (config->GetKind_Solver() == MAIN_SOLVER::FEM_LES && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 }
@@ -221,7 +221,7 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   if (config->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
   }
-  if ((config->GetKind_Solver()  == MAIN_SOLVER::FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+  if ((config->GetKind_Solver()  == MAIN_SOLVER::FEM_LES) && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)){
     // todo: Export Eddy instead of Laminar viscosity
     SetVolumeOutputValue("EDDY_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
   }
