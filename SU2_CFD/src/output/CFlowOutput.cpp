@@ -633,12 +633,11 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 }
 
 void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry,
-                                                    CConfig *config, su2activematrix Surface_Species_Total,
-                                                    vector<su2double> Surface_MassFlow_Abs_Total,
-                                                    vector<su2double> Surface_Area_Total) {
+                                                    CConfig *config, const su2activematrix& Surface_Species_Total,
+                                                    const vector<su2double>& Surface_MassFlow_Abs_Total,
+                                                    const vector<su2double>& Surface_Area_Total) {
 
   const unsigned short nMarker      = config->GetnMarker_All();
-  const unsigned short nDim         = geometry->GetnDim();
   const unsigned short Kind_Average = config->GetKind_Average();
 
   const bool species        = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
