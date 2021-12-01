@@ -65,62 +65,76 @@ protected:
    * \param[in,out] config - Definition of the particular problem.
    * \param[in] output - Boolean indicating whether information should be written to screen
    */
-  void SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output);
+  void SetAnalyzeSurface(const CSolver* const* solver, const CGeometry *geometry, CConfig *config, bool output);
 
   /*!
-   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Compute and Set flow species variance output field values
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in,out] config - Definition of the particular problem.
+   * \param[in] Surface_Species_Total - Avg mass fraction of each species on all Marker_Analyze
+   * \param[in] Surface_MassFlow_Abs_Total - Massflow on all Marker_Analyze
+   * \param[in] Surface_Area_Total - Area of all Marker_Analyze
    */
-  void AddHistoryOutputFields_TurbRMS_RES(const CConfig* config);
+  void SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver, const CGeometry *geometry, CConfig *config,
+                                         const su2activematrix& Surface_Species_Total,
+                                         const vector<su2double>& Surface_MassFlow_Abs_Total,
+                                         const vector<su2double>& Surface_Area_Total);
 
   /*!
-   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void AddHistoryOutputFields_TurbMAX_RES(const CConfig* config);
+  void AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config);
 
   /*!
-   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void AddHistoryOutputFields_TurbBGS_RES(const CConfig* config);
+  void AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config);
 
   /*!
-   * \brief Add turbulence history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void AddHistoryOutputFields_TurbLinsol(const CConfig* config);
+  void AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config);
 
   /*!
-   * \brief Set all turbulence history field values.
+   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
    */
-  void LoadHistoryData_Turb(const CConfig* config, const CSolver* const* solver);
+  void AddHistoryOutputFields_ScalarLinsol(const CConfig* config);
 
   /*!
-   * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \brief Set all scalar (turbulence/species) history field values.
+   */
+  void LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_TurbSolution(const CConfig* config);
+  void SetVolumeOutputFields_ScalarSolution(const CConfig* config);
 
   /*!
-   * \brief Add turbulence volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_TurbResidual(const CConfig* config);
+  void SetVolumeOutputFields_ScalarResidual(const CConfig* config);
 
   /*!
-   * \brief Add turbulence volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVolumeOutputFields_TurbLimiter(const CConfig* config);
+  void SetVolumeOutputFields_ScalarLimiter(const CConfig* config);
 
   /*!
-   * \brief Set all turbulence volume field values for a point.
+   * \brief Set all scalar (turbulence/species) volume field values for a point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData_Turb(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
-                           const unsigned long iPoint);
+  void LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+                             const unsigned long iPoint);
 
   /*!
    * \brief Add aerodynamic coefficients as output fields

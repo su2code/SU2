@@ -125,6 +125,22 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     }
   }
 
+  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
+    config[val_iZone]->SetGlobalParam(config[val_iZone]->GetKind_Solver(), RUNTIME_SPECIES_SYS);
+    integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                         RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
+
+    // This only applies if mixture properties are used. But this also doesn't hurt if done w/out mixture properties.
+    // In case of turbulence, the Turb-Post computes the correct eddy viscosity based on mixture-density and
+    // mixture lam-visc. In order to get the correct mixture properties, based on the just updated mass-fractions, the
+    // Flow-Pre has to be called upfront. The updated eddy-visc are copied into the flow-solver Primitive in another
+    // Flow-Pre call which is done at the start of the next iteration.
+    if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+      solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+      solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    }
+  }
+
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
     config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,

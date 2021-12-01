@@ -278,6 +278,7 @@ public:
                              string val_marker,
                              const CGeometry *geometry,
                              const CConfig *config) const override;
+
   /*!
    * \brief Set a uniform inlet profile
    *

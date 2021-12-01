@@ -40,6 +40,8 @@ protected:
   VectorType muT; /*!< \brief Eddy viscosity. */
 
 public:
+  static constexpr size_t MAXNVAR = 2;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.

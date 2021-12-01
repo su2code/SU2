@@ -950,9 +950,11 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
-  /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
-   *    after it loads its variables (they are needed to compute flow primitives). ---*/
-  if (config->GetKind_Turb_Model() == TURB_MODEL::NONE) {
+  /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
+   *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
+   *    species solver does all the Pre-/Postprocessing. ---*/
+  if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
+      config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
@@ -981,7 +983,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::NONE) {
+    if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
+        config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
   }

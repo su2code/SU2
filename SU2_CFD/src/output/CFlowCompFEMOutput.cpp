@@ -262,7 +262,7 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(flow_solver, geometry, config, false);
+  SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 

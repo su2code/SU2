@@ -76,7 +76,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -481,6 +481,8 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
+  RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
+  RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -497,6 +499,9 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+
+const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
+const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -687,6 +692,21 @@ enum class CONDUCTIVITYMODEL_TURB {
 static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
   MakePair("NONE", CONDUCTIVITYMODEL_TURB::NONE)
   MakePair("CONSTANT_PRANDTL_TURB", CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL)
+};
+
+/*!
+ * \brief types of mass diffusivity models
+ */
+enum class DIFFUSIVITYMODEL {
+  CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
+  CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
+  UNITY_LEWIS,          /*!< \brief Unity Lewis model */
+};
+
+static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
+  MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
+  MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
+  MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
 };
 
 /*!
@@ -921,6 +941,18 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
   MakePair("BC", TURB_TRANS_MODEL::BC)
+};
+
+/*!
+ * \brief types of species transport models
+ */
+enum class SPECIES_MODEL {
+  NONE,              /*!< \brief No scalar transport model. */
+  PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
+};
+static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
+  MakePair("NONE", SPECIES_MODEL::NONE)
+  MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
 };
 
 /*!

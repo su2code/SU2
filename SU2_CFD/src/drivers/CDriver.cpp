@@ -85,6 +85,9 @@
 #include "../../include/numerics/turbulent/turb_convection.hpp"
 #include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
+#include "../../include/numerics/species/species_convection.hpp"
+#include "../../include/numerics/species/species_diffusion.hpp"
+#include "../../include/numerics/species/species_sources.hpp"
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEANonlinearElasticity.hpp"
@@ -1080,6 +1083,9 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     if (solver[MESH_0][TURB_SOL]) {
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
     }
+    if (solver[MESH_0][SPECIES_SOL]) {
+      solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
+    }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
 
@@ -1103,6 +1109,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
         if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][SPECIES_SOL]) solver[iMesh][SPECIES_SOL]->SetUniformInlet(config, iMarker);
       }
     }
 
@@ -1324,6 +1331,63 @@ template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<
 template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
+template <class Indices>
+void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
+                                         const CSolver* species_solver, CNumerics ****&numerics) const {
+  const int conv_term = CONV_TERM + offset;
+  const int visc_term = VISC_TERM + offset;
+
+  const int source_first_term = SOURCE_FIRST_TERM + offset;
+  const int source_second_term = SOURCE_SECOND_TERM + offset;
+
+  const int conv_bound_term = CONV_BOUND_TERM + offset;
+  const int visc_bound_term = VISC_BOUND_TERM + offset;
+
+  /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
+
+  switch (config->GetKind_ConvNumScheme_Species()) {
+    case NONE :
+      break;
+    case SPACE_UPWIND :
+      for (auto iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+        numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
+        numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
+      }
+      break;
+    default :
+      SU2_MPI::Error("Invalid convective scheme for the species transport equations. Use SCALAR_UPWIND.", CURRENT_FUNCTION);
+      break;
+  }
+
+  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, true, config);
+    numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, false, config);
+  }
+
+  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+
+  for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    if (config->GetAxisymmetric() == YES) {
+      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config);
+    }
+    else {
+      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
+    }
+    numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+  }
+}
+/*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
+template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
+template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
+    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+
 void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
 
   if (rank == MASTER_NODE)
@@ -1338,6 +1402,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   nPrimVarGrad_NEMO     = 0,
   nVar_Trans            = 0,
   nVar_Turb             = 0,
+  nVar_Species          = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
@@ -1357,6 +1422,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   euler = ns = NEMO_euler = NEMO_ns = turbulent = adj_euler = adj_ns = adj_turb = fem_euler = fem_ns = false;
   fem = heat = transition = template_solver = false;
+  bool species = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -1369,7 +1435,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     case MAIN_SOLVER::NAVIER_STOKES:
     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
-      ns = compressible = true; break;
+      ns = compressible = true;
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::NEMO_EULER:
       NEMO_euler = compressible = true; break;
@@ -1380,7 +1447,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM); break;
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:
     case MAIN_SOLVER::DISC_ADJ_INC_EULER:
@@ -1389,13 +1457,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case MAIN_SOLVER::INC_NAVIER_STOKES:
     case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       ns = incompressible = true;
-      heat = config->GetWeakly_Coupled_Heat(); break;
+      heat = config->GetWeakly_Coupled_Heat();
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::INC_RANS:
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       ns = incompressible = turbulent = true;
       heat = config->GetWeakly_Coupled_Heat();
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM); break;
+      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      species = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE); break;
 
     case MAIN_SOLVER::FEM_EULER:
     case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
@@ -1448,6 +1518,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (NEMO_ns)      nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver[MESH_0][TRANS_SOL]->GetnVar();
+  if (species)      nVar_Species = solver[MESH_0][SPECIES_SOL]->GetnVar();
 
   if (fem_euler)    nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
@@ -1977,6 +2048,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
     }
+  }
+
+  /*--- Solver definition for the species transport problem ---*/
+
+  if (species) {
+    if (incompressible)
+      InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
+                                                                               solver[MESH_0][SPECIES_SOL], numerics);
+    else if (compressible)
+      InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
+                                                                            solver[MESH_0][SPECIES_SOL], numerics);
+    else
+      SU2_MPI::Error("Species transport only available for standard compressible and incompressible flow.", CURRENT_FUNCTION);
   }
 
   /*--- Solver definition of the finite volume heat solver  ---*/
@@ -2757,6 +2841,15 @@ void CDriver::Print_DirectResidual(RECORDING kind_recording) {
           }
         }
 
+        if (configs->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+          for (unsigned short iVar = 0; iVar < solvers[SPECIES_SOL]->GetnVar(); iVar++) {
+            if (!addVals)
+              RMSTable.AddColumn("rms_Spec" + iVar_iZone2string(iVar, iZone), fieldWidth);
+            else
+              RMSTable << log10(solvers[SPECIES_SOL]->GetRes_RMS(iVar));
+          }
+        }
+
         if (!multizone && configs->GetWeakly_Coupled_Heat()){
           if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
           else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
@@ -2896,8 +2989,9 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   if(!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]->GetFluidProblem()) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
+        }
       }
     }
   }
