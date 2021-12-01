@@ -217,7 +217,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[TVE_INDEX] = T[1];
 
   // Determine if the temperature lies within the acceptable range
-  if (V[T_INDEX] <= Tmin)      { nonPhys = true; cout << endl << "var Tmin" << endl; return nonPhys;}
+  if (V[T_INDEX] <= Tmin)      { nonPhys = true;}// cout << endl << "var Tmin" << endl; return nonPhys;}
   else if (V[T_INDEX] >= Tmax) { nonPhys = true; cout << endl << "var Tmax" << endl; return nonPhys;}
   else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; cout << endl << "var Tnan" << endl; return nonPhys;}
 

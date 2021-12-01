@@ -1558,12 +1558,13 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
 
-  //cout << endl << "BC FARFIELD" << endl;
-
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *V_infty, *V_domain, *U_domain,*U_infty;
+
+  su2double *U_aux = new su2double[nVar];
+  su2double *V_aux = new su2double[nPrimVar];
 
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1594,13 +1595,11 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       U_infty  = node_infty->GetSolution(0);
       V_infty  = node_infty->GetPrimitive(0);
 
+      for (iVar = 0; iVar < nVar; iVar++)     U_aux[iVar]=node_infty->GetSolution(0,iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_aux[iVar]=node_infty->GetPrimitive(0,iVar);
 
       unsigned short VEL_INDEX = nodes->GetVelIndex();
       unsigned short H_INDEX = nodes->GetHIndex();
-      //cout << endl << "old U_infty[nSpecies]= " << U_infty[nSpecies] << endl;
-      //cout << endl << "old U_infty[nSpecies+nDim]= " << U_infty[nSpecies+nDim] << endl;
-      //cout << endl << "old V_infty[VEL_INDEX]= " << V_infty[VEL_INDEX] << endl;
-
 
       // This is done assuming horizontal freestream, from left to right, increase in Mach number
 
@@ -1627,41 +1626,48 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
         su2double x_new_freestream = x - x0 - new_velocity*Physical_t; //x - x0 - new_velocity*Physical_t;
 
-        su2double k = 10.0;
+        su2double k = 1.0;
 
-        //if (x_new_freestream < 0) {
-        if (x < 0.005){
-          //cout << endl << "x=" << x << endl;
-          v = old_velocity + (new_velocity - old_velocity) * (erf(k*Physical_t)); //old_velocity + (new_velocity - old_velocity) * (-erf(k*x_new_freestream)); //increase in Mach number
-          U_infty[nSpecies]      = rho_freestream*v;
-          U_infty[nSpecies+nDim] = rho_freestream* (Energy_FreeStream - 0.5*sqvel_old + 0.5*v*v);
-          V_infty[VEL_INDEX]     = v;
-          V_infty[H_INDEX] = (U_infty[nSpecies+nDim] + Pressure_FreeStream)/rho_freestream;
+        cout << endl << endl << "bc farfield iPoint=" << iPoint << endl;
+        cout << endl << "x=" << x << endl;
+        cout << "x_new_freestream=" << x_new_freestream << endl;
+        cout << "old_velocity=" << old_velocity << endl;
+        cout << "new_velocity=" << new_velocity << endl;
 
-          //cout << endl << "bc farfield iPoint=" << iPoint << endl;
-          
-          //cout << "new U_infty[nSpecies]=" << U_infty[nSpecies] << endl;
-          //cout << endl << "soundspeed=" << soundspeed << endl;
-          //cout << "new V_infty[VEL_INDEX]=" << V_infty[VEL_INDEX] << endl;
-          //cout << endl << "x=" << x << endl;
-          //cout << endl << "Physical_t=" << Physical_t << endl;
-          //cout << endl << "x_new_freestream=" << x_new_freestream << endl;
-          //cout << endl << "v=" << v << endl;
+        if (x_new_freestream < 0) {
 
-          //cout << "new U_infty[nSpecies+nDim]= " << U_infty[nSpecies+nDim] << endl;
+          v = old_velocity + (new_velocity - old_velocity) * (erf(-k*x_new_freestream)); //old_velocity + (new_velocity - old_velocity) * (-erf(k*x_new_freestream)); //increase in Mach number
+          U_aux[nSpecies]      = rho_freestream*v;
+          U_aux[nSpecies+nDim] = rho_freestream* (Energy_FreeStream - 0.5*sqvel_old + 0.5*v*v);
+          V_aux[VEL_INDEX]     = v;
+          V_aux[H_INDEX] = (U_aux[nSpecies+nDim] + Pressure_FreeStream)/rho_freestream;
 
-          //cout << "new 0.5*rho*sqvel= " << 0.5*rho_freestream*v*v << endl;
+         
+          cout << "YES" << endl;
+          cout << "V_aux[VEL_INDEX]=" << V_aux[VEL_INDEX] << endl;
+
+          /*--- Pass conserved & primitive variables to CNumerics ---*/
+          conv_numerics->SetConservative(U_domain, U_aux);
+          conv_numerics->SetPrimitive(V_domain, V_aux);
+
+
+        } else {
+
+          /*--- Pass conserved & primitive variables to CNumerics ---*/
+          conv_numerics->SetConservative(U_domain, U_infty);
+          conv_numerics->SetPrimitive(V_domain, V_infty);
+          cout << "NO" << endl;
+          cout << "V_infty[VEL_INDEX]=" << V_infty[VEL_INDEX] << endl;
 
         }
+      } else {
+
+          conv_numerics->SetConservative(U_domain, U_infty);
+          conv_numerics->SetPrimitive(V_domain, V_infty);        
+
       }
 
-      //cout << endl << "bc farfield iPoint=" << iPoint << endl;
-      //for (int iVar = 0; iVar < nVar; iVar++) cout << "U_infty[" << iVar << "]= " << U_infty[iVar] << endl;
-      //for (int iVar = 0; iVar < nPrimVar; iVar++) cout << "V_infty[" << iVar << "]= " << V_infty[iVar] << endl;
-
-      /*--- Pass conserved & primitive variables to CNumerics ---*/
-      conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      //cout << "node_infty->GetPrimitive(0, VEL_INDEX)= " << node_infty->GetPrimitive(0,VEL_INDEX) << endl;
 
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
@@ -1674,12 +1680,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
       auto residual = conv_numerics->ComputeResidual(config);
-
-
-
-      //for (int iVar = 0; iVar < nVar; iVar++) cout << "residual[" << iVar << "]= " << residual[iVar] << endl;
-
-      //exit(0);
 
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
