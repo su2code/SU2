@@ -51,7 +51,6 @@
 #include "../../include/solvers/CBaselineSolver.hpp"
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
-#include "../../include/solvers/CGradientSmoothingSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -116,26 +115,22 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
     case MAIN_SOLVER::DISC_ADJ_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[GRADIENT_SMOOTHING] = CreateSubSolver(SUB_SOLVER_TYPE::GRAD_SMOOTH, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[GRADIENT_SMOOTHING] = CreateSubSolver(SUB_SOLVER_TYPE::GRAD_SMOOTH, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
-      solver[GRADIENT_SMOOTHING] = CreateSubSolver(SUB_SOLVER_TYPE::GRAD_SMOOTH, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
-      solver[GRADIENT_SMOOTHING] = CreateSubSolver(SUB_SOLVER_TYPE::GRAD_SMOOTH, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -144,7 +139,6 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
-      solver[GRADIENT_SMOOTHING] = CreateSubSolver(SUB_SOLVER_TYPE::GRAD_SMOOTH, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -155,7 +149,6 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
-      solver[GRADIENT_SMOOTHING] = CreateSubSolver(SUB_SOLVER_TYPE::GRAD_SMOOTH, solver, geometry, config, iMGLevel);
     break;
     case MAIN_SOLVER::DISC_ADJ_HEAT:
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -304,11 +297,6 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
         genericSolver = new CDiscAdjSolver(geometry, config, solver[RAD_SOL], RUNTIME_RADIATION_SYS, iMGLevel);
       }
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
-      break;
-    case SUB_SOLVER_TYPE::GRAD_SMOOTH:
-      if (iMGLevel == MESH_0 && config->GetSmoothGradient() ) {
-        genericSolver = new CGradientSmoothingSolver(geometry, config);
-      }
       break;
     default:
       SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);

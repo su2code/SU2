@@ -50,10 +50,10 @@ CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
     Eta = GaussCoord[iGauss][1];
     Zeta = GaussCoord[iGauss][2];
 
-    val_Ni = Xi;						  GaussPoint[iGauss].SetNi(val_Ni,0);
-    val_Ni = Eta;						  GaussPoint[iGauss].SetNi(val_Ni,1);
-    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss].SetNi(val_Ni,2);
-    val_Ni = Zeta;					  GaussPoint[iGauss].SetNi(val_Ni,3);
+    val_Ni = Xi;              GaussPoint[iGauss].SetNi(val_Ni,0);
+    val_Ni = Eta;             GaussPoint[iGauss].SetNi(val_Ni,1);
+    val_Ni = 1.0-Xi-Eta-Zeta; GaussPoint[iGauss].SetNi(val_Ni,2);
+    val_Ni = Zeta;            GaussPoint[iGauss].SetNi(val_Ni,3);
 
     /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
 

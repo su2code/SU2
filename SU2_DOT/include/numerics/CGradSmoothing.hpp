@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "CNumerics.hpp"
 #include "../../../Common/include/geometry/elements/CElement.hpp"
+#include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
 
 /*!
  * \class CGradSmoothing

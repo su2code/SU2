@@ -37,7 +37,7 @@
 
 #pragma once
 
-#include "CVariable.hpp"
+#include "../../../SU2_CFD/include/variables/CVariable.hpp"
 
 class CSobolevSmoothingVariable : public CVariable {
 public:

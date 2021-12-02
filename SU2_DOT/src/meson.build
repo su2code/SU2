@@ -1,5 +1,9 @@
 su2_dot_src = ['SU2_DOT.cpp']
 
+su2_dot_src += files(['variables/CSobolevSmoothingVariable.cpp'])
+su2_dot_src += files(['solvers/CGradientSmoothingSolver.cpp'])
+su2_dot_src += files(['numerics/CGradSmoothing.cpp'])
+
 if get_option('enable-normal')
   su2_cfd_obj = su2_cfd_lib.extract_objects(['solvers/CSolver.cpp',
                                              'solvers/CBaselineSolver.cpp',
@@ -28,7 +32,8 @@ if get_option('enable-normal')
                                              'output/filewriter/CCGNSFileWriter.cpp',
                                              'variables/CBaselineVariable.cpp',
                                              'variables/CVariable.cpp',
-                                             'limiters/CLimiterDetails.cpp'])
+                                             'limiters/CLimiterDetails.cpp',
+                                             'numerics/CNumerics.cpp'])
   su2_dot = executable('SU2_DOT',
                       su2_dot_src, 
                       install: true,
@@ -66,7 +71,8 @@ if get_option('enable-autodiff')
                                                    'output/filewriter/CCGNSFileWriter.cpp',
                                                    'variables/CBaselineVariable.cpp',
                                                    'variables/CVariable.cpp',
-                                                   'limiters/CLimiterDetails.cpp'])
+                                                   'limiters/CLimiterDetails.cpp',
+                                                   'numerics/CNumerics.cpp'])
 
   su2_dot_ad = executable('SU2_DOT_AD',
                           su2_dot_src,

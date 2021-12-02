@@ -27,10 +27,10 @@
 
 #pragma once
 
-#include "CSolver.hpp"
 #include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
+#include "../../../SU2_CFD/include/solvers/CSolver.hpp"
 
 /** Introduction of a new data type to allow compilation with forward mode.
   *
@@ -101,8 +101,7 @@ public:
    * \brief Main routine for applying the solver on the volume sensitivities
    */
   void ApplyGradientSmoothingVolume(CGeometry *geometry,
-                                    CSolver *solver,
-                                    CNumerics **numerics,
+                                    CNumerics *numerics,
                                     CConfig *config) override;
 
   /*!
@@ -110,34 +109,33 @@ public:
    *        Projects and smoothes only in the normal direction!
    */
   void ApplyGradientSmoothingSurface(CGeometry *geometry,
-                                       CSolver *solver,
-                                       CNumerics **numerics,
-                                       CConfig *config,
-                                       unsigned long val_marker) override;
+                                     CNumerics *numerics,
+                                     CConfig *config,
+                                     unsigned long val_marker) override;
 
   /*!
    * \brief All steps required for smoothing the whole system on DV level in an iterative way
    */
   void ApplyGradientSmoothingDV(CGeometry *geometry,
-                                CSolver *solver,
-                                CNumerics **numerics,
+                                CNumerics *numerics,
                                 CSurfaceMovement *surface_movement,
                                 CVolumetricMovement *grid_movement,
-                                CConfig *config) override;
+                                CConfig *config,
+                                su2double** Gradient) override;
 
 
   /*!
    * \brief Assemble the stiffness matrix
    */
   void Compute_StiffMatrix(CGeometry *geometry,
-                           CNumerics **numerics,
+                           CNumerics *numerics,
                            CConfig *config);
 
   /*!
    * \brief Compute the stiffness matrix of the surface mesh
    */
   void Compute_Surface_StiffMatrix(CGeometry *geometry,
-                                   CNumerics **numerics,
+                                   CNumerics *numerics,
                                    CConfig *config,
                                    unsigned long val_marker,
                                    unsigned int nSurfDim=1);
@@ -146,14 +144,12 @@ public:
    * \brief Calculate the RHS of the PDE
    */
   void Compute_Residual(CGeometry *geometry,
-                        CSolver *solver,
                         CConfig *config);
 
   /*!
    * \brief Compute the RHS of the PDE on the surface mesh
    */
   void Compute_Surface_Residual(CGeometry *geometry,
-                                CSolver *solver,
                                 CConfig *config,
                                 unsigned long val_marker);
 
@@ -161,15 +157,12 @@ public:
    * \brief Set the boundary conditions
    */
   void Impose_BC(CGeometry *geometry,
-                 CNumerics **numerics,
                  CConfig *config);
 
   /*!
    * \brief Set Dirichlet boundary conditions
    */
   void BC_Dirichlet(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CNumerics **numerics,
                     CConfig *config,
                     unsigned int val_marker);
 
@@ -191,7 +184,7 @@ public:
    * \note This always applies the stiffness matrix for all dimensions independent of each other!
    */
   CSysMatrixVectorProduct<su2matvecscalar> GetStiffnessMatrixVectorProduct(CGeometry *geometry,
-                                                                           CNumerics **numerics,
+                                                                           CNumerics *numerics,
                                                                            CConfig *config);
 
   /*!
@@ -199,7 +192,8 @@ public:
    */
   void CalculateOriginalGradient(CGeometry *geometry,
                                  CVolumetricMovement* grid_movement,
-                                 CConfig *config);
+                                 CConfig *config,
+                                 su2double **Gradient);
 
   /*!
    * \brief Return the original gradient for application in OneShot.
@@ -207,17 +201,13 @@ public:
   void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
                                               CSurfaceMovement *surface_movement,
                                               CVolumetricMovement *grid_movement,
-                                              CConfig *config) override;
+                                              CConfig *config,
+                                              su2double** Gradient) override;
 
   /*!
    * \brief Return current parameter gradient.
    */
   inline vector<su2double> GetDeltaP() override { return deltaP; }
-
-  /*!
-   * \brief Return a handle for the Hessian.
-   */
-  void GetHessianMatrix() override {}
 
   /*!
    * \brief write the DV gradient into a file
@@ -260,30 +250,16 @@ public:
                        CConfig *config);
 
   /*!
-   * \brief Extract and set the sensitivity from the discrete adjoint solver.
+   * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry,
-                      CConfig *config,
-                      CSolver *solver) override;
-
-  /*!
-   * \brief Store smoothed sensitivties back into the adjoint solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void OutputSensitivity(CGeometry *geometry,
-                         CConfig *config,
-                         CSolver *solver) override;
+  void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) override;
 
   /*!
    * \brief Write the solution of the linear solver into the sensitivities of the nodes
    */
   void WriteSensitivity(CGeometry *geometry,
-                          CSolver *solver,
                           CConfig *config,
                           unsigned long val_marker=0);
 

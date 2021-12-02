@@ -36,7 +36,7 @@
  * \ingroup Discrete_Adjoint
  * \author T. Albring
  */
-class CDiscAdjSolver : public CSolver {
+class CDiscAdjSolver final : public CSolver {
 protected:
   static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 32; /*!< \brief Max number of variables, for static arrays. */

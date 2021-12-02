@@ -5192,7 +5192,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
-  Marker_All_SobolevBC      = new unsigned short[nMarker_All] ();	// Store wether the boundary should apply to the gradient smoothing.
+  Marker_All_SobolevBC      = new unsigned short[nMarker_All] (); // Store wether the boundary should apply to the gradient smoothing.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";

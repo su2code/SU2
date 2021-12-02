@@ -322,11 +322,15 @@ int main(int argc, char *argv[]) {
       /*--- If AD mode is enabled we can use it to compute the projection,
        *    otherwise we use finite differences. ---*/
 
-      if (config_container[iZone]->GetAD_Mode())
-        SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
-      else
+      if (config_container[iZone]->GetAD_Mode()) {
+        if (config_container[iZone]->GetSmoothGradient()) {
+          DerivativeTreatment(geometry_container[iZone][INST_0], config_container[iZone], grid_movement[iZone], surface_movement[iZone] , Gradient);
+        } else {
+          SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
+        }
+      } else {
         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
-
+      }
     }
   } // for iZone
 
@@ -954,6 +958,65 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     delete output;
     delete solver;
 
+  }
+
+}
+
+void DerivativeTreatment(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, CSurfaceMovement *surface_movement, su2double** Gradient) {
+
+  int rank = SU2_MPI::GetRank();
+
+  /*-- Construct the smoothing solver and numerics ---*/
+  CSolver* solver = new CGradientSmoothingSolver(geometry, config);
+  CNumerics* numerics;
+  if (config->GetSmoothOnSurface()) {
+    numerics = new CGradSmoothing(geometry->GetnDim()-1, config);
+  } else {
+    numerics = new CGradSmoothing(geometry->GetnDim(), config);
+  }
+
+  if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
+
+  /*--- Get the sensitivities from the geometry class to work with. ---*/
+  solver->ReadSens2Geometry(geometry,config);
+
+  /*--- Apply the smoothing procedure on the mesh level. ---*/
+  if (config->GetSobMode()==MESH_LEVEL || config->GetSobMode()==DEBUG ) {
+
+    if (rank == MASTER_NODE)  cout << "  working on mesh level (including debug mode)" << endl;
+
+    /*--- Work with the surface derivatives. ---*/
+    if (config->GetSmoothOnSurface()) {
+
+      /*--- Select DV marker, or NOT_AVAILABLE if none is specified. ---*/
+      unsigned long  dvMarker = BC_TYPE::NOT_AVAILABLE;
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ( config->GetMarker_All_DV(iMarker) == YES ) {
+          dvMarker = iMarker;
+        }
+      }
+      solver->ApplyGradientSmoothingSurface(geometry, numerics, config, dvMarker);
+
+    /*--- Work with the volume derivatives. ---*/
+    } else {
+      solver->ApplyGradientSmoothingVolume(geometry, numerics, config);
+    }
+
+    /*--- After appling the solver write the results back ---*/
+    solver->WriteSens2Geometry(geometry,config);
+
+  /*--- Apply the smoothing procedure on the DV level. ---*/
+  } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
+
+    solver->ApplyGradientSmoothingDV(geometry, numerics, surface_movement, grid_movement, config, Gradient);
+
+  /*--- For some application, e.g. OneShot, we might only need the original gradient. ---*/
+  } else if (config->GetSobMode()==ONLY_GRAD) {
+    solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
+
+  /*--- Warning if choose mode is unsupported. ---*/
+  } else if (config->GetSobMode()==NO_MODUS) {
+    if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
   }
 
 }

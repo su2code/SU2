@@ -123,11 +123,6 @@ public:
   void SecondaryRecording(void);
 
   /*!
-   * \brief Postprocess the calculated derivatives with gradient smoothing
-   */
-  void DerivativeTreatment(void);
-
-  /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */

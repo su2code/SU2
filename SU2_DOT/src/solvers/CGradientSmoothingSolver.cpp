@@ -209,7 +209,7 @@ CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
 
 }
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config) {
+void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry, CNumerics *numerics, CConfig *config) {
 
   /*--- current dimension if we run consecutive on each dimension ---*/
   dir = 0;
@@ -227,13 +227,13 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
 
     for (dir = 0; dir < nDim ; dir++) {
 
-      Compute_Residual(geometry, solver, config);
+      Compute_Residual(geometry, config);
 
-      Impose_BC(geometry, numerics, config);
+      Impose_BC(geometry, config);
 
       Solve_Linear_System(geometry, config);
 
-      WriteSensitivity(geometry, solver, config);
+      WriteSensitivity(geometry, config);
 
       LinSysSol.SetValZero();
       LinSysRes.SetValZero();
@@ -241,19 +241,19 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
 
   } else {
 
-    Compute_Residual(geometry, solver, config);
+    Compute_Residual(geometry, config);
 
-    Impose_BC(geometry, numerics, config);
+    Impose_BC(geometry, config);
 
     Solve_Linear_System(geometry, config);
 
-    WriteSensitivity(geometry, solver, config);
+    WriteSensitivity(geometry, config);
 
   }
 
 }
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
+void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned long val_marker) {
 
   /*--- Set vector and sparse matrix to 0 ---*/
   LinSysSol.SetValZero();
@@ -263,7 +263,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
   /*--- Compute the stiffness matrix for the smoothing operator. ---*/
   Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
 
-  Compute_Surface_Residual(geometry, solver, config, val_marker);
+  Compute_Surface_Residual(geometry, config, val_marker);
 
   if ( config->GetDirichletSurfaceBound() ) {
     BC_Surface_Dirichlet(geometry, config, val_marker);
@@ -272,11 +272,11 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
   /*--- Solve the system and write the result back. ---*/
   Solve_Linear_System(geometry, config);
 
-  WriteSensitivity(geometry, solver, config, val_marker);
+  WriteSensitivity(geometry, config, val_marker);
 
 }
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
+void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNumerics *numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
 
   unsigned nDVtotal=config->GetnDV_Total();
   unsigned column, row;
@@ -294,7 +294,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
   RecordParameterizationJacobian(geometry, surface_movement, activeCoord, config);
 
   /*--- Calculate the original gradient. ---*/
-  CalculateOriginalGradient(geometry, grid_movement, config);
+  CalculateOriginalGradient(geometry, grid_movement, config, Gradient);
 
   /*--- Compute the full Sobolev Hessian approximation column by column. ---*/
   if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;
@@ -389,7 +389,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
 
 }
 
-void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
+void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics *numerics, CConfig *config){
 
   unsigned long iElem, iNode;
   unsigned int iDim, nNodes = 0, NelNodes, jNode;
@@ -419,7 +419,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
     /*--- compute the contributions of the single elements inside the numerics container ---*/
 
-    numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
+    numerics->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
 
     NelNodes = element_container[GRAD_TERM][EL_KIND]->GetnNodes();
 
@@ -450,7 +450,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
   }
 }
 
-void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker, unsigned int nSurfDim){
+void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics *numerics, CConfig *config, unsigned long val_marker, unsigned int nSurfDim){
 
   unsigned long iElem, iPoint, iVertex, iDim, iSurfDim;
   unsigned int iNode, jNode, nNodes = 0, NelNodes;
@@ -496,7 +496,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
       }
 
       /*--- compute the contributions of the single elements inside the numerics container ---*/
-      numerics[GRAD_TERM]->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
+      numerics->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
 
       NelNodes = element_container[GRAD_TERM][EL_KIND]->GetnNodes();
 
@@ -531,7 +531,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
   }
 }
 
-void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *solver, CConfig *config){
+void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CConfig *config) {
 
   unsigned long iElem;
   unsigned int iDim, iNode, nNodes = 0;
@@ -602,7 +602,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
   }
 }
 
-void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
+void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CConfig *config, unsigned long val_marker) {
 
   unsigned long iElem, iPoint, iVertex;
   unsigned int iDim, iNode, nNodes = 0;
@@ -679,7 +679,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   }
 }
 
-void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CConfig *config) {
 
   unsigned int iMarker;
 
@@ -688,13 +688,13 @@ void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numeri
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_SobolevBC(iMarker) == YES) {
-      BC_Dirichlet(geometry, NULL, numerics, config, iMarker);
+      BC_Dirichlet(geometry, config, iMarker);
     }
   }
 
 }
 
-void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned int val_marker) {
+void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CConfig *config, unsigned int val_marker) {
 
   unsigned long iPoint, iVertex;
   const su2double zeros[MAXNDIM] = {0.0};
@@ -762,7 +762,7 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 
 }
 
-CSysMatrixVectorProduct<su2matvecscalar> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+CSysMatrixVectorProduct<su2matvecscalar> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics *numerics, CConfig *config) {
 
   bool surf = config->GetSmoothOnSurface();
 
@@ -782,7 +782,9 @@ CSysMatrixVectorProduct<su2matvecscalar> CGradientSmoothingSolver::GetStiffnessM
   return CSysMatrixVectorProduct<su2matvecscalar>(Jacobian, geometry, config);
 }
 
-void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config) {
+void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
+
+  unsigned int iDV, iDV_Value, iDV_index, nDV, nDV_Value;
 
   if (rank == MASTER_NODE) cout << endl << "Calculating the original DV gradient." << endl;
 
@@ -795,16 +797,25 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
   OutputDVGradient(config, "orig_grad.dat");
+
+  iDV_index = 0;
+  for (iDV = 0; iDV  < config->GetnDV(); iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      Gradient[iDV][iDV_Value] = deltaP[iDV_index];
+      iDV_index++;
+    }
+  }
 }
 
-void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
+void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config, su2double **Gradient) {
 
   /*--- Record the parameterization on the AD tape. ---*/
   if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
   RecordParameterizationJacobian(geometry, surface_movement, activeCoord, config);
 
   /*--- Calculate the original gradient. ---*/
-  CalculateOriginalGradient(geometry, grid_movement, config);
+  CalculateOriginalGradient(geometry, grid_movement, config, Gradient);
 
 }
 
@@ -958,11 +969,9 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
     nDV_Value =  config->GetnDV_Value(iDV);
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value[iDV][iDV_Value]);
-      #ifdef HAVE_MPI
-        SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      #else
-        localGradient = my_Gradient;
-      #endif
+
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
       output[iDV_index] = localGradient;
       iDV_index++;
     }
@@ -972,27 +981,17 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
 
 }
 
-void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
+void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      nodes->SetSensitivity(iPoint,iDim, solver->GetNodes()->GetSensitivity(iPoint,iDim));
+      // nodes->SetSensitivity(iPoint,iDim, solver->GetNodes()->GetSensitivity(iPoint,iDim));
     }
   }
 }
 
-void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      solver->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-void CGradientSmoothingSolver::WriteSensitivity(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
+void CGradientSmoothingSolver::WriteSensitivity(CGeometry *geometry, CConfig *config, unsigned long val_marker) {
 
   unsigned long iPoint, total_index;
   unsigned int iDim;

@@ -4164,8 +4164,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ApplyGradientSmoothingVolume(CGeometry *geometry,
-                                            CSolver *solver,
-                                            CNumerics **numerics,
+                                            CNumerics *numerics,
                                             CConfig *config) { }
 
   /*!
@@ -4177,20 +4176,19 @@ public:
    *
    */
   virtual void ApplyGradientSmoothingSurface(CGeometry *geometry,
-                                               CSolver *solver,
-                                               CNumerics **numerics,
-                                               CConfig *config,
-                                               unsigned long val_marker) { }
+                                             CNumerics *numerics,
+                                             CConfig *config,
+                                             unsigned long val_marker) { }
 
   /*!
    * \brief All steps required for smoothing the whole system on DV level in an iterative way
    */
   virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
-                                        CSolver *solver,
-                                        CNumerics **numerics,
+                                        CNumerics *numerics,
                                         CSurfaceMovement *surface_movement,
                                         CVolumetricMovement *grid_movement,
-                                        CConfig *config) { }
+                                        CConfig *config,
+                                        su2double** Gradient) { }
 
   /*!
    * \brief A virtual member.
@@ -4200,27 +4198,29 @@ public:
   virtual void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
                                                      CSurfaceMovement *surface_movement,
                                                      CVolumetricMovement *grid_movement,
-                                                     CConfig *config) { }
+                                                     CConfig *config,
+                                                     su2double** Gradient) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void OutputSensitivity(CGeometry *geometry,
-                                 CConfig *config,
-                                 CSolver *solver) { }
+  virtual void ReadSens2Geometry(CGeometry *geometry,
+                                 CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WriteSens2Geometry(CGeometry *geometry,
+                                 CConfig *config) { }
 
   /*!
    * \brief A virtual member.
    */
   inline virtual vector<su2double> GetDeltaP() { return vector<su2double>(); }
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void GetHessianMatrix() {}
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

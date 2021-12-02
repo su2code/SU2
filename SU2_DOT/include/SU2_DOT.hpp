@@ -46,6 +46,9 @@
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
 
+#include "solvers/CGradientSmoothingSolver.hpp"
+#include "numerics/CGradSmoothing.hpp"
+
 using namespace std;
 
 
@@ -87,3 +90,13 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
  */
 
 void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+
+/*!
+ * \brief Treatment of derivatives with the Sobolev smoothing solver.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement class of the problem.
+ * \param[in] Gradient_file - Output file to store the gradient data.
+ */
+
+void DerivativeTreatment(CGeometry *geometry, CConfig *config, CVolumetricMovement *grid_movement, CSurfaceMovement *surface_movement, su2double **Gradient);
