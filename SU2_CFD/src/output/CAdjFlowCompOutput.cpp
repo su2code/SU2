@@ -31,13 +31,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
-
-  turb_model = config->GetKind_Turb_Model();
-
-  cont_adj = config->GetContinuous_Adjoint();
-
-  frozen_visc = (config->GetFrozen_Visc_Disc() && !cont_adj) || (config->GetFrozen_Visc_Cont() && cont_adj);
+CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : CAdjFlowOutput(config, nDim) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

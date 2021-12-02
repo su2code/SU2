@@ -31,19 +31,13 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
-
-  turb_model = config->GetKind_Turb_Model();
+CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAdjFlowOutput(config, nDim) {
 
   heat = config->GetEnergy_Equation();
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
   rad_model = config->GetKind_RadiationModel();
-
-  cont_adj = config->GetContinuous_Adjoint();
-
-  frozen_visc = (config->GetFrozen_Visc_Disc() && !cont_adj) || (config->GetFrozen_Visc_Cont() && cont_adj);
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
