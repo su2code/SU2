@@ -41,7 +41,7 @@ template <class VariableType>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t { MAXNVAR = 2 };      /*!< \brief Max number of variables, used in some static arrays. */
+  static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
   enum : size_t { MAXNVARFLOW = 12 }; /*!< \brief Max number of flow variables, used in some static arrays. */
 
   enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
@@ -134,6 +134,14 @@ class CScalarSolver : public CSolver {
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
   }
+
+  /*!
+   * \brief Gradient and Limiter computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether the residual+jacobian should be zeroed.
+   */
+  void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
  private:
   /*!

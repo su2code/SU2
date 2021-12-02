@@ -96,6 +96,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
     break;
+  case RUNTIME_SPECIES_SYS:
+    SolverName = "ADJ.SPECIES";
+    break;
   case RUNTIME_RADIATION_SYS:
     SolverName = "ADJ.RAD";
     break;
@@ -602,8 +605,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Skip flow adjoint variables ---*/
-  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+  if (KindDirect_Solver == RUNTIME_TURB_SYS) {
     skipVars += nDim + 2;
+  }
+
+  if (KindDirect_Solver == RUNTIME_SPECIES_SYS) {
+    // Skip the number of Flow Vars and Turb Vars to get to the adjoint species vars
+    skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Skip flow adjoint and turbulent variables ---*/

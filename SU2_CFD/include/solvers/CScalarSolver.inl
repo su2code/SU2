@@ -78,6 +78,54 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 }
 
 template <class VariableType>
+void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
+  /*--- Set booleans depending on the calling solver, alternatively one could add the bools to the func input. ---*/
+  bool implicit = false;
+  bool muscl = false;
+  bool limiter = false;
+  if (SolverName == "SA" || SolverName == "K-W SST") {
+    implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+    muscl = config->GetMUSCL_Turb();
+    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+              (config->GetInnerIter() <= config->GetLimiterIter());
+  }
+  else if (SolverName == "SPECIES") {
+    implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+    muscl = config->GetMUSCL_Species();
+    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
+              (config->GetInnerIter() <= config->GetLimiterIter());
+  }
+
+  /*--- Clear residual and system matrix, not needed for
+   * reducer strategy as we write over the entire matrix. ---*/
+  if (!ReducerStrategy && !Output) {
+    LinSysRes.SetValZero();
+    if (implicit) {
+      Jacobian.SetValZero();
+    } else {
+      SU2_OMP_BARRIER
+    }
+  }
+
+  /*--- Upwind second order reconstruction and gradients ---*/
+
+  if (config->GetReconstructionGradientRequired()) {
+    switch(config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+    }
+  }
+
+  switch(config->GetKind_Gradient_Method()) {
+    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
+    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
+  }
+
+  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+}
+
+template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
@@ -180,7 +228,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         }
 
         if (muscl) {
-          /*--- Reconstruct turbulence variables. ---*/
+          /*--- Reconstruct scalar variables. ---*/
 
           auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
           auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
@@ -362,8 +410,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 }
 
 template <class VariableType>

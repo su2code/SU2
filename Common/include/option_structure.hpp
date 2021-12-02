@@ -77,7 +77,7 @@ const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of peri
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
@@ -481,6 +481,8 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
+  RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
+  RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -498,7 +500,8 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
 
-const int GRADIENT_SMOOTHING = 11; /*!< \brief Position of the gradient smoothing equation in the solution solver array. */
+const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
+const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -697,6 +700,21 @@ static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_
 };
 
 /*!
+ * \brief types of mass diffusivity models
+ */
+enum class DIFFUSIVITYMODEL {
+  CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
+  CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
+  UNITY_LEWIS,          /*!< \brief Unity Lewis model */
+};
+
+static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
+  MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
+  MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
+  MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
+};
+
+/*!
  * \brief Types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {
@@ -849,13 +867,13 @@ static const MapType<std::string, ENUM_FEM> FEM_Map = {
 /*!
  * \brief Types of shock capturing method in Discontinuous Galerkin numerical method.
  */
-enum ENUM_SHOCK_CAPTURING_DG {
-  NO_SHOCK_CAPTURING = 0,     /*!< \brief Shock capturing is not used. */
-  PERSSON = 1                 /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
+enum class FEM_SHOCK_CAPTURING_DG {
+  NONE,     /*!< \brief Shock capturing is not used. */
+  PERSSON   /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
 };
-static const MapType<std::string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
-  MakePair("NONE", NO_SHOCK_CAPTURING)
-  MakePair("PERSSON", PERSSON)
+static const MapType<std::string, FEM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
+  MakePair("NONE", FEM_SHOCK_CAPTURING_DG::NONE)
+  MakePair("PERSSON", FEM_SHOCK_CAPTURING_DG::PERSSON)
 };
 
 /*!
@@ -931,21 +949,33 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
 };
 
 /*!
+ * \brief types of species transport models
+ */
+enum class SPECIES_MODEL {
+  NONE,              /*!< \brief No scalar transport model. */
+  PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
+};
+static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
+  MakePair("NONE", SPECIES_MODEL::NONE)
+  MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
+};
+
+/*!
  * \brief Types of subgrid scale models
  */
-enum ENUM_SGS_MODEL {
-  NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
-  IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
-  SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
-  WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
-  VREMAN       = 4  /*!< \brief Vreman SGS model. */
+enum class TURB_SGS_MODEL {
+  NONE        , /*!< \brief No subgrid scale model. */
+  IMPLICIT_LES, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
+  SMAGORINSKY , /*!< \brief Smagorinsky SGS model. */
+  WALE        , /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
+  VREMAN        /*!< \brief Vreman SGS model. */
 };
-static const MapType<std::string, ENUM_SGS_MODEL> SGS_Model_Map = {
-  MakePair("NONE",         NO_SGS_MODEL)
-  MakePair("IMPLICIT_LES", IMPLICIT_LES)
-  MakePair("SMAGORINSKY",  SMAGORINSKY)
-  MakePair("WALE",         WALE)
-  MakePair("VREMAN",       VREMAN)
+static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
+  MakePair("NONE",         TURB_SGS_MODEL::NONE)
+  MakePair("IMPLICIT_LES", TURB_SGS_MODEL::IMPLICIT_LES)
+  MakePair("SMAGORINSKY",  TURB_SGS_MODEL::SMAGORINSKY)
+  MakePair("WALE",         TURB_SGS_MODEL::WALE)
+  MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
 
 
@@ -2212,35 +2242,35 @@ static const MapType<std::string, ENUM_PROJECTION_FUNCTION> Projection_Function_
 /*!
  * \brief the different validation solution
  */
-enum ENUM_VERIFICATION_SOLUTIONS {
-  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
-  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
-  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
-  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
-  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
-  INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
-  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
-  MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
-  MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
-  MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
-  MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
-  MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
-  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+enum class VERIFICATION_SOLUTION {
+  NONE,                     /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX,          /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB,                  /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD,             /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX,      /*!< \brief Taylor Green Vortex. */
+  INC_TAYLOR_GREEN_VORTEX,  /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  MMS_NS_UNIT_QUAD,         /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  MMS_NS_UNIT_QUAD_WALL_BC, /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
+  MMS_NS_TWO_HALF_CIRCLES,  /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
+  MMS_NS_TWO_HALF_SPHERES,  /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER,            /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS,               /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  USER_DEFINED_SOLUTION,    /*!< \brief User defined solution. */
 };
-static const MapType<std::string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = {
-  MakePair("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
-  MakePair("INVISCID_VORTEX",          INVISCID_VORTEX)
-  MakePair("RINGLEB",                  RINGLEB)
-  MakePair("NS_UNIT_QUAD",             NS_UNIT_QUAD)
-  MakePair("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
-  MakePair("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
-  MakePair("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
-  MakePair("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
-  MakePair("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
-  MakePair("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
-  MakePair("MMS_INC_EULER",            MMS_INC_EULER)
-  MakePair("MMS_INC_NS",               MMS_INC_NS)
-  MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+static const MapType<std::string, VERIFICATION_SOLUTION> Verification_Solution_Map = {
+  MakePair("NO_VERIFICATION_SOLUTION", VERIFICATION_SOLUTION::NONE)
+  MakePair("INVISCID_VORTEX",          VERIFICATION_SOLUTION::INVISCID_VORTEX)
+  MakePair("RINGLEB",                  VERIFICATION_SOLUTION::RINGLEB)
+  MakePair("NS_UNIT_QUAD",             VERIFICATION_SOLUTION::NS_UNIT_QUAD)
+  MakePair("TAYLOR_GREEN_VORTEX",      VERIFICATION_SOLUTION::TAYLOR_GREEN_VORTEX)
+  MakePair("INC_TAYLOR_GREEN_VORTEX",  VERIFICATION_SOLUTION::INC_TAYLOR_GREEN_VORTEX)
+  MakePair("MMS_NS_UNIT_QUAD",         VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD)
+  MakePair("MMS_NS_UNIT_QUAD_WALL_BC", VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD_WALL_BC)
+  MakePair("MMS_NS_TWO_HALF_CIRCLES",  VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_CIRCLES)
+  MakePair("MMS_NS_TWO_HALF_SPHERES",  VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_SPHERES)
+  MakePair("MMS_INC_EULER",            VERIFICATION_SOLUTION::MMS_INC_EULER)
+  MakePair("MMS_INC_NS",               VERIFICATION_SOLUTION::MMS_INC_NS)
+  MakePair("USER_DEFINED_SOLUTION",    VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION)
 };
 
 /*!

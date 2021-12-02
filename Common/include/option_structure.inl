@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "parallelization/mpi_structure.hpp"
 using namespace std;
 
 template <class Tenum, class TField>
@@ -965,58 +966,6 @@ public:
 
 };
 
-// Class where the option is represented by (String, su2double, string, su2double, ...)
-class COptionStringDoubleList : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & size; // how many strings are there (same as number of su2doubles)
-
-  string * & s_f; // Reference to the string fields
-  su2double* & d_f; // reference to the su2double fields
-
-public:
-  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, su2double* & double_field) : size(list_size), s_f(string_field), d_f(double_field) {
-    this->name = option_field_name;
-  }
-
-  ~COptionStringDoubleList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // There must be an even number of entries (same number of strings and doubles
-    unsigned short totalVals = option_value.size();
-    if ((totalVals % 2) != 0) {
-      if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-        // It's okay to say its NONE
-        this->size = 0;
-        return "";
-      }
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have an even number of entries");
-      return newstring;
-    }
-    unsigned short nVals = totalVals / 2;
-    this->size = nVals;
-    this->s_f = new string[nVals];
-    this->d_f = new su2double[nVals];
-
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->s_f[i].assign(option_value[2*i]); // 2 because have su2double and string
-      istringstream is(option_value[2*i + 1]);
-      su2double val;
-      if (!(is >> val)) {
-        return badValue(option_value, "string su2double", this->name);
-      }
-      this->d_f[i] = val;
-    }
-    // Need to return something...
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
-  }
-};
-
 class COptionInlet : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
@@ -1100,6 +1049,101 @@ public:
     this->size = 0; // There is no default value for list
   }
 };
+
+// Base helper for when T is not an array, does dummy allocation and de-allocation.
+template <class T>
+struct CStringValuesListHelper {
+  static T resize(unsigned short) { return T(); }
+  static T& access(T& val, unsigned short) { return val; }
+};
+
+// Specialization for pointer types (multiple values per string).
+template <class T>
+struct CStringValuesListHelper<T*> {
+  static T* resize(unsigned short n) { return new T[n]; }
+  static T& access(T* ptr, unsigned short i) { return ptr[i]; }
+};
+
+// Class where the option is represented by (string, N * "some type", string, N * "some type", ...)
+template <class Type>
+class COptionStringValuesList final : public COptionBase {
+  const string name;     // identifier for the option
+  unsigned short& size;  // number of string-value pairs
+  string*& strings;      // the strings in the option
+  Type*& values;         // the values per string
+  unsigned short& num_vals; // how many values per string
+  unsigned short optional_num_vals = 0; // num_vals points to this when it is not provided in the ctor.
+
+public:
+  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_,
+                          Type*& values_, unsigned short& num_vals_) :
+    name(name_), size(size_), strings(strings_), values(values_), num_vals(num_vals_) {
+  }
+
+  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_) :
+    name(name_), size(size_), strings(strings_), values(values_), num_vals(optional_num_vals) {
+  }
+
+  string SetValue(vector<string> option_value) override {
+    COptionBase::SetValue(option_value);
+    unsigned short option_size = option_value.size();
+    if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
+      size = 0;
+      num_vals = 0;
+      return "";
+    }
+
+    /*--- Determine the number of strings: A new string is found if the first char in the option is a letter.
+     * This will fail in if a string starts with a number! Additionally, determine the number of values that
+     * are prescribed per string. ---*/
+    vector<unsigned short> num_vals_per_string;
+    /*--- Loop through the fields of the option. ---*/
+    for (const auto& val : option_value) {
+      if (isalpha(val[0])) {
+        num_vals_per_string.push_back(0);
+      } else {
+        num_vals_per_string.back()++;
+      }
+    }
+
+    /*--- Check that the same amount of values are defined per string. ---*/
+    for (auto n : num_vals_per_string) {
+      if (num_vals_per_string[0] != n)
+        SU2_MPI::Error(string("Unequal number of values defined for ") + name, CURRENT_FUNCTION);
+    }
+    num_vals = num_vals_per_string[0];
+    size = num_vals_per_string.size();
+
+    /*--- If num_vals was taken as optional, it can only be one. ---*/
+    if (optional_num_vals > 1)
+      SU2_MPI::Error(string("More than one value provided for \"string-value\" pair, in ") + name, CURRENT_FUNCTION);
+
+    strings = new string[size];
+    values = new Type[size];
+
+    auto option_it = option_value.begin();
+    for (unsigned short i = 0; i < size; i++) {
+      strings[i].assign(*option_it);
+      ++option_it;
+
+      values[i] = CStringValuesListHelper<Type>::resize(num_vals);
+      for (unsigned short j = 0; j < num_vals; j++) {
+        istringstream ss_nd(*option_it);
+        ++option_it;
+        if (!(ss_nd >> CStringValuesListHelper<Type>::access(values[i], j))) {
+          return badValue(option_value, "\"string + values\"", name);
+        }
+      }
+    }
+    return "";
+  }
+
+  void SetDefault() override {
+    size = 0; // There is no default value for lists
+    num_vals = 0;
+  }
+};
+
 
 template <class Tenum>
 class COptionRiemann : public COptionBase {
