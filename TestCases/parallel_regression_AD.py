@@ -168,6 +168,18 @@ def main():
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
+    # 3 species (2 eq) primitive venturi mixing
+    DAspecies3_primitiveVenturi           = TestCase('DAspecies3_primitiveVenturi')
+    DAspecies3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
+    DAspecies3_primitiveVenturi.test_iter = 50
+    DAspecies3_primitiveVenturi.test_vals = [-8.519150, -7.786969, -7.774848, -7.474167, -12.127149, -12.262476, -11.456643]
+    DAspecies3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    DAspecies3_primitiveVenturi.timeout   = 1600
+    DAspecies3_primitiveVenturi.new_output = True
+    DAspecies3_primitiveVenturi.tol       = 0.00001
+    test_list.append(DAspecies3_primitiveVenturi)
+
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
