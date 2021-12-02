@@ -133,6 +133,11 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     case TURB_MODEL::NONE: break;
     }
   }
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("RMS_ADJ_SPECIES_" + std::to_string(iVar), "rms[A_rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
   if (config->AddRadiation()){
     /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
     AddHistoryOutput("RMS_ADJ_RAD_ENERGY", "rms[A_P1]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
@@ -258,6 +263,11 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
       break;
     case TURB_MODEL::NONE: break;
+    }
+  }
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      SetHistoryOutputValue("RMS_ADJ_SPECIES_" + std::to_string(iVar), log10(solver[ADJSPECIES_SOL]->GetRes_RMS(iVar)));
     }
   }
   if (config->AddRadiation()){
