@@ -2316,6 +2316,10 @@ static const MapType<std::string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solu
     I_SRC_TOT_PROG_VAR,
     I_SRC_TOT_CO,
     I_SRC_TOT_NOX,
+    I_SRC_POS_CO,
+    I_SRC_NEG_CO,
+    I_SRC_POS_NOX,
+    I_SRC_NEG_NOX,
   };
 /*!
  * \brief Types of streamwise periodicity.

@@ -19,14 +19,17 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
 
     config->SetScalarNames(table_scalar_names);
 
-    n_table_sources = 3;
+    n_table_sources = 7;
     config->SetNTableSources(n_table_sources);
 
     table_source_names.resize(n_table_sources);
     table_source_names.at(I_SRC_TOT_PROG_VAR) = "ProdRateTot-PV";
     table_source_names.at(I_SRC_TOT_CO)       = "ProdRateTot-CO";
-    table_source_names.at(I_SRC_TOT_NOX)      = "ProdRateTot-NOx";
-
+    table_source_names.at(I_SRC_TOT_NOX)      = "ProdRateTot-X-NOx";
+    table_source_names.at(I_SRC_POS_CO)       = "ProdRatePos-CO";
+    table_source_names.at(I_SRC_NEG_CO)       = "ProdRateNeg-CO_OverY-CO";
+    table_source_names.at(I_SRC_POS_NOX)      = "ProdRatePos-X-NOx";
+    table_source_names.at(I_SRC_NEG_NOX)      = "ProdRateNeg-X-NOx_OverX-NOx";
 
     config->SetTableSourceNames(table_source_names);
 
@@ -75,6 +78,9 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   string name_enth = table_scalar_names.at(I_ENTHALPY);
   string name_prog = table_scalar_names.at(I_PROG_VAR);
 
+  su2double y_co   = val_scalars[I_CO];
+  su2double y_nox  = val_scalars[I_NOX];
+
   for (int i_source=0; i_source < n_table_sources; ++i_source) {
     look_up_tags.push_back(table_source_names.at(i_source));
     look_up_data.push_back(&table_sources[i_source]);
@@ -85,7 +91,10 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   source_scalar.at(I_ENTHALPY) = 0;
   source_scalar.at(I_PROG_VAR) = table_sources[I_SRC_TOT_PROG_VAR];
-  source_scalar.at(I_CO)       = table_sources[I_SRC_TOT_CO];
+  //source_scalar.at(I_CO)       = table_sources[I_SRC_TOT_CO];
+  source_scalar.at(I_CO)       = table_sources[I_SRC_POS_CO] + y_co*table_sources[I_SRC_NEG_CO];
+  //source_scalar.at(I_NOX)       = table_sources[I_SRC_TOT_NOX];
+  //source_scalar.at(I_NOX)       = table_sources[I_SRC_POS_NOX] + y_nox*table_sources[I_SRC_NEG_NOX];
   source_scalar.at(I_NOX)      = table_sources[I_SRC_TOT_NOX];
 
 
