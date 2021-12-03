@@ -202,9 +202,108 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
   }
 }
 
-void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* config) {}
+void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* config) {
+  if (!frozen_visc) {
+    switch (turb_model) {
+      case TURB_MODEL::SA:
+      case TURB_MODEL::SA_NEG:
+      case TURB_MODEL::SA_E:
+      case TURB_MODEL::SA_COMP:
+      case TURB_MODEL::SA_E_COMP:
+        /// DESCRIPTION: Adjoint nu tilde.
+        AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION", "Adjoint Spalart-Allmaras variable");
+        break;
+      case TURB_MODEL::SST:
+      case TURB_MODEL::SST_SUST:
+        /// DESCRIPTION: Adjoint kinetic energy.
+        AddVolumeOutput("ADJ_TKE", "Adjoint_TKE", "SOLUTION", "Adjoint turbulent kinetic energy");
+        /// DESCRIPTION: Adjoint dissipation.
+        AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION", "Adjoint rate of dissipation");
+        break;
+      case TURB_MODEL::NONE:
+        break;
+    }
+  }
 
-void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* config) {}
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddVolumeOutput("ADJ_SPECIES_" + std::to_string(iVar), "Adjoint_Species_" + std::to_string(iVar), "SOLUTION",
+                      "Adjoint Species variable");
+    }
+  }
+}
+
+void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* config) {
+  if (!frozen_visc) {
+    switch (turb_model) {
+      case TURB_MODEL::SA:
+      case TURB_MODEL::SA_NEG:
+      case TURB_MODEL::SA_E:
+      case TURB_MODEL::SA_COMP:
+      case TURB_MODEL::SA_E_COMP:
+        /// DESCRIPTION: Residual of the nu tilde.
+        AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL",
+                        "Residual of the adjoint Spalart-Allmaras variable");
+        break;
+      case TURB_MODEL::SST:
+      case TURB_MODEL::SST_SUST:
+        /// DESCRIPTION: Residual of the adjoint kinetic energy.
+        AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL",
+                        "Residual of the adjoint turb. kinetic energy");
+        /// DESCRIPTION: Residual of the adjoint dissipation.
+        AddVolumeOutput("RES_ADJ_DISSIPATION", "Residual_Adjoint_Omega", "RESIDUAL",
+                        "Residual of adjoint rate of dissipation");
+        break;
+      case TURB_MODEL::NONE:
+        break;
+    }
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddVolumeOutput("RES_ADJ_SPECIES_" + std::to_string(iVar), "Residual_Adjoint_Species_" + std::to_string(iVar),
+                      "RESIDUAL", "Residual of the adjoint Species variable");
+    }
+  }
+}
 
 void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver,
-                                              const CGeometry* geometry, const unsigned long iPoint) {}
+                                              const unsigned long iPoint) {
+  const auto Node_AdjTurb =
+      ((turb_model != TURB_MODEL::NONE) && !frozen_visc) ? solver[ADJTURB_SOL]->GetNodes() : nullptr;
+  const auto Node_AdjSpecies =
+      (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) ? solver[ADJSPECIES_SOL]->GetNodes() : nullptr;
+
+  if (!frozen_visc) {
+    switch (turb_model) {
+      case TURB_MODEL::SA:
+      case TURB_MODEL::SA_COMP:
+      case TURB_MODEL::SA_E:
+      case TURB_MODEL::SA_E_COMP:
+      case TURB_MODEL::SA_NEG:
+        SetVolumeOutputValue("ADJ_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
+        SetVolumeOutputValue("RES_ADJ_NU_TILDE", iPoint,
+                             Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
+        break;
+      case TURB_MODEL::SST:
+      case TURB_MODEL::SST_SUST:
+        SetVolumeOutputValue("ADJ_TKE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
+        SetVolumeOutputValue("ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1));
+        SetVolumeOutputValue("RES_ADJ_TKE", iPoint,
+                             Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
+        SetVolumeOutputValue("RES_ADJ_DISSIPATION", iPoint,
+                             Node_AdjTurb->GetSolution(iPoint, 1) - Node_AdjTurb->GetSolution_Old(iPoint, 1));
+        break;
+      case TURB_MODEL::NONE:
+        break;
+    }
+  }
+
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      SetVolumeOutputValue("ADJ_SPECIES_" + std::to_string(iVar), iPoint, Node_AdjSpecies->GetSolution(iPoint, iVar));
+      SetVolumeOutputValue("RES_ADJ_SPECIES_" + std::to_string(iVar), iPoint,
+                           Node_AdjSpecies->GetSolution(iPoint, iVar) - Node_AdjSpecies->GetSolution_Old(iPoint, iVar));
+    }
+  }
+}

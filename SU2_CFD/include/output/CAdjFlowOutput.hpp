@@ -90,9 +90,7 @@ class CAdjFlowOutput : public COutput {
    * \brief Set all scalar (turbulence/species) volume field values for a point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - The container holding all solution data.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
-                                const unsigned long iPoint);
+  void LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
 };
