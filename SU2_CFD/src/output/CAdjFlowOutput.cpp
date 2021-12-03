@@ -106,6 +106,8 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
 }
 
 void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* config) {
+  if (!multiZone) return;
+
   if (!frozen_visc) {
     switch (turb_model) {
       case TURB_MODEL::SA:
@@ -169,7 +171,9 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
       case TURB_MODEL::SA_E_COMP:
         SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
         SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
-        SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
+        }
         break;
       case TURB_MODEL::SST:
       case TURB_MODEL::SST_SUST:
@@ -177,8 +181,10 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
         SetHistoryOutputValue("RMS_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_RMS(1)));
         SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
         SetHistoryOutputValue("MAX_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_Max(1)));
-        SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_BGS(1)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
+          SetHistoryOutputValue("BGS_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_BGS(1)));
+        }
         break;
       case TURB_MODEL::NONE:
         break;

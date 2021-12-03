@@ -814,6 +814,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
+  if (!multiZone) return;
+
   switch(config->GetKind_Turb_Model()) {
     case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
