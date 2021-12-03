@@ -112,26 +112,9 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
-  if (!frozen_visc) {
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
-      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
-      AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
-      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    case TURB_MODEL::NONE: break;
-    }
-  }
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("RMS_ADJ_SPECIES_" + std::to_string(iVar), "rms[A_rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
-    }
-  }
+
+  AddHistoryOutputFields_AdjScalarRMS_RES(config);
+
   if (config->AddRadiation()){
     /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
     AddHistoryOutput("RMS_ADJ_RAD_ENERGY", "rms[A_P1]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
@@ -149,21 +132,8 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
   AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
-  if (!frozen_visc) {
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
-      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
-      AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: Maximum residual of the adjoint dissipation.
-      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    case TURB_MODEL::NONE: break;
-    }
-  }
+
+  AddHistoryOutputFields_AdjScalarMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -177,21 +147,9 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the temperature.
   AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
-  if (!frozen_visc) {
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      /// DESCRIPTION: BGS residual of the adjoint nu tilde.
-      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
-      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: BGS residual of the adjoint dissipation.
-      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    case TURB_MODEL::NONE: break;
-    }
-  }
+
+  AddHistoryOutputFields_AdjScalarBGS_RES(config);
+
   if (config->AddRadiation()){
     /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
     AddHistoryOutput("BGS_ADJ_RAD_ENERGY", "bgs[A_P1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual  of the P1 radiative energy.",HistoryFieldType::RESIDUAL);
@@ -214,10 +172,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  if ((turb_model != TURB_MODEL::NONE) && !frozen_visc) {
-    AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence.");
-    AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence.");
-  }
+  AddHistoryOutputFields_AdjScalarLinsol(config);
 
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
@@ -229,7 +184,6 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
-  CSolver* adjturb_solver = solver[ADJTURB_SOL];
   CSolver* adjheat_solver = solver[ADJHEAT_SOL];
   CSolver* adjrad_solver = solver[ADJRAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
@@ -247,23 +201,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     if (nDim == 3) SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_RMS(4)));
     else           SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_RMS(3)));
   }
-  if (!frozen_visc) {
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetHistoryOutputValue("RMS_ADJ_TKE", log10(adjturb_solver->GetRes_RMS(0)));
-      SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
-      break;
-    case TURB_MODEL::NONE: break;
-    }
-  }
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetHistoryOutputValue("RMS_ADJ_SPECIES_" + std::to_string(iVar), log10(solver[ADJSPECIES_SOL]->GetRes_RMS(iVar)));
-    }
-  }
+
   if (config->AddRadiation()){
     SetHistoryOutputValue("RMS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_RMS(0)));
   }
@@ -280,18 +218,6 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     if (nDim == 3) SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_Max(3)));
   }
-  if (!frozen_visc) {
-    switch(turb_model){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-      SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
-      break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-      SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
-      SetHistoryOutputValue("MAX_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_Max(1)));
-      break;
-    case TURB_MODEL::NONE: break;
-    }
-  }
 
   if (multiZone){
     SetHistoryOutputValue("BGS_ADJ_PRESSURE", log10(adjflow_solver->GetRes_BGS(0)));
@@ -307,18 +233,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       if (nDim == 3) SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_BGS(4)));
       else           SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_BGS(3)));
     }
-    if (!frozen_visc) {
-      switch(turb_model){
-      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
-        SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
-        break;
-      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
-        SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
-        break;
-      case TURB_MODEL::NONE: break;
-      }
-    }
+
     if (config->AddRadiation()){
       SetHistoryOutputValue("BGS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_BGS(0)));
     }
@@ -333,16 +248,12 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LINSOL_ITER", adjflow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjflow_solver->GetResLinSolver()));
 
-  if ((turb_model != TURB_MODEL::NONE) && !frozen_visc) {
-    SetHistoryOutputValue("LINSOL_ITER_TURB", adjturb_solver->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(adjturb_solver->GetResLinSolver()));
-  }
-
   if (config->GetDeform_Mesh()) {
     SetHistoryOutputValue("DEFORM_ITER", mesh_solver->System.GetIterations());
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->System.GetResidual()));
   }
 
+  LoadHistoryData_AdjScalar(config, solver);
 }
 
 void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){

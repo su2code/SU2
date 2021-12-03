@@ -82,17 +82,17 @@ protected:
                                          const vector<su2double>& Surface_Area_Total);
 
   /*!
-   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the Residual RMS (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config);
 
   /*!
-   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the max Residual (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config);
 
   /*!
-   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the BGS Residual (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config);
 
