@@ -784,7 +784,7 @@ CSysMatrixVectorProduct<su2matvecscalar> CGradientSmoothingSolver::GetStiffnessM
 
 void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
 
-  unsigned int iDV, iDV_Value, iDV_index, nDV, nDV_Value;
+  unsigned int iDV, iDV_Value, iDV_index;
 
   if (rank == MASTER_NODE) cout << endl << "Calculating the original DV gradient." << endl;
 
@@ -800,8 +800,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   iDV_index = 0;
   for (iDV = 0; iDV  < config->GetnDV(); iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
       Gradient[iDV][iDV_Value] = deltaP[iDV_index];
       iDV_index++;
     }
