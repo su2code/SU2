@@ -29,11 +29,11 @@
 
 #include "../../include/solvers/CSolver.hpp"
 
-CAdjFlowOutput::CAdjFlowOutput(CConfig* config, unsigned short nDim) : COutput(config, nDim, false) {
-  turb_model = config->GetKind_Turb_Model();
-  cont_adj = config->GetContinuous_Adjoint();
-  frozen_visc = (config->GetFrozen_Visc_Disc() && !cont_adj) || (config->GetFrozen_Visc_Cont() && cont_adj);
-}
+CAdjFlowOutput::CAdjFlowOutput(CConfig* config, unsigned short nDim)
+    : COutput(config, nDim, false),
+      turb_model(config->GetKind_Turb_Model()),
+      cont_adj(config->GetContinuous_Adjoint()),
+      frozen_visc((config->GetFrozen_Visc_Disc() && !cont_adj) || (config->GetFrozen_Visc_Cont() && cont_adj)) {}
 
 void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* config) {
   if (!frozen_visc) {

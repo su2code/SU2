@@ -36,9 +36,9 @@
  */
 class CAdjFlowOutput : public COutput {
  protected:
-  TURB_MODEL turb_model; /*!< \brief The kind of turbulence model*/
-  bool cont_adj;         /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  bool frozen_visc;      /*!< \brief Boolean indicating whether frozen viscosity/turbulence is used. */
+  const TURB_MODEL turb_model; /*!< \brief The kind of turbulence model*/
+  const bool cont_adj;         /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
+  const bool frozen_visc;      /*!< \brief Boolean indicating whether frozen viscosity/turbulence is used. */
 
  public:
   /*!
