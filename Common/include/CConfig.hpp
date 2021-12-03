@@ -180,6 +180,7 @@ private:
   Current_UnstTimeND;             /*!< \brief Global time of the unsteady simulation. */
   unsigned short nMarker_Euler,   /*!< \brief Number of Euler wall markers. */
   nMarker_FarField,               /*!< \brief Number of far-field markers. */
+  nMarker_FarField_Cat,
   nMarker_Custom,                 /*!< \brief Number of custom markers. */
   nMarker_SymWall,                /*!< \brief Number of symmetry wall markers. */
   nMarker_PerBound,               /*!< \brief Number of periodic boundary markers. */
@@ -230,6 +231,7 @@ private:
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
+  *Marker_FarField_Cat,
   *Marker_Custom,
   *Marker_SymWall,                /*!< \brief Symmetry wall markers. */
   *Marker_PerBound,               /*!< \brief Periodic boundary markers. */

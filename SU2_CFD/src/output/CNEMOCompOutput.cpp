@@ -270,6 +270,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
+  AddVolumeOutput("X_NEW_FREESTREAM",  "x_new_freestream",  "AUXILIARY", "x_new_freestream");
+
+
   SetVolumeOutputFields_TurbSolution(config);
 
   // Grid velocity
@@ -356,6 +359,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("MASSFRAC_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
+
+  SetVolumeOutputValue("X_NEW_FREESTREAM",   iPoint, Node_Flow->Get_x_new_freestream(iPoint));
 
   if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);

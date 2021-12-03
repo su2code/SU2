@@ -85,6 +85,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Cvves.resize(nPoint, nSpecies) = su2double(0.0);
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   Gamma.resize(nPoint)           = su2double(0.0);
+  x_new_freestream.resize(nPoint)= su2double(0.0);
 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);

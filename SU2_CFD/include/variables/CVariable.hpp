@@ -1021,6 +1021,13 @@ public:
   inline virtual su2double GetTemperature_ve(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of the vibrational-electronic temperature.
+   */
+  inline virtual su2double Get_x_new_freestream(unsigned long iPoint) const { return 0.0; }  
+
+  /*!
    * \brief A virtual member -- Get the mixture specific heat at constant volume (trans.-rot.).
    * \param[in] iPoint - Point index.
    * \return \f$\rho C^{t-r}_{v} \f$
@@ -1410,6 +1417,12 @@ public:
    * \return Value of the temperature of the flow.
    */
   inline virtual bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) { return false; }
+
+  /*!
+   * \brief Sets the vibrational electronic temperature of the flow.
+   * \return Value of the temperature of the flow.
+   */
+  inline virtual bool Set_x_new_freestream(unsigned long iPoint, su2double val_x_new_freestream) { return false; }
 
   /*!
    * \brief A virtual member.

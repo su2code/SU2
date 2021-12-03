@@ -83,6 +83,8 @@ class CNEMOEulerVariable : public CFlowVariable {
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
   VectorType Gamma;  /*!< \brief Ratio of specific heats. */
 
+  VectorType x_new_freestream;
+
   CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
@@ -285,11 +287,25 @@ class CNEMOEulerVariable : public CFlowVariable {
                                     { return Primitive(iPoint,TVE_INDEX); }
 
   /*!
+   * \brief A virtual member.
+   * \return Value of the vibrational-electronic temperature.
+   */
+  inline su2double Get_x_new_freestream(unsigned long iPoint) const final
+                                    { return x_new_freestream(iPoint); }                                  
+
+  /*!
    * \brief Sets the vibrational electronic temperature of the flow.
    * \return Value of the temperature of the flow.
    */
   inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) final
                                { Primitive(iPoint,TVE_INDEX) = val_Tve; return false; }
+
+  /*!
+   * \brief Sets the vibrational electronic temperature of the flow.
+   * \return Value of the temperature of the flow.
+   */
+  inline bool Set_x_new_freestream(unsigned long iPoint, su2double val_x_new_freestream) final
+                               { x_new_freestream(iPoint) = val_x_new_freestream; return false; }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (trans.-rot.).

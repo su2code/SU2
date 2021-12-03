@@ -834,7 +834,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv         = nullptr;    Marker_All_PerBound        = nullptr;
   Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface    = nullptr;    Marker_Riemann             = nullptr;
   Marker_Fluid_InterfaceBound = nullptr;    Marker_CHTInterface         = nullptr;    Marker_Damper              = nullptr;
-  Marker_Emissivity           = nullptr;    Marker_HeatTransfer         = nullptr;
+  Marker_Emissivity           = nullptr;    Marker_HeatTransfer         = nullptr;    Marker_FarField_Cat             = nullptr;
 
     /*--- Boundary Condition settings ---*/
 
@@ -1388,6 +1388,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
   /*!\brief MARKER_FAR\n DESCRIPTION: Far-field boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
+  /*!\brief MARKER_FAR\n DESCRIPTION: Far-field boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_FAR_CAT", nMarker_FarField_Cat, Marker_FarField_Cat);  
   /*!\brief MARKER_SYM\n DESCRIPTION: Symmetry boundary condition \ingroup Config*/
   addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
   /*!\brief MARKER_NEARFIELD\n DESCRIPTION: Near-Field boundary condition \ingroup Config*/
@@ -5107,7 +5109,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
-  iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
+  iMarker_FarField, iMarker_FarField_Cat, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
   iMarker_Smoluchowski_Maxwell,
@@ -5125,7 +5127,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /*--- Compute the total number of markers in the config file ---*/
-  nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
+  nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_FarField_Cat + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
@@ -5230,6 +5232,12 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = FAR_FIELD;
     iMarker_CfgFile++;
   }
+
+  for (iMarker_FarField_Cat = 0; iMarker_FarField_Cat < nMarker_FarField_Cat; iMarker_FarField_Cat++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FarField_Cat[iMarker_FarField_Cat];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = FAR_FIELD_CAT;
+    iMarker_CfgFile++;
+  }  
 
   for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_SymWall[iMarker_SymWall];
@@ -5614,7 +5622,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
 void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
-  unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
+  unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField, iMarker_FarField_Cat,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
@@ -6816,6 +6824,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_FarField_Cat != 0) {
+    BoundaryTable << "Far-field-Cat";
+    for (iMarker_FarField_Cat = 0; iMarker_FarField_Cat < nMarker_FarField_Cat; iMarker_FarField_Cat++) {
+      BoundaryTable << Marker_FarField_Cat[iMarker_FarField_Cat];
+      if (iMarker_FarField_Cat < nMarker_FarField_Cat-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }  
+
   if (nMarker_SymWall != 0) {
     BoundaryTable << "Symmetry plane";
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
@@ -7835,6 +7852,7 @@ CConfig::~CConfig(void) {
 
                delete[] Marker_Euler;
             delete[] Marker_FarField;
+            delete[] Marker_FarField_Cat;
               delete[] Marker_Custom;
              delete[] Marker_SymWall;
             delete[] Marker_PerBound;
