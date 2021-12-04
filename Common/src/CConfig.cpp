@@ -5139,13 +5139,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   else {monoatomic = false;}
 
   /*--- Set number of Turbulence Variables. ---*/
-  switch(Kind_Turb_Model) {
-    case TURB_MODEL::NONE:
+  switch (TurbModelFamily(Kind_Turb_Model)) {
+    case TURB_FAMILY::NONE:
       nTurbVar = 0; break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_NEG:
+    case TURB_FAMILY::SA:
       nTurbVar = 1; break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       nTurbVar = 2; break;
   }
 
@@ -5864,7 +5863,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       case MAIN_SOLVER::MULTIPHYSICS:
         cout << "Multiphysics solver" << endl;
-        break;  
+        break;
       default:
         SU2_MPI::Error("No valid solver was chosen", CURRENT_FUNCTION);
 
@@ -8456,7 +8455,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
 
     default:
-      break;  
+      break;
   }
 }
 
