@@ -37,18 +37,13 @@ CAdjFlowOutput::CAdjFlowOutput(CConfig* config, unsigned short nDim)
 
 void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* config) {
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_NEG:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
         AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", ScreenOutputFormat::FIXED, "RMS_RES",
                          "Root-mean square residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
         AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", ScreenOutputFormat::FIXED, "RMS_RES",
                          "Root-mean square residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
@@ -56,7 +51,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
         AddHistoryOutput("RMS_ADJ_DISSIPATION", "rms[A_w]", ScreenOutputFormat::FIXED, "RMS_RES",
                          " Root-mean square residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
@@ -72,18 +67,13 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
 
 void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* config) {
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_NEG:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
         AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", ScreenOutputFormat::FIXED, "MAX_RES",
                          "Maximum residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
         AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", ScreenOutputFormat::FIXED, "MAX_RES",
                          "Maximum residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
@@ -91,7 +81,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
         AddHistoryOutput("MAX_ADJ_DISSIPATION", "max[A_w]", ScreenOutputFormat::FIXED, "MAX_RES",
                          "Maximum residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
@@ -109,18 +99,13 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
   if (!multiZone) return;
 
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_NEG:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         /// DESCRIPTION: BGS residual of the adjoint nu tilde.
         AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES",
                          "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
         AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES",
                          "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
@@ -128,7 +113,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
         AddHistoryOutput("BGS_ADJ_DISSIPATION", "bgs[A_w]", ScreenOutputFormat::FIXED, "BGS_RES",
                          "BGS residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
@@ -163,20 +148,15 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
   const auto adjspecies_solver = solver[ADJSPECIES_SOL];
 
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_NEG:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
         SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
         if (multiZone) {
           SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
         }
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         SetHistoryOutputValue("RMS_ADJ_TKE", log10(adjturb_solver->GetRes_RMS(0)));
         SetHistoryOutputValue("RMS_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_RMS(1)));
         SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
@@ -186,7 +166,7 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
           SetHistoryOutputValue("BGS_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_BGS(1)));
         }
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
 
@@ -212,23 +192,18 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
 
 void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* config) {
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_NEG:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         /// DESCRIPTION: Adjoint nu tilde.
         AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION", "Adjoint Spalart-Allmaras variable");
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /// DESCRIPTION: Adjoint kinetic energy.
         AddVolumeOutput("ADJ_TKE", "Adjoint_TKE", "SOLUTION", "Adjoint turbulent kinetic energy");
         /// DESCRIPTION: Adjoint dissipation.
         AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION", "Adjoint rate of dissipation");
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
@@ -243,18 +218,13 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* conf
 
 void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* config) {
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_NEG:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         /// DESCRIPTION: Residual of the nu tilde.
         AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL",
                         "Residual of the adjoint Spalart-Allmaras variable");
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /// DESCRIPTION: Residual of the adjoint kinetic energy.
         AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL",
                         "Residual of the adjoint turb. kinetic energy");
@@ -262,7 +232,7 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* conf
         AddVolumeOutput("RES_ADJ_DISSIPATION", "Residual_Adjoint_Omega", "RESIDUAL",
                         "Residual of adjoint rate of dissipation");
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
@@ -283,18 +253,13 @@ void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolv
       (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) ? solver[ADJSPECIES_SOL]->GetNodes() : nullptr;
 
   if (!frozen_visc) {
-    switch (turb_model) {
-      case TURB_MODEL::SA:
-      case TURB_MODEL::SA_COMP:
-      case TURB_MODEL::SA_E:
-      case TURB_MODEL::SA_E_COMP:
-      case TURB_MODEL::SA_NEG:
+    switch (TurbModelFamily(turb_model)) {
+      case TURB_FAMILY::SA:
         SetVolumeOutputValue("ADJ_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
         SetVolumeOutputValue("RES_ADJ_NU_TILDE", iPoint,
                              Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
         break;
-      case TURB_MODEL::SST:
-      case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         SetVolumeOutputValue("ADJ_TKE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
         SetVolumeOutputValue("ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1));
         SetVolumeOutputValue("RES_ADJ_TKE", iPoint,
@@ -302,7 +267,7 @@ void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolv
         SetVolumeOutputValue("RES_ADJ_DISSIPATION", iPoint,
                              Node_AdjTurb->GetSolution(iPoint, 1) - Node_AdjTurb->GetSolution_Old(iPoint, 1));
         break;
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }

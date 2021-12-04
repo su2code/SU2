@@ -930,6 +930,34 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
 };
 
 /*!
+ * \brief Families of turbulence models
+ */
+enum class TURB_FAMILY {
+  NONE,   /*!< \brief No turbulence model. */
+  SA,     /*!< \brief Spalart-Allmaras variants. */
+  KW,     /*!< \brief k-w models. */
+};
+/*!
+ * \brief Associate turb models with their family
+ */
+inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
+  switch (model) {
+    case TURB_MODEL::NONE:
+      return TURB_FAMILY::NONE;
+    case TURB_MODEL::SA:
+    case TURB_MODEL::SA_NEG:
+    case TURB_MODEL::SA_E:
+    case TURB_MODEL::SA_COMP:
+    case TURB_MODEL::SA_E_COMP:
+      return TURB_FAMILY::SA;
+    case TURB_MODEL::SST:
+    case TURB_MODEL::SST_SUST:
+      return TURB_FAMILY::KW;
+  }
+  return TURB_FAMILY::NONE;
+}
+
+/*!
  * \brief Types of transition models
  */
 enum class TURB_TRANS_MODEL {
