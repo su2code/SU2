@@ -131,8 +131,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
                                                   unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  bool muscl;
-  bool limiter;
+  bool muscl = false;
+  bool limiter = false;
   if (SolverName == "SA" || SolverName == "K-W SST") {
     muscl = config->GetMUSCL_Turb();
     limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
