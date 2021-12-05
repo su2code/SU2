@@ -130,8 +130,17 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+
+  bool muscl;
+  bool limiter;
+  if (SolverName == "SA" || SolverName == "K-W SST") {
+    muscl = config->GetMUSCL_Turb();
+    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  }
+  else if (SolverName == "SPECIES") {
+    muscl = config->GetMUSCL_Species();
+    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER);
+  }
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = config->GetMUSCL_Flow() && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);

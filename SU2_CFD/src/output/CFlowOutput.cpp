@@ -954,8 +954,10 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+    if (config->GetKind_SlopeLimit_Species() != NO_LIMITER) {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+    }
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -1047,7 +1049,8 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+      if (config->GetKind_SlopeLimit_Species() != NO_LIMITER)
+        SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
   }
 }
