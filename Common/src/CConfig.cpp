@@ -1139,6 +1139,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
+  /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_RESTART_OVERWRITE", Wrt_Restart_Overwrite, true);
+  /*!\brief WRT_VOLUME_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 

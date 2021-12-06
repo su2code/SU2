@@ -312,6 +312,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
 
+  std::stringstream inner_iter_ss;
+  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
+
+  std::stringstream outer_iter_ss;
+  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << curOuterIter;
+
   /*--- Write files depending on the format --- */
 
   switch (format) {
@@ -347,9 +353,16 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case RESTART_BINARY:
 
-      if (fileName.empty())
+      if (fileName.empty()){
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
-
+        if (!config->GetWrt_Restart_Overwrite()){
+          if (config->GetMultizone_Problem())
+            fileName.append(outer_iter_ss.str());
+          else 
+            fileName.append(inner_iter_ss.str());
+        }
+      }
+      
       if (rank == MASTER_NODE) {
           (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
       }
@@ -418,8 +431,15 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case PARAVIEW_XML:
 
-      if (fileName.empty())
+      if (fileName.empty()){
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        if (!config->GetWrt_Volume_Overwrite()){
+          if (config->GetMultizone_Problem())
+            fileName.append(outer_iter_ss.str());
+          else 
+            fileName.append(inner_iter_ss.str());
+        }
+      }
 
       /*--- Load and sort the output data and connectivity. ---*/
 

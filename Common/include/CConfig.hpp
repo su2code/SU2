@@ -667,9 +667,11 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
-  Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
+  Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
+  Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,                    /*!< \brief Number of markers for the objective function. */
@@ -5241,6 +5243,18 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
+   * \brief Flag for whether restart solution files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Restart_Overwrite(void) const { return Wrt_Restart_Overwrite; }
+
+    /*!
+   * \brief Flag for whether visualization files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
    * \brief Provides the number of varaibles.
