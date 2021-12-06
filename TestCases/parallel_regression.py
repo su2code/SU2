@@ -1598,18 +1598,6 @@ def main():
     species2_primitiveVenturi.tol       = 0.00001
     test_list.append(species2_primitiveVenturi)
 
-    # 3 species (2 eq) primitive venturi mixing
-    species3_primitiveVenturi           = TestCase('species3_primitiveVenturi')
-    species3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
-    species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
-    species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300, 1.645644, 0.499064, 0.601230, 0.545351]
-    species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species3_primitiveVenturi.timeout   = 1600
-    species3_primitiveVenturi.new_output = True
-    species3_primitiveVenturi.tol       = 0.00001
-    test_list.append(species3_primitiveVenturi)
-
     # 3 species (2 eq) primitive venturi mixing with inlet files.
     # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
     species3_primitiveVenturi_inletFile           = TestCase('species3_primitiveVenturi_inletFile')
