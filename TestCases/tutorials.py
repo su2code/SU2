@@ -97,7 +97,7 @@ def main():
 
     # 3 species (2 eq) primitive venturi mixing
     species3_primitiveVenturi           = TestCase('species3_primitiveVenturi')
-    species3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
     species3_primitiveVenturi.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300, 1.645644, 0.499064, 0.601230, 0.545351]
@@ -110,7 +110,7 @@ def main():
 
     # 3 species (2 eq) primitive venturi mixing
     DAspecies3_primitiveVenturi           = TestCase('DAspecies3_primitiveVenturi')
-    DAspecies3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
     DAspecies3_primitiveVenturi.test_vals = [-8.519150, -7.786969, -7.774848, -7.474167, -12.127149, -12.262476, -11.456643]
