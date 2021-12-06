@@ -57,6 +57,10 @@ class CScalarSolver : public CSolver {
 
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
 
+  bool implicit; /*!< \brief Solver uses an implicit scheme. */
+  bool muscl;    /*!< \brief Solver uses MUSCL reconstruction. */
+  bool limiter;  /*!< \brief Solver uses limiters. */
+
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP

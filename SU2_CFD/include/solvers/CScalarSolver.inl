@@ -79,22 +79,6 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 
 template <class VariableType>
 void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
-  /*--- Set booleans depending on the calling solver, alternatively one could add the bools to the func input. ---*/
-  bool implicit = false;
-  bool muscl = false;
-  bool limiter = false;
-  if (SolverName == "SA" || SolverName == "K-W SST") {
-    implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-    muscl = config->GetMUSCL_Turb();
-    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-              (config->GetInnerIter() <= config->GetLimiterIter());
-  }
-  else if (SolverName == "SPECIES") {
-    implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
-    muscl = config->GetMUSCL_Species();
-    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
-              (config->GetInnerIter() <= config->GetLimiterIter());
-  }
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -129,19 +113,6 @@ template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  bool muscl = false;
-  bool limiter = false;
-  if (SolverName == "SA" || SolverName == "K-W SST") {
-    muscl = config->GetMUSCL_Turb();
-    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
-  }
-  else if (SolverName == "SPECIES") {
-    muscl = config->GetMUSCL_Species();
-    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER);
-  }
-
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = config->GetMUSCL_Flow() && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
   /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
@@ -484,7 +455,6 @@ template <class VariableType>
 void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                                        unsigned short iRKStep, unsigned short iMesh,
                                                        unsigned short RunTime_EqSystem) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);

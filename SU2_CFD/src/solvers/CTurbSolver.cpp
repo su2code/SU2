@@ -37,6 +37,11 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative
   : CScalarSolver<CTurbVariable>(geometry, config, conservative) {
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+
+  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  muscl = config->GetMUSCL_Turb();
+  limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+            (config->GetInnerIter() <= config->GetLimiterIter());
 }
 
 CTurbSolver::~CTurbSolver() {
@@ -335,8 +340,6 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
 
   /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
   if(config->GetTurb_Fixed_Values()){
-
-    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
     /*--- Form normalized far-field velocity ---*/
     const su2double* velocity_inf = config->GetVelocity_FreeStreamND();
