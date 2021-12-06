@@ -509,7 +509,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
       SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
       Tot_Surface_Species[iVar] += Species;
-      // Set value into config. Necessary to access as an OF.
+      if (iVar == 0)
+        config->SetSurface_Species_0(iMarker_Analyze, Species);
     }
 
   }
