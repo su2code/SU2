@@ -1619,19 +1619,19 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         su2double v = 0.0, v_t = 0.0;
 
         su2double Physical_t   = TimeIter * Physical_dt;
-        su2double v1 = mach1*soundspeed1; //horizontal freestream
-        su2double v2 = V_infty[VEL_INDEX];  //horizontal freestream
+        su2double v1 = mach1*soundspeed1; //horizontal freestream //new velocity
+        su2double v2 = V_infty[VEL_INDEX];  //horizontal freestream //old velocity
 
         //su2double tol          = 1.0E-6;    // Tolerance for the Bisection method
         //unsigned short maxIter = 50;        // Maximum Bisection method iterations
         //bool convg = false;
 
         su2double xs = x - x0 - v1 * Physical_t;
-        v = v1;
+        //v= v1;
 
         nodes->Set_x_new_freestream(iPoint, xs);
 
-        su2double k = 1.0;
+        su2double k = 10.0;
 
         //cout << endl << endl << "bc farfield iPoint=" << iPoint << endl;
         //cout << endl << "x=" << x << endl;
@@ -1660,6 +1660,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
         if (xs < 0) {
 
+          v = v2 + (v1 - v2) * (erf(-k*xs));
           U_aux[nSpecies]      = rho1*v;
           U_aux[nSpecies+nDim] = rho1* (E2 - 0.5*sqvel2 + 0.5*v*v);
           V_aux[VEL_INDEX]     = v;
