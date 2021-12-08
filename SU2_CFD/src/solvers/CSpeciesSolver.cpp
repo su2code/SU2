@@ -58,8 +58,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   nDim = geometry->GetnDim();
 
-  /*--- Set whether MUSCL and limiters are used in this solver, and implicit variable ---*/
-  implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+  /*--- Set whether MUSCL and limiters are used in this solver. ---*/
   muscl = config->GetMUSCL_Species();
   limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
             (config->GetInnerIter() <= config->GetLimiterIter());
@@ -396,6 +395,7 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
@@ -540,6 +540,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
