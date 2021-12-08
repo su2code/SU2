@@ -187,6 +187,7 @@ CHeatSolver::~CHeatSolver(void) {
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     SetUndivided_Laplacian(geometry, config);
@@ -459,7 +460,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
             thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j;
 
-  const bool turb = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
+  const bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   eddy_viscosity_i = 0.0;
   eddy_viscosity_j = 0.0;
@@ -1039,7 +1040,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
   const su2double* Normal;
 
-  const bool turb = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
+  const bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
