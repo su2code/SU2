@@ -427,6 +427,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
   /*--- Set booleans based on config settings ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool rom      = (config->GetReduced_Model());
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -574,14 +575,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         } else {
           lim_i = lim_j = 1.0;
         }
-        else if (limiter) {
-          lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
-          lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
-        }
-        su2double lim_ij = min(lim_i, lim_j);
-
-        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
       }
       su2double lim_ij = min(lim_i, lim_j);
 

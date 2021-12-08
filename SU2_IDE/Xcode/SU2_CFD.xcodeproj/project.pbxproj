@@ -155,9 +155,7 @@
 		354903C12537E0290095B597 /* nonlinear_models.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032A2537E0280095B597 /* nonlinear_models.cpp */; };
 		354903C22537E0290095B597 /* transition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032B2537E0280095B597 /* transition.cpp */; };
 		354903C32537E0290095B597 /* radiation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032C2537E0280095B597 /* radiation.cpp */; };
-		354903C42537E0290095B597 /* turb_convection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032E2537E0280095B597 /* turb_convection.cpp */; };
 		354903C52537E0290095B597 /* turb_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032F2537E0280095B597 /* turb_sources.cpp */; };
-		354903C62537E0290095B597 /* turb_diffusion.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903302537E0280095B597 /* turb_diffusion.cpp */; };
 		354903C72537E0290095B597 /* heat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903312537E0280095B597 /* heat.cpp */; };
 		354903C82537E0290095B597 /* adj_diffusion.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903332537E0280095B597 /* adj_diffusion.cpp */; };
 		354903C92537E0290095B597 /* adj_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903342537E0280095B597 /* adj_sources.cpp */; };
@@ -261,6 +259,7 @@
 		35D63007259987B8008DF28B /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D63006259987B7008DF28B /* blas_structure.cpp */; };
 		35D6301625998877008DF28B /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301325998877008DF28B /* mpi_structure.cpp */; };
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
+		40404422276055B100219090 /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 40EECF6527604D8300C77056 /* libROM.dylib */; };
 		40C6D17D271F8053009B5531 /* CScalarVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D17B271F8053009B5531 /* CScalarVariable.cpp */; };
 		40C6D17E271F8053009B5531 /* CFlowVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D17C271F8053009B5531 /* CFlowVariable.cpp */; };
 		40C6D183271F80CC009B5531 /* omp_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D182271F80CC009B5531 /* omp_structure.cpp */; };
@@ -268,8 +267,8 @@
 		40C6D18D271F81AD009B5531 /* CNewtonIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */; };
 		40C6D193271F822F009B5531 /* CCGNSFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D192271F822E009B5531 /* CCGNSFileWriter.cpp */; };
 		40C6D19D271F840E009B5531 /* scalar_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19A271F840E009B5531 /* scalar_sources.cpp */; };
-		40C6D19E271F840E009B5531 /* scalar_diffusion.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19B271F840E009B5531 /* scalar_diffusion.cpp */; };
-		40C6D19F271F840E009B5531 /* scalar_convection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19C271F840E009B5531 /* scalar_convection.cpp */; };
+		40EECF6227604D0500C77056 /* CSpeciesSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40EECF6127604D0500C77056 /* CSpeciesSolver.cpp */; };
+		40EECF6827604D9D00C77056 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40EECF6727604D9D00C77056 /* Accelerate.framework */; };
 		E9D6EE572316522800618E36 /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
@@ -280,7 +279,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				40C54DC52641EED30057F3DD /* libROM.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -668,9 +666,7 @@
 		3549032A2537E0280095B597 /* nonlinear_models.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = nonlinear_models.cpp; sourceTree = "<group>"; };
 		3549032B2537E0280095B597 /* transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transition.cpp; sourceTree = "<group>"; };
 		3549032C2537E0280095B597 /* radiation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = radiation.cpp; sourceTree = "<group>"; };
-		3549032E2537E0280095B597 /* turb_convection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_convection.cpp; sourceTree = "<group>"; };
 		3549032F2537E0280095B597 /* turb_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_sources.cpp; sourceTree = "<group>"; };
-		354903302537E0280095B597 /* turb_diffusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_diffusion.cpp; sourceTree = "<group>"; };
 		354903312537E0280095B597 /* heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = heat.cpp; sourceTree = "<group>"; };
 		354903332537E0280095B597 /* adj_diffusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = adj_diffusion.cpp; sourceTree = "<group>"; };
 		354903342537E0280095B597 /* adj_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = adj_sources.cpp; sourceTree = "<group>"; };
@@ -890,8 +886,10 @@
 		40C6D197271F83CC009B5531 /* scalar_diffusion.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_diffusion.hpp; sourceTree = "<group>"; };
 		40C6D198271F83CC009B5531 /* scalar_convection.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_convection.hpp; sourceTree = "<group>"; };
 		40C6D19A271F840E009B5531 /* scalar_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_sources.cpp; sourceTree = "<group>"; };
-		40C6D19B271F840E009B5531 /* scalar_diffusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_diffusion.cpp; sourceTree = "<group>"; };
-		40C6D19C271F840E009B5531 /* scalar_convection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_convection.cpp; sourceTree = "<group>"; };
+		40EECF6127604D0500C77056 /* CSpeciesSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSpeciesSolver.cpp; sourceTree = "<group>"; };
+		40EECF6327604D2700C77056 /* CSpeciesSolver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSpeciesSolver.hpp; sourceTree = "<group>"; };
+		40EECF6527604D8300C77056 /* libROM.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libROM.dylib; path = ../../../libROM/build/libROM.dylib; sourceTree = "<group>"; };
+		40EECF6727604D9D00C77056 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -899,8 +897,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				40C54DC42641EED30057F3DD /* libROM.dylib in Frameworks */,
-				40C6D17626F00728009B5531 /* Accelerate.framework in Frameworks */,
+				40404422276055B100219090 /* libROM.dylib in Frameworks */,
+				40EECF6827604D9D00C77056 /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -914,7 +912,7 @@
 				354900E82537E0050095B597 /* Common */,
 				3549021A2537E0280095B597 /* SU2_CFD */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
-				40C54DB72640C1DE0057F3DD /* Frameworks */,
+				40EECF6427604D8300C77056 /* Frameworks */,
 			);
 			name = SU2_CFD;
 			sourceTree = "<group>";
@@ -1435,6 +1433,7 @@
 				40C6D190271F81D9009B5531 /* CScalarSolver.inl */,
 				354902652537E0280095B597 /* CSolver.hpp */,
 				354902702537E0280095B597 /* CSolverFactory.hpp */,
+				40EECF6327604D2700C77056 /* CSpeciesSolver.hpp */,
 				3549026C2537E0280095B597 /* CTemplateSolver.hpp */,
 				3549026E2537E0280095B597 /* CTransLMSolver.hpp */,
 				354902682537E0280095B597 /* CTurbSASolver.hpp */,
@@ -1646,7 +1645,6 @@
 		354902D82537E0280095B597 /* integration */ = {
 			isa = PBXGroup;
 			children = (
-				40C54DB02640BE100057F3DD /* CNewtonIntegration.cpp */,
 				354902D92537E0280095B597 /* CFEM_DG_Integration.cpp */,
 				354902DA2537E0280095B597 /* CIntegration.cpp */,
 				354902DE2537E0280095B597 /* CIntegrationFactory.cpp */,
@@ -1745,6 +1743,7 @@
 				354903212537E0280095B597 /* CRadSolver.cpp */,
 				354903162537E0280095B597 /* CSolver.cpp */,
 				354903142537E0280095B597 /* CSolverFactory.cpp */,
+				40EECF6127604D0500C77056 /* CSpeciesSolver.cpp */,
 				354903102537E0280095B597 /* CTemplateSolver.cpp */,
 				354903112537E0280095B597 /* CTransLMSolver.cpp */,
 				354903192537E0280095B597 /* CTurbSASolver.cpp */,
@@ -1786,9 +1785,7 @@
 		3549032D2537E0280095B597 /* turbulent */ = {
 			isa = PBXGroup;
 			children = (
-				3549032E2537E0280095B597 /* turb_convection.cpp */,
 				3549032F2537E0280095B597 /* turb_sources.cpp */,
-				354903302537E0280095B597 /* turb_diffusion.cpp */,
 			);
 			path = turbulent;
 			sourceTree = "<group>";
@@ -2181,7 +2178,6 @@
 			children = (
 				40C6D182271F80CC009B5531 /* omp_structure.cpp */,
 				35D6301125998877008DF28B /* mpi_structure.hpp */,
-				40C54DBC2640C3D90057F3DD /* omp_structure.cpp */,
 				35D6301225998877008DF28B /* special_vectorization.hpp */,
 				35D6301325998877008DF28B /* mpi_structure.cpp */,
 				35D6301425998877008DF28B /* vectorization.hpp */,
@@ -2204,10 +2200,17 @@
 			isa = PBXGroup;
 			children = (
 				40C6D19A271F840E009B5531 /* scalar_sources.cpp */,
-				40C6D19B271F840E009B5531 /* scalar_diffusion.cpp */,
-				40C6D19C271F840E009B5531 /* scalar_convection.cpp */,
 			);
 			path = scalar;
+			sourceTree = "<group>";
+		};
+		40EECF6427604D8300C77056 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				40EECF6727604D9D00C77056 /* Accelerate.framework */,
+				40EECF6527604D8300C77056 /* libROM.dylib */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -2329,7 +2332,6 @@
 				354901FA2537E0050095B597 /* CTetrahedron.cpp in Sources */,
 				354903D92537E0290095B597 /* CVariable.cpp in Sources */,
 				35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */,
-				354903C62537E0290095B597 /* turb_diffusion.cpp in Sources */,
 				354903E72537E0290095B597 /* CFEABoundVariable.cpp in Sources */,
 				354903C72537E0290095B597 /* heat.cpp in Sources */,
 				354902092537E0050095B597 /* CMeshReaderFVM.cpp in Sources */,
@@ -2366,7 +2368,6 @@
 				354903B92537E0290095B597 /* CFEM_DG_NSSolver.cpp in Sources */,
 				354901F62537E0050095B597 /* CPyramid.cpp in Sources */,
 				354902132537E0050095B597 /* CGeometry.cpp in Sources */,
-				40C54DB12640BE100057F3DD /* CNewtonIntegration.cpp in Sources */,
 				3549039B2537E0290095B597 /* CBaselineOutput.cpp in Sources */,
 				354902162537E0050095B597 /* CSysVector.cpp in Sources */,
 				354902082537E0050095B597 /* CCGNSMeshReaderFVM.cpp in Sources */,
@@ -2379,7 +2380,6 @@
 				354902022537E0050095B597 /* CVertex.cpp in Sources */,
 				3549037F2537E0280095B597 /* COutput.cpp in Sources */,
 				357BEEF7256D71E100423D14 /* ausmplusup2.cpp in Sources */,
-				354903C42537E0290095B597 /* turb_convection.cpp in Sources */,
 				354903A42537E0290095B597 /* CAdjEulerSolver.cpp in Sources */,
 				354903B32537E0290095B597 /* CTurbSASolver.cpp in Sources */,
 				357BEE53256D592C00423D14 /* CPengRobinson.cpp in Sources */,
@@ -2471,13 +2471,11 @@
 				357BEF13256D722500423D14 /* CFreeFormDefBox.cpp in Sources */,
 				357BEEE6256D716400423D14 /* CNEMONSVariable.cpp in Sources */,
 				354902042537E0050095B597 /* CTurboVertex.cpp in Sources */,
-				40C6D19E271F840E009B5531 /* scalar_diffusion.cpp in Sources */,
 				357BEF11256D722500423D14 /* CSurfaceMovement.cpp in Sources */,
 				357BEE55256D592C00423D14 /* CIdealGas.cpp in Sources */,
 				354903892537E0290095B597 /* CSurfaceFVMDataSorter.cpp in Sources */,
 				357BEEF4256D71E100423D14 /* lax.cpp in Sources */,
 				354903B02537E0290095B597 /* CSolver.cpp in Sources */,
-				40C6D19F271F840E009B5531 /* scalar_convection.cpp in Sources */,
 				354901D52537E0050095B597 /* CRadialBasisFunction.cpp in Sources */,
 				357BEE75256D59AA00423D14 /* fem_cgns_elements.cpp in Sources */,
 				E9D6EE572316522800618E36 /* (null) in Sources */,
@@ -2492,7 +2490,6 @@
 				357BEEFB256D71E100423D14 /* NEMO_diffusion.cpp in Sources */,
 				354902152537E0050095B597 /* CSysMatrix.cpp in Sources */,
 				354903BC2537E0290095B597 /* SU2_CFD.cpp in Sources */,
-				40C6D17A26F007C9009B5531 /* CFVMOutput.cpp in Sources */,
 				357BEE49256D589B00423D14 /* CNEMONSSolver.cpp in Sources */,
 				40C6D193271F822F009B5531 /* CCGNSFileWriter.cpp in Sources */,
 				354903BB2537E0290095B597 /* CRadSolver.cpp in Sources */,
@@ -2512,6 +2509,7 @@
 				354901EC2537E0050095B597 /* graph_coloring_structure.cpp in Sources */,
 				354901E42537E0050095B597 /* CVerificationSolution.cpp in Sources */,
 				354901E92537E0050095B597 /* C1DInterpolation.cpp in Sources */,
+				40EECF6227604D0500C77056 /* CSpeciesSolver.cpp in Sources */,
 				354903B12537E0290095B597 /* CMeshSolver.cpp in Sources */,
 				354901F82537E0050095B597 /* CQuadrilateral.cpp in Sources */,
 				354902072537E0050095B597 /* CBoxMeshReaderFVM.cpp in Sources */,
@@ -2583,7 +2581,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					../../externals/CLI11,
-					/Users/jessie/Software/libROM,
+					/Users/jessie/Software/libROM/lib,
 				);
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -2646,7 +2644,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					../../externals/CLI11,
-					/Users/jessie/Software/libROM,
+					/Users/jessie/Software/libROM/lib,
 				);
 				INSTALL_PATH = /usr/local/bin;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;

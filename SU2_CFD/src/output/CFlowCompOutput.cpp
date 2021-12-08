@@ -454,10 +454,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
-  if (turb_model != TURB_MODEL::NONE) {
-    SetHistoryOutputValue("LINSOL_ITER_TURB", turb_solver->GetIterLinSolver());
-    SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(turb_solver->GetResLinSolver()));
-  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());

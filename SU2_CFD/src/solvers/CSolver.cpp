@@ -4439,12 +4439,12 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   
   if (gnat) {
     std::cout << "Performing GNAT." << std::endl;
-    CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    //CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
     fname = "masked_nodes_airfoil_GNAT_"+to_string(desired_nodes)+".csv";
   }
   else {
     std::cout << "Performing QDEIM." << std::endl;
-    CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    //CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
     fname = "masked_nodes_airfoil_QDEIM_"+to_string(desired_nodes)+".csv";
   }
   
@@ -4696,7 +4696,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   
   switch( config->GetKind_Solver() ) {
 
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: {
+    case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::INC_NAVIER_STOKES: {
       // Get neighbor of neighbor
       
       std::vector<unsigned long> temp_neighs;

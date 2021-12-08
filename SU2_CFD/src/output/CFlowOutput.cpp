@@ -1183,11 +1183,7 @@ void CFlowOutput::Add_CpInverseDesignOutput(){
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
-  if (!Surface_file.good()) {
-    solver->SetTotal_CpDiff(0.0);
-    SetHistoryOutputValue("INVERSE_DESIGN_PRESSURE", 0.0);
-    return;
-  }
+  /*--- Prepare to read the surface pressure files (CSV) ---*/
 
   const auto surfCp_filename = config->GetUnsteady_FileName("TargetCp", curTimeIter, ".dat");
 

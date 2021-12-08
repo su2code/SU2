@@ -95,8 +95,6 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
-  const long unsigned int offset=(nSpecies+2);
-  ComputeVorticityAndStrainMag(*config, iMesh, offset);
 
   ComputeVorticityAndStrainMag(*config, iMesh);
 

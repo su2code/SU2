@@ -45,7 +45,6 @@
 #include <sstream>
 #include <vector>
 #include <chrono>
-#include "../../include/limiters/CLimiterDetails.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -1943,7 +1942,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   END_SU2_OMP_FOR
-  } // end color loop
+  //} // end color loop
 
   /*--- Restore preaccumulation and adjoint evaluation state. ---*/
   AD::ResumePreaccumulation(pausePreacc);
@@ -2049,7 +2048,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
   /*--- Allow Jacobian to be calculated for ROM problem ---*/
-  if (config->GetReduced_Model()) implicit = true;
+  //if (config->GetReduced_Model()) implicit = true;
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];

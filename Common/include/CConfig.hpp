@@ -3811,8 +3811,30 @@ public:
    */
     su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
 
+  /*!
+   * \brief Get the value of the constant mass diffusivity for scalar transport.
+   * \return Constant mass diffusivity.
+   */
+  su2double GetDiffusivity_Constant(void) const { return Diffusivity_Constant; }
 
+  /*!
+   * \brief Get the value of the non-dimensional constant mass diffusivity.
+   * \return Non-dimensional constant mass diffusivity.
+   */
+  su2double GetDiffusivity_ConstantND(void) const { return Diffusivity_ConstantND; }
 
+  /*!
+   * \brief Get the value of the laminar Schmidt number for scalar transport.
+   * \return Laminar Schmidt number for scalar transport.
+   */
+  su2double GetSchmidt_Number_Laminar(void) const { return Schmidt_Number_Laminar; }
+
+  /*!
+   * \brief Get the value of the turbulent Schmidt number for scalar transport.
+   * \return Turbulent Schmidt number for scalar transport.
+   */
+  su2double GetSchmidt_Number_Turbulent(void) const { return Schmidt_Number_Turbulent; }
+  
   /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
@@ -5346,36 +5368,6 @@ public:
    * \return Name of the file with the initial snapshot.
   */
   string GetInit_Coord_FileName(void) const { return Init_Coord_FileName; }
-  
-  /*!
-   * \brief Static or incremental toggle for POD basis generation type.
-   * \return Type of POD generation type
-   */
-  POD_KIND GetKind_PODBasis(void) const { return POD_Basis_Gen; }
-  
-  /*!
-   * \brief Get the number of hyper-reduction nodes desired.
-   * \return Number of rdesired hyper-reduction nodes.
-   */
-  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
-  
-  /*!
-   * \brief Get number of POD modes desired.
-   * \return Number of POD modes desired.
-   */
-  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
-  
-  /*!
-   * \brief Get the name of the file for libROM to save.
-   * \return Name of filename for libROM to save to.
-   */
-  string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
-  
-  /*!
-   * \brief Get whether or not to save to libROM.
-   * \return True if specified in config file.
-   */
-  bool GetSave_libROM(void) const {return libROM; }
   
   /*!
    * \brief Get the name of the file with the residual of the problem.
@@ -9520,7 +9512,19 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
-
+  
+  /*!
+   * \brief Get the number of hyper-reduction nodes desired.
+   * \return Number of rdesired hyper-reduction nodes.
+   */
+  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
+  
+  /*!
+   * \brief Get number of POD modes desired.
+   * \return Number of POD modes desired.
+   */
+  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
+  
   /*!
    * \brief Get whether or not to save solution data to libROM.
    * \return True if specified in config file.
