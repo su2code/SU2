@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,11 +105,11 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
   for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
     iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
+    geometry[iMGlevel]->SetControlVolume(geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
     if (config->GetGrid_Movement())
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine]);
   }
 
 }

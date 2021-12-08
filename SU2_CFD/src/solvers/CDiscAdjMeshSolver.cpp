@@ -2,7 +2,7 @@
  * \file CDiscAdjMeshSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint mesh problem.
  * \author Ruben Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

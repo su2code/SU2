@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,6 +35,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CSU2TCLib.hpp"
+#include "../../include/limiters/CLimiterDetails.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -59,7 +60,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
-  unsigned short iMarker, nLineLets;
+  unsigned long iMarker;
+  unsigned short nLineLets;
   su2double *Mvec_Inf, Alpha, Beta;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -134,7 +136,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   Allocate(*config);
 
   /*--- Allocate Jacobians for implicit time-stepping or for ROM solution ---*/
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT or config->GetReduced_Model()) {
+  if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT or config->GetReduced_Model()) {
 
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
@@ -265,7 +267,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
-      
+
       if ((rank == MASTER_NODE) && (ErrorCounter != 0))
         cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
     }
@@ -420,13 +422,11 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
-  unsigned short iVar, jVar;
-  bool err;
-  
+
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   /*--- Set booleans based on config settings ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool rom = config->GetReduced_Model();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -456,18 +456,8 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Compute residuals, and Jacobians ---*/
     auto residual = numerics->ComputeResidual(config);
 
-    /*--- Check for NaNs before applying the residual to the linear system ---*/
-    err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (residual[iVar] != residual[iVar])
-        err = true;
-
-    if (implicit or rom)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
-              (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar]))
-            err = true;
+    /*--- Check residuals/Jacobians --*/
+    bool err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
@@ -482,8 +472,6 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar, jVar;
 
   /*--- Set booleans based on config settings ---*/
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -491,7 +479,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
   const bool rom              = (config->GetReduced_Model());
-  
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -553,18 +541,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      /*--- Set and extract limiters ---*/
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-      if (limiter){
-        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-      }
-
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        su2double lim_i = 0.0;
-        su2double lim_j = 0.0;
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
 
@@ -573,22 +551,22 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
           Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
-        if (limiter) {
-          if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
-            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
-            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
-          }
-          if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
-          if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
-          su2double lim_ij = min(lim_i, lim_j);
+        su2double lim_i = 1.0;
+        su2double lim_j = 1.0;
 
-          Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
-        } else {
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+        if (van_albada) {
+          su2double V_ij = V_j[iVar] - V_i[iVar];
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
         }
+        else if (limiter) {
+          lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
+          lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
+        }
+        su2double lim_ij = min(lim_i, lim_j);
+
+        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
@@ -632,16 +610,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
-    bool err = false;
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (residual[iVar] != residual[iVar]) err = true;
-
-    if (implicit or rom)
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        for (auto jVar = 0u; jVar < nVar; jVar++)
-          if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
-              (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar])   )
-            err = true;
+    bool err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
@@ -780,17 +749,17 @@ bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  unsigned short iVar, jVar;
+  unsigned short iVar;
   unsigned long iPoint;
 
   /*--- Assign booleans ---*/
   bool err        = false;
-  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool frozen     = config->GetFrozen();
   bool monoatomic = config->GetMonoatomic();
   bool axisymm    = config->GetAxisymmetric();
   bool viscous    = config->GetViscous();
-  bool rans       = (config->GetKind_Turb_Model() != NONE);
+  bool rans       = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   bool rom        = config->GetReduced_Model();
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
@@ -837,19 +806,12 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         auto residual = numerics->ComputeChemistry(config);
 
         /*--- Check for errors before applying source to the linear system ---*/
-        err = false;
-        for (iVar = 0; iVar < nVar; iVar++)
-          if (residual[iVar] != residual[iVar]) err = true;
-
-        if (implicit or rom)
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              if (residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) err = true;
+        err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
         /*--- Apply the chemical sources to the linear system ---*/
         if (!err) {
           LinSysRes.SubtractBlock(iPoint, residual);
-          if (implicit)
+          if (implicit or rom)
             Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
         } else
           eChm_local++;
@@ -863,13 +825,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       auto residual = numerics->ComputeVibRelaxation(config);
 
       /*--- Check for errors before applying source to the linear system ---*/
-      err = false;
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit or rom)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) err = true;
+      err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
       /*--- Apply the vibrational relaxation terms to the linear system ---*/
       if (!err) {
@@ -917,13 +873,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       auto residual = numerics->ComputeAxisymmetric(config);
 
       /*--- Check for errors before applying source to the linear system ---*/
-      err = false;
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) err = true;
+      err = CNumerics::CheckResidualNaNs(implicit, nVar, residual);
 
       /*--- Apply the update to the linear system ---*/
       if (!err) {
@@ -985,6 +935,69 @@ void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**,
 
   CompleteImplicitIteration_impl<true>(geometry, config);
 }
+
+void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  const su2double allowableRatio = 0.2;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double localUnderRelaxation = 1.0;
+
+    su2double num = 0.0;
+    su2double denom = 0.0;
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      /* We impose a limit on the maximum percentage that the
+       density (sum of all species) and energy can change over a nonlinear iteration. */
+
+      const unsigned long index = iPoint * nVar + iVar;
+      if (iVar < config->GetnSpecies()) {
+        num   += fabs(LinSysSol[index]);
+        denom += fabs(nodes->GetSolution(iPoint, iVar));
+
+        /*--- If final density/species, compute Under-relaxation ---*/
+        if (iVar == (config ->GetnSpecies()-1)){
+          su2double ratio = (num/(denom+EPS));
+          if (ratio > allowableRatio) {
+            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+          }
+        }
+
+        /*--- Energy ---*/
+        if (iVar == (nVar-2)){
+          su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+          if (ratio > allowableRatio) {
+            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+          }
+        }
+      }
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+  END_SU2_OMP_FOR
+}
+
+
+
+
+
+
+
+
+
 
 void CNEMOEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
@@ -1354,7 +1367,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = false;
-  bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
   /*--- Instatiate the fluid model ---*/
@@ -1757,7 +1770,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   **Jacobian_b, **DubDu,
   rho, cs, P, rhoE, rhoEve, conc, *u, *dPdU;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Allocate arrays ---*/
   Normal     = new su2double[nDim];
@@ -1881,7 +1894,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   su2double *V_infty, *V_domain, *U_domain,*U_infty;
 
   /*--- Set booleans from configuration parameters ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
 
   /*--- Allocate arrays ---*/
@@ -1941,8 +1954,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetConservative(nodes->GetSolution(iPoint),
                                        node_infty->GetSolution(0) );
-        visc_numerics->SetConsVarGradient(nodes->GetGradient(iPoint),
-                                          node_infty->GetGradient(0) );
         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                                     node_infty->GetPrimitive(0) );
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -1992,29 +2003,27 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
 
-  unsigned short iVar, iDim, iSpecies, nSpecies,
-      RHO_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, H_INDEX, A_INDEX, P_INDEX,
-      RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
 
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
-  Temperature_ve, Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
+  Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
 
   const su2double *Flow_Dir;
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  bool implicit          = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool dynamic_grid      = config->GetGrid_Movement();
-  su2double Two_Gamma_M1 = 2.0/Gamma_Minus_One;
-  su2double Gas_Constant = config->GetGas_ConstantND();
-  INLET_TYPE Kind_Inlet  = config->GetKind_Inlet();
-  string Marker_Tag      = config->GetMarker_All_TagBound(val_marker);
+  bool dynamic_grid         = config->GetGrid_Movement();
+  su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
+  su2double Gas_Constant    = config->GetGas_ConstantND();
+  INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
   su2double *U_domain = new su2double[nVar];      su2double *U_inlet = new su2double[nVar];
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_inlet = new su2double[nPrimVar];
   su2double *Normal   = new su2double[nDim];
-  su2double *Ys       = new su2double[config->GetnSpecies()];
 
   nSpecies = config->GetnSpecies();
   su2double *Spec_Density = new su2double[nSpecies];
@@ -2041,8 +2050,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Retrieve solution at this boundary node ---*/
-      U_domain = nodes->GetSolution(iPoint);
-      V_domain = nodes->GetPrimitive(iPoint);
+      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
@@ -2056,7 +2065,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       switch (Kind_Inlet) {
 
       /*--- Total properties have been specified at the inlet. ---*/
-      case TOTAL_CONDITIONS:
+      case INLET_TYPE::TOTAL_CONDITIONS:
 
         /*--- Retrieve the specified total conditions for this inlet. ---*/
         P_Total  = config->GetInlet_Ptotal(Marker_Tag);
@@ -2067,33 +2076,16 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         P_Total /= config->GetPressure_Ref();
         T_Total /= config->GetTemperature_Ref();
 
-        /*--- Compute Gamma ---*/
-        //TODO move to fluidmodel
-        auto& Ms = FluidModel->GetSpeciesMolarMass();
-        su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
-        su2double rhoR = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          rhoR += V_domain[iSpecies]*Ru/Ms[iSpecies];        }
-        Gamma = rhoR/(V_domain[RHOCVTR_INDEX]+
-                      V_domain[RHOCVVE_INDEX])+1;
-        Gamma_Minus_One = Gamma-1.0;
-        
         /*--- Store primitives and set some variables for clarity. ---*/
-        //TODO NEED TO RECOMPUTE GAS_CONSTANT?
         Density = V_domain[RHO_INDEX];
-        Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = V_domain[VEL_INDEX+iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-        }
+        for (iDim = 0; iDim < nDim; iDim++) 
+          Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
+
+        Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
         Energy      = U_domain[nVar-2]/Density;
-        Pressure    = V_domain[P_INDEX];
+        Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;
-
-        /*--- Mass fractions of gas species ---*/
-        //for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-        //  Ys[iSpecies] = V_domain[iSpecies];              }
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
@@ -2106,9 +2098,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Dot product of normal and flow direction. This should
            be negative due to outward facing boundary normal convention. ---*/
-        alpha = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          alpha += UnitNormal[iDim]*Flow_Dir[iDim];
+        alpha = GeometryToolbox::DotProduct(nDim, UnitNormal, Flow_Dir);
 
         /*--- Coefficients in the quadratic equation for the velocity ---*/
         aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
@@ -2140,114 +2130,110 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Static temperature from the speed of sound relation ---*/
         Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-        Temperature_ve = V_domain[TVE_INDEX]; //TODO NEED TVE AS WELL
+        //NEED TVE AS WELL
 
         /*--- Static pressure using isentropic relation at a point ---*/
         Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
 
         /*--- Density at the inlet from the gas law ---*/
         Density = Pressure/(Gas_Constant*Temperature);
-        //TODO NEED SPECIES DENSITIES
+        //NEED SPECIES DENSITIES
 
         /*--- Using pressure, density, & velocity, compute the energy ---*/
         Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
         //NEED EVE AS WELL
 
         /*--- Conservative variables, using the derived quantities ---*/
-        //TODO EVE
         for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-          U_inlet[iSpecies] = 1.0*Density;
+          U_inlet[iSpecies] = Spec_Density[iSpecies];
         for (iDim = 0; iDim < nDim; iDim++)
           U_inlet[nSpecies+iDim] = Velocity[iDim]*Density;
         U_inlet[nVar-2] = Energy*Density;
-        U_inlet[nVar-1] = U_domain[nVar-1];
+        //U_inlet[nVar-1]=Eve
 
-  /*--- Primitive variables, using the derived quantities ---*/
-        //TODO, 1species only
+        /*--- Primitive variables, using the derived quantities ---*/
         for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-          V_inlet[iSpecies] = 1.0*Density;
-        V_inlet[T_INDEX]   = Temperature;
-        V_inlet[TVE_INDEX] = V_domain[TVE_INDEX];
+          V_inlet[iSpecies] = Spec_Density[iSpecies];
+        V_inlet[nSpecies] = Temperature;
+        //V_inlet[nSpecies+1] = Tve
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[VEL_INDEX+iDim] = Velocity[iDim];
-        V_inlet[P_INDEX]   = Pressure;
+          V_inlet[nSpecies+2] = Velocity[iDim];
+        V_inlet[nSpecies+nDim+2] = Pressure;
         V_inlet[RHO_INDEX] = Density;
-        V_inlet[H_INDEX] = H_Total;
-        V_inlet[A_INDEX] = sqrt(SoundSpeed2);
-        V_inlet[RHOCVTR_INDEX] = V_domain[RHOCVTR_INDEX];
-        V_inlet[RHOCVVE_INDEX] = V_domain[RHOCVVE_INDEX];
-  
-  break;
-      
+        //V_inlet[H_INDEX] = H;
+        //V_inlet[A_INDEX] = A;
+        //V_inlet[RHO_CVTR_INDEX] = rcvtr;
+        //V_inlet[RHO_CVVE_INDEX] = rcvve;
+
+        break;
+
         /*--- Mass flow has been specified at the inlet. ---*/
-//      case MASS_FLOW:
+      case INLET_TYPE::MASS_FLOW:
 
-//        SU2_MPI::Error("BC_INLET: If you somehow got here....you are very special..", CURRENT_FUNCTION);
+        /*--- Retrieve the specified mass flow for the inlet. ---*/
+        Density  = config->GetInlet_Ttotal(Marker_Tag);
+        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
+        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
-//        /*--- Retrieve the specified mass flow for the inlet. ---*/
-//        Density  = config->GetInlet_Ttotal(Marker_Tag);
-//        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-//        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        /*--- Non-dim. the inputs if necessary. ---*/
+        Density /= config->GetDensity_Ref();
+        Vel_Mag /= config->GetVelocity_Ref();
 
-//        /*--- Non-dim. the inputs if necessary. ---*/
-//        Density /= config->GetDensity_Ref();
-//        Vel_Mag /= config->GetVelocity_Ref();
+        /*--- Get primitives from current inlet state. ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
+        Pressure    = nodes->GetPressure(iPoint);
+        SoundSpeed2 = Gamma*Pressure/U_domain[0];
 
-//        /*--- Get primitives from current inlet state. ---*/
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
-//        Pressure    = nodes->GetPressure(iPoint);
-//        SoundSpeed2 = Gamma*Pressure/U_domain[0];
+        /*--- Compute the acoustic Riemann invariant that is extrapolated
+           from the domain interior. ---*/
+        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+        for (iDim = 0; iDim < nDim; iDim++)
+          Riemann += Velocity[iDim]*UnitNormal[iDim];
 
-//        /*--- Compute the acoustic Riemann invariant that is extrapolated
-//           from the domain interior. ---*/
-//        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          Riemann += Velocity[iDim]*UnitNormal[iDim];
+        /*--- Speed of sound squared for fictitious inlet state ---*/
+        SoundSpeed2 = Riemann;
+        for (iDim = 0; iDim < nDim; iDim++)
+          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
-//        /*--- Speed of sound squared for fictitious inlet state ---*/
-//        SoundSpeed2 = Riemann;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
+        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
-//        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-//        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+        /*--- Pressure for the fictitious inlet state ---*/
+        Pressure = SoundSpeed2*Density/Gamma;
 
-//        /*--- Pressure for the fictitious inlet state ---*/
-//        Pressure = SoundSpeed2*Density/Gamma;
+        /*--- Energy for the fictitious inlet state ---*/
+        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
 
-//        /*--- Energy for the fictitious inlet state ---*/
-//        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
+        /*--- Conservative variables, using the derived quantities ---*/
+        U_inlet[0] = Density;
+        for (iDim = 0; iDim < nDim; iDim++)
+          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
+        U_inlet[nDim+1] = Energy*Density;
 
-//        /*--- Conservative variables, using the derived quantities ---*/
-//        U_inlet[0] = Density;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
-//        U_inlet[nDim+1] = Energy*Density;
+        /*--- Primitive variables, using the derived quantities ---*/
+        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+        V_inlet[nDim+1] = Pressure;
+        V_inlet[nDim+2] = Density;
 
-//        /*--- Primitive variables, using the derived quantities ---*/
-//        V_inlet[0] = Pressure / ( Gas_Constant * Density);
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-//        V_inlet[nDim+1] = Pressure;
-//        V_inlet[nDim+2] = Density;
+        break;
 
-//        break;
+      default:
+        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+        break;
       }
 
       /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetdPdU  (node_infty->GetdPdU(0),   nodes->GetdPdU(iPoint));
-      conv_numerics->SetdTdU  (node_infty->GetdTdU(0),   nodes->GetdTdU(iPoint));
-      conv_numerics->SetdTvedU(node_infty->GetdTvedU(0), nodes->GetdTvedU(iPoint));
-      conv_numerics->SetEve   (node_infty->GetEve(0),    nodes->GetEve(iPoint));
-      conv_numerics->SetCvve  (node_infty->GetCvve(0),   nodes->GetCvve(iPoint));
-      conv_numerics->SetGamma (node_infty->GetGamma(0),  nodes->GetGamma(iPoint));
-
       conv_numerics->SetConservative(U_domain, U_inlet);
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
+
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
@@ -2282,11 +2268,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   }
 
   /*--- Free locally allocated memory ---*/
+  delete [] U_domain;
   delete [] U_inlet;
+  delete [] V_domain;
   delete [] V_inlet;
   delete [] Normal;
-  delete [] Ys;
-
+  delete [] Spec_Density;
 }
 
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -2303,7 +2290,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool dynamic_grid = config->GetGrid_Movement();
   bool gravity      = config->GetGravityForce();
-  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
@@ -2492,8 +2479,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
 //        /*--- Conservative variables, and gradient ---*/
 //        visc_numerics->SetConservative(U_domain, U_outlet);
-//        visc_numerics->SetConsVarGradient(nodes->GetGradient(), node_infty->GetGradient() );
-
 
 //        /*--- Pass supplementary information to CNumerics ---*/
 //        visc_numerics->SetdPdU(nodes->GetdPdU(), node_infty->GetdPdU());
@@ -2550,7 +2535,7 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 //  su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, Velocity2, soundspeed;
 //  su2double Gas_Constant = config->GetGas_ConstantND();
 //
-//  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+//  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 //  bool dynamic_grid  = config->GetGrid_Movement();
 //  bool viscous              = config->GetViscous();
 //  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -2711,7 +2696,7 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 //
 //      /*--- Jacobian contribution for implicit integration ---*/
 //      //if (implicit)
-//      //  Jacobian.AddBlock2Daig(iPoint, residual.jacobian_i);
+//      //  Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 //
 //      /*--- Viscous contribution ---*/
 //      if (viscous) {
@@ -2736,7 +2721,7 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 //
 //        /*--- Jacobian contribution for implicit integration ---*/
 //        //if (implicit)
-//        //  Jacobian.SubtractBlock(iPoint, residual.jacobian_i);
+//        //  Jacobian.SubtractBlock2Diag(iPoint, residual.Jacobian_i);
 //      }
 //
 //    }
@@ -2758,7 +2743,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   su2double *V_outlet, *V_domain;
   su2double *U_outlet, *U_domain;
 
-  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool dynamic_grid = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 

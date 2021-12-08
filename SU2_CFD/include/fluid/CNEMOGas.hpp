@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -102,7 +102,7 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
-   * \param[in] Ms   - Mass fraction of the gas.
+   * \param[in] Ms   - Mass fractions of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
@@ -123,18 +123,18 @@ public:
    */
   virtual vector<su2double>& ComputeMixtureEnergies() = 0;
 
-    /*!
-   * \brief Compute chemical production and destruction rates.
+  /*!
+   * \brief Compute species net production rates.
    */
-  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                                       su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                                       const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                        su2double **val_jacobian) = 0;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
-                                 su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
+                                 const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                  su2double **val_jacobian){};
 
   /*!
@@ -145,8 +145,8 @@ public:
   /*!
    * \brief Compute vibration enery source term jacobian.
    */
-  virtual void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
-                                        su2double *dTdU, su2double* dTvedU,
+  virtual void GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve,
+                                        const su2double *dTdU, const su2double* dTvedU,
                                         su2double **val_jacobian){};
 
   /*!
@@ -202,17 +202,17 @@ public:
   /*!
    * \brief Compute derivative of pressure w.r.t. conservative variables.
    */
-  void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
+  void ComputedPdU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dPdU);
 
   /*!
    * \brief Compute derivative of temperature w.r.t. conservative variables.
    */
-  void ComputedTdU(su2double *V, su2double *val_dTdU);
+  void ComputedTdU(const su2double *V, su2double *val_dTdU);
 
   /*!
    * \brief Compute derivative of vibrational temperature w.r.t. conservative variables.
    */
-  void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
+  void ComputedTvedU(const su2double *V, const vector<su2double>& val_eves, su2double *val_dTvedU);
 
   /*!
    * \brief Set the translational temperature.

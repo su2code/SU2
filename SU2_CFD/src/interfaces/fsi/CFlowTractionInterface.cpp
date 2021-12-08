@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -189,7 +189,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
     su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
     su2double tau[3][3];
-    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetGradient_Primitive(Point_Flow,1), Viscosity);
+    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetVelocityGradient(Point_Flow), Viscosity);
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
         // Viscous component in the tn vector --> Units of force (non-dimensional).

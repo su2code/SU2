@@ -2,7 +2,7 @@
  * \file CFlowOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1299,8 +1299,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const bool viscous = config->GetViscous();
   const bool dynamic_grid = config->GetDynamic_Grid();
   const bool gravity = config->GetGravityForce();
-  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
-  const bool turbulent = Kind_Turb_Model != NONE;
+  const TURB_MODEL Kind_Turb_Model = config->GetKind_Turb_Model();
+  const bool turbulent = Kind_Turb_Model != TURB_MODEL::NONE;
   const bool fixed_cl = config->GetFixed_CL_Mode();
   const auto Kind_Solver = config->GetKind_Solver();
   const auto Ref_NonDim = config->GetRef_NonDim();
@@ -1482,7 +1482,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.2.0 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.2.1 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -1530,25 +1530,26 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       if (incompressible) file << "Incompressible RANS equations.\n";
       file << "Turbulence model: ";
       switch (Kind_Turb_Model) {
-        case SA:
+        case TURB_MODEL::NONE: break;
+        case TURB_MODEL::SA:
           file << "Spalart Allmaras\n";
           break;
-        case SA_NEG:
+        case TURB_MODEL::SA_NEG:
           file << "Negative Spalart Allmaras\n";
           break;
-        case SA_E:
+        case TURB_MODEL::SA_E:
           file << "Edwards Spalart Allmaras\n";
           break;
-        case SA_COMP:
+        case TURB_MODEL::SA_COMP:
           file << "Compressibility Correction Spalart Allmaras\n";
           break;
-        case SA_E_COMP:
+        case TURB_MODEL::SA_E_COMP:
           file << "Compressibility Correction Edwards Spalart Allmaras\n";
           break;
-        case SST:
+        case TURB_MODEL::SST:
           file << "Menter's SST\n";
           break;
-        case SST_SUST:
+        case TURB_MODEL::SST_SUST:
           file << "Menter's SST with sustaining terms\n";
           break;
       }
@@ -1807,7 +1808,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       file << "Reference viscosity: " << config->GetViscosity_Ref();
       if (si_units) file << " N.s/m^2.\n";
       else file << " lbf.s/ft^2.\n";
-      file << "Reference conductivity: " << config->GetConductivity_Ref();
+      file << "Reference conductivity: " << config->GetThermal_Conductivity_Ref();
       if (si_units) file << " W/m^2.K.\n";
       else file << " lbf/ft.s.R.\n";
     }

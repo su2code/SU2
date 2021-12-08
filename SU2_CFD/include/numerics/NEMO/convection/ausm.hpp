@@ -2,7 +2,7 @@
  * \file ausm.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,22 +41,6 @@ private:
   su2double *dmLP, *dmRM, *dpLP, *dpRM;
   su2double *daL, *daR;
   su2double ProjVel_i, ProjVel_j;
-  su2double sq_vel, Proj_ModJac_Tensor_ij;
-
-  /************************************/
-  //DELETE ME TODO: ROE JACOBIAN STUFF
-  /*__________________________________*/
-
-  su2double *Diff_U;
-  su2double *RoeU, *RoeV;
-  vector<su2double> roe_eves;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double RoeSoundSpeed;
-  su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  su2double R;
-  su2double *RoedPdU;
 
 public:
 
@@ -64,6 +48,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad, CConfig *config);

@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2129,7 +2129,6 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
   nPoint       = nLocal_Point;
   nPointDomain = nLocal_PointDomain;
-  nPointNode   = nPoint;
 
   nodes = new CPoint(nPoint, nDim, MESH_0, config);
 
@@ -3763,7 +3762,6 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig        *config,
 
   /*--- Initialize point counts and the grid node data structure. ---*/
 
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Loop over the CGNS grid nodes and load into the SU2 data
@@ -4976,7 +4974,7 @@ void CPhysicalGeometry::SetBoundVolume(void) {
     }
 }
 
-void CPhysicalGeometry::SetVertex(CConfig *config) {
+void CPhysicalGeometry::SetVertex(const CConfig *config) {
   unsigned long  iPoint, iVertex, iElem;
   unsigned short iMarker, iNode;
 
@@ -6652,7 +6650,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
 }
 
-void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
+void CPhysicalGeometry::MatchActuator_Disk(const CConfig *config) {
 
   su2double epsilon = 1e-1;
 
@@ -6855,7 +6853,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
+void CPhysicalGeometry::MatchPeriodic(const CConfig *config,
                                       unsigned short val_periodic) {
 
   unsigned short iMarker, iDim, jMarker, pMarker = 0;
@@ -8431,7 +8429,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
 
 }
 
-void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
+void CPhysicalGeometry::FindNormal_Neighbor(const CConfig *config) {
   su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
   unsigned short iNeigh, iMarker, iDim;

@@ -2,7 +2,7 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -132,8 +132,8 @@ vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_
   return eves;
 }
 
-vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
-                                               su2double* cvve, su2double* dTdU, su2double* dTvedU,
+vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
                                                su2double **val_jacobian){
 
   mix->netProductionRates(ws.data());

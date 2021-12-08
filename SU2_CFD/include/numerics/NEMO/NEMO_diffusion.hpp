@@ -2,7 +2,7 @@
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,12 +34,11 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
 
-  unsigned short iDim, iVar;  /*!< \brief Iterators in dimension an variable. */
   su2double *Mean_PrimVar,    /*!< \brief Mean primitive variables. */
   *Mean_U,
   **Mean_GU,
@@ -91,7 +90,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
@@ -103,7 +102,7 @@ private:
   **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
   *Mean_Eve,                    /*!< \brief Mean value of eve. */
   *Mean_Cvve,                   /*!< \brief Mean value of cvve. */
-  *Edge_Vector,                 /*!< \brief Vector from point i to point j. */
+  Edge_Vector[MAXNDIM]={0.0},   /*!< \brief Vector from point i to point j. */
   *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Mean_Diffusion_Coeff,        /*!< \brief Mean value of the species diffusion coefficient. */
   Mean_Laminar_Viscosity,       /*!< \brief Mean value of the viscosity. */
