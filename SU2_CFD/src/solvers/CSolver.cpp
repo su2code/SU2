@@ -4282,8 +4282,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         ref_sol[s] = stod(field);
         nodes->Set_RefSolution(iPoint, iVar, ref_sol[s]);
         s++;
-        if (s % 4 == 0) iPoint++;
-        if (iVar == 3) iVar = 0; else iVar++;
+        if (s % nVar == 0) iPoint++;
+        if (iVar == nVar-1) iVar = 0; else iVar++;
       }
     }
   }
@@ -4307,8 +4307,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
         nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
         s++;
-        if (s % 4 == 0) iPoint++;
-        if (iVar == 3) iVar = 0; else iVar++;
+        if (s % nVar == 0) iPoint++;
+        if (iVar == nVar-1) iVar = 0; else iVar++;
       }
     }
     
@@ -4470,13 +4470,11 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   bool read_mask_from_file = false;
   
-
   
   /*--- Get solver nodes ---*/
   //CVariable* nodes = GetNodes();
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
-  
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
   unsigned long desired_nodes = config->GetnHyper_Nodes();
   if (desired_nodes > nPointDomain) {
@@ -4484,6 +4482,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   if (desired_nodes == 0) read_mask_from_file = true;
   
+  /*--- read Phi from file ---*/ //TODO: make this a function
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4510,6 +4509,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   //unsigned long nsnaps = 10;
   unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
+  /*--- compute PhiNodes, the norm of Phi at each node ---*/
   std::vector<double> PhiNodes;
   for (i = 0; i < nPointDomain; i++) {
   
@@ -4522,7 +4522,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   }
   
   unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps ; // ceil (nodes to add per loop)
-    
+  
+  /*--- Add first max node to mask set ---*/
   for (i = 0; i < nodestoAdd; i++) {
     nodewithMax = std::distance(PhiNodes.begin(),
                                 std::max_element(PhiNodes.begin(), PhiNodes.end()) );
@@ -4530,11 +4531,10 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     PhiNodes[nodewithMax] = -100000.0;
   }
     
+    
+  /*--- Find and add nodes to mask set ---*/
   std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
   std::vector<std::vector<double>> U, masked_U;
-
-  
-  
 
   for (ivec = 1; ivec < nsnaps; ivec++) {
     
@@ -4549,7 +4549,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       masked_U.push_back({});
     }
     
-    // loop through nodes to add masked Phi entries in correct order
+    /*--- loop through nodes to add masked Phi entries in correct order ---*/
+    //TODO: simplify this loop
     for (imask = 0; imask < nPointDomain; imask++) {
       if (MaskedNode(imask)) {
         for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
@@ -4560,8 +4561,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       }
     }
       
-    // compute gappy reconstruction: GappyPhi = A*B*c
-    
+    /*--- compute gappy reconstruction: GappyPhi = A*B*c ---*/
     for (ii = 0; ii < nPointDomain; ii++) {
       double norm_phi = 0.0;
       for (iVar = 0; iVar < nVar; iVar++) {
