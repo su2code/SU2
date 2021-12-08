@@ -58,11 +58,6 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   nDim = geometry->GetnDim();
 
-  /*--- Set whether MUSCL and limiters are used in this solver. ---*/
-  muscl = config->GetMUSCL_Species();
-  limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
-            (config->GetInnerIter() <= config->GetLimiterIter());
-
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
