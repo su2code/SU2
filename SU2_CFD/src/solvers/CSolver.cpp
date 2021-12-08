@@ -4274,8 +4274,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   
   unsigned long nsnaps = TrialBasis[0].size();
   unsigned long iPoint, i, iVar;
-  double *ref_sol = new double[nPointDomain * nVar]();
-  double *init_sol = new double[nPointDomain * nVar]();
+  su2double *ref_sol = new su2double[nPointDomain * nVar]();
+  su2double *init_sol = new su2double[nPointDomain * nVar]();
   
   /*--- Reference Solution (read from file) ---*/
   

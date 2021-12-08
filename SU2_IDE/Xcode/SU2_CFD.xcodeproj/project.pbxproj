@@ -259,7 +259,9 @@
 		35D63007259987B8008DF28B /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D63006259987B7008DF28B /* blas_structure.cpp */; };
 		35D6301625998877008DF28B /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301325998877008DF28B /* mpi_structure.cpp */; };
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
-		40404422276055B100219090 /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 40EECF6527604D8300C77056 /* libROM.dylib */; };
+		400F2BCA27607A4100B84906 /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 400F2BC927607A4100B84906 /* libROM.dylib */; };
+		400F2BCC27607B5F00B84906 /* CSpeciesVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400F2BCB27607B5F00B84906 /* CSpeciesVariable.cpp */; };
+		400F2BD127607C5800B84906 /* species_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400F2BD027607C5800B84906 /* species_sources.cpp */; };
 		40C6D17D271F8053009B5531 /* CScalarVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D17B271F8053009B5531 /* CScalarVariable.cpp */; };
 		40C6D17E271F8053009B5531 /* CFlowVariable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D17C271F8053009B5531 /* CFlowVariable.cpp */; };
 		40C6D183271F80CC009B5531 /* omp_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D182271F80CC009B5531 /* omp_structure.cpp */; };
@@ -863,6 +865,13 @@
 		35D6301425998877008DF28B /* vectorization.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = vectorization.hpp; sourceTree = "<group>"; };
 		35D6301525998877008DF28B /* omp_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = omp_structure.hpp; sourceTree = "<group>"; };
 		35D6301725999185008DF28B /* CSquareMatrixCM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSquareMatrixCM.cpp; sourceTree = "<group>"; };
+		400F2BC927607A4100B84906 /* libROM.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libROM.dylib; path = ../../../libROM/build/lib/libROM.dylib; sourceTree = "<group>"; };
+		400F2BCB27607B5F00B84906 /* CSpeciesVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSpeciesVariable.cpp; sourceTree = "<group>"; };
+		400F2BCD27607B7300B84906 /* CSpeciesVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSpeciesVariable.hpp; sourceTree = "<group>"; };
+		400F2BD027607C5800B84906 /* species_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = species_sources.cpp; sourceTree = "<group>"; };
+		400F2BD327607C7100B84906 /* species_convection.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = species_convection.hpp; sourceTree = "<group>"; };
+		400F2BD427607C7100B84906 /* species_diffusion.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = species_diffusion.hpp; sourceTree = "<group>"; };
+		400F2BD527607C7100B84906 /* species_sources.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = species_sources.hpp; sourceTree = "<group>"; };
 		40C6D17B271F8053009B5531 /* CScalarVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CScalarVariable.cpp; sourceTree = "<group>"; };
 		40C6D17C271F8053009B5531 /* CFlowVariable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CFlowVariable.cpp; sourceTree = "<group>"; };
 		40C6D17F271F806D009B5531 /* CScalarVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CScalarVariable.hpp; sourceTree = "<group>"; };
@@ -897,7 +906,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				40404422276055B100219090 /* libROM.dylib in Frameworks */,
+				400F2BCA27607A4100B84906 /* libROM.dylib in Frameworks */,
 				40EECF6827604D9D00C77056 /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1451,6 +1460,7 @@
 				3549028B2537E0280095B597 /* flow */,
 				357BEEFD256D71ED00423D14 /* NEMO */,
 				40C6D195271F83CC009B5531 /* scalar */,
+				400F2BD227607C7100B84906 /* species */,
 				3549027E2537E0280095B597 /* turbulent */,
 				354902862537E0280095B597 /* CNumerics.hpp */,
 				354902872537E0280095B597 /* heat.hpp */,
@@ -1542,6 +1552,7 @@
 				3549029D2537E0280095B597 /* CRadP1Variable.hpp */,
 				3549029E2537E0280095B597 /* CRadVariable.hpp */,
 				40C6D17F271F806D009B5531 /* CScalarVariable.hpp */,
+				400F2BCD27607B7300B84906 /* CSpeciesVariable.hpp */,
 				354902A62537E0280095B597 /* CTransLMVariable.hpp */,
 				3549029B2537E0280095B597 /* CTurbSAVariable.hpp */,
 				354902AE2537E0280095B597 /* CTurbSSTVariable.hpp */,
@@ -1761,6 +1772,7 @@
 				354903372537E0280095B597 /* flow */,
 				357BEEE9256D71E100423D14 /* NEMO */,
 				40C6D199271F840E009B5531 /* scalar */,
+				400F2BCF27607C5800B84906 /* species */,
 				3549032D2537E0280095B597 /* turbulent */,
 				354903362537E0280095B597 /* CNumerics.cpp */,
 				354903312537E0280095B597 /* heat.cpp */,
@@ -1850,6 +1862,7 @@
 				354903592537E0280095B597 /* CRadP1Variable.cpp */,
 				3549035A2537E0280095B597 /* CRadVariable.cpp */,
 				40C6D17B271F8053009B5531 /* CScalarVariable.cpp */,
+				400F2BCB27607B5F00B84906 /* CSpeciesVariable.cpp */,
 				354903542537E0280095B597 /* CTransLMVariable.cpp */,
 				354903582537E0280095B597 /* CTurbSAVariable.cpp */,
 				354903432537E0280095B597 /* CTurbSSTVariable.cpp */,
@@ -2186,6 +2199,24 @@
 			path = parallelization;
 			sourceTree = "<group>";
 		};
+		400F2BCF27607C5800B84906 /* species */ = {
+			isa = PBXGroup;
+			children = (
+				400F2BD027607C5800B84906 /* species_sources.cpp */,
+			);
+			path = species;
+			sourceTree = "<group>";
+		};
+		400F2BD227607C7100B84906 /* species */ = {
+			isa = PBXGroup;
+			children = (
+				400F2BD327607C7100B84906 /* species_convection.hpp */,
+				400F2BD427607C7100B84906 /* species_diffusion.hpp */,
+				400F2BD527607C7100B84906 /* species_sources.hpp */,
+			);
+			path = species;
+			sourceTree = "<group>";
+		};
 		40C6D195271F83CC009B5531 /* scalar */ = {
 			isa = PBXGroup;
 			children = (
@@ -2207,6 +2238,7 @@
 		40EECF6427604D8300C77056 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				400F2BC927607A4100B84906 /* libROM.dylib */,
 				40EECF6727604D9D00C77056 /* Accelerate.framework */,
 				40EECF6527604D8300C77056 /* libROM.dylib */,
 			);
@@ -2366,6 +2398,7 @@
 				357BEF16256D722500423D14 /* CGridMovement.cpp in Sources */,
 				354903A62537E0290095B597 /* CDiscAdjFEASolver.cpp in Sources */,
 				354903B92537E0290095B597 /* CFEM_DG_NSSolver.cpp in Sources */,
+				400F2BCC27607B5F00B84906 /* CSpeciesVariable.cpp in Sources */,
 				354901F62537E0050095B597 /* CPyramid.cpp in Sources */,
 				354902132537E0050095B597 /* CGeometry.cpp in Sources */,
 				3549039B2537E0290095B597 /* CBaselineOutput.cpp in Sources */,
@@ -2440,6 +2473,7 @@
 				354903D72537E0290095B597 /* CDiscAdjVariable.cpp in Sources */,
 				357BEEDD256D711C00423D14 /* CDiscAdjHeatIteration.cpp in Sources */,
 				354903F32537E0290095B597 /* CSlidingInterface.cpp in Sources */,
+				400F2BD127607C5800B84906 /* species_sources.cpp in Sources */,
 				354903AB2537E0290095B597 /* CTransLMSolver.cpp in Sources */,
 				354903742537E0280095B597 /* CMultizoneDriver.cpp in Sources */,
 				354903992537E0290095B597 /* CAdjFlowIncOutput.cpp in Sources */,
@@ -2697,6 +2731,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -2731,6 +2766,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};

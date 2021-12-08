@@ -2546,7 +2546,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   if (false) {
   
-    vector<double> rnorm(nVar,0.0);
+    vector<su2double> rnorm(nVar,0.0);
     
     // warning: weights are written for no hyper-reduction
   
@@ -2591,24 +2591,24 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   /*--- Container for reduced residual ---*/
   
-  vector<double> r_red(n,0.0);
-  double ReducedRes = 0.0;
+  vector<su2double> r_red(n,0.0);
+  su2double ReducedRes = 0.0;
   
   /*--- Compute Test Basis: W = J * Phi ---*/
   
-  vector<double> TestBasis2(m*n, 0.0);
+  vector<su2double> TestBasis2(m*n, 0.0);
   su2double* prod   = new su2double[nVar]();
 
   for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
     iPoint = Mask[iPoint_mask];
   //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    su2double* J_ii = Jacobian.GetBlock(iPoint, iPoint);
+    su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
     
     for (kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
       kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
       
-      su2double* J_ik = Jacobian.GetBlock(iPoint, kPoint);
+      su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
       
       for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
         
