@@ -64,6 +64,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                     'GROUP': 'BGS_RES',
                     'HEADER': 'bgs[A_Uz]',
                     'TYPE': 'RESIDUAL'},
+ 'BGS_ADJ_DISSIPATION': {'DESCRIPTION': 'BGS residual of the adjoint '
+                                        'dissipation.',
+                         'GROUP': 'BGS_RES',
+                         'HEADER': 'bgs[A_w]',
+                         'TYPE': 'RESIDUAL'},
  'BGS_ADJ_ENERGY': {'DESCRIPTION': 'BGS residual of the adjoint energy.',
                     'GROUP': 'BGS_RES',
                     'HEADER': 'bgs[A_E]',
@@ -83,6 +88,10 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'BGS_RES',
                         'HEADER': 'bgs[A_RhoW]',
                         'TYPE': 'RESIDUAL'},
+ 'BGS_ADJ_NU_TILDE': {'DESCRIPTION': 'BGS residual of the adjoint nu tilde.',
+                      'GROUP': 'BGS_RES',
+                      'HEADER': 'bgs[A_nu]',
+                      'TYPE': 'RESIDUAL'},
  'BGS_ADJ_PRESSURE': {'DESCRIPTION': 'BGS residual of the adjoint Pressure.',
                       'GROUP': 'BGS_RES',
                       'HEADER': 'bgs[A_Rho]',
@@ -92,11 +101,24 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'BGS_RES',
                         'HEADER': 'bgs[A_P1]',
                         'TYPE': 'RESIDUAL'},
+ 'BGS_ADJ_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'BGS residual of '
+                                                            'the adjoint '
+                                                            'transported '
+                                                            'species.',
+                                             'GROUP': 'BGS_RES',
+                                             'HEADER': 'bgs[A_rho*Y_" + '
+                                                       'std::to_string(iVar) + '
+                                                       '"]',
+                                             'TYPE': 'RESIDUAL'},
  'BGS_ADJ_TEMPERATURE': {'DESCRIPTION': 'BGS residual of the adjoint '
                                         'temperature.',
                          'GROUP': 'BGS_RES',
                          'HEADER': 'bgs[A_T]',
                          'TYPE': 'RESIDUAL'},
+ 'BGS_ADJ_TKE': {'DESCRIPTION': 'BGS residual of the adjoint kinetic energy.',
+                 'GROUP': 'BGS_RES',
+                 'HEADER': 'bgs[A_k]',
+                 'TYPE': 'RESIDUAL'},
  'BGS_ADJ_VELOCITY-X': {'DESCRIPTION': 'BGS residual of the adjoint Velocity '
                                        'x-component',
                         'GROUP': 'BGS_RES',
@@ -492,7 +514,7 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                          'HEADER': 'LinSolIterSpecies',
                          'TYPE': 'DEFAULT'},
  'LINSOL_ITER_TURB': {'DESCRIPTION': 'Number of iterations of the linear '
-                                     'solver for turbulence solver.',
+                                     'solver for turbulence.',
                       'GROUP': 'LINSOL',
                       'HEADER': 'LinSolIterTurb',
                       'TYPE': 'DEFAULT'},
@@ -506,7 +528,7 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                              'HEADER': 'LinSolResSpecies',
                              'TYPE': 'DEFAULT'},
  'LINSOL_RESIDUAL_TURB': {'DESCRIPTION': 'Residual of the linear solver for '
-                                         'turbulence solver.',
+                                         'turbulence.',
                           'GROUP': 'LINSOL',
                           'HEADER': 'LinSolResTurb',
                           'TYPE': 'DEFAULT'},
@@ -527,6 +549,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                      'GROUP': 'MAX_RES',
                      'HEADER': 'max[A_Rho]',
                      'TYPE': 'RESIDUAL'},
+ 'MAX_ADJ_DISSIPATION': {'DESCRIPTION': 'Maximum residual of the adjoint '
+                                        'dissipation.',
+                         'GROUP': 'MAX_RES',
+                         'HEADER': 'max[A_w]',
+                         'TYPE': 'RESIDUAL'},
  'MAX_ADJ_ENERGY': {'DESCRIPTION': 'Maximum residual of the adjoint energy.',
                     'GROUP': 'MAX_RES',
                     'HEADER': 'max[A_E]',
@@ -546,15 +573,34 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'MAX_RES',
                         'HEADER': 'max[A_RhoW]',
                         'TYPE': 'RESIDUAL'},
+ 'MAX_ADJ_NU_TILDE': {'DESCRIPTION': 'Maximum residual of the adjoint nu '
+                                     'tilde.',
+                      'GROUP': 'MAX_RES',
+                      'HEADER': 'max[A_nu]',
+                      'TYPE': 'RESIDUAL'},
  'MAX_ADJ_PRESSURE': {'DESCRIPTION': 'Maximum residual of the adjoint '
                                      'Pressure.',
                       'GROUP': 'MAX_RES',
                       'HEADER': 'max[A_Rho]',
                       'TYPE': 'RESIDUAL'},
+ 'MAX_ADJ_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'Maximum residual '
+                                                            'of the adjoint '
+                                                            'transported '
+                                                            'species.',
+                                             'GROUP': 'MAX_RES',
+                                             'HEADER': 'max[A_rho*Y_" + '
+                                                       'std::to_string(iVar) + '
+                                                       '"]',
+                                             'TYPE': 'RESIDUAL'},
  'MAX_ADJ_TEMPERATURE': {'DESCRIPTION': 'Maximum residual of the temperature.',
                          'GROUP': 'MAX_RES',
                          'HEADER': 'max[A_T]',
                          'TYPE': 'RESIDUAL'},
+ 'MAX_ADJ_TKE': {'DESCRIPTION': 'Maximum residual of the adjoint kinetic '
+                                'energy.',
+                 'GROUP': 'MAX_RES',
+                 'HEADER': 'max[A_k]',
+                 'TYPE': 'RESIDUAL'},
  'MAX_ADJ_VELOCITY-X': {'DESCRIPTION': 'Maximum residual of the adjoint '
                                        'Velocity x-component',
                         'GROUP': 'MAX_RES',
@@ -687,6 +733,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                      'GROUP': 'RMS_RES',
                      'HEADER': 'rms[A_Rho]',
                      'TYPE': 'RESIDUAL'},
+ 'RMS_ADJ_DISSIPATION': {'DESCRIPTION': 'Root-mean square residual of the '
+                                        'adjoint dissipation.',
+                         'GROUP': 'RMS_RES',
+                         'HEADER': 'rms[A_w]',
+                         'TYPE': 'RESIDUAL'},
  'RMS_ADJ_ENERGY': {'DESCRIPTION': 'Root-mean square residual of the adjoint '
                                    'energy.',
                     'GROUP': 'RMS_RES',
@@ -707,6 +758,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'RMS_RES',
                         'HEADER': 'rms[A_RhoW]',
                         'TYPE': 'RESIDUAL'},
+ 'RMS_ADJ_NU_TILDE': {'DESCRIPTION': 'Root-mean square residual of the adjoint '
+                                     'nu tilde.',
+                      'GROUP': 'RMS_RES',
+                      'HEADER': 'rms[A_nu]',
+                      'TYPE': 'RESIDUAL'},
  'RMS_ADJ_PRESSURE': {'DESCRIPTION': 'Root-mean square residual of the adjoint '
                                      'Pressure.',
                       'GROUP': 'RMS_RES',
@@ -717,11 +773,26 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'RMS_RES',
                         'HEADER': 'rms[A_P1]',
                         'TYPE': 'RESIDUAL'},
+ 'RMS_ADJ_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'Root-mean square '
+                                                            'residual of the '
+                                                            'adjoint '
+                                                            'transported '
+                                                            'species.',
+                                             'GROUP': 'RMS_RES',
+                                             'HEADER': 'rms[A_rho*Y_" + '
+                                                       'std::to_string(iVar) + '
+                                                       '"]',
+                                             'TYPE': 'RESIDUAL'},
  'RMS_ADJ_TEMPERATURE': {'DESCRIPTION': 'Root-mean square residual of the '
                                         'adjoint temperature.',
                          'GROUP': 'RMS_RES',
                          'HEADER': 'rms[A_T]',
                          'TYPE': 'RESIDUAL'},
+ 'RMS_ADJ_TKE': {'DESCRIPTION': 'Root-mean square residual of the adjoint '
+                                'kinetic energy.',
+                 'GROUP': 'RMS_RES',
+                 'HEADER': 'rms[A_k]',
+                 'TYPE': 'RESIDUAL'},
  'RMS_ADJ_VELOCITY-X': {'DESCRIPTION': 'Root-mean square residual of the '
                                        'adjoint Velocity x-component.',
                         'GROUP': 'RMS_RES',
