@@ -46,8 +46,8 @@
 #include "../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
 
-#include "solvers/CGradientSmoothingSolver.hpp"
-#include "numerics/CGradSmoothing.hpp"
+#include "../../SU2_CFD/include/solvers/CGradientSmoothingSolver.hpp"
+#include "../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
 
 using namespace std;
 

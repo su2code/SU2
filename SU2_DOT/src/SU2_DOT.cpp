@@ -285,6 +285,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
+
   if (config_container[ZONE_0]->GetDiscrete_Adjoint()) {
 
     DerivativeTreatment_MeshSensitivity(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);

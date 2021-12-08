@@ -1,8 +1,8 @@
 su2_dot_src = ['SU2_DOT.cpp']
 
-su2_dot_src += files(['variables/CSobolevSmoothingVariable.cpp'])
-su2_dot_src += files(['solvers/CGradientSmoothingSolver.cpp'])
-su2_dot_src += files(['numerics/CGradSmoothing.cpp'])
+su2_dot_src += files(['../../SU2_CFD/src/variables/CSobolevSmoothingVariable.cpp',
+                      '../../SU2_CFD/src/solvers/CGradientSmoothingSolver.cpp',
+                      '../../SU2_CFD/src/numerics/CGradSmoothing.cpp'])
 
 if get_option('enable-normal')
   su2_cfd_obj = su2_cfd_lib.extract_objects(['solvers/CSolver.cpp',
