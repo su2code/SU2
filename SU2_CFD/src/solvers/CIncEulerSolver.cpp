@@ -243,8 +243,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   bool unsteady      = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous       = config->GetViscous();
-  bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  bool turbulent     = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
+                        (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
@@ -429,6 +429,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+
+  const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
+  config->SetDiffusivity_ConstantND(MassDiffusivityND);
+
 
   /*--- Delete the original (dimensional) FluidModel object. No fluid is used for inscompressible cases. ---*/
 
@@ -788,6 +792,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s";
+        NonDimTable << "Mass Diffusivity" << config->GetDiffusivity_Constant() << config->GetDiffusivity_Constant()/config->GetDiffusivity_ConstantND() << Unit.str() << config->GetDiffusivity_ConstantND();
         Unit.str("");
       }
     }

@@ -775,13 +775,8 @@ class CFVMFlowSolverBase : public CSolver {
     const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
     const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
 
-    /*--- Set shared residual variables to 0 and declare
-     *    local ones for current thread to work on. ---*/
-
-    SetResToZero();
-
+    /*--- Local residual variables for current thread ---*/
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     /*--- Update the solution and residuals ---*/
@@ -832,23 +827,13 @@ class CFVMFlowSolverBase : public CSolver {
           }
 
           /*--- Update residual information for current thread. ---*/
-          resRMS[iVar] += Res*Res;
-          if (fabs(Res) > resMax[iVar]) {
-            resMax[iVar] = fabs(Res);
-            idxMax[iVar] = iPoint;
-            coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-          }
+          ResidualReductions_PerThread(iPoint, iVar, Res, resRMS, resMax, idxMax);
         }
       }
       END_SU2_OMP_FOR
       /*--- Reduce residual information over all threads in this rank. ---*/
-      SU2_OMP_CRITICAL
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Residual_RMS[iVar] += resRMS[iVar];
-        AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-      }
-      END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
+      ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+
     }
 
     /*--- MPI solution ---*/
@@ -857,9 +842,6 @@ class CFVMFlowSolverBase : public CSolver {
     CompleteComms(geometry, config, SOLUTION);
 
     if (!adjoint) {
-      /*--- Compute the root mean square residual ---*/
-      SetResidual_RMS(geometry, config);
-
       /*--- For verification cases, compute the global error metrics. ---*/
       ComputeVerificationError(geometry, config);
     }
@@ -893,12 +875,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-    /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
-
-    SetResToZero();
-
+    /*--- Local residual variables for current thread ---*/
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     /*--- Add pseudotime term to Jacobian. ---*/
@@ -948,26 +926,15 @@ class CFVMFlowSolverBase : public CSolver {
         LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
         LinSysSol[total_index] = 0.0;
 
-        su2double Res = fabs(LinSysRes[total_index]);
-        resRMS[iVar] += Res*Res;
-        if (Res > resMax[iVar]) {
-          resMax[iVar] = Res;
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Residual_RMS[iVar] += resRMS[iVar];
-      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-    }
-    END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    /*--- Compute the root mean square residual ---*/
-    SetResidual_RMS(geometry, config);
+    /*--- "Add" residuals from all threads to global residual variables. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+
   }
 
   /*!
@@ -1005,95 +972,8 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
-   * \tparam VelocityOffset - Index in the primitive variables where the velocity starts.
    */
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh,
-                                    const size_t VelocityOffset = 1) {
-
-    auto& StrainMag = nodes->GetStrainMag();
-
-    ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
-
-    su2double strainMax = 0.0, omegaMax = 0.0;
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-      const auto VelocityGradient = nodes->GetGradient_Primitive(iPoint, VelocityOffset);
-      auto Vorticity = nodes->GetVorticity(iPoint);
-
-      /*--- Vorticity ---*/
-
-      Vorticity[0] = 0.0;
-      Vorticity[1] = 0.0;
-      Vorticity[2] = VelocityGradient(1,0)-VelocityGradient(0,1);
-
-      if (nDim == 3) {
-        Vorticity[0] = VelocityGradient(2,1)-VelocityGradient(1,2);
-        Vorticity[1] = -(VelocityGradient(2,0)-VelocityGradient(0,2));
-      }
-
-      /*--- Strain Magnitude ---*/
-
-      AD::StartPreacc();
-      AD::SetPreaccIn(VelocityGradient, nDim, nDim);
-
-      su2double Div = 0.0;
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        Div += VelocityGradient(iDim, iDim);
-      Div /= 3.0;
-
-      StrainMag(iPoint) = 0.0;
-
-      /*--- Add diagonal part ---*/
-
-      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-        StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
-      }
-      if (nDim == 2) {
-        StrainMag(iPoint) += pow(Div, 2);
-      }
-
-      /*--- Add off diagonals ---*/
-
-      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
-
-      if (nDim == 3) {
-        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
-        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
-      }
-
-      StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-      AD::SetPreaccOut(StrainMag(iPoint));
-
-      /*--- Max is not differentiable, so we not register them for preacc. ---*/
-      strainMax = max(strainMax, StrainMag(iPoint));
-      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-
-      AD::EndPreacc();
-    }
-    END_SU2_OMP_FOR
-
-    if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
-      SU2_OMP_CRITICAL {
-        StrainMag_Max = max(StrainMag_Max, strainMax);
-        Omega_Max = max(Omega_Max, omegaMax);
-      }
-      END_SU2_OMP_CRITICAL
-
-      SU2_OMP_BARRIER
-      SU2_OMP_MASTER {
-        su2double MyOmega_Max = Omega_Max;
-        su2double MyStrainMag_Max = StrainMag_Max;
-
-        SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-        SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-      }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
-    }
-
-  }
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh);
 
   /*!
    * \brief Destructor.

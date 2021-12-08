@@ -190,16 +190,9 @@ if get_option('enable-librom')
    
    su2_cpp_args += '-DHAVE_LIBROM'
 
-   assert(get_option('enable-mkl') or get_option('enable-openblas'),
-          'libROM support requires either mkl or openblas')
-
-   librom_dep = dependency('ROM', required: false)
-
-   if not librom_dep.found()
-     librom_root = get_option('librom_root')
-     librom_dep = declare_dependency(include_directories: librom_root, compile_args: ['-std=c++11', '-I../'+librom_root],
-                                     link_args: ['-L'+librom_root+'/build', '-lROM'])
-   endif
+   librom_root = get_option('librom_root')
+   librom_dep = declare_dependency(include_directories: librom_root+'/lib',
+                                   link_args: ['-L'+librom_root+'/build', '-lROM'])
 
    su2_deps += librom_dep
 

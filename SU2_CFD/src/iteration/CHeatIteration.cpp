@@ -35,7 +35,7 @@ void CHeatIteration::Iterate(COutput* output, CIntegration**** integration, CGeo
 
   /*--- Update global parameters ---*/
 
-  config[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS);
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);
 
   integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                     RUNTIME_HEAT_SYS, val_iZone, val_iInst);

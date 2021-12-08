@@ -310,7 +310,6 @@
 		354901042537E0050095B597 /* CLinearPartitioner.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CLinearPartitioner.hpp; sourceTree = "<group>"; };
 		354901052537E0050095B597 /* C1DInterpolation.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = C1DInterpolation.hpp; sourceTree = "<group>"; };
 		354901062537E0050095B597 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = printing_toolbox.hpp; sourceTree = "<group>"; };
-		354901072537E0050095B597 /* CVertexMap.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CVertexMap.hpp; sourceTree = "<group>"; };
 		354901092537E0050095B597 /* CMMSNSUnitQuadSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMMSNSUnitQuadSolution.hpp; sourceTree = "<group>"; };
 		3549010A2537E0050095B597 /* CMMSNSTwoHalfCirclesSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMMSNSTwoHalfCirclesSolution.hpp; sourceTree = "<group>"; };
 		3549010B2537E0050095B597 /* CUserDefinedSolution.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CUserDefinedSolution.hpp; sourceTree = "<group>"; };
@@ -329,7 +328,6 @@
 		354901182537E0050095B597 /* CSymmetricMatrix.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSymmetricMatrix.hpp; sourceTree = "<group>"; };
 		354901192537E0050095B597 /* geometry_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = geometry_toolbox.hpp; sourceTree = "<group>"; };
 		3549011A2537E0050095B597 /* allocation_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = allocation_toolbox.hpp; sourceTree = "<group>"; };
-		3549011B2537E0050095B597 /* C2DContainer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = C2DContainer.hpp; sourceTree = "<group>"; };
 		3549011C2537E0050095B597 /* graph_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = graph_toolbox.hpp; sourceTree = "<group>"; };
 		354901202537E0050095B597 /* option_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = option_structure.hpp; sourceTree = "<group>"; };
 		354901232537E0050095B597 /* graph_coloring_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = graph_coloring_structure.hpp; sourceTree = "<group>"; };
@@ -985,12 +983,10 @@
 				40C6D185271F8120009B5531 /* ndflattener.hpp */,
 				354901052537E0050095B597 /* C1DInterpolation.hpp */,
 				354901062537E0050095B597 /* printing_toolbox.hpp */,
-				354901072537E0050095B597 /* CVertexMap.hpp */,
 				354901082537E0050095B597 /* MMS */,
 				354901182537E0050095B597 /* CSymmetricMatrix.hpp */,
 				354901192537E0050095B597 /* geometry_toolbox.hpp */,
 				3549011A2537E0050095B597 /* allocation_toolbox.hpp */,
-				3549011B2537E0050095B597 /* C2DContainer.hpp */,
 				3549011C2537E0050095B597 /* graph_toolbox.hpp */,
 			);
 			path = toolboxes;
@@ -1289,11 +1285,6 @@
 		354902212537E0280095B597 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				357BEEBB256D70B900423D14 /* numerics_simd */,
-				357BEEAF256D708200423D14 /* iteration */,
-				357BEE99256D706900423D14 /* fluid */,
-				354902222537E0280095B597 /* definition_structure.hpp */,
-				354902232537E0280095B597 /* sgs_model.inl */,
 				354902242537E0280095B597 /* drivers */,
 				357BEE99256D706900423D14 /* fluid */,
 				354902B72537E0280095B597 /* gradients */,
@@ -1305,11 +1296,7 @@
 				357BEEBB256D70B900423D14 /* numerics_simd */,
 				354902362537E0280095B597 /* output */,
 				3549025C2537E0280095B597 /* solvers */,
-				354902772537E0280095B597 /* sgs_model.hpp */,
-				354902782537E0280095B597 /* numerics */,
-				354902972537E0280095B597 /* task_definition.hpp */,
 				354902982537E0280095B597 /* variables */,
-				354902B22537E0280095B597 /* SU2_CFD.hpp */,
 				354902B42537E0280095B597 /* CMarkerProfileReaderFVM.hpp */,
 				354902222537E0280095B597 /* definition_structure.hpp */,
 				354902772537E0280095B597 /* sgs_model.hpp */,
@@ -1317,8 +1304,6 @@
 				354902B22537E0280095B597 /* SU2_CFD.hpp */,
 				354902972537E0280095B597 /* task_definition.hpp */,
 				354902B52537E0280095B597 /* task_definition.inl */,
-				354902B72537E0280095B597 /* gradients */,
-				354902BB2537E0280095B597 /* interfaces */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -1331,7 +1316,6 @@
 				354902262537E0280095B597 /* CDriver.hpp */,
 				354902272537E0280095B597 /* CDummyDriver.hpp */,
 				354902282537E0280095B597 /* CMultizoneDriver.hpp */,
-				354902292537E0280095B597 /* CDiscAdjSinglezoneDriver.hpp */,
 				3549022A2537E0280095B597 /* CSinglezoneDriver.hpp */,
 			);
 			path = drivers;
@@ -1340,7 +1324,6 @@
 		3549022B2537E0280095B597 /* limiters */ = {
 			isa = PBXGroup;
 			children = (
-				3549022C2537E0280095B597 /* computeLimiters.hpp */,
 				3549022D2537E0280095B597 /* CLimiterDetails.hpp */,
 				3549022E2537E0280095B597 /* computeLimiters_impl.hpp */,
 				3549022C2537E0280095B597 /* computeLimiters.hpp */,
@@ -1351,11 +1334,6 @@
 		3549022F2537E0280095B597 /* integration */ = {
 			isa = PBXGroup;
 			children = (
-				354902302537E0280095B597 /* CSingleGridIntegration.hpp */,
-				354902312537E0280095B597 /* CMultiGridIntegration.hpp */,
-				40C54DB32640BE280057F3DD /* CNewtonIntegration.hpp */,
-				354902322537E0280095B597 /* CIntegrationFactory.hpp */,
-				354902332537E0280095B597 /* CStructuralIntegration.hpp */,
 				354902342537E0280095B597 /* CFEM_DG_Integration.hpp */,
 				354902352537E0280095B597 /* CIntegration.hpp */,
 				354902322537E0280095B597 /* CIntegrationFactory.hpp */,
@@ -1370,15 +1348,6 @@
 		354902362537E0280095B597 /* output */ = {
 			isa = PBXGroup;
 			children = (
-				40C6D17826F007B8009B5531 /* CAdjFlowCompOutput.hpp */,
-				40C6D17726F007B8009B5531 /* CFVMOutput.hpp */,
-				357BEEC9256D70DC00423D14 /* CNEMOCompOutput.hpp */,
-				354902372537E0280095B597 /* CFlowCompFEMOutput.hpp */,
-				354902382537E0280095B597 /* CHeatOutput.hpp */,
-				354902392537E0280095B597 /* tools */,
-				3549023B2537E0280095B597 /* COutputLegacy.hpp */,
-				3549023C2537E0280095B597 /* CFlowIncOutput.hpp */,
-				3549023D2537E0280095B597 /* CAdjHeatOutput.hpp */,
 				3549023E2537E0280095B597 /* filewriter */,
 				354902392537E0280095B597 /* tools */,
 				354902562537E0280095B597 /* CAdjElasticityOutput.hpp */,
@@ -1386,10 +1355,6 @@
 				354902512537E0280095B597 /* CAdjFlowIncOutput.hpp */,
 				3549023D2537E0280095B597 /* CAdjHeatOutput.hpp */,
 				354902532537E0280095B597 /* CBaselineOutput.hpp */,
-				354902542537E0280095B597 /* COutput.hpp */,
-				354902552537E0280095B597 /* COutputFactory.hpp */,
-				354902562537E0280095B597 /* CAdjElasticityOutput.hpp */,
-				354902572537E0280095B597 /* CMeshOutput.hpp */,
 				354902582537E0280095B597 /* CElasticityOutput.hpp */,
 				354902372537E0280095B597 /* CFlowCompFEMOutput.hpp */,
 				354902522537E0280095B597 /* CFlowCompOutput.hpp */,
@@ -1471,13 +1436,10 @@
 				354902652537E0280095B597 /* CSolver.hpp */,
 				354902702537E0280095B597 /* CSolverFactory.hpp */,
 				3549026C2537E0280095B597 /* CTemplateSolver.hpp */,
-				3549026D2537E0280095B597 /* CHeatSolver.hpp */,
 				3549026E2537E0280095B597 /* CTransLMSolver.hpp */,
 				354902682537E0280095B597 /* CTurbSASolver.hpp */,
 				354902732537E0280095B597 /* CTurbSolver.hpp */,
-				354902742537E0280095B597 /* CAdjEulerSolver.hpp */,
 				354902752537E0280095B597 /* CTurbSSTSolver.hpp */,
-				354902762537E0280095B597 /* CDiscAdjFEASolver.hpp */,
 			);
 			path = solvers;
 			sourceTree = "<group>";
@@ -1491,13 +1453,11 @@
 				357BEEFD256D71ED00423D14 /* NEMO */,
 				40C6D195271F83CC009B5531 /* scalar */,
 				3549027E2537E0280095B597 /* turbulent */,
-				354902822537E0280095B597 /* continuous_adjoint */,
 				354902862537E0280095B597 /* CNumerics.hpp */,
 				354902872537E0280095B597 /* heat.hpp */,
 				354902882537E0280095B597 /* template.hpp */,
 				354902892537E0280095B597 /* transition.hpp */,
 				3549028A2537E0280095B597 /* radiation.hpp */,
-				3549028B2537E0280095B597 /* flow */,
 			);
 			path = numerics;
 			sourceTree = "<group>";
@@ -1579,10 +1539,7 @@
 				354902A12537E0280095B597 /* CMeshVariable.hpp */,
 				357BEEE7256D717900423D14 /* CNEMOEulerVariable.hpp */,
 				357BEEE8256D717900423D14 /* CNEMONSVariable.hpp */,
-				354902992537E0280095B597 /* CFEABoundVariable.hpp */,
 				3549029A2537E0280095B597 /* CNSVariable.hpp */,
-				3549029B2537E0280095B597 /* CTurbSAVariable.hpp */,
-				3549029C2537E0280095B597 /* CHeatVariable.hpp */,
 				3549029D2537E0280095B597 /* CRadP1Variable.hpp */,
 				3549029E2537E0280095B597 /* CRadVariable.hpp */,
 				40C6D17F271F806D009B5531 /* CScalarVariable.hpp */,
@@ -1646,10 +1603,6 @@
 		354902C82537E0280095B597 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				357BEECA256D711C00423D14 /* iteration */,
-				357BEE4B256D592C00423D14 /* fluid */,
-				354902C92537E0280095B597 /* CMarkerProfileReaderFVM.cpp */,
-				354902CA2537E0280095B597 /* python_wrapper_structure.cpp */,
 				354902CE2537E0280095B597 /* drivers */,
 				357BEE4B256D592C00423D14 /* fluid */,
 				354902D82537E0280095B597 /* integration */,
@@ -1659,9 +1612,6 @@
 				354903242537E0280095B597 /* numerics */,
 				354902E12537E0280095B597 /* output */,
 				354903072537E0280095B597 /* solvers */,
-				354903222537E0280095B597 /* SU2_CFD.cpp */,
-				354903232537E0280095B597 /* meson.build */,
-				354903242537E0280095B597 /* numerics */,
 				354903422537E0280095B597 /* variables */,
 				354902C92537E0280095B597 /* CMarkerProfileReaderFVM.cpp */,
 				3549035C2537E0280095B597 /* definition_structure.cpp */,
@@ -1675,8 +1625,6 @@
 		354902CE2537E0280095B597 /* drivers */ = {
 			isa = PBXGroup;
 			children = (
-				354902CF2537E0280095B597 /* CSinglezoneDriver.cpp */,
-				354902D02537E0280095B597 /* CDiscAdjSinglezoneDriver.cpp */,
 				354902D12537E0280095B597 /* CDiscAdjMultizoneDriver.cpp */,
 				354902D02537E0280095B597 /* CDiscAdjSinglezoneDriver.cpp */,
 				354902D22537E0280095B597 /* CDriver.cpp */,
@@ -1701,9 +1649,6 @@
 				40C54DB02640BE100057F3DD /* CNewtonIntegration.cpp */,
 				354902D92537E0280095B597 /* CFEM_DG_Integration.cpp */,
 				354902DA2537E0280095B597 /* CIntegration.cpp */,
-				354902DB2537E0280095B597 /* CStructuralIntegration.cpp */,
-				354902DC2537E0280095B597 /* CSingleGridIntegration.cpp */,
-				354902DD2537E0280095B597 /* CMultiGridIntegration.cpp */,
 				354902DE2537E0280095B597 /* CIntegrationFactory.cpp */,
 				354902DD2537E0280095B597 /* CMultiGridIntegration.cpp */,
 				40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */,
@@ -1716,11 +1661,6 @@
 		354902E12537E0280095B597 /* output */ = {
 			isa = PBXGroup;
 			children = (
-				40C6D17926F007C9009B5531 /* CFVMOutput.cpp */,
-				357BEEE1256D712600423D14 /* CNEMOCompOutput.cpp */,
-				354902E22537E0280095B597 /* COutput.cpp */,
-				354902E32537E0280095B597 /* COutputFactory.cpp */,
-				354902E42537E0280095B597 /* tools */,
 				354902E62537E0280095B597 /* CAdjElasticityOutput.cpp */,
 				354903052537E0280095B597 /* CAdjFlowCompOutput.cpp */,
 				354902FE2537E0280095B597 /* CAdjFlowIncOutput.cpp */,
@@ -1742,15 +1682,6 @@
 				354902EB2537E0280095B597 /* output_structure_legacy.cpp */,
 				354902E42537E0280095B597 /* tools */,
 				354902EC2537E0280095B597 /* filewriter */,
-				354902FE2537E0280095B597 /* CAdjFlowIncOutput.cpp */,
-				354902FF2537E0280095B597 /* CFlowCompOutput.cpp */,
-				354903002537E0280095B597 /* CBaselineOutput.cpp */,
-				354903012537E0280095B597 /* output_physics.cpp */,
-				354903022537E0280095B597 /* CFlowIncOutput.cpp */,
-				354903032537E0280095B597 /* CAdjHeatOutput.cpp */,
-				354903042537E0280095B597 /* CFlowCompFEMOutput.cpp */,
-				354903052537E0280095B597 /* CAdjFlowCompOutput.cpp */,
-				354903062537E0280095B597 /* CHeatOutput.cpp */,
 			);
 			path = output;
 			sourceTree = "<group>";
@@ -1794,7 +1725,6 @@
 				3549030A2537E0280095B597 /* CAdjEulerSolver.cpp */,
 				3549031A2537E0280095B597 /* CAdjNSSolver.cpp */,
 				354903122537E0280095B597 /* CAdjTurbSolver.cpp */,
-				354903202537E0280095B597 /* CBaselineSolver.cpp */,
 				354903152537E0280095B597 /* CBaselineSolver_FEM.cpp */,
 				354903202537E0280095B597 /* CBaselineSolver.cpp */,
 				3549030C2537E0280095B597 /* CDiscAdjFEASolver.cpp */,
@@ -1833,8 +1763,6 @@
 				357BEEE9256D71E100423D14 /* NEMO */,
 				40C6D199271F840E009B5531 /* scalar */,
 				3549032D2537E0280095B597 /* turbulent */,
-				354903312537E0280095B597 /* heat.cpp */,
-				354903322537E0280095B597 /* continuous_adjoint */,
 				354903362537E0280095B597 /* CNumerics.cpp */,
 				354903312537E0280095B597 /* heat.cpp */,
 				3549032C2537E0280095B597 /* radiation.cpp */,
@@ -1922,8 +1850,6 @@
 				357BEEE3256D716400423D14 /* CNEMOEulerVariable.cpp */,
 				357BEEE4256D716400423D14 /* CNEMONSVariable.cpp */,
 				354903562537E0280095B597 /* CNSVariable.cpp */,
-				354903572537E0280095B597 /* CHeatVariable.cpp */,
-				354903582537E0280095B597 /* CTurbSAVariable.cpp */,
 				354903592537E0280095B597 /* CRadP1Variable.cpp */,
 				3549035A2537E0280095B597 /* CRadVariable.cpp */,
 				40C6D17B271F8053009B5531 /* CScalarVariable.cpp */,
@@ -1978,9 +1904,6 @@
 		357BEE4B256D592C00423D14 /* fluid */ = {
 			isa = PBXGroup;
 			children = (
-				357BEE4C256D592C00423D14 /* CPengRobinson.cpp */,
-				357BEE4D256D592C00423D14 /* CSU2TCLib.cpp */,
-				357BEE4E256D592C00423D14 /* CIdealGas.cpp */,
 				357BEE4F256D592C00423D14 /* CFluidModel.cpp */,
 				357BEE4E256D592C00423D14 /* CIdealGas.cpp */,
 				357BEE52256D592C00423D14 /* CMutationTCLib.cpp */,
@@ -1988,7 +1911,6 @@
 				357BEE4C256D592C00423D14 /* CPengRobinson.cpp */,
 				357BEE4D256D592C00423D14 /* CSU2TCLib.cpp */,
 				357BEE51256D592C00423D14 /* CVanDerWaalsGas.cpp */,
-				357BEE52256D592C00423D14 /* CMutationTCLib.cpp */,
 			);
 			path = fluid;
 			sourceTree = "<group>";
@@ -2090,13 +2012,9 @@
 		357BEE99256D706900423D14 /* fluid */ = {
 			isa = PBXGroup;
 			children = (
-				357BEE9A256D706900423D14 /* CIncIdealGasPolynomial.hpp */,
 				357BEE9B256D706900423D14 /* CConductivityModel.hpp */,
 				357BEEA4256D706900423D14 /* CConstantConductivity.hpp */,
 				357BEE9E256D706900423D14 /* CConstantConductivityRANS.hpp */,
-				357BEE9F256D706900423D14 /* CMutationTCLib.hpp */,
-				357BEEA0256D706900423D14 /* CConstantPrandtl.hpp */,
-				357BEEA1256D706900423D14 /* CSutherland.hpp */,
 				357BEEA2256D706900423D14 /* CConstantDensity.hpp */,
 				357BEEA0256D706900423D14 /* CConstantPrandtl.hpp */,
 				357BEEAB256D706900423D14 /* CConstantPrandtlRANS.hpp */,
@@ -2129,14 +2047,10 @@
 				357BEEB2256D708200423D14 /* CFEAIteration.hpp */,
 				357BEEB3256D708200423D14 /* CFEMFluidIteration.hpp */,
 				357BEEB4256D708200423D14 /* CFluidIteration.hpp */,
-				357BEEB5256D708200423D14 /* CDiscAdjHeatIteration.hpp */,
-				357BEEB6256D708200423D14 /* CIterationFactory.hpp */,
 				357BEEB7256D708200423D14 /* CHeatIteration.hpp */,
 				357BEEB0256D708200423D14 /* CIteration.hpp */,
 				357BEEB6256D708200423D14 /* CIterationFactory.hpp */,
 				357BEEB8256D708200423D14 /* CTurboIteration.hpp */,
-				357BEEB9256D708200423D14 /* CDiscAdjFluidIteration.hpp */,
-				357BEEBA256D708200423D14 /* CAdjFluidIteration.hpp */,
 			);
 			path = iteration;
 			sourceTree = "<group>";
@@ -2148,7 +2062,6 @@
 				357BEEBC256D70B900423D14 /* CNumericsSIMD.cpp */,
 				357BEEBD256D70B900423D14 /* CNumericsSIMD.hpp */,
 				357BEEBE256D70B900423D14 /* util.hpp */,
-				357BEEBF256D70B900423D14 /* flow */,
 			);
 			path = numerics_simd;
 			sourceTree = "<group>";
@@ -2159,7 +2072,6 @@
 				357BEEC4256D70B900423D14 /* convection */,
 				357BEEC0256D70B900423D14 /* diffusion */,
 				357BEEC3256D70B900423D14 /* variables.hpp */,
-				357BEEC4256D70B900423D14 /* convection */,
 			);
 			path = flow;
 			sourceTree = "<group>";

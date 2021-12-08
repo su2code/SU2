@@ -236,6 +236,7 @@ class CFlowVariable : public CVariable {
    * \return Vorticity array.
    */
   inline su2double* GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+  inline const su2double* GetVorticity(unsigned long iPoint) const final { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the magnitude of rate of strain.

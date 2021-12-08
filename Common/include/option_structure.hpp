@@ -76,7 +76,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -225,71 +225,71 @@ static const MapType<std::string, AVERAGE_TYPE> Average_Map = {
 /*!
  * \brief different solver types for the CFD component
  */
-enum ENUM_MAIN_SOLVER {
-  NO_SOLVER = 0,                    /*!< \brief Definition of no solver. */
-  EULER = 1,                        /*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES = 2,                /*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS = 3,                         /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  INC_EULER = 4,                    /*!< \brief Definition of the incompressible Euler's solver. */
-  INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
-  INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
-  FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
-  ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES = 11,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS = 12,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  TEMPLATE_SOLVER = 13,             /*!< \brief Definition of template solver. */
-  DISC_ADJ_EULER = 15,              /*!< \brief Definition of the discrete adjoint Euler solver. */
-  DISC_ADJ_RANS = 16,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_NAVIER_STOKES = 17,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
-  DISC_ADJ_INC_EULER = 18,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
-  DISC_ADJ_INC_RANS = 19,           /*!< \brief Definition of the discrete adjoint imcompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_INC_NAVIER_STOKES = 20,  /*!< \brief Definition of the discrete adjoint imcompressible Navier-Stokes'. */
-  DISC_ADJ_HEAT = 21,               /*!< \brief Definition of the discrete adjoint heat solver. */
-  DISC_ADJ_FEM_EULER = 22,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
-  DISC_ADJ_FEM_RANS = 23,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_FEM_NS = 24,             /*!< \brief Definition of the discrete adjoint FEM Navier-Stokes' solver. */
-  DISC_ADJ_FEM = 25,                /*!< \brief Definition of the discrete adjoint FEM solver. */
-  FEM_EULER = 26,                   /*!< \brief Definition of the finite element Euler's solver. */
-  FEM_NAVIER_STOKES = 27,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
-  FEM_RANS = 28,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30,
-  NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
+enum class MAIN_SOLVER {
+  NONE,                        /*!< \brief Definition of no solver. */
+  EULER,                       /*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES,               /*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS,                        /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  INC_EULER,                   /*!< \brief Definition of the incompressible Euler's solver. */
+  INC_NAVIER_STOKES,           /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
+  INC_RANS,                    /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  HEAT_EQUATION,               /*!< \brief Definition of the finite volume heat solver. */
+  FEM_ELASTICITY,              /*!< \brief Definition of a FEM solver. */
+  ADJ_EULER,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS,                    /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TEMPLATE_SOLVER,             /*!< \brief Definition of template solver. */
+  DISC_ADJ_EULER,              /*!< \brief Definition of the discrete adjoint Euler solver. */
+  DISC_ADJ_RANS,               /*!< \brief Definition of the discrete adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_NAVIER_STOKES,      /*!< \brief Definition of the discrete adjoint Navier-Stokes' solver. */
+  DISC_ADJ_INC_EULER,          /*!< \brief Definition of the discrete adjoint incompressible Euler solver. */
+  DISC_ADJ_INC_RANS,           /*!< \brief Definition of the discrete adjoint incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_INC_NAVIER_STOKES,  /*!< \brief Definition of the discrete adjoint incompressible Navier-Stokes'. */
+  DISC_ADJ_HEAT,               /*!< \brief Definition of the discrete adjoint heat solver. */
+  DISC_ADJ_FEM_EULER,          /*!< \brief Definition of the discrete adjoint FEM Euler solver. */
+  DISC_ADJ_FEM_RANS,           /*!< \brief Definition of the discrete adjoint FEM Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  DISC_ADJ_FEM_NS,             /*!< \brief Definition of the discrete adjoint FEM Navier-Stokes' solver. */
+  DISC_ADJ_FEM,                /*!< \brief Definition of the discrete adjoint FEM solver. */
+  FEM_EULER,                   /*!< \brief Definition of the finite element Euler's solver. */
+  FEM_NAVIER_STOKES,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
+  FEM_RANS,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIPHYSICS,
+  NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
+  NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
-static const MapType<std::string, ENUM_MAIN_SOLVER> Solver_Map = {
-  MakePair("NONE", NO_SOLVER)
-  MakePair("EULER", EULER)
-  MakePair("NAVIER_STOKES", NAVIER_STOKES)
-  MakePair("RANS", RANS)
-  MakePair("INC_EULER", INC_EULER)
-  MakePair("INC_NAVIER_STOKES", INC_NAVIER_STOKES)
-  MakePair("INC_RANS", INC_RANS)
-  MakePair("FEM_EULER", FEM_EULER)
-  MakePair("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
-  MakePair("FEM_RANS", FEM_RANS)
-  MakePair("FEM_LES", FEM_LES)
-  MakePair("NEMO_EULER",NEMO_EULER)
-  MakePair("NEMO_NAVIER_STOKES",NEMO_NAVIER_STOKES)
-  MakePair("ADJ_EULER", ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", ADJ_RANS )
-  MakePair("HEAT_EQUATION", HEAT_EQUATION)
-  MakePair("ELASTICITY", FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", DISC_ADJ_FEM)
-  MakePair("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-  MakePair("MULTIPHYSICS", MULTIPHYSICS)
+static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
+  MakePair("NONE", MAIN_SOLVER::NONE)
+  MakePair("EULER", MAIN_SOLVER::EULER)
+  MakePair("NAVIER_STOKES", MAIN_SOLVER::NAVIER_STOKES)
+  MakePair("RANS", MAIN_SOLVER::RANS)
+  MakePair("INC_EULER", MAIN_SOLVER::INC_EULER)
+  MakePair("INC_NAVIER_STOKES", MAIN_SOLVER::INC_NAVIER_STOKES)
+  MakePair("INC_RANS", MAIN_SOLVER::INC_RANS)
+  MakePair("FEM_EULER", MAIN_SOLVER::FEM_EULER)
+  MakePair("FEM_NAVIER_STOKES", MAIN_SOLVER::FEM_NAVIER_STOKES)
+  MakePair("FEM_RANS", MAIN_SOLVER::FEM_RANS)
+  MakePair("FEM_LES", MAIN_SOLVER::FEM_LES)
+  MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
+  MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
+  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
+  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
+  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
+  MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
+  MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
+  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
+  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
+  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
+  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
+  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
+  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
+  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
+  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
+  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
+  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
+  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
+  MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
+  MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
 
 /*!
@@ -481,6 +481,8 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
+  RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
+  RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -497,6 +499,9 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+
+const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
+const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -690,6 +695,21 @@ static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_
 };
 
 /*!
+ * \brief types of mass diffusivity models
+ */
+enum class DIFFUSIVITYMODEL {
+  CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
+  CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
+  UNITY_LEWIS,          /*!< \brief Unity Lewis model */
+};
+
+static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
+  MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
+  MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
+  MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
+};
+
+/*!
  * \brief Types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {
@@ -842,13 +862,13 @@ static const MapType<std::string, ENUM_FEM> FEM_Map = {
 /*!
  * \brief Types of shock capturing method in Discontinuous Galerkin numerical method.
  */
-enum ENUM_SHOCK_CAPTURING_DG {
-  NO_SHOCK_CAPTURING = 0,     /*!< \brief Shock capturing is not used. */
-  PERSSON = 1                 /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
+enum class FEM_SHOCK_CAPTURING_DG {
+  NONE,     /*!< \brief Shock capturing is not used. */
+  PERSSON   /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
 };
-static const MapType<std::string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
-  MakePair("NONE", NO_SHOCK_CAPTURING)
-  MakePair("PERSSON", PERSSON)
+static const MapType<std::string, FEM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
+  MakePair("NONE", FEM_SHOCK_CAPTURING_DG::NONE)
+  MakePair("PERSSON", FEM_SHOCK_CAPTURING_DG::PERSSON)
 };
 
 /*!
@@ -912,33 +932,45 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
 /*!
  * \brief Types of transition models
  */
-enum ENUM_TRANS_MODEL {
-  NO_TRANS_MODEL = 0,  /*!< \brief No transition model. */
-  LM = 1,              /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC = 2               /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+enum class TURB_TRANS_MODEL {
+  NONE,  /*!< \brief No transition model. */
+  LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
-static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
-  MakePair("NONE", NO_TRANS_MODEL)
-  MakePair("LM", LM)
-  MakePair("BC", BC)
+static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
+  MakePair("NONE", TURB_TRANS_MODEL::NONE)
+  MakePair("LM", TURB_TRANS_MODEL::LM)
+  MakePair("BC", TURB_TRANS_MODEL::BC)
+};
+
+/*!
+ * \brief types of species transport models
+ */
+enum class SPECIES_MODEL {
+  NONE,              /*!< \brief No scalar transport model. */
+  PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
+};
+static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
+  MakePair("NONE", SPECIES_MODEL::NONE)
+  MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
 };
 
 /*!
  * \brief Types of subgrid scale models
  */
-enum ENUM_SGS_MODEL {
-  NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
-  IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
-  SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
-  WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
-  VREMAN       = 4  /*!< \brief Vreman SGS model. */
+enum class TURB_SGS_MODEL {
+  NONE        , /*!< \brief No subgrid scale model. */
+  IMPLICIT_LES, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
+  SMAGORINSKY , /*!< \brief Smagorinsky SGS model. */
+  WALE        , /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
+  VREMAN        /*!< \brief Vreman SGS model. */
 };
-static const MapType<std::string, ENUM_SGS_MODEL> SGS_Model_Map = {
-  MakePair("NONE",         NO_SGS_MODEL)
-  MakePair("IMPLICIT_LES", IMPLICIT_LES)
-  MakePair("SMAGORINSKY",  SMAGORINSKY)
-  MakePair("WALE",         WALE)
-  MakePair("VREMAN",       VREMAN)
+static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
+  MakePair("NONE",         TURB_SGS_MODEL::NONE)
+  MakePair("IMPLICIT_LES", TURB_SGS_MODEL::IMPLICIT_LES)
+  MakePair("SMAGORINSKY",  TURB_SGS_MODEL::SMAGORINSKY)
+  MakePair("WALE",         TURB_SGS_MODEL::WALE)
+  MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
 
 
@@ -2218,35 +2250,35 @@ static const MapType<std::string, ENUM_PROJECTION_FUNCTION> Projection_Function_
 /*!
  * \brief the different validation solution
  */
-enum ENUM_VERIFICATION_SOLUTIONS {
-  NO_VERIFICATION_SOLUTION =  0,       /*!< \brief No verification solution, standard solver mode. */
-  INVISCID_VORTEX          =  1,       /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
-  RINGLEB                  =  2,       /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
-  NS_UNIT_QUAD             = 31,       /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
-  TAYLOR_GREEN_VORTEX      = 32,       /*!< \brief Taylor Green Vortex. */
-  INC_TAYLOR_GREEN_VORTEX  = 33,       /*!< \brief Incompressible Taylor Green Vortex (2D). */
-  MMS_NS_UNIT_QUAD         = 61,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
-  MMS_NS_UNIT_QUAD_WALL_BC = 62,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
-  MMS_NS_TWO_HALF_CIRCLES  = 63,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
-  MMS_NS_TWO_HALF_SPHERES  = 64,       /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
-  MMS_INC_EULER            = 65,       /*!< \brief Manufactured solution of the incompressible Euler equations. */
-  MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
-  USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
+enum class VERIFICATION_SOLUTION {
+  NONE,                     /*!< \brief No verification solution, standard solver mode. */
+  INVISCID_VORTEX,          /*!< \brief Inviscid vortex. Exact solution of the unsteady Euler equations. */
+  RINGLEB,                  /*!< \brief Ringleb flow. Exact solution of the steady Euler equations. */
+  NS_UNIT_QUAD,             /*!< \brief Exact solution of the laminar Navier Stokes equations without heat conduction. */
+  TAYLOR_GREEN_VORTEX,      /*!< \brief Taylor Green Vortex. */
+  INC_TAYLOR_GREEN_VORTEX,  /*!< \brief Incompressible Taylor Green Vortex (2D). */
+  MMS_NS_UNIT_QUAD,         /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad. */
+  MMS_NS_UNIT_QUAD_WALL_BC, /*!< \brief Manufactured solution of the laminar Navier Stokes equations on a unit quad with wall BC's. */
+  MMS_NS_TWO_HALF_CIRCLES,  /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half circles. */
+  MMS_NS_TWO_HALF_SPHERES,  /*!< \brief Manufactured solution of the laminar Navier Stokes equations between two half spheres. */
+  MMS_INC_EULER,            /*!< \brief Manufactured solution of the incompressible Euler equations. */
+  MMS_INC_NS,               /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
+  USER_DEFINED_SOLUTION,    /*!< \brief User defined solution. */
 };
-static const MapType<std::string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = {
-  MakePair("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
-  MakePair("INVISCID_VORTEX",          INVISCID_VORTEX)
-  MakePair("RINGLEB",                  RINGLEB)
-  MakePair("NS_UNIT_QUAD",             NS_UNIT_QUAD)
-  MakePair("TAYLOR_GREEN_VORTEX",      TAYLOR_GREEN_VORTEX)
-  MakePair("INC_TAYLOR_GREEN_VORTEX",  INC_TAYLOR_GREEN_VORTEX)
-  MakePair("MMS_NS_UNIT_QUAD",         MMS_NS_UNIT_QUAD)
-  MakePair("MMS_NS_UNIT_QUAD_WALL_BC", MMS_NS_UNIT_QUAD_WALL_BC)
-  MakePair("MMS_NS_TWO_HALF_CIRCLES",  MMS_NS_TWO_HALF_CIRCLES)
-  MakePair("MMS_NS_TWO_HALF_SPHERES",  MMS_NS_TWO_HALF_SPHERES)
-  MakePair("MMS_INC_EULER",            MMS_INC_EULER)
-  MakePair("MMS_INC_NS",               MMS_INC_NS)
-  MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+static const MapType<std::string, VERIFICATION_SOLUTION> Verification_Solution_Map = {
+  MakePair("NO_VERIFICATION_SOLUTION", VERIFICATION_SOLUTION::NONE)
+  MakePair("INVISCID_VORTEX",          VERIFICATION_SOLUTION::INVISCID_VORTEX)
+  MakePair("RINGLEB",                  VERIFICATION_SOLUTION::RINGLEB)
+  MakePair("NS_UNIT_QUAD",             VERIFICATION_SOLUTION::NS_UNIT_QUAD)
+  MakePair("TAYLOR_GREEN_VORTEX",      VERIFICATION_SOLUTION::TAYLOR_GREEN_VORTEX)
+  MakePair("INC_TAYLOR_GREEN_VORTEX",  VERIFICATION_SOLUTION::INC_TAYLOR_GREEN_VORTEX)
+  MakePair("MMS_NS_UNIT_QUAD",         VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD)
+  MakePair("MMS_NS_UNIT_QUAD_WALL_BC", VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD_WALL_BC)
+  MakePair("MMS_NS_TWO_HALF_CIRCLES",  VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_CIRCLES)
+  MakePair("MMS_NS_TWO_HALF_SPHERES",  VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_SPHERES)
+  MakePair("MMS_INC_EULER",            VERIFICATION_SOLUTION::MMS_INC_EULER)
+  MakePair("MMS_INC_NS",               VERIFICATION_SOLUTION::MMS_INC_NS)
+  MakePair("USER_DEFINED_SOLUTION",    VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION)
 };
 
 /*!

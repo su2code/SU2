@@ -210,6 +210,14 @@ def main():
     turb_naca0012_sst_fixedvalues.test_vals = [-5.192502, -9.575898, -1.568269, 1.022571, 0.040527, -2.384329]
     test_list.append(turb_naca0012_sst_fixedvalues)
 
+    # NACA0012 (SST, explicit Euler for flow and turbulence equations)
+    turb_naca0012_sst_expliciteuler           = TestCase('turb_naca0012_sst_expliciteuler')
+    turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
+    turb_naca0012_sst_expliciteuler.test_iter = 10
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532228, -3.157766, 3.364025, 1.124824, 0.501717, -float("inf")]
+    test_list.append(turb_naca0012_sst_expliciteuler)
+
     # PROPELLER
     propeller           = TestCase('propeller')
     propeller.cfg_dir   = "rans/propeller"
@@ -227,7 +235,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-12.094009, -6.643017, -8.900656, -2.393294]
+    axi_rans_air_nozzle.test_vals = [-12.093575, -6.630426, -8.798725, -2.399130]
     test_list.append(axi_rans_air_nozzle)
 
     #################################

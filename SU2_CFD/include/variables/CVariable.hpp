@@ -453,24 +453,6 @@ public:
   }
 
   /*!
-   * \brief Update the variables using a conservative format.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the solution change.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_density_old - Value of the old density.
-   * \param[in] lowerlimit - Lower value.
-   * \param[in] upperlimit - Upper value.
-   */
-  inline void AddConservativeSolution(unsigned long iPoint, unsigned long iVar, su2double solution,
-                                      su2double val_density, su2double val_density_old,
-                                      su2double lowerlimit, su2double upperlimit) {
-
-    su2double val_new = (Solution_Old(iPoint,iVar)*val_density_old + solution)/val_density;
-    Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
-  }
-
-  /*!
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
@@ -1173,6 +1155,7 @@ public:
    * \return Value of the vorticity.
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
+  inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.

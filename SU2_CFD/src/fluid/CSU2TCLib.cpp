@@ -801,7 +801,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
   su2double Keq;
   ws.resize(nSpecies,0.0);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
-    ws[iSpecies] = 0.0;
+    ws[iSpecies] = 0.0; 
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -1009,7 +1009,6 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
     }
   } // ii
 }
-
 void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii;
@@ -1157,7 +1156,6 @@ void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *ev
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 }
-
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;

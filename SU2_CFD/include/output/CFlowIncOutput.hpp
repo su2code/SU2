@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CFlowIncOutput.hpp
  * \brief  Headers of the incompressible flow output.
  * \author T. Albring, R. Sanchez
@@ -38,7 +38,6 @@ class CVariable;
  */
 class CFlowIncOutput final: public CFlowOutput {
 private:
-
   TURB_MODEL turb_model;     /*!< \brief The kind of turbulence model*/
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
@@ -46,7 +45,6 @@ private:
   bool streamwisePeriodic_temperature; /*!< \brief Boolean indicating streamwise periodic temperature is used. */
 
 public:
-
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
@@ -54,27 +52,10 @@ public:
   CFlowIncOutput(CConfig *config, unsigned short nDim);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CFlowIncOutput(void) override;
-
-  /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-
-  /*!
-   * \brief Set the values of the volume output fields for a surface point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] iMarker - Index of the surface marker.
-   * \param[in] iVertex - Index of the vertex on the marker.
-   */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
-                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
 
   /*!
    * \brief Set the available volume output fields
