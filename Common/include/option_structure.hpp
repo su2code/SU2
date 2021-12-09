@@ -1970,6 +1970,20 @@ static const MapType<std::string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = {
 };
 
 /*!
+ * \brief Types of sensitivity smoothing
+ */
+enum ENUM_SENS_SMOOTHING {
+  NO_SMOOTH = 0,  /*!< \brief No smoothing. */
+  SOBOLEV = 1,    /*!< \brief Sobolev gradient smoothing. */
+  BIGRID = 2      /*!< \brief Bi-grid technique smoothing. */
+};
+static const MapType<std::string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
+  MakePair("NONE", NO_SMOOTH)
+  MakePair("SOBOLEV", SOBOLEV)
+  MakePair("BIGRID", BIGRID)
+};
+
+/*!
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
