@@ -36,7 +36,7 @@ CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_ou
   lastInnerIter(curInnerIter) {
 }
 
-// The "AddHistoryOutput(" must not be split over multiple lines to assure proper python parsing
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
 // clang-format off
 void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 
@@ -768,7 +768,7 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
-// The "AddHistoryOutput(" must not be split over multiple lines to assure proper python parsing
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
 // clang-format off
 void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
