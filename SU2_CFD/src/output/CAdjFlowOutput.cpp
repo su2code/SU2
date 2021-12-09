@@ -35,7 +35,7 @@ CAdjFlowOutput::CAdjFlowOutput(CConfig* config, unsigned short nDim)
       cont_adj(config->GetContinuous_Adjoint()),
       frozen_visc((config->GetFrozen_Visc_Disc() && !cont_adj) || (config->GetFrozen_Visc_Cont() && cont_adj)) {}
 
-// The "AddHistoryOutput(" must not be split over multiple lines to assure proper python parsing
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
 // clang-format off
 void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* config) {
   if (!frozen_visc) {
