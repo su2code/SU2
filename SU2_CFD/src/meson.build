@@ -13,6 +13,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
+                      'output/CAdjFlowOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
                       'output/CAdjHeatOutput.cpp',

@@ -146,6 +146,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CBaselineOutput.cpp \
   ../src/output/CAdjElasticityOutput.cpp \
   ../src/output/CAdjHeatOutput.cpp \
+  ../src/output/CAdjFlowOutput.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
