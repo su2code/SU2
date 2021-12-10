@@ -780,7 +780,7 @@ vector<passivedouble> CDeformationDriver::GetVertexNormal(unsigned short iMarker
   return ret_Normal_passive;
 }
 
-vector<unsigned long> CDeformationDriver::GetMeshElemIDs() const {
+vector<unsigned long> CDeformationDriver::GetMeshElementIDs() const {
     CGeometry* geometry = geometry_container[ZONE_0];
     const auto nElem    = geometry->GetnElem();
 
@@ -810,7 +810,7 @@ vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivity() const {
     return values;
 }
 
-vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivity_Marker(unsigned short iMarker) const {
+vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivityMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0];
     const auto nBound   = geometry->GetnElem_Bound(iMarker);
 
@@ -846,7 +846,7 @@ vector<passivedouble> CDeformationDriver::GetMeshCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDeformationDriver::GetMeshCoordinates_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDeformationDriver::GetMeshCoordinatesMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
 
@@ -866,11 +866,70 @@ vector<passivedouble> CDeformationDriver::GetMeshCoordinates_Marker(unsigned sho
     return values;
 }
 
-vector<passivedouble> CDeformationDriver::GetMeshDisplacements_Marker(unsigned short iMarker) const {
+void CDeformationDriver::SetMeshCoordinates(vector<passivedouble> values) {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nPoint   = geometry->GetnPoint();
+
+    if (values.size() != nPoint*nDim) {
+        SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
+    }
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            geometry->nodes->SetCoord(iPoint, iDim, values[iPoint*nDim + iDim]);
+        }
+    }
+}
+
+void CDeformationDriver::SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+
+    if (values.size() != nVertex*nDim) {
+        SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
+    }
+
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            geometry->nodes->SetCoord(iPoint, iDim, values[iVertex*nDim + iDim]);
+        }
+    }
+}
+
+void CDeformationDriver::SetVertexCoordX(unsigned short iMarker, unsigned long iVertex, passivedouble newPosX) {
+
+  CGeometry* geometry = geometry_container[ZONE_0];
+
+  auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  geometry->nodes->SetCoord(iPoint, 0, newPosX);
+
+}
+
+void CDeformationDriver::SetVertexCoordY(unsigned short iMarker, unsigned long iVertex, passivedouble newPosY) {
+
+  CGeometry* geometry = geometry_container[ZONE_0];
+
+  auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  geometry->nodes->SetCoord(iPoint, 1, newPosY);
+
+}
+
+void CDeformationDriver::SetVertexCoordZ(unsigned short iMarker, unsigned long iVertex, passivedouble newPosZ) {
+
+  CGeometry* geometry = geometry_container[ZONE_0];
+
+  auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  geometry->nodes->SetCoord(iPoint, 2, newPosZ);
+
+}
+
+vector<passivedouble> CDeformationDriver::GetMeshDisplacementsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
 
     if (!config->GetDeform_Mesh()) {
-        return {};  // empty
+        return {};
     }
 
     CGeometry* geometry = geometry_container[ZONE_0];
@@ -894,7 +953,7 @@ vector<passivedouble> CDeformationDriver::GetMeshDisplacements_Marker(unsigned s
     return values;
 }
 
-void CDeformationDriver::SetMeshDisplacements_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDeformationDriver::SetMeshDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
 
     if (!config->GetDeform_Mesh()) {

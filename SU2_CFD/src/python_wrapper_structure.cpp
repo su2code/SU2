@@ -63,7 +63,7 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
 /* Functions related to the global performance indices (Lift, Drag, ecc..) */
 /////////////////////////////////////////////////////////////////////////////
 
-passivedouble CDriver::Get_Drag() const {
+passivedouble CDriver::GetDrag() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -78,7 +78,7 @@ passivedouble CDriver::Get_Drag() const {
     return SU2_TYPE::GetValue(val_Drag);
 }
 
-passivedouble CDriver::Get_Lift() const {
+passivedouble CDriver::GetLift() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -93,7 +93,7 @@ passivedouble CDriver::Get_Lift() const {
     return SU2_TYPE::GetValue(val_Lift);
 }
 
-passivedouble CDriver::Get_Mx() const {
+passivedouble CDriver::GetMx() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -110,7 +110,7 @@ passivedouble CDriver::Get_Mx() const {
     return SU2_TYPE::GetValue(val_Mx);
 }
 
-passivedouble CDriver::Get_My() const {
+passivedouble CDriver::GetMy() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -127,7 +127,7 @@ passivedouble CDriver::Get_My() const {
     return SU2_TYPE::GetValue(val_My);
 }
 
-passivedouble CDriver::Get_Mz() const {
+passivedouble CDriver::GetMz() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -144,7 +144,7 @@ passivedouble CDriver::Get_Mz() const {
     return SU2_TYPE::GetValue(val_Mz);
 }
 
-passivedouble CDriver::Get_DragCoeff() const {
+passivedouble CDriver::GetDragCoeff() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -155,7 +155,7 @@ passivedouble CDriver::Get_DragCoeff() const {
     return SU2_TYPE::GetValue(CDrag);
 }
 
-passivedouble CDriver::Get_LiftCoeff() const {
+passivedouble CDriver::GetLiftCoeff() const {
     
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -166,7 +166,7 @@ passivedouble CDriver::Get_LiftCoeff() const {
     return SU2_TYPE::GetValue(CLift);
 }
 
-passivedouble CDriver::Get_MxCoeff() const {
+passivedouble CDriver::GetMxCoeff() const {
     
     unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
     su2double CMx = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMx();
@@ -174,7 +174,7 @@ passivedouble CDriver::Get_MxCoeff() const {
     return SU2_TYPE::GetValue(CMx);
 }
 
-passivedouble CDriver::Get_MyCoeff() const {
+passivedouble CDriver::GetMyCoeff() const {
     
     unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
     su2double CMy = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMy();
@@ -182,7 +182,7 @@ passivedouble CDriver::Get_MyCoeff() const {
     return SU2_TYPE::GetValue(CMy);
 }
 
-passivedouble CDriver::Get_MzCoeff() const {
+passivedouble CDriver::GetMzCoeff() const {
     
     unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
     su2double CMz = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMz();
@@ -190,9 +190,29 @@ passivedouble CDriver::Get_MzCoeff() const {
     return SU2_TYPE::GetValue(CMz);
 }
 
+passivedouble CDriver::GetFlowObjective() const {
+    CConfig* config = config_container[ZONE_0];
+    
+    if (config->GetFluidProblem()) {
+        CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+        
+        solver->Evaluate_ObjFunc(config);
+        return SU2_TYPE::GetValue(solver->GetTotal_ComboObj());
+    }
+    else {
+        return 0.0;  // TODO: Raise error instead ?
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////
-/* Functions to obtain information from the geometry/mesh                  */
+/* Functions to obtain information from the geometry/mesh.                 */
 /////////////////////////////////////////////////////////////////////////////
+
+unsigned long CDriver::GetNumberDimensions() const {
+    
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+    
+}
 
 unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
     
@@ -283,22 +303,6 @@ vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned 
     return ret_Normal_passive;
 }
 
-/* --- Functions related to the objective function.                       --- */
-
-passivedouble CDriver::GetFlowObjective() const {
-    CConfig* config = config_container[ZONE_0];
-
-    if (config->GetFluidProblem()) {
-        CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-
-        solver->Evaluate_ObjFunc(config);
-        return SU2_TYPE::GetValue(solver->GetTotal_ComboObj());
-    }
-    else {
-        return 0.0;  // TODO: Raise error instead ?
-    }
-}
-
 vector<passivedouble> CDriver::GetAIP() const {
     // AIP[0] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALPRESS"));
     // AIP[1] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALTEMP"));
@@ -311,11 +315,13 @@ vector<passivedouble> CDriver::GetAIP() const {
     // AIP[8] = SU2_TYPE::GetValue(config_container[ZONE_0]->GetRefArea());
     // AIP[9] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("MOMENTUM_DISTORTION"));
     // return AIP;
-
+    
     return vector<passivedouble> (10,0.0);
 }
 
-/* --- Functions related to the far-field flow variables.                 --- */
+/////////////////////////////////////////////////////////////////////////////
+/* Functions related to the far-field flow variables.                      */
+/////////////////////////////////////////////////////////////////////////////
 
 passivedouble CDriver::GetAoA() const {
     return SU2_TYPE::GetValue(config_container[ZONE_0]->GetAoA());
@@ -323,21 +329,21 @@ passivedouble CDriver::GetAoA() const {
 
 void CDriver::SetAoA(passivedouble value) {
     CConfig* config = config_container[ZONE_0];
-
+    
     config->SetAoA(value);
-
+    
     //  apply the angle of attack to the free-stream velocity vector
     su2double velocity_inf_vec[nDim];
-
+    
     for (auto iDim = 0u; iDim < nDim; iDim++) {
         velocity_inf_vec[iDim] = config->GetVelocity_FreeStreamND()[iDim];
     }
-
+    
     su2double velocity_inf_mag = GeometryToolbox::Norm(nDim, velocity_inf_vec);
-
+    
     su2double alpha = alpha            * PI_NUMBER/180.0;
     su2double beta  = config->GetAoS() * PI_NUMBER/180.0;
-
+    
     if (nDim == 3) {
         velocity_inf_vec[0] = cos(alpha)*cos(beta)*velocity_inf_mag;
         velocity_inf_vec[1] = sin(beta)*velocity_inf_mag;
@@ -347,11 +353,11 @@ void CDriver::SetAoA(passivedouble value) {
         velocity_inf_vec[0] = cos(alpha)*velocity_inf_mag;
         velocity_inf_vec[1] = sin(alpha)*velocity_inf_mag;
     }
-
+    
     for (auto iDim = 0u; iDim < nDim; iDim++) {
         config->SetVelocity_FreeStreamND(velocity_inf_vec[iDim], iDim);
     }
-
+    
     //  TODO:   Move this code to the solution update (would also be required for side-slip, Mach, and Reynolds)
 }
 
@@ -379,86 +385,86 @@ void CDriver::SetReynoldsNumber(passivedouble value) {
     config_container[ZONE_0]->SetReynolds(value);
 }
 
-/* --- Functions related to the geometry and mesh solver.                 --- */
+/////////////////////////////////////////////////////////////////////////////
+/* Functions related to the geometry and mesh solver.                      */
+/////////////////////////////////////////////////////////////////////////////
 
-vector<unsigned long> CDriver::GetMeshElemIDs() const {
+vector<unsigned long> CDriver::GetMeshElementIDs() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nElem    = geometry->GetnElem();
-
+    
     vector<unsigned long> values;
-
+    
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
         values.push_back(geometry->elem[iElem]->GetGlobalIndex());
     }
-
+    
     return values;
 }
 
 vector<vector<unsigned long>> CDriver::GetMeshConnectivity() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nElem    = geometry->GetnElem();
-
+    
     vector<vector<unsigned long>> values(nElem);
-
+    
     for (auto iElem = 0ul; iElem < nElem; iElem++) {
         unsigned short nNode = geometry->elem[iElem]->GetnNodes();
-
+        
         for (auto iNode = 0u; iNode < nNode; iNode++) {
             values[iElem].push_back(geometry->elem[iElem]->GetNode(iNode));
         }
     }
-
+    
     return values;
 }
 
-vector<vector<unsigned long>> CDriver::GetMeshConnectivity_Marker(unsigned short iMarker) const {
+vector<vector<unsigned long>> CDriver::GetMeshConnectivityMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nBound   = geometry->GetnElem_Bound(iMarker);
-
+    
     vector<vector<unsigned long>> values(nBound);
-
+    
     for (auto iBound = 0ul; iBound < nBound; iBound++) {
         unsigned short nNode = geometry->bound[iMarker][iBound]->GetnNodes();
-
+        
         for (auto iNode = 0u; iNode < nNode; iNode++) {
             values[iBound].push_back(geometry->bound[iMarker][iBound]->GetNode(iNode));
         }
     }
-
+    
     return values;
 }
 
 vector<passivedouble> CDriver::GetMeshCoordinates() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = geometry->nodes->GetCoord(iPoint, iDim);
-
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetMeshCoordinates_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetMeshCoordinatesMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = geometry->nodes->GetCoord(iPoint, iDim);
-
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
@@ -469,11 +475,11 @@ vector<passivedouble> CDriver::GetMeshCoordinates_Marker(unsigned short iMarker)
 void CDriver::SetMeshCoordinates(vector<passivedouble> values) {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     if (values.size() != nPoint*nDim) {
         SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             geometry->nodes->SetCoord(iPoint, iDim, values[iPoint*nDim + iDim]);
@@ -481,260 +487,264 @@ void CDriver::SetMeshCoordinates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetMeshCoordinates_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     if (values.size() != nVertex*nDim) {
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             geometry->nodes->SetCoord(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
 }
 
-vector<passivedouble> CDriver::GetMeshDisplacements_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetMeshDisplacementsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetBound_Disp(iPoint, iDim);
-
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-void CDriver::SetMeshDisplacements_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetMeshDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh()) {
         SU2_MPI::Error("Mesh solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL];
-
+    
     if (values.size() != nVertex*nDim) {
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetBound_Disp(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
 }
 
-vector<passivedouble> CDriver::GetMeshVelocities_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetMeshVelocitiesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetBound_Vel(iPoint, iDim);
-
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-void CDriver::SetMeshVelocities_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetMeshVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh()) {
         SU2_MPI::Error("Mesh solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL];
-
+    
     if (values.size() != nVertex*nDim) {
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetBound_Vel(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
 }
 
-/* --- Functions related to the flow solver solution and variables.       --- */
+/////////////////////////////////////////////////////////////////////////////
+/* Functions related to the flow solver solution and variables.            */
+/////////////////////////////////////////////////////////////////////////////
+
+unsigned long CDriver::GetNumberStateVariables() const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim() + 2;
+}
+
+unsigned long CDriver::GetNumberPrimitiveVariables() const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim() + 9;
+}
 
 vector<passivedouble> CDriver::GetFlowResiduals() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nVar = solver->GetnVar();
-
+    
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->LinSysRes(iPoint, iVar);
-
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowResiduals_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetFlowResidualsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nVar = solver->GetnVar();
-
+    
     vector<passivedouble> values(nVertex*nVar, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->LinSysRes(iPoint, iVar);
-
             values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
 vector<passivedouble> CDriver::GetFlowStates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
-
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowStates_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetFlowStatesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nVertex*nVar, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
-
             values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
 void CDriver::SetFlowStates(vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     if (values.size() != nPoint*nVar) {
         SU2_MPI::Error("Size does not match nPoint * nVar !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             solver->GetNodes()->SetSolution(iPoint, iVar, values[iPoint*nVar + iVar]);
@@ -742,53 +752,53 @@ void CDriver::SetFlowStates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetFlowStates_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetFlowStatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     if (values.size() != nVertex*nVar) {
         SU2_MPI::Error("Size does not match nVertex * nVar !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             solver->GetNodes()->SetSolution(iPoint, iVar, values[iVertex*nVar + iVar]);
         }
     }
 }
 
-vector<passivedouble> CDriver::GetFlowQuantities() const {
+vector<passivedouble> CDriver::GetFlowProperties() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nPrim  = 7;
-
+    
     vector<passivedouble> values(nPoint*nPrim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
         //  density
         value = solver->GetNodes()->GetDensity(iPoint);
         values[iPoint*nPrim]     = SU2_TYPE::GetValue(value);
-
+        
         //  velocity
         value = solver->GetNodes()->GetVelocity(iPoint, 0);
         values[iPoint*nPrim + 1] = SU2_TYPE::GetValue(value);
@@ -796,46 +806,46 @@ vector<passivedouble> CDriver::GetFlowQuantities() const {
         values[iPoint*nPrim + 2] = SU2_TYPE::GetValue(value);
         value = solver->GetNodes()->GetVelocity(iPoint, 2);
         values[iPoint*nPrim + 3] = SU2_TYPE::GetValue(value);
-
+        
         //  pressure
         value = solver->GetNodes()->GetPressure(iPoint);
         values[iPoint*nPrim + 4] = SU2_TYPE::GetValue(value);
-
-        //  velocity of sound
+        
+        //  speed of sound
         value = solver->GetNodes()->GetSoundSpeed(iPoint);
         values[iPoint*nPrim + 5] = SU2_TYPE::GetValue(value);
-
+        
         //  temperature
         value = solver->GetNodes()->GetTemperature(iPoint);
         values[iPoint*nPrim + 6] = SU2_TYPE::GetValue(value);
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowQuantities_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetFlowPropertiesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     const auto nPrim  = 7;
-
+    
     vector<passivedouble> values(nVertex*nPrim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++){
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         //  density
         value = solver->GetNodes()->GetDensity(iPoint);
         values[iVertex*nPrim]     = SU2_TYPE::GetValue(value);
-
+        
         //  velocity
         value = solver->GetNodes()->GetVelocity(iPoint, 0);
         values[iVertex*nPrim + 1] = SU2_TYPE::GetValue(value);
@@ -843,42 +853,41 @@ vector<passivedouble> CDriver::GetFlowQuantities_Marker(unsigned short iMarker) 
         values[iVertex*nPrim + 2] = SU2_TYPE::GetValue(value);
         value = solver->GetNodes()->GetVelocity(iPoint, 2);
         values[iVertex*nPrim + 3] = SU2_TYPE::GetValue(value);
-
+        
         //  pressure
         value = solver->GetNodes()->GetPressure(iPoint);
         values[iVertex*nPrim + 4] = SU2_TYPE::GetValue(value);
-
-        //  velocity of sound
+        
+        //  speed of sound
         value = solver->GetNodes()->GetSoundSpeed(iPoint);
         values[iVertex*nPrim + 5] = SU2_TYPE::GetValue(value);
-
+        
         //  temperature
         value = solver->GetNodes()->GetTemperature(iPoint);
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowTractions_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetFlowTractionsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem()) {
-        return {};  // empty !
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    const auto nPrim  = solver->GetnVar();
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetVertexTractions(iMarker, iVertex, iDim);
-
+            
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
@@ -886,80 +895,82 @@ vector<passivedouble> CDriver::GetFlowTractions_Marker(unsigned short iMarker) c
     return values;
 }
 
-/* --- Functions related to the adjoint mesh solver solution.       --- */
+/////////////////////////////////////////////////////////////////////////////
+/* Functions related to the adjoint mesh solver solution.                  */
+/////////////////////////////////////////////////////////////////////////////
 
 vector<passivedouble> CDriver::GetAdjMeshCoordinates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-
+    
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetSolution(iPoint, iDim);
             //  solver->GetNodes()->GetAdjoint_MeshCoord(iPoint, Coord);
-
+            
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetAdjMeshCoordinates_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetAdjMeshCoordinatesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetNodes()->GetSolution(iPoint, iDim);
             //  solver->GetNodes()->GetAdjoint_MeshCoord(iPoint, Coord);
-
+            
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
 void CDriver::SetAdjMeshCoordinates(vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint mesh solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-
+    
     if (values.size() != nPoint*nDim) {
         SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetSolution(iPoint, iDim, values[iPoint*nDim + iDim]);
@@ -967,53 +978,55 @@ void CDriver::SetAdjMeshCoordinates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetAdjMeshCoordinates_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetAdjMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint mesh solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnPoint();
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-
+    
     if (values.size() != nVertex*nDim) {
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->GetNodes()->SetSolution(iPoint, iDim, values[iVertex*nDim + iDim]);
         }
     }
 }
 
-/* --- Functions related to the adjoint flow solver solution.       --- */
+/////////////////////////////////////////////////////////////////////////////
+/* Functions related to the adjoint flow solver solution.                  */
+/////////////////////////////////////////////////////////////////////////////
 
 vector<passivedouble> CDriver::GetAdjFlowStates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
-
+            
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
@@ -1021,28 +1034,28 @@ vector<passivedouble> CDriver::GetAdjFlowStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetAdjFlowStates_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetAdjFlowStatesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
-        return {};  // empty
+        return {};
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nVertex*nVar, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetNodes()->GetSolution(iPoint, iVar);
-
+            
             values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
@@ -1052,21 +1065,21 @@ vector<passivedouble> CDriver::GetAdjFlowStates_Marker(unsigned short iMarker) c
 
 void CDriver::SetAdjFlowStates(vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     if (values.size() != nPoint*nVar) {
         SU2_MPI::Error("Size does not match nPoint * nVar !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             solver->GetNodes()->SetSolution(iPoint, iVar, values[iPoint*nVar + iVar]);
@@ -1074,51 +1087,51 @@ void CDriver::SetAdjFlowStates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetAdjFlowStates_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetAdjFlowStatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     if (values.size() != nVertex*nVar) {
         SU2_MPI::Error("Size does not match nVertex * nVar !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
+        
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             solver->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
         }
     }
 }
 
-vector<passivedouble> CDriver::GetAdjFlowTractions_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetAdjFlowTractionsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetAdjointVertexTractions(iMarker, iVertex, iDim);
-
+            
             values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
@@ -1126,22 +1139,22 @@ vector<passivedouble> CDriver::GetAdjFlowTractions_Marker(unsigned short iMarker
     return values;
 }
 
-void CDriver::SetAdjFlowTractions_Marker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetAdjFlowTractionsMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-
+    
     if (values.size() != nVertex*nDim) {
         SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
     }
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             solver->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, values[iVertex*nDim + iDim]);
@@ -1149,137 +1162,137 @@ void CDriver::SetAdjFlowTractions_Marker(unsigned short iMarker, vector<passived
     }
 }
 
-vector<passivedouble> CDriver::GetProd_dMeshCoordinates_dMeshCoordinates() const {
+vector<passivedouble> CDriver::GetProd_dCoordinates_dCoordinates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dMeshCoordinates_dMeshCoordinates(iPoint, iDim);
-
+            
             values[iPoint*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dMeshCoordinates_dMeshDisplacements_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetProd_dCoordinates_dDisplacements_Marker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dMeshCoordinates_dMeshDisplacements(iMarker, iVertex, iDim);
-
+            
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowVariables() const {
+vector<passivedouble> CDriver::GetSens_dObjective_dFlowVariables() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const int nTrim = 2;
-
+    
     vector<passivedouble> values(nTrim, 0.0);
     su2double value;
-
+    
     value = solver->GetSens_dFlowObjective_dFlowVariables(0);
     values[0] = SU2_TYPE::GetValue(value);
-
+    
     value = solver->GetSens_dFlowObjective_dFlowVariables(1);
     values[1] = SU2_TYPE::GetValue(value);
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowResiduals_dFlowVariables() const {
+vector<passivedouble> CDriver::GetProd_dResiduals_dFlowVariables() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CSolver*  solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const int nTrim  = 2;
-
+    
     vector<passivedouble> values(nTrim, 0.0);
     su2double value;
-
+    
     value = solver->GetProd_dFlowResiduals_dFlowVariables(0);
     values[0] = SU2_TYPE::GetValue(value);
-
+    
     value = solver->GetProd_dFlowResiduals_dFlowVariables(1);
     values[1] = SU2_TYPE::GetValue(value);
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowStates() const {
+vector<passivedouble> CDriver::GetSens_dObjective_dStates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetSens_dFlowObjective_dFlowStates(iPoint, iVar);
-
+            
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
@@ -1287,88 +1300,88 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dFlowStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowResiduals_dFlowStates() const {
+vector<passivedouble> CDriver::GetProd_dResiduals_dStates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetProd_dFlowResiduals_dFlowStates(iPoint, iVar);
-
+            
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowTractions_dFlowStates() const {
+vector<passivedouble> CDriver::GetProd_dTractions_dStates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     const auto nVar   = solver->GetnVar();
-
+    
     vector<passivedouble> values(nPoint*nVar, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
             value = solver->GetProd_dFlowTractions_dFlowStates(iPoint, iVar);
-
+            
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetSens_dFlowObjective_dMeshCoordinates() const {
+vector<passivedouble> CDriver::GetSens_dObjective_dCoordinates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetSens_dFlowObjective_dMeshCoordinates(iPoint, iDim);
-
+            
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
@@ -1376,172 +1389,169 @@ vector<passivedouble> CDriver::GetSens_dFlowObjective_dMeshCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowResiduals_dMeshCoordinates() const {
+vector<passivedouble> CDriver::GetProd_dResiduals_dCoordinates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dFlowResiduals_dMeshCoordinates(iPoint, iDim);
-
+            
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowTractions_dMeshCoordinates() const {
+vector<passivedouble> CDriver::GetProd_dTractions_dCoordinates() const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nPoint*nDim, 0.0);
     su2double value;
-
+    
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dFlowTractions_dMeshCoordinates(iPoint, iDim);
-
+            
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetSens_dFlowObjective_dMeshDisplacements_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetSens_dObjective_dDisplacements_Marker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetSens_dFlowObjective_dMeshDisplacements(iMarker, iVertex, iDim);
-
+            
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowResiduals_dMeshDisplacements_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetProd_dResiduals_dDisplacements_Marker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dFlowResiduals_dMeshDisplacements(iMarker, iVertex, iDim);
-
+            
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dFlowTractions_dMeshDisplacements_Marker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetProd_dTractions_dDisplacements_Marker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
-
+    
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
         SU2_MPI::Error("Adjoint flow solver is not defined !", CURRENT_FUNCTION);
     }
     if (config->GetKind_DiscreteAdjoint() != RESIDUALS) {
         SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation !", CURRENT_FUNCTION);
     }
-
+    
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
-
+    
     CSolver*   solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-
+    
     vector<passivedouble> values(nVertex*nDim, 0.0);
     su2double value;
-
+    
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
             value = solver->GetProd_dFlowTractions_dMeshDisplacements(iMarker, iVertex, iDim);
-
+            
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
     }
-
+    
     return values;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-/* Functions to obtain global parameters from SU2 (time steps, delta t, etc...) */
+/* Functions to obtain global parameters from SU2 (time steps, delta t, etc.).  */
 //////////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetnTimeIter() const {
-    
     return config_container[ZONE_0]->GetnTime_Iter();
 }
 
 unsigned long CDriver::GetTime_Iter() const{
-    
     return TimeIter;
 }
 
 passivedouble CDriver::GetUnsteady_TimeStep() const {
-    
     return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/* Functions related to CHT solver                                           */
+/* Functions related to CHT solver.                                          */
 ///////////////////////////////////////////////////////////////////////////////
 
 passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const {
@@ -1562,7 +1572,6 @@ passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned lon
 }
 
 void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallTemp){
-    
     geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, val_WallTemp);
 }
 
@@ -1636,7 +1645,7 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
             GradT[iDim] = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
             dTdn += GradT[iDim]*UnitNormal[iDim];
         }
-
+        
         vertexWallHeatFlux = -thermal_conductivity*dTdn;
     }
     
@@ -1644,7 +1653,6 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
 }
 
 void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble val_WallHeatFlux){
-    
     geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryHeatFlux(iMarker, iVertex, val_WallHeatFlux);
 }
 
@@ -1667,7 +1675,7 @@ passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned l
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/* Functions related to the management of markers                             */
+/* Functions related to the management of markers.                            */
 ////////////////////////////////////////////////////////////////////////////////
 
 vector<string> CDriver::GetAllBoundaryMarkersTag() const {
@@ -1705,19 +1713,19 @@ vector<string> CDriver::GetAllDeformMeshMarkersTag() const {
 }
 
 vector<string> CDriver::GetAllFluidLoadsMarkersTag() const {
-
+    
     vector<string> interfaceBoundariesTagList;
     unsigned short iMarker, nBoundariesMarker;
     string Marker_Tag;
-
+    
     nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Fluid_Load();
     interfaceBoundariesTagList.resize(nBoundariesMarker);
-
+    
     for(iMarker=0; iMarker < nBoundariesMarker; iMarker++){
         Marker_Tag = config_container[ZONE_0]->GetMarker_Fluid_Load_TagBound(iMarker);
         interfaceBoundariesTagList[iMarker] = Marker_Tag;
     }
-
+    
     return interfaceBoundariesTagList;
 }
 
@@ -1840,11 +1848,10 @@ void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha){
         solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 0, cos(alpha_rad));
         solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
     }
-    
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/* Functions related to simulation control, high level functions (reset convergence, set initial mesh, ecc...) */
+/* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.).  */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void CDriver::ResetConvergence() {
@@ -1916,7 +1923,7 @@ void CDriver::BoundaryConditionsUpdate(){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/* Functions related to finite elements                                       */
+/* Functions related to finite elements.                                      */
 ////////////////////////////////////////////////////////////////////////////////
 
 void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passivedouble LoadX,
@@ -2012,7 +2019,7 @@ vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigne
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/* Functions related to adjoint simulations                                   */
+/* Functions related to adjoint simulations.                                  */
 ////////////////////////////////////////////////////////////////////////////////
 
 vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const {
@@ -2109,7 +2116,7 @@ void CDriver::SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVe
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/* Functions related to mesh deformation */
+/* Functions related to mesh deformation.                                     */
 ////////////////////////////////////////////////////////////////////////////////
 
 void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
@@ -2137,7 +2144,7 @@ void CDriver::CommunicateMeshDisplacement(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/* Functions related to flow loads */
+/* Functions related to flow loads.                                           */
 ////////////////////////////////////////////////////////////////////////////////
 
 vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const {

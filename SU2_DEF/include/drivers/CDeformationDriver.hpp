@@ -162,7 +162,7 @@ public:
    * \brief Get the global IDs of the mesh elements.
    * \return Element IDs (nElem).
    */
-  vector<unsigned long> GetMeshElemIDs() const;
+  vector<unsigned long> GetMeshElementIDs() const;
 
   /*!
    * \brief Get the connected point IDs of the mesh elements.
@@ -175,7 +175,7 @@ public:
    * \param[in] iMarker - Marker identifier.
    * \return Element connectivities (nBound, nNode).
    */
-  vector<vector<unsigned long>> GetMeshConnectivity_Marker(unsigned short iMarker) const;
+  vector<vector<unsigned long>> GetMeshConnectivityMarker(unsigned short iMarker) const;
 
   /*!
    * \brief Get the coordinates of the mesh points.
@@ -188,21 +188,58 @@ public:
    * \param[in] iMarker - Marker identifier.
    * \return Point coordinates (nVertex, nDim).
    */
-  vector<passivedouble> GetMeshCoordinates_Marker(unsigned short iMarker) const;
+  vector<passivedouble> GetMeshCoordinatesMarker(unsigned short iMarker) const;
+
+  /*!
+   * \brief Set the coordinates of the mesh points.
+   * \param[in] values - Point coordinates (nPoint*nDim).
+   */
+  void SetMeshCoordinates(vector<passivedouble> values);
+
+  /*!
+   * \brief Set the coordinates of the mesh points on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] values - Point coordinates (nVertex*nDim).
+   */
+  void SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
+
+  /*!
+   * \brief Set the x coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] newPosX - New x coordinate of the vertex.
+   */
+  void SetVertexCoordX(unsigned short iMarker, unsigned long iVertex, passivedouble newPosX);
+
+  /*!
+   * \brief Set the y coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] newPosY - New y coordinate of the vertex.
+   */
+  void SetVertexCoordY(unsigned short iMarker, unsigned long iVertex, passivedouble newPosY);
+
+  /*!
+   * \brief Set the z coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] newPosZ - New z coordinate of the vertex.
+   */
+  void SetVertexCoordZ(unsigned short iMarker, unsigned long iVertex, passivedouble newPosZ);
 
   /*!
    * \brief Get the vertex displacements on the specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return Vertex displacements (nVertex, nDim).
    */
-  vector<passivedouble> GetMeshDisplacements_Marker(unsigned short iMarker) const;
+  vector<passivedouble> GetMeshDisplacementsMarker(unsigned short iMarker) const;
 
   /*!
    * \brief Set the vertex displacements on the specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] values - Vertex displacements (nVertex, nDim).
    */
-  void SetMeshDisplacements_Marker(unsigned short iMarker, vector<passivedouble> values);
+  void SetMeshDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values);
 
   /*!
    * \brief Communicate the boundary mesh displacements in a python call
