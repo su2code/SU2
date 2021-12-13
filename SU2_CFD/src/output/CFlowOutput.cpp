@@ -36,6 +36,8 @@ CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_ou
   lastInnerIter(curInnerIter) {
 }
 
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
+// clang-format off
 void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 
   /// DESCRIPTION: Average mass flow
@@ -118,6 +120,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 }
+// clang-format on
 
 void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry *geometry, CConfig *config, bool output){
 
@@ -509,7 +512,8 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
       su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
       SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
       Tot_Surface_Species[iVar] += Species;
-      // Set value into config. Necessary to access as an OF.
+      if (iVar == 0)
+        config->SetSurface_Species_0(iMarker_Analyze, Species);
     }
 
   }
@@ -759,26 +763,28 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
     su2double SpeciesVariance = Surface_SpeciesVariance_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_VARIANCE", SpeciesVariance, iMarker_Analyze);
     Tot_Surface_SpeciesVariance += SpeciesVariance;
-    // Set value into config. Necessary to access as an OF.
+    config->SetSurface_Species_Variance(iMarker_Analyze, Tot_Surface_SpeciesVariance);
   }
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
+// clang-format off
 void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
       AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
       AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
       AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -789,20 +795,20 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("MAX_NU_TILDE", "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
       AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the dissipation (SST model).
       AddHistoryOutput("MAX_DISSIPATION", "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::NONE:
+    case TURB_FAMILY::NONE:
       break;
   }
 
@@ -814,20 +820,22 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
-  switch(config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  if (!multiZone) return;
+
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("BGS_NU_TILDE", "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
       AddHistoryOutput("BGS_TKE", "bgs[k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the dissipation (SST model).
       AddHistoryOutput("BGS_DISSIPATION", "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -848,10 +856,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
     AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
   }
 }
+// clang-format on
 
 void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
       if (multiZone) {
@@ -859,7 +868,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       }
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       SetHistoryOutputValue("RMS_TKE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("RMS_DISSIPATION",log10(solver[TURB_SOL]->GetRes_RMS(1)));
       SetHistoryOutputValue("MAX_TKE", log10(solver[TURB_SOL]->GetRes_Max(0)));
@@ -870,7 +879,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       }
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -893,17 +902,17 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
-  switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
       break;
 
-    case TURB_MODEL::NONE:
+    case TURB_FAMILY::NONE:
       break;
   }
 
@@ -914,17 +923,17 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
-  switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())){
+    case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
       AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
       break;
 
-    case TURB_MODEL::NONE:
+    case TURB_FAMILY::NONE:
       break;
   }
 
@@ -936,24 +945,26 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
 
 void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-    switch (config->GetKind_Turb_Model()) {
-      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::SA:
         AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
         break;
 
-      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
         AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
         break;
 
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+    if (config->GetKind_SlopeLimit_Species() != NO_LIMITER) {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+    }
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -983,7 +994,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
 }
 
 void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
-                                      const unsigned long iPoint) {
+                                        const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
@@ -1002,8 +1013,8 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("RES_NU_TILDE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       if (limiter) {
@@ -1011,7 +1022,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       }
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
@@ -1022,7 +1033,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       }
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
@@ -1045,7 +1056,8 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+      if (config->GetKind_SlopeLimit_Species() != NO_LIMITER)
+        SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
   }
 }
@@ -2040,7 +2052,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       }
       break;
     default:
-      break;  
+      break;
   }
 
   /*--- Compressible version of console output ---*/

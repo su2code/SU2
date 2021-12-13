@@ -378,6 +378,8 @@ private:
   su2double *Surface_TotalTemperature;       /*!< \brief Total temperature at the boundaries. */
   su2double *Surface_TotalPressure;          /*!< \brief Total pressure at the boundaries. */
   su2double *Surface_PressureDrop;           /*!< \brief Pressure drop between boundaries. */
+  su2double* Surface_Species_0;              /*!< \brief Average Species_0 at the boundaries. */
+  su2double* Surface_Species_Variance;       /*!< \brief Species Variance at the boundaries. */
   su2double *Surface_DC60;                   /*!< \brief Specified surface DC60 for nacelle boundaries. */
   su2double *Surface_IDC;                    /*!< \brief Specified IDC for nacelle boundaries. */
   su2double *Surface_IDC_Mach;               /*!< \brief Specified IDC mach for nacelle boundaries. */
@@ -7632,6 +7634,20 @@ public:
   void SetSurface_PressureDrop(unsigned short val_marker, su2double val_surface_pressuredrop) { Surface_PressureDrop[val_marker] = val_surface_pressuredrop; }
 
   /*!
+   * \brief Set the average of species_0 at the surface.
+   * \param[in] val_marker - Index corresponding to boundary.
+   * \param[in] val_surface_species_0 - Value of avg species_0.
+   */
+  void SetSurface_Species_0(unsigned short val_marker, su2double val_surface_species_0) { Surface_Species_0[val_marker] = val_surface_species_0; }
+
+  /*!
+   * \brief Set the species variance at the surface.
+   * \param[in] val_marker - Index corresponding to boundary.
+   * \param[in] val_surface_species_variance - Value of the species variance.
+   */
+  void SetSurface_Species_Variance(unsigned short val_marker, su2double val_surface_species_variance) { Surface_Species_Variance[val_marker] = val_surface_species_variance; }
+
+  /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
@@ -7896,6 +7912,20 @@ public:
    * \return The pressure drop.
    */
   su2double GetSurface_PressureDrop(unsigned short val_marker) const { return Surface_PressureDrop[val_marker]; }
+
+  /*!
+   * \brief Get avg species_0 at a boundary.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The avg species_0.
+   */
+  su2double GetSurface_Species_0(unsigned short val_marker) const { return Surface_Species_0[val_marker]; }
+
+  /*!
+   * \brief Get the species variance at a boundary.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The species variance.
+   */
+  su2double GetSurface_Species_Variance(unsigned short val_marker) const { return Surface_Species_Variance[val_marker]; }
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

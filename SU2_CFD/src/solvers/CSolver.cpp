@@ -3615,14 +3615,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
     if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
 
-    switch (config->GetKind_Turb_Model()) {
-      case TURB_MODEL::NONE: break;
-      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::NONE: break;
+      case TURB_FAMILY::SA:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE   " << setw(24);
         columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() / config->GetDensity_FreeStream() <<"\t";
         break;
-      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /*--- 2-equation turbulence model (SST) ---*/
         columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";

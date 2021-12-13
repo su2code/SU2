@@ -3,7 +3,7 @@ su2_dot_src = ['SU2_DOT.cpp']
 if get_option('enable-normal')
 
   su2_dot = executable('SU2_DOT',
-                      su2_dot_src, 
+                      su2_dot_src,
                       install: true,
                       dependencies: [su2_deps, common_dep, su2_cfd_dep],
                       cpp_args :[default_warning_flags, su2_cpp_args])

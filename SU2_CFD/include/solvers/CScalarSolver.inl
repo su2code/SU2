@@ -79,22 +79,12 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 
 template <class VariableType>
 void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
-  /*--- Set booleans depending on the calling solver, alternatively one could add the bools to the func input. ---*/
-  bool implicit = false;
-  bool muscl = false;
-  bool limiter = false;
-  if (SolverName == "SA" || SolverName == "K-W SST") {
-    implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-    muscl = config->GetMUSCL_Turb();
-    limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-              (config->GetInnerIter() <= config->GetLimiterIter());
-  }
-  else if (SolverName == "SPECIES") {
-    implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
-    muscl = config->GetMUSCL_Species();
-    limiter = (config->GetKind_SlopeLimit_Species() != NO_LIMITER) &&
-              (config->GetInnerIter() <= config->GetLimiterIter());
-  }
+  /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
+   * before calling these solver functions. ---*/
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool muscl = config->GetMUSCL();
+  const bool limiter = (config->GetKind_SlopeLimit() != NO_LIMITER) &&
+                       (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -129,9 +119,12 @@ template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
+  /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
+   * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  const bool muscl = config->GetMUSCL();
+  const bool limiter = (config->GetKind_SlopeLimit() != NO_LIMITER) &&
+                       (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = config->GetMUSCL_Flow() && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
