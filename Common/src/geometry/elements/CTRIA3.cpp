@@ -76,7 +76,7 @@ su2double CTRIA3::ComputeArea(const FrameType mode) const {
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
   const su2activematrix& Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < NDIM; iDim++) {
     a[iDim] = Coord[0][iDim]-Coord[2][iDim];
     b[iDim] = Coord[1][iDim]-Coord[2][iDim];
   }

@@ -2250,6 +2250,10 @@ public:
   /*!
    * \brief return wether a point is a boundary of a design surface boundary
    */
-  virtual bool IsBoundaryPoint(unsigned long iPoint) { return false;}
+  virtual bool GetIsBoundaryPoint(unsigned long iPoint) const { return false; }
 
+  /*!
+   * \brief return the number of boundary points of a design surface boundary
+   */
+  virtual unsigned int GetNBoundPoints() const { return 0; };
 };

@@ -37,16 +37,14 @@
  * \author T. Dick
  */
 class CGradSmoothing : public CNumerics {
+  su2activematrix val_DHiDHj;
+  su2activevector Ni_Vec;
 
-    su2double **val_DHiDHj;
-    su2double *Ni_Vec;
-
-public:
-
+ public:
   /*!
-   * \brief Constructor of the class.
+   * \brief Default constructor
    */
-  CGradSmoothing(void);
+  CGradSmoothing() = delete;
 
   /*!
    * \brief Constructor of the class (overload).
@@ -54,12 +52,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CGradSmoothing(unsigned short val_nDim, CConfig *config);
+  CGradSmoothing(unsigned short val_nDim, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CGradSmoothing(void);
+  ~CGradSmoothing();
 
   void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config);
 

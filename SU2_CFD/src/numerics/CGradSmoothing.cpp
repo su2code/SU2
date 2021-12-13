@@ -4,22 +4,12 @@
  * \author T.Dick
  * \version 7.2.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,41 +29,16 @@
 
 #include <limits>
 
-CGradSmoothing::CGradSmoothing(void) : CNumerics () {
-
-  val_DHiDHj = NULL;
-  Ni_Vec = NULL;
-
-}
-
-CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
-  : CNumerics(val_nDim, val_nDim, config) {
-
-  unsigned short iDim;
+CGradSmoothing::CGradSmoothing(unsigned short val_nDim, const CConfig* config) : CNumerics(val_nDim, val_nDim, config) {
+  val_DHiDHj.resize(nDim, nDim);
+  val_DHiDHj.setConstant(0.0);
 
   /*--- 8 is the max number of nodes in 3D ---*/
-  val_DHiDHj = new su2double* [nDim];
-  for (iDim=0; iDim<nDim; iDim++) {
-    val_DHiDHj[iDim] = new su2double[nDim];
-  }
-  Ni_Vec  = new su2double [8];
-
+  Ni_Vec.resize(8);
+  Ni_Vec.setConstant(0.0);
 }
 
-CGradSmoothing::~CGradSmoothing(void) {
-
-  unsigned short iDim;
-
-  if (val_DHiDHj != NULL) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      if (val_DHiDHj[iDim] != NULL) delete [] val_DHiDHj[iDim];
-    }
-    delete [] val_DHiDHj;
-  }
-
-  if (Ni_Vec != NULL) delete [] Ni_Vec;
-
-}
+CGradSmoothing::~CGradSmoothing() {}
 
 void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 

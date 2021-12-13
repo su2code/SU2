@@ -65,7 +65,7 @@ CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
   }
 
   /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
-  /*--- The stress is constant at a TETRA1 element ---*/
+  /*--- TODO: Use correct extrapolation, currently assumes stress is constant similar to TETRA1 element ---*/
 
   NodalExtrap[0][0] = 1.0;
   NodalExtrap[1][0] = 1.0;
@@ -84,7 +84,7 @@ su2double CTETRA4::ComputeVolume(const FrameType mode) const {
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed)---*/
   const su2activematrix& Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < NDIM; iDim++) {
     r1[iDim] = Coord[1][iDim] - Coord[0][iDim];
     r2[iDim] = Coord[2][iDim] - Coord[0][iDim];
     r3[iDim] = Coord[3][iDim] - Coord[0][iDim];

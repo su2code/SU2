@@ -2005,13 +2005,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Epsilon of the Laplace term in the Laplace Beltrami Operator */
   addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
   /* DESCRIPTION: Switch to calculate for each dimension separately */
-  addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
+  addBoolOption("SEPARATE_DIMENSIONS", SmoothSepDim, false);
   /* DESCRIPTION: Switch to activate working on the design surfaces only */
   addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
   /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
-  addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
+  addBoolOption("DIRICHLET_SURFACE_BOUNDARY", SmoothDirichletSurfaceBound, false);
   /* DESCRIPTION: Switch to activate the debbuging modus */
-  addEnumOption("SOBOLEV_MODE",NumMode, Sobolev_Modus_Map,NO_MODUS);
+  addEnumOption("SOBOLEV_MODE", SmoothNumMode, Sobolev_Modus_Map, ENUM_SOBOLEV_MODUS::NO_MODUS);
   /*!\brief HESS_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output filename for the Sobolev Hessian approximation.  \ingroup Config*/
   addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
@@ -8737,9 +8737,6 @@ bool CConfig::GetVolumetric_Movement() const {
       Kind_SU2 == SU2_COMPONENT::SU2_DOT ||
       DirectDiff)
   { volumetric_movement = true;}
-
-  if (GetSmoothGradient())
-  { volumetric_movement=true; }
 
   return volumetric_movement;
 }

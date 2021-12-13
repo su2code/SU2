@@ -32,18 +32,6 @@
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 #include "../../../SU2_CFD/include/solvers/CSolver.hpp"
 
-/** Introduction of a new data type to allow compilation with forward mode.
-  *
-  * This is done for compatibility to the treatment of Jacobian and System in CSolver.hpp.
-  * Note that the compuations done dere are always 'passive', i.e. not intended to be differentiated. We only need to define functions depending on this once.
-  * Move to Common/include/basic_types later if possible.
-  */
-#ifndef CODI_FORWARD_TYPE
-  using su2matvecscalar = su2mixedfloat;
-#else
-  using su2matvecscalar = su2double;
-#endif
-
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
  *  \author T. Dick.
@@ -55,17 +43,26 @@ public:
   enum : size_t {MAXNNODE_3D = 8};
   enum : size_t {MAXNDIM = 3};
 
+/** Introduction of a new alias for the data type to allow compilation with forward mode.
+ *
+ * This is done for compatibility to the treatment of Jacobian and System in CSolver.hpp.
+ * Note that the computations done here are always 'passive', i.e. not intended to be differentiated. We only need to
+ * define functions depending on this once.
+ */
+#ifndef CODI_FORWARD_TYPE
+  typedef su2mixedfloat su2matvecscalar;
+#else
+  typedef su2double su2matvecscalar;
+#endif
+  using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor, 64, DynamicSize, DynamicSize>;
+
+ private:
   unsigned long nElement;
-
   CElement*** element_container  = nullptr;  /*!< \brief Container which stores the element information. */
-
-  su2double **Jacobian_block = nullptr;      /*!< \brief Submatrix to assemble the Jacobian matrix. */
-  su2double **mId_Aux = nullptr;             /*!< \brief Diagonal identity matrix to set blocks in the Jacobian. */
 
   unsigned int dir;                          /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
   CSysVector<su2double> auxVec;              /*!< \brief Auxiliar vectors for output and debugging */
-
   CSysVector<su2double> activeCoord;         /*!< \brief Auxiliar vector to keep the indeces of geometry->vertex->Coord */
 
   CSysVector<su2matvecscalar> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
@@ -86,6 +83,7 @@ public:
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -100,17 +98,13 @@ public:
   /*!
    * \brief Main routine for applying the solver on the volume sensitivities
    */
-  void ApplyGradientSmoothingVolume(CGeometry *geometry,
-                                    CNumerics *numerics,
-                                    CConfig *config) override;
+  void ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics, const CConfig* config) override;
 
   /*!
    * \brief Main routine to apply the method only on the surface for mesh sensitivities
    *        Projects and smoothes only in the normal direction!
    */
-  void ApplyGradientSmoothingSurface(CGeometry *geometry,
-                                     CNumerics *numerics,
-                                     CConfig *config,
+  void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config,
                                      unsigned long val_marker) override;
 
   /*!
@@ -127,65 +121,51 @@ public:
   /*!
    * \brief Assemble the stiffness matrix
    */
-  void Compute_StiffMatrix(CGeometry *geometry,
-                           CNumerics *numerics,
-                           CConfig *config);
+  void Compute_StiffMatrix(CGeometry* geometry, CNumerics* numerics, const CConfig* config);
 
   /*!
    * \brief Compute the stiffness matrix of the surface mesh
    */
-  void Compute_Surface_StiffMatrix(CGeometry *geometry,
-                                   CNumerics *numerics,
-                                   CConfig *config,
-                                   unsigned long val_marker,
-                                   unsigned int nSurfDim=1);
+  void Compute_Surface_StiffMatrix(CGeometry* geometry, CNumerics* numerics, const CConfig* config,
+                                   unsigned long val_marker, unsigned int nSurfDim = 1);
 
   /*!
    * \brief Calculate the RHS of the PDE
    */
-  void Compute_Residual(CGeometry *geometry,
-                        CConfig *config);
+  void Compute_Residual(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Compute the RHS of the PDE on the surface mesh
    */
-  void Compute_Surface_Residual(CGeometry *geometry,
-                                CConfig *config,
-                                unsigned long val_marker);
+  void Compute_Surface_Residual(CGeometry* geometry, const CConfig* config, unsigned long val_marker);
 
   /*!
    * \brief Set the boundary conditions
    */
-  void Impose_BC(CGeometry *geometry,
-                 CConfig *config);
+  void Impose_BC(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Set Dirichlet boundary conditions
    */
-  void BC_Dirichlet(CGeometry *geometry,
-                    CConfig *config,
-                    unsigned int val_marker);
+  void BC_Dirichlet(CGeometry* geometry, const CConfig* config, unsigned int val_marker);
 
   /*!
    * \brief Set Dirichlet boundary conditions for the surface solver
    */
-  void BC_Surface_Dirichlet(CGeometry *geometry,
-                            CConfig *config,
-                            unsigned int val_marker);
+  void BC_Surface_Dirichlet(CGeometry* geometry, const CConfig* config, unsigned int val_marker);
 
   /*!
    * \brief Call the linear systems solver
    */
-  void Solve_Linear_System(CGeometry *geometry,
-                           CConfig *config);
+  void Solve_Linear_System(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Get the matrix vector product with the StiffnessMatrix
    * \note This always applies the stiffness matrix for all dimensions independent of each other!
    */
-  CSysMatrixVectorProduct<su2matvecscalar> GetStiffnessMatrixVectorProduct(CGeometry *geometry,
-                                                                           CNumerics *numerics,
-                                                                           CConfig *config);
+  template <typename scalar_type>
+  CSysMatrixVectorProduct<scalar_type> GetStiffnessMatrixVectorProduct(CGeometry* geometry, CNumerics* numerics,
+                                                                       const CConfig* config);
 
   /*!
    * \brief calculate the original DV gradient similar to SU2_DOT_AD
@@ -207,7 +187,7 @@ public:
   /*!
    * \brief Return current parameter gradient.
    */
-  inline vector<su2double> GetDeltaP() override { return deltaP; }
+  inline const vector<su2double>& GetDeltaP() const { return deltaP; }
 
   /*!
    * \brief write the DV gradient into a file
@@ -259,39 +239,31 @@ public:
   /*!
    * \brief Write the solution of the linear solver into the sensitivities of the nodes
    */
-  void WriteSensitivity(CGeometry *geometry,
-                          CConfig *config,
-                          unsigned long val_marker=0);
+  void WriteSensitivity(CGeometry* geometry, const CConfig* config, unsigned long val_marker = 0);
 
   /*!
    * \brief Write the content of sensitivity in the nodes to the sensitivity in the geometry
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void WriteSens2Geometry(CGeometry *geometry,
-                          CConfig *config);
+  void WriteSens2Geometry(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Read the sensitivity for the geometry into the nodes
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ReadSens2Geometry(CGeometry *geometry,
-                         CConfig *config);
+  void ReadSens2Geometry(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Copy sensitivities from a vector into the geometry
    */
-  void WriteVector2Geometry(CGeometry *geometry,
-                            CConfig *config,
-                            CSysVector<su2matvecscalar> &vector);
+  void WriteVector2Geometry(CGeometry* geometry, const CConfig* config, CSysVector<su2matvecscalar>& vector);
 
   /*!
    * \brief Copy sensitivities from the geometry into a vector
    */
-  void ReadVector2Geometry(CGeometry *geometry,
-                           CConfig *config,
-                           CSysVector<su2matvecscalar> &vector);
+  void ReadVector2Geometry(CGeometry* geometry, const CConfig* config, CSysVector<su2matvecscalar>& vector);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -315,8 +287,7 @@ public:
   /*!
    * \brief Extra entries to eliminate in the linear system
    */
-  void Set_VertexEliminationSchedule(CGeometry *geometry,
-                                     CConfig *config);
+  void Set_VertexEliminationSchedule(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Get the element container index and number of nodes of a given VTK type.

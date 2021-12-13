@@ -4,22 +4,12 @@
  * \author T.Dick
  * \version 7.2.1 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,9 +29,8 @@
 
 #include "../../../SU2_CFD/include/variables/CVariable.hpp"
 
-class CSobolevSmoothingVariable : public CVariable {
-public:
-
+class CSobolevSmoothingVariable final : public CVariable {
+ public:
   MatrixType Sensitivity;  /*!< Vector holding the derivative of target functional with respect to the coordinates at this node */
 
   bool* boundary_vertex;  /*!< \brief Stores if a point belongs to the boundary of a boundary. */
@@ -77,16 +66,15 @@ public:
   /*!
    * \brief Mark a point as boundary of a boundary
    */
-  void MarkAsBoundaryPoint(unsigned long iPoint);
+  void MarkAsBoundaryPoint(unsigned long iPoint) override;
 
   /*!
    * \brief return wether a point is a boundary of a boundary
    */
-  bool IsBoundaryPoint(unsigned long iPoint);
+  bool GetIsBoundaryPoint(unsigned long iPoint) const override;
 
   /*!
    * \brief return the number of marked points
    */
-  unsigned int GetNBoundPoints();
-
+  unsigned int GetNBoundPoints() const override;
 };

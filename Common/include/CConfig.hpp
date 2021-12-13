@@ -438,18 +438,18 @@ private:
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
   /* Gradient smoothing options */
-  bool SmoothGradient;            /*!< \brief Flag for enabling gradient smoothing. */
-  su2double SmoothingEps1;        /*!< \brief Parameter for the identity part in gradient smoothing. */
-  su2double SmoothingEps2;        /*!< \brief Parameter for the Laplace part in gradient smoothing. */
-  bool SepDim;                    /*!< \brief Flag for enabling separated calculation for every dimension. */
-  bool SmoothOnSurface;           /*!< \brief Flag for assembling the system only on the surface. */
-  bool DirichletSurfaceBound;     /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
-  unsigned short NumMode;         /*!< \brief temporary flag for some debuging stuff */
+  su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
+  su2double SmoothingEps2;          /*!< \brief Parameter for the Laplace part in gradient smoothing. */
+  bool SmoothGradient;              /*!< \brief Flag for enabling gradient smoothing. */
+  bool SmoothSepDim;                /*!< \brief Flag for enabling separated calculation for every dimension. */
+  bool SmoothOnSurface;             /*!< \brief Flag for assembling the system only on the surface. */
+  bool SmoothDirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
+  unsigned short SmoothNumMode;     /*!< \brief temporary flag for some debuging stuff */
 
   unsigned short  Kind_Grad_Linear_Solver,  /*!< Numerical method to smooth the gradient */
   Kind_Grad_Linear_Solver_Prec;             /*!< \brief Preconditioner of the linear solver. */
-  su2double Grad_Linear_Solver_Error;      /*!< \brief Min error of the linear solver for the gradient smoothing. */
-  unsigned long Grad_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
+  su2double Grad_Linear_Solver_Error;       /*!< \brief Min error of the linear solver for the gradient smoothing. */
+  unsigned long Grad_Linear_Solver_Iter; /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   bool AddIndNeighbor;         /*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -2820,12 +2820,12 @@ public:
    * \brief Get the total number of design variables.
    */
   unsigned short GetnDV_Total(void) const {
-    if(!nDV_Value) return 0;
-      unsigned short sum=0;
-      for (unsigned short iDV=0; iDV<nDV; iDV++) {
-        sum += nDV_Value[iDV];
-      }
-      return sum;
+    if (!nDV_Value) return 0;
+    unsigned short sum = 0;
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      sum += nDV_Value[iDV];
+    }
+    return sum;
   }
 
   /*!
@@ -3012,7 +3012,7 @@ public:
    * \brief Get the total number of markers for gradient treatment.
    * \return Total number of markers for gradient treatment.
    */
-  unsigned short GetnMarker_SobolevBC(void) { return nMarker_SobolevBC; }
+  unsigned short GetnMarker_SobolevBC(void) const { return nMarker_SobolevBC; }
 
   /*!
    * \brief Get the total number of Python customizable markers.
@@ -4067,18 +4067,6 @@ public:
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
 
   /*!
    * \brief Get min error of the linear solver for the implicit formulation.
@@ -5657,12 +5645,6 @@ public:
    */
   su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) { return DV_Value[val_dv][val_val]; }
   const su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
-
-  /*!
-   * \brief Pointer to the design variables.
-   * \return Design variable array.
-   */
-  su2double** GetDV_Pointer() { return DV_Value; }
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
@@ -9586,7 +9568,7 @@ public:
    * \brief Check if we split in the dimensions
    * \return true means that smoothing is for each dimension separate
    */
-  bool GetSepDim(void) const { return SepDim; }
+  bool GetSmoothSepDim(void) const { return SmoothSepDim; }
 
   /*!
    * \brief Check if we assemble the operator on the surface
@@ -9598,13 +9580,13 @@ public:
    * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
    * \return true means that we use zero Dirichlet boundary
    */
-  bool GetDirichletSurfaceBound(void) const { return DirichletSurfaceBound; }
+  bool GetDirichletSurfaceBound(void) const { return SmoothDirichletSurfaceBound; }
 
   /*!
-   * \brief The modus of operation for the solver
+   * \brief The modus of operation for the Sobolev solver
    * \return returns on what level we operate
    */
-  unsigned short GetSobMode(void) const { return NumMode; }
+  unsigned short GetSobMode(void) const { return SmoothNumMode; }
 
   /*!
    * \brief Get the name of the file with the hessian of the objective function.
@@ -9624,17 +9606,11 @@ public:
    */
   unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
 
-    /*!
+  /*!
    * \brief Get the kind of preconditioner for the gradient smoothing.
    * \return Numerical preconditioner for the gradient smoothing.
    */
   unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
-
-    /*!
-   * \brief Set the kind of preconditioner for the gradient smoothing.
-   * \return Numerical preconditioner for the gradient smoothing.
-   */
-  void SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
 
     /*!
    * \brief Get max number of iterations of the for the gradient smoothing.

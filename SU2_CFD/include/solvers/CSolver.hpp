@@ -4163,9 +4163,7 @@ public:
    * \param[in] numerics - the numerics for this problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ApplyGradientSmoothingVolume(CGeometry *geometry,
-                                            CNumerics *numerics,
-                                            CConfig *config) { }
+  virtual void ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
 
   /*!
    * \brief A virtual member.
@@ -4175,10 +4173,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    *
    */
-  virtual void ApplyGradientSmoothingSurface(CGeometry *geometry,
-                                             CNumerics *numerics,
-                                             CConfig *config,
-                                             unsigned long val_marker) { }
+  virtual void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config,
+                                             unsigned long val_marker) {}
 
   /*!
    * \brief All steps required for smoothing the whole system on DV level in an iterative way
@@ -4206,21 +4202,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ReadSens2Geometry(CGeometry *geometry,
-                                 CConfig *config) { }
+  virtual void ReadSens2Geometry(CGeometry* geometry, const CConfig* config) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void WriteSens2Geometry(CGeometry *geometry,
-                                 CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual vector<su2double> GetDeltaP() { return vector<su2double>(); }
+  virtual void WriteSens2Geometry(CGeometry* geometry, const CConfig* config) {}
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

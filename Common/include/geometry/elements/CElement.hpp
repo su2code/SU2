@@ -501,22 +501,23 @@ public:
   * \param[in] nodeB - index of Node b.
   * \param[in] val - value of the scalar product of ansatz function.
   */
- inline void Add_HiHj(su2double val, unsigned short nodeA, unsigned short nodeB) { HiHj[nodeA][nodeB] += val; }
+  inline void Add_HiHj(su2double val, unsigned short nodeA, unsigned short nodeB) { HiHj[nodeA][nodeB] += val; }
 
- /*!
-  * \brief Add the scalar product of the gradients of shape functions to the tangent matrix.
-  * \param[in] nodeA - index of Node a.
-  * \param[in] nodeB - index of Node b.
-  * \param[in] val - value of the scalar product of gradients of ansatz function.
-  */
- inline void Add_DHiDHj(su2double **val, unsigned short nodeA, unsigned short nodeB){
-   unsigned short iDim, jDim;
-   for(iDim = 0; iDim < nDim; iDim++) {
-     for (jDim = 0; jDim < nDim; jDim++) {
-       DHiDHj[nodeA][nodeB][iDim][jDim] += val[iDim][jDim];
-     }
-   }
- }
+  /*!
+   * \brief Add the scalar product of the gradients of shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[in] val - value of the scalar product of gradients of ansatz function.
+   */
+  template <class MatrixType>
+  inline void Add_DHiDHj(const MatrixType& val, unsigned short nodeA, unsigned short nodeB) {
+    unsigned short iDim, jDim;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        DHiDHj[nodeA][nodeB][iDim][jDim] += val[iDim][jDim];
+      }
+    }
+  }
 
  /*!
   * \brief Add the transposed scalar product of the gradients of shape functions to the tangent matrix.
@@ -524,14 +525,15 @@ public:
   * \param[in] nodeB - index of Node b.
   * \param[in] val - value of the term that will contribute.
   */
- inline void Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned short nodeB)  {
-   unsigned short iDim, jDim;
-   for(iDim = 0; iDim < nDim; iDim++) {
-     for (jDim = 0; jDim < nDim; jDim++) {
-       DHiDHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
-     }
-   }
- }
+  template <class MatrixType>
+  inline void Add_DHiDHj_T(const MatrixType& val, unsigned short nodeA, unsigned short nodeB) {
+    unsigned short iDim, jDim;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        DHiDHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
+      }
+    }
+  }
 
  /*!
   * \brief Get the scalar product of the shape functions to the tangent matrix.
@@ -671,14 +673,12 @@ protected:
   template<FrameType FRAME>
   void ComputeGrad_impl_surf_embedded() {
 
-    unsigned short iNode, iDim, iGauss;
-
     /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
           for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
     const su2activematrix& Coord = (FRAME==REFERENCE) ? RefCoord : CurrentCoord;
 
     if (NDIM==1) {
-
+      unsigned short iNode, iDim, iGauss;
       su2double Jacobian[2];
       su2double val_grad;
 
