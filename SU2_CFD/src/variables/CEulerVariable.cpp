@@ -2,7 +2,7 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,8 @@
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
                                unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config) {
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+    indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);

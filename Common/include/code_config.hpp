@@ -2,7 +2,7 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
 #include <type_traits>

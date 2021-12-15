@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] config - Definition of the particular problem.
    */
   explicit CDiscAdjFluidIteration(const CConfig *config) : CIteration(config),
-    turbulent(config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS) {}
+    turbulent(config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS || config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS) {}
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -164,18 +164,6 @@ class CDiscAdjFluidIteration final : public CIteration {
    */
   void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                       unsigned short iZone, unsigned short iInst) override;
-
-  /*!
-   * \brief Record a single iteration of the direct mean flow system.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions

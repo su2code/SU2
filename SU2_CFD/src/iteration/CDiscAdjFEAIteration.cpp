@@ -2,7 +2,7 @@
  * \file CDiscAdjFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -148,14 +148,6 @@ void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** s
                                                                     CrossTerm);
 
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
-}
-
-void CDiscAdjFEAIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                        unsigned short iZone, unsigned short iInst,
-                                        RECORDING kind_recording) {
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,

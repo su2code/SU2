@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -121,7 +121,7 @@ private:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+  void SetTau_Wall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
 
 public:
   /*!

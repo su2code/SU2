@@ -2,7 +2,7 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
 
@@ -41,7 +42,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
    * Axisymmetric: total-viscosity * y-vel / y-coord
    * Streamwise Periodic: eddy viscosity (mu_t) ---*/
   if (config->GetAxisymmetric() ||
-      (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE))) {
+      (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != TURB_MODEL::NONE))) {
     nAuxVar = 1;
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
@@ -50,8 +51,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
-  unsigned short iVar;
-  bool check_dens = false, check_temp = false, physical = true;
+  bool physical = true;
 
   /*--- Set the value of the pressure ---*/
 
@@ -59,8 +59,8 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution(iPoint,nDim+1);
-  check_temp = SetTemperature(iPoint,Temperature);
+  su2double Temperature = Solution(iPoint, nDim+1);
+  const auto check_temp = SetTemperature(iPoint,Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -72,7 +72,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the density ---*/
 
-  check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
@@ -80,12 +80,12 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     /*--- Copy the old solution ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution(iPoint,nDim+1);
+    Temperature = Solution(iPoint, nDim+1);
     SetTemperature(iPoint, Temperature);
     FluidModel->SetTDState_T(Temperature);
     SetDensity(iPoint, FluidModel->GetDensity());

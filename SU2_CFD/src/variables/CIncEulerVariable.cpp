@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,8 @@
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config) {
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+    indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -65,8 +66,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  unsigned long iVar;
-  bool check_dens = false, check_temp = false, physical = true;
+  bool physical = true;
 
   /*--- Set the value of the pressure ---*/
 
@@ -74,8 +74,8 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution(iPoint,nDim+1);
-  check_temp = SetTemperature(iPoint,Temperature);
+  su2double Temperature = Solution(iPoint, nDim+1);
+  const auto check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -87,7 +87,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set the value of the density ---*/
 
-  check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
@@ -95,7 +95,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
     /*--- Copy the old solution ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
 
     /*--- Recompute the primitive variables ---*/

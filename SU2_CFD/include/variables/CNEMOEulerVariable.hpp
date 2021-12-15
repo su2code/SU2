@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
 /*!
  * \class CNEMOEulerVariable
  * \brief Main class for defining the variables of the NEMO Euler's solver.
- * \note Primitive variables (rhos_s, T, Tve, vx, vy, vw, P, rho, h, rhoCvtr, rhoCvve)
+ * \note Primitive variables (rhos_s, T, Tve, vx, vy, vw, P, rho, h, a, rhoCvtr, rhoCvve)
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
  */
@@ -42,7 +42,27 @@ class CNEMOEulerVariable : public CFlowVariable {
  public:
   static constexpr size_t MAXNVAR = 25;
 
+  template <class IndexType>
+  struct CIndices {
+    const IndexType nDim, nSpecies;
+    CIndices(IndexType ndim, IndexType nspecies) : nDim(ndim), nSpecies(nspecies) {}
+    inline IndexType SpeciesDensities() const {return 0;}
+    inline IndexType Temperature() const {return nSpecies;}
+    inline IndexType Temperature_ve() const {return nSpecies+1;}
+    inline IndexType Velocity() const {return nSpecies+2;}
+    inline IndexType Pressure() const {return nSpecies+nDim+2;}
+    inline IndexType Density() const {return nSpecies+nDim+3;}
+    inline IndexType Enthalpy() const {return nSpecies+nDim+4;}
+    inline IndexType SoundSpeed() const {return nSpecies+nDim+5;}
+    inline IndexType RhoCvtr() const {return nSpecies+nDim+6;}
+    inline IndexType RhoCvve() const {return nSpecies+nDim+7;}
+    inline IndexType LaminarViscosity() const {return nSpecies+nDim+8;}
+    inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
+  };
+
  protected:
+  const CIndices<unsigned long> indices;
+
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
   bool monoatomic = false;  /*!< \brief Presence of single species gas. */
 
@@ -214,6 +234,14 @@ class CNEMOEulerVariable : public CFlowVariable {
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
   inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final { return Primitive(iPoint,VEL_INDEX+iDim); }
+
+  /*!
+   * \brief Get the velocity gradient.
+   * \return Value of the velocity gradient.
+   */
+  inline CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const final {
+    return Gradient_Primitive(iPoint, indices.Velocity());
+  }
 
   /*!
    * \brief Get the projected velocity in a unitary vector direction (compressible solver).

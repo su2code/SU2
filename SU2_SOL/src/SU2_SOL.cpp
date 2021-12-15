@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -630,7 +630,7 @@ int main(int argc, char *argv[]) {
 
 
       /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-      if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY && config_container[ZONE_0]->GetRestart())
+      if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::FEM_ELASTICITY && config_container[ZONE_0]->GetRestart())
         TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
       while (TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {

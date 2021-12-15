@@ -2,7 +2,7 @@
  * \file CPYRAM5.cpp
  * \brief Definition of 5-node pyramid element with 5 Gauss points.
  * \author R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

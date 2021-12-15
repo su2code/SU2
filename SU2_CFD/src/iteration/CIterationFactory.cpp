@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
 #include "../../include/iteration/CHeatIteration.hpp"
 #include "../../include/iteration/CFEAIteration.hpp"
 
-CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config){
+CIteration* CIterationFactory::CreateIteration(MAIN_SOLVER kindSolver, const CConfig* config){
 
   CIteration *iteration = nullptr;
 
@@ -47,9 +47,9 @@ CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, cons
 
   switch (kindSolver) {
 
-    case EULER: case NAVIER_STOKES: case RANS:
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
       if(config->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
           cout << "Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
@@ -63,56 +63,56 @@ CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, cons
       }
       break;
 
-    case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+    case MAIN_SOLVER::FEM_EULER: case MAIN_SOLVER::FEM_NAVIER_STOKES: case MAIN_SOLVER::FEM_RANS: case MAIN_SOLVER::FEM_LES:
       if (rank == MASTER_NODE)
         cout << "Finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
       iteration = new CFEMFluidIteration(config);
       break;
 
-    case HEAT_EQUATION:
+    case MAIN_SOLVER::HEAT_EQUATION:
       if (rank == MASTER_NODE)
         cout << "Heat iteration (finite volume method)." << endl;
       iteration = new CHeatIteration(config);
       break;
 
-    case FEM_ELASTICITY:
+    case MAIN_SOLVER::FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << "FEM iteration." << endl;
       iteration = new CFEAIteration(config);
       break;
 
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << "Adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CAdjFluidIteration(config);
       break;
 
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       if (rank == MASTER_NODE)
         cout << "Discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjFluidIteration(config);
       break;
 
-    case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER : case MAIN_SOLVER::DISC_ADJ_FEM_NS : case MAIN_SOLVER::DISC_ADJ_FEM_RANS :
       if (rank == MASTER_NODE)
         cout << "Discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration = new CDiscAdjFluidIteration(config);
       break;
 
-    case DISC_ADJ_FEM:
+    case MAIN_SOLVER::DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << "Discrete adjoint FEM structural iteration." << endl;
       iteration = new CDiscAdjFEAIteration(config);
       break;
 
-    case DISC_ADJ_HEAT:
+    case MAIN_SOLVER::DISC_ADJ_HEAT:
       if (rank == MASTER_NODE)
         cout << "Discrete adjoint heat iteration." << endl;
       iteration = new CDiscAdjHeatIteration(config);
       break;
 
-    case NO_SOLVER: case TEMPLATE_SOLVER: case MULTIPHYSICS:
+    case MAIN_SOLVER::NONE: case MAIN_SOLVER::TEMPLATE_SOLVER: case MAIN_SOLVER::MULTIPHYSICS:
       SU2_MPI::Error("No iteration found for specified solver.", CURRENT_FUNCTION);
       break;
   }

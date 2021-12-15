@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,7 +55,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   const auto nZone = geometry->GetnZone();
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  const bool rans = (config->GetKind_Turb_Model() != NONE);
+  const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const auto direct_diff = config->GetDirectDiff();
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -63,8 +63,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
-  unsigned long iPoint, counter_local = 0, counter_global = 0;
-  unsigned short iDim, iMarker, nLineLets;
+  unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
+  unsigned short iDim, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -391,7 +391,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   ExtAverageKine = AveragePressure;
   ExtAverageOmega = AveragePressure;
 
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     AverageVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     AverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     OldAverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
@@ -418,7 +418,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   OmegaOut = DensityIn;
   NuOut = DensityIn;
 
-  for (unsigned short iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++) {
     TurboVelocityIn[iMarker].resize(nSpanMax+1,nDim) = su2double(0.0);
     TurboVelocityOut[iMarker].resize(nSpanMax+1,nDim) = su2double(0.0);
   }
@@ -431,7 +431,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     CkOutflow1.resize(nMarker);
     CkOutflow2.resize(nMarker);
 
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
       CkInflow[iMarker].resize(nSpanWiseSections,2*geometry->GetnFreqSpanMax(INFLOW)+1) = complex<su2double>(0.0,0.0);
       CkOutflow1[iMarker].resize(nSpanWiseSections,2*geometry->GetnFreqSpanMax(OUTFLOW)+1) = complex<su2double>(0.0,0.0);
       CkOutflow2[iMarker] = CkOutflow1[iMarker];
@@ -447,7 +447,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
   //bool ActDisk_Perimeter;
-  bool rans = (config->GetKind_Turb_Model() != NONE) && (solver_container[TURB_SOL] != nullptr);
+  bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) && (solver_container[TURB_SOL] != nullptr);
 
   unsigned short nPrimVar_ = nPrimVar;
   if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
@@ -789,8 +789,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = (config->GetKind_Turb_Model() != NONE);
-  bool tkeNeeded          = (turbulent && (config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST));
+  bool turbulent          = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  bool tkeNeeded          = (turbulent && (config->GetKind_Turb_Model() == TURB_MODEL::SST || config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
@@ -1029,6 +1029,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+
+  const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
+  config->SetDiffusivity_ConstantND(MassDiffusivityND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
@@ -1277,7 +1280,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       Unit.str("");
       if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      NonDimTable << "Conductivity" << "-" << config->GetThermal_Conductivity_Ref() << Unit.str() << "-";
       Unit.str("");
       if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
@@ -1287,6 +1290,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s";
+        NonDimTable << "Mass Diffusivity" << config->GetDiffusivity_Constant() << config->GetDiffusivity_Constant()/config->GetDiffusivity_ConstantND() << Unit.str() << config->GetDiffusivity_ConstantND();
         Unit.str("");
       }
     }
@@ -1556,7 +1565,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1995,7 +2003,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool body_force       = config->GetBody_Force();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
-  const bool rans             = (config->GetKind_Turb_Model() != NONE);
+  const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -4195,7 +4203,8 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
 
 void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
 
-  unsigned short nMGlevel, iMarker;
+  unsigned short nMGlevel;
+  unsigned long iMarker;
 
   // TODO: Update the fluid boundary conditions for MG
   nMGlevel = config->GetnMGLevels();
@@ -4283,7 +4292,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   su2double *Normal = new su2double[nDim];
 
@@ -4493,7 +4502,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -4538,7 +4547,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
@@ -4981,7 +4990,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -5052,7 +5061,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5495,7 +5504,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Turbulent kinetic energy ---*/
 
-          if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+          if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
             visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -6392,7 +6401,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
         /*--- Turbulent kinetic energy ---*/
 
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -6459,7 +6468,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double Gas_Constant       = config->GetGas_ConstantND();
   INLET_TYPE Kind_Inlet= config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -6717,7 +6726,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -6757,7 +6766,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double Gas_Constant     = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -6891,7 +6900,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -6928,7 +6937,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   su2double *Normal = new su2double[nDim];
   su2double *Velocity = new su2double[nDim];
 
@@ -7036,7 +7045,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -7158,7 +7167,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -7196,7 +7205,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   unsigned short Kind_Engine_Inflow = config->GetKind_Engine_Inflow();
   su2double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
   bool Engine_HalfModel = config->GetEngine_HalfModel();
 
@@ -7378,7 +7387,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -7412,7 +7421,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   su2double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   su2double DampingFactor = config->GetDamp_Engine_Exhaust();
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
 
@@ -7629,7 +7638,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -7702,7 +7711,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
   bool implicit           = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Gas_Constant  = config->GetGas_ConstantND();
-  bool tkeNeeded          = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded          = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
   su2double SecondaryFlow = config->GetSecondaryFlow_ActDisk();
 
@@ -8065,7 +8074,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //
 //        /*--- Turbulent kinetic energy ---*/
 //
-//        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+//        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
 //          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
 //                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 //
@@ -8128,7 +8137,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Gas_Constant = config->GetGas_ConstantND();
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
   for (iDim = 0; iDim < nDim; iDim++){
@@ -8610,9 +8619,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double TotalNu, TotalOmega, TotalKine, TotalMassNu, TotalMassOmega, TotalMassKine, TotalAreaNu, TotalAreaOmega, TotalAreaKine;
   su2double Nu, Kine, Omega;
   su2double MachTest, soundSpeed;
-  bool turbulent = (config->GetKind_Turb_Model() != NONE);
-  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
-  bool menter_sst       = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+  bool turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  bool spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA);
+  bool menter_sst       = ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST));
 
   /*-- Variables declaration and allocation ---*/
   Velocity            = new su2double[nDim];
@@ -9358,7 +9367,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       for (i=0;i<n2t;i++)
         TotTurbPerfOut[i] = -1.0;
       TotMarkerTP = new int[size];
-      for(i=0; i<size; i++){
+      for(int i=0; i<size; i++){
         TotMarkerTP[i]    = -1;
       }
     }
@@ -9370,7 +9379,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     }
 
     if (rank == MASTER_NODE){
-      for (i=0;i<size;i++){
+      for (int i=0;i<size;i++){
         if(TotTurbPerfIn[n1*i] > 0.0){
           densityIn        = TotTurbPerfIn[n1*i];
           pressureIn       = TotTurbPerfIn[n1*i+1];

@@ -2,7 +2,7 @@
  * \file CAdjFlowCompOutput.hpp
  * \brief Headers of the adjoint compressible flow output.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,19 +27,14 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CAdjFlowOutput.hpp"
 
 /*! \class CAdjFlowCompOutput
  *  \brief Output class for compressible flow adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CAdjFlowCompOutput final: public COutput {
-private:
-
-  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
-
+class CAdjFlowCompOutput final: public CAdjFlowOutput {
 public:
 
   /*!

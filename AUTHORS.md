@@ -15,11 +15,13 @@ Juan J. Alonso                 (Stanford University)
 The SU2 project is maintained by members of the SU2 Foundation (https://su2foundation.org)
 
 ```
-Thomas D. Economon - Executive Director   - tom@su2foundation.org
-Ruben Sanchez      - User Director        - ruben@su2foundation.org
-Tim Albring        - Developer Director   - tim@su2foundation.org
-Juan J. Alonso     - Academic Director    - juan@su2foundation.org
-Eran Arad          - Industry Director    - eran@su2foundation.org
+Thomas D. Economon - Executive Director - tom@su2foundation.org
+Tim Albring        - Director           - tim@su2foundation.org
+Juan J. Alonso     - Director           - juan@su2foundation.org
+Eran Arad          - Director           - eran@su2foundation.org
+Piero Colonna      - Director           - piero@su2foundation.org
+Pedro Gomes        - Director           - pedro@su2foundation.org
+Daniel Mayer       - Director           - daniel@su2foundation.org
 ```
 
 in collaboration with the following main contributors and research teams:
@@ -63,10 +65,12 @@ Clark Pederson
 Daumantas Kavolis
 Dave Taflin
 Eduardo Molina
+Edwin van der Weide
 Ethan Alan Hereth
 Florian Dittmann
 Francisco D. Palacios
 Gaurav Bansal
+Giacomo Baldan
 Giulio Gori
 Guillaume Bâty
 Harichand M V
@@ -74,6 +78,7 @@ HL Kline
 IndianaStokes
 J. Sinsay
 JSmith36
+Jacob Needels
 Jairo Paes Cavalcante Filho
 Jason Howison
 Jayant Mukhopadhaya
@@ -92,7 +97,9 @@ Max Sagebaum
 Michele Gaffuri
 Mickael Philit
 Mladen Banovic
+Nat-1
 Nicola Fonzi
+Nijso Beishuizen
 Ole Burghardt
 Patrick Mischke
 Paul Urbanczyk
@@ -119,8 +126,6 @@ aaronyicongfu
 aeroamit
 anilvar
 band-a-prend
-bigfootedrockmidget
-bmunguia
 chamsolli
 costat
 daniel-linton
@@ -130,16 +135,15 @@ erangit
 flo
 fmpmorgado
 garcgutierrez
-jtneedels
 juliendm
 jvanoostrom
 mcolonno
 minkwankim
 padronas
+snow54
 sravya91
 srcopela
 tobadavid
-vdweide
 vfrancesmolla
 ```
 

@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.2.0 "Blackbird"',
+        version: '7.2.1 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -191,7 +191,7 @@ if get_option('enable-librom')
    su2_cpp_args += '-DHAVE_LIBROM'
 
    librom_root = get_option('librom_root')
-   librom_dep = declare_dependency(include_directories: librom_root,
+   librom_dep = declare_dependency(include_directories: librom_root+'/lib',
                                    link_args: ['-L'+librom_root+'/build', '-lROM'])
 
    su2_deps += librom_dep
@@ -246,7 +246,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.2.0 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.2.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
