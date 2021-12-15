@@ -429,29 +429,14 @@ public:
      * \brief Get the objective function.
      * \return Objective function.
      */
-    passivedouble GetFlowObjective() const;
+    passivedouble GetObjective() const;
     
     /*!
-     * \brief Get the number of vertices (halo nodes included) from a specified marker.
-     * \param[in] iMarker -  Marker identifier.
-     * \return Number of vertices.
-     */
-    unsigned long GetNumberVertices(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the number of halo vertices from a specified marker.
+     * \brief Get the AIP parameters.
      * \param[in] iMarker - Marker identifier.
-     * \return Number of vertices.
+     * \return AIP (vector).
      */
-    unsigned long GetNumberHaloVertices(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Check if a vertex is physical or not (halo node) on a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex identifier.
-     * \return True if the specified vertex is a halo node.
-     */
-    bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const;
+    vector<passivedouble> GetAIP() const;
     
     /*!
      * \brief Get the number of external iterations.
@@ -470,22 +455,6 @@ public:
      * \return Unsteady time step.
      */
     passivedouble GetUnsteady_TimeStep() const;
-    
-    /*!
-     * \brief Get the global index of a vertex on a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex identifier.
-     * \return Vertex global index.
-     */
-    unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const;
-    
-    /*!
-     * \brief Get undeformed coordinates from the mesh solver.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex identifier.
-     * \return x,y,z coordinates of the vertex.
-     */
-    vector<passivedouble> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the temperature at a vertex on a specified marker.
@@ -544,25 +513,6 @@ public:
     void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) const;
     
     /*!
-     * \brief Get the unit normal (vector) at a vertex on a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex identifier.
-     * \return Unit normal (vector) at the vertex.
-     */
-    vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
-    
-    inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
-        return GetVertexNormal(iMarker, iVertex, true);
-    }
-    
-    /*!
-     * \brief Get the AIP parameters.
-     * \param[in] iMarker - Marker identifier.
-     * \return AIP (vector).
-     */
-    vector<passivedouble> GetAIP() const;
-    
-    /*!
      * \brief Get the free-stream Reynolds number.
      * \return Free-stream Reynolds number.
      */
@@ -617,77 +567,166 @@ public:
     unsigned long GetNumberDimensions() const;
     
     /*!
-     * \brief Get the global IDs of the mesh elements.
-     * \return Element IDs (nElem).
+     * \brief Get the number of mesh vertices.
+     * \return Number of vertices.
      */
-    vector<unsigned long> GetMeshElementIDs() const;
+    unsigned long GetNumberVertices() const;
     
     /*!
-     * \brief Get the connected point IDs of the mesh elements.
+     * \brief Get the number of mesh vertices from a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \return Number of vertices.
+     */
+    unsigned long GetNumberVerticesMarker(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get the number of halo mesh vertices from a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \return Number of vertices.
+     */
+    unsigned long GetNumberHaloVerticesMarker(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get the number of mesh elements.
+     * \return Number of elements.
+     */
+    unsigned long GetNumberElements() const;
+    
+    /*!
+     * \brief Get the number of mesh elements from a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \return Number of elements.
+     */
+    unsigned long GetNumberElementsMarker(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get global IDs of mesh vertices.
+     * \return Global vertex IDs.
+     */
+    vector<unsigned long> GetVertexIDs() const;
+    
+    /*!
+     * \brief Get global IDs of mesh vertices.
+     * \param[in] iMarker - Marker identifier.
+     * \return Global vertex IDs.
+     */
+    vector<unsigned long> GetVertexIDsMarker(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get global IDs of mesh elements.
+     * \return Global element IDs.
+     */
+    vector<unsigned long> GetElementIDs() const;
+    
+    /*!
+     * \brief Get global IDs of mesh elements.
+     * \param[in] iMarker - Marker identifier.
+     * \return Global element IDs.
+     */
+    vector<unsigned long> GetElementIDsMarker(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get the connected point IDs of mesh elements.
      * \return Element connectivities (nElem, nNode)
      */
-    vector<vector<unsigned long>> GetMeshConnectivity() const;
+    vector<vector<unsigned long>> GetConnectivity() const;
     
     /*!
-     * \brief Get the connected point IDs of the mesh elements on a specified marker.
+     * \brief Get the connected point IDs of mesh elements on a specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Element connectivities (nBound, nNode).
      */
-    vector<vector<unsigned long>> GetMeshConnectivityMarker(unsigned short iMarker) const;
+    vector<vector<unsigned long>> GetConnectivityMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get the coordinates of the mesh points.
      * \return Point coordinates (nPoint*nDim).
      */
-    vector<passivedouble> GetMeshCoordinates() const;
+    vector<passivedouble> GetCoordinates() const;
     
     /*!
      * \brief Get the coordinates of the mesh points on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Point coordinates (nVertex*nDim).
      */
-    vector<passivedouble> GetMeshCoordinatesMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetCoordinatesMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the coordinates of the mesh points [DEBUGGING].
      * \param[in] values - Point coordinates (nPoint*nDim).
      */
-    void SetMeshCoordinates(vector<passivedouble> values);
+    void SetCoordinates(vector<passivedouble> values);
     
     /*!
      * \brief Set the coordinates of the mesh points on the specified marker [DEBUGGING].
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Point coordinates (nVertex*nDim).
      */
-    void SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
      * \brief Get the vertex displacements on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Vertex displacements (nVertex*nDim).
      */
-    vector<passivedouble> GetMeshDisplacementsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetDisplacementsMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the vertex displacements on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Vertex displacements (nVertex*nDim).
      */
-    void SetMeshDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
      * \brief Get the vertex velocities on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Vertex velocities (nVertex*nDim).
      */
-    vector<passivedouble> GetMeshVelocitiesMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetVelocitiesMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the vertex velocities on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Vertex velocities (nVertex*nDim).
      */
-    void SetMeshVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values);
+    
+    /*!
+     * \brief Check if a vertex is physical or not (halo node) on a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex identifier.
+     * \return True if the specified vertex is a halo node.
+     */
+    bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const;
+    
+    /*!
+     * \brief Get the global index of a vertex on a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex identifier.
+     * \return Vertex global index.
+     */
+    unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const;
+    
+    /*!
+     * \brief Get undeformed coordinates from the mesh solver.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex identifier.
+     * \return x,y,z coordinates of the vertex.
+     */
+    vector<passivedouble> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const;
+    
+    /*!
+     * \brief Get the unit normal (vector) at a vertex on a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex identifier.
+     * \return Unit normal (vector) at the vertex.
+     */
+    vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
+    
+    inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
+        return GetVertexNormal(iMarker, iVertex, true);
+    }
     
     /*!
      * \brief Get the number of conservative state variables.
@@ -705,40 +744,40 @@ public:
      * \brief Get the residuals of the (conservative) flow variables.
      * \return Residuals of the (conservative) flow variables (nPoint*nVar).
      */
-    vector<passivedouble> GetFlowResiduals() const;
+    vector<passivedouble> GetResiduals() const;
     
     /*!
      * \brief Get the residuals of the (conservative) flow variables on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Residuals of the (conservative) flow variables (nVertex*nVar).
      */
-    vector<passivedouble> GetFlowResidualsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetResidualsMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get the (conservative) flow states.
      * \return Flow states (nPoint*nVar).
      */
-    vector<passivedouble> GetFlowStates() const;
+    vector<passivedouble> GetStates() const;
     
     /*!
      * \brief Get the (conservative) flow states on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Flow states (nVertex*nVar).
      */
-    vector<passivedouble> GetFlowStatesMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetStatesMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the (conservative) states [DEBUGGING].
      * \param[in] values - Flow states (nPoint*nVar).
      */
-    void SetFlowStates(vector<passivedouble> values);
+    void SetStates(vector<passivedouble> values);
     
     /*!
      * \brief Set the (conservative) states on the specified marker [DEBUGGING].
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Flow states (nVertex*nVar).
      */
-    void SetFlowStatesMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetStatesMarker(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
      * \brief Get the flow properties (e.g., density, pressure, speed of sound)
@@ -759,74 +798,74 @@ public:
      * \param[in] iMarker - Marker identifier.
      * \return Surface tractions (nVertex*nDim).
      */
-    vector<passivedouble> GetFlowTractionsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetTractionsMarker(unsigned short iMarker) const;
     
     
     /*!
      * \brief Get the adjoint (conservative) flow states.
      * \return Adjoint flow states (nPoint*nVar).
      */
-    vector<passivedouble> GetAdjFlowStates() const;
+    vector<passivedouble> GetAdjStates() const;
     
     /*!
      * \brief Get the adjoint (conservative) flow states on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Adjoint flow states (nVertex*nVar).
      */
-    vector<passivedouble> GetAdjFlowStatesMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetAdjStatesMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the adjoint (conservative) states.
      * \param[in] values - Adjoint flow states (nPoint*nVar).
      */
-    void SetAdjFlowStates(vector<passivedouble> values);
+    void SetAdjStates(vector<passivedouble> values);
     
     /*!
      * \brief Set the adjoint (conservative) states on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Adjoint flow states (nVertex*nVar).
      */
-    void SetAdjFlowStatesMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetAdjStatesMarker(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
      * \brief Get the adjoint flow tractions on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Adjoint flow tractions (nVertex*nDim).
      */
-    vector<passivedouble> GetAdjFlowTractionsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetAdjTractionsMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the adjoint flow tractions on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Adjoint flow tractions (nVertex*nDim).
      */
-    void SetAdjFlowTractionsMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetAdjTractionsMarker(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
      * \brief Get the adjoint mesh coordinates.
      * \return Adjoint mesh coordinates (nPoint*nDim).
      */
-    vector<passivedouble> GetAdjMeshCoordinates() const;
+    vector<passivedouble> GetAdjCoordinates() const;
     
     /*!
      * \brief Get the adjoint mesh coordinates on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Adjoint mesh coordinates (nVertex*nDim).
      */
-    vector<passivedouble> GetAdjMeshCoordinatesMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetAdjCoordinatesMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Set the adjoint mesh coordinates.
      * \param[in] values - Adjoint mesh coordinates (nPoint*nDim).
      */
-    void SetAdjMeshCoordinates(vector<passivedouble> values);
+    void SetAdjCoordinates(vector<passivedouble> values);
     
     /*!
      * \brief Set the adjoint mesh coordinates on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Adjoint mesh coordinates (nVertex*nDim).
      */
-    void SetAdjMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
+    void SetAdjCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
      * \brief Get sens of volume coordinates wrt initial coordinates.
@@ -845,13 +884,13 @@ public:
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the far-field flow variables.
      * \return Sensitivity of the objective function w.r.t. the far-field flow variables (nTrim).
      */
-    vector<passivedouble> GetSens_dObjective_dFlowVariables() const;
+    vector<passivedouble> GetSens_dObjective_dVariables() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the far-field flow variables.
      * \return Sensitivity of the flow residuals w.r.t. the far-field flow variables (nTrim).
      */
-    vector<passivedouble> GetProd_dResiduals_dFlowVariables() const;
+    vector<passivedouble> GetProd_dResiduals_dVariables() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the (conservative) flow states.

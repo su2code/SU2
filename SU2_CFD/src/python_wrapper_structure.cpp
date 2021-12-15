@@ -190,7 +190,7 @@ passivedouble CDriver::GetMzCoeff() const {
     return SU2_TYPE::GetValue(CMz);
 }
 
-passivedouble CDriver::GetFlowObjective() const {
+passivedouble CDriver::GetObjective() const {
     CConfig* config = config_container[ZONE_0];
     
     if (config->GetFluidProblem()) {
@@ -202,105 +202,6 @@ passivedouble CDriver::GetFlowObjective() const {
     else {
         return 0.0;  // TODO: Raise error instead ?
     }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-/* Functions to obtain information from the geometry/mesh.                 */
-/////////////////////////////////////////////////////////////////////////////
-
-unsigned long CDriver::GetNumberDimensions() const {
-    
-    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-    
-}
-
-unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
-    
-    return geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker];
-    
-}
-
-unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) const {
-    
-    unsigned long nHaloVertices, iVertex, iPoint;
-    
-    nHaloVertices = 0;
-    for(iVertex = 0; iVertex < geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker]; iVertex++){
-        iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-        if(!(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint))) nHaloVertices += 1;
-    }
-    
-    return nHaloVertices;
-    
-}
-
-unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const {
-    
-    unsigned long iPoint, GlobalIndex;
-    
-    iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetGlobalIndex(iPoint);
-    
-    return GlobalIndex;
-    
-}
-
-bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
-    
-    unsigned long iPoint;
-    
-    iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    if(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint)) return false;
-    else return true;
-    
-}
-
-vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const {
-    
-    vector<su2double> coord(3,0.0);
-    vector<passivedouble> coord_passive(3, 0.0);
-    
-    auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    for (auto iDim = 0u ; iDim < nDim ; iDim++){
-        coord[iDim] = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint,iDim);
-    }
-    
-    coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
-    coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
-    coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
-    
-    return coord_passive;
-}
-
-vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal) const {
-    
-    su2double *Normal;
-    su2double Area;
-    vector<su2double> ret_Normal(3, 0.0);
-    vector<passivedouble> ret_Normal_passive(3, 0.0);
-    
-    Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-    
-    if (!unitNormal) {
-        
-        ret_Normal_passive[0] = SU2_TYPE::GetValue(Normal[0]);
-        ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
-        if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
-        
-        return ret_Normal_passive;
-    }
-    
-    Area = GeometryToolbox::Norm(nDim, Normal);
-    
-    ret_Normal[0] = Normal[0]/Area;
-    ret_Normal[1] = Normal[1]/Area;
-    if(nDim>2) ret_Normal[2] = Normal[2]/Area;
-    
-    ret_Normal_passive[0] = SU2_TYPE::GetValue(ret_Normal[0]);
-    ret_Normal_passive[1] = SU2_TYPE::GetValue(ret_Normal[1]);
-    ret_Normal_passive[2] = SU2_TYPE::GetValue(ret_Normal[2]);
-    
-    return ret_Normal_passive;
 }
 
 vector<passivedouble> CDriver::GetAIP() const {
@@ -389,7 +290,72 @@ void CDriver::SetReynoldsNumber(passivedouble value) {
 /* Functions related to the geometry and mesh solver.                      */
 /////////////////////////////////////////////////////////////////////////////
 
-vector<unsigned long> CDriver::GetMeshElementIDs() const {
+unsigned long CDriver::GetNumberDimensions() const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+}
+
+unsigned long CDriver::GetNumberVertices() const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+}
+
+unsigned long CDriver::GetNumberVerticesMarker(unsigned short iMarker) const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnVertex(iMarker);
+}
+
+unsigned long CDriver::GetNumberHaloVerticesMarker(unsigned short iMarker) const {
+    
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    
+    unsigned long nHaloVertices = 0;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (!(geometry->nodes->GetDomain(iPoint))) {
+            nHaloVertices += 1;
+        }
+    }
+    
+    return nHaloVertices;
+}
+
+unsigned long CDriver::GetNumberElements() const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem();
+}
+
+unsigned long CDriver::GetNumberElementsMarker(unsigned short iMarker) const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem_Bound(iMarker);
+}
+
+vector<unsigned long> CDriver::GetVertexIDs() const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    vector<unsigned long> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+    }
+    
+    return values;
+}
+
+vector<unsigned long> CDriver::GetVertexIDsMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    
+    vector<unsigned long> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        values.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+    }
+    
+    return values;
+}
+
+vector<unsigned long> CDriver::GetElementIDs() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nElem    = geometry->GetnElem();
     
@@ -402,7 +368,20 @@ vector<unsigned long> CDriver::GetMeshElementIDs() const {
     return values;
 }
 
-vector<vector<unsigned long>> CDriver::GetMeshConnectivity() const {
+vector<unsigned long> CDriver::GetElementIDsMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nBound   = geometry->GetnElem_Bound(iMarker);
+    
+    vector<unsigned long> values;
+    
+    for (auto iBound = 0ul; iBound < nBound; iBound++) {
+        values.push_back(geometry->bound[iMarker][iBound]->GetGlobalIndex());
+    }
+    
+    return values;
+}
+
+vector<vector<unsigned long>> CDriver::GetConnectivity() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nElem    = geometry->GetnElem();
     
@@ -419,7 +398,7 @@ vector<vector<unsigned long>> CDriver::GetMeshConnectivity() const {
     return values;
 }
 
-vector<vector<unsigned long>> CDriver::GetMeshConnectivityMarker(unsigned short iMarker) const {
+vector<vector<unsigned long>> CDriver::GetConnectivityMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nBound   = geometry->GetnElem_Bound(iMarker);
     
@@ -436,7 +415,7 @@ vector<vector<unsigned long>> CDriver::GetMeshConnectivityMarker(unsigned short 
     return values;
 }
 
-vector<passivedouble> CDriver::GetMeshCoordinates() const {
+vector<passivedouble> CDriver::GetCoordinates() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
     
@@ -453,7 +432,7 @@ vector<passivedouble> CDriver::GetMeshCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetMeshCoordinatesMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetCoordinatesMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
     
@@ -472,7 +451,7 @@ vector<passivedouble> CDriver::GetMeshCoordinatesMarker(unsigned short iMarker) 
     return values;
 }
 
-void CDriver::SetMeshCoordinates(vector<passivedouble> values) {
+void CDriver::SetCoordinates(vector<passivedouble> values) {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nPoint   = geometry->GetnPoint();
     
@@ -487,7 +466,7 @@ void CDriver::SetMeshCoordinates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     const auto nVertex  = geometry->GetnVertex(iMarker);
     
@@ -504,7 +483,7 @@ void CDriver::SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedou
     }
 }
 
-vector<passivedouble> CDriver::GetMeshDisplacementsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetDisplacementsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh()) {
@@ -531,7 +510,7 @@ vector<passivedouble> CDriver::GetMeshDisplacementsMarker(unsigned short iMarker
     return values;
 }
 
-void CDriver::SetMeshDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh()) {
@@ -556,7 +535,7 @@ void CDriver::SetMeshDisplacementsMarker(unsigned short iMarker, vector<passived
     }
 }
 
-vector<passivedouble> CDriver::GetMeshVelocitiesMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetVelocitiesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh()) {
@@ -583,7 +562,7 @@ vector<passivedouble> CDriver::GetMeshVelocitiesMarker(unsigned short iMarker) c
     return values;
 }
 
-void CDriver::SetMeshVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh()) {
@@ -608,19 +587,88 @@ void CDriver::SetMeshVelocitiesMarker(unsigned short iMarker, vector<passivedoub
     }
 }
 
+unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const {
+    
+    unsigned long iPoint, GlobalIndex;
+    
+    iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+    GlobalIndex = geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetGlobalIndex(iPoint);
+    
+    return GlobalIndex;
+    
+}
+
+bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
+    
+    unsigned long iPoint;
+    
+    iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+    if(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint)) return false;
+    else return true;
+    
+}
+
+vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const {
+    
+    vector<su2double> coord(3,0.0);
+    vector<passivedouble> coord_passive(3, 0.0);
+    
+    auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+    for (auto iDim = 0u ; iDim < nDim ; iDim++){
+        coord[iDim] = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint,iDim);
+    }
+    
+    coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
+    coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
+    coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
+    
+    return coord_passive;
+}
+
+vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal) const {
+    
+    su2double *Normal;
+    su2double Area;
+    vector<su2double> ret_Normal(3, 0.0);
+    vector<passivedouble> ret_Normal_passive(3, 0.0);
+    
+    Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
+    
+    if (!unitNormal) {
+        
+        ret_Normal_passive[0] = SU2_TYPE::GetValue(Normal[0]);
+        ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
+        if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
+        
+        return ret_Normal_passive;
+    }
+    
+    Area = GeometryToolbox::Norm(nDim, Normal);
+    
+    ret_Normal[0] = Normal[0]/Area;
+    ret_Normal[1] = Normal[1]/Area;
+    if(nDim>2) ret_Normal[2] = Normal[2]/Area;
+    
+    ret_Normal_passive[0] = SU2_TYPE::GetValue(ret_Normal[0]);
+    ret_Normal_passive[1] = SU2_TYPE::GetValue(ret_Normal[1]);
+    ret_Normal_passive[2] = SU2_TYPE::GetValue(ret_Normal[2]);
+    
+    return ret_Normal_passive;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 /* Functions related to the flow solver solution and variables.            */
 /////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetNumberStateVariables() const {
-    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim() + 2;
+    return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
 }
 
 unsigned long CDriver::GetNumberPrimitiveVariables() const {
-    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim() + 9;
+    return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
 }
 
-vector<passivedouble> CDriver::GetFlowResiduals() const {
+vector<passivedouble> CDriver::GetResiduals() const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -646,7 +694,7 @@ vector<passivedouble> CDriver::GetFlowResiduals() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowResidualsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetResidualsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -674,7 +722,7 @@ vector<passivedouble> CDriver::GetFlowResidualsMarker(unsigned short iMarker) co
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowStates() const {
+vector<passivedouble> CDriver::GetStates() const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -700,7 +748,7 @@ vector<passivedouble> CDriver::GetFlowStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowStatesMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetStatesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -728,7 +776,7 @@ vector<passivedouble> CDriver::GetFlowStatesMarker(unsigned short iMarker) const
     return values;
 }
 
-void CDriver::SetFlowStates(vector<passivedouble> values) {
+void CDriver::SetStates(vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -752,7 +800,7 @@ void CDriver::SetFlowStates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetFlowStatesMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetStatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -869,7 +917,7 @@ vector<passivedouble> CDriver::GetFlowPropertiesMarker(unsigned short iMarker) c
     return values;
 }
 
-vector<passivedouble> CDriver::GetFlowTractionsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetTractionsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem()) {
@@ -899,7 +947,7 @@ vector<passivedouble> CDriver::GetFlowTractionsMarker(unsigned short iMarker) co
 /* Functions related to the adjoint mesh solver solution.                  */
 /////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetAdjMeshCoordinates() const {
+vector<passivedouble> CDriver::GetAdjCoordinates() const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
@@ -926,7 +974,7 @@ vector<passivedouble> CDriver::GetAdjMeshCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetAdjMeshCoordinatesMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetAdjCoordinatesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
@@ -955,7 +1003,7 @@ vector<passivedouble> CDriver::GetAdjMeshCoordinatesMarker(unsigned short iMarke
     return values;
 }
 
-void CDriver::SetAdjMeshCoordinates(vector<passivedouble> values) {
+void CDriver::SetAdjCoordinates(vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
@@ -978,7 +1026,7 @@ void CDriver::SetAdjMeshCoordinates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetAdjMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetAdjCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetDeform_Mesh() || !config->GetDiscrete_Adjoint()) {
@@ -1007,7 +1055,7 @@ void CDriver::SetAdjMeshCoordinatesMarker(unsigned short iMarker, vector<passive
 /* Functions related to the adjoint flow solver solution.                  */
 /////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetAdjFlowStates() const {
+vector<passivedouble> CDriver::GetAdjStates() const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1034,7 +1082,7 @@ vector<passivedouble> CDriver::GetAdjFlowStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetAdjFlowStatesMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetAdjStatesMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1063,7 +1111,7 @@ vector<passivedouble> CDriver::GetAdjFlowStatesMarker(unsigned short iMarker) co
     return values;
 }
 
-void CDriver::SetAdjFlowStates(vector<passivedouble> values) {
+void CDriver::SetAdjStates(vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1087,7 +1135,7 @@ void CDriver::SetAdjFlowStates(vector<passivedouble> values) {
     }
 }
 
-void CDriver::SetAdjFlowStatesMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetAdjStatesMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1113,7 +1161,7 @@ void CDriver::SetAdjFlowStatesMarker(unsigned short iMarker, vector<passivedoubl
     }
 }
 
-vector<passivedouble> CDriver::GetAdjFlowTractionsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetAdjTractionsMarker(unsigned short iMarker) const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1139,7 +1187,7 @@ vector<passivedouble> CDriver::GetAdjFlowTractionsMarker(unsigned short iMarker)
     return values;
 }
 
-void CDriver::SetAdjFlowTractionsMarker(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetAdjTractionsMarker(unsigned short iMarker, vector<passivedouble> values) {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1182,7 +1230,7 @@ vector<passivedouble> CDriver::GetProd_dCoordinates_dCoordinates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dMeshCoordinates_dMeshCoordinates(iPoint, iDim);
+            value = solver->GetProd_dCoordinates_dCoordinates(iPoint, iDim);
             
             values[iPoint*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
@@ -1211,7 +1259,7 @@ vector<passivedouble> CDriver::GetProd_dCoordinates_dDisplacements_Marker(unsign
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dMeshCoordinates_dMeshDisplacements(iMarker, iVertex, iDim);
+            value = solver->GetProd_dCoordinates_dDisplacements(iMarker, iVertex, iDim);
             
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
@@ -1220,7 +1268,7 @@ vector<passivedouble> CDriver::GetProd_dCoordinates_dDisplacements_Marker(unsign
     return values;
 }
 
-vector<passivedouble> CDriver::GetSens_dObjective_dFlowVariables() const {
+vector<passivedouble> CDriver::GetSens_dObjective_dVariables() const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1236,16 +1284,16 @@ vector<passivedouble> CDriver::GetSens_dObjective_dFlowVariables() const {
     vector<passivedouble> values(nTrim, 0.0);
     su2double value;
     
-    value = solver->GetSens_dFlowObjective_dFlowVariables(0);
+    value = solver->GetSens_dObjective_dVariables(0);
     values[0] = SU2_TYPE::GetValue(value);
     
-    value = solver->GetSens_dFlowObjective_dFlowVariables(1);
+    value = solver->GetSens_dObjective_dVariables(1);
     values[1] = SU2_TYPE::GetValue(value);
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetProd_dResiduals_dFlowVariables() const {
+vector<passivedouble> CDriver::GetProd_dResiduals_dVariables() const {
     CConfig* config = config_container[ZONE_0];
     
     if (!config->GetFluidProblem() || !config->GetDiscrete_Adjoint()) {
@@ -1261,10 +1309,10 @@ vector<passivedouble> CDriver::GetProd_dResiduals_dFlowVariables() const {
     vector<passivedouble> values(nTrim, 0.0);
     su2double value;
     
-    value = solver->GetProd_dFlowResiduals_dFlowVariables(0);
+    value = solver->GetProd_dResiduals_dVariables(0);
     values[0] = SU2_TYPE::GetValue(value);
     
-    value = solver->GetProd_dFlowResiduals_dFlowVariables(1);
+    value = solver->GetProd_dResiduals_dVariables(1);
     values[1] = SU2_TYPE::GetValue(value);
     
     return values;
@@ -1291,7 +1339,7 @@ vector<passivedouble> CDriver::GetSens_dObjective_dStates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetSens_dFlowObjective_dFlowStates(iPoint, iVar);
+            value = solver->GetSens_dObjective_dStates(iPoint, iVar);
             
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
@@ -1321,7 +1369,7 @@ vector<passivedouble> CDriver::GetProd_dResiduals_dStates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetProd_dFlowResiduals_dFlowStates(iPoint, iVar);
+            value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
             
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
@@ -1351,7 +1399,7 @@ vector<passivedouble> CDriver::GetProd_dTractions_dStates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetProd_dFlowTractions_dFlowStates(iPoint, iVar);
+            value = solver->GetProd_dTractions_dStates(iPoint, iVar);
             
             values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
         }
@@ -1380,7 +1428,7 @@ vector<passivedouble> CDriver::GetSens_dObjective_dCoordinates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetSens_dFlowObjective_dMeshCoordinates(iPoint, iDim);
+            value = solver->GetSens_dObjective_dCoordinates(iPoint, iDim);
             
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
@@ -1409,7 +1457,7 @@ vector<passivedouble> CDriver::GetProd_dResiduals_dCoordinates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dFlowResiduals_dMeshCoordinates(iPoint, iDim);
+            value = solver->GetProd_dResiduals_dCoordinates(iPoint, iDim);
             
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
@@ -1438,7 +1486,7 @@ vector<passivedouble> CDriver::GetProd_dTractions_dCoordinates() const {
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dFlowTractions_dMeshCoordinates(iPoint, iDim);
+            value = solver->GetProd_dTractions_dCoordinates(iPoint, iDim);
             
             values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
         }
@@ -1467,7 +1515,7 @@ vector<passivedouble> CDriver::GetSens_dObjective_dDisplacements_Marker(unsigned
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetSens_dFlowObjective_dMeshDisplacements(iMarker, iVertex, iDim);
+            value = solver->GetSens_dObjective_dDisplacements(iMarker, iVertex, iDim);
             
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
@@ -1496,7 +1544,7 @@ vector<passivedouble> CDriver::GetProd_dResiduals_dDisplacements_Marker(unsigned
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dFlowResiduals_dMeshDisplacements(iMarker, iVertex, iDim);
+            value = solver->GetProd_dResiduals_dDisplacements(iMarker, iVertex, iDim);
             
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
@@ -1525,7 +1573,7 @@ vector<passivedouble> CDriver::GetProd_dTractions_dDisplacements_Marker(unsigned
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dFlowTractions_dMeshDisplacements(iMarker, iVertex, iDim);
+            value = solver->GetProd_dTractions_dDisplacements(iMarker, iVertex, iDim);
             
             values[iVertex*nDim + nDim] = SU2_TYPE::GetValue(value);
         }
