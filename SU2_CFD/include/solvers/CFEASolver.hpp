@@ -27,23 +27,15 @@
 
 #pragma once
 
-#include "CSolver.hpp"
-#include "../../../Common/include/geometry/elements/CElement.hpp"
-#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "CFEASolverBase.hpp"
 
 /*!
  * \class CFEASolver
  * \brief Main class for defining a FEM solver for elastic structural problems.
  * \author R. Sanchez.
  */
-class CFEASolver : public CSolver {
+class CFEASolver : public CFEASolverBase {
 protected:
-  enum : size_t {MAXNNODE_2D = 4};
-  enum : size_t {MAXNNODE_3D = 8};
-  enum : size_t {MAXNVAR = 3};
-  enum : size_t {MAXNDIM = 3};
-  enum : size_t {OMP_MIN_SIZE = 32};
-  enum : size_t {OMP_MAX_SIZE = 512};
 
   unsigned long omp_chunk_size;     /*!< \brief Chunk size used in light point loops. */
 
@@ -91,7 +83,6 @@ protected:
   CSysMatrix<su2double> MassMatrix;
 #endif
 
-  CElement*** element_container = nullptr;  /*!< \brief Vector which the define the finite element structure for each problem. */
   CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
 
 #ifdef HAVE_OMP
@@ -107,22 +98,6 @@ protected:
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
   bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
-
-  unsigned long nElement;      /*!< \brief Number of elements. */
-
-  /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
-  vector<unsigned long> ExtraVerticesToEliminate;
-
-  /*!
-   * \brief The highest level in the variable hierarchy this solver can safely use,
-   * CVariable is the common denominator between the FEA and Mesh deformation variables.
-   */
-  CVariable* nodes = nullptr;
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
   /*!
    * \brief Get the element container index and number of nodes of a given VTK type.

@@ -38,6 +38,8 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "../fluid/CFluidModel.hpp"
 #include "../task_definition.hpp"
@@ -4200,16 +4202,15 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    */
-  virtual void ReadSens2Geometry(CGeometry* geometry, const CConfig* config) {}
+  virtual void ReadSensFromGeometry(const CGeometry* geometry) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void WriteSens2Geometry(CGeometry* geometry, const CConfig* config) {}
+  virtual void WriteSensToGeometry(CGeometry* geometry) const {}
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

@@ -27,21 +27,17 @@
 
 #pragma once
 
-#include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
-#include "../../../SU2_CFD/include/solvers/CSolver.hpp"
+#include "../../../SU2_CFD/include/solvers/CFEASolverBase.hpp"
 
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
  *  \author T. Dick.
  *  \date March 25, 2019.
  */
-class CGradientSmoothingSolver : public CSolver {
+class CGradientSmoothingSolver final : public CFEASolverBase {
 public:
-  enum : size_t {MAXNNODE_2D = 4};
-  enum : size_t {MAXNNODE_3D = 8};
-  enum : size_t {MAXNDIM = 3};
 
 /** Introduction of a new alias for the data type to allow compilation with forward mode.
  *
@@ -57,31 +53,17 @@ public:
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor, 64, DynamicSize, DynamicSize>;
 
  private:
-  unsigned long nElement;
-  CElement*** element_container  = nullptr;  /*!< \brief Container which stores the element information. */
+  unsigned int curDim;                       /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
-  unsigned int dir;                          /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
-
-  CSysVector<su2double> auxVec;              /*!< \brief Auxiliar vectors for output and debugging */
   CSysVector<su2double> activeCoord;         /*!< \brief Auxiliar vector to keep the indeces of geometry->vertex->Coord */
 
   CSysVector<su2matvecscalar> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
   CSysVector<su2matvecscalar> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
-  CSysVector<su2matvecscalar> helperVecAux;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
-
-  CVariable* nodes = nullptr;                /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CSysVector<su2matvecscalar> helperVecAux;  /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
 
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
   CSquareMatrixCM hessian;                   /*!< \brief The approximated Hessian with respect to the design variables. */
-
-  /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
-  vector<unsigned long> ExtraVerticesToEliminate;
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
  public:
   /*!
@@ -244,26 +226,24 @@ public:
   /*!
    * \brief Write the content of sensitivity in the nodes to the sensitivity in the geometry
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    */
-  void WriteSens2Geometry(CGeometry* geometry, const CConfig* config);
+  void WriteSensToGeometry(CGeometry* geometry) const override;
 
   /*!
    * \brief Read the sensitivity for the geometry into the nodes
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    */
-  void ReadSens2Geometry(CGeometry* geometry, const CConfig* config);
+  void ReadSensFromGeometry(const CGeometry *geometry) override;
 
   /*!
    * \brief Copy sensitivities from a vector into the geometry
    */
-  void WriteVector2Geometry(CGeometry* geometry, const CConfig* config, CSysVector<su2matvecscalar>& vector);
+  void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) const;
 
   /*!
    * \brief Copy sensitivities from the geometry into a vector
    */
-  void ReadVector2Geometry(CGeometry* geometry, const CConfig* config, CSysVector<su2matvecscalar>& vector);
+  void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -307,6 +287,16 @@ public:
       case HEXAHEDRON:    nNodes = 8; EL_KIND = EL_HEXA;  break;
       default: assert(false); nNodes = 0; EL_KIND = -(1<<30); break;
     }
+  }
+
+private:
+
+  inline void SetCurrentDim(unsigned int iDim) {
+    curDim=iDim;
+  }
+
+  inline const unsigned int& GetCurrentDim() const {
+    return curDim;
   }
 
 };

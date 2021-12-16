@@ -34,7 +34,6 @@ class CSobolevSmoothingVariable final : public CVariable {
   MatrixType Sensitivity;  /*!< Vector holding the derivative of target functional with respect to the coordinates at this node */
 
   bool* boundary_vertex;  /*!< \brief Stores if a point belongs to the boundary of a boundary. */
-  unsigned long nBoundPoints;
 
   /*!
    * \brief Constructor of the class.
@@ -72,9 +71,4 @@ class CSobolevSmoothingVariable final : public CVariable {
    * \brief return wether a point is a boundary of a boundary
    */
   bool GetIsBoundaryPoint(unsigned long iPoint) const override;
-
-  /*!
-   * \brief return the number of marked points
-   */
-  unsigned int GetNBoundPoints() const override;
 };

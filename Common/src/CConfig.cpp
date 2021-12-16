@@ -2012,7 +2012,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
   addBoolOption("DIRICHLET_SURFACE_BOUNDARY", SmoothDirichletSurfaceBound, false);
   /* DESCRIPTION: Switch to activate the debbuging modus */
-  addEnumOption("SOBOLEV_MODE", SmoothNumMode, Sobolev_Modus_Map, ENUM_SOBOLEV_MODUS::NO_MODUS);
+  addEnumOption("SOBOLEV_MODE", SmoothNumMode, Sobolev_Modus_Map, ENUM_SOBOLEV_MODUS::NONE);
   /*!\brief HESS_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output filename for the Sobolev Hessian approximation.  \ingroup Config*/
   addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));

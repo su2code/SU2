@@ -96,10 +96,9 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] grid_movement - Volumetric movement class of the problem.
- * \param[in] surface_movement - Surface movement class of the problem.
  */
 
-void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config);
+void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, CVolumetricMovement *grid_movement);
 
 /*!
  * \brief Treatment of derivatives with the Sobolev smoothing solver.

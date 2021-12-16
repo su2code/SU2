@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/geometry/elements/CElement.hpp"
-
+#include "../../../include/toolboxes/geometry_toolbox.hpp"
 
 CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
@@ -90,11 +90,8 @@ su2double CTETRA4::ComputeVolume(const FrameType mode) const {
     r3[iDim] = Coord[3][iDim] - Coord[0][iDim];
   }
 
-  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-
-  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  GeometryToolbox::CrossProduct(r1, r2, CrossProduct);
+  Volume = fabs(GeometryToolbox::DotProduct(3, CrossProduct, r3))/6.0;
 
   return Volume;
 

@@ -39,7 +39,6 @@ CSobolevSmoothingVariable::CSobolevSmoothingVariable(unsigned long npoint, unsig
   for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
     boundary_vertex[iPoint] = false;
   }
-  nBoundPoints = 0;
 }
 
 CSobolevSmoothingVariable::~CSobolevSmoothingVariable() {
@@ -48,9 +47,6 @@ CSobolevSmoothingVariable::~CSobolevSmoothingVariable() {
 
 void CSobolevSmoothingVariable::MarkAsBoundaryPoint(unsigned long iPoint) {
   boundary_vertex[iPoint] = true;
-  nBoundPoints++;
 }
 
 bool CSobolevSmoothingVariable::GetIsBoundaryPoint(unsigned long iPoint) const { return boundary_vertex[iPoint]; }
-
-unsigned int CSobolevSmoothingVariable::GetNBoundPoints() const { return nBoundPoints; }

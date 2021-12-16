@@ -2252,8 +2252,4 @@ public:
    */
   virtual bool GetIsBoundaryPoint(unsigned long iPoint) const { return false; }
 
-  /*!
-   * \brief return the number of boundary points of a design surface boundary
-   */
-  virtual unsigned int GetNBoundPoints() const { return 0; };
 };

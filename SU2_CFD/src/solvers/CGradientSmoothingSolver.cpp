@@ -1,5 +1,5 @@
 ﻿/*!
- * \file CSolverGradientSmoothing.cpp
+ * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
  * \version 7.2.1 "Blackbird"
@@ -28,10 +28,8 @@
 #include "../../include/solvers/CGradientSmoothingSolver.hpp"
 #include "../../include/variables/CSobolevSmoothingVariable.hpp"
 #include <algorithm>
-#include <unordered_set>
-#include <unordered_map>
 
-CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(LINEAR_SOLVER_MODE::GRADIENT_MODE) {
+CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(LINEAR_SOLVER_MODE::GRADIENT_MODE) {
   unsigned int iDim, marker_count = 0;
   unsigned long iPoint;
 
@@ -99,16 +97,13 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     }
   }
 
-  /*--- initializations for the debug mode ---*/
-  if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::DEBUG) {
-    auxVec.Initialize(nPoint, nPointDomain, nDim, 1.0);
-  }
-
   /*--- vectors needed for projection when working on the complete system ---*/
-  activeCoord.Initialize(nPoint, nPointDomain, nDim, 0.0);
-  helperVecIn.Initialize(nPoint, nPointDomain, nDim, 0.0);
-  helperVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
-  helperVecAux.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE || config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD) {
+    activeCoord.Initialize(nPoint, nPointDomain, nDim, 0.0);
+    helperVecIn.Initialize(nPoint, nPointDomain, nDim, 0.0);
+    helperVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
+    helperVecAux.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  }
 
   /*--- Initialize the CVariable structure holding solution data ---*/
   nodes = new CSobolevSmoothingVariable(nPoint, nDim,  config);
@@ -160,7 +155,7 @@ CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
 void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics,
                                                             const CConfig* config) {
   /*--- current dimension if we run consecutive on each dimension ---*/
-  dir = 0;
+  unsigned int iDim = 0;
 
   /*--- Set vector and sparse matrix to 0 ---*/
   LinSysSol.SetValZero();
@@ -172,7 +167,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry* geometry,
 
   /*--- Impose boundary conditions to the RHS and solve the system. ---*/
   if (config->GetSmoothSepDim()) {
-    for (dir = 0; dir < nDim ; dir++) {
+    for (iDim = 0; iDim < nDim ; iDim++) {
+
+      SetCurrentDim(iDim);
 
       Compute_Residual(geometry, config);
 
@@ -277,16 +274,16 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
     } else {
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      WriteVector2Geometry(geometry,config, helperVecIn);
+      WriteVectorToGeometry(geometry, helperVecIn);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
-      ReadVector2Geometry(geometry,config, helperVecIn);
+      ReadVectorToGeometry(geometry, helperVecIn);
 
       CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
       CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
 
       mat_vec(helperVecIn, helperVecAux);
 
-      /*--- Delete entries from halo cells, otherwise we get errors for parallel computations ---*/
+      /*--- Only consider values inside the domain for the output of the matrix vector product ---*/
       for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           helperVecOut(iPoint,iDim) = helperVecAux(iPoint,iDim);
@@ -294,9 +291,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
       }
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      WriteVector2Geometry(geometry,config, helperVecOut);
+      WriteVectorToGeometry(geometry, helperVecOut);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
-      ReadVector2Geometry(geometry,config, helperVecOut);
+      ReadVectorToGeometry(geometry, helperVecOut);
 
     }
 
@@ -335,7 +332,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {
   unsigned long iElem, iNode;
   unsigned int iDim, jDim, nNodes = 0, NelNodes, jNode;
-  std::vector<unsigned long> indexNode(MAXNNODE_3D, 0.0);
+  std::array<unsigned long, MAXNNODE_3D> indexNode;
   su2double val_Coord, HiHj = 0.0;
   int EL_KIND = 0;
   su2activematrix DHiDHj;
@@ -384,7 +381,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumeric
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
 
         if (config->GetSmoothSepDim()) {
-          Jacobian_block[0][0] = DHiDHj[dir][dir] + HiHj;
+          Jacobian_block[0][0] = DHiDHj[GetCurrentDim()][GetCurrentDim()] + HiHj;
           Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
 
         } else {
@@ -408,8 +405,8 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
                                                            unsigned int nSurfDim) {
   unsigned long iElem, iPoint, iVertex, iDim, jDim, iSurfDim;
   unsigned int iNode, jNode, nNodes = 0, NelNodes;
-  std::vector<unsigned long> indexNode(MAXNNODE_2D, 0.0);
-  std::vector<unsigned long> indexVertex(MAXNNODE_2D, 0.0);
+  std::array<unsigned long, MAXNNODE_2D> indexNode;
+  std::array<unsigned long, MAXNNODE_2D> indexVertex;
   int EL_KIND = 0;
   su2double val_Coord, HiHj = 0.0;
   su2activematrix DHiDHj;
@@ -508,7 +505,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConf
   unsigned long iElem;
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
-  std::vector<unsigned long> indexNode(MAXNNODE_3D, 0.0);
+  std::array<unsigned long, MAXNNODE_3D> indexNode;
   su2double Weight, Jac_X, val_Coord;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -541,21 +538,12 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConf
 
       for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
         if (config->GetSmoothSepDim()) {
-          if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::DEBUG) {
-            Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * (auxVec.GetBlock(indexNode[iNode]))[dir];
-            LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
-          } else {
-            Residual[dir] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * nodes->GetSensitivity(indexNode[iNode], dir);
-            LinSysRes.AddBlock(indexNode[iNode], &Residual[dir]);
-          }
-
+          Residual[GetCurrentDim()] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * nodes->GetSensitivity(indexNode[iNode], GetCurrentDim());
+          LinSysRes.AddBlock(indexNode[iNode], &Residual[GetCurrentDim()]);
         } else {
           for (iDim = 0; iDim < nDim; iDim++) {
-            if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::DEBUG) {
-              Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * (auxVec.GetBlock(indexNode[iNode]))[iDim];
-            } else {
-              Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * nodes->GetSensitivity(indexNode[iNode], iDim);
-            }
+            Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * nodes->GetSensitivity(indexNode[iNode], iDim);
+
           }
           LinSysRes.AddBlock(indexNode[iNode], Residual);
         }
@@ -574,8 +562,8 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
   unsigned long iElem, iPoint, iVertex;
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
-  std::vector<unsigned long> indexNode(MAXNNODE_2D, 0.0);
-  std::vector<unsigned long> indexVertex(MAXNNODE_2D, 0.0);
+  std::array<unsigned long, MAXNNODE_2D> indexNode;
+  std::array<unsigned long, MAXNNODE_2D> indexVertex;
   su2double Weight, Jac_X, normalSens = 0.0, norm, val_Coord;
   su2double* normal = NULL;
 
@@ -627,11 +615,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
           }
 
           for (iDim = 0; iDim < nDim; iDim++) {
-            if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::DEBUG) {
-              normalSens += normal[iDim] * (auxVec.GetBlock(indexNode[iNode]))[iDim];
-            } else {
-              normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
-            }
+            normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
           }
 
           Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * normalSens;
@@ -749,11 +733,11 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   if (rank == MASTER_NODE) cout << endl << "Calculating the original DV gradient." << endl;
 
-  WriteSens2Geometry(geometry,config);
+  WriteSensToGeometry(geometry);
 
   grid_movement->SetVolume_Deformation(geometry, config, false, true);
 
-  ReadVector2Geometry(geometry,config, helperVecOut);
+  ReadVectorToGeometry(geometry, helperVecOut);
 
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
@@ -967,27 +951,27 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
           normal[iDim] = normal[iDim] / norm;
         }
         for (iDim = 0; iDim < nDim; iDim++) {
-          this->GetNodes()->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iPoint]);
+          nodes->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iPoint]);
         }
       }
     }
   } else {
     if (config->GetSmoothSepDim()) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        this->GetNodes()->SetSensitivity(iPoint, dir, LinSysSol[iPoint]);
+        nodes->SetSensitivity(iPoint, GetCurrentDim(), LinSysSol[iPoint]);
       }
     } else {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nDim + iDim;
-          this->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+          nodes->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
         }
       }
     }
   }
 }
 
-void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry* geometry, const CConfig* config) {
+void CGradientSmoothingSolver::WriteSensToGeometry(CGeometry* geometry) const {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -997,7 +981,7 @@ void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry* geometry, const CCo
   }
 }
 
-void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry* geometry, const CConfig* config) {
+void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -1007,24 +991,22 @@ void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry* geometry, const CCon
   }
 }
 
-void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry* geometry, const CConfig* config,
-                                                    CSysVector<su2matvecscalar>& vector) {
+void CGradientSmoothingSolver::WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) const {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->SetSensitivity(iPoint,iDim, vector[iPoint*nDim+iDim]);
+      geometry->SetSensitivity(iPoint,iDim, vector(iPoint, iDim));
     }
   }
 }
 
-void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry* geometry, const CConfig* config,
-                                                   CSysVector<su2matvecscalar>& vector) {
+void CGradientSmoothingSolver::ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
+      vector(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
     }
   }
 }
@@ -1076,47 +1058,9 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
     }
   }
 
-  /*--- communicate the boundary points ---*/
-
-  const unordered_set<unsigned long> markerPoints(myPoints.begin(), myPoints.end());
-
-  vector<unsigned long> numPoints(size);
-  unsigned long num = myPoints.size();
-  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
-  /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
-  unordered_map<unsigned long, unsigned long> Global2Local;
-  for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
-    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
-  }
-
-  /*--- Populate elimination list. ---*/
-  ExtraVerticesToEliminate.clear();
-
-  for (int i = 0; i < size; ++i) {
-    /*--- Send our point list. ---*/
-    if (rank == i) {
-      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, SU2_MPI::GetComm());
-      continue;
-    }
-
-    /*--- Receive point list. ---*/
-    vector<unsigned long> theirPoints(numPoints[i]);
-    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, SU2_MPI::GetComm());
-
-    for (auto iPointGlobal : theirPoints) {
-      /*--- Check if the rank has the point. ---*/
-      auto it = Global2Local.find(iPointGlobal);
-      if (it == Global2Local.end()) continue;
-
-      /*--- If the point is not covered by this rank's markers, mark it for elimination. ---*/
-      if (markerPoints.count(iPointGlobal) == 0)
-        ExtraVerticesToEliminate.push_back(it->second);
-    }
-  }
+  CommunicateExtraEliminationVertices(geometry, myPoints);
 
   /*--- eliminate the extra vertices ---*/
-
   for (auto iPoint : ExtraVerticesToEliminate) {
     Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
   }

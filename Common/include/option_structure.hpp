@@ -2367,18 +2367,18 @@ enum class LINEAR_SOLVER_MODE {
 /*!
  * \brief mode of operation for the sobolev smoothing solver.
  */
-enum ENUM_SOBOLEV_MODUS {
-  NO_MODUS,             /*!< \brief Default option if none is choosen. */
+enum class ENUM_SOBOLEV_MODUS {
+  NONE,                 /*!< \brief Default option if none is choosen. */
   PARAM_LEVEL_COMPLETE, /*!< \brief Operate on parameter level. */
   MESH_LEVEL,           /*!< \brief Operate on mesh level. */
-  DEBUG,                /*!< \brief Special flag for debugging. */
-  ONLY_GRAD,            /*!< \brief Flag for OneShot to only compute the original gradient. */
+  ONLY_GRAD,            /*!< \brief Flag to only compute the original gradient. */
 };
 static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
-    MakePair("NONE", ENUM_SOBOLEV_MODUS::NO_MODUS)
-        MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
-            MakePair("MESH_LEVEL", ENUM_SOBOLEV_MODUS::MESH_LEVEL) MakePair("DEBUG", ENUM_SOBOLEV_MODUS::DEBUG)
-                MakePair("ONLY_GRADIENT", ENUM_SOBOLEV_MODUS::ONLY_GRAD)};
+  MakePair("NONE",                 ENUM_SOBOLEV_MODUS::NONE)
+  MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
+  MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
+  MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
+};
 
 #undef MakePair
 /* END_CONFIG_ENUMS */

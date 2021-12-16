@@ -446,7 +446,7 @@ private:
   bool SmoothSepDim;                /*!< \brief Flag for enabling separated calculation for every dimension. */
   bool SmoothOnSurface;             /*!< \brief Flag for assembling the system only on the surface. */
   bool SmoothDirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
-  unsigned short SmoothNumMode;     /*!< \brief temporary flag for some debuging stuff */
+  ENUM_SOBOLEV_MODUS SmoothNumMode; /*!< \brief The mode in which the Sobolev smoothing solver is applied. */
 
   unsigned short  Kind_Grad_Linear_Solver,  /*!< Numerical method to smooth the gradient */
   Kind_Grad_Linear_Solver_Prec;             /*!< \brief Preconditioner of the linear solver. */
@@ -9616,7 +9616,7 @@ public:
    * \brief The modus of operation for the Sobolev solver
    * \return returns on what level we operate
    */
-  unsigned short GetSobMode(void) const { return SmoothNumMode; }
+  ENUM_SOBOLEV_MODUS GetSobMode(void) const { return SmoothNumMode; }
 
   /*!
    * \brief Get the name of the file with the hessian of the objective function.
