@@ -4062,13 +4062,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   const bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   const bool low_mach_prec = config->Low_Mach_Preconditioning();
 
-  bool rom = config->GetReduced_Model();
-  
-  if (rom) {
-    ROM_Iteration(geometry, solver_container, config);
-    return;
-  }
-
   /*--- Local matrix for preconditioning. ---*/
   su2double** LowMachPrec = nullptr;
   if (roe_turkel || low_mach_prec) {

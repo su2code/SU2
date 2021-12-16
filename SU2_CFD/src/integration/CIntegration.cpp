@@ -190,6 +190,12 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  bool rom = config->GetReduced_Model();
+  
+  if (rom) {
+    solver_container[MainSolver]->ROM_Iteration(geometry, solver_container, config);
+    return;
+  }
 
   switch (config->GetKind_TimeIntScheme()) {
     case (RUNGE_KUTTA_EXPLICIT):
