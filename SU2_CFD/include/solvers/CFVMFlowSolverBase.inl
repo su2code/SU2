@@ -2468,7 +2468,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
+  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0, RHO_INDEX = 0;
   su2double Viscosity = 0.0, Area, Density = 0.0, GradTemperature = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
@@ -2497,6 +2497,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     T_INDEX       = nSpecies;
     TVE_INDEX     = nSpecies+1;
     VEL_INDEX     = nSpecies+2;
+    RHO_INDEX    = nSpecies+nDim+3;
   }
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
