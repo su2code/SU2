@@ -2,14 +2,14 @@
  * \file CGridMovement.hpp
  * \brief Headers of the CGridMovement class
  * \author F. Palacios
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,10 +55,12 @@ public:
   virtual ~CGridMovement(void);
 
   /*!
-   * \brief A pure virtual member.
+   * \brief Set the surface/boundary deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
-
+  inline virtual vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
+    return vector<vector<su2double> >();
+  }
 };

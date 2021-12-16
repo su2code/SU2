@@ -2,14 +2,14 @@
  * \file CEdge.hpp
  * \brief Declaration of the edge class <i>CEdge.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,8 @@
 
 #include "../../containers/C2DContainer.hpp"
 
+class CPhysicalGeometry;
+
 /*!
  * \class CEdge
  * \brief Class for defining the edges of the dual grid.
@@ -41,7 +43,8 @@ private:
   using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
   NodeArray Nodes;           /*!< \brief Vector to store the node indices of the edge. */
   su2activematrix Normal;    /*!< \brief Normal (area) of the edge. */
-  su2activematrix Coord_CG;  /*!< \brief Center-of-gravity (mid point) of the edge. */
+
+  friend class CPhysicalGeometry;
 
 public:
   enum NodePosition : unsigned long {LEFT = 0, RIGHT = 1};
@@ -57,25 +60,6 @@ public:
    * \brief No default construction.
    */
   CEdge() = delete;
-
-  /*!
-   * \brief Set the center of gravity of the edge.
-   * \param[in] iEdge - Edge index.
-   * \param[in] nodeCoord - Coordinates of the two nodes.
-   */
-  template<class T>
-  void SetCoord_CG(unsigned long iEdge, const T& nodeCoord) {
-    for (auto iDim = 0u; iDim < Coord_CG.cols(); ++iDim)
-      Coord_CG(iEdge,iDim) = 0.5 * (nodeCoord[0][iDim] + nodeCoord[1][iDim]);
-  }
-
-  /*!
-   * \brief Obtain the center of gravity of the edge.
-   * \param[in] iEdge - Edge index.
-   * \param[in] iDim - Dimension.
-   * \return Coordinate of the centre of gravity.
-   */
-  inline su2double GetCG(unsigned long iEdge, unsigned long iDim) const { return Coord_CG(iEdge,iDim); }
 
   /*!
    * \brief Get left/right node index defining the edge.

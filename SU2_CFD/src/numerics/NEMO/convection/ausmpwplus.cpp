@@ -1,15 +1,15 @@
 /*!
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
- * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \author F. Palacios, W. Maier, C. Garbacz
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,42 +26,22 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/ausmpwplus.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
                                          unsigned short val_nVar,
                                          unsigned short val_nPrimVar,
                                          unsigned short val_nPrimVarGrad,
-                                         CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                          config) {
+                                         CConfig *config) : CNEMONumerics(val_nDim, val_nVar,
+                                                                          val_nPrimVar, val_nPrimVarGrad,
+                                                                          config) {
 
   FcL     = new su2double [nVar];
   FcR     = new su2double [nVar];
-  dmLdL   = new su2double [nVar];
-  dmLdR   = new su2double [nVar];
-  dmRdL   = new su2double [nVar];
-  dmRdR   = new su2double [nVar];
-  dmLPdL  = new su2double [nVar];
-  dmLPdR  = new su2double [nVar];
-  dmRMdL  = new su2double [nVar];
-  dmRMdR  = new su2double [nVar];
-  dmbLPdL = new su2double [nVar];
-  dmbLPdR = new su2double [nVar];
-  dmbRMdL = new su2double [nVar];
-  dmbRMdR = new su2double [nVar];
-  dpLPdL  = new su2double [nVar];
-  dpLPdR  = new su2double [nVar];
-  dpRMdL  = new su2double [nVar];
-  dpRMdR  = new su2double [nVar];
-  dHnL    = new su2double [nVar];
-  dHnR    = new su2double [nVar];
-  daL     = new su2double [nVar];
-  daR     = new su2double [nVar];
   rhos_i  = new su2double [nSpecies];
   rhos_j  = new su2double [nSpecies];
   u_i     = new su2double [nDim];
   u_j     = new su2double [nDim];
-  dPdU_i  = new su2double [nVar];
-  dPdU_j  = new su2double [nVar];
 
   Flux   = new su2double[nVar];
 
@@ -71,32 +51,10 @@ CUpwAUSMPWplus_NEMO::~CUpwAUSMPWplus_NEMO(void) {
 
   delete [] FcL;
   delete [] FcR;
-  delete [] dmLdL;
-  delete [] dmLdR;
-  delete [] dmRdL;
-  delete [] dmRdR;
-  delete [] dmLPdL;
-  delete [] dmLPdR;
-  delete [] dmRMdL;
-  delete [] dmRMdR;
-  delete [] dmbLPdL;
-  delete [] dmbLPdR;
-  delete [] dmbRMdL;
-  delete [] dmbRMdR;
-  delete [] dpLPdL;
-  delete [] dpLPdR;
-  delete [] dpRMdL;
-  delete [] dpRMdR;
-  delete [] dHnL;
-  delete [] dHnR;
-  delete [] daL;
-  delete [] daR;
   delete [] rhos_i;
   delete [] rhos_j;
   delete [] u_i;
   delete [] u_j;
-  delete [] dPdU_i;
-  delete [] dPdU_j;
   delete [] Flux;
 }
 
@@ -105,11 +63,8 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
 
   unsigned short iDim, iVar, iSpecies;
-  su2double rho_i, rho_j, rhoEve_i, rhoEve_j, P_i, P_j, h_i, h_j;
-  su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+  su2double rho_i, rho_j, rhoEve_i, rhoEve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
-  su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double gam;
@@ -121,17 +76,10 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     Flux[iVar] = 0.0;
 
   /*--- Calculate geometric quantities ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
-
-  /*--- Read from config ---*/
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
 
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
@@ -140,29 +88,20 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++) {
-    u_i[iDim] = 0.0; // V_i[VEL_INDEX+iDim];
-    u_j[iDim] = 0.0; // V_j[VEL_INDEX+iDim];
+    u_i[iDim] = V_i[VEL_INDEX+iDim];
+    u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-  P_i       = 0.0; // V_i[P_INDEX];
-  P_j       = 0.0; // V_j[P_INDEX];
-  h_i       = V_i[H_INDEX];
-  h_j       = V_j[H_INDEX];
-  rho_i     = V_i[RHO_INDEX];
-  rho_j     = V_j[RHO_INDEX];
-  rhoEve_i  = U_i[nSpecies+nDim+1];
-  rhoEve_j  = U_j[nSpecies+nDim+1];
-  rhoCvtr_i = V_i[RHOCVTR_INDEX];
-  rhoCvtr_j = V_j[RHOCVTR_INDEX];
-  rhoCvve_i = V_i[RHOCVVE_INDEX];
-  rhoCvve_j = V_j[RHOCVVE_INDEX];
+  P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
+  h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
+  rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
 
-  vector<su2double> Ms = fluidmodel->GetMolarMass();
-  
-  rhoRi = 0.0;
-  rhoRj = 0.0;
+  rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
+  rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
+
+  rhoEve_i = 0.0; rhoEve_j = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoRi += V_i[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
-    rhoRj += V_j[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
+    rhoEve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies]);
+    rhoEve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies]);
   }
 
   /*--- Projected velocities ---*/
@@ -173,17 +112,17 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
   sqVi = 0.0;   sqVj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim])
-        * (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
-    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim])
-        * (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
+    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim]) *
+            (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
+    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim]) *
+            (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
   }
 
-  /*--- Calculate interface numerical speed of sound ---*/
+  /*--- Calculate interface numerical gammas and speed of sound ---*/
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
-  gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
-  gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
-  gam = 0.5*(gtl_i+gtl_j);
+  gtl_i = Gamma_i;
+  gtl_j = Gamma_j;
+  gam   = 0.5*(gtl_i+gtl_j);
   if (fabs(rho_i-rho_j)/(0.5*(rho_i+rho_j)) < 1E-3)
     atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
   else {
@@ -213,9 +152,11 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
 
   /*--- Calculate supporting w & f functions ---*/
-  w = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
+  w  = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
   ps = pLP + pRM;
-  // Modified f function:
+
+  // simplified f function (Literature requires information from cells
+  // above and below  (TODO)
   if (fabs(mL) < 1.0) fL = P_i/ps - 1.0;
   else fL = 0.0;
   if (fabs(mR) < 1.0) fR = P_j/ps - 1.0;

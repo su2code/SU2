@@ -2,14 +2,14 @@
  * \file CADTPointsOnlyClass.cpp
  * \brief Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,13 +26,13 @@
  */
 
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 #include "../../include/option_structure.hpp"
 
 CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
                                          unsigned long  nPoints,
-                                         su2double      *coor,
-                                         unsigned long  *pointID,
+                                         const su2double *coor,
+                                         const unsigned long *pointID,
                                          const bool     globalTree) {
 
   /* Allocate some thread-safe working variables if required. */
@@ -52,14 +52,14 @@ CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
           First determine the number of points per rank and store them in such
           a way that the info can be used directly in Allgatherv. ---*/
     int rank, size;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+    SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
     vector<int> recvCounts(size), displs(size);
     int sizeLocal = (int) nPoints;
 
     SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
-                       MPI_INT, MPI_COMM_WORLD);
+                       MPI_INT, SU2_MPI::GetComm());
     displs[0] = 0;
     for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
@@ -69,26 +69,26 @@ CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
     localPointIDs.resize(sizeGlobal);
     SU2_MPI::Allgatherv(pointID, sizeLocal, MPI_UNSIGNED_LONG, localPointIDs.data(),
                         recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
-                        MPI_COMM_WORLD);
+                        SU2_MPI::GetComm());
 
     ranksOfPoints.resize(sizeGlobal);
     vector<int> rankLocal(sizeLocal, rank);
     SU2_MPI::Allgatherv(rankLocal.data(), sizeLocal, MPI_INT, ranksOfPoints.data(),
-                        recvCounts.data(), displs.data(), MPI_INT, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_INT, SU2_MPI::GetComm());
 
     /*--- Gather the coordinates of the points on all ranks. ---*/
     for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
 
     coorPoints.resize(nDim*sizeGlobal);
     SU2_MPI::Allgatherv(coor, nDim*sizeLocal, MPI_DOUBLE, coorPoints.data(),
-                        recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_DOUBLE, SU2_MPI::GetComm());
   }
   else {
 
     /*--- A local tree must be built. Copy the coordinates and point IDs and
           set the ranks to the rank of this processor. ---*/
     int rank;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
     coorPoints.assign(coor, coor + nDim*nPoints);
     localPointIDs.assign(pointID, pointID + nPoints);

@@ -2,14 +2,14 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving generic radiation problems (P1, M1, discrete ordinates...)
  * \author Ruben Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,8 +78,8 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short iVar;
   unsigned long index;
 
-  bool rans = ((config->GetKind_Solver()== INC_RANS) ||
-               (config->GetKind_Solver()== DISC_ADJ_INC_RANS));
+  bool rans = ((config->GetKind_Solver()== MAIN_SOLVER::INC_RANS) ||
+               (config->GetKind_Solver()== MAIN_SOLVER::DISC_ADJ_INC_RANS));
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -104,7 +104,7 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   if (nDim == 2) skipVars += 6;
   if (nDim == 3) skipVars += 8;
 
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 

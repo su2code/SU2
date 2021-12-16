@@ -3,14 +3,14 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
 
 using namespace std;
@@ -98,7 +98,7 @@ class CIteration {
    * \param[in] kind_recording - Current kind of recording.
    */
   void SetMesh_Deformation(CGeometry** geometry, CSolver** solver_container, CNumerics*** numerics_container,
-                           CConfig* config_container, unsigned short kind_recording);
+                           CConfig* config_container, RECORDING kind_recording);
 
   /*!
    * \brief A virtual member.
@@ -137,6 +137,18 @@ class CIteration {
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                        unsigned short val_iInst){}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
+   */
+  virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                              unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {}
 
   /*!
    * \brief A virtual member.
@@ -272,20 +284,11 @@ class CIteration {
                                  unsigned short iInst) {}
 
   virtual void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                             unsigned short iInst, unsigned short kind_recording) {}
+                             unsigned short iInst, RECORDING kind_recording) {}
 
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                               unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {}
+                               unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
-  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
-
-  virtual void LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                     unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
-  virtual void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                    unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
-  virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                            unsigned short val_iInst, unsigned short kind_recording) {}
 };

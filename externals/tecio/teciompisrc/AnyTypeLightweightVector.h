@@ -12,7 +12,7 @@ virtual void ___3504(uint64_t i, double ___4314) = 0; virtual double operator[] 
  #if !defined NO_ASSERTS
 virtual uint64_t size() const { return lightweightVector.size(); }
  #endif
-virtual void ___3504(uint64_t i, double ___4314) { lightweightVector[i] = static_cast<T>(___4314); } virtual double operator[](uint64_t i) const { return static_cast<double>(lightweightVector[i]); } }; VectorHolderBase* m_vectorHolder; UNCOPYABLE_CLASS(AnyTypeLightweightVector); public: AnyTypeLightweightVector() : m_vectorHolder(NULL) {} ~AnyTypeLightweightVector() { if (m_vectorHolder) delete m_vectorHolder; }
+virtual void ___3504(uint64_t i, double ___4314) { lightweightVector[i] = static_cast<T>(___4314); } virtual double operator[](uint64_t i) const { return static_cast<double>(lightweightVector[i]); } }; VectorHolderBase* m_vectorHolder; UNCOPYABLE_CLASS(AnyTypeLightweightVector) public: AnyTypeLightweightVector() : m_vectorHolder(NULL) {} ~AnyTypeLightweightVector() { if (m_vectorHolder) delete m_vectorHolder; }
  #if (defined _MSC_VER && __cplusplus >= 199711L) || __cplusplus >= 201103L
 AnyTypeLightweightVector(AnyTypeLightweightVector&& that) { m_vectorHolder = that.m_vectorHolder; that.m_vectorHolder = nullptr; } AnyTypeLightweightVector& operator=(AnyTypeLightweightVector&& that) { if (this != &that) { ___937(); m_vectorHolder = that.m_vectorHolder; that.m_vectorHolder = nullptr; } return *this; }
  #else

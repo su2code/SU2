@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPyramid.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,25 +30,28 @@
 
 #include "CPrimalGrid.hpp"
 
-/*
-* \class CPyramid
-* \brief Class for pyramid element definition.
-* \author F. Palacios
-*/
-class CPyramid final: public CPrimalGrid {
-private:
- static unsigned short Faces[5][4];     /*!< \brief Matrix to store the local nodes of all the faces. */
- static unsigned short Neighbor_Nodes[5][4];  /*!< \brief Neighbor to a nodes in the element. */
- static unsigned short nNodesFace[5];       /*!< \brief Number of nodes of each face of the element. */
- static unsigned short nNeighbor_Nodes[5];      /*!< \brief Number of Neighbor to a nodes in the element. */
- static unsigned short nFaces;            /*!< \brief Number of faces of the element. */
- static unsigned short nNodes;            /*!< \brief Number of nodes of the element. */
- static unsigned short VTK_Type;        /*!< \brief Type of element using VTK nomenclature. */
- static unsigned short maxNodesFace;      /*!< \brief Maximum number of nodes for a face. */
- static unsigned short nNeighbor_Elements;      /*!< \brief Number of neighbor elements. */
+/*! \class CPyramidConnectivity
+ * Defines the connectivity of a pyramid element.
+ * See CPrimalGridWithConnectivity.
+ */
+struct CPyramidConnectivity {
+  enum { nNodes = N_POINTS_PYRAMID };
+  enum { nFaces = N_FACES_PYRAMID };
+  enum { maxNodesFace = N_POINTS_QUADRILATERAL };
+  enum { VTK_Type = PYRAMID };
+  static constexpr unsigned short nNodesFace[5] = {4,3,3,3,3};
+  static constexpr unsigned short Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
+  static constexpr unsigned short nNeighbor_Nodes[5] = {3,3,3,3,4};
+  static constexpr unsigned short Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};
+};
 
+/*!
+ * \class CPyramid
+ * \brief Class for pyramid element definition.
+ * \author F. Palacios
+ */
+class CPyramid final: public CPrimalGridWithConnectivity<CPyramidConnectivity> {
 public:
-
  /*!
   * \brief Constructor using the nodes and index.
   * \param[in] val_point_0 - Index of the 1st point read from the grid file.
@@ -62,86 +65,7 @@ public:
           unsigned long val_point_4);
 
  /*!
-  * \brief Destructor of the class.
-  */
- ~CPyramid(void) override;
-
- /*!
-  * \brief Get the nodes shared by the pyramid.
-  * \param[in] val_node - Local (to the pyramid) index of the node (a pyramid has 3 nodes).
-  * \return Global index of the pyramid node.
-  */
- inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
-
- /*!
-  * \brief Set the point associated at a node.
-  * \param[in] val_node - Local index of a node.
-  * \param[in] val_point - Point associated to the node.
-  */
- inline void SetNode(unsigned short val_node, unsigned long val_point) override { Nodes[val_node] = val_point; }
-
- /*!
-  * \brief Get the face index of and element.
-  * \param[in] val_face - Local index of the face.
-  * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
-  * \return Local (to the element) index of the nodes that compose the face.
-  */
- inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return Faces[val_face][val_index]; }
-
- /*!
-  * \brief Get the local index of the neighbors to a node (given the local index).
-  * \param[in] val_node - Local (to the element) index of a node.
-  * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
-  * \return Local (to the element) index of the nodes that are neighbor to val_node.
-  */
- inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return Neighbor_Nodes[val_node][val_index]; }
-
- /*!
-  * \brief Get the number of neighbors nodes of a node.
-  * \param[in] val_node - Local (to the element) index of a node.
-  * \return Number if neighbors of a node val_node.
-  */
- inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return nNeighbor_Nodes[val_node]; }
-
- /*!
-  * \brief Get the number of nodes that composes a face of an element.
-  * \param[in] val_face - Local index of the face.
-  * \return Number of nodes that composes a face of an element.
-  */
- inline unsigned short GetnNodesFace(unsigned short val_face) override { return nNodesFace[val_face]; }
-
- /*!
-  * \brief Get the number of nodes of an element.
-  * \return Number of nodes that composes an element.
-  */
- inline unsigned short GetnNodes(void) override { return nNodes; }
-
- /*!
-  * \brief Get the number of faces of an element.
-  * \return Number of faces of an element.
-  */
- inline unsigned short GetnFaces(void) override { return nFaces; }
-
- /*!
-  * \brief Get the Maximum number of nodes of a face of an element.
-  * \return Maximum number of nodes of a face of an element.
-  */
- inline unsigned short GetMaxNodesFace(void) override { return maxNodesFace; }
-
- /*!
-  * \brief Get the type of the element using VTK nomenclature.
-  * \return Type of the element using VTK nomenclature.
-  */
- inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
-
- /*!
-  * \brief Get the number of element that are neighbor to this element.
-  * \return Number of neighbor elements.
-  */
- inline unsigned short GetnNeighbor_Elements(void) override { return nNeighbor_Elements; }
-
- /*!
   * \brief Change the orientation of an element.
   */
- void Change_Orientation(void) override;
+ void Change_Orientation() override;
 };

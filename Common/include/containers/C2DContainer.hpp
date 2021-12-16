@@ -2,14 +2,14 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ enum SizeType : size_t {DynamicSize=0};
 
 /*--- Namespace to "hide" helper classes and
  functions used by the container class. ---*/
-namespace container_helpers
+namespace container_details
 {
 /*!
  * \class AccessorImpl
@@ -77,12 +77,17 @@ protected:
    * Static size specializations use this do-nothing allocation macro.
    */
 #define DUMMY_ALLOCATOR \
-  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {}
+  void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {}\
+  void m_destroy() noexcept {}
+
   /*!
    * Dynamic size specializations use this one, EXTRA is used to set some
    * runtime internal value that depend on the number of rows/columns.
    * What values need setting depends on the specialization as not all have
    * members for e.g. number of rows and cols (static size optimization).
+   * Because aligned allocation is used, "placement new" is used after to
+   * default construct the elements of non-trivial type. Such types also
+   * need to be destructed explicitly before freeing the memory.
    */
 #define REAL_ALLOCATOR(EXTRA)                                           \
   static_assert(MemoryAllocation::is_power_of_two(AlignSize),           \
@@ -91,6 +96,14 @@ protected:
   void m_allocate(size_t sz, Index_t rows, Index_t cols) noexcept {     \
     EXTRA;                                                              \
     m_data = MemoryAllocation::aligned_alloc<Scalar_t>(AlignSize,sz);   \
+    if (!std::is_trivial<Scalar_t>::value)                              \
+      for (size_t i = 0; i < size(); ++i) new (m_data+i) Scalar_t();    \
+  }                                                                     \
+                                                                        \
+  void m_destroy() noexcept {                                           \
+    if (!std::is_trivial<Scalar_t>::value)                              \
+      for (size_t i = 0; i < size(); ++i) m_data[i].~Scalar_t();        \
+    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
 
   DUMMY_ALLOCATOR
@@ -114,15 +127,13 @@ public:
                                                                         \
   AccessorImpl& operator= (AccessorImpl&& other) noexcept               \
   {                                                                     \
-    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
+    m_destroy();                                                        \
     MOVE; m_data=other.m_data; other.m_data=nullptr;                    \
     return *this;                                                       \
   }                                                                     \
                                                                         \
-  ~AccessorImpl() noexcept                                              \
-  {                                                                     \
-    MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
-  }
+  ~AccessorImpl() noexcept {m_destroy();}
+
   /*!
    * Shorthand for when specialization has only one more member than m_data.
    */
@@ -136,7 +147,9 @@ public:
   bool empty() const noexcept {return size()==0;}                       \
   Scalar_t* data() noexcept {return m_data;}                            \
   const Scalar_t* data() const noexcept {return m_data;}                \
+  Scalar_t* begin() noexcept {return data();}                           \
   const Scalar_t* begin() const noexcept {return data();}               \
+  Scalar_t* end() noexcept {return data()+size();}                      \
   const Scalar_t* end() const noexcept {return data()+size();}
 
   /*!
@@ -372,14 +385,15 @@ public:
  */
 template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, size_t StaticRows, size_t StaticCols>
 class C2DContainer :
-  public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
+  public container_details::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
   static_assert(std::is_integral<Index_t>::value,"");
 
 private:
-  using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
+  using Base = container_details::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
   using Base::m_allocate;
+  using Base::m_destroy;
 public:
   using Base::size;
   using Base::rows;
@@ -473,7 +487,7 @@ private:
     if(rows==this->rows() && cols==this->cols())
       return reqSize;
 
-    MemoryAllocation::aligned_free<Scalar_t>(m_data);
+    m_destroy();
 
     /*--- request actual allocation to base class as it needs specialization ---*/
     size_t bytes = reqSize*sizeof(Scalar_t);
@@ -601,7 +615,7 @@ public:
     assert(Size <= cols()-start);
     StaticContainer ret;
     for (size_t k=0; k<N; ++k) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t i=0; i<Size; ++i)
         ret.data()[i][k] = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
     }
@@ -613,7 +627,8 @@ public:
  * \brief Useful typedefs with default template parameters
  */
 template<class T> using su2vector = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor, 64, DynamicSize, DynamicSize>;
+template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+template<class T> using ColMajorMatrix = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, DynamicSize>;
 
 using su2activevector = su2vector<su2double>;
 using su2activematrix = su2matrix<su2double>;

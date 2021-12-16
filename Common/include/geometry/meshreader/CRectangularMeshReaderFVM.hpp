@@ -3,14 +3,14 @@
  * \brief Header file for the class CRectangularMeshReaderFVM.
  *        The implementations are in the <i>CRectangularMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,48 +36,43 @@
  * \author: T. Economon
  */
 class CRectangularMeshReaderFVM: public CMeshReaderFVM {
-  
+
 private:
-  
+
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
-  
+
   su2double Lx; /*!< \brief Length of the domain in the x-direction. */
   su2double Ly; /*!< \brief Length of the domain in the y-direction. */
-  
+
   su2double Ox; /*!< \brief Offset of the domain from 0.0 in the x-direction. */
   su2double Oy; /*!< \brief Offset of the domain from 0.0 in the y-direction. */
-  
+
   unsigned short KindElem;  /*!< \brief VTK identifier of the interior elements. */
   unsigned short KindBound; /*!< \brief VTK identifier of the surface elements. */
-  
+
   /*!
    * \brief Computes and stores the grid points based on an analytic definition of a rectangular grid.
    */
   void ComputeRectangularPointCoordinates();
-  
+
   /*!
    * \brief Computes and stores the volume element connectivity based on an analytic definition of a rectangular grid.
    */
   void ComputeRectangularVolumeConnectivity();
-  
+
   /*!
    * \brief Computes and stores the surface element connectivity based on an analytic definition of a rectangular grid.
    */
   void ComputeRectangularSurfaceConnectivity();
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the CRectangularMeshReaderFVM class.
    */
-  CRectangularMeshReaderFVM(CConfig        *val_config,
+  CRectangularMeshReaderFVM(const CConfig *val_config,
                             unsigned short val_iZone,
                             unsigned short val_nZone);
-  
-  /*!
-   * \brief Destructor of the CRectangularMeshReaderFVM class.
-   */
-  ~CRectangularMeshReaderFVM(void);
-  
+
 };

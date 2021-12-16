@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,8 +39,14 @@
  */
 class CDiscAdjMeshSolver final : public CSolver {
 private:
-  unsigned short KindDirect_Solver;
-  CSolver *direct_solver;
+  static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = 3;  /*!< \brief Max number of variables, for static arrays. */
+
+  static constexpr size_t OMP_MAX_SIZE = 1024; /*!< \brief Max chunk size for light point loops. */
+
+  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  CSolver *direct_solver = nullptr;
 
   CDiscAdjMeshBoundVariable* nodes = nullptr;   /*!< \brief Variables of the discrete adjoint mesh solver. */
 
@@ -54,29 +60,20 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDiscAdjMeshSolver(void);
-
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config);
+  CDiscAdjMeshSolver() = default;
 
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
-   * \param[in] Kind_Solver - The kind of direct solver.
    */
   CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver* solver);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMeshSolver(void) override;
+  ~CDiscAdjMeshSolver() override;
 
   /*!
    * \brief Performs the preprocessing of the AD-based mesh adjoint solver.
@@ -92,15 +89,15 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] target_solver - The target solver to store the sensitivities.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) override;
+  void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver* target_solver) override;
 
   /*!
    * \brief Prepare the solver for a new recording.
@@ -124,24 +121,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Update the dual-time derivatives.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned short iRKStep,
-                    unsigned short RunTime_EqSystem,
-                    bool Output) override;
 
   /*!
    * \brief Load a solution from a restart file.

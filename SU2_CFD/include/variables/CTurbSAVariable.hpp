@@ -2,14 +2,14 @@
  * \file CTurbSAVariable.hpp
  * \brief Declaration of the variables of the SA turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,22 +62,6 @@ public:
   ~CTurbSAVariable() override = default;
 
   /*!
-   * \brief Set the harmonic balance source term.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] source - Value of the harmonic balance source term. for the index <i>iVar</i>.
-   */
-  inline void SetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar, su2double source) override { HB_Source(iPoint,iVar) = source; }
-
-  /*!
-   * \brief Get the harmonic balance source term.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
-   */
-  inline su2double GetHarmonicBalance_Source(unsigned long iPoint, unsigned long iVar) const override { return HB_Source(iPoint,iVar); }
-
-  /*!
    * \brief Get the intermittency of the BC transition model.
    * \param[in] iPoint - Point index.
    * \return Value of the intermittency of the BC transition model.
@@ -108,7 +92,7 @@ public:
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    * \param[in] iPoint - Point index.
    */
-  void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+  void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double>,
                          const su2double* Vorticity, su2double LaminarViscosity) override;
 
   /*!

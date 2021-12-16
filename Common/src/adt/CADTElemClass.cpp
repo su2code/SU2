@@ -2,14 +2,14 @@
  * \file CADTElemClass.cpp
  * \brief Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/adt/CADTElemClass.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 #include "../../include/option_structure.hpp"
 
 /* Define the tolerance to decide whether or not a point is inside an element. */
@@ -75,14 +75,14 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
     /*--- First determine the number of points per rank and make them
           available to all ranks. ---*/
     int rank, size;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+    SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
     vector<int> recvCounts(size), displs(size);
     int sizeLocal = (int) val_coor.size();
 
     SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
-                       MPI_INT, MPI_COMM_WORLD);
+                       MPI_INT, SU2_MPI::GetComm());
     displs[0] = 0;
     for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
@@ -98,14 +98,14 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
 
     coorPoints.resize(sizeGlobal);
     SU2_MPI::Allgatherv(val_coor.data(), sizeLocal, MPI_DOUBLE, coorPoints.data(),
-                        recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_DOUBLE, SU2_MPI::GetComm());
 
     /*--- Determine the number of elements per rank and make them
           available to all ranks. ---*/
     sizeLocal = (int) val_VTKElem.size();
 
     SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
-                       MPI_INT, MPI_COMM_WORLD);
+                       MPI_INT, SU2_MPI::GetComm());
     displs[0] = 0;
     for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
@@ -118,13 +118,13 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
     localElemIDs.resize(sizeGlobal);
 
     SU2_MPI::Allgatherv(val_VTKElem.data(), sizeLocal, MPI_UNSIGNED_SHORT, elemVTK_Type.data(),
-                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, SU2_MPI::GetComm());
 
     SU2_MPI::Allgatherv(val_markerID.data(), sizeLocal, MPI_UNSIGNED_SHORT, localMarkers.data(),
-                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, SU2_MPI::GetComm());
 
     SU2_MPI::Allgatherv(val_elemID.data(), sizeLocal, MPI_UNSIGNED_LONG, localElemIDs.data(),
-                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     /*--- Create the content of ranksOfElems, which stores the original ranks
           where the elements come from. ---*/
@@ -140,7 +140,7 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
     sizeLocal = (int) val_connElem.size();
 
     SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
-                       MPI_INT, MPI_COMM_WORLD);
+                       MPI_INT, SU2_MPI::GetComm());
     displs[0] = 0;
     for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
@@ -150,14 +150,14 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
     elemConns.resize(sizeGlobal);
 
     SU2_MPI::Allgatherv(val_connElem.data(), sizeLocal, MPI_UNSIGNED_LONG, elemConns.data(),
-                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   }
     else {
 
     /*--- A local tree must be built. Copy the data from the arguments into the
           member variables and set the ranks to the rank of this processor. ---*/
     int rank;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
     coorPoints   = val_coor;
     elemConns    = val_connElem;

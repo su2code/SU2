@@ -2,14 +2,14 @@
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 7.0.7 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -122,7 +122,12 @@ class Driver:
 
     try:
       sp.call(self._objValCommand,shell=True)
-      fid = open(self._objValFile,"r"); val = float(fid.readlines()[1]); fid.close()
+      with open(self._objValFile,"r") as fid:
+        lines = fid.readlines()
+      for col,name in enumerate(lines[0].split(",")):
+        if "TopComp" in name:
+          val = float(lines[1].split(",")[col])
+          break
       # the return code of mpirun is useless, we test the value of the function
       self._assert_isfinite(val)
     except:
@@ -161,15 +166,13 @@ class Driver:
   def con_val(self,x):
     # inputs written in obj_val_driver
 
-    # clear previous output and run solver
-    try:    os.remove(self._conValFile)
-    except: pass
-    try:    os.remove(self._conDerFile)
-    except: pass
-
     try:
-      sp.call(self._conDerCommand,shell=True)
-      fid = open(self._conValFile,"r"); val = float(fid.readlines()[1]); fid.close()
+      with open(self._conValFile,"r") as fid:
+        lines = fid.readlines()
+      for col,name in enumerate(lines[0].split(",")):
+        if "VolFrac" in name:
+          val = float(lines[1].split(",")[col])
+          break
       self._assert_isfinite(val)
     except:
       raise RuntimeError("Constraint function evaluation failed")
@@ -181,12 +184,16 @@ class Driver:
   def con_der(self,x):
     # inputs written in obj_val_driver
 
-    # adjoint solver already ran
+    # clear previous output and run solver
+    try:    os.remove(self._conDerFile)
+    except: pass
     N = x.shape[0]
     y = np.ndarray((N,))
 
     # read result
     try:
+      sp.call(self._conDerCommand,shell=True)
+
       fid = open(self._conDerFile,"r"); lines = fid.readlines(); fid.close()
       for i in range(N):
         val = float(lines[i][0:-1])

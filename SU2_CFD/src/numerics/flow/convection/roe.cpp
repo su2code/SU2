@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/roe.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
                                    bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
@@ -110,10 +111,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -221,11 +219,11 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   /*--- Initialize residual (flux) and Jacobians ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
-    Flux[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+    Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 
   if (implicit) {
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   }
 
   /*--- Finalize in children class ---*/
@@ -318,7 +316,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- Compute wave amplitudes (characteristics) ---*/
 
-  su2double proj_delta_vel = 0.0, delta_vel[3];
+  su2double proj_delta_vel = 0.0, delta_vel[3] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++) {
     delta_vel[iDim] = Velocity_j[iDim] - Velocity_i[iDim];
     proj_delta_vel += delta_vel[iDim]*UnitNormal[iDim];
@@ -327,7 +325,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   su2double delta_p = Pressure_j - Pressure_i;
   su2double delta_rho = Density_j - Density_i;
 
-  su2double delta_wave[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  su2double delta_wave[5] = {0.0};
   if (nDim == 2) {
     delta_wave[0] = delta_rho - delta_p/RoeSoundSpeed2;
     delta_wave[1] = (UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1])*zeta;
@@ -391,7 +389,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- Compute wave amplitudes (characteristics) ---*/
 
-  su2double proj_delta_vel = 0.0, delta_vel[3];
+  su2double proj_delta_vel = 0.0, delta_vel[3] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++) {
     delta_vel[iDim] = Velocity_j[iDim] - Velocity_i[iDim];
     proj_delta_vel += delta_vel[iDim]*UnitNormal[iDim];
@@ -400,7 +398,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   su2double delta_p = Pressure_j - Pressure_i;
   su2double delta_rho = Density_j - Density_i;
 
-  su2double delta_wave[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  su2double delta_wave[5] = {0.0};
   if (nDim == 2) {
     delta_wave[0] = delta_rho - delta_p/RoeSoundSpeed2;
     delta_wave[1] = (UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1]);
@@ -517,10 +515,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
 
@@ -752,10 +747,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-  Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
 
@@ -938,11 +930,11 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
     GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeChi , &RoeKappa, UnitNormal);
 
      /*--- Jacobians of the inviscid flux, scaled by
-      kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
+      0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
-    GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, kappa, Jacobian_i);
+    GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, 0.5, Jacobian_i);
 
-    GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, kappa, Jacobian_j);
+    GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, 0.5, Jacobian_j);
 
 
     /*--- Diference variables iPoint and jPoint ---*/
@@ -951,7 +943,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      Flux[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+      Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
       for (jVar = 0; jVar < nVar; jVar++) {
         Proj_ModJac_Tensor_ij = 0.0;
 

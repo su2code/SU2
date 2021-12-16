@@ -1,7 +1,12 @@
 if build_machine.system() == 'windows' or meson.get_compiler('cpp').get_id() == 'intel'
   cgns_default_warnings = []
 else
-  cgns_default_warnings = ['-Wno-unused-result']
+  cgns_default_warnings = ['-Wno-unused-result',
+                           '-Wno-unused-parameter',
+                           '-Wno-unused-variable',
+                           '-Wno-unused-but-set-variable',
+                           '-Wno-sign-compare',
+                           '-Wno-pedantic']
 endif
 
 cgns_include = include_directories('adf', './')

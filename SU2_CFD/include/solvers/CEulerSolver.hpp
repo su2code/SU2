@@ -2,14 +2,14 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,48 +35,46 @@
  * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */
-class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
+class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE> {
 protected:
+  using BaseClass = CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
+
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
 
-  su2double
-  AllBound_CEquivArea_Inv = 0.0, /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  *CEquivArea_Mnt = nullptr,     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  *CEquivArea_Inv = nullptr;     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  su2double AllBound_CEquivArea_Inv=0.0; /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
+  vector<su2double> CEquivArea_Mnt;      /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  vector<su2double> CEquivArea_Inv;      /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
 
+  vector<su2double> Inflow_MassFlow;     /*!< \brief Mass flow rate for each boundary. */
+  vector<su2double> Exhaust_MassFlow;    /*!< \brief Mass flow rate for each boundary. */
+  vector<su2double> Inflow_Pressure;     /*!< \brief Fan face pressure for each boundary. */
+  vector<su2double> Inflow_Mach;         /*!< \brief Fan face mach number for each boundary. */
+  vector<su2double> Inflow_Area;         /*!< \brief Boundary total area. */
+  vector<su2double> Exhaust_Area;        /*!< \brief Boundary total area. */
+  vector<su2double> Exhaust_Pressure;    /*!< \brief Fan face pressure for each boundary. */
+  vector<su2double> Exhaust_Temperature; /*!< \brief Fan face mach number for each boundary. */
   su2double
-  *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow = nullptr,   /*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure = nullptr,    /*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach = nullptr,        /*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area = nullptr,        /*!< \brief Boundary total area. */
-  *Exhaust_Area = nullptr,       /*!< \brief Boundary total area. */
-  *Exhaust_Pressure = nullptr,   /*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature = nullptr,/*!< \brief Fan face mach number for each boundary. */
   Inflow_MassFlow_Total = 0.0,   /*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total = 0.0,  /*!< \brief Mass flow rate for each boundary. */
   Inflow_Pressure_Total = 0.0,   /*!< \brief Fan face pressure for each boundary. */
   Inflow_Mach_Total = 0.0,       /*!< \brief Fan face mach number for each boundary. */
   InverseDesign = 0.0;           /*!< \brief Inverse design functional for each boundary. */
-  unsigned long
-  **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
-  su2double
-  ***DonorPrimVar = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
-  **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
-  **ActDisk_DeltaT = nullptr;    /*!< \brief Value of the Delta T. */
+  vector<vector<unsigned long> > DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
+  vector<su2activematrix> DonorPrimVar;       /*!< \brief Value of the donor variables at each boundary. */
+  vector<vector<su2double> > ActDisk_DeltaP;  /*!< \brief Value of the Delta P. */
+  vector<vector<su2double> > ActDisk_DeltaT;  /*!< \brief Value of the Delta T. */
 
   su2activevector
   ActDisk_R;         /*!< \brief Value of the actuator disk Radius. */
   su2activematrix
   ActDisk_C,         /*!< \brief Value of the actuator disk Center. */
   ActDisk_Axis;      /*!< \brief Value of the actuator disk Axis. */
-  su2double
-  **ActDisk_Fa,        /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
-  **ActDisk_Fx,        /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
-  **ActDisk_Fy,        /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
-  **ActDisk_Fz;        /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fa; /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  vector<vector<su2double> > ActDisk_Fx; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fy; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fz; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
 
   su2double
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -108,63 +106,47 @@ protected:
   unsigned long Iter_Update_AoA = 0; /*!< \brief Iteration at which AoA was updated last */
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
-  unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
-  unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones. */
-  unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
-  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
-
-  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
-  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
-
   /*--- Turbomachinery Solver Variables ---*/
 
-  su2double ***AverageFlux = nullptr,
-            ***SpanTotalFlux = nullptr,
-            ***AverageVelocity = nullptr,
-            ***AverageTurboVelocity = nullptr,
-            ***OldAverageTurboVelocity = nullptr,
-            ***ExtAverageTurboVelocity = nullptr,
-             **AveragePressure = nullptr,
-             **OldAveragePressure = nullptr,
-             **RadialEquilibriumPressure = nullptr,
-             **ExtAveragePressure = nullptr,
-             **AverageDensity = nullptr,
-             **OldAverageDensity = nullptr,
-             **ExtAverageDensity = nullptr,
-             **AverageNu = nullptr,
-             **AverageKine = nullptr,
-             **AverageOmega = nullptr,
-             **ExtAverageNu = nullptr,
-             **ExtAverageKine = nullptr,
-             **ExtAverageOmega = nullptr;
+  vector<su2activematrix> AverageFlux;
+  vector<su2activematrix> SpanTotalFlux;
+  vector<su2activematrix> AverageVelocity;
+  vector<su2activematrix> AverageTurboVelocity;
+  vector<su2activematrix> OldAverageTurboVelocity;
+  vector<su2activematrix> ExtAverageTurboVelocity;
+  su2activematrix AveragePressure;
+  su2activematrix OldAveragePressure;
+  su2activematrix RadialEquilibriumPressure;
+  su2activematrix ExtAveragePressure;
+  su2activematrix AverageDensity;
+  su2activematrix OldAverageDensity;
+  su2activematrix ExtAverageDensity;
+  su2activematrix AverageNu;
+  su2activematrix AverageKine;
+  su2activematrix AverageOmega;
+  su2activematrix ExtAverageNu;
+  su2activematrix ExtAverageKine;
+  su2activematrix ExtAverageOmega;
 
-  su2double  **DensityIn = nullptr,
-             **PressureIn = nullptr,
-             ***TurboVelocityIn = nullptr,
-             **DensityOut = nullptr,
-             **PressureOut = nullptr,
-             ***TurboVelocityOut = nullptr,
-             **KineIn = nullptr,
-             **OmegaIn = nullptr,
-             **NuIn = nullptr,
-             **KineOut = nullptr,
-             **OmegaOut = nullptr,
-             **NuOut = nullptr;
+  su2activematrix DensityIn;
+  su2activematrix PressureIn;
+  vector<su2activematrix> TurboVelocityIn;
+  su2activematrix DensityOut;
+  su2activematrix PressureOut;
+  vector<su2activematrix> TurboVelocityOut;
+  su2activematrix KineIn;
+  su2activematrix OmegaIn;
+  su2activematrix NuIn;
+  su2activematrix KineOut;
+  su2activematrix OmegaOut;
+  su2activematrix NuOut;
 
-  complex<su2double> ***CkInflow = nullptr,
-                     ***CkOutflow1 = nullptr,
-                     ***CkOutflow2 = nullptr;
+  vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
   /*--- End of Turbomachinery Solver Variables ---*/
-
-  /*!
-   * \brief Generic implementation of explicit iterations (RK, Classic RK and EULER).
-   */
-  template<ENUM_TIME_INT IntegrationType>
-  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -239,7 +221,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+  void SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the undivided laplacian for the solution.
@@ -266,11 +248,10 @@ protected:
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                               CConfig *config, bool Output);
+                                               const CConfig *config);
 
   /*!
    * \brief Set gradients of coefficients for fixed CL mode
@@ -278,11 +259,30 @@ protected:
    */
   void SetCoefficient_Gradients(CConfig *config) const;
 
+  /*!
+   * \brief Instantiate a SIMD numerics object.
+   * \param[in] solvers - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) final;
+
+  /*!
+   * \brief Set the solver nondimensionalization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
+
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>() {}
+  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {}
 
   /*!
    * \overload Main constructor of this class.
@@ -297,13 +297,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CEulerSolver(void) override;
-
-  /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -354,20 +347,6 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the viscous contribution for a particular edge.
-   * \note The convective residual methods include a call to this for each edge,
-   *       this allows convective and viscous loops to be "fused".
-   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *numerics, CConfig *config) { }
-  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
@@ -452,22 +431,14 @@ public:
    * \param[in,out] preconditioner - The preconditioner matrix, must be allocated outside.
    */
   void SetPreconditioner(const CConfig *config, unsigned long iPoint,
-                         su2double delta, su2double** preconditioner) const;
-  using CSolver::SetPreconditioner; /*--- Silence warning. ---*/
-
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
+                         su2double delta, su2activematrix& preconditioner) const;
 
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config) override;
+  void Evaluate_ObjFunc(const CConfig *config) override;
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -552,31 +523,6 @@ public:
                                CConfig *config,
                                unsigned short val_marker,
                                bool val_inlet_surface);
-
-  /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -739,12 +685,6 @@ public:
                          unsigned short val_marker) final;
 
   /*!
-   * \brief Set the new solution variables to the current solution value for classical RK.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  inline void Set_NewSolution() final { nodes->SetSolution_New(); }
-
-  /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -817,14 +757,18 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Update the solution using an implicit Euler scheme.
+   * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) final;
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Update the solution using reduced order modelling methods (LSPG).
@@ -865,12 +809,6 @@ public:
   inline su2double GetInflow_Mach(unsigned short val_marker) const final { return Inflow_Mach[val_marker]; }
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
-  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional aero CD.
    * \return Value of the Aero CD coefficient (inviscid + viscous contribution).
    */
@@ -888,12 +826,6 @@ public:
    * \param[in] val_obj - Value of the contribution to the 'combo' objective.
    */
   inline void AddTotal_ComboObj(su2double val_obj) final {Total_ComboObj +=val_obj;}
-
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  inline void SetTotal_CEquivArea(su2double val_cequivarea) final { Total_CEquivArea = val_cequivarea; }
 
   /*!
    * \brief Set the value of the Aero drag.
@@ -1088,36 +1020,6 @@ public:
   void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) final;
 
   /*!
-   * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   */
-  void SetResidual_DualTime(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config,
-                            unsigned short iRKStep,
-                            unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) final;
-
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
-   */
-  void LoadRestart(CGeometry **geometry,
-                   CSolver ***solver,
-                   CConfig *config,
-                   int val_iter,
-                   bool val_update_geo) final;
-
-  /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container with all the solutions.
@@ -1133,7 +1035,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config) final;
+  void SetFreeStream_Solution(const CConfig *config) final;
 
   /*!
    * \brief Initilize turbo containers.
@@ -1277,7 +1179,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
+  inline const su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
     return AverageTurboVelocity[valMarker][valSpan];
   }
 
@@ -1430,7 +1332,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+  inline const su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
     return TurboVelocityIn[inMarkerTP][valSpan];
   }
 
@@ -1457,7 +1359,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+  inline const su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
     return TurboVelocityOut[inMarkerTP][valSpan];
   }
 
@@ -1542,12 +1444,10 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityIn(su2double *value,
+  inline void SetTurboVelocityIn(const su2double *value,
                                  unsigned short inMarkerTP,
                                  unsigned short valSpan) final {
-    unsigned short iDim;
-
-    for(iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       TurboVelocityIn[inMarkerTP][valSpan][iDim] = value[iDim];
   }
 
@@ -1578,12 +1478,10 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityOut(su2double *value,
+  inline void SetTurboVelocityOut(const su2double *value,
                                   unsigned short inMarkerTP,
                                   unsigned short valSpan) final {
-    unsigned short iDim;
-
-    for(iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
   }
 
@@ -1659,7 +1557,7 @@ public:
   void PrintVerificationError(const CConfig* config) const final;
 
   /*!
-   * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).
+   * \brief The Euler and NS solvers support MPI+OpenMP.
    */
   inline bool GetHasHybridParallel() const final { return true; }
 

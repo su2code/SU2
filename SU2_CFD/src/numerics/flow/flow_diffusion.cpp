@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/numerics/flow/flow_diffusion.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              unsigned short val_nVar,
@@ -123,262 +124,44 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
                            const su2double val_laminar_viscosity,
                            const su2double val_eddy_viscosity) {
 
-  unsigned short iDim, jDim;
   const su2double Density = val_primvar[nDim+2];
-  const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 
-  su2double div_vel = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += val_gradprimvar[iDim+1][iDim];
-
-  /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
+  /* --- If UQ methodology is used, use the perturbed Reynolds stress tensor
+   * for the turbulent part of tau. Otherwise both the laminar and turbulent
+   * parts of tau can be computed with the total viscosity. --- */
 
   if (using_uq){
-    for (iDim = 0 ; iDim < nDim; iDim++)
-      for (jDim = 0 ; jDim < nDim; jDim++)
-        tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-        - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
-
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity);  // laminar part
+    // add turbulent part which was perturbed
+    for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
+        tau[iDim][jDim] += (-Density) * MeanPerturbedRSM[iDim][jDim];
   } else {
-
-    for (iDim = 0 ; iDim < nDim; iDim++)
-      for (jDim = 0 ; jDim < nDim; jDim++)
-        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-                        - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+    // compute both parts in one step
+    const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0)); // TODO why ignore turb_ke?
   }
 }
 
-void CAvgGrad_Base::AddQCR(const su2double* const *val_gradprimvar) {
+void CAvgGrad_Base::AddTauWall(const su2double *UnitNormal,
+                               const su2double TauWall) {
 
-  su2double den_aux, c_cr1= 0.3, O_ik, O_jk;
-  unsigned short iDim, jDim, kDim;
+  /*--- Compute the wall shear stress as the magnitude of the
+   tangential projection of the shear stress tensor. ---*/
 
-  /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+  su2double TauTangent[MAXNDIM];
+  GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);
 
-  den_aux = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      den_aux += val_gradprimvar[iDim+1][jDim] * val_gradprimvar[iDim+1][jDim];
-  den_aux = sqrt(max(den_aux,1E-10));
-
-  /*--- Adding the QCR contribution ---*/
-
-  for (iDim = 0 ; iDim < nDim; iDim++){
-    for (jDim = 0 ; jDim < nDim; jDim++){
-      for (kDim = 0 ; kDim < nDim; kDim++){
-        O_ik = (val_gradprimvar[iDim+1][kDim] - val_gradprimvar[kDim+1][iDim])/ den_aux;
-        O_jk = (val_gradprimvar[jDim+1][kDim] - val_gradprimvar[kDim+1][jDim])/ den_aux;
-        tau[iDim][jDim] -= c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
-      }
-    }
-  }
-}
-
-void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
-                               const su2double val_tau_wall) {
-
-  unsigned short iDim, jDim;
-  su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
-
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += val_normal[iDim]*val_normal[iDim];
-  Area = sqrt(Area);
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = val_normal[iDim]/Area;
-
-  /*--- First, compute wall shear stress as the magnitude of the wall-tangential
-   component of the shear stress tensor---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    TauElem[iDim] = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++)
-      TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
-  }
-
-  TauNormal = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-  WallShearStress = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    WallShearStress += TauTangent[iDim]*TauTangent[iDim];
-  WallShearStress = sqrt(WallShearStress);
+  su2double WallShearStress = GeometryToolbox::Norm(nDim, TauTangent);
+  su2double Scale = TauWall / WallShearStress;
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
-   to the computed representation of the shear stress ---*/
+   (from wall functions) to the one computed above. ---*/
 
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
+  for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto jDim = 0u; jDim < nDim; jDim++)
+      tau[iDim][jDim] *= Scale;
 }
-
-void CAvgGrad_Base::GetMeanRateOfStrainMatrix(su2double **S_ij) const
-{
-  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
-
-  if (nDim == 3){
-    S_ij[0][0] = Mean_GradPrimVar[1][0];
-    S_ij[1][1] = Mean_GradPrimVar[2][1];
-    S_ij[2][2] = Mean_GradPrimVar[3][2];
-    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
-    S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
-    S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-  }
-  else {
-    S_ij[0][0] = Mean_GradPrimVar[1][0];
-    S_ij[1][1] = Mean_GradPrimVar[2][1];
-    S_ij[2][2] = 0.0;
-    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
-    S_ij[0][2] = 0.0;
-    S_ij[1][2] = 0.0;
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-
-  }
-}
-
-void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
-
-  unsigned short iDim, jDim;
-  su2double **S_ij = new su2double* [3];
-  su2double muT = Mean_Eddy_Viscosity;
-  su2double divVel = 0;
-  su2double density;
-  su2double TWO3 = 2.0/3.0;
-  density = Mean_PrimVar[nDim+2];
-
-  for (iDim = 0; iDim < 3; iDim++){
-    S_ij[iDim] = new su2double [3];
-  }
-
-  GetMeanRateOfStrainMatrix(S_ij);
-
-  /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
-
-  for (iDim = 0; iDim < 3; iDim++){
-    divVel += S_ij[iDim][iDim];
-  }
-
-  for (iDim = 0; iDim < 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
-    }
-  }
-
-  for (iDim = 0; iDim < 3; iDim++)
-    delete [] S_ij[iDim];
-  delete [] S_ij;
-}
-
-void CAvgGrad_Base::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
-
-  unsigned short iDim,jDim;
-
-  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
-
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
-      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
-    }
-  }
-
-  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
-
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
-
-  /* compute convex combination coefficients */
-  su2double c1c = Eig_Val[2] - Eig_Val[1];
-  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
-  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
-
-  /* define barycentric traingle corner points */
-  Corners[0][0] = 1.0;
-  Corners[0][1] = 0.0;
-  Corners[1][0] = 0.0;
-  Corners[1][1] = 0.0;
-  Corners[2][0] = 0.5;
-  Corners[2][1] = 0.866025;
-
-  /* define barycentric coordinates */
-  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
-  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
-
-  if (Eig_Val_Comp == 1) {
-    /* 1C turbulence */
-    New_Coord[0] = Corners[0][0];
-    New_Coord[1] = Corners[0][1];
-  }
-  else if (Eig_Val_Comp== 2) {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-  else if (Eig_Val_Comp == 3) {
-    /* 3C turbulence */
-    New_Coord[0] = Corners[2][0];
-    New_Coord[1] = Corners[2][1];
-  }
-  else {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-
-  /* calculate perturbed barycentric coordinates */
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
-
-  /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
-  c3c = Barycentric_Coord[1] / Corners[2][1];
-  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
-  c2c = 1 - c1c - c3c;
-
-  /* build new anisotropy eigenvalues */
-  Eig_Val[0] = (c3c - 1) / 3.0;
-  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
-  Eig_Val[2] = c1c + Eig_Val[1];
-
-  /* permute eigenvectors if required */
-  if (uq_permute) {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
-      }
-    }
-  }
-
-  else {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
-      }
-    }
-  }
-
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
-
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
-      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
-    }
-  }
-
-}
-
 
 void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
                                    const su2double val_laminar_viscosity,
@@ -428,6 +211,8 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
                                        const su2double *val_normal) {
 
   /*--- Primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
@@ -580,16 +365,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -600,7 +383,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   for (iVar = 0; iVar < nPrimVar; iVar++) {
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
-
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -636,26 +418,25 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                     dist_ij_2, nDim+1);
   }
 
-  /*--- Wall shear stress values (wall functions) ---*/
+  /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
-  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
-  else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
-  else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
-  else Mean_TauWall = -1.0;
+  const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
-  /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
+  /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
   if (using_uq){
-    SetReynoldsStressMatrix(Mean_turb_ke);
-    SetPerturbedRSM(Mean_turb_ke, config);
+    ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                        Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-         Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
-  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
@@ -769,16 +550,14 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(PrimVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -824,8 +603,24 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                     dist_ij_2, nVar);
   }
 
+  /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
+
+  const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
+
+  /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
+
+  if (using_uq){
+    ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                        Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
+                        Mean_turb_ke, MeanPerturbedRSM);
+  }
+
   /*--- Get projected flux tensor (viscous residual) ---*/
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
 
@@ -884,6 +679,8 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
                                              su2double val_thermal_conductivity) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
@@ -1071,16 +868,14 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -1138,17 +933,25 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                     dist_ij_2, nDim+1);
   }
 
-  /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
+  /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
+
+  const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
+
+  /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
   if (using_uq){
-    SetReynoldsStressMatrix(Mean_turb_ke);
-    SetPerturbedRSM(Mean_turb_ke, config);
+    ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                        Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);

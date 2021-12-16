@@ -2,14 +2,14 @@
  * \file CSlidingMesh.cpp
  * \brief Implementation of sliding mesh interpolation.
  * \author H. Kline
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,11 +78,14 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long target_iPoint, jVertexTarget;
   unsigned long nEdges_target, nNode_target;
 
-  unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, *target_segment;
-  unsigned long  *Target_Proc;
-  long *Target_GlobalPoint, *Donor_GlobalPoint;
+  su2vector<unsigned long> Target_nLinkedNodes;
+  su2vector<unsigned long> Target_StartLinkedNodes;
+  unsigned long *target_segment;
+  su2vector<unsigned long> Target_LinkedNodes;
+  su2vector<unsigned long> Target_GlobalPoint, Donor_GlobalPoint;
 
-  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
+  su2double *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
+  su2activematrix TargetPoint_Coord;
 
   /* --- Donor variables --- */
 
@@ -91,11 +94,14 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
-  unsigned long *Donor_nLinkedNodes, *Donor_LinkedNodes, *Donor_StartLinkedNodes;
-  unsigned long *Donor_Proc;
+  su2vector<unsigned long> Donor_nLinkedNodes;
+  su2vector<unsigned long> Donor_StartLinkedNodes;
+  su2vector<unsigned long> Donor_LinkedNodes;
+  su2vector<unsigned long> Donor_Proc;
 
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
-  su2double **donor_element, *DonorPoint_Coord;
+  su2double **donor_element;
+  su2activematrix DonorPoint_Coord;
 
   targetVertices.resize(config[targetZone]->GetnMarker_All());
 
@@ -151,7 +157,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     Target_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
     Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
     Target_LinkedNodes      = Buffer_Receive_LinkedNodes;
-    Target_Proc             = Buffer_Receive_Proc;
 
     /*--- Donor boundary ---*/
     ReconstructBoundary(donorZone, markDonor);
@@ -204,7 +209,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
 
-            Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
+            Coord_j = DonorPoint_Coord[ donor_iPoint ];
 
             dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
@@ -224,7 +229,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Contruct information regarding the target cell ---*/
 
-          long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
+          auto dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
           for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
             if( dPoint == Target_GlobalPoint[jVertexTarget] )
               break;
@@ -240,10 +245,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
-            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] +
-                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
-            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] +
-                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
+            target_iMidEdge_point[iDim] = ( TargetPoint_Coord(target_segment[0], iDim ) +
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2.;
+            target_jMidEdge_point[iDim] = ( TargetPoint_Coord(target_segment[1], iDim ) +
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2.;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
@@ -286,10 +291,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord(donor_forward_point, iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord(donor_backward_point, iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
             }
 
             LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
@@ -369,10 +374,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord(donor_forward_point , iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord(donor_backward_point, iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
             }
 
             LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
@@ -451,10 +456,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
 
         /*--- The value of Area computed here includes also portion of boundary belonging to different marker ---*/
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         for (iDim = 0; iDim < nDim; iDim++)
           Normal[iDim] /= Area;
@@ -462,7 +464,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         for (iDim = 0; iDim < nDim; iDim++)
           Coord_i[iDim] = target_geometry->nodes->GetCoord(target_iPoint, iDim);
 
-        long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
+        auto dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
         for (target_iPoint = 0; target_iPoint < nGlobalVertex_Target; target_iPoint++){
           if( dPoint == Target_GlobalPoint[target_iPoint] )
             break;
@@ -488,7 +490,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
 
-          Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
+          Coord_j = DonorPoint_Coord[ donor_iPoint ];
 
           dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
@@ -704,20 +706,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
-    delete [] TargetPoint_Coord;
-    delete [] Target_GlobalPoint;
-    delete [] Target_Proc;
-    delete [] Target_nLinkedNodes;
-    delete [] Target_LinkedNodes;
-    delete [] Target_StartLinkedNodes;
-
-    delete [] DonorPoint_Coord;
-    delete [] Donor_GlobalPoint;
-    delete [] Donor_Proc;
-    delete [] Donor_nLinkedNodes;
-    delete [] Donor_StartLinkedNodes;
-    delete [] Donor_LinkedNodes;
-
   }
 
   delete [] Normal;
@@ -728,117 +716,98 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   delete [] storeProc;
 }
 
-int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
-                                           const unsigned long* nNeighbor, const su2double *coord,
+int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, const su2vector<unsigned long>& startIndex,
+                                           const su2vector<unsigned long>& nNeighbor, su2activematrix const& coord,
                                            unsigned long centralNode, su2double** element) {
 
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered
    *    surface element around the node and store it into "element" ---*/
 
-  unsigned long iNode, jNode, kNode, iElementNode, iPoint, jPoint, nOuterNodes;
-
   constexpr unsigned short nDim = 3;
-  unsigned short iDim, nTmp;
 
-  int NextNode, **OuterNodesNeighbour, CurrentNode, StartIndex, count;
-  const unsigned long *OuterNodes, *ptr;
+  const unsigned long *OuterNodes;
 
   /* --- Store central node as element first point --- */
 
-  for (iDim = 0; iDim < nDim; iDim++)
-    element[0][iDim] = coord[centralNode * nDim + iDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    element[0][iDim] = coord(centralNode,iDim);
 
-  nOuterNodes = nNeighbor[centralNode];
+  unsigned long nOuterNodes = nNeighbor[centralNode];
 
   OuterNodes = &map[ startIndex[centralNode] ];
 
-  /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to length variation --- */
+  // For each neighbor n of centralNode, store <=2 neighbors of centralNode that are neighbors of n.
+  su2matrix<int> OuterNodesNeighbour(nOuterNodes,2);
+  OuterNodesNeighbour = -1;
+  // Typically there are exactly 2 such neighbors, and all the neighbors of centralNode can be
+  // arranged into a closed chain. However at 1D boundaries of 2D markers, the neighbors might
+  // be an open chain, with the two ends having only 1 such neighbor.
+  // StartNode is a node where we can start to iterate through the chain. I.e. it's any node in
+  // case of a closed chain, or one of the two ends in case of an open chain.
+  int StartNode = 0;
+  for( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ ){
 
-  OuterNodesNeighbour = new int*[nOuterNodes];
-  for ( iNode = 0; iNode < nOuterNodes; iNode++ )
-    OuterNodesNeighbour[ iNode ] = new int[2];
+    int count = 0; // number of neighboring outer nodes already found
+    const unsigned long iPoint = OuterNodes[ iNode ];
+    const unsigned long *ptr = &map[ startIndex[iPoint] ];
 
-  /* --- Finds which and how many nodes belong to the specified marker, initialize some variables --- */
-
-  for ( iNode = 0; iNode < nOuterNodes; iNode++ ){
-    OuterNodesNeighbour[ iNode ][0] = -1;
-    OuterNodesNeighbour[ iNode ][1] = -1;
-  }
-
-  /* --- For each outer node, the program finds the two neighbouring outer nodes --- */
-
-  StartIndex = 0;
-  for( iNode = 0; iNode < nOuterNodes; iNode++ ){
-
-  count = 0;
-  iPoint = OuterNodes[ iNode ];
-  ptr = &map[ startIndex[iPoint] ];
-  nTmp = nNeighbor[iPoint];
-
-  for ( jNode = 0; jNode < nTmp; jNode++ ){
-    jPoint = ptr[jNode];
-    for( kNode = 0; kNode < nOuterNodes; kNode++ ){
-      if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-        OuterNodesNeighbour[iNode][count] = (int)kNode;
-        count++;
-        break;
+    for ( unsigned long jNode = 0; jNode < nNeighbor[iPoint]; jNode++ ){
+      const unsigned long jPoint = ptr[jNode];
+      for( unsigned long kNode = 0; kNode < nOuterNodes; kNode++ ){
+        if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
+          OuterNodesNeighbour(iNode,count) = static_cast<int>(kNode);
+          count++;
+          break;
+        }
       }
     }
-  }
-
-  // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
-  if( count == 1 )
-    StartIndex = (int)iNode;
+    if( count == 1 )
+      StartNode = static_cast<int>(iNode);
   }
 
   /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
 
-  CurrentNode = StartIndex;
-  NextNode    = OuterNodesNeighbour[ CurrentNode ][0];
-  iElementNode = 1;
+  int CurrentNode = StartNode;
+  int NextNode    = OuterNodesNeighbour(CurrentNode,0);
+  unsigned long iElementNode = 1;
 
-  while( NextNode != -1 ){
+  while( NextNode != -1 ){ // We finished iterating through the chain if it is an open chain and we reached the other end.
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim ])/2;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
 
     iElementNode++;
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] +
-                                        coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim] +
+                                        coord(OuterNodes[ NextNode ], iDim) )/3.;
     iElementNode++;
 
-    if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
+    // "Place the next domino piece in the correct orientation."
+    if( OuterNodesNeighbour(NextNode, 0) == CurrentNode){
       CurrentNode = NextNode;
-      NextNode = OuterNodesNeighbour[ NextNode ][1];
-    }
-    else{
+      NextNode = OuterNodesNeighbour(NextNode, 1);
+    } else{
       CurrentNode = NextNode;
-      NextNode = OuterNodesNeighbour[ NextNode ][0];
+      NextNode = OuterNodesNeighbour(NextNode, 0);
     }
 
-    if (CurrentNode == StartIndex)
+    // We finished iterating through the chain if it is closed and we reached the beginning again.
+    if (CurrentNode == StartNode)
       break;
-    }
+  }
 
-    if( CurrentNode == StartIndex ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
-
-    for (iDim = 0; iDim < nDim; iDim++)
+  if( CurrentNode == StartNode ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = element[1][iDim];
     iElementNode++;
-  }
-  else{
-    for (iDim = 0; iDim < nDim; iDim++)
-    element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] )/2;
+  } else{
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
     iElementNode++;
   }
 
-  for ( iNode = 0; iNode < nOuterNodes; iNode++ )
-    delete [] OuterNodesNeighbour[ iNode ];
-  delete [] OuterNodesNeighbour;
-
-  return (int)iElementNode;
+  return static_cast<int>(iElementNode);
 
 }
 

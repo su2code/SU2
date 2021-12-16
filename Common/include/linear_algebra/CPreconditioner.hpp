@@ -3,14 +3,14 @@
  * \brief Classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #pragma once
 
@@ -59,6 +58,17 @@ public:
    * \brief Generic "preprocessing" hook derived classes may implement to build the preconditioner.
    */
   virtual void Build() {}
+
+  /*!
+   * \brief Return true to identify the identity preconditioner, may allow some solvers to be more efficient.
+   */
+  virtual bool IsIdentity() const { return false; }
+
+  /*!
+   * \brief Factory method.
+   */
+  static CPreconditioner* Create(ENUM_LINEAR_SOLVER_PREC kind, CSysMatrix<ScalarType>& jacobian,
+                                 CGeometry* geometry, const CConfig* config);
 };
 template<class ScalarType>
 CPreconditioner<ScalarType>::~CPreconditioner() {}
@@ -74,7 +84,6 @@ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
   const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
-  bool transp;                           /*!< \brief If the transpose version of the preconditioner is required. */
 
 public:
   /*!
@@ -82,17 +91,15 @@ public:
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
    * \param[in] geometry_ref - Geometry associated with the problem.
    * \param[in] config_ref - Config of the problem.
-   * \param[in] transposed - If the transpose version of the preconditioner is required.
    */
   inline CJacobiPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                               CGeometry *geometry_ref, const CConfig *config_ref, bool transposed) :
+                               CGeometry *geometry_ref, const CConfig *config_ref) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
-    transp = transposed;
   }
 
   /*!
@@ -113,7 +120,7 @@ public:
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override {
-    sparse_matrix.BuildJacobiPreconditioner(transp);
+    sparse_matrix.BuildJacobiPreconditioner();
   }
 };
 
@@ -128,7 +135,6 @@ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
   const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
-  bool transp;                           /*!< \brief If the transpose version of the preconditioner is required. */
 
 public:
   /*!
@@ -136,17 +142,15 @@ public:
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
    * \param[in] geometry_ref - Geometry associated with the problem.
    * \param[in] config_ref - Config of the problem.
-   * \param[in] transposed - If the transpose version of the preconditioner is required.
    */
   inline CILUPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                            CGeometry *geometry_ref, const CConfig *config_ref, bool transposed) :
+                            CGeometry *geometry_ref, const CConfig *config_ref) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
-    transp = transposed;
   }
 
   /*!
@@ -167,7 +171,7 @@ public:
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override {
-    sparse_matrix.BuildILUPreconditioner(transp);
+    sparse_matrix.BuildILUPreconditioner();
   }
 };
 
@@ -263,7 +267,7 @@ public:
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override {
-    sparse_matrix.BuildJacobiPreconditioner(false);
+    sparse_matrix.BuildJacobiPreconditioner();
   }
 };
 
@@ -279,7 +283,6 @@ private:
   CGeometry* geometry;                   /*!< \brief Geometry associated with the problem. */
   const CConfig *config;                 /*!< \brief Configuration of the problem. */
   unsigned short kind_fact;              /*!< \brief The type of factorization desired. */
-  bool transp;                           /*!< \brief If the transpose version of the preconditioner is required. */
 
 public:
   /*!
@@ -288,10 +291,9 @@ public:
    * \param[in] geometry_ref - Associated geometry.
    * \param[in] config_ref - Problem configuration.
    * \param[in] kind_factorization - Type of factorization required.
-   * \param[in] transposed - If the transpose version of the preconditioner is required.
    */
   inline CPastixPreconditioner(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref,
-                               const CConfig *config_ref, unsigned short kind_factorization, bool transposed) :
+                               const CConfig *config_ref, unsigned short kind_factorization) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
@@ -299,7 +301,6 @@ public:
     geometry = geometry_ref;
     config = config_ref;
     kind_fact = kind_factorization;
-    transp = transposed;
   }
 
   /*!
@@ -320,6 +321,35 @@ public:
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override {
-    sparse_matrix.BuildPastixPreconditioner(geometry, config, kind_fact, transp);
+    sparse_matrix.BuildPastixPreconditioner(geometry, config, kind_fact);
   }
 };
+
+
+template<class ScalarType>
+CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOLVER_PREC kind,
+                                                                 CSysMatrix<ScalarType>& jacobian,
+                                                                 CGeometry* geometry,
+                                                                 const CConfig* config) {
+  CPreconditioner<ScalarType>* prec = nullptr;
+
+  switch (kind) {
+    case JACOBI:
+      prec = new CJacobiPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case LINELET:
+      prec = new CLineletPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case LU_SGS:
+      prec = new CLU_SGSPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case ILU:
+      prec = new CILUPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+      prec = new CPastixPreconditioner<ScalarType>(jacobian, geometry, config, kind);
+      break;
+  }
+
+  return prec;
+}

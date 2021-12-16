@@ -2,14 +2,14 @@
  * \file CMirror.cpp
  * \brief Implementation of mirror interpolation (conservative approach in FSI problems).
  * \author P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -93,11 +93,11 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Communicate vertex and donor node counts. ---*/
     SU2_MPI::Allgather(&nVertexTarget, 1, MPI_UNSIGNED_LONG,
-                       allNumVertexTarget.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                       allNumVertexTarget.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
     SU2_MPI::Allgather(&nVertexDonorLocal, 1, MPI_UNSIGNED_LONG,
-                       allNumVertexDonor.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                       allNumVertexDonor.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
     SU2_MPI::Allgather(&nNodeDonorLocal, 1, MPI_UNSIGNED_LONG,
-                       allNumNodeDonor.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                       allNumNodeDonor.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     /*--- Copy donor interpolation matrix (triplet format). ---*/
     vector<long> sendGlobalIndex(nNodeDonorLocal);
@@ -175,15 +175,15 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
           GlobalIndex[iSend] = new long [numCoeff];
           DonorIndex[iSend] = new long [numCoeff];
           DonorCoeff[iSend] = new su2double [numCoeff];
-          SU2_MPI::Recv(GlobalIndex[iSend], numCoeff, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-          SU2_MPI::Recv(DonorIndex[iSend],  numCoeff, MPI_LONG, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-          SU2_MPI::Recv(DonorCoeff[iSend], numCoeff, MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(GlobalIndex[iSend], numCoeff, MPI_LONG, jProcessor, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(DonorIndex[iSend],  numCoeff, MPI_LONG, jProcessor, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(DonorCoeff[iSend], numCoeff, MPI_DOUBLE, jProcessor, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
         }
         else if (rank == jProcessor) {
           /*--- "I'm" the donor, send. ---*/
-          SU2_MPI::Send(sendGlobalIndex.data(), numCoeff, MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
-          SU2_MPI::Send(sendDonorIndex.data(),  numCoeff, MPI_LONG, iProcessor, 0, MPI_COMM_WORLD);
-          SU2_MPI::Send(sendDonorCoeff.data(), numCoeff, MPI_DOUBLE, iProcessor, 0, MPI_COMM_WORLD);
+          SU2_MPI::Send(sendGlobalIndex.data(), numCoeff, MPI_LONG, iProcessor, 0, SU2_MPI::GetComm());
+          SU2_MPI::Send(sendDonorIndex.data(),  numCoeff, MPI_LONG, iProcessor, 0, SU2_MPI::GetComm());
+          SU2_MPI::Send(sendDonorCoeff.data(), numCoeff, MPI_DOUBLE, iProcessor, 0, SU2_MPI::GetComm());
         }
       }
     }
@@ -231,7 +231,8 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
         }
       }
 
-    } // end target loop
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free the heap allocations. ---*/
     for (auto ptr : GlobalIndex) if (ptr != sendGlobalIndex.data()) delete [] ptr;

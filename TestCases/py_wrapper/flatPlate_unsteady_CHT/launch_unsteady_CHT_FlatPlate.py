@@ -3,7 +3,7 @@
 ## \file launch_unsteady_CHT_FlatPlate.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 7.0.7 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@ import pysu2			            # imports the SU2 wrapped module
 from math import *
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
@@ -53,38 +53,12 @@ def main():
   # Command line options
   parser=OptionParser()
   parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
-  parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
-                    metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
-                    metavar="ZONES")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
 
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-
-  parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
-                    help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-
-  parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
-                    help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
-
-  parser.add_option("--wave_equation", dest="wave_equation", default="False",
-                    help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
-
-  parser.add_option("--heat_equation", dest="heat_equation", default="False",
-                    help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
-
   (options, args) = parser.parse_args()
-  options.nDim  = int( options.nDim )
-  options.nZone = int( options.nZone )
-  options.fsi = options.fsi.upper() == 'TRUE'
-  options.fem = options.fem.upper() == 'TRUE'
-  options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
-  options.poisson_equation = options.poisson_equation.upper() == 'TRUE'
-  options.wave_equation    = options.wave_equation.upper()    == 'TRUE'
-  options.heat_equation    = options.heat_equation.upper()    == 'TRUE'
+  options.nDim = int(2)
+  options.nZone = int(1)
 
   # Import mpi4py for parallel run
   if options.with_MPI == True:
@@ -92,18 +66,11 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
   else:
-    comm = 0 
+    comm = 0
     rank = 0
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, comm);
-    elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, comm);
-    elif (options.nZone == 2) and (options.fsi):
-      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, comm);
-    else:
       SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
@@ -162,6 +129,8 @@ def main():
     SU2Driver.BoundaryConditionsUpdate()
     # Run one time iteration (e.g. dual-time)
     SU2Driver.Run()
+    # Postprocess the solver and exit cleanly
+    SU2Driver.Postprocess()
     # Update the solver for the next time iteration
     SU2Driver.Update()
     # Monitor the solver and output solution to file if required
@@ -173,9 +142,6 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
-
   if SU2Driver != None:
     del SU2Driver
 
@@ -185,4 +151,4 @@ def main():
 
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
-    main()  
+    main()

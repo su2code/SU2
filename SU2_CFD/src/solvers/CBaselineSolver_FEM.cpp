@@ -2,14 +2,14 @@
  * \file CBaselineSolver_FEM.cpp
  * \brief Main subroutines for CBaselineSolver_FEM class.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Determine the global number of DOFs. ---*/
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nDOFsGlobal = nDOFsLocOwned;
 #endif
@@ -140,7 +140,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
       SU2_MPI::Error(string("File ") + filename + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
 
     /*--- Close the file. ---*/
 
@@ -157,7 +157,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -174,7 +174,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -183,7 +183,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
       SU2_MPI::Error(string("File ") + filename + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
 
     /*--- All ranks close the file after writing. ---*/
 
@@ -230,7 +230,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
       SU2_MPI::Error(string("File ") + filename + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     fclose(fhw);
 
 #else
@@ -244,7 +244,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -259,7 +259,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -268,7 +268,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
       SU2_MPI::Error(string("File ") + filename + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
 
     MPI_File_close(&fhw);
 
@@ -368,7 +368,7 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
 #ifdef HAVE_MPI
   unsigned short sbuf_NotMatching = rbuf_NotMatching;
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   if (rbuf_NotMatching != 0)

@@ -2,14 +2,14 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,7 +132,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     /*--- Close the file. ---*/
@@ -157,7 +157,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -175,7 +175,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -184,7 +184,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
 
@@ -208,7 +208,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Broadcast the string names of the variables. ---*/
 
     SU2_MPI::Bcast(mpi_str_buf, nVar*CGNS_STRING_SIZE, MPI_CHAR,
-                   MASTER_NODE, MPI_COMM_WORLD);
+                   MASTER_NODE, SU2_MPI::GetComm());
 
     fields.push_back("Point_ID");
 
@@ -269,7 +269,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     fclose(fhw);
@@ -283,7 +283,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -298,7 +298,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -307,7 +307,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     MPI_File_close(&fhw);
@@ -357,7 +357,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() );
   unsigned short iInst = config->GetiInst();
   bool steady_restart = config->GetSteadyRestart();
-  unsigned short turb_model = config->GetKind_Turb_Model();
+  TURB_MODEL turb_model = config->GetKind_Turb_Model();
 
   su2double *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -421,9 +421,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
 
-        if (turb_model == SA || turb_model == SA_NEG) {
+        if (turb_model == TURB_MODEL::SA || turb_model == TURB_MODEL::SA_NEG) {
           index++;
-        } else if (turb_model == SST) {
+        } else if (turb_model == TURB_MODEL::SST) {
           index+=2;
         }
 

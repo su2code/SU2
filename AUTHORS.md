@@ -15,11 +15,13 @@ Juan J. Alonso                 (Stanford University)
 The SU2 project is maintained by members of the SU2 Foundation (https://su2foundation.org)
 
 ```
-Thomas D. Economon - Executive Director   - tom@su2foundation.org
-Ruben Sanchez      - User Director        - ruben@su2foundation.org
-Tim Albring        - Developer Director   - tim@su2foundation.org
-Juan J. Alonso     - Academic Director    - juan@su2foundation.org
-Eran Arad          - Industry Director    - eran@su2foundation.org
+Thomas D. Economon - Executive Director - tom@su2foundation.org
+Tim Albring        - Director           - tim@su2foundation.org
+Juan J. Alonso     - Director           - juan@su2foundation.org
+Eran Arad          - Director           - eran@su2foundation.org
+Piero Colonna      - Director           - piero@su2foundation.org
+Pedro Gomes        - Director           - pedro@su2foundation.org
+Daniel Mayer       - Director           - daniel@su2foundation.org
 ```
 
 in collaboration with the following main contributors and research teams:
@@ -43,6 +45,7 @@ Copyright holders might be the individual person or their respective employer. I
 ```
 Akshay.K.R
 Alejandro
+Alessandro Gastaldi
 Aman uz zaman Baig
 Amit Sachdeva
 Ana Lourenco
@@ -53,35 +56,50 @@ Antonio Rubino
 Arne Bachmann
 Beckett Y. Zhou
 Benjamin S. Kirk
-Brandon Tracey
+Brendan Tracey
+Brian Munguía
 Carsten Othmer
+Catarina Garbacz
+Charanya Venkatesan-Crome
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
 Eduardo Molina
+Edwin van der Weide
 Ethan Alan Hereth
-FlorianDm
+Florian Dittmann
 Francisco D. Palacios
 Gaurav Bansal
+Giacomo Baldan
 Giulio Gori
 Guillaume Bâty
 Harichand M V
+HL Kline
 IndianaStokes
 J. Sinsay
 JSmith36
+Jacob Needels
 Jairo Paes Cavalcante Filho
 Jason Howison
 Jayant Mukhopadhaya
 Jeffrey van Oostrom
 Jessie Lauzon
 João Loureiro
+Johannes Blühdorn
+JonathanSmith1936
 Kedar Naik
 LaSerpe
+Lennaert Tol
 Matteo Pini
+Max Aehle
 Max Le
 Max Sagebaum
 Michele Gaffuri
 Mickael Philit
+Mladen Banovic
+Nat-1
+Nicola Fonzi
+Nijso Beishuizen
 Ole Burghardt
 Patrick Mischke
 Paul Urbanczyk
@@ -91,6 +109,7 @@ Pete Bachant
 RaulFeijo55
 Ruben Sanchez
 Ryan Barrett
+SaettaE
 Salvatore Vitale
 Samet Cakmakcioglu
 Scott Imlay
@@ -104,29 +123,27 @@ Trent Lukaczyk
 VivaanKhatri
 Wally Maier
 aaronyicongfu
+aeroamit
 anilvar
-bmunguia
+band-a-prend
 chamsolli
 costat
-cr109
-cvencro
 daniel-linton
 demanosalvas
 dmudiger
 erangit
 flo
-hlkline
+fmpmorgado
+garcgutierrez
 juliendm
 jvanoostrom
-koodlyakshay
 mcolonno
 minkwankim
 padronas
-sametcaka
+snow54
 sravya91
 srcopela
 tobadavid
-vdweide
 vfrancesmolla
 ```
 

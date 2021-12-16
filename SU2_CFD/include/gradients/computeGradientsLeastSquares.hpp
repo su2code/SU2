@@ -3,14 +3,14 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,39 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 namespace detail {
+
+/*!
+ * \brief Prepare Smatrix for 2D or 3D
+ */
+FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
+                                su2double r22, su2double r23, su2double r33,
+                                su2double detR2, su2double Smatrix[][2]) {
+  Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+  Smatrix[0][1] = -r11*r12/detR2;
+  Smatrix[1][1] = r11*r11/detR2;
+}
+
+FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
+                                su2double r22, su2double r23, su2double r33,
+                                su2double detR2, su2double Smatrix[][3]) {
+  su2double z11 = r22*r33;
+  su2double z12 =-r12*r33;
+  su2double z13 = r12*r23-r13*r22;
+  su2double z22 = r11*r33;
+  su2double z23 =-r11*r23;
+  su2double z33 = r11*r22;
+
+  Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+  Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+  Smatrix[0][2] = (z13*z33)/detR2;
+  Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+  Smatrix[1][2] = (z23*z33)/detR2;
+  Smatrix[2][2] = (z33*z33)/detR2;
+}
 
 /*!
  * \brief Solve the least-squares problem for one point.
@@ -47,34 +76,34 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   /*--- Entries of upper triangular matrix R. ---*/
 
+  if (periodic) {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Rmatrix(iPoint,0,0));
+    AD::SetPreaccIn(Rmatrix(iPoint,0,1));
+    AD::SetPreaccIn(Rmatrix(iPoint,1,1));
+  }
+
   su2double r11 = Rmatrix(iPoint,0,0);
   su2double r12 = Rmatrix(iPoint,0,1);
   su2double r22 = Rmatrix(iPoint,1,1);
   su2double r13 = 0.0, r23 = 0.0, r33 = 1.0;
-
-  if (periodic) {
-    AD::StartPreacc();
-    AD::SetPreaccIn(r11);
-    AD::SetPreaccIn(r12);
-    AD::SetPreaccIn(r22);
-  }
 
   r11 = sqrt(max(r11, eps));
   r12 /= r11;
   r22 = sqrt(max(r22 - r12*r12, eps));
 
   if (nDim == 3) {
+    if (periodic) {
+      AD::SetPreaccIn(Rmatrix(iPoint,0,2));
+      AD::SetPreaccIn(Rmatrix(iPoint,1,2));
+      AD::SetPreaccIn(Rmatrix(iPoint,2,1));
+      AD::SetPreaccIn(Rmatrix(iPoint,2,2));
+    }
+
     r13 = Rmatrix(iPoint,0,2);
     r33 = Rmatrix(iPoint,2,2);
     const auto r23_a = Rmatrix(iPoint,1,2);
     const auto r23_b = Rmatrix(iPoint,2,1);
-
-    if (periodic) {
-      AD::SetPreaccIn(r13);
-      AD::SetPreaccIn(r23_a);
-      AD::SetPreaccIn(r23_b);
-      AD::SetPreaccIn(r33);
-    }
 
     r13 /= r11;
     r23 = r23_a/r22 - r23_b*r12/(r11*r22);
@@ -92,26 +121,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   /*--- Detect singular matrix ---*/
 
   if (detR2 > eps) {
-    if (nDim == 2) {
-      Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-      Smatrix[0][1] = -r11*r12/detR2;
-      Smatrix[1][1] = r11*r11/detR2;
-    }
-    else {
-      su2double z11 = r22*r33;
-      su2double z12 =-r12*r33;
-      su2double z13 = r12*r23-r13*r22;
-      su2double z22 = r11*r33;
-      su2double z23 =-r11*r23;
-      su2double z33 = r11*r22;
-
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-      Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-      Smatrix[0][2] = (z13*z33)/detR2;
-      Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-      Smatrix[1][2] = (z23*z33)/detR2;
-      Smatrix[2][2] = (z33*z33)/detR2;
-    }
+    computeSmatrix(r11, r12, r13, r22, r23, r33, detR2, Smatrix);
   }
 
   if (periodic) {
@@ -193,7 +203,8 @@ void computeGradientsLeastSquares(CSolver* solver,
     auto nodes = geometry.nodes;
     const auto coord_i = nodes->GetCoord(iPoint);
 
-    AD::StartPreacc();
+    /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+    if (omp_get_num_threads() == 1) AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -238,7 +249,7 @@ void computeGradientsLeastSquares(CSolver* solver,
             Rmatrix(iPoint,iDim,jDim) += dist_ij[iDim]*dist_ij[jDim]*weight;
 
         if (nDim == 3)
-          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
+          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[nDim-1]*weight;
 
         /*--- Entries of c:= transpose(A)*b ---*/
 
@@ -274,6 +285,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       solveLeastSquares<nDim, false>(iPoint, varBegin, varEnd, Rmatrix, gradient);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
@@ -290,6 +302,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     SU2_OMP_FOR_DYN(chunkSize)
     for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
       solveLeastSquares<nDim, true>(iPoint, varBegin, varEnd, Rmatrix, gradient);
+    END_SU2_OMP_FOR
   }
 
   /*--- If no solver was provided we do not communicate ---*/

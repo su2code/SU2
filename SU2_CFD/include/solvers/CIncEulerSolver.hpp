@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,21 +36,99 @@
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
  */
-class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
+class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
-  su2double
-  *Primitive = nullptr,   /*!< \brief Auxiliary nPrimVar vector. */
-  *Primitive_i = nullptr, /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Primitive_j = nullptr; /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+  StreamwisePeriodicValues SPvals;
 
-  CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
-  su2double **Preconditioner = nullptr; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
+  /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] iPoint - Index of the grid point
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] delta - Volume over delta time, does not matter for explicit.
+   * \param[out] preconditioner - The preconditioner matrix.
+   */
+  void SetPreconditioner(const CConfig *config, unsigned long iPoint,
+                         su2double delta, su2activematrix& preconditioner) const;
+
+  /*!
+   * \brief Compute a pressure sensor switch.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the max eigenvalue.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, const CConfig *config);
+
+  /*!
+   * \brief Update the Beta parameter for the incompressible preconditioner.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void SetBeta_Parameter(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config,
+                         unsigned short iMesh);
+
+  /*!
+   * \brief A virtual member.
+   */
+  void GetOutlet_Properties(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned short iMesh,
+                            bool Output);
+
+  /*!
+   * \brief Set the solver nondimensionalization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Generic implementation of explicit iterations with preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
 
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CIncEulerSolver() : CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() {}
+  CIncEulerSolver() : CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>() {}
 
   /*!
    * \overload
@@ -67,17 +145,10 @@ public:
   ~CIncEulerSolver(void) override;
 
   /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
-
-  /*!
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline CFluidModel* GetFluidModel(void) const final { return FluidModel;}
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -91,7 +162,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) override;
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -169,56 +240,13 @@ public:
                     bool Output) override;
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output);
-
-  /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the max eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config) final;
+  inline void Evaluate_ObjFunc(const CConfig *config) final {
+    Total_ComboObj = EvaluateCommonObjFunc(*config);
+  }
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -269,13 +297,6 @@ public:
                  unsigned short val_marker) final;
 
   /*!
-   * \brief compare to values.
-   * \param[in] a - value 1.
-   * \param[in] b - value 2.
-   */
-  static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
-
-  /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -288,6 +309,18 @@ public:
                             unsigned short iRKStep) final;
 
   /*!
+   * \brief Update the solution using the classical Runge-Kutta 4 scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config,
+                              unsigned short iRKStep) final;
+
+  /*!
    * \brief Update the solution using the explicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -298,14 +331,18 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Update the solution using an implicit Euler scheme.
+   * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) final;
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -338,48 +375,10 @@ public:
                    bool val_update_geo) final;
 
   /*!
-   * \brief Set the initial condition for the Euler Equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry **geometry,
-                           CSolver ***solver_container,
-                           CConfig *config,
-                           unsigned long TimeIter) final;
-  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config) final;
-
-  /*!
-   * \brief Update the Beta parameter for the incompressible preconditioner.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   */
-  void SetBeta_Parameter(CGeometry *geometry,
-                         CSolver **solver_container,
-                         CConfig *config,
-                         unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the preconditioner for low-Mach flows.
-   * \param[in] iPoint - Index of the grid point
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPreconditioner(CConfig *config, unsigned long iPoint) final;
-
-  /*!
-   * \brief A virtual member.
-   */
-  void GetOutlet_Properties(CGeometry *geometry,
-                            CConfig *config,
-                            unsigned short iMesh,
-                            bool Output) final;
+  void SetFreeStream_Solution(const CConfig *config) final;
 
   /*!
    * \brief Print verification error to screen.
@@ -387,4 +386,14 @@ public:
    */
   void PrintVerificationError(const CConfig* config) const final;
 
+  /*!
+   * \brief The incompressible Euler and NS solvers support MPI+OpenMP.
+   */
+  inline bool GetHasHybridParallel() const final { return true; }
+
+  /*!
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
+   */
+  StreamwisePeriodicValues GetStreamwisePeriodicValues() const final { return SPvals; }
 };

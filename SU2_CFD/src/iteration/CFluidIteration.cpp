@@ -2,14 +2,14 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, 
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This is done only in the first block subiteration.---*/
   /*--- From then on, the solver reuses the partially converged solution obtained in the previous subiteration ---*/
-  if (fsi && (OuterIter == 0)) {
+  if (fsi && !config[val_iZone]->GetDiscrete_Adjoint() && (OuterIter == 0)) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(
         geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
   }
@@ -58,41 +58,45 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long InnerIter, TimeIter;
 
-  bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                  (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
-  bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
-                     (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                        (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
+                           (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
-   steady or an unsteady simulaiton */
+   steady or an unsteady simulation */
 
   InnerIter = config[val_iZone]->GetInnerIter();
 
   /*--- Update global parameters ---*/
 
   switch (config[val_iZone]->GetKind_Solver()) {
-    case EULER:
-    case DISC_ADJ_EULER:
-    case INC_EULER:
-    case DISC_ADJ_INC_EULER:
-    case NEMO_EULER:
-      config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::DISC_ADJ_EULER:
+    case MAIN_SOLVER::INC_EULER:
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER:
+    case MAIN_SOLVER::NEMO_EULER:
+      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::EULER, RUNTIME_FLOW_SYS);
       break;
 
-    case NAVIER_STOKES:
-    case DISC_ADJ_NAVIER_STOKES:
-    case INC_NAVIER_STOKES:
-    case DISC_ADJ_INC_NAVIER_STOKES:
-    case NEMO_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case MAIN_SOLVER::INC_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::NAVIER_STOKES, RUNTIME_FLOW_SYS);
       break;
 
-    case RANS:
-    case DISC_ADJ_RANS:
-    case INC_RANS:
-    case DISC_ADJ_INC_RANS:
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS);
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_FLOW_SYS);
+      break;
+
+    default:
       break;
   }
 
@@ -101,43 +105,62 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
-  if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
-       config[val_iZone]->GetKind_Solver() == INC_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) &&
+  /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
+
+  if ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS ||
+       config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS) &&
       !frozen_visc) {
     /*--- Solve the turbulence model ---*/
 
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS);
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
 
     /*--- Solve transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == LM) {
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS);
+    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
     }
   }
 
+  if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
+    config[val_iZone]->SetGlobalParam(config[val_iZone]->GetKind_Solver(), RUNTIME_SPECIES_SYS);
+    integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                         RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
+
+    // This only applies if mixture properties are used. But this also doesn't hurt if done w/out mixture properties.
+    // In case of turbulence, the Turb-Post computes the correct eddy viscosity based on mixture-density and
+    // mixture lam-visc. In order to get the correct mixture properties, based on the just updated mass-fractions, the
+    // Flow-Pre has to be called upfront. The updated eddy-visc are copied into the flow-solver Primitive in another
+    // Flow-Pre call which is done at the start of the next iteration.
+    if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+      solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+      solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    }
+  }
+
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_HEAT_SYS, val_iZone, val_iInst);
   }
 
   /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
   if (config[val_iZone]->AddRadiation()) {
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS);
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_RADIATION_SYS);
     integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
-  if (config[val_iZone]->GetCFL_Adapt() == YES) {
+  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
+    END_SU2_OMP_PARALLEL
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -163,27 +186,29 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver on all mesh levels ---*/
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
                                                                       solver[val_iZone][val_iInst][iMesh][FLOW_SOL],
                                                                       config[val_iZone], iMesh);
+
+      integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
+                                                                        solver[val_iZone][val_iInst][iMesh][MESH_SOL],
+                                                                        config[val_iZone], iMesh);
+
       integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
 
-    /*--- Update dual time solver for the dynamic mesh solver ---*/
-    if (config[val_iZone]->GetDeform_Mesh()) {
-      solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
-    }
+    SetDualTime_Aeroelastic(config[val_iZone]);
 
     /*--- Update dual time solver for the turbulence model ---*/
 
-    if ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
-        (config[val_iZone]->GetKind_Solver() == INC_RANS) ||
-        (config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS)) {
+    if ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) || (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS)) {
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                       solver[val_iZone][val_iInst][MESH_0][TURB_SOL],
                                                                       config[val_iZone], MESH_0);
@@ -192,11 +217,20 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
     /*--- Update dual time solver for the transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == LM) {
+    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       integration[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
                                                                        solver[val_iZone][val_iInst][MESH_0][TRANS_SOL],
                                                                        config[val_iZone], MESH_0);
       integration[val_iZone][val_iInst][TRANS_SOL]->SetConvergence(false);
+    }
+
+    /*--- Update dual time solver for the weakly coupled energy equation ---*/
+
+    if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+      integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
+                                                                      solver[val_iZone][val_iInst][MESH_0][HEAT_SOL],
+                                                                      config[val_iZone], MESH_0);
+      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
     }
   }
 }
@@ -240,28 +274,13 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
 
+  /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
   if (config[val_iZone]->GetSinglezone_Driver()) {
+
     /*--- Compute the tractions at the vertices ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(geometry[val_iZone][val_iInst][MESH_0],
                                                                            config[val_iZone]);
-
-    if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
-        config[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-        config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) {
-      /*--- Read the target pressure ---*/
-
-      //      if (config[val_iZone]->GetInvDesign_Cp() == YES)
-      //        output->SetCp_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry[val_iZone][val_iInst][MESH_0],
-      //        config[val_iZone], config[val_iZone]->GetExtIter());
-
-      //      /*--- Read the target heat flux ---*/
-
-      //      if (config[val_iZone]->GetInvDesign_HeatFlux() == YES)
-      //        output->SetHeatFlux_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry[val_iZone][val_iInst][MESH_0],
-      //        config[val_iZone], config[val_iZone]->GetExtIter());
-    }
   }
 }
 
@@ -311,9 +330,14 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   if (multizone && steady) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
 
-    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+    /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
 
-    integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::HEAT_EQUATION) {
+      integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
+    }
+    else {
+      integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    }
   }
 }
 
@@ -354,6 +378,8 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
   su2double Physical_dt = config->GetDelta_UnstTime();
   unsigned long TimeIter = config->GetTimeIter();
+  if (config->GetDiscrete_Adjoint()) TimeIter = config->GetUnst_AdjointIter() - TimeIter - 1;
+
   su2double Physical_t = TimeIter * Physical_dt;
 
   su2double Uinf = solver[MESH_0][FLOW_SOL]->GetVelocity_Inf(0);  // Assumption gust moves at infinity velocity
@@ -389,7 +415,7 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
     for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
       /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
-      if (Kind_Grid_Movement == GUST) {
+      if (Kind_Grid_Movement == GUST && !(config->GetFSI_Simulation())) {
         for (iDim = 0; iDim < nDim; iDim++) geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, 0.0);
       }
 
@@ -557,4 +583,75 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
 
   /* --- Set convergence based on fixed CL convergence  --- */
   return fixed_cl_convergence;
+}
+
+void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
+
+  /*--- Store old aeroelastic solutions ---*/
+
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation()) {
+
+    config->SetAeroelastic_n1();
+    config->SetAeroelastic_n();
+
+    /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
+
+#ifdef HAVE_MPI
+    su2double plunge, pitch, *plunge_all = nullptr, *pitch_all = nullptr;
+    unsigned short iMarker, iMarker_Monitoring;
+    unsigned long iProcessor, owner, *owner_all = nullptr;
+
+    string Marker_Tag, Monitoring_Tag;
+    int nProcessor = size;
+
+    /*--- Only if master node allocate memory ---*/
+
+    if (rank == MASTER_NODE) {
+      plunge_all = new su2double[nProcessor];
+      pitch_all  = new su2double[nProcessor];
+      owner_all  = new unsigned long[nProcessor];
+    }
+
+    /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
+
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
+        } else {
+          owner = 0;
+        }
+
+      }
+      plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
+      pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
+
+      /*--- Gather the data on the master node. ---*/
+
+      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+
+      /*--- Set plunge and pitch on the master node ---*/
+
+      if (rank == MASTER_NODE) {
+        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
+          if (owner_all[iProcessor] == 1) {
+            config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
+            config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
+            break;
+          }
+        }
+      }
+    }
+
+    delete [] plunge_all;
+    delete [] pitch_all;
+    delete [] owner_all;
+#endif
+  }
+
 }

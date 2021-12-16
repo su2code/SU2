@@ -15,7 +15,6 @@ no upstream pointer communication
 partitions set once in config initial read
 
 SU2.run.CFD(config)
-SU2.run.MSH(config)
 SU2.run.DEF(config)
 SU2.run.DOT(config)
 SU2.run.SMC(config)
@@ -82,15 +81,7 @@ SU2.run.projection(config,step=1e-4)
 	returns dictionary 'info' with keys:
 		'HISTORY' - dict of col_header:iteration history
 		'GRADIENTS' - dict of function:grad list
-	
-SU2.run.adaptation(config,kind=None) (*incomplete*)
-	wraps SU2.mesh.adapt.* 
-	optional kind overides config['KIND_ADAPT']
-	skips adapt if 'KIND_ADAPT' = 'NONE'
-	adds suffix 'adapt' to 'MESH_OUT_FILENAME'
-	updates config
-		'MESH_FILENAME' = 'MESH_FILENAME'+'_adapt'
-		
+
 level2 - objective and gradient analysis, redundancy protection
 upstream pointer update of config and state
 config - controls SU2

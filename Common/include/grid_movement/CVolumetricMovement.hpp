@@ -2,14 +2,14 @@
  * \file CVolumetricMovement.hpp
  * \brief Headers of the CVolumetricMovement class.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -241,6 +241,14 @@ public:
   void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output);
 
   /*!
+   * \brief Compute amount of nonconvex elements
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Screen_Output - determines if text is written to screen
+   */
+  void ComputenNonconvexElements(CGeometry *geometry, bool Screen_Output);
+
+
+  /*!
    * \brief Compute the minimum distance to the nearest solid surface.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -352,26 +360,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Compute the determinant of a 3 by 3 matrix.
-   *        3 by 3 matrix elements
-   * \param[in] A00
-   * \param[in] A01
-   * \param[in] A02
-   * \param[in] A10
-   * \param[in] A11
-   * \param[in] A12
-   * \param[in] A20
-   * \param[in] A21
-   * \param[in] A22
-   * \result Determinant of the matrix
-   */
-  inline su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-    return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
-  }
-
-
 
   /*!
    * \brief Store the number of iterations when moving the mesh.

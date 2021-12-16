@@ -3,7 +3,7 @@
  * \brief Header file for the class CMarkerProfileReaderFVM.
  *        The implementations are in the <i>CMarkerProfileReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.2.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@
 #include <vector>
 #include <iomanip>
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
 
@@ -55,14 +55,14 @@ using namespace std;
  * \author: T. Economon
  */
 class CMarkerProfileReaderFVM {
-  
+
 protected:
-  
+
   int rank;  /*!< \brief MPI Rank. */
   int size;  /*!< \brief MPI Size. */
-  
+
   CConfig *config;  /*!< \brief Local pointer to the config parameter object. */
-  
+
   CGeometry *geometry;  /*!< \brief Local pointer to the geometry object. */
 
   unsigned short dimension;  /*!< \brief Dimension of the problem (2 or 3). */
@@ -73,34 +73,37 @@ protected:
   unsigned long numberOfProfiles;  /*!< \brief Auxiliary structure for holding the number of markers in a profile file. */
 
   string filename;  /*!< \brief File name of the marker profile file. */
-  
+
+  vector<string> columnNames; /*!< \brief string containing all the names of the columns, one for each marker */
+  vector<string> columnValues; /*!< \brief initial values for the profile, in string format */
+
   vector<string> profileTags;  /*!< \brief Auxiliary structure for holding the string names of the markers in a profile file. */
-  
+
   vector<unsigned long> numberOfRowsInProfile;  /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in a profile file. */
   vector<unsigned long> numberOfColumnsInProfile;  /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in a profile file. */
-  
+
   vector<vector<passivedouble> > profileData;  /*!< \brief Auxiliary structure for holding the data values from a profile file. */
   vector<vector<vector<su2double> > > profileCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
-  
+
 private:
-  
+
   /*!
    * \brief Read a native SU2 marker profile file in ASCII format.
    */
   void ReadMarkerProfile();
-  
+
   /*!
    * \brief Merge the node coordinates of all profile-type boundaries from all processors.
    */
   void MergeProfileMarkers();
-  
+
   /*!
    * \brief Write a template profile file if the requested file is not found.
    */
   void WriteMarkerProfileTemplate();
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the CMarkerProfileReaderFVM class.
    * \param[in] val_geometry    - Pointer to the current geometry
@@ -113,13 +116,15 @@ public:
                           CConfig        *val_config,
                           string         val_filename,
                           unsigned short val_kind_marker,
-                          unsigned short val_number_vars);
-  
+                          unsigned short val_number_vars,
+                          vector<string> val_columnNames,
+                          vector<string> val_columnValues);
+
   /*!
    * \brief Destructor of the CMeshReaderFVM class.
    */
   ~CMarkerProfileReaderFVM(void);
-  
+
   /*!
    * \brief Get the number of profiles found within the input file.
    * \returns Number of profiles found within the input file.
@@ -127,7 +132,7 @@ public:
   inline unsigned long GetNumberOfProfiles() const {
     return numberOfProfiles;
   }
-  
+
   /*!
    * \brief Get the string tag for the marker where the profile is applied.
    * \param[in] val_iProfile - current profile index.
@@ -136,7 +141,7 @@ public:
   inline const string &GetTagForProfile(int val_iProfile) const {
     return profileTags[val_iProfile];
   }
-  
+
   /*!
    * \brief Get the number of rows of data in a profile.
    * \param[in] val_iProfile - current profile index.
@@ -163,7 +168,7 @@ public:
   inline const vector<passivedouble> &GetDataForProfile(int val_iProfile) const {
     return profileData[val_iProfile];
   }
-  
+
    /*!
    * \brief Get the data for the specific column if interpolation being done.
    * \param[in] val_iProfile - current profile index.

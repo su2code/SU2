@@ -1,15 +1,15 @@
 /*!
- * \file CDriverOutput.hpp
+ * \file CMultizoneOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -44,7 +44,7 @@
 using namespace std;
 
 /*!
- * \class CDriverOutput
+ * \class CMultizoneOutput
  * \brief Class for writing the multizone output.
  * \author R. Sanchez, T. Albring.
  */
@@ -53,7 +53,7 @@ class CMultizoneOutput final: public COutput {
 protected:
   unsigned short nZone; //!< Number of zones
 
-  string bgs_res_name; //!< Block-Gauss seidel residual name
+  string bgs_res_name; //!< Block-Gauss Seidel residual name
   bool write_zone;     //!< Boolean indicating whether the individual zones write to screen
 
 public:
@@ -61,12 +61,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CMultizoneOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMultizoneOutput(void) override;
+  CMultizoneOutput(const CConfig *driver_config, const CConfig* const* config, unsigned short nDim);
 
   /*!
    * \brief Load the multizone history output field values
@@ -86,17 +81,17 @@ public:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteHistoryFile_Output(CConfig *config) override;
+  bool WriteHistoryFile_Output(const CConfig *config) override;
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Header(CConfig *config) override;
+  bool WriteScreen_Header(const CConfig *config) override;
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Output(CConfig *config) override;
+  bool WriteScreen_Output(const CConfig *config) override;
 };

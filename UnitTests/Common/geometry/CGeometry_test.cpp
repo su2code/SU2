@@ -2,14 +2,14 @@
  * \file CGeometry_tests.cpp
  * \brief Unit tests for CGeometry.
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,7 +90,7 @@ TEST_CASE("Set elem connectivity", "[Geometry]"){
 
   TestCase->geometry->SetElement_Connectivity();
 
-  CHECK(TestCase->geometry->elem[14]->GetnNeighbor_Elements() == 6);
+  CHECK(TestCase->geometry->elem[14]->GetnFaces() == 6);
   CHECK(TestCase->geometry->elem[14]->GetNeighbor_Elements(1) == 15);
 
 }
@@ -125,26 +125,13 @@ TEST_CASE("Set vertex", "[Geometry]"){
 
 }
 
-TEST_CASE("Set center of gravity", "[Geometry]"){
+TEST_CASE("Set control volume", "[Geometry]"){
 
-  TestCase->geometry->SetCoord_CG();
+  TestCase->geometry->SetControlVolume(TestCase->config.get(), ALLOCATE);
 
   CHECK(TestCase->geometry->elem[42]->GetCG(0) == 0.625);
   CHECK(TestCase->geometry->elem[3]->GetCG(1)  == 0.125);
   CHECK(TestCase->geometry->elem[25]->GetCG(2) == 0.375);
-
-  CHECK(TestCase->geometry->bound[1][4]->GetCG(0) == 1.0);
-  CHECK(TestCase->geometry->bound[3][2]->GetCG(1) == 1.0);
-  CHECK(TestCase->geometry->bound[4][3]->GetCG(2) == 0.0);
-
-  CHECK(TestCase->geometry->edges->GetCG(10, 0) == 0.75);
-  CHECK(TestCase->geometry->edges->GetCG(3,  1) == 0.125);
-  CHECK(TestCase->geometry->edges->GetCG(22, 2) == 0.0);
-}
-
-TEST_CASE("Set control volume", "[Geometry]"){
-
-  TestCase->geometry->SetControlVolume(TestCase->config.get(), ALLOCATE);
 
   CHECK(TestCase->geometry->nodes->GetVolume(42) == Approx(0.015625));
 
@@ -159,6 +146,10 @@ TEST_CASE("Set control volume", "[Geometry]"){
 TEST_CASE("Set bound control volume", "[Geometry]"){
 
   TestCase->geometry->SetBoundControlVolume(TestCase->config.get(), ALLOCATE);
+
+  CHECK(TestCase->geometry->bound[1][4]->GetCG(0) == 1.0);
+  CHECK(TestCase->geometry->bound[3][2]->GetCG(1) == 1.0);
+  CHECK(TestCase->geometry->bound[4][3]->GetCG(2) == 0.0);
 
   CHECK(TestCase->geometry->vertex[0][4]->GetNormal()[0] == -0.0625);
   CHECK(TestCase->geometry->vertex[3][2]->GetNormal()[1] == -0.0625);

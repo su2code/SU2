@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridFEM.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,14 +29,19 @@
 #pragma once
 
 #include "CPrimalGrid.hpp"
+#include "../../option_structure.hpp"
 
 /*!
  * \class CPrimalGridFEM
  * \brief Class to define primal grid element for the FEM solver.
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CPrimalGridFEM final: public CPrimalGrid {
 private:
+  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
+  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
+  unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
+
   unsigned short VTK_Type;      /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;     /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short nPolySol;      /*!< \brief Polynomial degree for the solution of the element. */
@@ -44,20 +49,10 @@ private:
   unsigned short nDOFsSol;      /*!< \brief Number of DOFs for the solution of the element. */
   unsigned short nFaces;        /*!< \brief Number of faces of the element. */
 
-  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
-  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
-  unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
-
   bool JacobianConsideredConstant;   /*!< \brief Whether or not the Jacobian of the transformation to
                                                  is (almost) constant. */
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CPrimalGridFEM(void);
-
   /*!
    * \brief Constructor using data to initialize the element.
    * \param[in] val_elemGlobalID - Global element ID of this element.
@@ -72,7 +67,7 @@ public:
   CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                  unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                  unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                 unsigned long  val_offDOfsSol,   istringstream  &elem_line);
+                 unsigned long  val_offDOfsSol,   std::istringstream  &elem_line);
 
   /*!
    * \brief Constructor using data to initialize the element.
@@ -91,23 +86,11 @@ public:
                  unsigned long  val_offDOfsSol,   const unsigned long *connGrid);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CPrimalGridFEM(void) override;
-
-  /*!
-   * \brief Get the node shared by the element
-   * \param[in] val_node - Local (to the element) index of the node.
-   * \return Global index of the node.
-   */
-  inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
-
-  /*!
    * \brief Get the number of nodes that composes a face of an element.
    * \param[in] val_face - Local index of the face.
    * \return Number of nodes that composes a face of an element.
    */
-  inline unsigned short GetnNodesFace(unsigned short val_face) override { return -1; }
+  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the face index of an element.
@@ -115,7 +98,7 @@ public:
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
    * \return Local (to the element) index of the nodes that compose the face.
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return -1; }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the local index of the neighbors to a node (given the local index).
@@ -123,26 +106,26 @@ public:
    * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
    * \return Local (to the element) index of the nodes that are neighbor to val_node.
    */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return -1; }
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the number of nodes of an element.
    * \return Number of nodes that composes an element.
    */
-  inline unsigned short GetnNodes(void) override { return nDOFsGrid; }
+  inline unsigned short GetnNodes(void) const override { return nDOFsGrid; }
 
   /*!
    * \brief Get the number of faces of an element.
    * \return Number of faces of an element.
    */
-  inline unsigned short GetnFaces(void) override { return nFaces; }
+  inline unsigned short GetnFaces(void) const override { return nFaces; }
 
   /*!
    * \brief Get the number of neighbors nodes of a node.
    * \param[in] val_node - Local (to the element) index of a node.
    * \return Number if neighbors of a node val_node.
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return -1; }
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Change the orientation of an element.
@@ -153,55 +136,49 @@ public:
    * \brief Make available the global ID of this element.
    * \return The global ID of this element.
    */
-  inline unsigned long GetGlobalElemID(void) override { return elemIDGlobal; }
+  inline unsigned long GetGlobalElemID(void) const override { return elemIDGlobal; }
 
   /*!
    * \brief Make available the global offset of the solution DOFs of this element.
    * \return The global offset of the solution DOFs.
    */
-  inline unsigned long GetGlobalOffsetDOFsSol(void) override { return offsetDOFsSolGlobal; }
-
-  /*!
-   * \brief Get the number of element that are neighbor to this element.
-   * \return Number of neighbor elements.
-   */
-  inline unsigned short GetnNeighbor_Elements(void) override { return nFaces; }
+  inline unsigned long GetGlobalOffsetDOFsSol(void) const override { return offsetDOFsSolGlobal; }
 
   /*!
    * \brief Get the Maximum number of nodes of a face of an element.
    * \return Maximum number of nodes of a face of an element.
    */
-  inline unsigned short GetMaxNodesFace(void) override { return -1; }
+  inline unsigned short GetMaxNodesFace(void) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the type of the element using VTK nomenclature.
    * \return Type of the element using VTK nomenclature.
    */
-  inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
+  inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
 
   /*!
    * \brief Get the polynomial degree of the grid for this element.
    * \return The polynomial degree of the grid.
    */
-  inline unsigned short GetNPolyGrid(void) override { return nPolyGrid; }
+  inline unsigned short GetNPolyGrid(void) const override { return nPolyGrid; }
 
   /*!
    * \brief Get the polynomial degree of the solution for this element.
    * \return The polynomial degree of the solution.
    */
-  inline unsigned short GetNPolySol(void) override { return nPolySol; }
+  inline unsigned short GetNPolySol(void) const override { return nPolySol; }
 
   /*!
    * \brief Function to make available the number of DOFs of the grid in the element.
    * \return The number of DOFs of the grid in the element.
    */
-  inline unsigned short GetNDOFsGrid(void) override { return nDOFsGrid; }
+  inline unsigned short GetNDOFsGrid(void) const override { return nDOFsGrid; }
 
   /*!
    * \brief Function to make available the number of DOFs of the solution in the element.
    * \return The number of DOFs of the solution in the element.
    */
-  inline unsigned short GetNDOFsSol(void) override { return nDOFsSol; }
+  inline unsigned short GetNDOFsSol(void) const override { return nDOFsSol; }
 
   /*!
    * \brief Get all the corner points of all the faces of this element. It must be made sure
@@ -213,7 +190,7 @@ public:
    */
   void GetCornerPointsAllFaces(unsigned short &numFaces,
                                unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]) override;
+                               unsigned long  faceConn[6][4]) const override;
 
   /*!
    * \brief Static member function to get the local the corner points of all the faces
@@ -236,7 +213,7 @@ public:
    * \brief Function to get whether or not the Jacobian is considered constant.
    * \return True if the Jacobian is (almost) constant and false otherwise.
    */
-  inline bool GetJacobianConsideredConstant(void) override { return JacobianConsideredConstant; }
+  inline bool GetJacobianConsideredConstant(void) const override { return JacobianConsideredConstant; }
 
   /*!
    * \brief Set the color of the element.
@@ -248,7 +225,7 @@ public:
    * \brief Get the color of the element for the partitioning.
    * return - The color of the element in the partitioning.
    */
-  inline unsigned long GetColor(void) override { return color; }
+  inline unsigned long GetColor(void) const override { return color; }
 
   /*!
    * \brief Function to set the value of JacobianConsideredConstant.

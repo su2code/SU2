@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.hpp
  * \brief Headers of the CSurfaceMovement class.
  * \author F. Palacios, T. Economon.
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -126,15 +126,6 @@ public:
   void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 
   /*!
-   * \brief Set the translational/rotational velocity for a moving wall.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Zone number in the mesh.
-   * \param[in] iter - Physical time iteration number.
-   */
-  void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-
-  /*!
    * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -210,8 +201,9 @@ public:
    * \brief Set the surface/boundary deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
+  vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
@@ -267,6 +259,15 @@ public:
    * \param[in] FFDBoxChild - Array with child FFDBoxes of the computation.
    */
   void GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
+
+  /*!
+   * \brief Apply the design variables to the control point position
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - Index of FFD box.
+   */
+  void ApplyDesignVariables(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, unsigned short iFFDBox);
 
   /*!
    * \brief Recompute the cartesian coordinates using the control points position.
@@ -484,4 +485,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Calculate the determinant of the Jacobian matrix for the FFD problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Free form deformation box.
+   * \return Number of points with negative Jacobian determinant.
+   */
+  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox) const;
 };

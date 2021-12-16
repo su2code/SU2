@@ -2,14 +2,14 @@
  * \file CSurfaceFVMDataSorter.hpp
  * \brief Headers for the surface FVM data sorter class.
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 
 class CSurfaceFVMDataSorter final: public CParallelDataSorter{
 
-  CFVMDataSorter* volumeSorter;                    //!< Pointer to the volume sorter instance
+  const CFVMDataSorter* volumeSorter;               //!< Pointer to the volume sorter instance
   map<unsigned long,unsigned long> Renumber2Global; //! Structure to map the local sorted point ID to the global point ID
 public:
 
@@ -41,12 +41,7 @@ public:
    * \param[in] geometry - Pointer to the current geometry
    * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, CFVMDataSorter* valVolumeSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CSurfaceFVMDataSorter() override;
+  CSurfaceFVMDataSorter(CConfig *config, CGeometry* geometry, const CFVMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
@@ -93,7 +88,7 @@ public:
    */
   unsigned long GetNodeBegin(unsigned short rank) const override {
     return nPoint_Recv[rank];
-  } 
+  }
 
   /*!
    * \brief Get the Processor ID a Point belongs to.
@@ -118,7 +113,7 @@ public:
   unsigned long GetnPointCumulative(unsigned short rank) const override {
     return GetNodeBegin(rank);
   }
-  
+
 private:
 
   /*!

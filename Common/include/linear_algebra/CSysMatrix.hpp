@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,17 +28,13 @@
 
 #pragma once
 
-#include "../../include/mpi_structure.hpp"
-#include "../../include/omp_structure.hpp"
-#include "../../include/parallelization/vectorization.hpp"
+#include "../../include/CConfig.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
 #include <cstdlib>
 #include <vector>
 #include <cassert>
-
-using namespace std;
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -75,8 +71,33 @@ struct mkl_jit_wrapper<float> {
 #endif
 #endif
 
-class CConfig;
 class CGeometry;
+
+struct CSysMatrixComms {
+  /*!
+   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
+   *        communication and to launch non-blocking sends and recvs.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  template<class T>
+  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                       unsigned short commType = SOLUTION_MATRIX);
+
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by
+   *        Initiate() and unpacking of the data in the vector.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  template<class T>
+  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                       unsigned short commType = SOLUTION_MATRIX);
+};
 
 /*!
  * \class CSysMatrix
@@ -85,10 +106,12 @@ class CGeometry;
 template<class ScalarType>
 class CSysMatrix {
 private:
+  friend struct CSysMatrixComms;
+
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
 
-  enum : size_t { MAXNVAR = 8 };    /*!< \brief Maximum number of variables the matrix can handle. The static
+  enum : size_t { MAXNVAR = 20 };   /*!< \brief Maximum number of variables the matrix can handle. The static
                                                 size is needed for fast, per-thread, static memory allocation. */
 
   enum { OMP_MAX_SIZE_L = 8192 };   /*!< \brief Max. chunk size used in light parallel for loops. */
@@ -139,8 +162,6 @@ private:
   gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
   void * MatrixVectorProductJitterAlphaMinusOne; /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and BETA=1.0. */
   gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
-  void * MatrixVectorProductTranspJitterBetaOne; /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
-  gemm_t MatrixVectorProductTranspKernelBetaOne; /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
 #endif
 
 #ifdef HAVE_PASTIX
@@ -152,6 +173,9 @@ private:
    */
   struct {
     const unsigned long *ptr = nullptr;
+    unsigned long nEdge = 0;
+
+    operator bool() { return nEdge != 0; }
 
     inline unsigned long operator() (unsigned long edge, unsigned long node) const {
       return ptr[2*edge+node];
@@ -163,9 +187,11 @@ private:
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
-   * \note See specialization for discrete adjoint right outside this class's declaration.
    */
-  template<class DstType, class SrcType>
+  template<class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
+
+  template<class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
   FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return val; }
 
   /*!
@@ -199,14 +225,6 @@ private:
   void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
-   * \brief Calculates the matrix-vector product: product += matrix^T * vector
-   * \param[in] matrix
-   * \param[in] vector
-   * \param[in,out] product
-   */
-  void MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
-
-  /*!
    * \brief Calculates the matrix-matrix product
    */
   void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const;
@@ -231,17 +249,10 @@ private:
   /*!
    * \brief Copy matrix src into dst, transpose if required.
    */
-  FORCEINLINE void MatrixCopy(const ScalarType *src, ScalarType *dst, bool transposed = false) const {
-    if (!transposed) {
-      SU2_OMP_SIMD
-      for(auto iVar = 0ul; iVar < nVar*nEqn; ++iVar)
-        dst[iVar] = src[iVar];
-    }
-    else {
-      for (auto iVar = 0ul; iVar < nVar; ++iVar)
-        for (auto jVar = 0ul; jVar < nVar; ++jVar)
-          dst[iVar*nVar+jVar] = src[jVar*nVar+iVar];
-    }
+  FORCEINLINE void MatrixCopy(const ScalarType *src, ScalarType *dst) const {
+    SU2_OMP_SIMD
+    for(auto iVar = 0ul; iVar < nVar*nEqn; ++iVar)
+      dst[iVar] = src[iVar];
   }
 
   /*!
@@ -262,17 +273,16 @@ private:
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
    * \param[in] block_i - Index of the (i,i) diagonal block.
    * \param[in] rhs - Right-hand-side of the linear system.
-   * \param[in] transposed - If true the transposed of the block is used (default = false).
    * \return Solution of the linear system (overwritten on rhs).
    */
-  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false) const;
+  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const;
 
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transposed = false) const;
+  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock) const;
 
   /*!
    * \brief Inverse diagonal block.
@@ -295,14 +305,6 @@ private:
    * \param[in] **val_block - Block to set to A(i, j).
    */
   inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
-
-  /*!
-   * \brief Set the transposed value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
-   */
-  inline void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
 
   /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
@@ -377,34 +379,6 @@ public:
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
   void SetValDiagonalZero(void);
-
-  /*!
-   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
-   *        communication and to launch non-blocking sends and recvs.
-   * \param[in] x        - CSysVector holding the array of data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be communicated.
-   */
-  template<class OtherType>
-  void InitiateComms(const CSysVector<OtherType> & x,
-                     CGeometry *geometry,
-                     const CConfig *config,
-                     unsigned short commType) const;
-
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched by
-   *        InitiateComms() and unpacking of the data in the vector.
-   * \param[in] x        - CSysVector holding the array of data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be unpacked.
-   */
-  template<class OtherType>
-  void CompleteComms(CSysVector<OtherType> & x,
-                     CGeometry *geometry,
-                     const CConfig *config,
-                     unsigned short commType) const;
 
   /*!
    * \brief Get a pointer to the start of block "ij"
@@ -583,7 +557,7 @@ public:
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
     for (size_t i=0; i<blkSz; ++i) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k=0; k<N; ++k) {
         blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
@@ -675,7 +649,7 @@ public:
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
     for (size_t i=0; i<blkSz; ++i) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k=0; k<N; ++k) {
         blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
@@ -708,8 +682,8 @@ public:
    * \param[in] val_block - Block to add to the diagonal of the matrix.
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, bool Overwrite = true>
-  inline void SetBlock2Diag(unsigned long block_i, const OtherType* const* val_block, OtherType alpha = 1.0) {
+  template<class OtherType, bool Overwrite = true, class T = ScalarType>
+  inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
 
     auto mat_ii = &matrix[dia_ptr[block_i]*nVar*nEqn];
 
@@ -723,8 +697,8 @@ public:
   /*!
    * \brief Non overwrite version of SetBlock2Diag, also with scaling.
    */
-  template<class OtherType>
-  inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block, OtherType alpha = 1.0) {
+  template<class OtherType, class T = ScalarType>
+  inline void AddBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
     SetBlock2Diag<OtherType,false>(block_i, val_block, alpha);
   }
 
@@ -732,8 +706,8 @@ public:
    * \brief Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal.
    */
   template<class OtherType>
-  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
-    AddBlock2Diag(block_i, val_block, OtherType(-1));
+  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType& val_block) {
+    AddBlock2Diag(block_i, val_block, -1.0);
   }
 
   /*!
@@ -746,6 +720,18 @@ public:
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val_matrix);
+  }
+
+  /*!
+   * \brief Adds the specified value to the diagonal of the (i, i) subblock
+   *        of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] iVar - Variable index.
+   * \param[in] val - Value to add to the diagonal elements of A(i, i).
+   */
+  template<class OtherType>
+  inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
+    matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val);
   }
 
   /*!
@@ -795,6 +781,11 @@ public:
   void SetDiagonalAsColumnSum();
 
   /*!
+   * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
+   */
+  void TransposeInPlace();
+
+  /*!
    * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).
    * \note Matrices must have the same sparse pattern.
    * \param[in] alpha - The scaling constant.
@@ -813,19 +804,9 @@ public:
                            CGeometry *geometry, const CConfig *config) const;
 
   /*!
-   * \brief Performs the product of a sparse matrix by a CSysVector.
-   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                     CGeometry *geometry, const CConfig *config) const;
-
-  /*!
    * \brief Build the Jacobi preconditioner.
    */
-  void BuildJacobiPreconditioner(bool transpose = false);
+  void BuildJacobiPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
@@ -839,9 +820,8 @@ public:
 
   /*!
    * \brief Build the ILU preconditioner.
-   * \param[in] transposed - Flag to use the transposed matrix to construct the preconditioner.
    */
-  void BuildILUPreconditioner(bool transposed = false);
+  void BuildILUPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
@@ -891,9 +871,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] kind_fact - Type of factorization.
-   * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed = false);
+  void BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config, unsigned short kind_fact);
 
   /*!
    * \brief Apply the PaStiX factorization to CSysVec.
@@ -906,8 +885,3 @@ public:
                                    CGeometry *geometry, const CConfig *config) const;
 
 };
-
-#ifdef CODI_REVERSE_TYPE
-template<> template<>
-FORCEINLINE su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
-#endif

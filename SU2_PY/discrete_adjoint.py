@@ -3,14 +3,14 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 7.0.7 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -85,10 +85,6 @@ def discrete_adjoint( filename           ,
 
     # State
     state = SU2.io.State()
-
-    # Force CSV output in order to compute gradients
-    config.WRT_CSV_SOL = 'YES'
-
 
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 

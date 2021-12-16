@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,8 +42,6 @@ class CPhysicalGeometry final : public CGeometry {
   unordered_map<unsigned long, unsigned long>
   Global_to_Local_Point;                           /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point{nullptr};            /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker{nullptr}; /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker{nullptr}; /*!< \brief Global to Local marker. */
   unsigned long *adj_counter{nullptr};             /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem{nullptr};          /*!< \brief Adjacency element list. */
   su2activematrix Sensitivity;                     /*!< \brief Matrix holding the sensitivities at each point. */
@@ -106,13 +104,11 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_BoundTria_Linear{nullptr};
   unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
 
-  vector<int> GlobalMarkerStorageDispl;
-  vector<su2double> GlobalRoughness_Height;
+  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only.*/
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
-  using CGeometry::SetMeshFile;
   using CGeometry::SetControlVolume;
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetPoint_Connectivity;
@@ -305,15 +301,6 @@ public:
   }
 
   /*!
-   * \brief Get the local marker that correspond with the global marker.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const override {
-    return Global_to_Local_Marker[val_imarker];
-  }
-
-  /*!
    * \brief Reads the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
    * \param[in] config - Definition of the particular problem.
@@ -413,7 +400,7 @@ public:
    * \brief Set boundary vertex.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVertex(CConfig *config) override;
+  void SetVertex(const CConfig *config) override;
 
   /*!
    * \brief Set number of span wise level for turbomachinery computation.
@@ -446,11 +433,6 @@ public:
   void GatherInOutAverageValues(CConfig *config, bool allocate) override;
 
   /*!
-   * \brief Set the center of gravity of the face, elements and edges.
-   */
-  void SetCoord_CG(void) override;
-
-  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
@@ -460,35 +442,28 @@ public:
   /*!
    * \brief Visualize the structure of the control volume(s).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  void VisualizeControlVolume(CConfig *config, unsigned short action) override;
+  void VisualizeControlVolume(const CConfig *config) const override;
 
   /*!
    * \brief Mach the near field boundary condition.
    * \param[in] config - Definition of the particular problem.
    */
-  void MatchNearField(CConfig *config) override;
-
-  /*!
-   * \brief Mach the near field boundary condition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void MatchActuator_Disk(CConfig *config) override;
+  void MatchActuator_Disk(const CConfig *config) override;
 
   /*!
    * \brief Mach the periodic boundary conditions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_periodic - Index of the first periodic face in a pair.
    */
-  void MatchPeriodic(CConfig *config, unsigned short val_periodic) override;
+  void MatchPeriodic(const CConfig *config, unsigned short val_periodic) override;
 
   /*!
    * \brief Set boundary vertex structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(CConfig *config, unsigned short action) override;
+  void SetBoundControlVolume(const CConfig *config, unsigned short action) override;
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.
@@ -596,23 +571,16 @@ public:
   void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) override;
 
   /*!
-   * \brief Write the .su2 file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  void SetMeshFile(CConfig *config, string val_mesh_out_filename) override;
-
-  /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMeshQualityStatistics(CConfig *config) override;
+  void ComputeMeshQualityStatistics(const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.
    * \param[in] config - Definition of the particular problem.
    */
-  void FindNormal_Neighbor(CConfig *config) override;
+  void FindNormal_Neighbor(const CConfig *config) override;
 
   /*!
    * \brief Read the sensitivity from an input file.
@@ -790,10 +758,14 @@ public:
   std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] config - ignored
+   * \param[in] iZone - zone whose markers made the ADT
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) override;
 
   /*!
    * \brief Set wall distances a specific value
@@ -805,8 +777,14 @@ public:
   }
 
   /*!
-   * \brief Set roughness values for markers in a global array.
+   * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetGlobalMarkerRoughness(const CConfig* config);
+  void FindUniqueNode_PeriodicBound(const CConfig *config) final;
 
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  inline const su2double* GetStreamwise_Periodic_RefNode(void) const final { return Streamwise_Periodic_RefNode;}
 };

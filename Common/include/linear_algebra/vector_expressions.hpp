@@ -2,14 +2,14 @@
  * \file vector_expressions.hpp
  * \brief Expression templates for vector types with coefficient-wise operations.
  * \author P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -157,10 +157,16 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
   RETURNS( EXPR<Bcast<S>,V,S>(Bcast<S>(u), v.derived())                       \
 )                                                                             \
 
-/*--- std::max/min have issues (maybe because they return by reference). ---*/
+/*--- std::max/min have issues (maybe because they return by reference).
+ * For AD codi::max/min need to be used to avoid issues in debug builds. ---*/
 
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+#define max_impl math::max
+#define min_impl math::min
+#else
 #define max_impl(a,b) a<b? Scalar(b) : Scalar(a)
 #define min_impl(a,b) b<a? Scalar(b) : Scalar(a)
+#endif
 MAKE_BINARY_FUN(max, max_, max_impl)
 MAKE_BINARY_FUN(min, min_, min_impl)
 MAKE_BINARY_FUN(pow, pow_, math::pow)

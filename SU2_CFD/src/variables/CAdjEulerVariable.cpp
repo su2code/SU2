@@ -2,14 +2,14 @@
  * \file CAdjEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
                                      unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   /*--- Allocate residual structures ---*/
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
@@ -52,7 +52,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
   }
-  
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
@@ -84,28 +84,26 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   }
 
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
-  AuxVar.resize(nPoint);
-  Grad_AuxVar.resize(nPoint,nDim);
+  nAuxVar = 1;
+  AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+  Grad_AuxVar.resize(nPoint, nAuxVar, nDim);
 
   /*--- Allocate and initializate projection vector for wall boundary condition ---*/
   ForceProj_Vector.resize(nPoint,nDim) = su2double(0.0);
 
-  /*--- Allocate and initializate interior boundary jump vector for near field boundary condition ---*/
-  IntBoundary_Jump.resize(nPoint,nVar) = su2double(0.0);
-
   /*--- Allocate space for the harmonic balance source terms ---*/
-  if (config->GetTime_Marching() == HARMONIC_BALANCE)
+  if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
   Sensor.resize(nPoint);
-  
+
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
-  
+
 }
 
 bool CAdjEulerVariable::SetPrimVar(unsigned long iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {

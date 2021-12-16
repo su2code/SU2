@@ -2,14 +2,14 @@
  * \file CFEANonlinearElasticity.hpp
  * \brief Declaration and inlines of the nonlinear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 
@@ -127,7 +127,7 @@ public:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
+  su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
 
 protected:
   /*!

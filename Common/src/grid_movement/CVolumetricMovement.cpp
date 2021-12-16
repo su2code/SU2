@@ -2,14 +2,14 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 
 #include "../../include/grid_movement/CVolumetricMovement.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(true) {
 
@@ -89,7 +90,6 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
   /*--- After moving all nodes, update the dual mesh. Recompute the edges and
    dual mesh control volumes in the domain and on the boundaries. ---*/
 
-  geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
   geometry->SetMaxLength(config);
@@ -105,11 +105,11 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
   for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
     iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
+    geometry[iMGlevel]->SetControlVolume(geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
     if (config->GetGrid_Movement())
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine]);
   }
 
 }
@@ -126,7 +126,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   /*--- Disable the screen output if we're running SU2_CFD ---*/
 
-  if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD && !Derivative) Screen_Output = false;
 
   /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
 
@@ -168,22 +168,25 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
 
-    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Initiate(LinSysSol, geometry, config);
+    CSysMatrixComms::Complete(LinSysSol, geometry, config);
 
-    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
-    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Initiate(LinSysRes, geometry, config);
+    CSysMatrixComms::Complete(LinSysRes, geometry, config);
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
+
+    /*--- To keep legacy behavior ---*/
+    System.SetToleranceType(LinearToleranceType::RELATIVE);
 
     /*--- If we want no derivatives or the direct derivatives, we solve the system using the
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
+    if (!Derivative || ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) && Derivative)) {
 
       Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
-    } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
+    } else if (Derivative && (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT)) {
 
       Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     }
@@ -196,9 +199,15 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     else { UpdateGridCoord_Derivatives(geometry, config); }
     if (UpdateGeo) { UpdateDualGrid(geometry, config); }
 
-    /*--- Check for failed deformation (negative volumes). ---*/
+    if (!Derivative) {
+      /*--- Check for failed deformation (negative volumes). ---*/
 
-    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+      ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+
+      /*--- Calculate amount of nonconvex elements ---*/
+
+      ComputenNonconvexElements(geometry, Screen_Output);
+    }
 
     /*--- Set number of iterations in the mesh update. ---*/
 
@@ -211,7 +220,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     }
 
   }
-
 
 }
 
@@ -276,9 +284,9 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
   su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
   su2double MinVolume_Local = MinVolume; MinVolume = 0.0;
-  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 #endif
 
   /*--- Volume from  0 to 1 ---*/
@@ -291,6 +299,72 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   if ((ElemCounter != 0) && (rank == MASTER_NODE) && (Screen_Output))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
+}
+
+void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Screen_Output) {
+  unsigned long iElem;
+  unsigned short iDim;
+  unsigned long nNonconvexElements = 0;
+
+  /*--- Load up each tetrahedron to check for convex properties. ---*/
+  if (nDim == 2){
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      su2double minCrossProduct = 1.e6, maxCrossProduct = -1.e6;
+
+      const auto nNodes = geometry->elem[iElem]->GetnNodes();
+
+      /*--- Get coordinates of corner points ---*/
+      unsigned short iNodes;
+      unsigned long PointCorners[8];
+      const su2double* CoordCorners[8];
+
+      for (iNodes = 0; iNodes < nNodes; iNodes++) {
+        PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
+        CoordCorners[iNodes] = geometry->nodes->GetCoord(PointCorners[iNodes]);
+      }
+
+      /*--- Determine whether element is convex ---*/
+      for (iNodes = 0; iNodes < nNodes; iNodes ++) {
+
+        /*--- Calculate minimum and maximum angle between edge vectors adjacent to each node ---*/
+        su2double edgeVector_i[3], edgeVector_j[3];
+
+        for (iDim = 0; iDim < nDim; iDim ++) {
+          if (iNodes == 0) {
+            edgeVector_i[iDim] = CoordCorners[nNodes-1][iDim] - CoordCorners[iNodes][iDim];
+          } else {
+            edgeVector_i[iDim] = CoordCorners[iNodes-1][iDim] - CoordCorners[iNodes][iDim];
+          }
+
+          if (iNodes == nNodes-1) {
+            edgeVector_j[iDim] = CoordCorners[0][iDim] - CoordCorners[iNodes][iDim];
+          } else {
+            edgeVector_j[iDim] = CoordCorners[iNodes+1][iDim] - CoordCorners[iNodes][iDim];
+          }
+        }
+
+        /*--- Calculate cross product of edge vectors ---*/
+        su2double crossProduct;
+        crossProduct = edgeVector_i[1]*edgeVector_j[0] - edgeVector_i[0]*edgeVector_j[1];
+
+        if (crossProduct < minCrossProduct) minCrossProduct = crossProduct;
+        if (crossProduct > maxCrossProduct) maxCrossProduct = crossProduct;
+      }
+
+      /*--- Element is nonconvex if cross product of at least one set of adjacent edges is negative ---*/
+      if (minCrossProduct < 0 && maxCrossProduct > 0){
+        nNonconvexElements++;
+      }
+    }
+  } else if (rank == MASTER_NODE) {
+    cout << "\nWARNING: Convexity is not checked for 3D elements (issue #1171).\n" << endl;
+  }
+
+  unsigned long nNonconvexElements_Local = nNonconvexElements; nNonconvexElements = 0;
+  SU2_MPI::Allreduce(&nNonconvexElements_Local, &nNonconvexElements, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+  /*--- Set number of nonconvex elements in geometry ---*/
+  geometry->SetnNonconvexElements(nNonconvexElements);
 }
 
 
@@ -310,12 +384,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   nVertex_SolidWall = 0;
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if(config->GetSolid_Wall(iMarker))
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
-    }
   }
 
   /*--- Allocate the vectors to hold boundary node coordinates
@@ -329,10 +399,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   ii = 0; jj = 0;
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if (config->GetSolid_Wall(iMarker)) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -382,8 +449,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
     MinDistance_Local = MinDistance; MinDistance = 0.0;
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 #else
     MaxDistance = MaxDistance_Local;
     MinDistance = MinDistance_Local;
@@ -1501,7 +1568,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
    meshes after imposing design variable surface deformations (DV_MARKER). ---*/
 
-  unsigned short Kind_SU2 = config->GetKind_SU2();
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
   /*--- If requested (no by default) impose the surface deflections in
    increments and solve the grid deformation equations iteratively with
@@ -1510,13 +1577,12 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 
   /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, internal and periodic bc the receive boundaries and periodic boundaries. ---*/
+   plane (which is treated specially, see below), internal and the send-receive boundaries ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -1533,10 +1599,10 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF)) ||
+        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1610,7 +1676,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Move the FSI interfaces ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1631,8 +1697,8 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
   unsigned long iPoint, total_index, iVertex;
 
   su2double * VarCoord;
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1647,7 +1713,7 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
       }
     }
     if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
-  } else if (Kind_SU2 == SU2_DOT) {
+  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1664,11 +1730,11 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
   unsigned long iPoint, total_index, iVertex;
   su2double *new_coord = new su2double[3];
 
-  unsigned short Kind_SU2 = config->GetKind_SU2();
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1678,13 +1744,9 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
       geometry->nodes->SetCoord(iPoint, new_coord);
     }
-  } else if (Kind_SU2 == SU2_DOT) {
+  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
-         (config->GetMarker_All_DV(iMarker) == YES)) {
+      if(config->GetSolid_Wall(iMarker) || (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
@@ -1705,32 +1767,17 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, total_index;
-  su2double *Coord, *MinCoordValues, *MaxCoordValues, *Hold_GridFixed_Coord;
 
   if (config->GetHold_GridFixed()) {
 
-    MinCoordValues = new su2double [nDim];
-    MaxCoordValues = new su2double [nDim];
-
-    for (iDim = 0; iDim < nDim; iDim++) {
-      MinCoordValues[iDim] = 0.0;
-      MaxCoordValues[iDim] = 0.0;
-    }
-
-    Hold_GridFixed_Coord = config->GetHold_GridFixed_Coord();
-
-    MinCoordValues[0] = Hold_GridFixed_Coord[0];
-    MinCoordValues[1] = Hold_GridFixed_Coord[1];
-    MinCoordValues[2] = Hold_GridFixed_Coord[2];
-    MaxCoordValues[0] = Hold_GridFixed_Coord[3];
-    MaxCoordValues[1] = Hold_GridFixed_Coord[4];
-    MaxCoordValues[2] = Hold_GridFixed_Coord[5];
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
 
     /*--- Set to zero displacements of all the points that are not going to be moved
      except the surfaces ---*/
 
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Coord = geometry->nodes->GetCoord(iPoint);
+      auto Coord = geometry->nodes->GetCoord(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) {
         if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
           total_index = iPoint*nDim + iDim;
@@ -1740,10 +1787,6 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
         }
       }
     }
-
-    delete [] MinCoordValues;
-    delete [] MaxCoordValues;
-
   }
 
   /*--- Don't move the volume grid outside the limits based
@@ -1777,7 +1820,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Problem dimension and physical time step ---*/
@@ -1939,7 +1982,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
@@ -2085,7 +2128,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
@@ -2216,7 +2259,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/

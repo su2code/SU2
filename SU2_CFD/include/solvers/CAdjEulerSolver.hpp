@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.hpp
  * \brief Headers of the CAdjEulerSolver class
  * \author F. Palacios
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,6 +78,13 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
+  /*!
+   * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
+
 public:
 
   /*!
@@ -117,13 +124,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
   void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
@@ -133,16 +133,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetForceProj_Vector(CGeometry *geometry,
-                           CSolver **solver_container,
-                           CConfig *config) final;
-
-  /*!
-   * \brief Compute the jump for the interior boundary problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetIntBoundary_Jump(CGeometry *geometry,
                            CSolver **solver_container,
                            CConfig *config) final;
 
@@ -222,13 +212,6 @@ public:
                        CNumerics *numerics,
                        CConfig *config,
                        unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the undivided laplacian for the adjoint solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
@@ -321,34 +304,6 @@ public:
                      CNumerics      *visc_numerics,
                      CConfig        *config,
                      unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
 
   /*!
    * \brief Impose an actuator disk inlet boundary condition.

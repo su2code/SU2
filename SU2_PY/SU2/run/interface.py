@@ -3,14 +3,14 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.7 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -109,28 +109,6 @@ def CFD(config):
         the_Command = 'SU2_CFD%s %s' % (quote, tempname)
 
     the_Command = build_command( the_Command, processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
-def MSH(config):
-    """ run SU2_MSH
-        partitions set by config.NUMBER_PART
-        currently forced to run serially
-    """    
-    konfig = copy.deepcopy(config)
-    
-    tempname = 'config_MSH.cfg'
-    konfig.dump(tempname)
-    
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    processes = min([1,processes])    
-    
-    the_Command = 'SU2_MSH%s %s' % (quote, tempname)
-    the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
     #os.remove(tempname)

@@ -2,14 +2,14 @@
  * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,12 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
-
-CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config) {
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -46,7 +44,8 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
 }
 
-CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar,
+                     const CConfig *config, bool adjoint) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;
@@ -59,21 +58,20 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Marching() != NO) {
-    Solution_time_n.resize(nPoint,nVar);
-    Solution_time_n1.resize(nPoint,nVar);
-  }
-  else if (config->GetTime_Domain()) {
+  if (config->GetTime_Domain())
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
-  }
 
-  if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
-    Solution_Adj_Old.resize(nPoint,nVar);
-  }
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
 
-  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-    AD_InputIndex.resize(nPoint,nVar) = -1;
-    AD_OutputIndex.resize(nPoint,nVar) = -1;
+  if (config->GetDiscrete_Adjoint()) {
+    if (adjoint && config->GetMultizone_Problem())
+      External.resize(nPoint,nVar) = su2double(0.0);
+
+    if (!adjoint) {
+      AD_InputIndex.resize(nPoint,nVar) = -1;
+      AD_OutputIndex.resize(nPoint,nVar) = -1;
+    }
   }
 
   if (config->GetMultizone_Problem())
@@ -113,39 +111,16 @@ void CVariable::Restore_BGSSolution_k() {
   parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
 }
 
-void CVariable::SetUnd_LaplZero() { parallelSet(Undivided_Laplacian.size(), 0.0, Undivided_Laplacian.data()); }
-
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
-void CVariable::RegisterSolution(bool input, bool push_index) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
-      }
-    }
-  }
+void CVariable::RegisterSolution(bool input) {
+  RegisterContainer(input, Solution, input? AD_InputIndex : AD_OutputIndex);
 }
 
 void CVariable::RegisterSolution_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
+  RegisterContainer(true, Solution_time_n);
 }
 
 void CVariable::RegisterSolution_time_n1() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+  RegisterContainer(true, Solution_time_n1);
 }

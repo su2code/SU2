@@ -3,14 +3,14 @@
  * \brief Delarations of classes for Flux-Vector-Spliting schemes,
  *        the implementations are in fvs.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,20 +39,16 @@
 class CUpwMSW_Flow final : public CNumerics {
 private:
   bool implicit;
-  su2double *Diff_U;
   su2double *u_i, *u_j, *ust_i, *ust_j;
   su2double *Fc_i, *Fc_j;
   su2double *Lambda_i, *Lambda_j;
-  su2double rhos_i, rhos_j;
-  su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Velst_i, *Velst_j;
+  su2double *Vst_i, *Vst_j, *Velst_i, *Velst_j;
   su2double **P_Tensor, **invP_Tensor;
-  unsigned short nPrimVar, nVar, nDim;
 
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.

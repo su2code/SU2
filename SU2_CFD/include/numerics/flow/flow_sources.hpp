@@ -2,14 +2,14 @@
  * \file flow_sources.hpp
  * \brief Delarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ class CSourceBase_Flow : public CNumerics {
 protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
+  struct StreamwisePeriodicValues SPvals;
 
   /*!
    * \brief Constructor of the class.
@@ -55,6 +56,12 @@ public:
    */
   ~CSourceBase_Flow() override;
 
+  /*!
+   * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
+   * \param[in] SolverSPvals - Struct holding the values.
+   */
+  void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) final { SPvals = SolverSPvals; }
+
 };
 
 /*!
@@ -63,7 +70,16 @@ public:
  * \ingroup SourceDiscr
  * \author F. Palacios
  */
-class CSourceAxisymmetric_Flow final : public CSourceBase_Flow {
+class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
+protected:
+    bool implicit, viscous, rans;
+    su2double yinv{0.0};
+
+  /*!
+  * \brief Diffusion residual of the axisymmetric source term.
+  */
+  void ResidualDiffusion();
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -74,7 +90,26 @@ public:
   CSourceAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
-   * \brief Residual of the rotational frame source term.
+   * \brief Residual of the axisymmetric source term.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
+
+/*!
+ * \class CSourceGeneralAxisymmetric_Flow
+ * \brief Class for source term for solving axisymmetric problems for a general (non ideal) fluid.
+ * \ingroup SourceDiscr
+ * \author F. Dittmann
+ */
+class CSourceGeneralAxisymmetric_Flow final : public CSourceAxisymmetric_Flow {
+public:
+
+  using CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow;
+  /*!
+   * \brief Residual of the general axisymmetric source term.
    * \param[in] config - Definition of the particular problem.
    * \return Lightweight const-view of residual and Jacobian.
    */
@@ -142,7 +177,7 @@ public:
  * \brief Class for the source term integration of a body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CSourceIncBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
@@ -169,7 +204,7 @@ public:
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CSourceBoussinesq final : public CSourceBase_Flow {
   su2double Gravity_Vector[3];
@@ -198,6 +233,8 @@ public:
  * \author F. Palacios
  */
 class CSourceGravity final : public CSourceBase_Flow {
+  su2double Force_Ref;
+
 public:
   /*!
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -295,6 +332,72 @@ public:
 };
 
 /*!
+ * \class CSourceIncStreamwise_Periodic
+ * \brief Class for the source term integration of a streamwise periodic body force in the incompressible solver.
+ * \ingroup SourceDiscr
+ * \author T. Kattmann
+ */
+class CSourceIncStreamwise_Periodic final : public CSourceBase_Flow {
+private:
+
+  bool turbulent; /*!< \brief Turbulence model used. */
+  bool energy;    /*!< \brief Energy equation on. */
+  bool streamwisePeriodic_temperature; /*!< \brief Periodicity in energy equation */
+  su2double Streamwise_Coord_Vector[MAXNDIM] = {0.0}; /*!< \brief Translation vector between streamwise periodic surfaces. */
+
+  su2double norm2_translation, /*!< \brief Square of distance between the 2 periodic surfaces. */
+            dot_product, /*!< \brief Container for various dot-products. */
+            scalar_factor; /*!< \brief Holds scalar factors to simplify final equations. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncStreamwise_Periodic(unsigned short val_nDim,
+                                unsigned short val_nVar,
+                                CConfig        *config);
+
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeResidual(const CConfig *config) override;
+
+};
+
+/*!
+ * \class CSourceIncStreamwisePeriodic_Outlet
+ * \brief Class for the outlet heat sink. Acts like a heatflux boundary on the outlet and not as a volume source.
+ * \ingroup SourceDiscr
+ * \author T. Kattmann
+ */
+class CSourceIncStreamwisePeriodic_Outlet : public CSourceBase_Flow {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncStreamwisePeriodic_Outlet(unsigned short val_nDim,
+                                      unsigned short val_nVar,
+                                      CConfig        *config);
+
+  /*!
+   * \brief Source term integration for boundary heat sink.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeResidual(const CConfig *config) override;
+
+};
+
+
+/*!
  * \class CSourceRadiation
  * \brief Class for a source term due to radiation.
  * \ingroup SourceDiscr
@@ -305,11 +408,7 @@ private:
   bool implicit;
 
 public:
-  /*!
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
+
   CSourceRadiation(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!

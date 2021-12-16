@@ -2,14 +2,14 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,11 +37,11 @@
  */
 class CNSSolver final : public CEulerSolver {
 private:
-  su2double
-  *Surface_Buffet_Metric = nullptr, /*!< \brief Integrated separation sensor for each monitoring surface. */
-  *Buffet_Metric = nullptr,         /*!< \brief Integrated separation sensor for each boundary. */
-  **Buffet_Sensor = nullptr,        /*!< \brief Separation sensor for each boundary and vertex. */
-  Total_Buffet_Metric = 0.0;        /*!< \brief Integrated separation sensor for all the boundaries. */
+
+  vector<su2double> Surface_Buffet_Metric;  /*!< \brief Integrated separation sensor for each monitoring surface. */
+  vector<su2double> Buffet_Metric;          /*!< \brief Integrated separation sensor for each boundary. */
+  vector<vector<su2double> > Buffet_Sensor; /*!< \brief Separation sensor for each boundary and vertex. */
+  su2double Total_Buffet_Metric = 0.0;      /*!< \brief Integrated separation sensor for all the boundaries. */
 
   /*!
    * \brief A virtual member.
@@ -54,11 +54,10 @@ private:
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config, bool Output) override;
+                                       const CConfig *config) override;
 
   /*!
    * \brief Common code for wall boundaries, add the residual and Jacobian
@@ -66,7 +65,7 @@ private:
    */
   void AddDynamicGridResidualContribution(unsigned long iPoint,
                                           unsigned long Point_Normal,
-                                          CGeometry* geometry,
+                                          const CGeometry* geometry,
                                           const su2double* UnitNormal,
                                           su2double Area,
                                           const su2double* GridVel,
@@ -97,6 +96,33 @@ private:
                                   unsigned short val_marker,
                                   bool cht_mode = false);
 
+  /*!
+   * \brief Generic implementation of the heatflux and heat-transfer/convection walls.
+   */
+  void BC_HeatFlux_Wall_Generic(const CGeometry *geometry,
+                                const CConfig *config,
+                                unsigned short val_marker,
+                                unsigned short kind_boundary);
+
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                        CNumerics *numerics, CConfig *config) override;
+
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTau_Wall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -113,7 +139,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void) override;
+  ~CNSSolver() = default;
 
   /*!
    * \brief Provide the buffet metric.
@@ -149,7 +175,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config) override;
+  void Evaluate_ObjFunc(const CConfig *config) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -166,6 +192,16 @@ public:
                         CNumerics *visc_numerics,
                         CConfig *config,
                         unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                            const CConfig *config,
+                            const unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -203,18 +239,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Buffet_Monitoring(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Compute the viscous contribution for a particular edge.
-   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *numerics, CConfig *config) override;
+  void Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) override;
 
   /*!
    * \brief Get the value of the buffet sensor
@@ -225,15 +250,4 @@ public:
   inline su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) const override {
     return Buffet_Sensor[val_marker][val_vertex];
   }
-
-  /*!
-   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTauWall_WF(CGeometry *geometry,
-                     CSolver** solver_container,
-                     CConfig* config) override;
-
 };

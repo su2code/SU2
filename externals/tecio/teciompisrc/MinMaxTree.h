@@ -6,7 +6,7 @@
 #include "importSzPltFile.h"
 #include "RawArray.h"
 #include "readValueArray.h"
-namespace tecplot { namespace ___3933 { class MinMaxTree { UNCOPYABLE_CLASS(MinMaxTree); public: typedef uint32_t EntryIndex_t; private: static EntryIndex_t const CHILDREN_BITS_PER_PARENT = 6; static EntryIndex_t const NUM_CHILDREN_PER_PARENT = (1<<CHILDREN_BITS_PER_PARENT); static EntryIndex_t const MAX_DEPTH = (24+CHILDREN_BITS_PER_PARENT-1)/CHILDREN_BITS_PER_PARENT; static size_t const MIN_ENTRIES_TO_ALLOCATE = 32; static size_t const ALLOCATION_EXPANSION_FACTOR = 2; ___2240<___2481> m_minMaxArraysByDepth;
+namespace tecplot { namespace ___3933 { class MinMaxTree { UNCOPYABLE_CLASS(MinMaxTree) public: typedef uint32_t EntryIndex_t; private: static EntryIndex_t const CHILDREN_BITS_PER_PARENT = 6; static EntryIndex_t const NUM_CHILDREN_PER_PARENT = (1<<CHILDREN_BITS_PER_PARENT); static EntryIndex_t const MAX_DEPTH = (24+CHILDREN_BITS_PER_PARENT-1)/CHILDREN_BITS_PER_PARENT; static size_t const MIN_ENTRIES_TO_ALLOCATE = 32; static size_t const ALLOCATION_EXPANSION_FACTOR = 2; ___2240<___2481> m_minMaxArraysByDepth;
  #ifndef NO_ASSERTS
 EntryIndex_t m_size;
  #endif

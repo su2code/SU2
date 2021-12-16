@@ -2,14 +2,14 @@
  * \file fem_cgns_elements.cpp
  * \brief CGNS element definitions and conversions to the SU2 standard.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,11 +28,13 @@
 #ifdef HAVE_CGNS
 #include "../../include/fem/fem_cgns_elements.hpp"
 #include "../../include/fem/geometry_structure_fem_part.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
 #include <climits>
 #include <algorithm>
+
+using namespace std;
 
 #if CGNS_VERSION >= 3300
 

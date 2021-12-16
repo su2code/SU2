@@ -2,14 +2,14 @@
  * \file COutputFactory.cpp
  * \brief Main subroutines for output solver information
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,47 +33,47 @@
 #include "../../include/output/CAdjElasticityOutput.hpp"
 #include "../../include/output/CFlowCompOutput.hpp"
 #include "../../include/output/CNEMOCompOutput.hpp"
-#include "../../include/output/CAdjFlowOutput.hpp"
+#include "../../include/output/CAdjFlowCompOutput.hpp"
 #include "../../include/output/CFlowCompFEMOutput.hpp"
 #include "../../include/output/CFlowIncOutput.hpp"
 #include "../../include/output/CAdjFlowIncOutput.hpp"
 #include "../../include/output/CHeatOutput.hpp"
 #include "../../include/output/CAdjHeatOutput.hpp"
 
-COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* config, int nDim){
+COutput* COutputFactory::CreateOutput(MAIN_SOLVER kindSolver, CConfig* config, int nDim){
 
   COutput* output = nullptr;
 
   switch(kindSolver){
-    case EULER: case NAVIER_STOKES: case RANS:
+    case MAIN_SOLVER::EULER: case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
       output = new CFlowCompOutput(config, nDim);
       break;
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+    case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
       output = new CFlowIncOutput(config, nDim);
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::NEMO_NAVIER_STOKES:
       output = new CNEMOCompOutput(config, nDim);
-      break;  
-    case HEAT_EQUATION:
+      break;
+    case MAIN_SOLVER::HEAT_EQUATION:
       output = new CHeatOutput(config, nDim);
       break;
-    case FEM_ELASTICITY:
+    case MAIN_SOLVER::FEM_ELASTICITY:
       output = new CElasticityOutput(config, nDim);
       break;
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS:
       output = new CAdjFlowCompOutput(config, nDim);
       break;
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       output = new CAdjFlowIncOutput(config, nDim);
       break;
-    case DISC_ADJ_FEM:
+    case MAIN_SOLVER::DISC_ADJ_FEM:
       output = new CAdjElasticityOutput(config, nDim);
       break;
-    case DISC_ADJ_HEAT:
+    case MAIN_SOLVER::DISC_ADJ_HEAT:
       output = new CAdjHeatOutput(config, nDim);
       break;
-    case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_EULER: case MAIN_SOLVER::FEM_LES: case MAIN_SOLVER::FEM_RANS: case MAIN_SOLVER::FEM_NAVIER_STOKES:
       output = new CFlowCompFEMOutput(config, nDim);
       break;
     default:

@@ -2,14 +2,14 @@
  * \file fem_wall_distance.cpp
  * \brief Main subroutines for computing the wall distance for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -172,7 +172,7 @@ void CMeshFEM_DG::SetWallDistance(su2double val){
   }
 }
 
-void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
+void CMeshFEM_DG::SetWallDistance(CADTElemClass *WallADT, const CConfig* config, unsigned short iZone){
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the wall distance of the integration points of   ---*/

@@ -2,14 +2,14 @@
  * \file CFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,8 +38,8 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   const unsigned long TimeIter = config[val_iZone]->GetTimeIter();
   const unsigned long nIncrements = config[val_iZone]->GetNumberIncrements();
 
-  const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  const bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+  const bool linear = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool disc_adj_fem = config[val_iZone]->GetDiscrete_Adjoint();
 
   /*--- Loads applied in steps (not used for discrete adjoint). ---*/
@@ -52,7 +52,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   feaIntegration->SetConvergence(false);
 
   /*--- FEA equations ---*/
-  config[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS);
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
 
   if (linear) {
     /*--- Run the (one) iteration ---*/
@@ -196,8 +196,9 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
   /*----------------- Update structural solver ----------------------*/
 
   if (dynamic) {
-    integration[val_iZone][val_iInst][FEA_SOL]->SetStructural_Solver(
-        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(
+        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone],
+        MESH_0);
     integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
     /*--- Verify convergence criteria (based on total time) ---*/
@@ -210,7 +211,7 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
   } else if (fsi) {
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
      * purposes) ---*/
-    if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == NEWMARK_IMPLICIT) {
+    if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == STRUCT_TIME_INT::NEWMARK_IMPLICIT) {
       feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     }
   }

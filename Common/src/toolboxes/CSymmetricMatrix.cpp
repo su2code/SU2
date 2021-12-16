@@ -2,14 +2,14 @@
  * \file CSymmetricMatrix.cpp
  * \brief Implementation of dense symmetric matrix helper class (see hpp).
  * \author Joel Ho, P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,8 @@
  */
 
 #include "../../include/toolboxes/CSymmetricMatrix.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 
 using namespace std;
 
@@ -70,47 +71,6 @@ void CSymmetricMatrix::CholeskyDecompose()
 #endif
 }
 
-void CSymmetricMatrix::LUDecompose(su2passivematrix& decomp, vector<int>& perm) const
-{
-#ifndef HAVE_LAPACK
-  const int sz = Size();
-
-  /*--- Copy matrix values to LU matrix, init permutation vec. ---*/
-  decomp.resize(sz,sz);
-  perm.resize(sz);
-
-  for (int i = 0; i < sz; ++i) {
-    perm[i] = i;
-    for (int j = i; j < sz; ++j) decomp(j,i) = decomp(i,j) = Get(i,j);
-  }
-
-  /*--- Decompose LU matrix. ---*/
-  for (int j = 0; j < sz-1; ++j) {
-    /*--- Search for maximum pivot and interchange rows. ---*/
-    passivedouble pivot = decomp(j,j);
-    int pivot_idx = j;
-    for (int i = j+1; i < sz; ++i)
-      if (abs(decomp(i,j)) > abs(pivot)) {
-        pivot = decomp(i,j);
-        pivot_idx = i;
-      }
-
-    if (pivot_idx != j) {
-      swap(perm[j], perm[pivot_idx]);
-      for (int k = 0; k < sz; ++k)
-        swap(decomp(j,k), decomp(pivot_idx,k));
-    }
-
-    /*--- Perform elimination. ---*/
-    for (int k = j+1; k < sz; ++k) decomp(k,j) /= pivot;
-
-    for (int k = j+1; k < sz; ++k)
-      for (int i = j+1; i < sz; ++i)
-        decomp(i,k) -= decomp(j,k)*decomp(i,j);
-  }
-#endif
-}
-
 void CSymmetricMatrix::CalcInv(bool is_spd)
 {
 #ifndef HAVE_LAPACK
@@ -145,45 +105,10 @@ void CSymmetricMatrix::CalcInv(bool is_spd)
         Set(i, j, sum);
       }
   }
-  else
-  {
-    su2passivematrix decomp;
-    vector<int> perm;
-    LUDecompose(decomp, perm);
-
-    /*--- Alias mat. ---*/
-    auto& inv = mat;
-
-    /*--- Invert L and U matrices in place. ---*/
-    for (int j = 0; j < sz; ++j) {
-      inv(j,j) = 1.0 / decomp(j,j);
-
-      for (int i = j+1; i < sz; ++i) {
-        inv(i,j) = -decomp(i,j);
-        inv(j,i) = -decomp(j,i) * inv(j,j);
-
-        for (int k = j+1; k < i; ++k) {
-          inv(i,j) -= decomp(i,k) * inv(k,j);
-          inv(j,i) -= decomp(k,i) * inv(j,k);
-        }
-        if (j+1 <= i) inv(j,i) /= decomp(i,i);
-      }
-    }
-    // inverses in mat
-
-    /*--- Multiply U_inv by L_inv, overwrite decomp_vec. ---*/
-    for (int i = 0; i < sz; ++i)
-      for (int j = 0; j < sz; ++j) {
-        decomp(i,j) = 0.0;
-        for (int k = max(i,j); k < sz; ++k)
-          decomp(i,j) += inv(i,k) * ((k==j)? 1.0 : inv(k,j));
-      }
-
-    /*--- Permute multiplied matrix to recover A_inv, overwrite mat. ---*/
-    for (int j = 0; j < sz; ++j) {
-      int k = perm[j];
-      for (int i = k; i < sz; ++i) Set(i, k, decomp(i,j));
-    }
+  else {
+    auto inv = StealData();
+    CBlasStructure::inverse(sz, inv);
+    mat = move(inv);
   }
 #endif
 }
@@ -241,7 +166,7 @@ void CSymmetricMatrix::MatMatMult(const char side,
   /*--- Left side: mat_out = this * mat_in. ---*/
   if (side == 'L' || side == 'l') {
     const int M = Size(), N = mat_in.cols();
-    assert(M == mat_in.rows());
+    assert(M == static_cast<int>(mat_in.rows()));
 
     mat_out.resize(M,N);
 
@@ -263,7 +188,7 @@ void CSymmetricMatrix::MatMatMult(const char side,
   /*--- Right_side: mat_out = mat_in * this. ---*/
   else {
     const int M = mat_in.rows(), N = Size();
-    assert(N == mat_in.cols());
+    assert(N == static_cast<int>(mat_in.cols()));
 
     mat_out.resize(M,N);
 
