@@ -309,7 +309,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   CFileWriter *fileWriter = nullptr;
   CFileWriter *fileWriterFinalIteration = nullptr;
 
-  unsigned short lastindex; // = fileName.find_last_of(".");
   string fullFileName=fileName;
   /*--- note that the suffix includes the dot ---*/
   string suffix;// = fullFileName.substr(lastindex); 
