@@ -3590,6 +3590,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (TimeMarching != TIME_MARCHING::HARMONIC_BALANCE) { TimeMarching = TIME_MARCHING::STEADY; }
   }
 
+  if (Time_Domain && GetWrt_Restart_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_RESTART_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+  if (Time_Domain && GetWrt_Volume_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_VOLUME_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+
+
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
 
   if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
@@ -8070,7 +8078,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, int Iter) const {
+string CConfig::GetFilename(string filename, string ext, int timeIter) const {
 
   /*--- Remove any extension --- */
 
@@ -8080,7 +8088,7 @@ string CConfig::GetFilename(string filename, string ext, int Iter) const {
   /*--- Add the extension --- */
 
   filename = filename + string(ext);
-
+  
   /*--- Append the zone number if multizone problems ---*/
   if (Multizone_Problem)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
@@ -8089,9 +8097,20 @@ string CConfig::GetFilename(string filename, string ext, int Iter) const {
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
+  /*--- Append the iteration number for unsteady problems ---*/
   if (GetTime_Domain()){
-    filename = GetUnsteady_FileName(filename, Iter, ext);
+    filename = GetUnsteady_FileName(filename, timeIter, ext);
   }
+  
+  /* --- nijso: we can also add the iteration number here --- */
+  /*
+  if (!GetWrt_Restart_Overwrite()){
+    cout << "getfilename : number of inner iterations = " << GetInnerIter() << endl;
+    std::stringstream inner_iter_ss;
+    inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << GetInnerIter();  
+    filename.append(inner_iter_ss.str());
+  } 
+  */
 
   return filename;
 }

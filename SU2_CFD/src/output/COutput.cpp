@@ -46,7 +46,6 @@
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
@@ -308,15 +307,29 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
   CFileWriter *fileWriter = nullptr;
+  CFileWriter *fileWriterFinalIteration = nullptr;
 
-  unsigned short lastindex = fileName.find_last_of(".");
-  fileName = fileName.substr(0, lastindex);
+  unsigned short lastindex; // = fileName.find_last_of(".");
+  string fullFileName=fileName;
+  /*--- note that the suffix includes the dot ---*/
+  string suffix;// = fullFileName.substr(lastindex); 
+  string filename_iter;
+
+  /*--- filename with iteration number ---*/
+  //string fileName_iter = fileName;
+  unsigned long previous_inner_iteration = curInnerIter - config->GetVolume_Wrt_Freq(); 
+  static unsigned long previous_outer_iteration = curOuterIter - config->GetVolume_Wrt_Freq(); 
+  cout << "1.inner iteration = " << curInnerIter << endl;
+  cout << "1.previous inner iteration = " << previous_inner_iteration << endl;
+  cout << "1. stepsize = " << config->GetVolume_Wrt_Freq() << endl;
+  cout <<" 1. restart filename = " << restartFilename << endl;
+  cout <<" 1. filename = " << fileName << endl;
 
   std::stringstream inner_iter_ss;
-  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
+  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;
 
   std::stringstream outer_iter_ss;
-  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << curOuterIter;
+  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_outer_iteration;
 
   /*--- Write files depending on the format --- */
 
@@ -353,13 +366,47 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case RESTART_BINARY:
 
+      cout << "restart binary" << endl;
+
       if (fileName.empty()){
+        
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
+
+
+        //cout << "filename is empty" << endl;
+        //fullFileName = restartFilename;
+        //cout <<"full filename="<< fullFileName << endl; 
+        //lastindex = fullFileName.find_last_of(".");
+        //cout << "lastindex = " << lastindex << endl;
+        //fileName = fullFileName.substr(0, lastindex);
+        //cout << "prefix = " <<fileName << endl;
+        /*--- note that the suffix includes the dot ---*/
+        //suffix = fullFileName.substr(lastindex); 
+        //cout << "suffix = " <<suffix << endl;
+
         if (!config->GetWrt_Restart_Overwrite()){
-          if (config->GetMultizone_Problem())
-            fileName.append(outer_iter_ss.str());
-          else 
-            fileName.append(inner_iter_ss.str());
+          if (config->GetMultizone_Problem()){
+            cout << "do nothing" << endl;
+            //fileName.append(outer_iter_ss.str());
+          }
+          else {
+            std::stringstream inner_iter_ss;
+            inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;  
+
+            // append previous iteration to filename
+            filename_iter = fileName;
+            filename_iter.append(inner_iter_ss.str());
+            filename_iter.append(CSU2BinaryFileWriter::fileExt);
+
+
+            cout << "2.inner iter = " << inner_iter_ss.str() << endl;
+            cout << "2.filename=" << fileName << endl;
+            cout << "2.moving "<<restartFilename << " to "<< filename_iter  << endl;
+
+            /*--- rename previous restart.dat to restart_xxxx.dat ---*/
+            rename(restartFilename.c_str(),filename_iter.c_str()); 
+            //fileName.append(inner_iter_ss.str());
+          }
         }
       }
       
@@ -367,7 +414,20 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
       }
 
+      cout << "write new restart filename = " << fileName << endl;
       fileWriter = new CSU2BinaryFileWriter(fileName, volumeDataSorter);
+      cout <<  config->GetnIter() << " / " << curInnerIter << endl;
+      if (config->GetnIter() == curInnerIter+1) {
+        cout <<"final iteration, copying last restart file" << endl;
+        std::stringstream inner_iter_ss;
+        inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;  
+        filename_iter = fileName;
+        filename_iter.append(inner_iter_ss.str());
+        //filename_iter.append(CSU2BinaryFileWriter::fileExt);
+
+        fileWriterFinalIteration = new CSU2BinaryFileWriter(filename_iter, volumeDataSorter);
+    
+      }
 
       break;
 
@@ -431,15 +491,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case PARAVIEW_XML:
 
-      if (fileName.empty()){
+      if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-        if (!config->GetWrt_Volume_Overwrite()){
-          if (config->GetMultizone_Problem())
-            fileName.append(outer_iter_ss.str());
-          else 
-            fileName.append(inner_iter_ss.str());
-        }
-      }
 
       /*--- Load and sort the output data and connectivity. ---*/
 
@@ -475,16 +528,15 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     case PARAVIEW_MULTIBLOCK:
       {
 
-        if (fileName.empty())
-          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-
         /*--- Sort volume connectivity ---*/
 
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
         /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
+        // Nijso: why use the case name?
 
-        fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
+        if (fileName.empty())
+          fileName = config->GetFilename(config->GetCaseName(), "", curTimeIter);
 
         /*--- Allocate the vtm file writer ---*/
 
@@ -570,7 +622,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-
+      
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
@@ -759,6 +811,30 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     }
 
     delete fileWriter;
+
+  }
+
+  if (fileWriterFinalIteration != nullptr){
+    
+    /*--- Write data to file ---*/
+
+    fileWriterFinalIteration->Write_Data();
+
+    su2double BandWidth = fileWriterFinalIteration->Get_Bandwidth();
+
+    /*--- Compute and store the bandwidth ---*/
+
+    if (format == RESTART_BINARY){
+      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
+    }
+
+    if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      (*fileWritingTable) << " " << "(" + PrintingToolbox::to_string(BandWidth) + " MB/s)";
+      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    }
+
+    delete fileWriterFinalIteration;
 
   }
 }
