@@ -316,14 +316,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   string filename_iter;
 
   /*--- filename with iteration number ---*/
-  //string fileName_iter = fileName;
   unsigned long previous_inner_iteration = curInnerIter - config->GetVolume_Wrt_Freq(); 
   static unsigned long previous_outer_iteration = curOuterIter - config->GetVolume_Wrt_Freq(); 
-  cout << "1.inner iteration = " << curInnerIter << endl;
-  cout << "1.previous inner iteration = " << previous_inner_iteration << endl;
-  cout << "1. stepsize = " << config->GetVolume_Wrt_Freq() << endl;
-  cout <<" 1. restart filename = " << restartFilename << endl;
-  cout <<" 1. filename = " << fileName << endl;
 
   std::stringstream inner_iter_ss;
   inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;
@@ -366,23 +360,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case RESTART_BINARY:
 
-      cout << "restart binary" << endl;
-
       if (fileName.empty()){
         
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
-
-        //cout << "filename is empty" << endl;
-        //fullFileName = restartFilename;
-        //cout <<"full filename="<< fullFileName << endl; 
-        //lastindex = fullFileName.find_last_of(".");
-        //cout << "lastindex = " << lastindex << endl;
-        //fileName = fullFileName.substr(0, lastindex);
-        //cout << "prefix = " <<fileName << endl;
-        /*--- note that the suffix includes the dot ---*/
-        //suffix = fullFileName.substr(lastindex); 
-        //cout << "suffix = " <<suffix << endl;
 
         if (!config->GetWrt_Restart_Overwrite()){
           if (config->GetMultizone_Problem()){
@@ -397,7 +378,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
             filename_iter = fileName;
             filename_iter.append(inner_iter_ss.str());
             filename_iter.append(CSU2BinaryFileWriter::fileExt);
-
 
             cout << "2.inner iter = " << inner_iter_ss.str() << endl;
             cout << "2.filename=" << fileName << endl;
@@ -423,7 +403,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;  
         filename_iter = fileName;
         filename_iter.append(inner_iter_ss.str());
-        //filename_iter.append(CSU2BinaryFileWriter::fileExt);
 
         fileWriterFinalIteration = new CSU2BinaryFileWriter(filename_iter, volumeDataSorter);
     
