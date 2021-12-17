@@ -910,7 +910,8 @@ void CConfig::SetPointersNull(void) {
   ActDisk_ReverseMassFlow = nullptr;    Surface_MassFlow        = nullptr;   Surface_Mach             = nullptr;
   Surface_Temperature      = nullptr;   Surface_Pressure         = nullptr;  Surface_Density          = nullptr;   Surface_Enthalpy          = nullptr;
   Surface_NormalVelocity   = nullptr;   Surface_TotalTemperature = nullptr;  Surface_TotalPressure    = nullptr;   Surface_PressureDrop    = nullptr;
-  Surface_DC60             = nullptr;    Surface_IDC = nullptr;
+  Surface_DC60             = nullptr;   Surface_IDC = nullptr;
+  Surface_Species_Variance = nullptr;   Surface_Species_0 = nullptr;
 
   Outlet_MassFlow      = nullptr;       Outlet_Density      = nullptr;      Outlet_Area     = nullptr;
 
@@ -3534,6 +3535,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case SURFACE_MOM_DISTORTION:
         case SURFACE_SECOND_OVER_UNIFORM:
         case SURFACE_PRESSURE_DROP:
+        case SURFACE_SPECIES_0:
+        case SURFACE_SPECIES_VARIANCE:
         case CUSTOM_OBJFUNC:
           if (Kind_ObjFunc[iObj] != Obj_0) {
             SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
@@ -3541,7 +3544,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
                            string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n")+
+                           string("SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
         default:
@@ -5150,13 +5154,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   else {monoatomic = false;}
 
   /*--- Set number of Turbulence Variables. ---*/
-  switch(Kind_Turb_Model) {
-    case TURB_MODEL::NONE:
+  switch (TurbModelFamily(Kind_Turb_Model)) {
+    case TURB_FAMILY::NONE:
       nTurbVar = 0; break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_NEG:
+    case TURB_FAMILY::SA:
       nTurbVar = 1; break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       nTurbVar = 2; break;
   }
 
@@ -5171,6 +5174,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS)
       SU2_MPI::Error("Species transport currently only avaialble for compressible and incompressible flow.", CURRENT_FUNCTION);
+
+    /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
+    for (unsigned short iObj = 0; iObj < nObj; iObj++) {
+      if ((Kind_ObjFunc[iObj] == SURFACE_SPECIES_0 ||
+           Kind_ObjFunc[iObj] == SURFACE_SPECIES_VARIANCE) &&
+          nMarker_Analyze > 1) {
+        SU2_MPI::Error("SURFACE_SPECIES_0 and SURFACE_SPECIES_VARIANCE currently can only handle one entry to MARKER_ANALYZE.", CURRENT_FUNCTION);
+      }
+    }
 
     // For now, do not allow axisymmetric simulations
     if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);
@@ -5347,6 +5359,8 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Surface_TotalTemperature = new su2double[nMarker_Analyze] ();
   Surface_TotalPressure = new su2double[nMarker_Analyze] ();
   Surface_PressureDrop = new su2double[nMarker_Analyze] ();
+  Surface_Species_0 = new su2double[nMarker_Analyze] ();
+  Surface_Species_Variance = new su2double[nMarker_Analyze] ();
   Surface_DC60 = new su2double[nMarker_Analyze] ();
   Surface_IDC = new su2double[nMarker_Analyze] ();
   Surface_IDC_Mach = new su2double[nMarker_Analyze] ();
@@ -5874,7 +5888,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       case MAIN_SOLVER::MULTIPHYSICS:
         cout << "Multiphysics solver" << endl;
-        break;  
+        break;
       default:
         SU2_MPI::Error("No valid solver was chosen", CURRENT_FUNCTION);
 
@@ -7889,6 +7903,8 @@ CConfig::~CConfig(void) {
      delete[]  Surface_TotalTemperature;
      delete[]  Surface_TotalPressure;
      delete[]  Surface_PressureDrop;
+     delete[]  Surface_Species_0;
+     delete[]  Surface_Species_Variance;
      delete[]  Surface_DC60;
      delete[]  Surface_IDC;
      delete[]  Surface_IDC_Mach;
@@ -8246,6 +8262,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
         case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
         case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
+        case SURFACE_SPECIES_0:           AdjExt = "_avgspec0"; break;
+        case SURFACE_SPECIES_VARIANCE:    AdjExt = "_specvar";  break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
         case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
@@ -8475,7 +8493,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
 
     default:
-      break;  
+      break;
   }
 }
 
