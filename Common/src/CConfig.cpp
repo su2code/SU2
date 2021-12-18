@@ -8104,7 +8104,7 @@ string CConfig::GetFilename(string filename, string ext, int timeIter) const {
   /*--- Add the extension --- */
 
   filename = filename + string(ext);
-  
+ 
   /*--- Append the zone number if multizone problems ---*/
   if (Multizone_Problem)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
@@ -8118,16 +8118,6 @@ string CConfig::GetFilename(string filename, string ext, int timeIter) const {
     filename = GetUnsteady_FileName(filename, timeIter, ext);
   }
   
-  /* --- nijso: we can also add the iteration number here --- */
-  /*
-  if (!GetWrt_Restart_Overwrite()){
-    cout << "getfilename : number of inner iterations = " << GetInnerIter() << endl;
-    std::stringstream inner_iter_ss;
-    inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << GetInnerIter();  
-    filename.append(inner_iter_ss.str());
-  } 
-  */
-
   return filename;
 }
 
