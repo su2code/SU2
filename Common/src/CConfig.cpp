@@ -3594,10 +3594,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (TimeMarching != TIME_MARCHING::HARMONIC_BALANCE) { TimeMarching = TIME_MARCHING::STEADY; }
   }
 
-  if (Time_Domain && GetWrt_Restart_Overwrite()){
+  if (Time_Domain && !GetWrt_Restart_Overwrite()){
     SU2_MPI::Error("Appending iterations to the filename (WRT_RESTART_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
   }
-  if (Time_Domain && GetWrt_Volume_Overwrite()){
+  if (Time_Domain && !GetWrt_Volume_Overwrite()){
     SU2_MPI::Error("Appending iterations to the filename (WRT_VOLUME_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
   }
 

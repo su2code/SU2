@@ -310,17 +310,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   CFileWriter *fileWriter = nullptr;
   CFileWriter *fileWriterFinalIteration = nullptr;
 
-  string fullFileName=fileName;
-  /*--- note that the suffix includes the dot ---*/
-  string suffix;// = fullFileName.substr(lastindex); 
   string filename_iter;
 
   /*--- filename with iteration number ---*/
   unsigned long previous_inner_iteration = curInnerIter - config->GetVolume_Wrt_Freq(); 
-  static unsigned long previous_outer_iteration = curOuterIter - config->GetVolume_Wrt_Freq(); 
+  unsigned long previous_outer_iteration = curOuterIter - config->GetVolume_Wrt_Freq(); 
 
-  std::stringstream inner_iter_ss;
-  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;
+  
 
   std::stringstream outer_iter_ss;
   outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_outer_iteration;
@@ -365,16 +361,22 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
         if (!config->GetWrt_Restart_Overwrite()){
           if (config->GetMultizone_Problem()){
-
-
+            /* --- do nothing --- */  
           }
           else {
 
-            inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;  
-
             // append previous iteration to filename
             filename_iter = fileName;
-            filename_iter.append(inner_iter_ss.str());
+            // for the final iteration we need to add 1
+            std::stringstream inner_iter_ss;
+            if (config->GetnIter() == curInnerIter+1){ 
+              inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration+1;
+              filename_iter.append((inner_iter_ss).str());
+            }
+            else {   
+              inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;
+              filename_iter.append(inner_iter_ss.str());
+            }
             filename_iter.append(CSU2BinaryFileWriter::fileExt);
 
              /*--- rename previous restart.dat to restart_xxxx.dat ---*/
@@ -384,17 +386,25 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       }
       
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
+        if (!config->GetWrt_Restart_Overwrite())
+          (*fileWritingTable) << "moving previous restart to:" << filename_iter ;
+
+        (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
       }
 
       fileWriter = new CSU2BinaryFileWriter(fileName, volumeDataSorter);
 
-      if (config->GetnIter() == curInnerIter+1) {
-
-        inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;  
+      if ((!config->GetWrt_Restart_Overwrite()) && (config->GetnIter() == curInnerIter+1)) {
+        std::stringstream inner_iter_ss;
+        inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
         filename_iter = fileName;
         filename_iter.append(inner_iter_ss.str());
         fileWriterFinalIteration = new CSU2BinaryFileWriter(filename_iter, volumeDataSorter);
+
+        if (rank == MASTER_NODE) 
+          (*fileWritingTable) << "copying current restart to:" << filename_iter + CSU2BinaryFileWriter::fileExt;
+
+
       }
 
       break;
@@ -784,8 +794,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   }
 
   if (fileWriterFinalIteration != nullptr){
-    
-    /*--- Write data to file ---*/
+
+    /*--- additional copy of data to file with iteration number ---*/
 
     fileWriterFinalIteration->Write_Data();
 
@@ -806,6 +816,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     delete fileWriterFinalIteration;
 
   }
+
+
 }
 
 bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
