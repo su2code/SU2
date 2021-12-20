@@ -8104,7 +8104,6 @@ string CConfig::GetFilename(string filename, string ext, int timeIter) const {
   /*--- Add the extension --- */
 
   filename = filename + string(ext);
- 
   /*--- Append the zone number if multizone problems ---*/
   if (Multizone_Problem)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
