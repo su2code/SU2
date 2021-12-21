@@ -850,6 +850,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
   for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
 
     bool fieldConverged = false;
+    su2double cauchyScalingFactor = 1.0;
 
     const string &convField = convFields[iField_Conv];
     if (historyOutput_Map.count(convField) > 0){
@@ -873,7 +874,17 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
         oldFunc[iField_Conv] = newFunc[iField_Conv];
         newFunc[iField_Conv] = monitor;
-        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
+        
+        /*--- Automatically modify the scaling factor of relative Cauchy convergence for 
+        * coefficients that are close to zero. Example: For the clean aircraft, the rolling 
+        * moment coefficient MOMENT_X is close to zero and thus will never reach a relative 
+        * cauchy convergence ->> dividing tiny numbers is not a good idea. Using absolute 
+        * cauchy convergence is more robust in this case. ---*/
+        
+        if (fabs(monitor) <= 0.1) { cauchyScalingFactor = 0.1; }
+        else { cauchyScalingFactor = fabs(monitor); }
+        
+        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/cauchyScalingFactor;
 
         cauchySerie[iField_Conv][Iteration % nCauchy_Elems] = cauchyFunc;
         cauchyValue = 0.0;
