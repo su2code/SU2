@@ -35,18 +35,20 @@ CSobolevSmoothingVariable::CSobolevSmoothingVariable(unsigned long npoint, unsig
 
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
-  boundary_vertex = new bool[nPoint];
-  for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
-    boundary_vertex[iPoint] = false;
-  }
-}
-
-CSobolevSmoothingVariable::~CSobolevSmoothingVariable() {
-  if (boundary_vertex != NULL) delete [] boundary_vertex;
+  BoundaryVertexMap.Reset(nPoint);
 }
 
 void CSobolevSmoothingVariable::MarkAsBoundaryPoint(unsigned long iPoint) {
-  boundary_vertex[iPoint] = true;
+  BoundaryVertexMap.SetIsVertex(iPoint, true);
 }
 
-bool CSobolevSmoothingVariable::GetIsBoundaryPoint(unsigned long iPoint) const { return boundary_vertex[iPoint]; }
+bool CSobolevSmoothingVariable::GetIsBoundaryPoint(unsigned long iPoint) const {
+  return BoundaryVertexMap.GetIsVertex(iPoint);
+}
+
+void CSobolevSmoothingVariable::AllocateBoundaryVariables() {
+  if (BoundaryVertexMap.GetIsValid()) return;  // nothing to do
+
+  /*--- Build the map ---*/
+  BoundaryVertexMap.Build();
+}

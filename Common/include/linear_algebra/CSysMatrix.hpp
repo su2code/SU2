@@ -499,6 +499,42 @@ public:
   }
 
   /*!
+   * \brief Set the value of a scaled block in the sparse matrix.
+   * \note This is an templated overload for C2Dcontainer specialization su2matrix.
+   *       It assumes that MatrixType supports a member type Scalar and access operator[][].
+   *       If the template param Overwrite is false we add to the block (bij += alpha*b).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
+   */
+  template <class MatrixType, bool Overwrite = true>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
+                       typename MatrixType::Scalar alpha = 1.0) {
+    auto mat_ij = GetBlock(block_i, block_j);
+    if (!mat_ij) return;
+    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+      for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
+        *mat_ij = (Overwrite ? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block[iVar][jVar]);
+        ++mat_ij;
+      }
+    }
+  }
+
+  /*!
+   * \brief Adds a scaled block to the sparse matrix (see SetBlock).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to add to A(i, j).
+   * \param[in] alpha - Scale factor.
+   */
+  template <class MatrixType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
+                       typename MatrixType::Scalar alpha = 1.0) {
+    SetBlock<MatrixType, false>(block_i, block_j, val_block, alpha);
+  }
+
+  /*!
    * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
    * \note This method assumes an FVM-type sparse pattern.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.

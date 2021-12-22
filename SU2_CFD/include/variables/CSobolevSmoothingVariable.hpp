@@ -27,13 +27,14 @@
 
 #pragma once
 
-#include "../../../SU2_CFD/include/variables/CVariable.hpp"
+#include "../../../Common/include/containers/CVertexMap.hpp"
+#include "CVariable.hpp"
 
 class CSobolevSmoothingVariable final : public CVariable {
  public:
   MatrixType Sensitivity;  /*!< Vector holding the derivative of target functional with respect to the coordinates at this node */
 
-  bool* boundary_vertex;  /*!< \brief Stores if a point belongs to the boundary of a boundary. */
+  CVertexMap<unsigned> BoundaryVertexMap; /*!< \brief Stores if a point belongs to the boundary of a boundary. */
 
   /*!
    * \brief Constructor of the class.
@@ -46,7 +47,7 @@ class CSobolevSmoothingVariable final : public CVariable {
   /*!
    * \brief Destructor of the class.
    */
-  ~CSobolevSmoothingVariable();
+  ~CSobolevSmoothingVariable() override = default;
 
   /*!
    * \brief Set the sensitivity at the node
@@ -65,10 +66,15 @@ class CSobolevSmoothingVariable final : public CVariable {
   /*!
    * \brief Mark a point as boundary of a boundary
    */
-  void MarkAsBoundaryPoint(unsigned long iPoint) override;
+  void MarkAsBoundaryPoint(unsigned long iPoint);
 
   /*!
    * \brief return wether a point is a boundary of a boundary
    */
-  bool GetIsBoundaryPoint(unsigned long iPoint) const override;
+  bool GetIsBoundaryPoint(unsigned long iPoint) const;
+
+  /*!
+   * \brief Allocate member variables for points marked as vertex (via "MarkAsBoundaryPoint").
+   */
+  void AllocateBoundaryVariables();
 };

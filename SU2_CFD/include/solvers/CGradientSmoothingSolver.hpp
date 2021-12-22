@@ -29,7 +29,8 @@
 
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
-#include "../../../SU2_CFD/include/solvers/CFEASolverBase.hpp"
+#include "../variables/CSobolevSmoothingVariable.hpp"
+#include "CFEASolverBase.hpp"
 
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
@@ -64,6 +65,17 @@ public:
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
   CSquareMatrixCM hessian;                   /*!< \brief The approximated Hessian with respect to the design variables. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy all derived solvers can safely use,
+   * CVariable is the common denominator between the FEA and Mesh deformationd variables.
+   */
+  CSobolevSmoothingVariable* nodes = nullptr;
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
  public:
   /*!
@@ -129,12 +141,12 @@ public:
   /*!
    * \brief Set Dirichlet boundary conditions
    */
-  void BC_Dirichlet(CGeometry* geometry, const CConfig* config, unsigned int val_marker);
+  void BC_Dirichlet(const CGeometry* geometry, const CConfig* config, unsigned int val_marker);
 
   /*!
    * \brief Set Dirichlet boundary conditions for the surface solver
    */
-  void BC_Surface_Dirichlet(CGeometry* geometry, const CConfig* config, unsigned int val_marker);
+  void BC_Surface_Dirichlet(const CGeometry* geometry, const CConfig* config, unsigned int val_marker);
 
   /*!
    * \brief Call the linear systems solver
@@ -174,7 +186,7 @@ public:
   /*!
    * \brief write the DV gradient into a file
    */
-  void OutputDVGradient(CConfig *config, string out_file="delta_p.txt");
+  void OutputDVGradient(const CConfig* config, string out_file = "delta_p.txt");
 
   /*!
    * \brief Record a tape containing the parameter Jacobian.
@@ -212,18 +224,6 @@ public:
                        CConfig *config);
 
   /*!
-   * \brief Extract and set the geometrical sensitivity.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) override;
-
-  /*!
-   * \brief Write the solution of the linear solver into the sensitivities of the nodes
-   */
-  void WriteSensitivity(CGeometry* geometry, const CConfig* config, unsigned long val_marker = 0);
-
-  /*!
    * \brief Write the content of sensitivity in the nodes to the sensitivity in the geometry
    * \param[in] geometry - Geometrical definition of the problem.
    */
@@ -234,6 +234,12 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void ReadSensFromGeometry(const CGeometry *geometry) override;
+
+ private:
+  /*!
+   * \brief Write the solution of the linear solver into the sensitivities of the nodes
+   */
+  void WriteSensitivity(CGeometry* geometry, const CConfig* config, unsigned long val_marker = 0);
 
   /*!
    * \brief Copy sensitivities from a vector into the geometry
@@ -256,13 +262,6 @@ public:
                                 unsigned int iDim)  {
     return geometry->nodes->GetCoord(indexNode, iDim);
   }
-
-  /*!
-   * \brief Extract the Coordinates of the element from geometry
-   */
-  su2activematrix GetElementCoordinates(CGeometry *geometry,
-                                        std::vector<unsigned long>& indexNode,
-                                        int EL_KIND = 0);
 
   /*!
    * \brief Extra entries to eliminate in the linear system
@@ -289,12 +288,17 @@ public:
     }
   }
 
-private:
-
+  /*!
+   * \brief Set the current working dimension, if the seperate dimension option is set.
+   * \param[in] iDim - the dimension we are currently working in.
+   */
   inline void SetCurrentDim(unsigned int iDim) {
     curDim=iDim;
   }
 
+  /*!
+   * \brief Return the current working dimension.
+   */
   inline const unsigned int& GetCurrentDim() const {
     return curDim;
   }

@@ -69,7 +69,6 @@ CFEASolverBase::~CFEASolverBase() {
     delete [] element_container;
   }
 
-  delete nodes;
 }
 
 void CFEASolverBase::CommunicateExtraEliminationVertices(const CGeometry* geometry, vector<unsigned long>& myPoints) {

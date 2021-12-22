@@ -100,6 +100,17 @@ protected:
   bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
 
   /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use,
+   * CVariable is the common denominator between the FEA and Mesh deformation variables.
+   */
+  CVariable* nodes = nullptr;
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_nodes to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
+  /*!
    * \brief Get the element container index and number of nodes of a given VTK type.
    * \param[in] VTK_Type - Type of element.
    * \param[out] EL_KIND - Element container index.

@@ -229,6 +229,8 @@ CFEASolver::~CFEASolver(void) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       omp_destroy_lock(&UpdateLocks[iPoint]);
   }
+
+  delete nodes;
 }
 
 void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {

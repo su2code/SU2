@@ -106,7 +106,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   /*--- Initialize the CVariable structure holding solution data ---*/
-  nodes = new CSobolevSmoothingVariable(nPoint, nDim,  config);
+  nodes = new CSobolevSmoothingVariable(nPoint, nDim, config);
   SetBaseClassPointerToNodes();
 
   /*--- Initialize the boundary of the boundary ---*/
@@ -128,6 +128,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
       marker_count = 0;
     }
   }
+  nodes->AllocateBoundaryVariables();
 
   /*--- vector for the parameter gradient ---*/
   deltaP.resize(config->GetnDV_Total(), 0.0);
@@ -331,22 +332,13 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
 
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {
   unsigned long iElem, iNode;
-  unsigned int iDim, jDim, nNodes = 0, NelNodes, jNode;
+  unsigned int iDim, nNodes = 0, NelNodes, jNode;
   std::array<unsigned long, MAXNNODE_3D> indexNode;
   su2double val_Coord, HiHj = 0.0;
   int EL_KIND = 0;
-  su2activematrix DHiDHj;
-  su2double** Jacobian_block;
+  su2activematrix DHiDHj, Jacobian_block;
 
-  /*--- Uses pointer for now to work with CSysMatrix::AddBlock()
-   *  TODO: Change this to a container type ---*/
-  Jacobian_block = new su2double*[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Jacobian_block[iDim] = new su2double[nDim];
-    for (jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_block[iDim][jDim] = 0.0;
-    }
-  }
+  Jacobian_block.resize(nDim, nDim) = su2double(0.0);
 
   /*--- Loops over all the elements ---*/
 
@@ -394,36 +386,23 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumeric
     }
   }
 
-  if (Jacobian_block != nullptr) {
-    for (iDim = 0; iDim < nDim; iDim++) delete[] Jacobian_block[iDim];
-    delete[] Jacobian_block;
-  }
 }
 
 void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, CNumerics* numerics,
                                                            const CConfig* config, unsigned long val_marker,
                                                            unsigned int nSurfDim) {
-  unsigned long iElem, iPoint, iVertex, iDim, jDim, iSurfDim;
+  unsigned long iElem, iPoint, iVertex, iDim, iSurfDim;
   unsigned int iNode, jNode, nNodes = 0, NelNodes;
   std::array<unsigned long, MAXNNODE_2D> indexNode;
   std::array<unsigned long, MAXNNODE_2D> indexVertex;
   int EL_KIND = 0;
   su2double val_Coord, HiHj = 0.0;
-  su2activematrix DHiDHj;
-  su2double **Jacobian_block, **mId_Aux;
+  su2activematrix DHiDHj, Jacobian_block, mId_Aux;
 
-  /*--- Uses pointer for now to work with CSysMatrix::AddBlock()
-   *  TODO: Change this to a container type ---*/
-  Jacobian_block = new su2double*[nDim];
-  mId_Aux = new su2double*[nDim];
+  Jacobian_block.resize(nDim, nDim) = su2double(0.0);
+  mId_Aux.resize(nDim, nDim) = su2double(0.0);
   for (iDim = 0; iDim < nDim; iDim++) {
-    Jacobian_block[iDim] = new su2double[nDim];
-    mId_Aux[iDim] = new su2double[nDim];
-    for (jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_block[iDim][jDim] = 0.0;
-      mId_Aux[iDim][jDim] = 0.0;
-    }
-    mId_Aux[iDim][iDim] = 1.0;
+    mId_Aux[iDim][iDim] = su2double(1.0);
   }
 
   vector<bool> visited(geometry->GetnPoint(), false);
@@ -491,14 +470,6 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
     }
   }
 
-  if (Jacobian_block != nullptr) {
-    for (iDim = 0; iDim < nDim; iDim++) delete[] Jacobian_block[iDim];
-    delete[] Jacobian_block;
-  }
-  if (mId_Aux != nullptr) {
-    for (iDim = 0; iDim < nDim; iDim++) delete[] mId_Aux[iDim];
-    delete[] mId_Aux;
-  }
 }
 
 void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConfig* config) {
@@ -643,7 +614,7 @@ void CGradientSmoothingSolver::Impose_BC(CGeometry* geometry, const CConfig* con
   }
 }
 
-void CGradientSmoothingSolver::BC_Dirichlet(CGeometry* geometry, const CConfig* config, unsigned int val_marker) {
+void CGradientSmoothingSolver::BC_Dirichlet(const CGeometry* geometry, const CConfig* config, unsigned int val_marker) {
   unsigned long iPoint, iVertex;
   const su2double zeros[MAXNDIM] = {0.0};
 
@@ -660,7 +631,7 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry* geometry, const CConfig* 
   }
 }
 
-void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry* geometry, const CConfig* config,
+void CGradientSmoothingSolver::BC_Surface_Dirichlet(const CGeometry* geometry, const CConfig* config,
                                                     unsigned int val_marker) {
   unsigned long iPoint, iVertex;
   const su2double zeros[MAXNDIM] = {0.0};
@@ -763,8 +734,7 @@ void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry 
 
 }
 
-void CGradientSmoothingSolver::OutputDVGradient(CConfig *config, string out_file) {
-
+void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string out_file) {
   unsigned iDV;
   if (rank == MASTER_NODE) {
     ofstream delta_p (out_file);
@@ -774,7 +744,6 @@ void CGradientSmoothingSolver::OutputDVGradient(CConfig *config, string out_file
     }
     delta_p.close();
   }
-
 }
 
 void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometry, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord, CConfig *config) {
@@ -920,12 +889,22 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
 
 }
 
-void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
+void CGradientSmoothingSolver::WriteSensToGeometry(CGeometry* geometry) const {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      // nodes->SetSensitivity(iPoint,iDim, solver->GetNodes()->GetSensitivity(iPoint,iDim));
+      geometry->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint, iDim));
+    }
+  }
+}
+
+void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint, iDim));
     }
   }
 }
@@ -967,26 +946,6 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
           nodes->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
         }
       }
-    }
-  }
-}
-
-void CGradientSmoothingSolver::WriteSensToGeometry(CGeometry* geometry) const {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint,iDim));
     }
   }
 }

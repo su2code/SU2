@@ -2242,14 +2242,4 @@ public:
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
-  /*!
-   * \brief Mark a point as boundary of a design surface boundary
-   */
-  virtual void MarkAsBoundaryPoint(unsigned long iPoint) {}
-
-  /*!
-   * \brief return wether a point is a boundary of a design surface boundary
-   */
-  virtual bool GetIsBoundaryPoint(unsigned long iPoint) const { return false; }
-
 };

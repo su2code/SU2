@@ -47,17 +47,6 @@ class CFEASolverBase : public CSolver {
 
   vector<unsigned long> ExtraVerticesToEliminate; /*!< Extra vertices for row/column elimination, see CommunicateExtraEliminationVertices. */
 
-  /*!
-   * \brief The highest level in the variable hierarchy all derived solvers can safely use,
-   * CVariable is the common denominator between the FEA, Mesh deformation, and smoothing variables.
-   */
-  CVariable* nodes = nullptr;
-
-  /*!
-   * \brief Return nodes to allow CSolver::base_nodes to be set.
-   */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-
  public:
   /*!
    * \brief Constructor of the class.
