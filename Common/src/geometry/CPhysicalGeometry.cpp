@@ -4776,7 +4776,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
     /*--- Add the node in the first free position. ---*/
 
-    Result.push_back(AddPoint);
+    Queue.push(AddPoint);
     inQueue[AddPoint] = true;
 
     /*--- Loop until reorganize all the nodes ---*/
