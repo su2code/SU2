@@ -4774,25 +4774,23 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
     }
 
-    /*--- Add the node in the first free position. ---*/
+    /*--- Seed the queue with the minimum degree node. ---*/
 
     Queue.push(AddPoint);
     inQueue[AddPoint] = true;
 
-    /*--- Loop until reorganize all the nodes ---*/
+    /*--- Loop until reorganizing all the nodes. ---*/
 
     while (!Queue.empty()) {
 
-      /*--- Extract the first node from the queue and add it in the first free
-       position. ---*/
+      /*--- Extract the first node from the queue and add it to the order. ---*/
 
       AddPoint = Queue.front();
       Result.push_back(AddPoint);
       Queue.pop();
 
-      /*--- Add to the queue all the nodes adjacent in the increasing
-       order of their degree, checking if the element is already
-       in the Queue. ---*/
+      /*--- Add all adjacent nodes to the queue in increasing order of their
+       degree, checking if the element is already in the queue. ---*/
 
       AuxQueue.clear();
       for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
@@ -4803,7 +4801,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       }
       if (AuxQueue.empty()) continue;
 
-      /*--- Sort the auxiliar queue based on the number of neighbors ---*/
+      /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
 
       stable_sort(AuxQueue.begin(), AuxQueue.end(),
         [&](unsigned long iPoint, unsigned long jPoint) {
