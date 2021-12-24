@@ -38,7 +38,7 @@
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
-  CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {
+  CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNSSolver. ---*/

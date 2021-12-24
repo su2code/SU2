@@ -4757,36 +4757,51 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   vector<unsigned long> AuxQueue, Result;
   Result.reserve(nPoint);
 
-  /*--- Select the node with the lowest degree in the grid. ---*/
+  while (Result.size() < nPointDomain) {
 
-  unsigned long AddPoint = 0;
-  auto MinDegree = nodes->GetnPoint(AddPoint);
-  for (auto iPoint = 1ul; iPoint < nPointDomain; iPoint++) {
-    auto Degree = nodes->GetnPoint(iPoint);
-    if (Degree < MinDegree) { MinDegree = Degree; AddPoint = iPoint; }
-  }
+    /*--- Select the node with the lowest degree in the grid. ---*/
 
-  /*--- Add the node in the first free position. ---*/
-
-  Result.push_back(AddPoint); inQueue[AddPoint] = true;
-
-  /*--- Loop until reorganize all the nodes ---*/
-
-  do {
-
-    /*--- Add to the queue all the nodes adjacent in the increasing
-     order of their degree, checking if the element is already
-     in the Queue. ---*/
-
-    AuxQueue.clear();
-    for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
-      auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
-      if ((!inQueue[AdjPoint]) && (AdjPoint < nPointDomain)) {
-        AuxQueue.push_back(AdjPoint);
+    auto AddPoint = nPoint;
+    auto MinDegree = std::numeric_limits<unsigned short>::max();
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      auto Degree = nodes->GetnPoint(iPoint);
+      if (!inQueue[iPoint] && Degree < MinDegree) {
+        MinDegree = Degree;
+        AddPoint = iPoint;
       }
     }
+    if (AddPoint == nPoint) {
+      SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
+    }
 
-    if (!AuxQueue.empty()) {
+    /*--- Add the node in the first free position. ---*/
+
+    Result.push_back(AddPoint);
+    inQueue[AddPoint] = true;
+
+    /*--- Loop until reorganize all the nodes ---*/
+
+    while (!Queue.empty()) {
+
+      /*--- Extract the first node from the queue and add it in the first free
+       position. ---*/
+
+      AddPoint = Queue.front();
+      Result.push_back(AddPoint);
+      Queue.pop();
+
+      /*--- Add to the queue all the nodes adjacent in the increasing
+       order of their degree, checking if the element is already
+       in the Queue. ---*/
+
+      AuxQueue.clear();
+      for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
+        auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
+        if (!inQueue[AdjPoint] && (AdjPoint < nPointDomain)) {
+          AuxQueue.push_back(AdjPoint);
+        }
+      }
+      if (AuxQueue.empty()) continue;
 
       /*--- Sort the auxiliar queue based on the number of neighbors ---*/
 
@@ -4800,24 +4815,15 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
         Queue.push(iPoint);
         inQueue[iPoint] = true;
       }
-
     }
-
-    /*--- Extract the first node from the queue and add it in the first free
-     position. ---*/
-
-    if (!Queue.empty()) {
-      AddPoint = Queue.front();
-      Result.push_back(AddPoint);
-      Queue.pop();
-    }
-
-  } while (!Queue.empty());
+  }
 
   /*--- Check that all the points have been added ---*/
 
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    if (inQueue[iPoint] == false) Result.push_back(iPoint);
+    if (!inQueue[iPoint]) {
+      SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
+    }
   }
 
   reverse(Result.begin(), Result.end());

@@ -279,13 +279,10 @@ protected:
   void SetReferenceValues(const CConfig& config) final;
 
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {}
+  CEulerSolver() = delete;
 
   /*!
-   * \overload Main constructor of this class.
+   * \brief Main constructor of this class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Grid level.
