@@ -67,10 +67,9 @@ def init_submodules(method = 'auto'):
   alt_name_medi = base_path + 'medi'
   alt_name_codi = base_path + 'codi'
   alt_name_opdi = base_path + 'opdi'
-  alt_name_meson =  base_path + 'meson'
-  alt_name_ninja =  base_path + 'ninja'
-  alt_name_mpp =  cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
-
+  alt_name_meson = base_path + 'meson'
+  alt_name_ninja = base_path + 'ninja'
+  alt_name_mpp = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
 
   if method == 'auto':
     is_git = is_git_directory(cur_dir)
@@ -100,6 +99,7 @@ def init_submodules(method = 'auto'):
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
     download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
 
+
 def is_git_directory(path = '.'):
   try:
      p = subprocess.call(["git", "branch"], stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w'), cwd=path)
@@ -110,6 +110,7 @@ def is_git_directory(path = '.'):
      print("Directory was not cloned using git. Using fall-back method to init submodules")
      return False
   return p == 0
+
 
 def submodule_status(path, sha_commit):
 
@@ -124,7 +125,6 @@ def submodule_status(path, sha_commit):
     # ' ' : Correct version of submodule is initialized
     status_indicator = status[0][0]
 
-    
     if status_indicator == '+':
       # Write a warning that the sha tags do not match
       sys.stderr.write('WARNING: the currently checked out submodule commit in '
@@ -139,11 +139,10 @@ def submodule_status(path, sha_commit):
     cur_sha_commit = status[1:].split(' ')[0]
     if (cur_sha_commit != sha_commit):
       print('SHA-1 tag stored in index does not match SHA tag stored in this script.')
-  
-  
+
 
 def download_module(name, alt_name, git_repo, commit_sha):
-  
+
   # ZipFile does not preserve file permissions. 
   # This is a workaround for that problem:
   # https://stackoverflow.com/questions/39296101/python-zipfile-removes-execute-permissions-from-binaries
@@ -159,50 +158,62 @@ def download_module(name, alt_name, git_repo, commit_sha):
         os.chmod(targetpath, attr)
       return targetpath
 
-  if not os.path.exists(alt_name + os.path.sep + commit_sha):
+  # Where to download the module into
+  target_dir = os.path.dirname(alt_name)
+
+  # File tag used to mark modules downloaded by this method.
+  module_identifier = os.path.join(alt_name, commit_sha)
+
+  if not os.path.exists(module_identifier):
 
     if os.path.exists(alt_name) and os.listdir(alt_name): 
       print('Directory ' + alt_name + ' is not empty')
       print('Maybe submodules are already cloned with git?')
       sys.exit(1) 
- 
+
     else:
       print('Downloading ' + name + ' \'' + commit_sha + '\'')
-    
+
       filename = commit_sha + '.zip'
+      filepath = os.path.join(sys.path[0], filename)
+      alt_filename = name + "-" + filename
+      alt_filepath = os.path.join(sys.path[0], alt_filename)
 
       url = git_repo + '/archive/' + filename
 
-      if not os.path.exists(sys.path[0] + os.path.sep + filename):
+      if not os.path.exists(filepath) and not os.path.exists(alt_filepath):
         try:
           urllib.request.urlretrieve (url, commit_sha + '.zip')
-        except RuntimeError as e:
+        except Exception as e:
           print(e)
           print('Download of module ' + name + ' failed.')
           print('Get archive at ' + url)
           print('and place it in the source code root folder')
           print('Run meson.py again')
           sys.exit()
-   
-      # Unzip file 
-      zipf = MyZipFile(sys.path[0] + os.path.sep + filename)
-      zipf.extractall(sys.path[0] + os.path.sep + 'externals')
-      
+
+      # Detect filename (changes have been noted)
+      if not os.path.exists(filepath):
+        filepath = alt_filepath
+
+      # Unzip file
+      zipf = MyZipFile(filepath)
+      zipf.extractall(target_dir)
+
       # Remove directory if exists
       if os.path.exists(alt_name):
         os.rmdir(alt_name)
 
-      os.rename(sys.path[0] + os.path.sep + 'externals' + os.path.sep + name + '-' + commit_sha, alt_name)
+      os.rename(os.path.join(target_dir, name + '-' + commit_sha), alt_name)
 
       # Delete zip file
-      remove_file(sys.path[0] + os.path.sep + filename)
+      remove_file(filepath)
 
       # Create identifier
-      f = open(alt_name + os.path.sep + commit_sha, 'w')
+      f = open(module_identifier, 'w')
       f.close()
 
 
-   
 if __name__ == '__main__':
   if sys.version_info[0] < 3:
     raise Exception("Script must be run using Python 3")
