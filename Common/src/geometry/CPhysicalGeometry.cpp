@@ -4752,20 +4752,30 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
-  queue<unsigned long> Queue;
-  vector<char> inQueue(nPoint, false);
+  /*--- The result is the RCM ordering, during the process it is also used as
+   * the queue of new points considered by the algorithm. This is possible
+   * because points move from the front of the queue to the back of the result,
+   * which is equivalent to incrementing an integer marking the end of the
+   * result and the start of the queue. ---*/
+  vector<char> InQueue(nPoint, false);
   vector<unsigned long> AuxQueue, Result;
   Result.reserve(nPoint);
+  unsigned long QueueStart = 0;
 
+  /*--- Exclude halo nodes from the ordering process. ---*/
+  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    InQueue[iPoint] = true;
+  }
+
+  /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
   while (Result.size() < nPointDomain) {
 
     /*--- Select the node with the lowest degree in the grid. ---*/
-
     auto AddPoint = nPoint;
     auto MinDegree = std::numeric_limits<unsigned short>::max();
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       auto Degree = nodes->GetnPoint(iPoint);
-      if (!inQueue[iPoint] && Degree < MinDegree) {
+      if (!InQueue[iPoint] && Degree < MinDegree) {
         MinDegree = Degree;
         AddPoint = iPoint;
       }
@@ -4775,59 +4785,47 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
     }
 
     /*--- Seed the queue with the minimum degree node. ---*/
+    Result.push_back(AddPoint);
+    InQueue[AddPoint] = true;
 
-    Queue.push(AddPoint);
-    inQueue[AddPoint] = true;
+    /*--- Loop until reorganizing all nodes connected to AddPoint. This will
+     * also terminate early once the ordering + queue include all points. ---*/
+    while (QueueStart < Result.size() && Result.size() < nPointDomain) {
 
-    /*--- Loop until reorganizing all the nodes. ---*/
-
-    while (!Queue.empty()) {
-
-      /*--- Extract the first node from the queue and add it to the order. ---*/
-
-      AddPoint = Queue.front();
-      Result.push_back(AddPoint);
-      Queue.pop();
+      /*--- Move the start of the queue, equivalent to taking from the front of
+       * the queue and inserting at the end of the result. ---*/
+      AddPoint = Result[QueueStart];
+      ++QueueStart;
 
       /*--- Add all adjacent nodes to the queue in increasing order of their
        degree, checking if the element is already in the queue. ---*/
-
       AuxQueue.clear();
       for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
-        auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
-        if (!inQueue[AdjPoint] && (AdjPoint < nPointDomain)) {
+        const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
+        if (!InQueue[AdjPoint]) {
           AuxQueue.push_back(AdjPoint);
+          InQueue[AdjPoint] = true;
         }
       }
       if (AuxQueue.empty()) continue;
 
       /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
-
       stable_sort(AuxQueue.begin(), AuxQueue.end(),
         [&](unsigned long iPoint, unsigned long jPoint) {
           return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
         }
       );
-
-      for (auto iPoint : AuxQueue) {
-        Queue.push(iPoint);
-        inQueue[iPoint] = true;
-      }
+      Result.insert(Result.end(), AuxQueue.begin(), AuxQueue.end());
     }
   }
-
-  /*--- Check that all the points have been added ---*/
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    if (!inQueue[iPoint]) {
-      SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
-    }
-  }
-
   reverse(Result.begin(), Result.end());
 
-  /*--- Add the MPI points ---*/
+  /*--- Check that all the points have been added ---*/
+  for (const auto status : InQueue) {
+    if (!status) SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
+  }
 
+  /*--- Add the MPI points ---*/
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     Result.push_back(iPoint);
   }

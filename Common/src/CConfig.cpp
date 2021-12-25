@@ -1785,8 +1785,6 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -2966,19 +2964,18 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("UNST_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
           else if (!option_name.compare("DYN_RESTART_ITER"))
             newString.append("DYN_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
-          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-          /*else if (!option_name.compare("CONV_CRITERIA"))
-            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
-                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
-          if (!option_name.compare("THERMAL_DIFFUSIVITY"))
+          else if (!option_name.compare("CONV_CRITERIA"))
+            newString.append("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
+                             "RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+          else if (!option_name.compare("THERMAL_DIFFUSIVITY"))
             newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
-          if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
+          else if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
             newString.append("THERMAL_DIFFUSIVITY_SOLID is deprecated. Set THERMAL_CONDUCTIVITY_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
-          if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
+          else if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
             newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use THERMAL_CONDUCTIVITY_CONSTANT instead.\n\n");
-          if (!option_name.compare("SOLID_DENSITY"))
+          else if (!option_name.compare("SOLID_DENSITY"))
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
-          if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
+          else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
@@ -5233,11 +5230,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   } // species transport checks
 
-  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
-    cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
-            "That is, RESIDUAL for any RMS_* BGS_* value, and CAUCHY for coefficients such as DRAG etc.\n" << endl;
-  }
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
