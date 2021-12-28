@@ -1354,16 +1354,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("AOA", AoA, 0.0);
   /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
-  /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
-  addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
   addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
-  addDoubleOption("TARGET_CM", Target_CM, 0.0);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
@@ -1941,16 +1937,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DCMY_DCL_VALUE", dCMy_dCL, 0.0);
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCMZ_DCL_VALUE", dCMz_dCL, 0.0);
-
-  /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DCD_DCMY_VALUE", dCD_dCMy, 0.0);
-
-  obj_coeff[0]=0.0; obj_coeff[1]=0.0; obj_coeff[2]=0.0; obj_coeff[3]=0.0; obj_coeff[4]=0.0;
-  /*!\brief OBJ_CHAIN_RULE_COEFF
-  * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
-  * with area-averaged outlet primitive variables. This is used with the genereralized outflow
-  * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF", 5, obj_coeff);
 
   geo_loc[0] = 0.0; geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
@@ -3375,12 +3361,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  /*--- Fixed CM mode requires a static movement of the grid ---*/
-
-  if (Fixed_CM_Mode) {
-    Kind_GridMovement = MOVING_HTP;
-  }
-
   /*--- Initialize the AoA and Sideslip variables for the incompressible
    solver. This is typically unused (often internal flows). Also fixed CL
    mode for incompressible flows is not implemented ---*/
@@ -4531,7 +4511,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    the AoA with each iteration to false  ---*/
 
   if (Fixed_CL_Mode) Update_AoA = false;
-  if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
@@ -4600,11 +4579,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
     if (Fixed_CL_Mode) nInnerIter += Iter_dCL_dAlpha;
-
-    if (Fixed_CM_Mode) {
-      nInnerIter += Iter_dCL_dAlpha;
-      MinLogResidual = -24;
-    }
   }
 
   /* --- Set Finite Difference mode to false by default --- */
@@ -5884,10 +5858,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
       }
-      if (Fixed_CM_Mode) {
-          cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
-          cout << "HTP rotation axis (X,Z): ("<< htp_axis[0] <<", "<< htp_axis[1] <<")."<< endl;
-      }
     }
 
     if (EquivArea) {
@@ -5901,7 +5871,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       switch (Kind_GridMovement) {
         case NO_MOVEMENT:     cout << "no direct movement." << endl; break;
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
-        case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
@@ -6246,7 +6215,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:           cout << "CD objective function";
           if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
-          else if (Fixed_CM_Mode) {      cout << " using fixed CMy mode, dCD/dCMy = " << dCD_dCMy << "." << endl; }
           else {                         cout << "." << endl; }
           break;
         case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;

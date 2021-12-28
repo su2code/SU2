@@ -86,7 +86,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
       heat_zone = true;
       break;
     default:
-      break;  
+      break;
     }
   }
 
@@ -105,9 +105,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     switch (config_container[iZone]->GetKind_GridMovement()){
       case RIGID_MOTION:
         prefixed_motion[iZone] = true; break;
-      case STEADY_TRANSLATION: case ROTATING_FRAME:
-      case NO_MOVEMENT: case GUST: default:
-      case ELASTICITY:
+      default:
         prefixed_motion[iZone] = false; break;
     }
     if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) ||
