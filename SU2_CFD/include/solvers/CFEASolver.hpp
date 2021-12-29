@@ -70,7 +70,6 @@ protected:
   su2double Total_OFDiscreteness;   /*!< \brief Total Objective Function: Discreteness (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
   su2double Total_OFStressPenalty;  /*!< \brief Total Objective Function: Stress penalty. */
-  su2double ObjFunc;
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -556,35 +555,34 @@ public:
   /*!
    * \brief Compute the objective function.
    * \param[in] config - Definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  inline void Evaluate_ObjFunc(const CConfig *config) final {
-    ObjFunc = 0.0;
+  void Evaluate_ObjFunc(const CConfig *config, CSolver**) final {
+    Total_ComboObj = 0.0;
     switch (config->GetKind_ObjFunc()) {
       case REFERENCE_GEOMETRY:
-        ObjFunc = GetTotal_OFRefGeom();
+        Total_ComboObj = GetTotal_OFRefGeom();
         break;
       case REFERENCE_NODE:
-        ObjFunc = GetTotal_OFRefNode();
+        Total_ComboObj = GetTotal_OFRefNode();
         break;
       case TOPOL_COMPLIANCE:
-        ObjFunc = GetTotal_OFCompliance();
+        Total_ComboObj = GetTotal_OFCompliance();
         break;
       case VOLUME_FRACTION:
-        ObjFunc = GetTotal_OFVolFrac();
+        Total_ComboObj = GetTotal_OFVolFrac();
         break;
       case TOPOL_DISCRETENESS:
-        ObjFunc = GetTotal_OFDiscreteness();
+        Total_ComboObj = GetTotal_OFDiscreteness();
         break;
       case STRESS_PENALTY:
-        ObjFunc = GetTotal_OFStressPenalty();
+        Total_ComboObj = GetTotal_OFStressPenalty();
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj = Total_Custom_ObjFunc;
         break;
     }
   }
-
-  /*!
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   */
-  inline su2double GetTotal_ComboObj() const final { return ObjFunc; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.

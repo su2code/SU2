@@ -74,8 +74,6 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(conf
 
 }
 
-CHeatOutput::~CHeatOutput(void) {}
-
 void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* heat_solver = solver[HEAT_SOL];

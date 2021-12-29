@@ -5470,12 +5470,6 @@ public:
   string GetObjFunc_Extension(string val_filename) const;
 
   /*!
-   * \brief Get the criteria for structural residual (relative/absolute).
-   * \return Relative/Absolute criteria for structural convergence.
-   */
-  unsigned short GetResidual_Criteria_FEM(void) const { return Res_FEM_CRIT; }
-
-  /*!
    * \brief Get functional that is going to be used to evaluate the residual flow convergence.
    * \return Functional that is going to be used to evaluate the residual flow convergence.
    */

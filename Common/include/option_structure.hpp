@@ -1563,17 +1563,8 @@ enum ENUM_OBJECTIVE {
   SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
   SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  TOTAL_PRESSURE_LOSS = 39,
-  KINETIC_ENERGY_LOSS = 40,
-  TOTAL_EFFICIENCY = 41,
-  TOTAL_STATIC_EFFICIENCY = 42,
-  EULERIAN_WORK = 43,
-  TOTAL_ENTHALPY_IN = 44,
-  FLOW_ANGLE_IN = 45,
   FLOW_ANGLE_OUT = 46,
   MASS_FLOW_IN = 47,
-  MASS_FLOW_OUT = 48,
-  PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
@@ -1617,64 +1608,15 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
-  MakePair("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
-  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
-  MakePair("EULERIAN_WORK", EULERIAN_WORK)
-  MakePair("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
-  MakePair("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
   MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
   MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("MASS_FLOW_OUT", MASS_FLOW_OUT)
-  MakePair("PRESSURE_RATIO",  PRESSURE_RATIO)
   MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
-  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
-};
-
-/*!
- * \brief Types of residual criteria equations
- */
-enum ENUM_RESIDUAL {
-  RHO_RESIDUAL = 1,        /*!< \brief Rho equation residual criteria equation. */
-  RHO_ENERGY_RESIDUAL = 2  /*!< \brief RhoE equation residual criteria equation. */
-};
-static const MapType<std::string, ENUM_RESIDUAL> Residual_Map = {
-  MakePair("RHO", RHO_RESIDUAL)
-  MakePair("RHO_ENERGY", RHO_ENERGY_RESIDUAL)
-};
-
-/*!
- * \brief Types of residual criteria for structural problems
- */
-enum ENUM_RESFEM {
-  RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
-  RESFEM_ABSOLUTE = 2          /*!< \brief Absolute criteria: abs(Res). */
-};
-static const MapType<std::string, ENUM_RESFEM> ResFem_Map = {
-  MakePair("RELATIVE", RESFEM_RELATIVE)
-  MakePair("ABSOLUTE", RESFEM_ABSOLUTE)
-};
-
-/*!
- * \brief Types of sensitivities to compute
- */
-enum ENUM_SENS {
-  SENS_GEOMETRY = 1,    /*!< \brief Geometrical sensitivity. */
-  SENS_MACH = 2,        /*!< \brief Mach number sensitivity. */
-  SENS_AOA = 3,         /*!< \brief Angle of attack sensitivity. */
-  SENS_AOS = 4          /*!< \brief Angle of Sideslip sensitivity. */
-};
-static const MapType<std::string, ENUM_SENS> Sens_Map = {
-  MakePair("SENS_GEOMETRY", SENS_GEOMETRY)
-  MakePair("SENS_MACH", SENS_MACH)
-  MakePair("SENS_AOA", SENS_AOA)
-  MakePair("SENS_AOS", SENS_AOS)
 };
 
 /*!
@@ -1821,32 +1763,6 @@ static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
   MakePair("V_CYCLE", V_CYCLE)
   MakePair("W_CYCLE", W_CYCLE)
   MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
-};
-
-/*!
- * \brief Type of solution output variables
- */
-enum ENUM_OUTPUT_VARS {
-  DENSITY = 1,      /*!< \brief Density. */
-  VEL_X = 2,        /*!< \brief X-component of velocity. */
-  VEL_Y = 3,        /*!< \brief Y-component of velocity. */
-  VEL_Z = 4,        /*!< \brief Z-component of velocity. */
-  PRESSURE = 5,     /*!< \brief Static pressure. */
-  MACH = 6,         /*!< \brief Mach number. */
-  TEMPERATURE = 7,  /*!< \brief Temperature. */
-  LAM_VISC = 8,     /*!< \brief Laminar viscosity. */
-  EDDY_VISC = 9     /*!< \brief Eddy viscosity. */
-};
-static const MapType<std::string, ENUM_OUTPUT_VARS> Output_Vars_Map = {
-  MakePair("DENSITY", DENSITY)
-  MakePair("VEL_X", VEL_X)
-  MakePair("VEL_Y", VEL_Y)
-  MakePair("VEL_Z", VEL_Z)
-  MakePair("PRESSURE", PRESSURE)
-  MakePair("MACH", MACH)
-  MakePair("TEMPERATURE", TEMPERATURE)
-  MakePair("LAM_VISC", LAM_VISC)
-  MakePair("EDDY_VISC", EDDY_VISC)
 };
 
 /*!

@@ -337,7 +337,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
 
     myfile_res << config[iZone]->GetTimeIter() << "\t";
 
-    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone]);
+    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone], solvers0);
     myfile_res << scientific << solvers0[FEA_SOL]->GetTotal_ComboObj() << "\t";
 
     for (iVar = 0; iVar < config[iZone]->GetnElasticityMod(); iVar++)

@@ -463,7 +463,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetAnalyzeSurface(solver, geometry, config, false);
 
-  /*--- Set aeroydnamic coefficients --- */
+  /*--- Set aerodynamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
 

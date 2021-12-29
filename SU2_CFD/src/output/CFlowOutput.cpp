@@ -1175,8 +1175,6 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   }
 
   SetHistoryOutputValue("AOA", config->GetAoA());
-
-  SetHistoryOutputValue("COMBO", flow_solver->GetTotal_ComboObj());
 }
 
 void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {
@@ -1190,7 +1188,6 @@ void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_so
 void CFlowOutput::Add_CpInverseDesignOutput(){
 
   AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
-
 }
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
@@ -1279,6 +1276,12 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
   solver->SetTotal_CpDiff(PressDiff);
   SetHistoryOutputValue("INVERSE_DESIGN_PRESSURE", PressDiff);
 
+}
+
+void CFlowOutput::SetComboAndCustomObjectives(CConfig *config, CSolver **solver) {
+
+
+  SetHistoryOutputValue("COMBO", solver[FLOW_SOL]->GetTotal_ComboObj());
 }
 
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){

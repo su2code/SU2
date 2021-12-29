@@ -4217,7 +4217,7 @@ void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container
   }
 }
 
-void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
+void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;

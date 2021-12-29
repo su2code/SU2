@@ -1786,6 +1786,17 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
   const bool penalty = ((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
                        ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL));
 
+  auto computeAllFunctions = [&]() {
+    /*--- Compute stresses for monitoring and output. ---*/
+    Compute_NodalStress(geometry, numerics, config);
+
+    /*--- Compute functions for monitoring and output. ---*/
+    Compute_OFRefNode(geometry, config);
+    Compute_OFCompliance(geometry, config);
+    if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
+    if (config->GetTopology_Optimization()) Compute_OFVolFrac(geometry, config);
+  };
+
   if (of_comp_mode) {
     if (penalty) Stiffness_Penalty(geometry, numerics, config);
 
@@ -1798,20 +1809,17 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
       case STRESS_PENALTY:
         Compute_NodalStress(geometry, numerics, config);
         break;
+      case CUSTOM_OBJFUNC:
+        /*--- No easy way to know, so compute everything. ---*/
+        computeAllFunctions();
+        break;
     }
     return;
   }
 
   if (!config->GetDiscrete_Adjoint()) {
-    /*--- Compute stresses for monitoring and output. ---*/
-    Compute_NodalStress(geometry, numerics, config);
-
-    /*--- Compute functions for monitoring and output. ---*/
     if (penalty) Stiffness_Penalty(geometry, numerics, config);
-    Compute_OFRefNode(geometry, config);
-    Compute_OFCompliance(geometry, config);
-    if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
-    if (config->GetTopology_Optimization()) Compute_OFVolFrac(geometry, config);
+    computeAllFunctions();
   }
 
   /*--- Residuals do not have to be computed while recording. ---*/
