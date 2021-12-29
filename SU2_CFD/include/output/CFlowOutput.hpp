@@ -183,13 +183,6 @@ protected:
   void Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Set the values of the rotating frame coefficients (CT, CQ and CMerit).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - The container holding all solution data.
-   */
-  virtual void SetComboAndCustomObjectives(CConfig *config, CSolver **solver);
-
-  /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
    * \param[in] VelocityGradient - Velocity gradients
    * \return Value of the Q criteration at the node

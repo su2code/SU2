@@ -355,12 +355,10 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
   case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
 
-    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
-                                     config->GetOuterIter(), config->GetInnerIter());
-
     /*--- Surface based obj. function ---*/
 
-    solver[FLOW_SOL]->Evaluate_ObjFunc(config, solver);
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                     config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
 
     /*--- These calls to be moved to a generic framework at a next stage        ---*/
@@ -390,7 +388,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_HEAT:
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
-    solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
     ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
     break;
 
@@ -399,7 +396,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
                                    config->GetOuterIter(), config->GetInnerIter());
-    solver[FEA_SOL]->Evaluate_ObjFunc(config, solver);
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
 

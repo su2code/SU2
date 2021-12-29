@@ -198,6 +198,9 @@ if get_option('enable-librom')
 
 endif
 
+mel_dep = declare_dependency(include_directories: 'externals/mel')
+su2_deps += mel_dep
+
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
   if dep != ''

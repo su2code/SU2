@@ -729,22 +729,18 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
 
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-
-        solvers[FLOW_SOL]->Evaluate_ObjFunc(config, solvers);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-        solvers[HEAT_SOL]->Evaluate_ObjFunc(config, solvers);
         ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-        solvers[FEA_SOL]->Evaluate_ObjFunc(config, solvers);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 

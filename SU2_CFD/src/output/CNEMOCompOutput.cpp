@@ -492,6 +492,10 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   Set_CpInverseDesign(NEMO_solver, geometry, config);
 
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
+
 }
 
 bool CNEMOCompOutput::SetInit_Residuals(const CConfig *config){

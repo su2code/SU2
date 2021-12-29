@@ -371,13 +371,20 @@ public:
    * \param[in] field - Name of the field
    * \return Value of the field
    */
-  su2double GetHistoryFieldValue(string field){
+  su2double GetHistoryFieldValue(const string& field) const {
     return historyOutput_Map.at(field).value;
   }
 
-  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
+  su2double GetHistoryFieldValuePerSurface(const string& field, unsigned short iMarker) const {
     return historyOutputPerSurface_Map.at(field)[iMarker].value;
   }
+
+  /*!
+   * \brief Evaluate a custom expression of the history values.
+   * \param[in] expression - Some user-defined math with the history field names as variables.
+   * \return Result of the expression
+   */
+  su2double ComputeCustomHistoryValue(const string& expression) const;
 
   /*!
    * \brief Get a vector with all output fields in a particular group
@@ -398,7 +405,7 @@ public:
    * \brief Get the list of all output fields
    * \return Vector container all output fields
    */
-  vector<string> GetHistoryOutput_List(){
+  const vector<string>& GetHistoryOutput_List() const {
     return historyOutput_List;
   }
 
@@ -406,7 +413,7 @@ public:
    * \brief Get the map containing all output fields
    * \return Map containing all output fields
    */
-  map<string, HistoryOutputField> GetHistoryFields(){
+  const map<string, HistoryOutputField>& GetHistoryFields() const {
     return historyOutput_Map;
   }
 
@@ -682,6 +689,15 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void AllocateDataSorters(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Computes the custom and combo objectives.
+   * \note To be called after all other history outputs are set.
+   * \param[in] idxSol - Index of the main solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  void SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver);
 
   /*--------------------------------- Virtual functions ---------------------------------------- */
 public:

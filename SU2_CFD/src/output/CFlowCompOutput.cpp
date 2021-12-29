@@ -480,7 +480,12 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   Set_CpInverseDesign(flow_solver, geometry, config);
 
   /*--- Set nearfield diff fields ---*/
+
   if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
+
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 
 }
 

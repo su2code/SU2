@@ -28,6 +28,8 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
+#include "mel.hpp"
+
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
@@ -260,6 +262,35 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
     if (WriteScreen_Output(config)) SetScreen_Output(config);
 
   }
+}
+
+su2double COutput::ComputeCustomHistoryValue(const string& expression) const {
+
+  std::vector<std::string> symbols;
+  const auto tree = mel::Parse<passivedouble>(expression, symbols);
+
+  auto valueOfSymbol = [&](const std::string& symbol) {
+    /*--- Decide if it should be per surface. ---*/
+    const auto pos = symbol.find('[');
+    if (pos == std::string::npos) {
+      return GetHistoryFieldValue(symbol);
+    } else {
+      const auto name = std::string(symbol, 0, pos);
+      const auto idx = std::stoi(std::string(symbol.begin()+pos+1, symbol.end()-1));
+      return GetHistoryFieldValuePerSurface(name, idx);
+    }
+  };
+
+  return mel::Eval<su2double>(tree, symbols, valueOfSymbol);
+}
+
+void COutput::SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver) {
+
+  if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC && !config->GetCustomObjFunc().empty()) {
+    solver[idxSol]->SetTotal_Custom_ObjFunc(ComputeCustomHistoryValue(config->GetCustomObjFunc()));
+  }
+  solver[idxSol]->Evaluate_ObjFunc(config, solver);
+  SetHistoryOutputValue("COMBO", solver[idxSol]->GetTotal_ComboObj());
 }
 
 void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){

@@ -1278,16 +1278,9 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 
 }
 
-void CFlowOutput::SetComboAndCustomObjectives(CConfig *config, CSolver **solver) {
-
-
-  SetHistoryOutputValue("COMBO", solver[FLOW_SOL]->GetTotal_ComboObj());
-}
-
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
-  AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
-
+  AddHistoryOutput("EQUIVALENT_AREA", "CEquiv_Area", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){

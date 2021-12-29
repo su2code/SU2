@@ -71,7 +71,6 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(conf
 
   if (convFields.empty() ) convFields.emplace_back("RMS_TEMPERATURE");
 
-
 }
 
 void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -90,6 +89,8 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(heat_solver->GetResLinSolver()));
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
 
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+  SetCustomAndComboObjectives(HEAT_SOL, config, solver);
 }
 
 
@@ -107,6 +108,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 
