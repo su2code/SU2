@@ -39,6 +39,14 @@
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
+/*--- AD workaround for a cmath function not defined in CoDi. ---*/
+namespace mel::internal {
+inline su2double hypot(const su2double& a, const su2double& b) {
+  return sqrt(a*a + b*b);
+}
+}
+#include "mel.hpp"
+
 class CGeometry;
 class CSolver;
 class CFileWriter;
@@ -158,6 +166,20 @@ protected:
 
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
+
+  /** \brief Struct to hold a parsed user-defined expression. */
+  struct CustomHistoryOutput {
+    mel::ExpressionTree<passivedouble> expression;
+    /*--- Pointers to values in the history output maps, to avoid key lookup every time. ---*/
+    std::vector<const su2double*> symbolValues;
+    bool ready = false;
+
+    su2double eval() const {
+      return mel::Eval<su2double>(expression, [&](int i) {return *symbolValues[i];});
+    }
+  };
+
+  CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
    /*----------------------------- Volume output ----------------------------*/
 
@@ -380,13 +402,6 @@ public:
   }
 
   /*!
-   * \brief Evaluate a custom expression of the history values.
-   * \param[in] expression - Some user-defined math with the history field names as variables.
-   * \return Result of the expression
-   */
-  su2double ComputeCustomHistoryValue(const string& expression) const;
-
-  /*!
    * \brief Get a vector with all output fields in a particular group
    * \param groupname - Name of the history group
    * \return Vector containing all output fields of a group
@@ -586,6 +601,13 @@ protected:
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
   }
+
+  /*!
+   * \brief Setup a custom history output object for a given expression.
+   * \param[in] expression - Some user-defined math with the history field names as variables.
+   * \param[out] output - Custom output ready to evaluate.
+   */
+  void SetupCustomHistoryOutput(const string& expression, CustomHistoryOutput& output) const;
 
   /*!
    * \brief Add a new field to the volume output.

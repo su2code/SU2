@@ -96,8 +96,6 @@ public:
     typeName(type_name) {
   }
 
-  ~COptionScalar() = default;
-
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
 
@@ -155,14 +153,6 @@ public:
   }
 };
 
-class COptionString final : public COptionScalar<string> {
-public:
-  template<class... Ts>
-  COptionString(Ts&&... args) :
-    COptionScalar<string>("string", args...) {
-  }
-};
-
 class COptionBool final : public COptionScalar<bool> {
 public:
   template<class... Ts>
@@ -188,6 +178,38 @@ public:
     }
 
     return badValue(option_value, "bool", name);
+  }
+};
+
+class COptionString final : public COptionBase {
+protected:
+  string& field; // Reference to the fieldname
+  const string def; // Default value
+  const string name; // identifier for the option
+
+public:
+  COptionString() = delete;
+
+  COptionString(const string& option_field_name,
+                string& option_field,
+                string default_value) :
+    field(option_field),
+    def(default_value),
+    name(option_field_name) {
+  }
+
+  string SetValue(vector<string> option_value) override {
+    COptionBase::SetValue(option_value);
+
+    string out = optionCheckMultipleValues(option_value, "string", name);
+    if (!out.empty()) return out;
+
+    field = option_value.front();
+    return "";
+  }
+
+  void SetDefault() override {
+    field = def;
   }
 };
 

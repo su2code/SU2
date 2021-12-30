@@ -7315,6 +7315,13 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   // now fill the option value vector
   option_value.clear();
   last_pos = value_part.find_first_not_of(delimiters, 0);
+
+  // detect a raw string
+  if (value_part[last_pos] == '\'' && value_part.back() == '\'') {
+    option_value.push_back(value_part.substr(last_pos+1, value_part.size()-last_pos-2));
+    return true;
+  }
+
   pos = value_part.find_first_of(delimiters, last_pos);
   while (string::npos != pos || string::npos != last_pos) {
     // add token to the vector<string>
