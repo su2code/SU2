@@ -2268,17 +2268,20 @@ class COptionBase {
 private:
   std::vector<std::string> value;
 public:
-  COptionBase() {};
-  virtual  ~COptionBase() = 0;
+  virtual ~COptionBase() = default;
 
-  virtual std::string SetValue(std::vector<std::string> value){this->value = value; return "";}
-  std::vector<std::string> GetValue() {return value;}
+  const std::vector<std::string>& GetValue() const {return value;}
+
+  virtual std::string SetValue(const std::vector<std::string>& val) {
+    value = val;
+    return "";
+  }
   virtual void SetDefault() = 0;
 
-  std::string optionCheckMultipleValues(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
+  std::string optionCheckMultipleValues(const std::vector<std::string>& option_value,
+                                        std::string type_id, const std::string& option_name) {
     if (option_value.size() != 1) {
-      std::string newString;
-      newString.append(option_name);
+      std::string newString(option_name);
       newString.append(": multiple values for type ");
       newString.append(type_id);
       return newString;
@@ -2286,16 +2289,13 @@ public:
     return "";
   }
 
-  std::string badValue(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
-    std::string newString;
-    newString.append(option_name);
+  std::string badValue(std::string type_id, const std::string& option_name) {
+    std::string newString(option_name);
     newString.append(": improper option value for type ");
     newString.append(type_id);
     return newString;
   }
 };
-
-inline COptionBase::~COptionBase() {}
 
 #ifdef ENABLE_MAPS
 #include "option_structure.inl"

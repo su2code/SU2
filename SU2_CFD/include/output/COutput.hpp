@@ -813,9 +813,8 @@ protected:
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void LoadMultizoneHistoryData(COutput **output, CConfig **config) {}
+  inline virtual void LoadMultizoneHistoryData(const COutput* const* output) {}
 
   /*!
    * \brief Set the available history output fields
@@ -826,9 +825,8 @@ protected:
   /*!
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem per zone.
    */
-  inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
+  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output) {}
 
   /*!
    * \brief Write any additional files defined for the current solver.
