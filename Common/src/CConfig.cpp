@@ -1354,16 +1354,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("AOA", AoA, 0.0);
   /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
-  /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
-  addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
   addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
-  addDoubleOption("TARGET_CM", Target_CM, 0.0);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
@@ -1785,8 +1781,6 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -1943,16 +1937,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DCMY_DCL_VALUE", dCMy_dCL, 0.0);
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCMZ_DCL_VALUE", dCMz_dCL, 0.0);
-
-  /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DCD_DCMY_VALUE", dCD_dCMy, 0.0);
-
-  obj_coeff[0]=0.0; obj_coeff[1]=0.0; obj_coeff[2]=0.0; obj_coeff[3]=0.0; obj_coeff[4]=0.0;
-  /*!\brief OBJ_CHAIN_RULE_COEFF
-  * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
-  * with area-averaged outlet primitive variables. This is used with the genereralized outflow
-  * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF", 5, obj_coeff);
 
   geo_loc[0] = 0.0; geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
@@ -2966,19 +2950,18 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("UNST_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
           else if (!option_name.compare("DYN_RESTART_ITER"))
             newString.append("DYN_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
-          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-          /*else if (!option_name.compare("CONV_CRITERIA"))
-            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
-                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
-          if (!option_name.compare("THERMAL_DIFFUSIVITY"))
+          else if (!option_name.compare("CONV_CRITERIA"))
+            newString.append("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
+                             "RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+          else if (!option_name.compare("THERMAL_DIFFUSIVITY"))
             newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
-          if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
+          else if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
             newString.append("THERMAL_DIFFUSIVITY_SOLID is deprecated. Set THERMAL_CONDUCTIVITY_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
-          if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
+          else if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
             newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use THERMAL_CONDUCTIVITY_CONSTANT instead.\n\n");
-          if (!option_name.compare("SOLID_DENSITY"))
+          else if (!option_name.compare("SOLID_DENSITY"))
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
-          if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
+          else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
@@ -3376,12 +3359,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
 
     }
-  }
-
-  /*--- Fixed CM mode requires a static movement of the grid ---*/
-
-  if (Fixed_CM_Mode) {
-    Kind_GridMovement = MOVING_HTP;
   }
 
   /*--- Initialize the AoA and Sideslip variables for the incompressible
@@ -4534,7 +4511,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    the AoA with each iteration to false  ---*/
 
   if (Fixed_CL_Mode) Update_AoA = false;
-  if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
@@ -4603,11 +4579,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
     if (Fixed_CL_Mode) nInnerIter += Iter_dCL_dAlpha;
-
-    if (Fixed_CM_Mode) {
-      nInnerIter += Iter_dCL_dAlpha;
-      MinLogResidual = -24;
-    }
   }
 
   /* --- Set Finite Difference mode to false by default --- */
@@ -5233,11 +5204,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   } // species transport checks
 
-  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
-    cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
-            "That is, RESIDUAL for any RMS_* BGS_* value, and CAUCHY for coefficients such as DRAG etc.\n" << endl;
-  }
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -5892,10 +5858,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
       }
-      if (Fixed_CM_Mode) {
-          cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
-          cout << "HTP rotation axis (X,Z): ("<< htp_axis[0] <<", "<< htp_axis[1] <<")."<< endl;
-      }
     }
 
     if (EquivArea) {
@@ -5909,7 +5871,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       switch (Kind_GridMovement) {
         case NO_MOVEMENT:     cout << "no direct movement." << endl; break;
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
-        case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
@@ -6254,7 +6215,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:           cout << "CD objective function";
           if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
-          else if (Fixed_CM_Mode) {      cout << " using fixed CMy mode, dCD/dCMy = " << dCD_dCMy << "." << endl; }
           else {                         cout << "." << endl; }
           break;
         case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;

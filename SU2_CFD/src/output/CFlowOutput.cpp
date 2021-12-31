@@ -1734,7 +1734,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){
+  if (config->GetFixed_CL_Mode()){
     WriteMetaData(config);
   }
 
