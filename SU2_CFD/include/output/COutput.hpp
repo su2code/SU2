@@ -40,9 +40,11 @@
 #include "../../../Common/include/option_structure.hpp"
 
 /*--- AD workaround for a cmath function not defined in CoDi. ---*/
-namespace mel::internal {
+namespace mel {
+namespace internal {
 inline su2double hypot(const su2double& a, const su2double& b) {
   return sqrt(a*a + b*b);
+}
 }
 }
 #include "mel.hpp"
