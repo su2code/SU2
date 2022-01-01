@@ -72,12 +72,14 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   } else if (rank == MASTER_NODE) {
     cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for 2 surfaces (outlet, inlet)\n" << endl;
   }
-  /// DESCRIPTION: Average Species
-  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-    AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    /// DESCRIPTION: Average Species
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+    }
+    /// DESCRIPTION: Species Variance
+    AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   }
-  /// DESCRIPTION: Species Variance
-  AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -112,12 +114,14 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("SURFACE_TOTAL_TEMPERATURE","Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
   AddHistoryOutputPerSurface("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Species
-  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-    AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    /// DESCRIPTION: Average Species
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+    }
+    /// DESCRIPTION: Species Variance
+    AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
-  /// DESCRIPTION: Species Variance
-  AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 }
 // clang-format on
@@ -508,14 +512,15 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     Tot_Surface_TotalPressure += TotalPressure;
     config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
-    for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
-      su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
-      SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
-      Tot_Surface_Species[iVar] += Species;
-      if (iVar == 0)
-        config->SetSurface_Species_0(iMarker_Analyze, Species);
+    if (species) {
+      for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
+        su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
+        SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
+        Tot_Surface_Species[iVar] += Species;
+        if (iVar == 0)
+          config->SetSurface_Species_0(iMarker_Analyze, Species);
+      }
     }
-
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -545,12 +550,13 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   SetHistoryOutputValue("SURFACE_SECOND_OVER_UNIFORM", Tot_SecondOverUniformity);
   SetHistoryOutputValue("SURFACE_TOTAL_TEMPERATURE", Tot_Surface_TotalTemperature);
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
-  for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-    SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
+  if (species) {
+    for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+      SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE)
     SetAnalyzeSurface_SpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
                                       Surface_Area_Total);
+  }
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 

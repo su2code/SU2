@@ -2089,50 +2089,60 @@ void COutput::LoadCommonHistoryData(CConfig *config){
 }
 
 
-void COutput::PrintHistoryFields(){
+void COutput::PrintHistoryFields() const {
 
-  if (rank == MASTER_NODE){
+  if (rank != MASTER_NODE) return;
 
-    PrintingToolbox::CTablePrinter HistoryFieldTable(&std::cout);
+  PrintingToolbox::CTablePrinter HistoryFieldTable(&std::cout);
 
-    unsigned short NameSize = 0, GroupSize = 0, DescrSize = 0;
+  size_t NameSize = 0, GroupSize = 0, DescrSize = 0;
 
-    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+  for (int perSurf = 0; perSurf < 2; ++perSurf) {
+    const auto& outputList = perSurf ? historyOutputPerSurface_List : historyOutput_List;
 
-      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
-
-      if (Field.description != ""){
-        if (historyOutput_List[iField].size() > NameSize){
-          NameSize = historyOutput_List[iField].size();
-        }
-        if (Field.outputGroup.size() > GroupSize){
-          GroupSize = Field.outputGroup.size();
-        }
-        if (Field.description.size() > DescrSize){
-          DescrSize = Field.description.size();
-        }
+    for (const auto& outputName : outputList) {
+      const HistoryOutputField* Field = nullptr;
+      if (!perSurf) {
+        Field = &historyOutput_Map.at(outputName);
+      } else {
+        Field = &historyOutputPerSurface_Map.at(outputName)[0];
+      }
+      if (perSurf || !Field->description.empty()) {
+        NameSize = std::max(NameSize, outputName.size());
+        GroupSize = std::max(GroupSize, Field->outputGroup.size());
+        DescrSize = std::max(DescrSize, Field->description.size());
       }
     }
+  }
 
-    cout << "Available screen/history output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
+  cout << "Available screen/history output fields for the current configuration in " << multiZoneHeaderString << ":\n";
 
-    HistoryFieldTable.AddColumn("Name", NameSize);
-    HistoryFieldTable.AddColumn("Group Name", GroupSize);
-    HistoryFieldTable.AddColumn("Type",5);
-    HistoryFieldTable.AddColumn("Description", DescrSize);
-    HistoryFieldTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+  HistoryFieldTable.AddColumn("Name", NameSize);
+  HistoryFieldTable.AddColumn("Group Name", GroupSize);
+  HistoryFieldTable.AddColumn("Type",5);
+  HistoryFieldTable.AddColumn("Description", DescrSize);
+  HistoryFieldTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
 
-    HistoryFieldTable.PrintHeader();
+  HistoryFieldTable.PrintHeader();
+  string type;
 
-    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+  for (int perSurf = 0; perSurf < 2; ++perSurf) {
+    const auto& outputList = perSurf ? historyOutputPerSurface_List : historyOutput_List;
 
-      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
+    for (const auto& outputName : outputList) {
+      const HistoryOutputField* Field = nullptr;
+      if (!perSurf) {
+        Field = &historyOutput_Map.at(outputName);
+      } else {
+        Field = &historyOutputPerSurface_Map.at(outputName)[0];
+      }
 
-      if (Field.fieldType == HistoryFieldType::DEFAULT
-          || Field.fieldType == HistoryFieldType::COEFFICIENT
-          || Field.fieldType == HistoryFieldType::RESIDUAL){
-        string type;
-        switch (Field.fieldType) {
+      if (!perSurf && Field->description.empty()) continue;
+
+      if (Field->fieldType == HistoryFieldType::DEFAULT ||
+          Field->fieldType == HistoryFieldType::COEFFICIENT ||
+          Field->fieldType == HistoryFieldType::RESIDUAL) {
+        switch (Field->fieldType) {
           case HistoryFieldType::COEFFICIENT:
             type = "C";
             break;
@@ -2143,58 +2153,55 @@ void COutput::PrintHistoryFields(){
             type = "D";
             break;
         }
-
-        if (Field.description != "")
-          HistoryFieldTable << historyOutput_List[iField] << Field.outputGroup << type << Field.description;
-
+        HistoryFieldTable << outputName << Field->outputGroup << type << Field->description;
       }
     }
-
-    HistoryFieldTable.PrintFooter();
-
-    cout << "Type legend: Default (D), Residual (R), Coefficient (C)" << endl;
-
-    cout << "Generated screen/history fields (only first field of every group is shown):" << endl;
-
-    PrintingToolbox::CTablePrinter ModifierTable(&std::cout);
-
-    ModifierTable.AddColumn("Name", NameSize);
-    ModifierTable.AddColumn("Group Name", GroupSize);
-    ModifierTable.AddColumn("Type",5);
-    ModifierTable.AddColumn("Description", DescrSize);
-    ModifierTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-    ModifierTable.PrintHeader();
-
-    std::map<string, bool> GroupVisited;
-
-    for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
-
-      HistoryOutputField &Field = historyOutput_Map.at(historyOutput_List[iField]);
-
-      if ((Field.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
-           Field.fieldType == HistoryFieldType::AUTO_RESIDUAL) && (GroupVisited.count(Field.outputGroup) == 0)){
-        string type;
-        switch (Field.fieldType) {
-          case HistoryFieldType::AUTO_COEFFICIENT:
-            type = "AC";
-            break;
-          case HistoryFieldType::AUTO_RESIDUAL:
-            type = "AR";
-            break;
-          default:
-            type = "AD";
-            break;
-        }
-
-        if (Field.description != "")
-          ModifierTable << historyOutput_List[iField] << Field.outputGroup << type << Field.description;
-
-        GroupVisited[Field.outputGroup] = true;
-      }
-    }
-    ModifierTable.PrintFooter();
-
   }
+
+  HistoryFieldTable.PrintFooter();
+
+  cout << "Type legend: Default (D), Residual (R), Coefficient (C)\n";
+  cout << "Generated screen/history fields (only first field of every group is shown):\n";
+
+  PrintingToolbox::CTablePrinter ModifierTable(&std::cout);
+
+  ModifierTable.AddColumn("Name", NameSize);
+  ModifierTable.AddColumn("Group Name", GroupSize);
+  ModifierTable.AddColumn("Type",5);
+  ModifierTable.AddColumn("Description", DescrSize);
+  ModifierTable.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+  ModifierTable.PrintHeader();
+
+  std::map<string, bool> GroupVisited;
+
+  for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++){
+
+    const auto& Field = historyOutput_Map.at(historyOutput_List[iField]);
+
+    if ((Field.fieldType == HistoryFieldType::AUTO_COEFFICIENT ||
+         Field.fieldType == HistoryFieldType::AUTO_RESIDUAL) &&
+        (GroupVisited.count(Field.outputGroup) == 0)){
+      switch (Field.fieldType) {
+        case HistoryFieldType::AUTO_COEFFICIENT:
+          type = "AC";
+          break;
+        case HistoryFieldType::AUTO_RESIDUAL:
+          type = "AR";
+          break;
+        default:
+          type = "AD";
+          break;
+      }
+
+      if (Field.description != "")
+        ModifierTable << historyOutput_List[iField] << Field.outputGroup << type << Field.description;
+
+      GroupVisited[Field.outputGroup] = true;
+    }
+  }
+
+  ModifierTable.PrintFooter();
+
 }
 
 void COutput::PrintVolumeFields(){

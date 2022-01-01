@@ -469,7 +469,7 @@ public:
   /*!
    * \brief Print a list of all history output fields to screen.
    */
-  void PrintHistoryFields();
+  void PrintHistoryFields() const;
 
   /*!
    * \brief Print a list of all volume output fields to screen.
