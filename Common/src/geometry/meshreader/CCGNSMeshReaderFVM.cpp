@@ -112,7 +112,7 @@ void CCGNSMeshReaderFVM::OpenCGNSFile(string val_filename) {
     cg_error_exit();
   if (rank == MASTER_NODE) {
     if (file_version < 4.0) {
-      cout << "The file version is too old, please update it with the cgnsupdate tool." << endl;
+      cout << "WARNING: The CGNS file version (" << file_version << ")  is old and may cause high memory usage issues, consider updating the file with the cgnsupdate tool.\n";
     }
   }
 }
