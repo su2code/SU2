@@ -89,6 +89,7 @@ void CCGNSMeshReaderFVM::OpenCGNSFile(string val_filename) {
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
   int file_type;
+  float file_version;
   if (cg_is_cgns(val_filename.c_str(), &file_type) != CG_OK) {
     SU2_MPI::Error(val_filename +
                    string(" was not found or is not a properly formatted") +
@@ -107,7 +108,13 @@ void CCGNSMeshReaderFVM::OpenCGNSFile(string val_filename) {
     cout << "Reading the CGNS file: ";
     cout << val_filename.c_str() << "." << endl;
   }
-
+  if (cg_version(cgnsFileID, &file_version))
+    cg_error_exit();
+  if (rank == MASTER_NODE) {
+    if (file_version < 4.0) {
+      cout << "The file version is too old, please update it with the cgnsupdate tool." << endl;
+    }
+  }
 }
 
 void CCGNSMeshReaderFVM::ReadCGNSDatabaseMetadata() {
