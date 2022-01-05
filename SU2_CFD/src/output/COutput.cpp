@@ -46,7 +46,6 @@
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
@@ -308,18 +307,13 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
   CFileWriter *fileWriter = nullptr;
-  CFileWriter *fileWriterFinalIteration = nullptr;
 
   string filename_iter;
 
-  /*--- filename with iteration number ---*/
-  unsigned long previous_inner_iteration = curInnerIter - config->GetVolume_Wrt_Freq(); 
-  unsigned long previous_outer_iteration = curOuterIter - config->GetVolume_Wrt_Freq(); 
-
-  
-
+  std::stringstream inner_iter_ss;
+  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
   std::stringstream outer_iter_ss;
-  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_outer_iteration;
+  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << curOuterIter;
 
   /*--- Write files depending on the format --- */
 
@@ -365,47 +359,22 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           }
           else {
 
-            // append previous iteration to filename
             filename_iter = fileName;
-            // for the final iteration we need to add 1
-            std::stringstream inner_iter_ss;
-            if (config->GetnIter() == curInnerIter+1){ 
-              inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration+1;
-              filename_iter.append((inner_iter_ss).str());
-            }
-            else {   
-              inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << previous_inner_iteration;
-              filename_iter.append(inner_iter_ss.str());
-            }
+            filename_iter.append(inner_iter_ss.str());
             filename_iter.append(CSU2BinaryFileWriter::fileExt);
 
-             /*--- rename previous restart.dat to restart_xxxx.dat ---*/
-            rename(restartFilename.c_str(),filename_iter.c_str()); 
           }
         }
       }
       
       if (rank == MASTER_NODE) {
         if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "moving previous restart to:" << filename_iter ;
+          (*fileWritingTable) << "SU2 restart with iteration" << filename_iter ;
 
         (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
       }
 
       fileWriter = new CSU2BinaryFileWriter(fileName, volumeDataSorter);
-
-      if ((!config->GetWrt_Restart_Overwrite()) && (config->GetnIter() == curInnerIter+1)) {
-        std::stringstream inner_iter_ss;
-        inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
-        filename_iter = fileName;
-        filename_iter.append(inner_iter_ss.str());
-        fileWriterFinalIteration = new CSU2BinaryFileWriter(filename_iter, volumeDataSorter);
-
-        if (rank == MASTER_NODE) 
-          (*fileWritingTable) << "copying current restart to:" << filename_iter + CSU2BinaryFileWriter::fileExt;
-
-
-      }
 
       break;
 
@@ -793,27 +762,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
   }
 
-  if (fileWriterFinalIteration != nullptr){
-
-    /*--- additional copy of data to file with iteration number ---*/
-
-    fileWriterFinalIteration->Write_Data();
-
-    su2double BandWidth = fileWriterFinalIteration->Get_Bandwidth();
-
-    /*--- Compute and store the bandwidth ---*/
-
-    if (format == RESTART_BINARY){
-      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
-    }
-
-    if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
-      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-      (*fileWritingTable) << " " << "(" + PrintingToolbox::to_string(BandWidth) + " MB/s)";
-      fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-    }
-
-    delete fileWriterFinalIteration;
+  if (!config->GetWrt_Restart_Overwrite() && (rank == MASTER_NODE)){
+    /*--- copy the file with iteration number appended ---*/
+    std::ifstream  src(restartFilename.c_str(), std::ios::binary);
+    std::ofstream  dst(filename_iter.c_str(),   std::ios::binary);
+    dst << src.rdbuf();
 
   }
 

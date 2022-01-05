@@ -610,11 +610,11 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetParabolic(geometry, config);
     }
 
-    /*--- Design variable not implement ---*/
+    /*--- Design variable not implemented ---*/
 
     else {
       if (rank == MASTER_NODE)
-        cout << "Design Variable not implement yet" << endl;
+        cout << "Design Variable not implemented yet" << endl;
     }
 
     /*--- Load the delta change in the design variable (finite difference step). ---*/
