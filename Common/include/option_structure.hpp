@@ -716,17 +716,13 @@ enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0,          /*!< \brief Simulation on a static mesh. */
   RIGID_MOTION = 2,         /*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
   ROTATING_FRAME = 8,       /*!< \brief Simulation in a rotating frame. */
-  ELASTICITY = 9,           /*!< \brief Linear Elasticity. */
   STEADY_TRANSLATION = 11,  /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12,                /*!< \brief Simulation on a static mesh with a gust. */
-  MOVING_HTP = 13,          /*!< \brief Simulation with moving HTP (rotation). */
 };
 static const MapType<std::string, ENUM_GRIDMOVEMENT> GridMovement_Map = {
   MakePair("NONE", NO_MOVEMENT)
   MakePair("RIGID_MOTION", RIGID_MOTION)
   MakePair("ROTATING_FRAME", ROTATING_FRAME)
-  MakePair("ELASTICITY", ELASTICITY)
-  MakePair("MOVING_HTP", MOVING_HTP)
   MakePair("STEADY_TRANSLATION", STEADY_TRANSLATION)
   MakePair("GUST", GUST)
 };

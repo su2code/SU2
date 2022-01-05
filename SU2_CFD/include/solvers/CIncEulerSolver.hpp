@@ -125,13 +125,10 @@ protected:
   void SetReferenceValues(const CConfig& config) final;
 
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CIncEulerSolver() : CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>() {}
+  CIncEulerSolver() = delete;
 
   /*!
-   * \overload
+   * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Grid level.

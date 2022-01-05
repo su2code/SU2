@@ -91,17 +91,13 @@ protected:
   void SetReferenceValues(const CConfig& config) final;
 
 public:
+  CNEMOEulerSolver() = delete;
 
   /*!
-   * \brief Constructor of the class.
+   * \brief Contructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  CNEMOEulerSolver() : CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {}
-
-  /*!
-     * \overload
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
   CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, const bool navier_stokes = false);
 
   /*!

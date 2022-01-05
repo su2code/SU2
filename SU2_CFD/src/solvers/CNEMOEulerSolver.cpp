@@ -35,7 +35,7 @@
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
-  CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {
+  CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNEMONSSolver. ---*/
@@ -541,7 +541,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       if (limiter && !van_albada){
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-      } 
+      }
 
       su2double lim_i = 2.0;
       su2double lim_j = 2.0;
@@ -1740,7 +1740,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Store primitives and set some variables for clarity. ---*/
         Density = V_domain[RHO_INDEX];
-        for (iDim = 0; iDim < nDim; iDim++) 
+        for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
 
         Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);

@@ -55,6 +55,9 @@ public:
     inline IndexType ThermalConductivity() const { return nDim+6; }
     inline IndexType CpTotal() const { return nDim+7; }
     inline IndexType CvTotal() const { return nDim+8; }
+
+    /*--- For compatible interface with NEMO. ---*/
+    inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
   };
 
  protected:

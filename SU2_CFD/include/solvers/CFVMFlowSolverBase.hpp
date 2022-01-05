@@ -44,6 +44,9 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
  protected:
+  /*!< \brief Object with indices of primitive variables. */
+  const typename VariableType::template CIndices<unsigned short> prim_idx;
+
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
 
@@ -226,9 +229,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
   /*!
-   * \brief Default constructor, this class is not directly instantiable.
+   * \brief Protected constructor, this class is not directly instantiable.
    */
-  CFVMFlowSolverBase() : CSolver() {}
+  CFVMFlowSolverBase(const CGeometry& geometry, const CConfig& config)
+    : CSolver(), prim_idx(geometry.GetnDim(), config.GetnSpecies()) {}
 
   /*!
    * \brief Set reference values for pressure, forces, etc., e.g. "AeroCoeffForceRef".
