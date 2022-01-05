@@ -354,17 +354,17 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
         if (!config->GetWrt_Restart_Overwrite()){
-          if (config->GetMultizone_Problem()){
-            /* --- do nothing --- */  
-          }
-          else {
-
-            filename_iter = fileName;
+          filename_iter = fileName;
+          
+          if (config->GetMultizone_Problem())
+              filename_iter.append(outer_iter_ss.str());
+          else 
             filename_iter.append(inner_iter_ss.str());
-            filename_iter.append(CSU2BinaryFileWriter::fileExt);
-
-          }
+          
+          filename_iter.append(CSU2BinaryFileWriter::fileExt);
+       
         }
+
       }
       
       if (rank == MASTER_NODE) {
