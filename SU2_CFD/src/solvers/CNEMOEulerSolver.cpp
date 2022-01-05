@@ -1631,7 +1631,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
         nodes->Set_x_new_freestream(iPoint, xs);
 
-        su2double k = 10.0;
+        su2double k = 100.0;
 
         //cout << endl << endl << "bc farfield iPoint=" << iPoint << endl;
         //cout << endl << "x=" << x << endl;
