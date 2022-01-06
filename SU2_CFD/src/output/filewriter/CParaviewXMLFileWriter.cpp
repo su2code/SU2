@@ -30,6 +30,21 @@
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 
+CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){
+
+  /* Check for big endian. We have to swap bytes otherwise.
+   * Since size of character is 1 byte when the character pointer
+   *  is de-referenced it will contain only first byte of integer. ---*/
+
+  bigEndian = false;
+  unsigned int i = 1;
+  char *c = (char*)&i;
+  if (*c) bigEndian = false;
+  else bigEndian = true;
+
+}
+
 CParaviewXMLFileWriter::CParaviewXMLFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
   CFileWriter(std::move(valFileName), valDataSorter, fileExt){
 
@@ -45,12 +60,11 @@ CParaviewXMLFileWriter::CParaviewXMLFileWriter(string valFileName, CParallelData
 
 }
 
-
 CParaviewXMLFileWriter::~CParaviewXMLFileWriter(){
 
 }
 
-void CParaviewXMLFileWriter::Write_Data(){
+void CParaviewXMLFileWriter::Write_Data(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -70,7 +84,7 @@ void CParaviewXMLFileWriter::Write_Data(){
 
   char str_buf[255];
 
-  OpenMPIFile();
+  OpenMPIFile(val_filename);
 
   dataOffset = 0;
 

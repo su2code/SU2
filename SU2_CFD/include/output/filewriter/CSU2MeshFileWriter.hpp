@@ -47,7 +47,7 @@ public:
    * \param[in] valiZone - The index of the current zone
    * \param[in] valnZone - The total number of zones
    */
-  CSU2MeshFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+  CSU2MeshFileWriter(CParallelDataSorter* valDataSorter,
                      unsigned short valiZone, unsigned short valnZone);
 
   /*!
@@ -55,7 +55,7 @@ public:
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };
 

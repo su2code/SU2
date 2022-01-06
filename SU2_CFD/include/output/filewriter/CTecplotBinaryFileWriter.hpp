@@ -50,7 +50,7 @@ public:
    * \param[in] valTimeIter - The current time iteration
    * \param[in] valTimeStep - The current physical time step value
    */
-  CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+  CTecplotBinaryFileWriter(CParallelDataSorter* valDataSorter,
                            unsigned long valTimeIter, su2double valTimeStep);
 
   /*!
@@ -63,7 +63,7 @@ public:
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
   /*!
    * \brief Calculate the partitioning of nodes to determine:

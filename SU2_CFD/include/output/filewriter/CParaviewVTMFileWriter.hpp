@@ -81,7 +81,7 @@ public:
    * \param[in] valiZone - The index of the current zone
    * \param[in] valnZone - The total number of zones
    */
-  CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime, unsigned short valiZone, unsigned short valnZone);
+  CParaviewVTMFileWriter(string valFolderName, su2double valTime, unsigned short valiZone, unsigned short valnZone);
 
   /*!
    * \brief Destructor
@@ -91,7 +91,7 @@ public:
   /*!
    * \brief Write sorted data to file in paraview binary file format
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
   /*!
    * \brief Add a new dataset by writing data from a datasorter to file and adding it to the vtm file

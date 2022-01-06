@@ -76,19 +76,19 @@ class CCGNSFileWriter final : public CFileWriter {
    * \param[in] valDataSorter - The parallel sorted data to write.
    * \param[in] isSurf - True if it is a surface file.
    */
-  CCGNSFileWriter(string valFileName, CParallelDataSorter* valDataSorter, bool isSurf = false);
+  CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf = false);
 
   /*!
    * \brief Write sorted data to file in CGNS file format.
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
  private:
 #ifdef HAVE_CGNS
   /*!
    * \brief Initialize CGNS mesh file.
    */
-  void InitializeMeshFile();
+  void InitializeMeshFile(string val_filename);
 
   /*!
    * \brief Write i-th coordinate to file in CGNS file format.

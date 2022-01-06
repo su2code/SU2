@@ -34,9 +34,9 @@
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
-CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime,
+CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFolderName, su2double valTime,
                                                unsigned short valiZone, unsigned short valnZone)
-  : CFileWriter(std::move(valFileName), fileExt),
+  : CFileWriter(fileExt),
     folderName(std::move(valFolderName)), iZone(valiZone), nZone(valnZone), curTime(valTime){
 
   if (rank == MASTER_NODE){
@@ -58,7 +58,10 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 
 }
 
-void CParaviewVTMFileWriter::Write_Data(){
+void CParaviewVTMFileWriter::Write_Data(string val_filename){
+
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   /*--- If we are in the first zone, create new file and write the file header,
    * otherwise append to already existing file ---*/
@@ -66,9 +69,9 @@ void CParaviewVTMFileWriter::Write_Data(){
   if (rank == MASTER_NODE){
     ofstream multiBlockFile;
     if (iZone == 0)
-      multiBlockFile.open (fileName.c_str());
+      multiBlockFile.open (val_filename.c_str());
     else
-      multiBlockFile.open(fileName.c_str(), ios::app);
+      multiBlockFile.open(val_filename.c_str(), ios::app);
 
     if (iZone == 0){
       multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;
@@ -98,13 +101,14 @@ void CParaviewVTMFileWriter::Write_Data(){
 void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataSorter* dataSorter){
 
   /*--- Construct the full file name incl. folder ---*/
+  /*--- Note that the folder name is simply the filename ---*/
 
   string fullFilename = folderName + "/zone_" + to_string(iZone) + "/" + file;
 
   /*--- Create an XML writer and dump data into file ---*/
 
   CParaviewXMLFileWriter XMLWriter(fullFilename, dataSorter);
-  XMLWriter.Write_Data();
+  XMLWriter.Write_Data(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/
 

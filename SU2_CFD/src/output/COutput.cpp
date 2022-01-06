@@ -331,7 +331,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "CSV file" << fileName + CSU2FileWriter::fileExt;
       }
 
-      fileWriter = new CSU2FileWriter(fileName, surfaceDataSorter);
+      fileWriter = new CSU2FileWriter(surfaceDataSorter);
 
       break;
 
@@ -344,7 +344,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 ASCII restart" << fileName + CSU2FileWriter::fileExt;
       }
 
-      fileWriter = new CSU2FileWriter(fileName, volumeDataSorter);
+      fileWriter = new CSU2FileWriter(volumeDataSorter);
 
       break;
 
@@ -357,24 +357,27 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           filename_iter = fileName;
           
           if (config->GetMultizone_Problem())
-              filename_iter.append(outer_iter_ss.str());
+            filename_iter.append(outer_iter_ss.str());
           else 
             filename_iter.append(inner_iter_ss.str());
           
-          filename_iter.append(CSU2BinaryFileWriter::fileExt);
-       
         }
 
       }
       
       if (rank == MASTER_NODE) {
-        if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 restart with iteration" << filename_iter ;
-
         (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
+
+        if (!config->GetWrt_Restart_Overwrite())
+          (*fileWritingTable) << "SU2 restart with iteration" << filename_iter + CSU2BinaryFileWriter::fileExt;
+
       }
 
-      fileWriter = new CSU2BinaryFileWriter(fileName, volumeDataSorter);
+      fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
+      
+      //if (!config->GetWrt_Restart_Overwrite())
+        //fileWriterIter = new CSU2BinaryFileWriter(filename_iter, volumeDataSorter);
+
 
       break;
 
@@ -392,7 +395,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "SU2 mesh" << fileName + CSU2MeshFileWriter::fileExt;
       }
 
-      fileWriter = new CSU2MeshFileWriter(fileName, volumeDataSorter,
+      fileWriter = new CSU2MeshFileWriter(volumeDataSorter,
                                           config->GetiZone(), config->GetnZone());
 
 
@@ -412,7 +415,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot binary" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotBinaryFileWriter(fileName, volumeDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(volumeDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -431,7 +434,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot ASCII" << fileName + CTecplotFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotFileWriter(fileName, volumeDataSorter,
+      fileWriter = new CTecplotFileWriter(volumeDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -450,7 +453,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "Paraview" << fileName + CParaviewXMLFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewXMLFileWriter(fileName, volumeDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(volumeDataSorter);
 
       break;
 
@@ -468,7 +471,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview binary" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewBinaryFileWriter(fileName, volumeDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(volumeDataSorter);
 
       break;
 
@@ -486,9 +489,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
         fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
 
-        /*--- Allocate the vtm file writer ---*/
+        /*--- Allocate the vtm file writer (using fileName as the folder name) ---*/
 
-        fileWriter = new CParaviewVTMFileWriter(fileName, fileName, GetHistoryFieldValue("CUR_TIME"),
+        fileWriter = new CParaviewVTMFileWriter(fileName, GetHistoryFieldValue("CUR_TIME"),
                                                 config->GetiZone(), config->GetnZone());
 
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
@@ -580,7 +583,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewFileWriter(fileName, volumeDataSorter);
+      fileWriter = new CParaviewFileWriter(volumeDataSorter);
 
       break;
 
@@ -599,7 +602,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview ASCII surface" << fileName + CParaviewFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewFileWriter(fileName, surfaceDataSorter);
+      fileWriter = new CParaviewFileWriter(surfaceDataSorter);
 
       break;
 
@@ -618,7 +621,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview binary surface" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewBinaryFileWriter(fileName, surfaceDataSorter);
+      fileWriter = new CParaviewBinaryFileWriter(surfaceDataSorter);
 
       break;
 
@@ -637,7 +640,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Paraview surface" << fileName + CParaviewXMLFileWriter::fileExt;
       }
 
-      fileWriter = new CParaviewXMLFileWriter(fileName, surfaceDataSorter);
+      fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter);
 
       break;
 
@@ -656,7 +659,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot ASCII surface" << fileName + CTecplotFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotFileWriter(fileName, surfaceDataSorter,
+      fileWriter = new CTecplotFileWriter(surfaceDataSorter,
                                           curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -676,7 +679,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "Tecplot binary surface" << fileName + CTecplotBinaryFileWriter::fileExt;
       }
 
-      fileWriter = new CTecplotBinaryFileWriter(fileName, surfaceDataSorter,
+      fileWriter = new CTecplotBinaryFileWriter(surfaceDataSorter,
                                                 curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
@@ -696,7 +699,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "STL ASCII" << fileName + CSTLFileWriter::fileExt;
       }
 
-      fileWriter = new CSTLFileWriter(fileName, surfaceDataSorter);
+      fileWriter = new CSTLFileWriter(surfaceDataSorter);
 
       break;
 
@@ -712,7 +715,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "CGNS" << fileName + CCGNSFileWriter::fileExt;
       }
 
-      fileWriter = new CCGNSFileWriter(fileName, volumeDataSorter);
+      fileWriter = new CCGNSFileWriter(volumeDataSorter);
 
       break;
 
@@ -729,12 +732,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         (*fileWritingTable) << "CGNS surface" << fileName + CCGNSFileWriter::fileExt;
       }
 
-      fileWriter = new CCGNSFileWriter(fileName, surfaceDataSorter, true);
+      fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
 
       break;
 
     default:
-      fileWriter = nullptr;
       break;
   }
 
@@ -742,11 +744,24 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     /*--- Write data to file ---*/
 
-    fileWriter->Write_Data();
+    fileWriter->Write_Data(fileName);
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
 
-    /*--- Compute and store the bandwidth ---*/
+  
+    /*--- Write data with iteration number to file ---*/
+
+    if (!config->GetWrt_Restart_Overwrite()){
+
+      fileWriter->Write_Data(filename_iter); 
+    
+      /*--- overwrite bandwidth ---*/
+      BandWidth = fileWriter->Get_Bandwidth();
+
+    }
+
+
+  /*--- Compute and store the bandwidth ---*/
 
     if (format == RESTART_BINARY){
       config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
@@ -761,15 +776,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     delete fileWriter;
 
   }
-
-  if (!config->GetWrt_Restart_Overwrite() && (rank == MASTER_NODE)){
-    /*--- copy the file with iteration number appended ---*/
-    std::ifstream  src(restartFilename.c_str(), std::ios::binary);
-    std::ofstream  dst(filename_iter.c_str(),   std::ios::binary);
-    dst << src.rdbuf();
-
-  }
-
 
 }
 

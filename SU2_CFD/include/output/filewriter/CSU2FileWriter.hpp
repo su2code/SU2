@@ -42,12 +42,12 @@ public:
    * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CSU2FileWriter(string valFileName, CParallelDataSorter* valDataSorter);
+  CSU2FileWriter(CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Write sorted data to file in SU2 ASCII file format
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };
 
