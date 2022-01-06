@@ -63,11 +63,13 @@ void CParaviewVTMFileWriter::Write_Data(string val_filename){
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
 
+
   /*--- If we are in the first zone, create new file and write the file header,
    * otherwise append to already existing file ---*/
 
   if (rank == MASTER_NODE){
-    ofstream multiBlockFile;
+   cout << "vtmfilewriter, file = " << val_filename << endl;
+   ofstream multiBlockFile;
     if (iZone == 0)
       multiBlockFile.open (val_filename.c_str());
     else

@@ -502,8 +502,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
   char endfea[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
 
-  if ((config->GetTabular_FileFormat() == TECPLOT) ||
-      (config->GetTabular_FileFormat() == TECPLOT_BINARY)) {
+  if ((config->GetTabular_FileFormat() == TAB_TECPLOT)) {
     ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
     ConvHist_file[0] << "VARIABLES = ";
   }
@@ -583,8 +582,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       break;
   }
 
-  if (config->GetTabular_FileFormat() == TECPLOT ||
-      config->GetTabular_FileFormat() == TECPLOT_BINARY) {
+  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
     ConvHist_file[0] << "ZONE T= \"Convergence history\"" << endl;
   }
 

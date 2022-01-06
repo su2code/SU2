@@ -1142,6 +1142,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
   addBoolOption("WRT_RESTART_OVERWRITE", Wrt_Restart_Overwrite, true);
+  /*!\brief WRT_SURFACE_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_SURFACE_OVERWRITE", Wrt_Surface_Overwrite, true);
   /*!\brief WRT_VOLUME_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
   addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
@@ -2798,7 +2800,7 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
-
+  
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -3276,17 +3278,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Set the default output files ---*/
   if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
-    VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
-    VolumeOutputFiles[0] = RESTART_BINARY;
-    VolumeOutputFiles[1] = PARAVIEW_XML;
-    VolumeOutputFiles[2] = SURFACE_PARAVIEW_XML;
+    VolumeOutputFiles = new OUTPUT_TYPE[nVolumeOutputFiles];
+    VolumeOutputFiles[0] = OUTPUT_TYPE::RESTART_BINARY;
+    VolumeOutputFiles[1] = OUTPUT_TYPE::PARAVIEW_XML;
+    VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
-    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::SURFACE_TECPLOT_BINARY) {
       SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
     }
   }
@@ -3295,8 +3297,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check if SU2 was build with CGNS support, as that is required for CGNS output. ---*/
 #ifndef HAVE_CGNS
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
-    if (VolumeOutputFiles[iVolumeFile] == CGNS ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_CGNS) {
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::CGNS ||
+        VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::SURFACE_CGNS) {
       SU2_MPI::Error(string("CGNS file requested in option OUTPUT_FILES but SU2 was built without CGNS support.\n"),CURRENT_FUNCTION);
     }
   }
@@ -3304,10 +3306,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
-    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY){
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
     }
-    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == STL || VolumeOutputFiles[iVolumeFile] == STL_BINARY)) {
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL || VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY)) {
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
     }
   }
@@ -3573,6 +3575,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Time_Domain && !GetWrt_Restart_Overwrite()){
     SU2_MPI::Error("Appending iterations to the filename (WRT_RESTART_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+  if (Time_Domain && !GetWrt_Surface_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_SURFACE_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
   }
   if (Time_Domain && !GetWrt_Volume_Overwrite()){
     SU2_MPI::Error("Appending iterations to the filename (WRT_VOLUME_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
@@ -10009,7 +10014,7 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
 
   bool multiblockDriver = false;
   for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++){
-    if (driver_config->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+    if (driver_config->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
       multiblockDriver = true;
     }
   }
@@ -10018,7 +10023,7 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
   for (unsigned short iZone = 0; iZone < nZone; iZone++){
     multiblockZone = false;
     for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++){
-      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
         multiblockZone = true;
       }
     }

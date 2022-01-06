@@ -482,7 +482,7 @@ public:
    * \param[in] format - The output format.
    * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
    */
-  void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
+  void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
 
 protected:
 

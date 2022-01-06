@@ -52,6 +52,11 @@ protected:
   int size;
 
   /*!
+   * \brief Filename
+   */
+  string full_FileName;
+
+  /*!
    * \brief The file extension to be attached to the filename.
    */
   std::string fileExt;
@@ -72,11 +77,6 @@ protected:
       int rc = stat(filename.c_str(), &stat_buf);
       return rc == 0 ? stat_buf.st_size : -1;
   }
-
-  /*!
-   * \brief Filename
-   */
-  string full_FileName;
 
   /*!
    * \brief The parallel data sorter

@@ -665,6 +665,7 @@ private:
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
+  Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
   Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
@@ -1106,7 +1107,7 @@ private:
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
-  unsigned short* VolumeOutputFiles;  /*!< \brief File formats to output */
+  OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
   unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
@@ -5230,6 +5231,12 @@ public:
   bool GetWrt_Restart_Overwrite(void) const { return Wrt_Restart_Overwrite; }
 
     /*!
+   * \brief Flag for whether visualization files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Surface_Overwrite(void) const { return Wrt_Surface_Overwrite; }
+
+   /*!
    * \brief Flag for whether visualization files are overwritten.
    * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
    */
@@ -9391,7 +9398,7 @@ public:
   /*!
    * \brief GetVolumeOutputFiles
    */
-  const unsigned short* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
+  const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
 
   /*!
    * \brief GetnVolumeOutputFiles

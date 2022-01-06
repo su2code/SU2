@@ -304,7 +304,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 }
 
-void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
+void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
 
   CFileWriter *fileWriter = nullptr;
 
@@ -319,7 +319,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
   switch (format) {
 
-    case SURFACE_CSV:
+    case OUTPUT_TYPE::SURFACE_CSV:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -335,7 +335,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case RESTART_ASCII: case CSV:
+    case OUTPUT_TYPE::RESTART_ASCII: case OUTPUT_TYPE::CSV:
 
       if (fileName.empty())
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
@@ -348,21 +348,19 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case RESTART_BINARY:
+    case OUTPUT_TYPE::RESTART_BINARY:
 
-      if (fileName.empty()){
+      if (fileName.empty())
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
-        if (!config->GetWrt_Restart_Overwrite()){
-          filename_iter = fileName;
+      if (!config->GetWrt_Restart_Overwrite()){
+        filename_iter = fileName;
           
-          if (config->GetMultizone_Problem())
-            filename_iter.append(outer_iter_ss.str());
-          else 
-            filename_iter.append(inner_iter_ss.str());
+        if (config->GetMultizone_Problem())
+          filename_iter.append(outer_iter_ss.str());
+        else 
+          filename_iter.append(inner_iter_ss.str());
           
-        }
-
       }
       
       if (rank == MASTER_NODE) {
@@ -375,13 +373,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
       
-      //if (!config->GetWrt_Restart_Overwrite())
-        //fileWriterIter = new CSU2BinaryFileWriter(filename_iter, volumeDataSorter);
-
-
+  
       break;
 
-    case MESH:
+    case OUTPUT_TYPE::MESH:
 
       if (fileName.empty())
         fileName = volumeFilename;
@@ -401,7 +396,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case TECPLOT_BINARY:
+    case OUTPUT_TYPE::TECPLOT_BINARY:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -420,7 +415,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case TECPLOT:
+    case OUTPUT_TYPE::TECPLOT:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -439,7 +434,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case PARAVIEW_XML:
+    case OUTPUT_TYPE::PARAVIEW_XML:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -457,7 +452,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case PARAVIEW_BINARY:
+    case OUTPUT_TYPE::PARAVIEW_BINARY:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -475,11 +470,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case PARAVIEW_MULTIBLOCK:
+    case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
       {
-
         if (fileName.empty())
           fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
 
         /*--- Sort volume connectivity ---*/
 
@@ -507,12 +502,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
         vtmWriter->StartBlock(multiZoneHeaderString);
 
-        fileName = "Internal";
+        //fileName = "Internal";
 
         /*--- Open a block for the internal (volume) data and add the dataset ---*/
 
-        vtmWriter->StartBlock(fileName);
-        vtmWriter->AddDataset(fileName, fileName, volumeDataSorter);
+        vtmWriter->StartBlock("Internal");
+        vtmWriter->AddDataset("Internal", "Internal", volumeDataSorter);
         vtmWriter->EndBlock();
 
         /*--- Open a block for the boundary ---*/
@@ -569,10 +564,20 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case PARAVIEW:
+    case OUTPUT_TYPE::PARAVIEW:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      if (!config->GetWrt_Volume_Overwrite()){
+        filename_iter = fileName;
+          
+        if (config->GetMultizone_Problem())
+          filename_iter.append(outer_iter_ss.str());
+        else 
+          filename_iter.append(inner_iter_ss.str());
+          
+      }
 
       /*--- Load and sort the output data and connectivity. ---*/
 
@@ -580,14 +585,17 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       /*--- Write paraview ascii ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
+        (*fileWritingTable) << "Paraview ASCII" << fileName + CParaviewFileWriter::fileExt;
+
+        if (!config->GetWrt_Restart_Overwrite())
+          (*fileWritingTable) << "SU2 restart with iteration" << filename_iter + CSU2BinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewFileWriter(volumeDataSorter);
 
       break;
 
-    case SURFACE_PARAVIEW:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -606,7 +614,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case SURFACE_PARAVIEW_BINARY:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_BINARY:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -625,7 +633,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case SURFACE_PARAVIEW_XML:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_XML:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -644,7 +652,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case SURFACE_TECPLOT:
+    case OUTPUT_TYPE::SURFACE_TECPLOT:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -664,7 +672,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case SURFACE_TECPLOT_BINARY:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_BINARY:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -684,7 +692,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case STL:
+    case OUTPUT_TYPE::STL:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -703,7 +711,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case CGNS:
+    case OUTPUT_TYPE::CGNS:
 
       if (fileName.empty()) fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
@@ -719,7 +727,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
-    case SURFACE_CGNS:
+    case OUTPUT_TYPE::SURFACE_CGNS:
 
       if (fileName.empty()) fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
@@ -751,8 +759,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   
     /*--- Write data with iteration number to file ---*/
 
-    if (!config->GetWrt_Restart_Overwrite()){
-
+    if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
       fileWriter->Write_Data(filename_iter); 
     
       /*--- overwrite bandwidth ---*/
@@ -763,7 +770,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
   /*--- Compute and store the bandwidth ---*/
 
-    if (format == RESTART_BINARY){
+    if (format == OUTPUT_TYPE::RESTART_BINARY){
       config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
     }
 
