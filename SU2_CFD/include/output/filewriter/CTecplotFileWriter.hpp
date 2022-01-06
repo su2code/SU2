@@ -42,7 +42,6 @@ public:
 
   /*!
    * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    * \param[in] valTimeIter - The current time iteration
    * \param[in] valTimeStep - The current physical time step value
@@ -57,8 +56,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in tecplot ASCII file format
+   * \param[in] valFileName - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void Write_Data(string valFileName) override;
 
 };
 

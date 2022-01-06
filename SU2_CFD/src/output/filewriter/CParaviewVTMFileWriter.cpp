@@ -58,22 +58,21 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 
 }
 
-void CParaviewVTMFileWriter::Write_Data(string val_filename){
+void CParaviewVTMFileWriter::Write_Data(string valFileName){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
+  valFileName.append(fileExt);
 
 
   /*--- If we are in the first zone, create new file and write the file header,
    * otherwise append to already existing file ---*/
 
   if (rank == MASTER_NODE){
-   cout << "vtmfilewriter, file = " << val_filename << endl;
    ofstream multiBlockFile;
     if (iZone == 0)
-      multiBlockFile.open (val_filename.c_str());
+      multiBlockFile.open (valFileName.c_str());
     else
-      multiBlockFile.open(val_filename.c_str(), ios::app);
+      multiBlockFile.open(valFileName.c_str(), ios::app);
 
     if (iZone == 0){
       multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;
@@ -109,7 +108,7 @@ void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataS
 
   /*--- Create an XML writer and dump data into file ---*/
 
-  CParaviewXMLFileWriter XMLWriter(fullFilename, dataSorter);
+  CParaviewXMLFileWriter XMLWriter(dataSorter);
   XMLWriter.Write_Data(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/

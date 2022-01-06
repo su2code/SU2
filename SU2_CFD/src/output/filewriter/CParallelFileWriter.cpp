@@ -27,30 +27,12 @@
 
 #include "../../../include/output/filewriter/CFileWriter.hpp"
 
-
-CFileWriter::CFileWriter(string valFileName, CParallelDataSorter *valDataSorter, string valFileExt):
-  full_FileName(valFileName), 
-  fileExt(valFileExt),
-  dataSorter(valDataSorter){
-
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
-  //this->fileName += valFileExt;
-
-  fileSize = 0.0;
-  bandwidth = 0.0;
-
-}
-
 CFileWriter::CFileWriter(CParallelDataSorter *valDataSorter, string valFileExt):
   fileExt(valFileExt),
   dataSorter(valDataSorter){
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-
-  //this->fileName += valFileExt;
 
   fileSize = 0.0;
   bandwidth = 0.0;
@@ -62,8 +44,6 @@ CFileWriter::CFileWriter(string valFileExt):
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-
-  //this->fileName += valFileExt;
 
   fileSize = 0.0;
   bandwidth = 0.0;

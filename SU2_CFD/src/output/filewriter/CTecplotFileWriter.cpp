@@ -35,10 +35,10 @@ CTecplotFileWriter::CTecplotFileWriter(CParallelDataSorter *valDataSorter,
 
 CTecplotFileWriter::~CTecplotFileWriter(){}
 
-void CTecplotFileWriter::Write_Data(string val_filename){
+void CTecplotFileWriter::Write_Data(string valFileName){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
+  valFileName.append(fileExt);
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -81,7 +81,7 @@ void CTecplotFileWriter::Write_Data(string val_filename){
   /*--- Open Tecplot ASCII file and write the header. ---*/
 
   if (rank == MASTER_NODE) {
-    Tecplot_File.open(val_filename.c_str(), ios::out);
+    Tecplot_File.open(valFileName.c_str(), ios::out);
     Tecplot_File.precision(6);
     Tecplot_File << "TITLE = \"Visualization of the solution\"" << endl;
 
@@ -126,7 +126,7 @@ void CTecplotFileWriter::Write_Data(string val_filename){
 
   /*--- Each processor opens the file. ---*/
 
-  Tecplot_File.open(val_filename.c_str(), ios::out | ios::app);
+  Tecplot_File.open(valFileName.c_str(), ios::out | ios::app);
 
   /*--- Write surface and volumetric solution data. ---*/
 
@@ -219,7 +219,7 @@ void CTecplotFileWriter::Write_Data(string val_filename){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = Determine_Filesize(valFileName);
 
   /*--- Compute and store the bandwidth ---*/
 

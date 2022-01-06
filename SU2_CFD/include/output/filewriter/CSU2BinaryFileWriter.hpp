@@ -40,7 +40,6 @@ public:
 
   /*!
    * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
   CSU2BinaryFileWriter(CParallelDataSorter* valDataSorter);
@@ -52,7 +51,8 @@ public:
 
   /*!
    * \brief Write sorted data to file in SU2 binary file format
+   * \param[in] filename - The filename to write
    */
-  void Write_Data(string val_filename) override;
+  void Write_Data(string filename) override;
 
 };

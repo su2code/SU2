@@ -37,7 +37,7 @@ CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
 
 }
 
-void CSU2BinaryFileWriter::Write_Data(string val_filename){
+void CSU2BinaryFileWriter::Write_Data(string valFileName){
 
   /*--- Local variables ---*/
 
@@ -60,7 +60,7 @@ void CSU2BinaryFileWriter::Write_Data(string val_filename){
 
   /*--- Open the file using MPI I/O ---*/
 
-  OpenMPIFile(val_filename);
+  OpenMPIFile(valFileName);
 
   /*--- First, write the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, write the

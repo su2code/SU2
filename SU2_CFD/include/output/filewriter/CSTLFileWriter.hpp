@@ -102,7 +102,6 @@ public:
 
   /*!
    * \brief Construct a file writer using field name and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
   CSTLFileWriter(CParallelDataSorter* valDataSorter);
@@ -114,8 +113,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in STL file format
+   * \param[in] valFileName - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void Write_Data(string valFileName) override;
 
 };
 

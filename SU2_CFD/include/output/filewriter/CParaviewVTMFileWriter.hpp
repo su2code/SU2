@@ -75,7 +75,6 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, dimension.
-   * \param[in] valFileName - The name of the file
    * \param[in] valFolderName - The name of the output folder
    * \param[in] valTime - The current physical time
    * \param[in] valiZone - The index of the current zone
@@ -90,8 +89,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in paraview binary file format
+   * \param[in] valFileName - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void Write_Data(string valFileName) override;
 
   /*!
    * \brief Add a new dataset by writing data from a datasorter to file and adding it to the vtm file

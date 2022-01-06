@@ -41,10 +41,10 @@ CSTLFileWriter::CSTLFileWriter(CParallelDataSorter *valDataSorter) :
 CSTLFileWriter::~CSTLFileWriter(){}
 
 
-void CSTLFileWriter::Write_Data(string val_filename){
+void CSTLFileWriter::Write_Data(string valFileName){
   
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
+  valFileName.append(fileExt);
 
   /*--- This Write_Data routine has 3 major parts where the first two are transfered in external functions:
     1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
@@ -75,7 +75,7 @@ void CSTLFileWriter::Write_Data(string val_filename){
     /*--- Open the STL file and write the header line. ---*/
     Surf_file.precision(6);
   
-    Surf_file.open(val_filename.c_str(), ios::out);
+    Surf_file.open(valFileName.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
 
     /*--- Loop through all of the collected data and write each node's coordinate values. ---*/

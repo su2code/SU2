@@ -32,12 +32,12 @@ const string CSU2FileWriter::fileExt = ".csv";
 CSU2FileWriter::CSU2FileWriter(CParallelDataSorter *valDataSorter) :
   CFileWriter(valDataSorter, fileExt){}
 
-void CSU2FileWriter::Write_Data(string val_filename){
+void CSU2FileWriter::Write_Data(string valFileName){
 
   ofstream restart_file;
   const vector<string> fieldNames = dataSorter->GetFieldNames();
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
+  valFileName.append(fileExt);
 
   /*--- Set a timer for the file writing. ---*/
 
@@ -46,7 +46,7 @@ void CSU2FileWriter::Write_Data(string val_filename){
   /*--- Only the FIRST node writes the header (it does not matter if that is the master). ---*/
 
   if (rank == 0) {
-    restart_file.open(val_filename);
+    restart_file.open(valFileName);
     restart_file << "\"PointID\"";
     for (auto& field : fieldNames) restart_file << ",\"" << field << "\"";
     restart_file << "\n";
@@ -57,7 +57,7 @@ void CSU2FileWriter::Write_Data(string val_filename){
 
   for (int iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      restart_file.open(val_filename, ios::app);
+      restart_file.open(valFileName, ios::app);
       restart_file.precision(15);
 
       for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
@@ -89,7 +89,7 @@ void CSU2FileWriter::Write_Data(string val_filename){
 
   /*--- Determine the file size ---*/
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = Determine_Filesize(valFileName);
 
   /*--- Compute and store the bandwidth ---*/
 

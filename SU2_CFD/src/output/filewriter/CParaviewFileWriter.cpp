@@ -35,10 +35,10 @@ CParaviewFileWriter::CParaviewFileWriter(CParallelDataSorter *valDataSorter) :
 
 CParaviewFileWriter::~CParaviewFileWriter(){}
 
-void CParaviewFileWriter::Write_Data(string val_filename){
+void CParaviewFileWriter::Write_Data(string valFileName){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  val_filename.append(fileExt);
+  valFileName.append(fileExt);
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -64,7 +64,7 @@ void CParaviewFileWriter::Write_Data(string val_filename){
 
   if (rank == MASTER_NODE) {
     
-    Paraview_File.open(val_filename.c_str(), ios::out);
+    Paraview_File.open(valFileName.c_str(), ios::out);
     Paraview_File.precision(6);
     Paraview_File << "# vtk DataFile Version 3.0\n";
     Paraview_File << "vtk output\n";
@@ -84,7 +84,7 @@ void CParaviewFileWriter::Write_Data(string val_filename){
 
   /*--- Each processor opens the file. ---*/
 
-  Paraview_File.open(val_filename.c_str(), ios::out | ios::app);
+  Paraview_File.open(valFileName.c_str(), ios::out | ios::app);
 
   /*--- Write surface and volumetric point coordinates. ---*/
 
@@ -362,7 +362,7 @@ void CParaviewFileWriter::Write_Data(string val_filename){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = Determine_Filesize(valFileName);
 
   /*--- Compute and store the bandwidth ---*/
 

@@ -80,7 +80,7 @@ public:
   /*!
    * \brief Write sorted data to file in paraview binary file format
    */
-  void Write_Data(string val_filename) override;
+  void Write_Data(string valFileName) override;
 
 private:
 

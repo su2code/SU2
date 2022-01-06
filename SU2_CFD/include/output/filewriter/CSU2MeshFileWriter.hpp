@@ -42,7 +42,6 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, dimension.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    * \param[in] valiZone - The index of the current zone
    * \param[in] valnZone - The total number of zones
@@ -52,10 +51,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in SU2 mesh file format
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
+   * \param[in] valFileName - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void Write_Data(string valFileName) override;
 
 };
 

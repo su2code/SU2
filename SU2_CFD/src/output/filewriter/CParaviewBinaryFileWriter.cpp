@@ -48,7 +48,7 @@ CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
 
 }
 
-void CParaviewBinaryFileWriter::Write_Data(string val_filename){
+void CParaviewBinaryFileWriter::Write_Data(string valFileName){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -65,7 +65,7 @@ void CParaviewBinaryFileWriter::Write_Data(string val_filename){
 
   const int NCOORDS = 3;
 
-  OpenMPIFile(val_filename);
+  OpenMPIFile(valFileName);
 
   string header = "# vtk DataFile Version 3.0\n"
                   "vtk output\n"
