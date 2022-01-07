@@ -68,7 +68,7 @@ CMultizoneOutput::CMultizoneOutput(const CConfig* driver_config, const CConfig* 
   /*--- Add the correct file extension depending on the file format ---*/
 
   string hist_ext = ".csv";
-  if (driver_config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  if (driver_config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
 
   historyFilename += hist_ext;
 

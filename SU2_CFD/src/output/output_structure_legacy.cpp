@@ -380,7 +380,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   /*--- Write file name with extension ---*/
   string filename = config->GetConv_FileName();
   string hist_ext = ".csv";
-  if (config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
 
   if(config->GetnZone() > 1){
     filename = config->GetMultizone_HistoryFileName(filename, val_iZone, hist_ext);
@@ -502,7 +502,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
   char endfea[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
 
-  if ((config->GetTabular_FileFormat() == TAB_TECPLOT)) {
+  if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT)) {
     ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
     ConvHist_file[0] << "VARIABLES = ";
   }
@@ -582,7 +582,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       break;
   }
 
-  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
     ConvHist_file[0] << "ZONE T= \"Convergence history\"" << endl;
   }
 
@@ -4648,7 +4648,7 @@ void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry,
           ofstream Load_File;
           if (iSection == 0) {
 
-            if ((config->GetTabular_FileFormat() == TAB_CSV)) {
+            if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) {
               Load_File.open("load_distribution.csv", ios::out);
               Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
             }
@@ -4659,14 +4659,14 @@ void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry,
               Load_File << "ZONE T=\"Wing load distribution\"" << endl;
             }
           } else {
-            if ((config->GetTabular_FileFormat() == TAB_CSV)) Load_File.open("load_distribution.csv", ios::app);
+            if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) Load_File.open("load_distribution.csv", ios::app);
             else Load_File.open("load_distribution.dat", ios::app);
           }
 
 
           /*--- CL and spanload ---*/
 
-          if ((config->GetTabular_FileFormat() == TAB_CSV))
+          if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV))
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
           else
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
@@ -5037,14 +5037,14 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
 
   if (output && (rank == MASTER_NODE)) {
 
-    if ((config->GetTabular_FileFormat() == TAB_CSV)) strcpy (cstr, "surface_analysis.vtk");
+    if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) strcpy (cstr, "surface_analysis.vtk");
     else strcpy (cstr, "surface_analysis.dat");
 
     SurfFlow_file.precision(15);
 
     SurfFlow_file.open(cstr, ios::out);
 
-    if ((config->GetTabular_FileFormat() == TAB_CSV)) {
+    if ((config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV)) {
       SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
       SurfFlow_file << "vtk output" << endl;
       SurfFlow_file << "ASCII" << endl;
@@ -5862,7 +5862,7 @@ void COutputLegacy::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometr
 
       if (output) {
 
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
 
           SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
           SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;

@@ -9955,7 +9955,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
       Wing_File.open("wing_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
@@ -10047,7 +10047,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
           Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
                      <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
                      <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
@@ -10250,7 +10250,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
       Fuselage_File.open("fuselage_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Fuselage_File << "\"x (in)\",\"Area (in^2)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
@@ -10333,7 +10333,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
           Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
                      <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
                      <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
@@ -10561,7 +10561,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
       Nacelle_File.open("nacelle_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
@@ -10623,7 +10623,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
       su2double theta_deg = atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180;
 
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
           Nacelle_File  << theta_deg <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
           <<", "<< Twist[iPlane] <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][2]
           <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][2] << endl;

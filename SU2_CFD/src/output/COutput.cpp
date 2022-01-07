@@ -76,7 +76,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   /*--- Add the correct file extension depending on the file format ---*/
 
   string hist_ext = ".csv";
-  if (config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
 
   /*--- Append the zone ID ---*/
 
@@ -364,10 +364,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       }
       
       if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 restart" << fileName + CSU2BinaryFileWriter::fileExt;
+        (*fileWritingTable) << "SU2 binary restart" << fileName + CSU2BinaryFileWriter::fileExt;
 
         if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 restart with iteration" << filename_iter + CSU2BinaryFileWriter::fileExt;
+          (*fileWritingTable) << "SU2 binary restart with iteration" << filename_iter + CSU2BinaryFileWriter::fileExt;
 
       }
 
@@ -415,7 +415,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::TECPLOT:
+    case OUTPUT_TYPE::TECPLOT_ASCII:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -452,7 +452,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::PARAVIEW_BINARY:
+    case OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -463,7 +463,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       /*--- Write paraview binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview binary" << fileName + CParaviewBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Paraview binary (legacy)" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewBinaryFileWriter(volumeDataSorter);
@@ -564,7 +564,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::PARAVIEW:
+    case OUTPUT_TYPE::PARAVIEW_ASCII:
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
@@ -595,7 +595,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::SURFACE_PARAVIEW:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -614,7 +614,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::SURFACE_PARAVIEW_BINARY:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -626,7 +626,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       /*--- Write surface paraview binary ---*/
       if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview binary surface" << fileName + CParaviewBinaryFileWriter::fileExt;
+          (*fileWritingTable) << "Paraview binary surface (legacy)" << fileName + CParaviewBinaryFileWriter::fileExt;
       }
 
       fileWriter = new CParaviewBinaryFileWriter(surfaceDataSorter);
@@ -652,7 +652,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::SURFACE_TECPLOT:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -692,7 +692,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       break;
 
-    case OUTPUT_TYPE::STL:
+    case OUTPUT_TYPE::STL_ASCII:
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
@@ -1086,7 +1086,7 @@ void COutput::SetHistoryFile_Header(const CConfig *config) {
     }
   }
 
-  if (config->GetTabular_FileFormat() == TAB_TECPLOT) {
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
     histFile << "VARIABLES = \\" << endl;
   }
   historyFileTable->PrintHeader();

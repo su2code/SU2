@@ -729,7 +729,7 @@ private:
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
-  unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
+  TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
@@ -5343,7 +5343,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetTabular_FileFormat(void) const { return Tab_FileFormat; }
+  TAB_OUTPUT GetTabular_FileFormat(void) const { return Tab_FileFormat; }
 
   /*!
    * \brief Get the output precision to be used in <ofstream>.precision(value) for history and SU2_DOT output.

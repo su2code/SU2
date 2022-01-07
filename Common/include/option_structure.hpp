@@ -1054,7 +1054,7 @@ static const MapType<std::string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
  * \brief Types of wall functions.
  */
 enum class WALL_FUNCTIONS {
-  NONE                      ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  NONE                 ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_FUNCTION    ,   /*!< \brief Standard wall function. */
   ADAPTIVE_FUNCTION    ,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
   SCALABLE_FUNCTION    ,   /*!< \brief Scalable wall function. */
@@ -1450,7 +1450,7 @@ enum TURBO_MARKER_TYPE{
 /*!
  * \brief Types inlet boundary treatments
  */
-enum INLET_TYPE {
+enum class INLET_TYPE {
   TOTAL_CONDITIONS, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW,        /*!< \brief User specifies density and velocity (mass flow). */
   INPUT_FILE,       /*!< \brief User specifies an input file. */
@@ -1698,16 +1698,16 @@ static const MapType<std::string, ENUM_INPUT> Input_Map = {
  * \brief Type of solution output file formats
  */
 enum class OUTPUT_TYPE {
-  TECPLOT,                 /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_ASCII,           /*!< \brief Tecplot format for the solution output. */
   TECPLOT_BINARY,          /*!< \brief Tecplot binary format for the solution output. */
-  SURFACE_TECPLOT,         /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_ASCII,   /*!< \brief Tecplot format for the solution output. */
   SURFACE_TECPLOT_BINARY,  /*!< \brief Tecplot binary format for the solution output. */
   CSV,                     /*!< \brief Comma-separated values format for the solution output. */
   SURFACE_CSV,             /*!< \brief Comma-separated values format for the solution output. */
-  PARAVIEW,                /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY,         /*!< \brief Paraview binary format for the solution output. */
-  SURFACE_PARAVIEW,        /*!< \brief Paraview ASCII format for the solution output. */
-  SURFACE_PARAVIEW_BINARY, /*!< \brief Paraview binary format for the solution output. */
+  PARAVIEW_ASCII,          /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
   MESH,                    /*!< \brief SU2 mesh format. */
   RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
   RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
@@ -1716,31 +1716,29 @@ enum class OUTPUT_TYPE {
   PARAVIEW_MULTIBLOCK,     /*!< \brief Paraview XML Multiblock */
   CGNS,                    /*!< \brief CGNS format. */
   SURFACE_CGNS,            /*!< \brief CGNS format. */
-  STL,                     /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY,               /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY,              /*!< \brief STL binary format for surface solution output. Not implemented yet. */
 };
 static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
-  MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT)
+  MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT_ASCII)
   MakePair("TECPLOT", OUTPUT_TYPE::TECPLOT_BINARY)
-  MakePair("SURFACE_TECPLOT_ASCII", OUTPUT_TYPE::SURFACE_TECPLOT)
+  MakePair("SURFACE_TECPLOT_ASCII", OUTPUT_TYPE::SURFACE_TECPLOT_ASCII)
   MakePair("SURFACE_TECPLOT", OUTPUT_TYPE::SURFACE_TECPLOT_BINARY)
   MakePair("CSV", OUTPUT_TYPE::CSV)
   MakePair("SURFACE_CSV", OUTPUT_TYPE::SURFACE_CSV)
-  MakePair("PARAVIEW_ASCII", OUTPUT_TYPE::PARAVIEW)
-  MakePair("PARAVIEW_LEGACY", OUTPUT_TYPE::PARAVIEW_BINARY)
-  MakePair("SURFACE_PARAVIEW_ASCII", OUTPUT_TYPE::SURFACE_PARAVIEW)
-  MakePair("SURFACE_PARAVIEW_LEGACY", OUTPUT_TYPE::SURFACE_PARAVIEW_BINARY)
+  MakePair("PARAVIEW_ASCII", OUTPUT_TYPE::PARAVIEW_ASCII)
+  MakePair("PARAVIEW_LEGACY", OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY)
+  MakePair("SURFACE_PARAVIEW_ASCII", OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII)
+  MakePair("SURFACE_PARAVIEW_LEGACY", OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY)
   MakePair("PARAVIEW", OUTPUT_TYPE::PARAVIEW_XML)
   MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
   MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
   MakePair("MESH", OUTPUT_TYPE::MESH)
   MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
   MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
-  MakePair("STL", OUTPUT_TYPE::STL)
-  MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
   MakePair("CGNS", OUTPUT_TYPE::CGNS)
   MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
-  MakePair("STL", OUTPUT_TYPE::STL)
+  MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
   MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
 };
 
@@ -1749,10 +1747,10 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
  */
 inline bool isParaview(OUTPUT_TYPE format) {
   switch(format) {
-    case OUTPUT_TYPE::PARAVIEW:
-    case OUTPUT_TYPE::PARAVIEW_BINARY:
-    case OUTPUT_TYPE::SURFACE_PARAVIEW:
-    case OUTPUT_TYPE::SURFACE_PARAVIEW_BINARY:
+    case OUTPUT_TYPE::PARAVIEW_ASCII:
+    case OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
     case OUTPUT_TYPE::PARAVIEW_XML:
     case OUTPUT_TYPE::SURFACE_PARAVIEW_XML:
     case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
@@ -1767,9 +1765,9 @@ inline bool isParaview(OUTPUT_TYPE format) {
  */
 inline bool isTecplot(OUTPUT_TYPE format) {
   switch(format) {
-    case OUTPUT_TYPE::TECPLOT:
+    case OUTPUT_TYPE::TECPLOT_ASCII:
     case OUTPUT_TYPE::TECPLOT_BINARY:
-    case OUTPUT_TYPE::SURFACE_TECPLOT:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
     case OUTPUT_TYPE::SURFACE_TECPLOT_BINARY:
       return true;
     default:
@@ -1780,13 +1778,13 @@ inline bool isTecplot(OUTPUT_TYPE format) {
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_TAB_OUTPUT {
-  TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
-  TAB_TECPLOT = 2         /*!< \brief Tecplot format for the solution output. */
+enum class TAB_OUTPUT {
+  TAB_CSV,            /*!< \brief Comma-separated values format for the solution output. */
+  TAB_TECPLOT         /*!< \brief Tecplot format for the solution output. */
 };
-static const MapType<std::string, ENUM_TAB_OUTPUT> TabOutput_Map = {
-  MakePair("CSV", TAB_CSV)
-  MakePair("TECPLOT", TAB_TECPLOT)
+static const MapType<std::string, TAB_OUTPUT> TabOutput_Map = {
+  MakePair("CSV", TAB_OUTPUT::TAB_CSV)
+  MakePair("TECPLOT", TAB_OUTPUT::TAB_TECPLOT)
 };
 
 /*!

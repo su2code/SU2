@@ -1989,7 +1989,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to input/output files and formats ---*/
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
-  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
+  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
   /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
   addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
@@ -3309,7 +3309,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY){
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
     }
-    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL || VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY)) {
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_ASCII || VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY)) {
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
     }
   }
@@ -6857,8 +6857,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
 
     switch (Tab_FileFormat) {
-      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
-      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_OUTPUT::TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_OUTPUT::TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6883,8 +6883,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_SOL) {
     switch (Tab_FileFormat) {
-      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
-      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_OUTPUT::TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_OUTPUT::TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
