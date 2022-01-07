@@ -34,12 +34,12 @@ CSU2MeshFileWriter::CSU2MeshFileWriter(CParallelDataSorter *valDataSorter,
                                        unsigned short valiZone, unsigned short valnZone) :
    CFileWriter(valDataSorter, fileExt), iZone(valiZone), nZone(valnZone) {}
 
-void CSU2MeshFileWriter::Write_Data(string valFileName) {
+void CSU2MeshFileWriter::Write_Data(string val_filename) {
 
   ofstream output_file;
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  valFileName.append(fileExt);
+  val_filename.append(fileExt);
 
   /*--- Only the FIRST node writes the header (it does not matter if that is the master). ---*/
 
@@ -47,9 +47,9 @@ void CSU2MeshFileWriter::Write_Data(string valFileName) {
     /*--- For multizone-cases this only works if the all zonal meshes are in one file.
           If the meshes are separate for each zone another solution has to be found. ---*/
     if (iZone==0) {
-      output_file.open(valFileName);
+      output_file.open(val_filename);
     } else {
-      output_file.open(valFileName, ios::app);
+      output_file.open(val_filename, ios::app);
     }
 
     if (iZone==0 && nZone>1) {
@@ -73,7 +73,7 @@ void CSU2MeshFileWriter::Write_Data(string valFileName) {
 
   for (int iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      output_file.open(valFileName, ios::app);
+      output_file.open(val_filename, ios::app);
 
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(TRIANGLE); iElem++) {
         output_file << "5\t";
@@ -123,7 +123,7 @@ void CSU2MeshFileWriter::Write_Data(string valFileName) {
   /*--- Write the node coordinates. ---*/
 
   if (rank == 0) {
-    output_file.open(valFileName, ios::app);
+    output_file.open(val_filename, ios::app);
     output_file << "NPOIN= " << dataSorter->GetnPointsGlobal() << "\n";
     output_file.close();
   }
@@ -132,7 +132,7 @@ void CSU2MeshFileWriter::Write_Data(string valFileName) {
 
   for (int iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      output_file.open(valFileName, ios::app);
+      output_file.open(val_filename, ios::app);
       output_file.precision(15);
 
       for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
@@ -158,7 +158,7 @@ void CSU2MeshFileWriter::Write_Data(string valFileName) {
 
   if (rank == MASTER_NODE) {
 
-    output_file.open(valFileName, ios::app);
+    output_file.open(val_filename, ios::app);
 
     /*--- Read the boundary information ---*/
 

@@ -36,7 +36,7 @@ CCSVFileWriter::~CCSVFileWriter(){
 
 }
 
-void CCSVFileWriter::Write_Data(string valFileName){
+void CCSVFileWriter::Write_Data(string val_filename){
 
   /*--- Routine to write the surface CSV files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the
@@ -123,10 +123,10 @@ void CCSVFileWriter::Write_Data(string valFileName){
   if (rank == MASTER_NODE) {
 
     /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-    valFileName.append(fileExt);
+    val_filename.append(fileExt);
 
     /*--- Open the CSV file and write the header with variable names. ---*/
-    Surf_file.open(valFileName.c_str(), ios::out);
+    Surf_file.open(val_filename.c_str(), ios::out);
     Surf_file << "\"Point\",";
     for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
       Surf_file << "\"" << fieldNames[iVar] << "\",";

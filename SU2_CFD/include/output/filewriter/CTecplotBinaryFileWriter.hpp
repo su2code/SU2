@@ -59,9 +59,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in tecplot binary file format
-   * \param[in] valFileName - The name of the file
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data(string valFileName) override;
+  void Write_Data(string val_filename) override;
 
   /*!
    * \brief Calculate the partitioning of nodes to determine:

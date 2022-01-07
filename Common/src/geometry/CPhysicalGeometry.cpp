@@ -4717,7 +4717,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 
       jElem = nodes->GetElem(iPoint, iElem);
 
-      /*--- If we find the point iPoint in the surronding element ---*/
+      /*--- If we find the point iPoint in the surrounding element ---*/
 
       for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++) {
 

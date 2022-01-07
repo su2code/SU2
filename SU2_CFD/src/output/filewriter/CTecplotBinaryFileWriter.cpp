@@ -39,10 +39,10 @@ CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(CParallelDataSorter *valDataS
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
-void CTecplotBinaryFileWriter::Write_Data(string valFileName){
+void CTecplotBinaryFileWriter::Write_Data(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  valFileName.append(fileExt);
+  val_filename.append(fileExt);
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -82,7 +82,7 @@ void CTecplotBinaryFileWriter::Write_Data(string valFileName){
   tecplot_variable_names << fieldNames[fieldNames.size()-1];
 
   void* file_handle = NULL;
-  int32_t err = tecFileWriterOpen(valFileName.c_str(), data_set_title.c_str(), tecplot_variable_names.str().c_str(),
+  int32_t err = tecFileWriterOpen(val_filename.c_str(), data_set_title.c_str(), tecplot_variable_names.str().c_str(),
     FILEFORMAT_SZL, FILETYPE_FULL, (int32_t)FieldDataType_Double, NULL, &file_handle);
   if (err) cout << "Error opening Tecplot file '" << val_filename << "'" << endl;
 
@@ -592,7 +592,7 @@ void CTecplotBinaryFileWriter::Write_Data(string valFileName){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(valFileName);
+  fileSize = Determine_Filesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

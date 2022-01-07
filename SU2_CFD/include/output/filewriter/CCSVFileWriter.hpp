@@ -34,10 +34,10 @@ public:
 
   /*!
    * \brief Construct a file writer using field name and the data sorter.
-   * \param[in] valFileName - The name of the file
+   * \param[in] val_filename - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CCSVFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
+  CCSVFileWriter(string val_filename, CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Construct a file writer using field name and the data sorter.
@@ -52,9 +52,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in CSV file format
-   * \param[in] valFileName - The name of the file
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data(string valFileName) override;
+  void Write_Data(string val_filename) override;
 
 };
 

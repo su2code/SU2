@@ -58,10 +58,10 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 
 }
 
-void CParaviewVTMFileWriter::Write_Data(string valFileName){
+void CParaviewVTMFileWriter::Write_Data(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-  valFileName.append(fileExt);
+  val_filename.append(fileExt);
 
 
   /*--- If we are in the first zone, create new file and write the file header,
@@ -70,9 +70,9 @@ void CParaviewVTMFileWriter::Write_Data(string valFileName){
   if (rank == MASTER_NODE){
    ofstream multiBlockFile;
     if (iZone == 0)
-      multiBlockFile.open (valFileName.c_str());
+      multiBlockFile.open (val_filename.c_str());
     else
-      multiBlockFile.open(valFileName.c_str(), ios::app);
+      multiBlockFile.open(val_filename.c_str(), ios::app);
 
     if (iZone == 0){
       multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;

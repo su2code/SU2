@@ -49,7 +49,7 @@ CParaviewXMLFileWriter::~CParaviewXMLFileWriter(){
 
 }
 
-void CParaviewXMLFileWriter::Write_Data(string valFileName){
+void CParaviewXMLFileWriter::Write_Data(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -69,7 +69,7 @@ void CParaviewXMLFileWriter::Write_Data(string valFileName){
 
   char str_buf[255];
 
-  OpenMPIFile(valFileName);
+  OpenMPIFile(val_filename);
 
   dataOffset = 0;
 

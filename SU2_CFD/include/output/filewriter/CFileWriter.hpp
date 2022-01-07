@@ -117,9 +117,9 @@ public:
 
   /*!
    * \brief Write sorted data to file
-   * \param[in] valFileName - The name of the file
+   * \param[in] val_filename - The name of the file
    */
-  virtual void Write_Data(string valFileName){}
+  virtual void Write_Data(string val_filename){}
 
   /*!
    * \brief Get the bandwith used for the last writing
@@ -170,10 +170,10 @@ protected:
 
   /*!
    * \brief Open a file to write using MPI I/O. Already existing file is deleted.
-   * \param[in] valFileName - The name of the file
+   * \param[in] val_filename - The name of the file
    * \return Boolean indicating whether the opening was successful.
    */
-  bool OpenMPIFile(string valFileName);
+  bool OpenMPIFile(string val_filename);
 
   /*!
    * \brief Close a file using MPI I/O.
