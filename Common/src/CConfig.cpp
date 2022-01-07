@@ -841,6 +841,8 @@ void CConfig::SetPointersNull(void) {
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
   Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;
 
+  Marker_FarField_Cat             = nullptr;
+
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
   DoubleInfo_WallFunctions = nullptr;
@@ -1284,6 +1286,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
 
+  /*--- Options related to varying freestream boundary condition ---*/
+  addBoolOption("VARYING_FREESTREAM", varying_freestream, false);
+  /* DESCRIPTION: New freestream Mach.  */
+  addDoubleOption("NEW_FREESTREAM_MACH", new_freestream_mach, 10.0);
+  /* DESCRIPTION: x coordinate of the most-left upstream boundary.  */
+  addDoubleOption("X_UPSTREAM", x_upstream, 0.0);
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -1416,6 +1424,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
   /*!\brief MARKER_FAR\n DESCRIPTION: Far-field boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
+  /*!\brief MARKER_FAR\n DESCRIPTION: Far-field boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_FAR_CAT", nMarker_FarField_Cat, Marker_FarField_Cat);  
   /*!\brief MARKER_SYM\n DESCRIPTION: Symmetry boundary condition \ingroup Config*/
   addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
   /*!\brief MARKER_NEARFIELD\n DESCRIPTION: Near-Field boundary condition \ingroup Config*/
@@ -5031,7 +5041,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
-  iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
+  iMarker_FarField, iMarker_FarField_Cat, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
   iMarker_Smoluchowski_Maxwell,
@@ -5054,7 +5064,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Compute the total number of markers in the config file ---*/
 
-  nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
+  nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_FarField_Cat + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
@@ -5159,6 +5169,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = FAR_FIELD;
     iMarker_CfgFile++;
   }
+
+  for (iMarker_FarField_Cat = 0; iMarker_FarField_Cat < nMarker_FarField_Cat; iMarker_FarField_Cat++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_FarField_Cat[iMarker_FarField_Cat];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = FAR_FIELD_CAT;
+    iMarker_CfgFile++;
+  }   
 
   for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_SymWall[iMarker_SymWall];
@@ -5537,7 +5553,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
-  unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
+  unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField, iMarker_FarField_Cat,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
@@ -6798,6 +6814,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_FarField_Cat != 0) {
+    BoundaryTable << "Far-field-Cat";
+    for (iMarker_FarField_Cat = 0; iMarker_FarField_Cat < nMarker_FarField_Cat; iMarker_FarField_Cat++) {
+      BoundaryTable << Marker_FarField_Cat[iMarker_FarField_Cat];
+      if (iMarker_FarField_Cat < nMarker_FarField_Cat-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }   
+
   if (nMarker_SymWall != 0) {
     BoundaryTable << "Symmetry plane";
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
@@ -7806,6 +7831,7 @@ CConfig::~CConfig(void) {
 
                delete[] Marker_Euler;
             delete[] Marker_FarField;
+            delete[] Marker_FarField_Cat;
               delete[] Marker_Custom;
              delete[] Marker_SymWall;
             delete[] Marker_PerBound;

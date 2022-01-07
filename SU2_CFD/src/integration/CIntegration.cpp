@@ -137,6 +137,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
+      case FAR_FIELD_CAT:
+        solver_container[MainSolver]->BC_Far_Field_Cat(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        break;           
       case SYMMETRY_PLANE:
         if (!config->GetNEMOProblem())
           solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);

@@ -1153,6 +1153,7 @@ enum BC_TYPE {
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
+  FAR_FIELD_CAT = 100,
 };
 
 /*!

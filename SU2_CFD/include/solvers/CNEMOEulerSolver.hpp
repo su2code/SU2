@@ -234,6 +234,10 @@ public:
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
+  void BC_Far_Field_Cat(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;  
+
+
   /*!
      * \brief Impose the symmetry boundary condition using the residual.
      * \param[in] geometry - Geometrical definition of the problem.

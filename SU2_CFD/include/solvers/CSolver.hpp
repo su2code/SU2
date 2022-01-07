@@ -1140,6 +1140,14 @@ public:
                                    CConfig *config,
                                    unsigned short val_marker) { }
 
+inline virtual void BC_Far_Field_Cat(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics,
+                                   CConfig *config,
+                                   unsigned short val_marker) { }  
+
+
   /*!
    * \brief Impose via the residual the Euler boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.

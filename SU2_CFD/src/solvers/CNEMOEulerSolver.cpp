@@ -1731,6 +1731,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   }
 
   config->SetDensity_FreeStream(Density_FreeStream);
+  config->SetSoundSpeed_FreeStream(soundspeed);
 
   /*-- Compute the freestream energy. ---*/
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
@@ -2039,14 +2040,18 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *V_infty, *V_domain, *U_domain,*U_infty;
 
+  su2double *U_aux = new su2double[nVar];
+  su2double *V_aux = new su2double[nPrimVar];
+
   /*--- Set booleans from configuration parameters ---*/
   //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
+  bool varying_freestream = config->GetVarying_FreeStream();
 
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
@@ -2072,9 +2077,223 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       U_infty  = node_infty->GetSolution(0);
       V_infty  = node_infty->GetPrimitive(0);
 
-      /*--- Pass conserved & primitive variables to CNumerics ---*/
-      conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      for (iVar = 0; iVar < nVar; iVar++)     U_aux[iVar]=node_infty->GetSolution(0,iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_aux[iVar]=node_infty->GetPrimitive(0,iVar);
+
+      unsigned short VEL_INDEX = nodes->GetVelIndex();
+      unsigned short H_INDEX = nodes->GetHIndex();
+
+      // This is done assuming horizontal freestream, from left to right, increase in Mach number
+
+      if (varying_freestream) {
+
+        su2double x0               = config->Get_Upstream_x(); //from left to right
+        su2double mach1            = config->GetNewMach_FreeStream();
+        su2double sqvel2           = config->GetModVel_FreeStream()*config->GetModVel_FreeStream();
+        su2double E2   = config->GetEnergy_FreeStream();
+        su2double p1 = config->GetPressure_FreeStream();
+        su2double soundspeed1    = config->GetSoundSpeed_FreeStream();
+        su2double rho1           = config->GetDensity_FreeStream();   
+
+        su2double x              = geometry->nodes->GetCoord(iPoint,0);
+        su2double Physical_dt    = config->GetDelta_UnstTime();
+        unsigned long TimeIter   = config->GetTimeIter();
+        su2double v = 0.0, v_t = 0.0;
+
+        su2double Physical_t   = TimeIter * Physical_dt;
+        su2double v1 = mach1*soundspeed1; //horizontal freestream //new velocity
+        su2double v2 = V_infty[VEL_INDEX];  //horizontal freestream //old velocity
+
+        //su2double tol          = 1.0E-6;    // Tolerance for the Bisection method
+        //unsigned short maxIter = 50;        // Maximum Bisection method iterations
+        //bool convg = false;
+
+        su2double xs = x - x0 - v1 * Physical_t;
+        //v= v1;
+
+        //cout << endl << "x = "  << x << endl;
+        //cout << endl << "x0 = " << x0 << endl;
+        //cout << endl << "v1 = "  << v1 << endl;
+        //cout << endl << "Physical_t = "  << Physical_t << endl;
+        //cout << endl << "xs = " << xs << endl;
+//
+        nodes->Set_x_new_freestream(iPoint, xs);
+
+
+        su2double k = 100.0;
+
+        //cout << endl << endl << "bc farfield iPoint=" << iPoint << endl;
+        //cout << endl << "x=" << x << endl;
+        //cout << "x_new_freestream=" << x_new_freestream << endl;
+        //cout << "old_velocity=" << old_velocity << endl;
+        //cout << "new_velocity=" << new_velocity << endl;
+
+        //for (unsigned short iIter = 0; iIter < maxIter; iIter++){
+//
+        //  x_new_freestream = x - x0 - v_t*Physical_t;
+        //  v = new_velocity; //old_velocity + (new_velocity - old_velocity) * (erf(-k*x_new_freestream)); //old_velocity + (new_velocity - old_velocity) * (-erf(k*x_new_freestream)); //increase in Mach number
+//
+        //  if (fabs(v_t - v) < tol) {
+        //    convg = true;
+        //    //cout << "x_freestream and new freestream velocity CONVERGED" << endl;
+        //    break;
+        //  } else {
+        //    v_t = v;
+        //  }
+        //}
+        //if (!convg) {
+        //  x_new_freestream = x - x0 - old_velocity*Physical_t;
+        //  v = old_velocity;
+        //  cout <<"Warning: x_freestream and new freestream velocity did not converge, error= "<< fabs(v_t-v)<<endl;
+        //}
+
+        if (xs < 0) {
+
+          v = v2 + (v1 - v2) * (erf(-k*xs));
+          U_aux[nSpecies]      = rho1*v;
+          U_aux[nSpecies+nDim] = rho1* (E2 - 0.5*sqvel2 + 0.5*v*v);
+          V_aux[VEL_INDEX]     = v;
+          V_aux[H_INDEX] = (U_aux[nSpecies+nDim] + p1)/rho1;
+
+         
+          //cout << "YES" << endl;
+          //cout << "V_aux[VEL_INDEX]=" << V_aux[VEL_INDEX] << endl;
+
+          /*--- Pass conserved & primitive variables to CNumerics ---*/
+          conv_numerics->SetConservative(U_domain, U_aux);
+          conv_numerics->SetPrimitive(V_domain, V_aux);
+
+
+        } else {
+
+          /*--- Pass conserved & primitive variables to CNumerics ---*/
+          conv_numerics->SetConservative(U_domain, U_infty);
+          conv_numerics->SetPrimitive(V_domain, V_infty);
+          //cout << "NO" << endl;
+          //cout << "V_infty[VEL_INDEX]=" << V_infty[VEL_INDEX] << endl;
+
+        }
+      } else {
+
+          conv_numerics->SetConservative(U_domain, U_infty);
+          conv_numerics->SetPrimitive(V_domain, V_infty);        
+
+      }
+
+      /*--- Pass supplementary information to CNumerics ---*/
+      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
+      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
+      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
+      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
+
+      /*--- Compute the convective residual (and Jacobian) ---*/
+      // Note: This uses the specified boundary num. method specified in driver_structure.cpp
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      /*--- Apply contribution to the linear system ---*/
+      LinSysRes.AddBlock(iPoint, residual);
+
+      //if (implicit)
+      //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+      if (viscous) {
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                                geometry->nodes->GetCoord(Point_Normal) );
+        visc_numerics->SetNormal(Normal);
+
+        /*--- Primitive variables, and gradient ---*/
+        visc_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                       node_infty->GetSolution(0) );
+        visc_numerics->SetConsVarGradient(nodes->GetGradient(iPoint),
+                                          node_infty->GetGradient(0) );
+        visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                                    node_infty->GetPrimitive(0) );
+        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                          node_infty->GetGradient_Primitive(0) );
+
+        /*--- Pass supplementary information to CNumerics ---*/
+        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
+        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
+        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
+        visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
+        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
+
+        /*--- Species diffusion coefficients ---*/
+        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
+                                         node_infty->GetDiffusionCoeff(0) );
+
+        /*--- Laminar viscosity ---*/
+        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                           node_infty->GetLaminarViscosity(0) );
+
+        /*--- Eddy viscosity ---*/
+        visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                        node_infty->GetEddyViscosity(0) );
+
+        /*--- Thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
+                                              node_infty->GetThermalConductivity(0));
+
+        /*--- Vib-el. thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
+                                                 node_infty->GetThermalConductivity_ve(0) );
+
+        /*--- Compute and update residual ---*/
+        auto residual = visc_numerics->ComputeResidual(config);
+
+        LinSysRes.SubtractBlock(iPoint, residual);
+        //if (implicit) {
+        //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        //}
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete [] Normal;
+}
+
+void CNEMOEulerSolver::BC_Far_Field_Cat(CGeometry *geometry, CSolver **solver_container,
+                                    CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                    CConfig *config, unsigned short val_marker) {
+
+  unsigned short iDim;
+  unsigned long iVertex, iPoint, Point_Normal;
+
+  su2double *V_infty, *V_domain, *U_domain,*U_infty;
+
+  /*--- Set booleans from configuration parameters ---*/
+  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool viscous  = config->GetViscous();
+  bool varying_freestream = config->GetVarying_FreeStream();
+
+  /*--- Allocate arrays ---*/
+  su2double *Normal = new su2double[nDim];
+
+  /*--- Loop over all the vertices on this boundary (val_marker) ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->nodes->GetDomain(iPoint)) {
+
+      /*--- Retrieve index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); //only used for implicit
+
+      /*--- Pass boundary node normal to CNumerics ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      /*--- Retrieve solution at the boundary node & free-stream ---*/
+      U_domain = nodes->GetSolution(iPoint);
+      V_domain = nodes->GetPrimitive(iPoint);
+
+      conv_numerics->SetConservative(U_domain, U_domain);
+      conv_numerics->SetPrimitive(V_domain, V_domain);        
 
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));

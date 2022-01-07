@@ -191,6 +191,7 @@ private:
   Current_UnstTimeND;             /*!< \brief Global time of the unsteady simulation. */
   unsigned short nMarker_Euler,   /*!< \brief Number of Euler wall markers. */
   nMarker_FarField,               /*!< \brief Number of far-field markers. */
+  nMarker_FarField_Cat,
   nMarker_Custom,                 /*!< \brief Number of custom markers. */
   nMarker_SymWall,                /*!< \brief Number of symmetry wall markers. */
   nMarker_PerBound,               /*!< \brief Number of periodic boundary markers. */
@@ -240,6 +241,7 @@ private:
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
+  *Marker_FarField_Cat,
   *Marker_Custom,
   *Marker_SymWall,                /*!< \brief Symmetry wall markers. */
   *Marker_PerBound,               /*!< \brief Periodic boundary markers. */
@@ -847,7 +849,8 @@ private:
   Pressure_FreeStream,        /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
-  Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  Soundspeed_FreeStream;
   su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
   Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
@@ -1161,6 +1164,12 @@ private:
   
   bool interpolate_solution;                /*!< \brief Flag for solution interpolation */
   string Interpolated_Restart_FileName;     /*!< \brief Name of interpolated restart file. */
+
+
+  /* Configure options for varying freestream conditions in NEMO */
+  bool varying_freestream;                  /*!< \brief Option for activating varying freestream boundary condition. */
+  su2double new_freestream_mach,            /*!< \brief New freestream Mach number. */
+  x_upstream;
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1703,6 +1712,36 @@ public:
    * \return Freestream temperature.
    */
   su2double GetModVel_FreeStreamND(void) const { return ModVel_FreeStreamND; }
+
+  /*!
+   * \brief Get the freestream soundspeed.
+   * \return Value of the freestream speed of sound.
+   */
+  su2double GetSoundSpeed_FreeStream(void) { return Soundspeed_FreeStream; }    
+
+  /*!
+   * \brief Set the freestream soundspeed.
+   * \param[in] val_soundspeed_freestream - Value of the freestream speed of sound.
+   */
+  void SetSoundSpeed_FreeStream(su2double val_soundspeed_freestream) { Soundspeed_FreeStream = val_soundspeed_freestream; }  
+
+/*!
+   * \brief Get the new value of Mach number for the varying freestream boundary condition.
+   * \return New freestream Mach number.
+   */
+  su2double GetNewMach_FreeStream(void) const { return new_freestream_mach; }
+
+  /*!
+   * \brief Decide whether to apply the varying freestream boundary condition.
+   * \return <code>TRUE</code> if the varying freestream BC is to be applied, <code>FALSE</code> otherwise.
+   */
+  bool GetVarying_FreeStream(void) const { return varying_freestream; }
+
+  /*!
+   * \brief Get the x coordinate of the most-left upstream boundary.
+   * \return x coordinate of the most-left upstream boundary.
+   */
+  su2double Get_Upstream_x(void) const { return x_upstream; } 
 
   /*!
    * \brief Get the value of the laminar Prandtl number.

@@ -84,6 +84,8 @@ protected:
 
   VectorType symmetry;      /*!< \brief Nodes in symmetry planes. */
 
+  VectorType x_new_freestream;
+
 public:
 
   /*!
@@ -144,6 +146,9 @@ public:
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
   inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) override { Primitive(iPoint,iVar) = val_prim; }
+
+inline bool Set_x_new_freestream(unsigned long iPoint, su2double val_x_new_freestream) final
+                               { x_new_freestream(iPoint) = val_x_new_freestream; return false; }
 
   /*!
    * \brief Set the value of the primitive variables.

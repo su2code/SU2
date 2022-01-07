@@ -350,6 +350,10 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline virtual void SetRoe_Dissipation(unsigned long iPoint, su2double val_dissipation) {}
+  
+  inline virtual bool Set_x_new_freestream(unsigned long iPoint, su2double val_x_new_freestream) { return false; }
+
+  inline virtual su2double Get_x_new_freestream(unsigned long iPoint) const { return 0.0; }   
 
   /*!
    * \brief A virtual member.
