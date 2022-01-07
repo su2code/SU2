@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <limits>
 #include "CFlowVariable.hpp"
 
 /*!
