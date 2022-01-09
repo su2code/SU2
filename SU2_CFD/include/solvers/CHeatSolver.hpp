@@ -308,6 +308,27 @@ public:
   inline su2double GetTotal_AvgTemperature() const override { return Total_AverageT; }
 
   /*!
+   * \brief Compute objective output
+   * \param[in] config - Definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   */
+  void Evaluate_ObjFunc(const CConfig *config, CSolver**) override {
+    switch (config->GetKind_ObjFunc()) {
+      case TOTAL_HEATFLUX:
+        Total_ComboObj = Total_HeatFlux;
+        break;
+      case AVG_TEMPERATURE:
+        Total_ComboObj = Total_AverageT;
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj = Total_Custom_ObjFunc;
+        break;
+      default:
+        Total_ComboObj = 0.0;
+    }
+  }
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

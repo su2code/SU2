@@ -346,15 +346,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
-  bool heat         = (config->GetWeakly_Coupled_Heat());
-  bool turbo        = (config->GetBoolTurbomachinery());
-
   ObjFunc = 0.0;
-
-  direct_output->SetHistory_Output(geometry, solver, config,
-                                   config->GetTimeIter(),
-                                   config->GetOuterIter(),
-                                   config->GetInnerIter());
 
   /*--- Specific scalar objective functions ---*/
 
@@ -363,26 +355,15 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
   case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
 
-    solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
-
     /*--- Surface based obj. function ---*/
 
-    solver[FLOW_SOL]->Evaluate_ObjFunc(config);
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                     config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-    if (heat){
-      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
-      }
-      else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
-      }
-    }
 
-    /*--- This calls to be moved to a generic framework at a next stage         ---*/
+    /*--- These calls to be moved to a generic framework at a next stage        ---*/
     /*--- Some things that are currently hacked into output must be reorganized ---*/
-    if (turbo){
-
-      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+    if (config->GetBoolTurbomachinery()) {
       output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
       unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
@@ -390,44 +371,36 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
+        ObjFunc += output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections);
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
+        ObjFunc += output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections);
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
+        ObjFunc += output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections);
         break;
       default:
         break;
       }
-
-      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
-
     }
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
-    switch (config->GetKind_ObjFunc()){
-    case TOTAL_HEATFLUX:
-      ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
-      break;
-    case AVG_TEMPERATURE:
-      ObjFunc = solver[HEAT_SOL]->GetTotal_AvgTemperature();
-      break;
-    default:
-      break;
-    }
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                     config->GetOuterIter(), config->GetInnerIter());
+    ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
     break;
 
   case MAIN_SOLVER::DISC_ADJ_FEM:
     solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
-    solver[FEA_SOL]->Evaluate_ObjFunc(config);
+
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                   config->GetOuterIter(), config->GetInnerIter());
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
 
   default:
-    break;  
+    break;
   }
 
   if (rank == MASTER_NODE){

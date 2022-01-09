@@ -80,7 +80,6 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string ConvCriteria;            // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -436,7 +435,7 @@ private:
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
-  bool AddIndNeighbor;         /*!< \brief Include indirect neighbor in the agglomeration process. */
+  string CustomObjFunc;        /*!< \brief User-defined objective function. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -5178,6 +5177,11 @@ public:
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val) { Weight_ObjFunc[val_obj] = val; }
 
   /*!
+   * \brief Get the user expression for the custom objective function.
+   */
+  const string& GetCustomObjFunc() const { return CustomObjFunc; }
+
+  /*!
    * \brief Get the kind of sensitivity smoothing technique.
    * \return Kind of sensitivity smoothing technique.
    */
@@ -5468,12 +5472,6 @@ public:
    * \return Name of the file with the appropriate objective function extension.
    */
   string GetObjFunc_Extension(string val_filename) const;
-
-  /*!
-   * \brief Get the criteria for structural residual (relative/absolute).
-   * \return Relative/Absolute criteria for structural convergence.
-   */
-  unsigned short GetResidual_Criteria_FEM(void) const { return Res_FEM_CRIT; }
 
   /*!
    * \brief Get functional that is going to be used to evaluate the residual flow convergence.

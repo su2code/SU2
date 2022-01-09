@@ -45,11 +45,6 @@ public:
   CHeatOutput(CConfig *config, unsigned short nDim);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatOutput(void) override;
-
-  /*!
    * \brief Set the available history output fields
    * \param[in] config - Definition of the particular problem.
    */
