@@ -1739,7 +1739,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("CGNS", OUTPUT_TYPE::CGNS)
   MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
   MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
-  MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
+  MakePair("STL", OUTPUT_TYPE::STL_BINARY)
 };
 
 /*!
