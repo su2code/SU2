@@ -2115,7 +2115,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         //cout << endl << "x0 = " << x0 << endl;
         //cout << endl << "v1 = "  << v1 << endl;
         //cout << endl << "Physical_t = "  << Physical_t << endl;
-        //cout << endl << "xs = " << xs << endl;
+        cout << endl << "xs = " << xs << endl;
 //
         nodes->Set_x_new_freestream(iPoint, xs);
 
