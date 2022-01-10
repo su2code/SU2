@@ -1931,9 +1931,11 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
   addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
-  /*!\brief OBJECTIVE_FUNCTION
-   *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
+  /*!\brief OBJECTIVE_FUNCTION \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
+
+  /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
+  addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
@@ -3472,10 +3474,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         nObjW = nObj;
       }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n ") +
-                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
-                       string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
-                       string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
+        SU2_MPI::Error("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n"
+                       "For multiple surfaces per objective, either use one objective or list the objective multiple times.\n"
+                       "For multiple objectives per marker either use one marker or list the marker multiple times.\n"
+                       "Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION.",
                        CURRENT_FUNCTION);
       }
     }
@@ -3485,8 +3487,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (nObjW<nObj) {
     if (Weight_ObjFunc!= nullptr && nObjW>1) {
-      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+      SU2_MPI::Error("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"
+                     "be lenght 1, or be deleted from the config file (equal weights will be applied).", CURRENT_FUNCTION);
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
@@ -3518,19 +3520,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case SURFACE_SPECIES_VARIANCE:
         case CUSTOM_OBJFUNC:
           if (Kind_ObjFunc[iObj] != Obj_0) {
-            SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
-                           string("problem or as a single objective applied to multiple monitoring markers:\n")+
-                           string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
-                           string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
-                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n")+
-                           string("SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+            SU2_MPI::Error("The following objectives can only be used for the first surface in a multi-objective \n"
+                           "problem or as a single objective applied to multiple monitoring markers:\n"
+                           "INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n"
+                           "FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n"
+                           "SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n"
+                           "SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n"
+                           "SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n", CURRENT_FUNCTION);
           }
           break;
         default:
           break;
       }
     }
+  }
+
+  if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
+    SU2_MPI::Error("The expression for the custom objective function was not set.\n"
+                   "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
   }
 
   /*--- Check for unsteady problem ---*/
@@ -7325,6 +7332,13 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   // now fill the option value vector
   option_value.clear();
   last_pos = value_part.find_first_not_of(delimiters, 0);
+
+  // detect a raw string
+  if (value_part[last_pos] == '\'' && value_part.back() == '\'') {
+    option_value.push_back(value_part.substr(last_pos+1, value_part.size()-last_pos-2));
+    return true;
+  }
+
   pos = value_part.find_first_of(delimiters, last_pos);
   while (string::npos != pos || string::npos != last_pos) {
     // add token to the vector<string>
@@ -8221,15 +8235,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_SPECIES_VARIANCE:    AdjExt = "_specvar";  break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
-        case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
-        case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
         case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
-        case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
-        case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
-        case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
-        case EULERIAN_WORK:               AdjExt = "_ew";       break;
         case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
-        case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
         case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
