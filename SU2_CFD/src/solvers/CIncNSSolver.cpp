@@ -750,7 +750,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         const su2double Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
         q_w = Transfer_Coefficient * (Tinfinity - T_Wall);
       }
-    
+
       /*--- Incompressible formulation ---*/
 
       su2double Density_Wall = nodes->GetDensity(iPoint);
@@ -763,7 +763,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       const su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
 
-      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
+      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall);
 
       su2double TauTangent[MAXNDIM] = {0.0};
       GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);

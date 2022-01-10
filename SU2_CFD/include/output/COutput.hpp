@@ -39,6 +39,16 @@
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
+/*--- AD workaround for a cmath function not defined in CoDi. ---*/
+namespace mel {
+namespace internal {
+inline su2double hypot(const su2double& a, const su2double& b) {
+  return sqrt(a*a + b*b);
+}
+}
+}
+#include "mel.hpp"
+
 class CGeometry;
 class CSolver;
 class CFileWriter;
@@ -158,6 +168,20 @@ protected:
 
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
+
+  /** \brief Struct to hold a parsed user-defined expression. */
+  struct CustomHistoryOutput {
+    mel::ExpressionTree<passivedouble> expression;
+    /*--- Pointers to values in the history output maps, to avoid key lookup every time. ---*/
+    std::vector<const su2double*> symbolValues;
+    bool ready = false;
+
+    su2double eval() const {
+      return mel::Eval<su2double>(expression, [&](int i) {return *symbolValues[i];});
+    }
+  };
+
+  CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
    /*----------------------------- Volume output ----------------------------*/
 
@@ -371,11 +395,11 @@ public:
    * \param[in] field - Name of the field
    * \return Value of the field
    */
-  su2double GetHistoryFieldValue(string field){
+  su2double GetHistoryFieldValue(const string& field) const {
     return historyOutput_Map.at(field).value;
   }
 
-  su2double GetHistoryFieldValuePerSurface(string field, unsigned short iMarker){
+  su2double GetHistoryFieldValuePerSurface(const string& field, unsigned short iMarker) const {
     return historyOutputPerSurface_Map.at(field)[iMarker].value;
   }
 
@@ -398,7 +422,7 @@ public:
    * \brief Get the list of all output fields
    * \return Vector container all output fields
    */
-  vector<string> GetHistoryOutput_List(){
+  const vector<string>& GetHistoryOutput_List() const {
     return historyOutput_List;
   }
 
@@ -406,7 +430,7 @@ public:
    * \brief Get the map containing all output fields
    * \return Map containing all output fields
    */
-  map<string, HistoryOutputField> GetHistoryFields(){
+  const map<string, HistoryOutputField>& GetHistoryFields() const {
     return historyOutput_Map;
   }
 
@@ -447,7 +471,7 @@ public:
   /*!
    * \brief Print a list of all history output fields to screen.
    */
-  void PrintHistoryFields();
+  void PrintHistoryFields() const;
 
   /*!
    * \brief Print a list of all volume output fields to screen.
@@ -581,6 +605,13 @@ protected:
   }
 
   /*!
+   * \brief Setup a custom history output object for a given expression.
+   * \param[in] expression - Some user-defined math with the history field names as variables.
+   * \param[out] output - Custom output ready to evaluate.
+   */
+  void SetupCustomHistoryOutput(const string& expression, CustomHistoryOutput& output) const;
+
+  /*!
    * \brief Add a new field to the volume output.
    * \param[in] name - Name for referencing it (in the config file and in the code).
    * \param[in] field_name - Header that is printed in the output files.
@@ -683,6 +714,15 @@ protected:
    */
   void AllocateDataSorters(CConfig *config, CGeometry *geometry);
 
+  /*!
+   * \brief Computes the custom and combo objectives.
+   * \note To be called after all other history outputs are set.
+   * \param[in] idxSol - Index of the main solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  void SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver);
+
   /*--------------------------------- Virtual functions ---------------------------------------- */
 public:
 
@@ -775,9 +815,8 @@ protected:
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void LoadMultizoneHistoryData(COutput **output, CConfig **config) {}
+  inline virtual void LoadMultizoneHistoryData(const COutput* const* output) {}
 
   /*!
    * \brief Set the available history output fields
@@ -788,9 +827,8 @@ protected:
   /*!
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem per zone.
    */
-  inline virtual void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {}
+  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output) {}
 
   /*!
    * \brief Write any additional files defined for the current solver.

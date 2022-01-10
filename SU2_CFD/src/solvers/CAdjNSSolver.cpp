@@ -39,6 +39,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ifstream restart_file;
   string filename, AdjExt;
 
+  adjoint = true;
+
   su2double RefArea    = config->GetRefArea();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();

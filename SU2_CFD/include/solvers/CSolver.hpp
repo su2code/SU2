@@ -101,6 +101,9 @@ protected:
   su2activematrix Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
   su2activematrix Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
 
+  su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
+  su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
+
   /*--- Variables that need to go. ---*/
 
   su2double *Residual,      /*!< \brief Auxiliary nVar vector. */
@@ -762,8 +765,9 @@ public:
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
+  inline virtual void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {};
 
   /*!
    * \brief A virtual member.
@@ -1688,20 +1692,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_Total_CT - Value of the total thrust coefficient.
    */
   inline virtual void SetTotal_CT(su2double val_Total_CT) { }
@@ -1759,6 +1749,19 @@ public:
                                           CSolver **solver_container,
                                           CNumerics *numerics,
                                           CConfig *config) { }
+
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  inline su2double GetTotal_ComboObj() const { return Total_ComboObj; }
+
+  /*!
+   * \brief Sets the value of the custom objective function.
+   * \param[in] value - Value of the total custom objective function.
+   */
+  inline void SetTotal_Custom_ObjFunc(su2double value) { Total_Custom_ObjFunc = value; }
 
   /*!
    * \brief A virtual member.
@@ -2177,20 +2180,6 @@ public:
   inline virtual su2double GetCD_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
-   * \author H. Kline
-   * \brief Set the total "combo" objective (weighted sum of other values).
-   * \param[in] ComboObj - Value of the combined objective.
-   */
-  inline virtual void SetTotal_ComboObj(su2double ComboObj) {}
-
-  /*!
-   * \author H. Kline
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   * \return Value of the "combo" objective values.
-   */
-  inline virtual su2double GetTotal_ComboObj(void) const { return 0;}
-
-  /*!
    * \brief A virtual member.
    * \return Value of the sideforce coefficient (inviscid + viscous contribution).
    */
@@ -2273,13 +2262,6 @@ public:
    * \return Value of the Near-Field Pressure coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_CNearFieldOF() const { return 0; }
-
-  /*!
-   * \author H. Kline
-   * \brief Add to the value of the total 'combo' objective.
-   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
-   */
-  inline virtual void AddTotal_ComboObj(su2double val_obj) {}
 
   /*!
    * \brief A virtual member.
@@ -2464,12 +2446,6 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_DC60() const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the custom objective function.
-   */
-  inline virtual su2double GetTotal_Custom_ObjFunc() const { return 0; }
 
   /*!
    * \brief A virtual member.

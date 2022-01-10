@@ -342,6 +342,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   if (commType == PERIODIC_NONE) return;
 
+  if (rotate_periodic && config->GetNEMOProblem()) {
+    SU2_MPI::Error("The NEMO solvers do not support rotational periodicity yet.", CURRENT_FUNCTION);
+  }
+
   /*--- Local variables ---*/
 
   bool boundary_i, boundary_j;
@@ -816,7 +820,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 Rotate(translation, distance, rotCoord_j);
 
-                /*--- Get conservative solution and rotte if necessary. ---*/
+                /*--- Get conservative solution and rotate if necessary. ---*/
 
                 for (iVar = 0; iVar < ICOUNT; iVar++)
                   rotPrim_j[iVar] = field(jPoint,iVar);

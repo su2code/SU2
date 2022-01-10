@@ -672,7 +672,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           break;
 
         default:
-          break;  
+          break;
       }
 
       /*--- Output a file with the forces breakdown. ---*/
@@ -704,11 +704,11 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*-- Compute the total objective if a "combo" objective is used ---*/
 
     if (output_comboObj) {
-      solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
       switch (config[val_iZone]->GetKind_Solver()) {
       case MAIN_SOLVER::EULER:                   case MAIN_SOLVER::NAVIER_STOKES:                   case MAIN_SOLVER::RANS:
       case MAIN_SOLVER::INC_EULER:               case MAIN_SOLVER::INC_NAVIER_STOKES:               case MAIN_SOLVER::INC_RANS:
-        solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
+        solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone],
+                                                                                       solver_container[val_iZone][val_iInst][FinestMesh]);
         break;
       default:
         break;
@@ -944,7 +944,6 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_CFz            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFz();
         Total_ComboObj       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
         Total_AoA            = config[val_iZone]->GetAoA() - config[val_iZone]->GetAoA_Offset();
-        Total_Custom_ObjFunc = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
 
         if (thermal) {
           Total_Heat         = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
@@ -1652,7 +1651,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 break;
               default:
-                break;  
+                break;
               }
             }
             else {
@@ -1842,19 +1841,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "      VMS(Max)"<<  endl;
               }
               else if (nonlinear_analysis) {
-                switch (config[val_iZone]->GetResidual_Criteria_FEM()) {
-                  case RESFEM_RELATIVE:
-                    cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
-                    break;
-                  case RESFEM_ABSOLUTE:
-                    cout << "   Res[UTOL-A]" << "   Res[RTOL-A]" << "   Res[ETOL-A]"  << "      VMS(Max)"<<  endl;
-                    break;
-                  default:
-                    cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
-                    break;
-                }
-            }
-           break;
+                cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
+              }
+            break;
 
             case MAIN_SOLVER::ADJ_EULER :              case MAIN_SOLVER::ADJ_NAVIER_STOKES :
             case MAIN_SOLVER::DISC_ADJ_EULER:          case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
@@ -1976,7 +1965,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
            break;
 
           default:
-            break; 
+            break;
           }
         }
       }
@@ -2853,7 +2842,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         }
         break;
       default:
-        break;  
+        break;
     }
 
 

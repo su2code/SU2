@@ -125,13 +125,10 @@ protected:
   void SetReferenceValues(const CConfig& config) final;
 
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CIncEulerSolver() : CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>() {}
+  CIncEulerSolver() = delete;
 
   /*!
-   * \overload
+   * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Grid level.
@@ -243,9 +240,15 @@ public:
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  inline void Evaluate_ObjFunc(const CConfig *config) final {
+  void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) final {
     Total_ComboObj = EvaluateCommonObjFunc(*config);
+
+    if (config->GetWeakly_Coupled_Heat()) {
+      solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
+      Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();
+    }
   }
 
   /*!

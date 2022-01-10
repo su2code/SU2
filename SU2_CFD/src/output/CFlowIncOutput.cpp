@@ -298,6 +298,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetRotatingFrameCoefficients(config, flow_solver);
 
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
+
 }
 
 void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
