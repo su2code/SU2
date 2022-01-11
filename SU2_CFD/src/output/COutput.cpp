@@ -357,6 +357,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
   CFileWriter *fileWriter = nullptr;
 
+  /*--- if it is still present, strip the extension (suffix) from the filename ---*/
+  unsigned short lastindex = fileName.find_last_of(".");
+  fileName = fileName.substr(0, lastindex);
+
   string filename_iter;
 
   std::stringstream inner_iter_ss;
@@ -524,7 +528,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         if (fileName.empty())
           fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
-
         /*--- Sort volume connectivity ---*/
 
         volumeDataSorter->SortConnectivity(config, geometry, true);
@@ -550,8 +553,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         /*--- Open a block for the zone ---*/
 
         vtmWriter->StartBlock(multiZoneHeaderString);
-
-        //fileName = "Internal";
 
         /*--- Open a block for the internal (volume) data and add the dataset ---*/
 
@@ -804,7 +805,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
     fileWriter->Write_Data(fileName);
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
-
   
     /*--- Write data with iteration number to file ---*/
 
