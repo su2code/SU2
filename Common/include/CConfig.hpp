@@ -5394,12 +5394,21 @@ public:
 
   /*!
    * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
-   * \param[in] config - Definition of the particular problem.
    * \param[in] filename - the base filename.
    * \param[in] ext - the extension to be added.
+   * \param[in] Iter - the current iteration
    * \return The new filename
    */
   string GetFilename(string filename, string ext, int Iter) const;
+
+  /*!
+   * \brief Add steady iteration number to the filename (does not overwrite previous files)
+   * \param[in] filename - the base filename.
+   * \param[in] inner_iter - the inner iterations
+   * \param[in] outer_iter - the outer iterations
+   * \return The new filename
+   */
+  string GetFilename_Iter(string filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5409,18 +5418,26 @@ public:
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iZone - the zone ID.
+   * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iInst - the current instance.
+   * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iInst - the current instance.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const;
@@ -5483,6 +5500,7 @@ public:
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
+   * \param[in] ext - the filename extension.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
   string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
@@ -5608,6 +5626,7 @@ public:
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
    * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val_ind - value of initial deformation.
    * \param[in] val    - Value of the design variable.
    */
   void SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
@@ -5655,7 +5674,6 @@ public:
 
   /*!
    * \brief Set the type of dynamic mesh motion.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
    */
   void SetKind_GridMovement(unsigned short motion_Type) { Kind_GridMovement = motion_Type; }
@@ -5774,7 +5792,7 @@ public:
 
   /*!
    * \brief Get the pitching phase of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] iDim - spatial component.
    * \return pitching phase of the mesh.
    */
   su2double GetPitching_Phase(unsigned short iDim) const { return Pitching_Phase[iDim];}
@@ -5804,7 +5822,6 @@ public:
 
   /*!
    * \brief Get the plunging amplitude of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] iDim - spatial component
    * \return Plunging amplitude of the mesh.
    */

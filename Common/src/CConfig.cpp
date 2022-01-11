@@ -8100,6 +8100,20 @@ string CConfig::GetFilename(string filename, string ext, int timeIter) const {
   return filename;
 }
 
+string CConfig::GetFilename_Iter(string filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const {
+
+  std::stringstream inner_iter_ss;
+  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
+  std::stringstream outer_iter_ss;
+  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << curOuterIter;
+
+  if (GetMultizone_Problem())
+    filename_iter.append(outer_iter_ss.str());
+  else
+    filename_iter.append(inner_iter_ss.str());
+  return filename_iter;
+}
+
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) const {
 
   string UnstExt="", UnstFilename = val_filename;

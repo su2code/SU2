@@ -28,6 +28,8 @@
 #pragma once
 
 #include "CFileWriter.hpp"
+#include "../../../Common/include/CConfig.hpp"
+
 
 class CParaviewVTMFileWriter final: public CFileWriter{
 
@@ -40,6 +42,12 @@ class CParaviewVTMFileWriter final: public CFileWriter{
    * \brief The folder name where all the files associated with the datasets will be stored
    */
   string folderName;
+
+
+  /*!
+   * \brief The iteration number that may be appended to the folder name
+   */
+  string iterationNumber;
 
   /*!
    * \brief The current zone index
@@ -80,7 +88,7 @@ public:
    * \param[in] valiZone - The index of the current zone
    * \param[in] valnZone - The total number of zones
    */
-  CParaviewVTMFileWriter(string valFolderName, su2double valTime, unsigned short valiZone, unsigned short valnZone);
+  CParaviewVTMFileWriter(su2double valTime, unsigned short valiZone, unsigned short valnZone);
 
   /*!
    * \brief Destructor
@@ -93,13 +101,30 @@ public:
    */
   void Write_Data(string val_filename) override;
 
+    /*!
+   * \brief Write all data of the zones, boundaries into the folder
+   * \param[in] val_foldername - The name of the file folder
+   * \param[in] config - The config options
+   * \param[in] multiZoneHeaderString 
+   * \param[in] volumeDataSorter - sorted volume data
+   * \param[in] surfaceDataSorter - sorted surface data
+   * \param[in] geometry - the geometry of the problem
+   */
+  void WriteFolderData(string foldername, CConfig *config, 
+                       string multiZoneHeaderString, 
+                       CParallelDataSorter* volumeDataSorter,
+                       CParallelDataSorter* surfaceDataSorter,
+                       CGeometry *geometry);
+
+
   /*!
    * \brief Add a new dataset by writing data from a datasorter to file and adding it to the vtm file
    * \param[in] name - The name of the dataset
    * \param[in] file - The name of the vtu dataset file to write
    * \param[in] dataSorter - Datasorter object containing the actual data. Note, data must be sorted.
    */
-  void AddDataset(string name, string file, CParallelDataSorter* dataSorter);
+  //void AddDataset(string name, string file, CParallelDataSorter* dataSorter);
+  void AddDataset(string foldername, string name, string file, CParallelDataSorter* dataSorter);
 
   /*!
    * \brief Start a new block
