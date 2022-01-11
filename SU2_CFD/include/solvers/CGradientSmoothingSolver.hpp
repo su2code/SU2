@@ -66,6 +66,8 @@ public:
 
   CSquareMatrixCM hessian;                   /*!< \brief The approximated Hessian with respect to the design variables. */
 
+  std::vector<bool> visited;                 /*! <\brief Stores already visited points for surface applications with multiple markers. */
+
   /*!
    * \brief The highest level in the variable hierarchy all derived solvers can safely use,
    * CVariable is the common denominator between the FEA and Mesh deformationd variables.
@@ -190,9 +192,10 @@ public:
 
   /*!
    * \brief Record a tape containing the parameter Jacobian.
-   * \param geometry
-   * \param config
-   * \param surface_movement
+   * \param geometry - Geometrical definition of the problem.
+   * \param surface_movement - Surface movement of the problem.
+   * \param registeredCoord - Indexes of the affected coordinates.
+   * \param config - Definition of the particular problem.
    */
   void RecordParameterizationJacobian(CGeometry *geometry,
                                       CSurfaceMovement *surface_movement,
@@ -201,9 +204,6 @@ public:
 
   /*!
    * \brief Forward evaluate parameterization Jacobian.
-   * \param geometry
-   * \param config
-   * \param surface_movement
    */
   void ProjectDVtoMesh(CGeometry *geometry,
                        std::vector<su2double>& seeding,
@@ -213,9 +213,6 @@ public:
 
   /*!
    * \brief Reverse evaluate parameterization Jacobian.
-   * \param geometry
-   * \param config
-   * \param surface_movement
    */
   void ProjectMeshToDV(CGeometry *geometry,
                        CSysVector<su2matvecscalar>& sensitivity,
@@ -234,6 +231,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void ReadSensFromGeometry(const CGeometry *geometry) override;
+
+  /*!
+   * \brief Helper function for derivative treatment.
+   *        to determine if a boundary marker is a DVmarker on any mpi rank.
+   * \param[in] iMarker - the current boundary marker.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool MarkerIsDVMarker(unsigned short iMarker, const CConfig *config) const override;
 
  private:
   /*!
@@ -267,6 +272,12 @@ public:
    * \brief Extra entries to eliminate in the linear system
    */
   void Set_VertexEliminationSchedule(CGeometry* geometry, const CConfig* config);
+
+  /*!
+   * \brief Complete the calculation of the surface stiffness matrix
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void Complete_Surface_StiffMatrix(const CGeometry* geometry);
 
   /*!
    * \brief Get the element container index and number of nodes of a given VTK type.

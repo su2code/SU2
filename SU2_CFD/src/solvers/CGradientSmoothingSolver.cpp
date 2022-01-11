@@ -95,6 +95,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
       LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
       Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, true);
     }
+    visited.resize(geometry->GetnPoint(), false);
   }
 
   /*--- vectors needed for projection when working on the complete system ---*/
@@ -201,9 +202,11 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry* geometry
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
   Jacobian.SetValZero();
+  std::fill(visited.begin(), visited.end(), false);
 
   /*--- Compute the stiffness matrix for the smoothing operator. ---*/
   Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
+  Complete_Surface_StiffMatrix(geometry);
 
   Compute_Surface_Residual(geometry, config, val_marker);
 
@@ -397,18 +400,12 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
   std::array<unsigned long, MAXNNODE_2D> indexVertex;
   int EL_KIND = 0;
   su2double val_Coord, HiHj = 0.0;
-  su2activematrix DHiDHj, Jacobian_block, mId_Aux;
+  su2activematrix DHiDHj, Jacobian_block;
 
   Jacobian_block.resize(nDim, nDim) = su2double(0.0);
-  mId_Aux.resize(nDim, nDim) = su2double(0.0);
-  for (iDim = 0; iDim < nDim; iDim++) {
-    mId_Aux[iDim][iDim] = su2double(1.0);
-  }
-
-  vector<bool> visited(geometry->GetnPoint(), false);
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=NOT_AVAILABLE) {
+  if (val_marker!=BC_TYPE::NOT_AVAILABLE) {
 
     /*--- Loops over all the elements ---*/
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
@@ -460,13 +457,6 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
 
         }
       }
-    }
-  }
-
-  /*--- Assembling the stiffness matrix on the design surface means the Jacobian is the identity for nodes inside the domain. ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++){
-    if (visited[iPoint]==false) {
-      Jacobian.AddBlock(iPoint, iPoint, mId_Aux);
     }
   }
 
@@ -539,7 +529,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
   su2double* normal = NULL;
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=NOT_AVAILABLE) {
+  if (val_marker!=BC_TYPE::NOT_AVAILABLE) {
 
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
@@ -637,7 +627,7 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(const CGeometry* geometry, c
   const su2double zeros[MAXNDIM] = {0.0};
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=NOT_AVAILABLE) {
+  if (val_marker!=BC_TYPE::NOT_AVAILABLE) {
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
       /*--- Get node index ---*/
@@ -680,17 +670,15 @@ template <typename scalar_type>
 CSysMatrixVectorProduct<scalar_type> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry* geometry,
                                                                                                CNumerics* numerics,
                                                                                                const CConfig* config) {
-  bool surf = config->GetSmoothOnSurface();
 
   /*--- Compute the sparse stiffness matrix ---*/
-  if (surf) {
-    unsigned long dvMarker=NOT_AVAILABLE;
-    for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ( config->GetMarker_All_DV(iMarker) == YES ) {
-        dvMarker=iMarker;
+  if (config->GetSmoothOnSurface()) {
+    for (unsigned int iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        Compute_Surface_StiffMatrix(geometry, numerics, config, iMarker, nDim);
       }
     }
-    Compute_Surface_StiffMatrix(geometry, numerics, config, dvMarker, nDim);
+    Complete_Surface_StiffMatrix(geometry);
   } else {
     Compute_StiffMatrix(geometry, numerics, config);
   }
@@ -917,7 +905,7 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
 
   /*--- split between surface and volume first, to avoid mpi ranks with no part of the marker to write back nonphysical solutions in the surface case ---*/
   if ( config->GetSmoothOnSurface() ) {
-    if( val_marker!=NOT_AVAILABLE ) {
+    if( val_marker!=BC_TYPE::NOT_AVAILABLE ) {
       for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
         iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
         normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -980,23 +968,25 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
   if (config->GetSmoothOnSurface()) {
 
     /*--- Find Marker_DV if this node has any ---*/
-    unsigned long dvMarker=NOT_AVAILABLE;
+    unsigned long dvMarker=BC_TYPE::NOT_AVAILABLE;
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_DV(iMarker) == YES) {
-        dvMarker = iMarker;
-      }
-    }
+      //if (MarkerIsDVMarker(iMarker, config)) {
+        //dvMarker = BC_TYPE::NOT_AVAILABLE;
+        if (config->GetMarker_All_DV(iMarker) == YES) dvMarker = iMarker;
+      //}
 
-    /*--- Surface case:
-     * Fix design boundary border if Dirichlet condition is set and the current rank holds part of it. ---*/
-    if ( config->GetDirichletSurfaceBound() && dvMarker!=NOT_AVAILABLE) {
-      for (iVertex = 0; iVertex < geometry->nVertex[dvMarker]; iVertex++) {
-        /*--- Get node index ---*/
-        iPoint = geometry->vertex[dvMarker][iVertex]->GetNode();
-        if (nodes->GetIsBoundaryPoint(iPoint)) {
-          myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+      /*--- Surface case:
+       * Fix design boundary border if Dirichlet condition is set and the current rank holds part of it. ---*/
+      if ( config->GetDirichletSurfaceBound() && dvMarker!=BC_TYPE::NOT_AVAILABLE) {
+        for (iVertex = 0; iVertex < geometry->nVertex[dvMarker]; iVertex++) {
+          /*--- Get node index ---*/
+          iPoint = geometry->vertex[dvMarker][iVertex]->GetNode();
+          if (nodes->GetIsBoundaryPoint(iPoint)) {
+            myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+          }
         }
       }
+
     }
 
   } else {
@@ -1023,4 +1013,37 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
   for (auto iPoint : ExtraVerticesToEliminate) {
     Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
   }
+}
+
+bool CGradientSmoothingSolver::MarkerIsDVMarker(unsigned short iMarker, const CConfig *config) const {
+
+  int isLocalDVmarker, isGlobalDVmarker;
+  bool isDVmarker=false;
+
+  if ( config->GetMarker_All_DV(iMarker) == YES ) {
+    isLocalDVmarker = 1;
+  } else {
+    isLocalDVmarker = 0;
+  }
+  SU2_MPI::Allreduce(&isLocalDVmarker, &isGlobalDVmarker, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  if (isGlobalDVmarker >= 1) isDVmarker=true;
+
+  return isDVmarker;
+}
+
+void CGradientSmoothingSolver::Complete_Surface_StiffMatrix(const CGeometry* geometry) {
+
+  su2activematrix mId_Aux;
+  mId_Aux.resize(nDim, nDim) = su2double(0.0);
+  for (unsigned iDim = 0; iDim < nDim; iDim++) {
+    mId_Aux[iDim][iDim] = su2double(1.0);
+  }
+
+  /*--- Assembling the stiffness matrix on the design surface means the Jacobian is the identity for nodes inside the domain. ---*/
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++){
+    if (visited[iPoint]==false) {
+      Jacobian.AddBlock(iPoint, iPoint, mId_Aux);
+    }
+  }
+
 }

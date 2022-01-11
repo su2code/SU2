@@ -1003,19 +1003,15 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
       /*--- Get the sensitivities from the geometry class to work with. ---*/
       solver->ReadSensFromGeometry(geometry);
 
-      /*--- Select DV marker, or NOT_AVAILABLE if none is specified. ---*/
-      unsigned long ndvMarker=0, dvMarker = BC_TYPE::NOT_AVAILABLE;
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if ( config->GetMarker_All_DV(iMarker) == YES ) {
-          dvMarker = iMarker;
-          ++ndvMarker;
+      /*--- Perform the smoothing procedure sequentially for each DV marker. ---*/
+      unsigned long dvMarker;
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++) {
+        if (solver->MarkerIsDVMarker(iMarker, config)) {
+          dvMarker = BC_TYPE::NOT_AVAILABLE;
+          if (config->GetMarker_All_DV(iMarker) == YES) dvMarker = iMarker;
+          solver->ApplyGradientSmoothingSurface(geometry, numerics, config, dvMarker);
         }
       }
-      if(ndvMarker>1) {
-        SU2_MPI::Error("Sobolev smoothing in surface mode only works with one marker at a time.",CURRENT_FUNCTION);
-      }
-
-      solver->ApplyGradientSmoothingSurface(geometry, numerics, config, dvMarker);
 
       /*--- After appling the solver write the results back ---*/
       solver->WriteSensToGeometry(geometry);
