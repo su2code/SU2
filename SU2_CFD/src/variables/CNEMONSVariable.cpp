@@ -78,7 +78,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  unsigned long iVar, iSpecies;
+
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
@@ -87,7 +87,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute Primitive from previous solution ---*/
@@ -100,7 +100,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   SetVelocity2(iPoint);
 
   const auto& Ds = fluidmodel->GetDiffusionCoeff();
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
 
   su2double T   =  Primitive(iPoint,nSpecies);
@@ -108,7 +108,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   su2double* val_eves = GetEve(iPoint);
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eves);
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     Enthalpys(iPoint, iSpecies) = hs[iSpecies];
   
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();

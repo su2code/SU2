@@ -1253,7 +1253,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *visc_numerics,
                                               CConfig *config,
