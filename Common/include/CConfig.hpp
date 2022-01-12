@@ -5408,7 +5408,7 @@ public:
    * \param[in] outer_iter - the outer iterations
    * \return The new filename
    */
-  string GetFilename_Iter(string filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const;
+  string GetFilename_Iter(const string& filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
