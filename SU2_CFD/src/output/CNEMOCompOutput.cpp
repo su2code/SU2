@@ -365,7 +365,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
 
-  if (config->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS || config->GetKind_Solver() == MAIN_SOLVER::NEMO_NAVIER_STOKES){
+  if (config->GetViscous()){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
 
   SetVolumeOutputValue("THERMAL_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
