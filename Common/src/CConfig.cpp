@@ -8100,7 +8100,7 @@ string CConfig::GetFilename(string filename, string ext, int timeIter) const {
   return filename;
 }
 
-string CConfig::GetFilename_Iter(string filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const {
+string CConfig::GetFilename_Iter(const string& filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const {
   const auto iter = GetMultizone_Problem() ? curOuterIter : curInnerIter;
   std::stringstream iter_ss;
   iter_ss << filename_iter << "_" << std::setw(6) << std::setfill('0') << iter;
