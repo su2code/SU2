@@ -289,8 +289,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
-
-
   //Residuals
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("RES_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
@@ -370,15 +368,12 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if (config->GetKind_Solver() == MAIN_SOLVER::NEMO_RANS || config->GetKind_Solver() == MAIN_SOLVER::NEMO_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
   
-
   SetVolumeOutputValue("THERMAL_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
   SetVolumeOutputValue("THERMAL_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
   }
   if (config->GetKind_Solver() == NEMO_RANS) {
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
-
-
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("RES_DENSITY_" + std::to_string(iSpecies), iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, iSpecies));

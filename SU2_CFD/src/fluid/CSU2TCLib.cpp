@@ -1425,12 +1425,8 @@ void CSU2TCLib::ThermalConductivitiesD(){
   }
 
   su2double Cvtr = ComputerhoCvtr()/rho;
-  
   su2double Cvve = ComputerhoCvve()/rho;
-   
-
   su2double scl  = Cvve/Cvtr;
-   
   su2double Cptr = Cvtr + Ru/mass;
   su2double Cpve = scl*Cptr;
   

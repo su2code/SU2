@@ -6553,7 +6553,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
         (Kind_Solver == MAIN_SOLVER::NEMO_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS)) {
-
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
