@@ -38,7 +38,7 @@
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
-  CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {
+  CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNSSolver. ---*/
@@ -76,8 +76,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) &&
-      (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode())) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && config->GetFixed_CL_Mode()) {
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -1030,6 +1029,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
+  const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
+  config->SetDiffusivity_ConstantND(MassDiffusivityND);
+
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
@@ -1287,6 +1289,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s";
+        NonDimTable << "Mass Diffusivity" << config->GetDiffusivity_Constant() << config->GetDiffusivity_Constant()/config->GetDiffusivity_ConstantND() << Unit.str() << config->GetDiffusivity_ConstantND();
         Unit.str("");
       }
     }
@@ -1556,7 +1564,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -4210,7 +4217,7 @@ void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container
   }
 }
 
-void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
+void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -4219,27 +4226,28 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  if (config->GetFixed_CL_Mode()) {
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+      Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
 
-    switch(Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(SurfaceCoeff.CMy[iMarker_Monitoring]);
-        break;
-      case MOMENT_X_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      default:
-        break;
+      switch(Kind_ObjFunc) {
+        case DRAG_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        case MOMENT_X_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        case MOMENT_Y_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        case MOMENT_Z_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        default:
+          break;
+      }
     }
   }
 

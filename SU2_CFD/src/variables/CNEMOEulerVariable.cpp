@@ -123,7 +123,7 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
   }
 }
 
-bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke,  CFluidModel *FluidModel) {
 
   unsigned short iVar;
 
@@ -140,7 +140,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, s
 
     /*--- Recompute Primitive from previous solution ---*/
     Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                   dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], 0.0);
+                 dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], 0.0);
   }
 
   /*--- Set additional point quantities ---*/

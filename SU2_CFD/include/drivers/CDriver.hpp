@@ -221,6 +221,13 @@ protected:
                                     const CSolver* turb_solver, CNumerics ****&numerics) const;
 
   /*!
+   * \brief Helper to instantiate species transport numerics specialized for different flow solvers.
+   */
+  template <class FlowIndices>
+  void InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
+                                  const CSolver* species_solver, CNumerics ****&numerics) const;
+
+  /*!
    * \brief Definition and allocation of all solver classes.
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] solver_container - Container vector with all the solutions.

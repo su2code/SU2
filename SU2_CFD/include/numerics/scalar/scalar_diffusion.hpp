@@ -93,6 +93,11 @@ class CAvgGrad_Scalar : public CNumerics {
       Jacobian_i[iVar] = &JacobianBuffer[iVar * nVar];
       Jacobian_j[iVar] = &JacobianBuffer[iVar * nVar + MAXNVAR * MAXNVAR];
     }
+
+    /*--- Initialize the JacobianBuffer to zero. ---*/
+    for (unsigned short iVar = 0; iVar < 2*MAXNVAR*MAXNVAR; iVar++) {
+      JacobianBuffer[iVar] = 0.0;
+    }
   }
 
   /*!

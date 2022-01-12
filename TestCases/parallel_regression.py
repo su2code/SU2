@@ -71,7 +71,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-0.998812, -1.524371, -18.301794, -18.629156, -18.575201, 2.318954, 2.011581,  5.366905, 0.919345]
+    invwedge.test_vals = [-1.042843, -1.567606, -18.300689, -18.628064, -18.574092, 2.275192, 1.879772,  5.319420, 0.873699]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -83,7 +83,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.205860, -5.729753, -20.569311, -20.633846, -20.547397, -1.925197, -2.271253, 1.252586, -3.192292]
+    visc_cone.test_vals = [-5.222001, -5.746254, -20.569422, -20.633784, -20.547640, -1.928394, -2.246909, 1.255970, -3.208248]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -211,6 +211,17 @@ def main():
     flatplate.tol       = 0.00001
     test_list.append(flatplate)
 
+    # Custom objective function
+    flatplate_udobj           = TestCase('flatplate_udobj')
+    flatplate_udobj.cfg_dir   = "user_defined_functions"
+    flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
+    flatplate_udobj.test_iter = 20
+    flatplate_udobj.test_vals = [-6.653802, -1.18143, -0.794887, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 1.7147]
+    flatplate_udobj.su2_exec  = "mpirun -n 2 SU2_CFD"
+    flatplate_udobj.timeout   = 1600
+    flatplate_udobj.tol       = 0.00001
+    test_list.append(flatplate_udobj)
+
     # Laminar cylinder (steady)
     cylinder           = TestCase('cylinder')
     cylinder.cfg_dir   = "navierstokes/cylinder"
@@ -303,6 +314,17 @@ def main():
     turb_flatplate.tol       = 0.00001
     test_list.append(turb_flatplate)
 
+    # Flat plate (compressible) with species inlet
+    turb_flatplate_species           = TestCase('turb_flatplate_species')
+    turb_flatplate_species.cfg_dir   = "rans/flatplate"
+    turb_flatplate_species.cfg_file  = "turb_SA_flatplate_species.cfg"
+    turb_flatplate_species.test_iter = 20
+    turb_flatplate_species.test_vals = [-4.147548, -0.634735, -1.770801, 1.335176, -3.250308, 9, -6.700992, 5, -6.999234, 10, -6.033847, 0.996033, 0.996033]
+    turb_flatplate_species.su2_exec  = "parallel_computation.py -f"
+    turb_flatplate_species.timeout   = 1600
+    turb_flatplate_species.tol       = 0.00001
+    test_list.append(turb_flatplate_species)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
@@ -369,6 +391,17 @@ def main():
     turb_naca0012_sst_fixedvalues.tol       = 0.00001
     test_list.append(turb_naca0012_sst_fixedvalues)
 
+    # NACA0012 (SST, explicit Euler for flow and turbulence equations)
+    turb_naca0012_sst_expliciteuler           = TestCase('turb_naca0012_sst_expliciteuler')
+    turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
+    turb_naca0012_sst_expliciteuler.test_iter = 10
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532228, -3.157766, 3.364025, 1.124824, 0.501717, -float("inf")]
+    turb_naca0012_sst_expliciteuler.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_expliciteuler.timeout   = 3200
+    turb_naca0012_sst_expliciteuler.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_expliciteuler)
+
     # PROPELLER
     propeller           = TestCase('propeller')
     propeller.cfg_dir   = "rans/propeller"
@@ -389,7 +422,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-12.098340, -6.651791, -8.877009, -2.393286]
+    axi_rans_air_nozzle.test_vals = [-12.096377, -6.636625, -8.786639, -2.399099]
     axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
@@ -1344,7 +1377,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
+    solid_periodic_pins.test_vals = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
     solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
     solid_periodic_pins.timeout   = 1600
     solid_periodic_pins.tol       = 0.00001
@@ -1383,7 +1416,7 @@ def main():
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247026, -0.811632, -0.982066, -0.753312, 208.023676, 350.180000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000] #last 7 lines
     sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
@@ -1395,7 +1428,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451732, -0.008477, 214.707868, 365.670000] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451962, -0.008477, 214.707868, 365.670000] #last 7 lines
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
@@ -1559,6 +1592,47 @@ def main():
     mms_dg_ns_3d.timeout   = 1600
     mms_dg_ns_3d.tol       = 0.0001
     test_list.append(mms_dg_ns_3d)
+
+    #####################
+    ## Species solver ###
+    #####################
+
+    # 2 species (1 eq) primitive venturi mixing
+    species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
+    species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi.cfg_file  = "species2_primitiveVenturi.cfg"
+    species2_primitiveVenturi.test_iter = 50
+    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -6.046002, 5, -0.808614, 5 , -2.351161, 5, -0.247992, 0.000092, 0.000090, 0.000002, 0.000000]
+    species2_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi.timeout   = 1600
+    species2_primitiveVenturi.new_output = True
+    species2_primitiveVenturi.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi)
+
+    # 3 species (2 eq) primitive venturi mixing with inlet files.
+    # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
+    species3_primitiveVenturi_inletFile           = TestCase('species3_primitiveVenturi_inletFile')
+    species3_primitiveVenturi_inletFile.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species3_primitiveVenturi_inletFile.cfg_file  = "species3_primitiveVenturi_inletFile.cfg"
+    species3_primitiveVenturi_inletFile.test_iter = 50
+    species3_primitiveVenturi_inletFile.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300]
+    species3_primitiveVenturi_inletFile.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species3_primitiveVenturi_inletFile.timeout   = 1600
+    species3_primitiveVenturi_inletFile.new_output = True
+    species3_primitiveVenturi_inletFile.tol       = 0.00001
+    test_list.append(species3_primitiveVenturi_inletFile)
+
+    # rectangle passive transport validation
+    species_passive_val           = TestCase('species_passive_val')
+    species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
+    species_passive_val.cfg_file  = "passive_transport.cfg"
+    species_passive_val.test_iter = 50
+    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species_passive_val.timeout   = 1600
+    species_passive_val.new_output = True
+    species_passive_val.tol       = 0.00001
+    test_list.append(species_passive_val)
 
     ######################################
     ### RUN TESTS                      ###

@@ -42,5 +42,5 @@ class CIterationFactory {
    * \param[in] kindSolver - The kind of main solver we are running
    * \return               - Pointer to the allocated iteration instance
    */
-  static CIteration* CreateIteration(ENUM_MAIN_SOLVER kindSolver, const CConfig* config);
+  static CIteration* CreateIteration(MAIN_SOLVER kindSolver, const CConfig* config);
 };

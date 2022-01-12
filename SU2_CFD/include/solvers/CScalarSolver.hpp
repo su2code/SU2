@@ -41,7 +41,7 @@ template <class VariableType>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t { MAXNVAR = 2 };      /*!< \brief Max number of variables, used in some static arrays. */
+  static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
   enum : size_t { MAXNVARFLOW = 12 }; /*!< \brief Max number of flow variables, used in some static arrays. */
 
   enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
@@ -134,6 +134,14 @@ class CScalarSolver : public CSolver {
       if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
   }
+
+  /*!
+   * \brief Gradient and Limiter computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether the residual+jacobian should be zeroed.
+   */
+  void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
  private:
   /*!
@@ -260,6 +268,14 @@ class CScalarSolver : public CSolver {
   void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
+   * \brief Update the solution using the explicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -287,7 +303,8 @@ class CScalarSolver : public CSolver {
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  virtual void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) override = 0;
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                           bool val_update_geo) override = 0;
 
   /*!
    * \brief Scalar solvers support OpenMP+MPI.

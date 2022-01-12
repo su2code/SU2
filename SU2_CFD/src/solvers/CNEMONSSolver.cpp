@@ -99,8 +99,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Compute vorticity and strain mag. ---*/
 
-  const long unsigned int offset=(nSpecies+2);
-  ComputeVorticityAndStrainMag(*config, iMesh, offset);
+  ComputeVorticityAndStrainMag(*config, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -324,10 +323,9 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-    }
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -640,10 +638,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize viscous residual to zero ---*/
     for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++){
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-    }
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
@@ -692,7 +689,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
       const auto dTdU   = nodes->GetdTdU(iPoint);
       const auto dTvedU = nodes->GetdTvedU(iPoint);
-      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal); 
+      const su2double theta = GeometryToolbox::SquaredNorm(nDim, UnitNormal);
 
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dist_ij*dTdU[iVar] +

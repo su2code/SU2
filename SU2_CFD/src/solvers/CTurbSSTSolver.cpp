@@ -167,11 +167,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
-  /*--- The turbulence models are always solved implicitly, so set the
-  implicit flag in case we have periodic BCs. ---*/
-
-  SetImplicitPeriodic(true);
-
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
@@ -189,39 +184,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
-
-  /*--- Clear residual and system matrix, not needed for
-   * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy) {
-    LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
-    else {SU2_OMP_BARRIER}
-  }
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   /*--- Upwind second order reconstruction and gradients ---*/
-
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-  }
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-    SetSolution_Gradient_GG(geometry, config);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-    SetSolution_Gradient_LS(geometry, config);
-
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
-
+  CommonPreprocessing(geometry, config, Output);
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -253,6 +219,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+    VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 

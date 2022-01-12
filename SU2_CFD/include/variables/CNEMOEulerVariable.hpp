@@ -167,7 +167,7 @@ class CNEMOEulerVariable : public CFlowVariable {
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke,  CFluidModel *FluidModel);
 
    /*!
   * \brief Set all the primitive and secondary variables from the conserved vector.

@@ -313,7 +313,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-5.318452, -2.4380e-13]
+    discadj_fsi2.test_vals = [-3.47949, 0.122883, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
@@ -339,7 +339,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800529, -4.065499, -4.137153] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800597, -4.065541, -4.137339]
     da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001

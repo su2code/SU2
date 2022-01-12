@@ -41,24 +41,21 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   bool direct;
   switch (config[iZone]->GetKind_Solver()) {
-    case EULER:
-    case NAVIER_STOKES:
-    case NEMO_EULER:
-    case NEMO_NAVIER_STOKES:
-    case NEMO_RANS:
-    case RANS:
-    case FEM_EULER:
-    case FEM_NAVIER_STOKES:
-    case FEM_RANS:
-    case FEM_LES:
-    case DISC_ADJ_EULER:
-    case DISC_ADJ_NAVIER_STOKES:
-    case DISC_ADJ_NEMO_EULER:
-    case DISC_ADJ_NEMO_NAVIER_STOKES:
-    case DISC_ADJ_FEM_EULER:
-    case DISC_ADJ_FEM_NS:
-    case DISC_ADJ_RANS:
-    case DISC_ADJ_NEMO_RANS:
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::NEMO_RANS:
+    case MAIN_SOLVER::FEM_EULER:
+    case MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_RANS:
+    case MAIN_SOLVER::FEM_LES:
+    case MAIN_SOLVER::DISC_ADJ_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
+    case MAIN_SOLVER::DISC_ADJ_FEM_NS:
+    case MAIN_SOLVER::DISC_ADJ_RANS:
       direct = true;
       break;
     default:

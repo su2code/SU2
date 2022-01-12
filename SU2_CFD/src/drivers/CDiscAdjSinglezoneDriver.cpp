@@ -59,10 +59,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   switch (config->GetKind_Solver()) {
 
-  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-  case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-    case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
-
+  case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+  case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
 
@@ -70,12 +68,12 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       direct_iteration = new CTurboIteration(config);
       output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
-    else { direct_iteration = CIterationFactory::CreateIteration(EULER, config); }
+    else { direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::EULER, config); }
 
     if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-      direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
+      direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::EULER, config, nDim);
     }
-    else { direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim); }
+    else { direct_output =  COutputFactory::CreateOutput(MAIN_SOLVER::INC_EULER, config, nDim); }
 
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     if (config->GetDeform_Mesh()) {
@@ -85,34 +83,37 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     MainSolver = ADJFLOW_SOL;
     break;
 
-  case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
+  case MAIN_SOLVER::DISC_ADJ_FEM_EULER : case MAIN_SOLVER::DISC_ADJ_FEM_NS : case MAIN_SOLVER::DISC_ADJ_FEM_RANS :
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    direct_iteration = CIterationFactory::CreateIteration(FEM_EULER, config);
-    direct_output = COutputFactory::CreateOutput(FEM_EULER, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::FEM_EULER, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_EULER, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJFLOW_SOL;
     break;
 
-  case DISC_ADJ_FEM:
+  case MAIN_SOLVER::DISC_ADJ_FEM:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: elasticity equation." << endl;
-    direct_iteration =  CIterationFactory::CreateIteration(FEM_ELASTICITY, config);
-    direct_output = COutputFactory::CreateOutput(FEM_ELASTICITY, config, nDim);
+    direct_iteration =  CIterationFactory::CreateIteration(MAIN_SOLVER::FEM_ELASTICITY, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::FEM_ELASTICITY, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJFEA_SOL;
     break;
 
-  case DISC_ADJ_HEAT:
+  case MAIN_SOLVER::DISC_ADJ_HEAT:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: heat equation." << endl;
-    direct_iteration = CIterationFactory::CreateIteration(HEAT_EQUATION, config);
-    direct_output = COutputFactory::CreateOutput(HEAT_EQUATION, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::HEAT_EQUATION, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::HEAT_EQUATION, config, nDim);
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     SecondaryVariables = RECORDING::MESH_COORDS;
     MainSolver = ADJHEAT_SOL;
+    break;
+
+  default:
     break;
 
   }
@@ -217,16 +218,15 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   switch(config->GetKind_Solver())
   {
-    case DISC_ADJ_EULER :     case DISC_ADJ_NAVIER_STOKES :     case DISC_ADJ_RANS :
-    case DISC_ADJ_INC_EULER : case DISC_ADJ_INC_NAVIER_STOKES : case DISC_ADJ_INC_RANS :
-    case DISC_ADJ_NEMO_EULER : case DISC_ADJ_NEMO_NAVIER_STOKES : case DISC_ADJ_NEMO_RANS :
-    case DISC_ADJ_HEAT :
+    case MAIN_SOLVER::DISC_ADJ_EULER :     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES :     case MAIN_SOLVER::DISC_ADJ_RANS :
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER : case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES : case MAIN_SOLVER::DISC_ADJ_INC_RANS :
+    case MAIN_SOLVER::DISC_ADJ_HEAT :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
       break;
 
-    case DISC_ADJ_FEM :
+    case MAIN_SOLVER::DISC_ADJ_FEM :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
@@ -235,6 +235,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
                              solver_container, numerics_container, config_container,
                              surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
       break;
+
+    default:
+      break;
+
   }//switch
 
 }
@@ -342,44 +346,24 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
-  bool heat         = (config->GetWeakly_Coupled_Heat());
-  bool turbo        = (config->GetBoolTurbomachinery());
-
   ObjFunc = 0.0;
-
-  direct_output->SetHistory_Output(geometry, solver, config,
-                                   config->GetTimeIter(),
-                                   config->GetOuterIter(),
-                                   config->GetInnerIter());
 
   /*--- Specific scalar objective functions ---*/
 
   switch (config->GetKind_Solver()) {
-  case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
-  case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-  case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
-  case DISC_ADJ_NEMO_EULER:      case DISC_ADJ_NEMO_NAVIER_STOKES:     case DISC_ADJ_NEMO_RANS:
-
-    solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+  case MAIN_SOLVER::DISC_ADJ_INC_EULER:       case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+  case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
+  case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
 
     /*--- Surface based obj. function ---*/
 
-    solver[FLOW_SOL]->Evaluate_ObjFunc(config);
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                     config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-    if (heat){
-      if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
-      }
-      else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
-        ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
-      }
-    }
 
-    /*--- This calls to be moved to a generic framework at a next stage         ---*/
+    /*--- These calls to be moved to a generic framework at a next stage        ---*/
     /*--- Some things that are currently hacked into output must be reorganized ---*/
-    if (turbo){
-
-      solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
+    if (config->GetBoolTurbomachinery()) {
       output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
 
       unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
@@ -387,40 +371,35 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
       switch (config_container[ZONE_0]->GetKind_ObjFunc()){
       case ENTROPY_GENERATION:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections));
+        ObjFunc += output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections);
         break;
       case FLOW_ANGLE_OUT:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections));
+        ObjFunc += output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections);
         break;
       case MASS_FLOW_IN:
-        solver[FLOW_SOL]->AddTotal_ComboObj(output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections));
+        ObjFunc += output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections);
         break;
       default:
         break;
       }
-
-      ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
-
     }
     break;
 
-  case DISC_ADJ_HEAT:
-    switch (config->GetKind_ObjFunc()){
-    case TOTAL_HEATFLUX:
-      ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
-      break;
-    case AVG_TEMPERATURE:
-      ObjFunc = solver[HEAT_SOL]->GetTotal_AvgTemperature();
-      break;
-    default:
-      break;
-    }
+  case MAIN_SOLVER::DISC_ADJ_HEAT:
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                     config->GetOuterIter(), config->GetInnerIter());
+    ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
     break;
 
-  case DISC_ADJ_FEM:
+  case MAIN_SOLVER::DISC_ADJ_FEM:
     solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
-    solver[FEA_SOL]->Evaluate_ObjFunc(config);
+
+    direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                   config->GetOuterIter(), config->GetInnerIter());
     ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
+    break;
+
+  default:
     break;
   }
 

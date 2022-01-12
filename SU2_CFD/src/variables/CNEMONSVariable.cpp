@@ -78,20 +78,20 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
-  unsigned long iVar, iSpecies;
-
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], turb_ke);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
+                              Cvves[iPoint], turb_ke);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute Primitive from previous solution ---*/
-    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], turb_ke);
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint],
+                 Cvves[iPoint], turb_ke);
   }
 
   /*--- Set additional point quantities ---*/
@@ -100,7 +100,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
   SetVelocity2(iPoint);
 
   const auto& Ds = fluidmodel->GetDiffusionCoeff();
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
 
   su2double T   =  Primitive(iPoint,nSpecies);
@@ -108,7 +108,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
   su2double* val_eves = GetEve(iPoint);
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eves);
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     Enthalpys(iPoint, iSpecies) = hs[iSpecies];
   
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();

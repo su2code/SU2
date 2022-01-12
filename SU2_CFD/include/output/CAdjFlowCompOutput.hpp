@@ -27,20 +27,14 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CAdjFlowOutput.hpp"
 
 /*! \class CAdjFlowCompOutput
  *  \brief Output class for compressible flow adjoint problems.
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CAdjFlowCompOutput final: public COutput {
-private:
-
-  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  bool frozen_visc;          /*!< \brief Boolean indicating whether frozen viscosity/turbulence is used. */
-  TURB_MODEL turb_model;     /*!< \brief The kind of turbulence model*/
-
+class CAdjFlowCompOutput final: public CAdjFlowOutput {
 public:
 
   /*!
