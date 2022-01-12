@@ -4752,80 +4752,78 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
-  /*--- The result is the RCM ordering, during the process it is also used as
-   * the queue of new points considered by the algorithm. This is possible
-   * because points move from the front of the queue to the back of the result,
-   * which is equivalent to incrementing an integer marking the end of the
-   * result and the start of the queue. ---*/
-  vector<char> InQueue(nPoint, false);
+  queue<unsigned long> Queue;
+  vector<char> inQueue(nPoint, false);
   vector<unsigned long> AuxQueue, Result;
   Result.reserve(nPoint);
-  unsigned long QueueStart = 0;
 
-  /*--- Exclude halo nodes from the ordering process. ---*/
-  for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    InQueue[iPoint] = true;
+  /*--- Select the node with the lowest degree in the grid. ---*/
+
+  unsigned long AddPoint = 0;
+  auto MinDegree = nodes->GetnPoint(AddPoint);
+  for (auto iPoint = 1ul; iPoint < nPointDomain; iPoint++) {
+    auto Degree = nodes->GetnPoint(iPoint);
+    if (Degree < MinDegree) { MinDegree = Degree; AddPoint = iPoint; }
   }
 
-  /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
-  while (Result.size() < nPointDomain) {
+  /*--- Add the node in the first free position. ---*/
 
-    /*--- Select the node with the lowest degree in the grid. ---*/
-    auto AddPoint = nPoint;
-    auto MinDegree = std::numeric_limits<unsigned short>::max();
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      auto Degree = nodes->GetnPoint(iPoint);
-      if (!InQueue[iPoint] && Degree < MinDegree) {
-        MinDegree = Degree;
-        AddPoint = iPoint;
+  Result.push_back(AddPoint); inQueue[AddPoint] = true;
+
+  /*--- Loop until reorganize all the nodes ---*/
+
+  do {
+
+    /*--- Add to the queue all the nodes adjacent in the increasing
+     order of their degree, checking if the element is already
+     in the Queue. ---*/
+
+    AuxQueue.clear();
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
+      auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
+      if ((!inQueue[AdjPoint]) && (AdjPoint < nPointDomain)) {
+        AuxQueue.push_back(AdjPoint);
       }
     }
-    if (AddPoint == nPoint) {
-      SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
-    }
 
-    /*--- Seed the queue with the minimum degree node. ---*/
-    Result.push_back(AddPoint);
-    InQueue[AddPoint] = true;
+    if (!AuxQueue.empty()) {
 
-    /*--- Loop until reorganizing all nodes connected to AddPoint. This will
-     * also terminate early once the ordering + queue include all points. ---*/
-    while (QueueStart < Result.size() && Result.size() < nPointDomain) {
+      /*--- Sort the auxiliar queue based on the number of neighbors ---*/
 
-      /*--- Move the start of the queue, equivalent to taking from the front of
-       * the queue and inserting at the end of the result. ---*/
-      AddPoint = Result[QueueStart];
-      ++QueueStart;
-
-      /*--- Add all adjacent nodes to the queue in increasing order of their
-       degree, checking if the element is already in the queue. ---*/
-      AuxQueue.clear();
-      for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
-        const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
-        if (!InQueue[AdjPoint]) {
-          AuxQueue.push_back(AdjPoint);
-          InQueue[AdjPoint] = true;
-        }
-      }
-      if (AuxQueue.empty()) continue;
-
-      /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
       stable_sort(AuxQueue.begin(), AuxQueue.end(),
         [&](unsigned long iPoint, unsigned long jPoint) {
           return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
         }
       );
-      Result.insert(Result.end(), AuxQueue.begin(), AuxQueue.end());
+
+      for (auto iPoint : AuxQueue) {
+        Queue.push(iPoint);
+        inQueue[iPoint] = true;
+      }
+
     }
-  }
-  reverse(Result.begin(), Result.end());
+
+    /*--- Extract the first node from the queue and add it in the first free
+     position. ---*/
+
+    if (!Queue.empty()) {
+      AddPoint = Queue.front();
+      Result.push_back(AddPoint);
+      Queue.pop();
+    }
+
+  } while (!Queue.empty());
 
   /*--- Check that all the points have been added ---*/
-  for (const auto status : InQueue) {
-    if (!status) SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
+
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    if (inQueue[iPoint] == false) Result.push_back(iPoint);
   }
 
+  reverse(Result.begin(), Result.end());
+
   /*--- Add the MPI points ---*/
+
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     Result.push_back(iPoint);
   }
