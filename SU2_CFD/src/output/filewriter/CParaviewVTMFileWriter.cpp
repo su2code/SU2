@@ -92,13 +92,11 @@ void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string f
   /*--- Construct the full file name incl. folder ---*/
   /*--- Note that the folder name is simply the filename ---*/
 
-  //string fullFilename = folderName + "/zone_" + to_string(iZone) + "/" + file;
   string fullFilename = foldername + "/zone_" + to_string(iZone) + "/" + file;
 
   /*--- Create an XML writer and dump data into file ---*/
 
   CParaviewXMLFileWriter XMLWriter(dataSorter);
-  cout << "writing to XML file "<<fullFilename << endl;
   XMLWriter.Write_Data(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/
