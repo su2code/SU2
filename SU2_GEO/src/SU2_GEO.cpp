@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 
   }
 
-  bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_TECPLOT;
+  bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT;
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
