@@ -25,9 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
+
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CGradientSmoothingSolver.hpp"
 #include "../../include/variables/CSobolevSmoothingVariable.hpp"
-#include <algorithm>
 
 CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(LINEAR_SOLVER_MODE::GRADIENT_MODE) {
   unsigned int iDim, marker_count = 0;
@@ -322,7 +324,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
     string hess_filename = config->GetObjFunc_Hess_FileName();
-    if (config->GetnZone() > 1) config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
+    if (config->GetMultizone_Problem()) config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
     ofstream SysMatrix(hess_filename);
     SysMatrix.precision(config->GetOutput_Precision());
 
@@ -416,62 +418,57 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
 
   Jacobian_block.resize(nDim, nDim) = su2double(0.0);
 
-  /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=BC_TYPE::NOT_AVAILABLE) {
+  /*--- Loops over all the elements ---*/
+  for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
-    /*--- Loops over all the elements ---*/
-    for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+    /*--- Identify the kind of boundary element ---*/
+    GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-      /*--- Identify the kind of boundary element ---*/
-      GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), EL_KIND, nNodes);
+    /*--- Retrieve the boundary reference and current coordinates ---*/
 
-      /*--- Retrieve the boundary reference and current coordinates ---*/
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
 
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+      }
+    }
+
+    /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
       for (iNode = 0; iNode < nNodes; iNode++) {
-        indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-          element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
-        }
+        if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
       }
+    }
 
-      /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-        for (iNode = 0; iNode < nNodes; iNode++) {
-          if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
+    /*--- compute the contributions of the single elements inside the numerics container ---*/
+    numerics->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
+
+    NelNodes = element_container[GRAD_TERM][EL_KIND]->GetnNodes();
+
+    /*--- for all nodes add the contribution to the system Jacobian ---*/
+
+    for (iNode = 0; iNode < NelNodes; iNode++) {
+      for (jNode = 0; jNode < NelNodes; jNode++) {
+
+        DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
+        HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
+
+        /*--- Get the calculated stiffness blocks for the current element and add them to the block.  ---*/
+        for (iSurfDim=0; iSurfDim<nSurfDim; iSurfDim++) {
+          Jacobian_block[iSurfDim][iSurfDim] = DHiDHj[0][0] + HiHj;
         }
-      }
+        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
 
-      /*--- compute the contributions of the single elements inside the numerics container ---*/
-      numerics->Compute_Tangent_Matrix(element_container[GRAD_TERM][EL_KIND], config);
+        /*--- Store if we set values for a given node already ---*/
+        if (visited[indexNode[iNode]]==false) { visited[indexNode[iNode]]=true; }
+        if (visited[indexNode[jNode]]==false) { visited[indexNode[jNode]]=true; }
 
-      NelNodes = element_container[GRAD_TERM][EL_KIND]->GetnNodes();
-
-      /*--- for all nodes add the contribution to the system Jacobian ---*/
-
-      for (iNode = 0; iNode < NelNodes; iNode++) {
-        for (jNode = 0; jNode < NelNodes; jNode++) {
-
-          DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
-          HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
-
-          /*--- Get the calculated stiffness blocks for the current element and add them to the block.  ---*/
-          for (iSurfDim=0; iSurfDim<nSurfDim; iSurfDim++) {
-            Jacobian_block[iSurfDim][iSurfDim] = DHiDHj[0][0] + HiHj;
-          }
-          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
-
-          /*--- Store if we set values for a given node already ---*/
-          if (visited[indexNode[iNode]]==false) { visited[indexNode[iNode]]=true; }
-          if (visited[indexNode[jNode]]==false) { visited[indexNode[jNode]]=true; }
-
-        }
       }
     }
   }
-
 }
 
 void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConfig* config) {
@@ -511,12 +508,12 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConf
 
       for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
         if (config->GetSmoothSepDim()) {
-          Residual[GetCurrentDim()] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * nodes->GetSensitivity(indexNode[iNode], GetCurrentDim());
+          Residual[GetCurrentDim()] +=
+              Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * nodes->GetSensitivity(indexNode[iNode], GetCurrentDim());
           LinSysRes.AddBlock(indexNode[iNode], &Residual[GetCurrentDim()]);
         } else {
           for (iDim = 0; iDim < nDim; iDim++) {
-            Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * nodes->GetSensitivity(indexNode[iNode], iDim);
-
+            Residual[iDim] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * nodes->GetSensitivity(indexNode[iNode], iDim);
           }
           LinSysRes.AddBlock(indexNode[iNode], Residual);
         }
@@ -538,66 +535,55 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
   std::array<unsigned long, MAXNNODE_2D> indexNode;
   std::array<unsigned long, MAXNNODE_2D> indexVertex;
   su2double Weight, Jac_X, normalSens = 0.0, norm, val_Coord;
-  su2double* normal = NULL;
+  su2double normal[MAXNDIM];
 
-  /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=BC_TYPE::NOT_AVAILABLE) {
+  for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+    /*--- Identify the kind of boundary element ---*/
+    GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), EL_KIND, nNodes);
 
-    for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+    /*--- Retrieve the boundary reference and current coordinates ---*/
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
 
-      /*--- Identify the kind of boundary element ---*/
-      GetElemKindAndNumNodes(geometry->bound[val_marker][iElem]->GetVTK_Type(), EL_KIND, nNodes);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+      }
+    }
 
-      /*--- Retrieve the boundary reference and current coordinates ---*/
+    /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
       for (iNode = 0; iNode < nNodes; iNode++) {
-        indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
+        if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
+      }
+    }
+
+    element_container[GRAD_TERM][EL_KIND]
+        ->ClearElement(); /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    element_container[GRAD_TERM][EL_KIND]->ComputeGrad_SurfaceEmbedded();
+    unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
+
+    for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
+      Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
+      Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
+
+      for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
+        geometry->vertex[val_marker][indexVertex[iNode]]->GetNormal(normal);
+        norm = GeometryToolbox::Norm(nDim, normal);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          normal[iDim] = normal[iDim] / norm;
+        }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
-          element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
+          normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
         }
-      }
 
-      /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-        for (iNode = 0; iNode < nNodes; iNode++) {
-          if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
-        }
-      }
+        Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
+        LinSysRes.AddBlock(indexNode[iNode], Residual);
 
-      element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
-      element_container[GRAD_TERM][EL_KIND]->ComputeGrad_SurfaceEmbedded();
-      unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
-
-      for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
-
-        Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
-        Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
-
-        for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
-
-          normal = geometry->vertex[val_marker][indexVertex[iNode]]->GetNormal();
-          norm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            norm += normal[iDim]*normal[iDim];
-          }
-          norm = sqrt(norm);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            normal[iDim] = normal[iDim] / norm;
-          }
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
-          }
-
-          Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * normalSens;
-          LinSysRes.AddBlock(indexNode[iNode], Residual);
-
-          Residual[0] = 0;
-          normalSens = 0;
-
-        }
+        Residual[0] = 0;
+        normalSens = 0;
       }
     }
   }
@@ -638,18 +624,15 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(const CGeometry* geometry, c
   unsigned long iPoint, iVertex;
   const su2double zeros[MAXNDIM] = {0.0};
 
-  /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=BC_TYPE::NOT_AVAILABLE) {
-    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-      /*--- Get node index ---*/
-      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Get node index ---*/
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      if (nodes->GetIsBoundaryPoint(iPoint)) {
-        LinSysSol.SetBlock(iPoint, zeros);
-        LinSysRes.SetBlock(iPoint, zeros);
-        Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
-      }
+    if (nodes->GetIsBoundaryPoint(iPoint)) {
+      LinSysSol.SetBlock(iPoint, zeros);
+      LinSysRes.SetBlock(iPoint, zeros);
+      Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
     }
   }
 }
@@ -738,7 +721,7 @@ void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string ou
   unsigned iDV;
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
-    if (config->GetnZone() > 1) config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
+    if (config->GetMultizone_Problem()) config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
     ofstream delta_p (out_file);
     delta_p.precision(config->GetOutput_Precision());
 
@@ -913,9 +896,9 @@ void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
 }
 
 void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConfig* config) {
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   unsigned int iDim;
-  su2double* normal;
+  su2double normal[MAXNDIM];
   su2double norm;
 
   /*--- Split between surface and volume first. ---*/
@@ -925,16 +908,10 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
       if (config->GetMarker_All_DV(iMarker) == YES) {
         for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          norm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            norm += normal[iDim] * normal[iDim];
-          }
-          norm = sqrt(norm);
+          geometry->vertex[iMarker][iVertex]->GetNormal(normal);
+          norm = GeometryToolbox::Norm(nDim, normal);
           for (iDim = 0; iDim < nDim; iDim++) {
             normal[iDim] = normal[iDim] / norm;
-          }
-          for (iDim = 0; iDim < nDim; iDim++) {
             nodes->SetSensitivity(iPoint, iDim, normal[iDim] * LinSysSol[iPoint]);
           }
         }
@@ -948,8 +925,7 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
     } else {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim + iDim;
-          nodes->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+          nodes->SetSensitivity(iPoint, iDim, LinSysSol(iPoint, iDim));
         }
       }
     }
@@ -1027,16 +1003,10 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
 
 void CGradientSmoothingSolver::Complete_Surface_StiffMatrix(const CGeometry* geometry) {
 
-  su2activematrix mId_Aux;
-  mId_Aux.resize(nDim, nDim) = su2double(0.0);
-  for (unsigned iDim = 0; iDim < nDim; iDim++) {
-    mId_Aux[iDim][iDim] = su2double(1.0);
-  }
-
   /*--- Assembling the stiffness matrix on the design surface means the Jacobian is the identity for nodes inside the domain. ---*/
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++){
     if (visited[iPoint]==false) {
-      Jacobian.AddBlock(iPoint, iPoint, mId_Aux);
+      Jacobian.AddVal2Diag(iPoint, 1.0);
     }
   }
 
