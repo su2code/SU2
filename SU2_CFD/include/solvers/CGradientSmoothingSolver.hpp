@@ -100,8 +100,7 @@ public:
    * \brief Main routine to apply the method only on the surface for mesh sensitivities
    *        Projects and smoothes only in the normal direction!
    */
-  void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config,
-                                     unsigned long val_marker) override;
+  void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config) override;
 
   /*!
    * \brief All steps required for smoothing the whole system on DV level in an iterative way
@@ -232,19 +231,11 @@ public:
    */
   void ReadSensFromGeometry(const CGeometry *geometry) override;
 
-  /*!
-   * \brief Helper function for derivative treatment.
-   *        to determine if a boundary marker is a DVmarker on any mpi rank.
-   * \param[in] iMarker - the current boundary marker.
-   * \param[in] config - Definition of the particular problem.
-   */
-  bool MarkerIsDVMarker(unsigned short iMarker, const CConfig *config) const override;
-
  private:
   /*!
    * \brief Write the solution of the linear solver into the sensitivities of the nodes
    */
-  void WriteSensitivity(CGeometry* geometry, const CConfig* config, unsigned long val_marker = 0);
+  void WriteSensitivity(CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Copy sensitivities from a vector into the geometry

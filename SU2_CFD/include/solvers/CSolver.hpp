@@ -4151,8 +4151,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    *
    */
-  virtual void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config,
-                                             unsigned long val_marker) {}
+  virtual void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
 
   /*!
    * \brief All steps required for smoothing the whole system on DV level in an iterative way
@@ -4187,14 +4186,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void WriteSensToGeometry(CGeometry* geometry) const {}
-
-  /*!
-   * \brief Helper function for derivative treatment.
-   *        to determine if a boundary marker is a DVmarker on any mpi rank.
-   * \param[in] imMarker - the current boundary marker.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual bool MarkerIsDVMarker(unsigned short iMarker, const CConfig *config) const { return false; };
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

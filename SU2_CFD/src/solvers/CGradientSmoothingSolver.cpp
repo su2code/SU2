@@ -99,7 +99,8 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   }
 
   /*--- vectors needed for projection when working on the complete system ---*/
-  if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE || config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD) {
+  if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE ||
+      config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD || config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     activeCoord.Initialize(nPoint, nPointDomain, nDim, 0.0);
     helperVecIn.Initialize(nPoint, nPointDomain, nDim, 0.0);
     helperVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
@@ -197,27 +198,34 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry* geometry,
 }
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics,
-                                                             const CConfig* config, unsigned long val_marker) {
+                                                             const CConfig* config) {
   /*--- Set vector and sparse matrix to 0 ---*/
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
   Jacobian.SetValZero();
   std::fill(visited.begin(), visited.end(), false);
 
-  /*--- Compute the stiffness matrix for the smoothing operator. ---*/
-  Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
-  Complete_Surface_StiffMatrix(geometry);
+  /*--- Loop over all DV markers to compute the stiffness matrix for the smoothing operator. ---*/
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      /*--- Compute the stiffness matrix for the smoothing operator. ---*/
+      Compute_Surface_StiffMatrix(geometry, numerics, config, iMarker);
 
-  Compute_Surface_Residual(geometry, config, val_marker);
+      Compute_Surface_Residual(geometry, config, iMarker);
 
-  if ( config->GetDirichletSurfaceBound() ) {
-    BC_Surface_Dirichlet(geometry, config, val_marker);
+      if (config->GetDirichletSurfaceBound()) {
+        BC_Surface_Dirichlet(geometry, config, iMarker);
+      }
+    }
   }
+
+  /*--- Set the matrix to identity if the current mpi rank holds no part of the DV marker. ---*/
+  Complete_Surface_StiffMatrix(geometry);
 
   /*--- Solve the system and write the result back. ---*/
   Solve_Linear_System(geometry, config);
 
-  WriteSensitivity(geometry, config, val_marker);
+  WriteSensitivity(geometry, config);
 }
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNumerics *numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
@@ -312,8 +320,12 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
 
   /*--- Output the complete system matrix. ---*/
   if (rank == MASTER_NODE) {
-    ofstream SysMatrix(config->GetObjFunc_Hess_FileName());
+    /*--- For multizone append zone number to filename. ---*/
+    string hess_filename = config->GetObjFunc_Hess_FileName();
+    if (config->GetnZone() > 1) config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
+    ofstream SysMatrix(hess_filename);
     SysMatrix.precision(config->GetOutput_Precision());
+
     for (row=0; row<nDVtotal; row++) {
       for (column=0; column<nDVtotal; column++) {
         SysMatrix << hessian(row,column);
@@ -725,8 +737,11 @@ void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry 
 void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string out_file) {
   unsigned iDV;
   if (rank == MASTER_NODE) {
+    /*--- For multizone append zone number to filename. ---*/
+    if (config->GetnZone() > 1) config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
     ofstream delta_p (out_file);
     delta_p.precision(config->GetOutput_Precision());
+
     for (iDV = 0; iDV < deltaP.size(); iDV++) {
       delta_p << deltaP[iDV] << ",";
     }
@@ -897,28 +912,31 @@ void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
   }
 }
 
-void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConfig* config, unsigned long val_marker) {
+void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConfig* config) {
   unsigned long iPoint, total_index;
   unsigned int iDim;
   su2double* normal;
   su2double norm;
 
-  /*--- split between surface and volume first, to avoid mpi ranks with no part of the marker to write back nonphysical solutions in the surface case ---*/
+  /*--- Split between surface and volume first. ---*/
   if ( config->GetSmoothOnSurface() ) {
-    if( val_marker!=BC_TYPE::NOT_AVAILABLE ) {
-      for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
-        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-        normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        norm = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          norm += normal[iDim]*normal[iDim];
-        }
-        norm = sqrt(norm);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          normal[iDim] = normal[iDim] / norm;
-        }
-        for (iDim = 0; iDim < nDim; iDim++) {
-          nodes->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iPoint]);
+    /*--- Write back values for all design boundaries in the surface case. ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          norm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            norm += normal[iDim] * normal[iDim];
+          }
+          norm = sqrt(norm);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            normal[iDim] = normal[iDim] / norm;
+          }
+          for (iDim = 0; iDim < nDim; iDim++) {
+            nodes->SetSensitivity(iPoint, iDim, normal[iDim] * LinSysSol[iPoint]);
+          }
         }
       }
     }
@@ -966,27 +984,19 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
   /*--- get global indexes of Dirichlet boundaries ---*/
 
   if (config->GetSmoothOnSurface()) {
-
-    /*--- Find Marker_DV if this node has any ---*/
-    unsigned long dvMarker=BC_TYPE::NOT_AVAILABLE;
+    /*--- Surface case:
+     * Fix design boundary border if Dirichlet condition is set for the DV marker
+     * and the current rank holds part of it. ---*/
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      //if (MarkerIsDVMarker(iMarker, config)) {
-        //dvMarker = BC_TYPE::NOT_AVAILABLE;
-        if (config->GetMarker_All_DV(iMarker) == YES) dvMarker = iMarker;
-      //}
-
-      /*--- Surface case:
-       * Fix design boundary border if Dirichlet condition is set and the current rank holds part of it. ---*/
-      if ( config->GetDirichletSurfaceBound() && dvMarker!=BC_TYPE::NOT_AVAILABLE) {
-        for (iVertex = 0; iVertex < geometry->nVertex[dvMarker]; iVertex++) {
+      if (config->GetMarker_All_DV(iMarker) == YES && config->GetDirichletSurfaceBound()) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           /*--- Get node index ---*/
-          iPoint = geometry->vertex[dvMarker][iVertex]->GetNode();
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (nodes->GetIsBoundaryPoint(iPoint)) {
             myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
           }
         }
       }
-
     }
 
   } else {
@@ -1013,22 +1023,6 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
   for (auto iPoint : ExtraVerticesToEliminate) {
     Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
   }
-}
-
-bool CGradientSmoothingSolver::MarkerIsDVMarker(unsigned short iMarker, const CConfig *config) const {
-
-  int isLocalDVmarker, isGlobalDVmarker;
-  bool isDVmarker=false;
-
-  if ( config->GetMarker_All_DV(iMarker) == YES ) {
-    isLocalDVmarker = 1;
-  } else {
-    isLocalDVmarker = 0;
-  }
-  SU2_MPI::Allreduce(&isLocalDVmarker, &isGlobalDVmarker, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  if (isGlobalDVmarker >= 1) isDVmarker=true;
-
-  return isDVmarker;
 }
 
 void CGradientSmoothingSolver::Complete_Surface_StiffMatrix(const CGeometry* geometry) {

@@ -1003,15 +1003,8 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
       /*--- Get the sensitivities from the geometry class to work with. ---*/
       solver->ReadSensFromGeometry(geometry);
 
-      /*--- Perform the smoothing procedure sequentially for each DV marker. ---*/
-      unsigned long dvMarker;
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++) {
-        if (solver->MarkerIsDVMarker(iMarker, config)) {
-          dvMarker = BC_TYPE::NOT_AVAILABLE;
-          if (config->GetMarker_All_DV(iMarker) == YES) dvMarker = iMarker;
-          solver->ApplyGradientSmoothingSurface(geometry, numerics, config, dvMarker);
-        }
-      }
+      /*--- Perform the smoothing procedure on all boundaries marked as DV marker. ---*/
+      solver->ApplyGradientSmoothingSurface(geometry, numerics, config);
 
       /*--- After appling the solver write the results back ---*/
       solver->WriteSensToGeometry(geometry);
@@ -1064,10 +1057,9 @@ void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumet
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE) {
     solver->ApplyGradientSmoothingDV(geometry, numerics, surface_movement, grid_movement, config, Gradient);
 
-  /*--- For some application, e.g. OneShot, we might only need the original gradient. ---*/
-  } else if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD) {
+    /*--- If smoothing already took place on the mesh level, or none is requested, just do standard projection. ---*/
+  } else if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD ||
+             config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
-
   }
-
 }
