@@ -135,18 +135,18 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
       if (rank == MASTER_NODE) {
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           auto FileFormat = config->GetVolumeOutputFiles();
-          if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          if (isParaview(FileFormat[iFile])) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          } else if (isTecplot(FileFormat[iFile])) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
             }
           }
-          else if (FileFormat[iFile] == CGNS)  {
+          else if (FileFormat[iFile] == OUTPUT_TYPE::CGNS)  {
             cout << "Writing a CGNS file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
@@ -220,18 +220,18 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           auto FileFormat = config->GetVolumeOutputFiles();
 
-          if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          if (isParaview(FileFormat[iFile])) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          } else if (isTecplot(FileFormat[iFile])) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
             }
           }
-          else if (FileFormat[iFile] == CGNS)  {
+          else if (FileFormat[iFile] == OUTPUT_TYPE::CGNS)  {
             cout << "Writing a CGNS file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
@@ -499,18 +499,18 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             auto FileFormat = config->GetVolumeOutputFiles();
 
-            if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+            if (isParaview(FileFormat[iFile])) {
               cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
               }
-            } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+            } else if (isTecplot(FileFormat[iFile])) {
               cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
               }
             }
-            else if (FileFormat[iFile] == CGNS)  {
+            else if (FileFormat[iFile] == OUTPUT_TYPE::CGNS)  {
               cout << "Writing a CGNS file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, false);
