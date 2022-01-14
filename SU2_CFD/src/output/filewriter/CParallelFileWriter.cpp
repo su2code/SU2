@@ -200,8 +200,8 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 
 bool CFileWriter::OpenMPIFile(string val_filename){
 
-/*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
-val_filename.append(fileExt);
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
 #ifdef HAVE_MPI
   int ierr;

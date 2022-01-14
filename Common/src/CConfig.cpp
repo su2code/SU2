@@ -2835,7 +2835,7 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
-  
+
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -8159,7 +8159,7 @@ string CConfig::GetFilename(string filename, string ext, int timeIter) const {
   if (GetTime_Domain()){
     filename = GetUnsteady_FileName(filename, timeIter, ext);
   }
-  
+
   return filename;
 }
 
