@@ -61,10 +61,16 @@ public:
 
   /*!
    * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
+   * \param[in] val_filename - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CParaviewXMLFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
+  CParaviewXMLFileWriter(string val_filename, CParallelDataSorter* valDataSorter);
+
+  /*!
+   * \brief Construct a file writer using field names and the data sorter.
+   * \param[in] valDataSorter - The parallel sorted data to write
+   */
+  CParaviewXMLFileWriter(CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor
@@ -74,7 +80,7 @@ public:
   /*!
    * \brief Write sorted data to file in paraview binary file format
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 private:
 

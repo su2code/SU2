@@ -29,15 +29,15 @@
 
 const string CSU2BinaryFileWriter::fileExt = ".dat";
 
-CSU2BinaryFileWriter::CSU2BinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter)  :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
+CSU2BinaryFileWriter::CSU2BinaryFileWriter(CParallelDataSorter *valDataSorter)  :
+  CFileWriter(valDataSorter, fileExt){}
 
 
 CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
 
 }
 
-void CSU2BinaryFileWriter::Write_Data(){
+void CSU2BinaryFileWriter::Write_Data(string val_filename){
 
   /*--- Local variables ---*/
 
@@ -60,7 +60,7 @@ void CSU2BinaryFileWriter::Write_Data(){
 
   /*--- Open the file using MPI I/O ---*/
 
-  OpenMPIFile();
+  OpenMPIFile(val_filename);
 
   /*--- First, write the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, write the

@@ -210,7 +210,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
   CSolver *genericSolver = nullptr;
 
-  TURB_MODEL kindTurbModel = static_cast<TURB_MODEL>(config->GetKind_Turb_Model());
+  TURB_MODEL kindTurbModel = config->GetKind_Turb_Model();
 
   SolverMetaData metaData;
 

@@ -804,9 +804,9 @@ void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container
 
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
     auto FileFormat = config->GetVolumeOutputFiles();
-    if (FileFormat[iFile] != RESTART_ASCII &&
-        FileFormat[iFile] != RESTART_BINARY &&
-        FileFormat[iFile] != CSV)
+    if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII &&
+        FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY &&
+        FileFormat[iFile] != OUTPUT_TYPE::CSV)
       output->WriteToFile(config, geometry, FileFormat[iFile]);
   }
 
