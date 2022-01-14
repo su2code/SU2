@@ -589,7 +589,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
   }
 }
 
-void CGradientSmoothingSolver::Impose_BC(CGeometry* geometry, const CConfig* config) {
+void CGradientSmoothingSolver::Impose_BC(const CGeometry* geometry, const CConfig* config) {
   unsigned int iMarker;
 
   /*--- Get the boundary markers and iterate over them
@@ -896,10 +896,9 @@ void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
 }
 
 void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConfig* config) {
-  unsigned long iPoint;
+
   unsigned int iDim;
   su2double normal[MAXNDIM];
-  su2double norm;
 
   /*--- Split between surface and volume first. ---*/
   if ( config->GetSmoothOnSurface() ) {
@@ -907,9 +906,9 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_DV(iMarker) == YES) {
         for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           geometry->vertex[iMarker][iVertex]->GetNormal(normal);
-          norm = GeometryToolbox::Norm(nDim, normal);
+          const auto norm = GeometryToolbox::Norm(nDim, normal);
           for (iDim = 0; iDim < nDim; iDim++) {
             normal[iDim] = normal[iDim] / norm;
             nodes->SetSensitivity(iPoint, iDim, normal[iDim] * LinSysSol[iPoint]);
@@ -919,11 +918,11 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
     }
   } else {
     if (config->GetSmoothSepDim()) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         nodes->SetSensitivity(iPoint, GetCurrentDim(), LinSysSol[iPoint]);
       }
     } else {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           nodes->SetSensitivity(iPoint, iDim, LinSysSol(iPoint, iDim));
         }
@@ -955,7 +954,6 @@ void CGradientSmoothingSolver::ReadVectorToGeometry(const CGeometry* geometry, C
 void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry, const CConfig* config) {
   /*--- Store global point indices of essential BC markers. ---*/
   vector<unsigned long> myPoints;
-  unsigned long iPoint, iVertex;
 
   /*--- get global indexes of Dirichlet boundaries ---*/
 
@@ -965,9 +963,9 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
      * and the current rank holds part of it. ---*/
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_DV(iMarker) == YES && config->GetDirichletSurfaceBound()) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           /*--- Get node index ---*/
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (nodes->GetIsBoundaryPoint(iPoint)) {
             myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
           }
@@ -986,7 +984,7 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
       }
     }
     for (auto iMarker : markers) {
-      for (iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
       }
@@ -1004,7 +1002,7 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
 void CGradientSmoothingSolver::Complete_Surface_StiffMatrix(const CGeometry* geometry) {
 
   /*--- Assembling the stiffness matrix on the design surface means the Jacobian is the identity for nodes inside the domain. ---*/
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++){
+  for (unsigned long iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++){
     if (visited[iPoint]==false) {
       Jacobian.AddVal2Diag(iPoint, 1.0);
     }

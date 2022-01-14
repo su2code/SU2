@@ -137,7 +137,7 @@ public:
   /*!
    * \brief Set the boundary conditions
    */
-  void Impose_BC(CGeometry* geometry, const CConfig* config);
+  void Impose_BC(const CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Set Dirichlet boundary conditions
