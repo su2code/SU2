@@ -60,7 +60,7 @@ private:
   su2double Jacobian_Buffer; /// Static storage for the Jacobian (which needs to be pointer for return type).
 
 protected:
-  const bool incompressible = false, rotating_frame = false;
+  const bool rotating_frame = false;
   bool roughwall = false;
 
 public:
@@ -338,7 +338,6 @@ private:
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4]; /// Static storage for the Jacobian (which needs to be pointer for return type).
 
-  bool incompressible;
   bool sustaining_terms;
   bool axisymmetric;
 
