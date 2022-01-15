@@ -304,6 +304,35 @@ class ft2_nonzero : public Base {
   }
 };
 
+/* The above causes a cyclic dependency between the turbulence base and the ft2 and co. classes.
+ * To break that you need to template the get method instead of the class, for example: */
+struct ft2_nonzero {
+  template <class Base>
+  static void get(const Base& base, su2double& ft2, su2double& d_ft2) {
+    const su2double xsi2 = pow(base.xsi, 2);
+    ft2 = base.ct3 * exp(-base.ct4 * xsi2);
+    d_ft2 = -2.0 * base.ct4 * base.xsi * ft2 * base.d_xsi;
+  }
+};
+/* Now you pass the numerics class itself to "get" to access the member variables,
+ * which you'll have to make public, for example in ComputeResidual:
+ * ft2_class::get(*this, ft2, d_ft2);
+ *
+ * This is not a perfect solution because for performance we should cut down on "aux" class variables.
+ * An alternative is to put such variables in a struct, which can then be a local variable in ComputeResidual. */
+struct CommonVariables {
+  su2double ft2, d_ft2, r, d_r, g, d_g, g_6, glim, fw, Ji, Ji_2, Ji_3, d_Ji, S, Omega, Shat, d_Shat, inv_Shat, fv1, fv2;
+};
+/*
+ *  ResidualType<> ComputeResidual(const CConfig* config) final {
+ *    CommonVariables data;
+ *    ...
+ *    data.Ji = ...
+ *    ...
+ *    ft2_class::get(data, ft2, d_ft2);
+ */
+/* This way you can also dispense with templating "get". */
+
 /*------------------------------------------------------------------------------
 | Compute the modified vorticity (\tilde{S}) and its derivative
 | * \param[in] S - vorticity (Omega)
