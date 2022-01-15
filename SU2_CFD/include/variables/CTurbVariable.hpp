@@ -2,7 +2,7 @@
  * \file CTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,6 +40,8 @@ protected:
   VectorType muT; /*!< \brief Eddy viscosity. */
 
 public:
+  static constexpr size_t MAXNVAR = 2;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.

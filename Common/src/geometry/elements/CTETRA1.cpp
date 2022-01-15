@@ -2,7 +2,7 @@
  * \file CTETRA1.cpp
  * \brief Definition of 4-node tetra element with 1 Gauss point.
  * \author R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ CTETRA1::CTETRA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
     val_Ni = Xi;              GaussPoint[iGauss].SetNi(val_Ni,0);
     val_Ni = Eta;             GaussPoint[iGauss].SetNi(val_Ni,1);
-    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss].SetNi(val_Ni,2);
+    val_Ni = 1.0-Xi-Eta-Zeta; GaussPoint[iGauss].SetNi(val_Ni,2);
     val_Ni = Zeta;            GaussPoint[iGauss].SetNi(val_Ni,3);
 
     /*--- dN/d xi, dN/d eta, dN/d zeta ---*/

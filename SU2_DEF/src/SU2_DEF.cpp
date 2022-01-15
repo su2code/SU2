@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -396,7 +396,7 @@ int main(int argc, char *argv[]) {
 
     output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], nullptr);
 
-    output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], MESH, config->GetMesh_Out_FileName());
+    output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], OUTPUT_TYPE::MESH, config->GetMesh_Out_FileName());
 
     /*--- Set the file names for the visualization files ---*/
 
@@ -405,7 +405,7 @@ int main(int argc, char *argv[]) {
 
     for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
       auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();
-      if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+      if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII && FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY)
         output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
     }
   }

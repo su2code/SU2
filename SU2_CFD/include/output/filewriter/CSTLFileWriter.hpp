@@ -2,7 +2,7 @@
  * \file CSTLFileWriter.hpp
  * \brief Headers fo the STL file writer class.
  * \author T. Kattmann, T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CSTLFileWriter
  * \brief Class for writing STL output files.
  * \author T. Kattmann, T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CSTLFileWriter final : public CFileWriter{
 private:
@@ -102,10 +102,9 @@ public:
 
   /*!
    * \brief Construct a file writer using field name and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CSTLFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
+  CSTLFileWriter(CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor
@@ -114,8 +113,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in STL file format
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };
 

@@ -2,7 +2,7 @@
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
  * \author T. Kattmann, T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,14 +34,17 @@
 const string CSTLFileWriter::fileExt = ".stl";
 
 
-CSTLFileWriter::CSTLFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
+CSTLFileWriter::CSTLFileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){}
 
 
 CSTLFileWriter::~CSTLFileWriter(){}
 
 
-void CSTLFileWriter::Write_Data(){
+void CSTLFileWriter::Write_Data(string val_filename){
+  
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   /*--- This Write_Data routine has 3 major parts where the first two are transfered in external functions:
     1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
@@ -71,7 +74,8 @@ void CSTLFileWriter::Write_Data(){
     /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
     /*--- Open the STL file and write the header line. ---*/
     Surf_file.precision(6);
-    Surf_file.open(fileName.c_str(), ios::out);
+  
+    Surf_file.open(val_filename.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
 
     /*--- Loop through all of the collected data and write each node's coordinate values. ---*/

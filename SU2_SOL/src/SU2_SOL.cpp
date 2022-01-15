@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -630,7 +630,7 @@ int main(int argc, char *argv[]) {
 
 
       /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-      if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY && config_container[ZONE_0]->GetRestart())
+      if (config_container[ZONE_0]->GetKind_Solver() == MAIN_SOLVER::FEM_ELASTICITY && config_container[ZONE_0]->GetRestart())
         TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
       while (TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
@@ -804,9 +804,9 @@ void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container
 
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
     auto FileFormat = config->GetVolumeOutputFiles();
-    if (FileFormat[iFile] != RESTART_ASCII &&
-        FileFormat[iFile] != RESTART_BINARY &&
-        FileFormat[iFile] != CSV)
+    if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII &&
+        FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY &&
+        FileFormat[iFile] != OUTPUT_TYPE::CSV)
       output->WriteToFile(config, geometry, FileFormat[iFile]);
   }
 

@@ -2,7 +2,7 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -74,12 +74,7 @@ private:
 
 public:
   /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSASolver();
-
-  /*!
-   * \overload
+   * \brief Constructor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

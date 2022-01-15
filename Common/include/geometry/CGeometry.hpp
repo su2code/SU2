@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -133,7 +133,7 @@ protected:
   vector<vector<su2double> > FaceArea_plane;   /*!< \brief Vector containing area/volume associated with  new points appearing on a single plane */
   vector<vector<unsigned long> > Plane_points; /*!< \brief Vector containing points appearing on a single plane */
 
-  vector<su2double> XCoordList;	          /*!< \brief Vector containing points appearing on a single plane */
+  vector<su2double> XCoordList;              /*!< \brief Vector containing points appearing on a single plane */
 
 #if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
   vector<vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */

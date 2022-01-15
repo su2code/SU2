@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,7 +54,7 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
-  rans = (config->GetKind_Turb_Model() != NONE);
+  rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
 }
 
@@ -700,7 +700,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
                                                              CConfig        *config) :
                                CSourceBase_Flow(val_nDim, val_nVar, config) {
 
-  turbulent = (config->GetKind_Turb_Model() != NONE);
+  turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   energy    = config->GetEnergy_Equation();
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
 

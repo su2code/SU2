@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -627,7 +627,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool dynamic = config->GetTime_Domain();
-  const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+  const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
   const bool topology_mode = config->GetTopology_Optimization();
 
@@ -1786,6 +1786,17 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
   const bool penalty = ((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
                        ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL));
 
+  auto computeAllFunctions = [&]() {
+    /*--- Compute stresses for monitoring and output. ---*/
+    Compute_NodalStress(geometry, numerics, config);
+
+    /*--- Compute functions for monitoring and output. ---*/
+    Compute_OFRefNode(geometry, config);
+    Compute_OFCompliance(geometry, config);
+    if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
+    if (config->GetTopology_Optimization()) Compute_OFVolFrac(geometry, config);
+  };
+
   if (of_comp_mode) {
     if (penalty) Stiffness_Penalty(geometry, numerics, config);
 
@@ -1798,20 +1809,17 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
       case STRESS_PENALTY:
         Compute_NodalStress(geometry, numerics, config);
         break;
+      case CUSTOM_OBJFUNC:
+        /*--- No easy way to know, so compute everything. ---*/
+        computeAllFunctions();
+        break;
     }
     return;
   }
 
   if (!config->GetDiscrete_Adjoint()) {
-    /*--- Compute stresses for monitoring and output. ---*/
-    Compute_NodalStress(geometry, numerics, config);
-
-    /*--- Compute functions for monitoring and output. ---*/
     if (penalty) Stiffness_Penalty(geometry, numerics, config);
-    Compute_OFRefNode(geometry, config);
-    Compute_OFCompliance(geometry, config);
-    if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
-    if (config->GetTopology_Optimization()) Compute_OFVolFrac(geometry, config);
+    computeAllFunctions();
   }
 
   /*--- Residuals do not have to be computed while recording. ---*/
@@ -1847,41 +1855,23 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
 
     const auto ResidualAux = computeLinearResidual(Jacobian, LinSysSol, LinSysRes);
 
-    /*--- Set maximum residual to zero. ---*/
-
-    SetResToZero();
-
     SU2_OMP_PARALLEL {
 
     /*--- Compute the residual. ---*/
-
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        su2double Res = fabs(ResidualAux(iPoint, iVar));
-        resRMS[iVar] += Res*Res;
-        if (Res > resMax[iVar]) {
-          resMax[iVar] = Res;
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint, iVar, ResidualAux(iPoint, iVar), resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      Residual_RMS[iVar] += resRMS[iVar];
-      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-    }
-    END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    /*--- Compute the root mean square residual. ---*/
-    SetResidual_RMS(geometry, config);
+    /*--- "Add" residuals from all threads to global residual variables. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
 
     }
     END_SU2_OMP_PARALLEL

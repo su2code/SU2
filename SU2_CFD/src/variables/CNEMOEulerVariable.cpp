@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,6 +41,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const CConfig *config,
                                        CNEMOGas *fluidmodel)
   : CFlowVariable(npoint, ndim, nvar, nvarprim, nvarprimgrad, config),
+    indices(ndim, config->GetnSpecies()),
     implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
   unsigned short iDim, iSpecies;
@@ -225,7 +226,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
 
-  const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle();
+  const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle(V[TVE_INDEX]);
   vector<su2double> eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {

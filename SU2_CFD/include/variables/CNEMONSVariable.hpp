@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -128,11 +128,4 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity_ve(unsigned long iPoint) const override { return ThermalCond_ve(iPoint); }
-
-  /*!
-   * \brief Set the temperature at the wall
-   */
-  inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
-    Primitive(iPoint,T_INDEX) = temperature_wall;
-  }
 };

@@ -2,7 +2,7 @@
  * \file CHeatIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@ void CHeatIteration::Iterate(COutput* output, CIntegration**** integration, CGeo
 
   /*--- Update global parameters ---*/
 
-  config[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS);
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);
 
   integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                     RUNTIME_HEAT_SYS, val_iZone, val_iInst);

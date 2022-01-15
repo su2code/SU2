@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.hpp
  * \brief Class for defining the common variables of flow solvers.
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -236,6 +236,7 @@ class CFlowVariable : public CVariable {
    * \return Vorticity array.
    */
   inline su2double* GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+  inline const su2double* GetVorticity(unsigned long iPoint) const final { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the magnitude of rate of strain.

@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1045,6 +1045,15 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the velocity gradient.
+   */
+  inline virtual CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const {
+    return CMatrixView<const su2double>();
+  }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Norm 2 of the velocity vector.
    */
   inline virtual su2double GetVelocity2(unsigned long iPoint) const { return 0.0; }
@@ -1118,6 +1127,7 @@ public:
    * \return Value of the vorticity.
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
+  inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -1412,18 +1422,6 @@ public:
    * \param[in] config - Configuration parameters.
    */
   inline virtual void SetPrimitive(unsigned long iPoint, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double Temperature_Wall) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double* Temperature_Wall) {}
 
   /*!
    * \brief Set the thermal coefficient.
@@ -2159,9 +2157,9 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
-  inline virtual void SetTauWall(unsigned long iPoint, su2double val_tau_wall) {}
+  inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
-  inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }
 
   inline virtual void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}

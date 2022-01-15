@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
-  CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>() {
+  CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>(*geometry, *config) {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
@@ -243,9 +243,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   bool unsteady      = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous       = config->GetViscous();
-  bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
-                        (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
+  bool turbulent     = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
+                        (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
+  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
@@ -429,6 +429,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+
+  const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
+  config->SetDiffusivity_ConstantND(MassDiffusivityND);
+
 
   /*--- Delete the original (dimensional) FluidModel object. No fluid is used for inscompressible cases. ---*/
 
@@ -778,7 +782,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Unit.str("");
       if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      NonDimTable << "Conductivity" << "-" << config->GetThermal_Conductivity_Ref() << Unit.str() << "-";
       Unit.str("");
       if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
@@ -788,6 +792,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s";
+        NonDimTable << "Mass Diffusivity" << config->GetDiffusivity_Constant() << config->GetDiffusivity_Constant()/config->GetDiffusivity_ConstantND() << Unit.str() << config->GetDiffusivity_ConstantND();
         Unit.str("");
       }
     }
@@ -903,7 +913,6 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1318,7 +1327,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
-  const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
+  const bool turbulent      = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
@@ -2088,7 +2097,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2333,7 +2342,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2531,7 +2540,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 

@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,6 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver(false) { }
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config, false) {
@@ -112,7 +110,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
 
@@ -121,7 +119,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
   }
 
@@ -166,11 +164,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar) = nu_tilde_Inf;
 
-  /*--- The turbulence models are always solved implicitly, so set the
-   implicit flag in case we have periodic BCs. ---*/
-
-  SetImplicitPeriodic(true);
-
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
@@ -188,39 +181,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
   const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
 
-  /*--- Clear residual and system matrix, not needed for
-   * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy) {
-    LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
-    else {SU2_OMP_BARRIER}
-  }
-
-  /*--- Upwind second order reconstruction and gradients ---*/
-
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-  }
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-    SetSolution_Gradient_GG(geometry, config);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-    SetSolution_Gradient_LS(geometry, config);
-
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+  /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
+  CommonPreprocessing(geometry, config, Output);
 
   if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
 
@@ -251,7 +217,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
-  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
+  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
 
   /*--- Compute eddy viscosity ---*/
 
@@ -295,7 +261,7 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Roughness heights. ---*/
-    if (config->GetKind_Turb_Model() == SA)
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SA)
       numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
 
@@ -309,8 +275,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool transition    = (config->GetKind_Trans_Model() == LM);
-  const bool transition_BC = (config->GetKind_Trans_Model() == BC);
+  const bool transition    = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+  const bool transition_BC = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -600,9 +566,16 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
+      /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
+      su2double Inlet_Vars[MAXNVAR];
+      Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      if (config->GetInlet_Profile_From_File()) {
+        Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
+      }
+
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_Vars);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
 
@@ -1250,7 +1223,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), &nu_tilde);
 
       visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
-                                        nodes->GetGradient(iPoint));
+                                          nodes->GetGradient(iPoint));
 
       /*--- Compute residual, and Jacobians ---*/
 
@@ -1273,11 +1246,11 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
-  constexpr unsigned short max_iter = 200;
+  const unsigned short max_iter = config->GetwallModel_MaxIter();
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
-  su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -1298,9 +1271,9 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
-      /*--- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition ---*/
+      /*--- Do not use wall model at the ipoint when y+ < "limit" ---*/
 
-      if (Y_Plus < 5.0) continue;
+      if (Y_Plus < config->GetwallModel_MinYPlus()) continue;
 
       su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
       su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
@@ -1316,7 +1289,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       unsigned short counter = 0;
       su2double diff = 1.0;
-      relax = 0.5;
+      su2double relax = config->GetwallModel_RelFac();
       while (diff > tol) {
         // note the error in Nichols and Nelson
         su2double func = pow(nu_til_old,4) - (Eddy_Visc/Density_Normal)*(pow(nu_til_old,3) + pow(Kin_Visc_Normal,3)*cv1_3);
@@ -1366,7 +1339,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     const auto coord_i       = geometry->nodes->GetCoord(iPoint);
     const auto nNeigh        = geometry->nodes->GetnPoint(iPoint);
     const auto wallDistance  = geometry->nodes->GetWall_Distance(iPoint);
-    const auto primVarGrad   = flowNodes->GetGradient_Primitive(iPoint);
+    const auto velocityGrad  = flowNodes->GetVelocityGradient(iPoint);
     const auto vorticity     = flowNodes->GetVorticity(iPoint);
     const auto density       = flowNodes->GetDensity(iPoint);
     const auto laminarViscosity = flowNodes->GetLaminarViscosity(iPoint);
@@ -1377,7 +1350,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     su2double uijuij = 0.0;
     for(auto iDim = 0u; iDim < nDim; iDim++){
       for(auto jDim = 0u; jDim < nDim; jDim++){
-        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
+        uijuij += pow(velocityGrad[iDim][jDim], 2);
       }
     }
     uijuij = sqrt(fabs(uijuij));
@@ -1607,7 +1580,7 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    SA_NEG model is more robust due to allowing for negative nu_tilde,
    so the under-relaxation is not applied to that variant. */
 
-  if (config->GetKind_Turb_Model() == SA_NEG) return;
+  if (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG) return;
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */

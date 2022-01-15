@@ -2,7 +2,7 @@
  * \file CDiscAdjFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -337,7 +337,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
 
     myfile_res << config[iZone]->GetTimeIter() << "\t";
 
-    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone]);
+    solvers0[FEA_SOL]->Evaluate_ObjFunc(config[iZone], solvers0);
     myfile_res << scientific << solvers0[FEA_SOL]->GetTotal_ComboObj() << "\t";
 
     for (iVar = 0; iVar < config[iZone]->GetnElasticityMod(); iVar++)

@@ -2,7 +2,7 @@
  * \file CMultizoneOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,16 +66,14 @@ public:
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem.
    */
-  void LoadMultizoneHistoryData(COutput **output, CConfig **config) override;
+  void LoadMultizoneHistoryData(const COutput* const* output) override;
 
   /*!
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem per zone.
    */
-  void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) override;
+  void SetMultizoneHistoryOutputFields(const COutput* const* output) override;
 
   /*!
    * \brief Determines if the history file output.

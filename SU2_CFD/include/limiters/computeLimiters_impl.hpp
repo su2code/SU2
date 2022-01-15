@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
