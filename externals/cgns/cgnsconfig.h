@@ -35,7 +35,7 @@
 #ifndef CGNSCONFIG_H
 #define CGNSCONFIG_H
 
-#define CG_BUILD_HDF5      0
+#define CG_BUILD_HDF5      1
 #define CG_BUILD_DEBUG     0
 #define CG_BUILD_FORTRAN   0
 #define CG_BUILD_PARALLEL  0
