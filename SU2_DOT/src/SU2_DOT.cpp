@@ -980,12 +980,8 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
 
   /*-- Construct the smoothing solver and numerics ---*/
   std::unique_ptr<CSolver> solver(new CGradientSmoothingSolver(geometry, config));
-  CNumerics* numerics;
-  if (config->GetSmoothOnSurface()) {
-    numerics = new CGradSmoothing(geometry->GetnDim()-1, config);
-  } else {
-    numerics = new CGradSmoothing(geometry->GetnDim(), config);
-  }
+  unsigned dim = (config->GetSmoothOnSurface() ? geometry->GetnDim() - 1 : geometry->GetnDim());
+  std::unique_ptr<CNumerics> numerics(new CGradSmoothing(dim, config));
 
   if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
 
@@ -1003,7 +999,7 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
       solver->ReadSensFromGeometry(geometry);
 
       /*--- Perform the smoothing procedure on all boundaries marked as DV marker. ---*/
-      solver->ApplyGradientSmoothingSurface(geometry, numerics, config);
+      solver->ApplyGradientSmoothingSurface(geometry, numerics.get(), config);
 
       /*--- After appling the solver write the results back ---*/
       solver->WriteSensToGeometry(geometry);
@@ -1014,7 +1010,7 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
       /*--- Get the sensitivities from the geometry class to work with. ---*/
       solver->ReadSensFromGeometry(geometry);
 
-      solver->ApplyGradientSmoothingVolume(geometry, numerics, config);
+      solver->ApplyGradientSmoothingVolume(geometry, numerics.get(), config);
 
       /*--- After appling the solver write the results back ---*/
       solver->WriteSensToGeometry(geometry);
@@ -1024,8 +1020,6 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
     }
 
   }
-
-  delete numerics;
 
 }
 
@@ -1041,12 +1035,8 @@ void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumet
 
   /*-- Construct the smoothing solver and numerics ---*/
   std::unique_ptr<CSolver> solver(new CGradientSmoothingSolver(geometry, config));
-  CNumerics* numerics;
-  if (config->GetSmoothOnSurface()) {
-    numerics = new CGradSmoothing(geometry->GetnDim()-1, config);
-  } else {
-    numerics = new CGradSmoothing(geometry->GetnDim(), config);
-  }
+  unsigned dim = (config->GetSmoothOnSurface() ? geometry->GetnDim() - 1 : geometry->GetnDim());
+  std::unique_ptr<CNumerics> numerics(new CGradSmoothing(dim, config));
 
   if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
 
@@ -1055,14 +1045,12 @@ void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumet
 
   /*--- Apply the smoothing procedure on the DV level. ---*/
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE) {
-    solver->ApplyGradientSmoothingDV(geometry, numerics, surface_movement, grid_movement, config, Gradient);
+    solver->ApplyGradientSmoothingDV(geometry, numerics.get(), surface_movement, grid_movement, config, Gradient);
 
     /*--- If smoothing already took place on the mesh level, or none is requested, just do standard projection. ---*/
   } else if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD ||
              config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
   }
-
-  delete numerics;
 
 }

@@ -242,8 +242,10 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry* geometry
   WriteSensitivity(geometry, config);
 }
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNumerics *numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
-
+void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNumerics* numerics,
+                                                        CSurfaceMovement* surface_movement,
+                                                        CVolumetricMovement* grid_movement, CConfig* config,
+                                                        su2double** Gradient) {
   unsigned nDVtotal=config->GetnDV_Total();
   unsigned column, row;
   unsigned long iPoint;
@@ -336,7 +338,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
     string hess_filename = config->GetObjFunc_Hess_FileName();
-    if (config->GetMultizone_Problem()) hess_filename=config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
+    if (config->GetMultizone_Problem()) {
+      hess_filename = config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
+    }
     ofstream SysMatrix(hess_filename);
     SysMatrix.precision(config->GetOutput_Precision());
 
@@ -356,7 +360,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
   deltaP = x;
 
   OutputDVGradient(config);
-
 }
 
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {
@@ -734,7 +737,9 @@ void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string ou
   unsigned iDV;
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
-    if (config->GetMultizone_Problem()) out_file=config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
+    if (config->GetMultizone_Problem()) {
+      out_file = config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
+    }
     ofstream delta_p (out_file);
     delta_p.precision(config->GetOutput_Precision());
 
