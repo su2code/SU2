@@ -61,6 +61,7 @@ threads="1"
 #endif
 
 namespace std {
+   %template() vector<bool>;
    %template() vector<unsigned long>;
    %template() vector<vector<unsigned long>>;
    %template() vector<int>;

@@ -565,6 +565,19 @@ public:
      * \return Number of dimensions.
      */
     unsigned long GetNumberDimensions() const;
+     
+    /*!
+     * \brief Get the number of mesh elements.
+     * \return Number of elements.
+     */
+    unsigned long GetNumberElements() const;
+    
+    /*!
+     * \brief Get the number of mesh elements from a specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \return Number of elements.
+     */
+    unsigned long GetNumberElementsMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get the number of mesh vertices.
@@ -580,24 +593,17 @@ public:
     unsigned long GetNumberVerticesMarker(unsigned short iMarker) const;
     
     /*!
+     * \brief Get the number of halo mesh vertices.
+     * \return Number of vertices.
+     */
+    unsigned long GetNumberHaloVertices() const;
+
+    /*!
      * \brief Get the number of halo mesh vertices from a specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Number of vertices.
      */
     unsigned long GetNumberHaloVerticesMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the number of mesh elements.
-     * \return Number of elements.
-     */
-    unsigned long GetNumberElements() const;
-    
-    /*!
-     * \brief Get the number of mesh elements from a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Number of elements.
-     */
-    unsigned long GetNumberElementsMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get global IDs of mesh vertices.
@@ -637,7 +643,20 @@ public:
      * \return Element connectivities (nBound, nNode).
      */
     vector<vector<unsigned long>> GetConnectivityMarker(unsigned short iMarker) const;
-    
+      
+    /*!
+     * \brief Get halo node stauts of mesh vertices. 
+     * \return Point domain status.
+     */
+    vector<bool> GetDomain() const;
+
+    /*!
+     * \brief Get halo node stauts of mesh marker vertices. 
+     * \param[in] iMarker - Marker identifier.
+     * \return Point domain status.
+     */
+    vector<bool> GetDomainMarker(unsigned short iMarker) const;
+
     /*!
      * \brief Get the coordinates of the mesh points.
      * \return Point coordinates (nPoint*nDim).

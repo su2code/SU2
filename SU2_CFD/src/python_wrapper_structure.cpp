@@ -294,12 +294,36 @@ unsigned long CDriver::GetNumberDimensions() const {
     return geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
 }
 
+unsigned long CDriver::GetNumberElements() const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem();
+}
+
+unsigned long CDriver::GetNumberElementsMarker(unsigned short iMarker) const {
+    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem_Bound(iMarker);
+}
+
 unsigned long CDriver::GetNumberVertices() const {
     return geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 }
 
 unsigned long CDriver::GetNumberVerticesMarker(unsigned short iMarker) const {
     return geometry_container[ZONE_0][INST_0][MESH_0]->GetnVertex(iMarker);
+}
+
+unsigned long CDriver::GetNumberHaloVertices() const {
+    
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    unsigned long nHaloVertices = 0;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        if (!(geometry->nodes->GetDomain(iPoint))) {
+            nHaloVertices += 1;
+        }
+    }
+    
+    return nHaloVertices;
 }
 
 unsigned long CDriver::GetNumberHaloVerticesMarker(unsigned short iMarker) const {
@@ -317,14 +341,6 @@ unsigned long CDriver::GetNumberHaloVerticesMarker(unsigned short iMarker) const
     }
     
     return nHaloVertices;
-}
-
-unsigned long CDriver::GetNumberElements() const {
-    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem();
-}
-
-unsigned long CDriver::GetNumberElementsMarker(unsigned short iMarker) const {
-    return geometry_container[ZONE_0][INST_0][MESH_0]->GetnElem_Bound(iMarker);
 }
 
 vector<unsigned long> CDriver::GetVertexIDs() const {
@@ -410,6 +426,34 @@ vector<vector<unsigned long>> CDriver::GetConnectivityMarker(unsigned short iMar
         for (auto iNode = 0u; iNode < nNode; iNode++) {
             values[iBound].push_back(geometry->bound[iMarker][iBound]->GetNode(iNode));
         }
+    }
+    
+    return values;
+}
+
+vector<bool> CDriver::GetDomain() const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    vector<bool> values(nPoint);
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(geometry->nodes->GetDomain(iPoint));
+    }
+    
+    return values;
+}
+
+vector<bool> CDriver::GetDomainMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    
+    vector<bool> values(nVertex);
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        values.push_back(geometry->nodes->GetDomain(iPoint));
     }
     
     return values;

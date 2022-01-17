@@ -688,25 +688,354 @@ map<string, string> CDeformationDriver::GetAllBoundaryMarkersType() const {
   return allBoundariesTypeMap;
 }
 
-unsigned long CDeformationDriver::GetNumberVertices(unsigned short iMarker) const {
-
-  return geometry_container[ZONE_0]->nVertex[iMarker];
-
+unsigned long CDeformationDriver::GetNumberDimensions() const {
+    return geometry_container[ZONE_0]->GetnDim();
 }
 
-unsigned long CDeformationDriver::GetNumberHaloVertices(unsigned short iMarker) const {
-
-  unsigned long nHaloVertices, iVertex, iPoint;
-
-  nHaloVertices = 0;
-  for(iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++){
-    iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
-    if(!(geometry_container[ZONE_0]->nodes->GetDomain(iPoint))) nHaloVertices += 1;
-  }
-
-  return nHaloVertices;
-
+unsigned long CDeformationDriver::GetNumberElements() const {
+    return geometry_container[ZONE_0]->GetnElem();
 }
+
+unsigned long CDeformationDriver::GetNumberElementsMarker(unsigned short iMarker) const {
+    return geometry_container[ZONE_0]->GetnElem_Bound(iMarker);
+}
+
+unsigned long CDeformationDriver::GetNumberVertices() const {
+    return geometry_container[ZONE_0]->GetnPoint();
+}
+
+unsigned long CDeformationDriver::GetNumberVerticesMarker(unsigned short iMarker) const {
+    return geometry_container[ZONE_0]->GetnVertex(iMarker);
+}
+
+unsigned long CDeformationDriver::GetNumberHaloVertices() const {
+    
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    unsigned long nHaloVertices = 0;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        if (!(geometry->nodes->GetDomain(iPoint))) {
+            nHaloVertices += 1;
+        }
+    }
+    
+    return nHaloVertices;
+}
+
+unsigned long CDeformationDriver::GetNumberHaloVerticesMarker(unsigned short iMarker) const {
+    
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    
+    unsigned long nHaloVertices = 0;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (!(geometry->nodes->GetDomain(iPoint))) {
+            nHaloVertices += 1;
+        }
+    }
+    
+    return nHaloVertices;
+}
+
+vector<unsigned long> CDeformationDriver::GetVertexIDs() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    vector<unsigned long> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+    }
+    
+    return values;
+}
+
+vector<unsigned long> CDeformationDriver::GetVertexIDsMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    
+    vector<unsigned long> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        values.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+    }
+    
+    return values;
+}
+
+vector<unsigned long> CDeformationDriver::GetElementIDs() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nElem    = geometry->GetnElem();
+    
+    vector<unsigned long> values;
+    
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+        values.push_back(geometry->elem[iElem]->GetGlobalIndex());
+    }
+    
+    return values;
+}
+
+vector<unsigned long> CDeformationDriver::GetElementIDsMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nBound   = geometry->GetnElem_Bound(iMarker);
+    
+    vector<unsigned long> values;
+    
+    for (auto iBound = 0ul; iBound < nBound; iBound++) {
+        values.push_back(geometry->bound[iMarker][iBound]->GetGlobalIndex());
+    }
+    
+    return values;
+}
+
+vector<vector<unsigned long>> CDeformationDriver::GetConnectivity() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nElem    = geometry->GetnElem();
+    
+    vector<vector<unsigned long>> values(nElem);
+    
+    for (auto iElem = 0ul; iElem < nElem; iElem++) {
+        unsigned short nNode = geometry->elem[iElem]->GetnNodes();
+        
+        for (auto iNode = 0u; iNode < nNode; iNode++) {
+            values[iElem].push_back(geometry->elem[iElem]->GetNode(iNode));
+        }
+    }
+    
+    return values;
+}
+
+vector<vector<unsigned long>> CDeformationDriver::GetConnectivityMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nBound   = geometry->GetnElem_Bound(iMarker);
+    
+    vector<vector<unsigned long>> values(nBound);
+    
+    for (auto iBound = 0ul; iBound < nBound; iBound++) {
+        unsigned short nNode = geometry->bound[iMarker][iBound]->GetnNodes();
+        
+        for (auto iNode = 0u; iNode < nNode; iNode++) {
+            values[iBound].push_back(geometry->bound[iMarker][iBound]->GetNode(iNode));
+        }
+    }
+    
+    return values;
+}
+
+vector<bool> CDeformationDriver::GetDomain() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    vector<bool> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(geometry->nodes->GetDomain(iPoint));
+    }
+    
+    return values;
+}
+
+vector<bool> CDeformationDriver::GetDomainMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    
+    vector<bool> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        values.push_back(geometry->nodes->GetDomain(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDeformationDriver::GetCoordinates() const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nPoint   = geometry->GetnPoint();
+    const auto nDim     = geometry->GetnDim();
+    
+    vector<passivedouble> values(nPoint*nDim, 0.0);
+    su2double value;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = geometry->nodes->GetCoord(iPoint, iDim);
+            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDeformationDriver::GetCoordinatesMarker(unsigned short iMarker) const {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    const auto nDim     = geometry->GetnDim();
+    
+    vector<passivedouble> values(nVertex*nDim, 0.0);
+    su2double value;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = geometry->nodes->GetCoord(iPoint, iDim);
+            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+    
+    return values;
+}
+
+void CDeformationDriver::SetCoordinates(vector<passivedouble> values) {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nPoint   = geometry->GetnPoint();
+    
+    if (values.size() != nPoint*nDim) {
+        SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
+    }
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            geometry->nodes->SetCoord(iPoint, iDim, values[iPoint*nDim + iDim]);
+        }
+    }
+}
+
+void CDeformationDriver::SetCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    const auto nDim     = geometry->GetnDim();
+    
+    if (values.size() != nVertex*nDim) {
+        SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
+    }
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            geometry->nodes->SetCoord(iPoint, iDim, values[iVertex*nDim + iDim]);
+        }
+    }
+}
+
+vector<passivedouble> CDeformationDriver::GetDisplacementsMarker(unsigned short iMarker) const {
+    CConfig* config = config_container[ZONE_0];
+    
+    if (!config->GetDeform_Mesh()) {
+        return {};
+    }
+    
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    const auto nDim     = geometry->GetnDim();
+    
+    CSolver* solver = solver_container[ZONE_0];
+    
+    vector<passivedouble> values(nVertex*nDim, 0.0);
+    su2double value;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = solver->GetNodes()->GetBound_Disp(iPoint, iDim);
+            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+    
+    return values;
+}
+
+void CDeformationDriver::SetDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values) {
+    CConfig* config = config_container[ZONE_0];
+    
+    if (!config->GetDeform_Mesh()) {
+        SU2_MPI::Error("Mesh solver is not defined !", CURRENT_FUNCTION);
+    }
+    
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    const auto nDim     = geometry->GetnDim();
+    
+    CSolver* solver = solver_container[ZONE_0];
+    
+    if (values.size() != nVertex*nDim) {
+        SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
+    }
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            solver->GetNodes()->SetBound_Disp(iPoint, iDim, values[iVertex*nDim + iDim]);
+        }
+    }
+}
+
+vector<passivedouble> CDeformationDriver::GetVelocitiesMarker(unsigned short iMarker) const {
+    CConfig* config = config_container[ZONE_0];
+    
+    if (!config->GetDeform_Mesh()) {
+        return {};
+    }
+    
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    const auto nDim     = geometry->GetnDim();
+    
+    CSolver* solver = solver_container[ZONE_0];
+    
+    vector<passivedouble> values(nVertex*nDim, 0.0);
+    su2double value;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            value = solver->GetNodes()->GetBound_Vel(iPoint, iDim);
+            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
+        }
+    }
+    
+    return values;
+}
+
+void CDeformationDriver::SetVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values) {
+    CConfig* config = config_container[ZONE_0];
+    
+    if (!config->GetDeform_Mesh()) {
+        SU2_MPI::Error("Mesh solver is not defined !", CURRENT_FUNCTION);
+    }
+    
+    CGeometry* geometry = geometry_container[ZONE_0];
+    const auto nVertex  = geometry->GetnVertex(iMarker);
+    const auto nDim     = geometry->GetnDim();
+    
+    CSolver* solver = solver_container[ZONE_0];
+    
+    if (values.size() != nVertex*nDim) {
+        SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
+    }
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+            solver->GetNodes()->SetBound_Vel(iPoint, iDim, values[iVertex*nDim + iDim]);
+        }
+    }
+}
+
 
 unsigned long CDeformationDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const {
 
@@ -778,124 +1107,6 @@ vector<passivedouble> CDeformationDriver::GetVertexNormal(unsigned short iMarker
   ret_Normal_passive[2] = SU2_TYPE::GetValue(ret_Normal[2]);
 
   return ret_Normal_passive;
-}
-
-vector<unsigned long> CDeformationDriver::GetMeshElementIDs() const {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nElem    = geometry->GetnElem();
-
-    vector<unsigned long> values;
-
-    for (auto iElem = 0ul; iElem < nElem; iElem++) {
-        values.push_back(geometry->elem[iElem]->GetGlobalIndex());
-    }
-
-    return values;
-}
-
-vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivity() const {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nElem    = geometry->GetnElem();
-
-    vector<vector<unsigned long>> values(nElem);
-
-    for (auto iElem = 0ul; iElem < nElem; iElem++) {
-        unsigned short nNode = geometry->elem[iElem]->GetnNodes();
-
-        for (auto iNode = 0u; iNode < nNode; iNode++) {
-            values[iElem].push_back(geometry->elem[iElem]->GetNode(iNode));
-        }
-    }
-
-    return values;
-}
-
-vector<vector<unsigned long>> CDeformationDriver::GetMeshConnectivityMarker(unsigned short iMarker) const {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nBound   = geometry->GetnElem_Bound(iMarker);
-
-    vector<vector<unsigned long>> values(nBound);
-
-    for (auto iBound = 0ul; iBound < nBound; iBound++) {
-        unsigned short nNode = geometry->bound[iMarker][iBound]->GetnNodes();
-
-        for (auto iNode = 0u; iNode < nNode; iNode++) {
-            values[iBound].push_back(geometry->bound[iMarker][iBound]->GetNode(iNode));
-        }
-    }
-
-    return values;
-}
-
-
-vector<passivedouble> CDeformationDriver::GetMeshCoordinates() const {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nPoint   = geometry->GetnPoint();
-
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
-
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = geometry->nodes->GetCoord(iPoint, iDim);
-
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
-    }
-
-    return values;
-}
-
-vector<passivedouble> CDeformationDriver::GetMeshCoordinatesMarker(unsigned short iMarker) const {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nVertex  = geometry->GetnVertex(iMarker);
-
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
-
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = geometry->nodes->GetCoord(iPoint, iDim);
-
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
-    }
-
-    return values;
-}
-
-void CDeformationDriver::SetMeshCoordinates(vector<passivedouble> values) {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nPoint   = geometry->GetnPoint();
-
-    if (values.size() != nPoint*nDim) {
-        SU2_MPI::Error("Size does not match nPoint * nDim !", CURRENT_FUNCTION);
-    }
-
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            geometry->nodes->SetCoord(iPoint, iDim, values[iPoint*nDim + iDim]);
-        }
-    }
-}
-
-void CDeformationDriver::SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values) {
-    CGeometry* geometry = geometry_container[ZONE_0];
-    const auto nVertex  = geometry->GetnVertex(iMarker);
-
-    if (values.size() != nVertex*nDim) {
-        SU2_MPI::Error("Size does not match nVertex * nDim !", CURRENT_FUNCTION);
-    }
-
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            geometry->nodes->SetCoord(iPoint, iDim, values[iVertex*nDim + iDim]);
-        }
-    }
 }
 
 void CDeformationDriver::SetVertexCoordX(unsigned short iMarker, unsigned long iVertex, passivedouble newPosX) {

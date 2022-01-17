@@ -109,20 +109,6 @@ public:
   map<string, string> GetAllBoundaryMarkersType() const;
 
   /*!
-   * \brief Get the number of vertices (halo nodes included) from a specified marker.
-   * \param[in] iMarker -  Marker identifier.
-   * \return Number of vertices.
-   */
-  unsigned long GetNumberVertices(unsigned short iMarker) const;
-
-  /*!
-   * \brief Get the number of halo vertices from a specified marker.
-   * \param[in] iMarker - Marker identifier.
-   * \return Number of vertices.
-   */
-  unsigned long GetNumberHaloVertices(unsigned short iMarker) const;
-
-  /*!
    * \brief Check if a vertex is physical or not (halo node) on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -159,50 +145,156 @@ public:
   }
 
   /*!
-   * \brief Get the global IDs of the mesh elements.
-   * \return Element IDs (nElem).
+   * \brief Get the number of mesh dimensions.
+   * \return Number of dimensions.
    */
-  vector<unsigned long> GetMeshElementIDs() const;
+  unsigned long GetNumberDimensions() const;
+   
+  /*!
+   * \brief Get the number of mesh elements.
+   * \return Number of elements.
+   */
+  unsigned long GetNumberElements() const;
+  
+  /*!
+   * \brief Get the number of mesh elements from a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Number of elements.
+   */
+  unsigned long GetNumberElementsMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Get the number of mesh vertices.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberVertices() const;
+  
+  /*!
+   * \brief Get the number of mesh vertices from a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberVerticesMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Get the number of halo mesh vertices.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberHaloVertices() const;
 
   /*!
-   * \brief Get the connected point IDs of the mesh elements.
+   * \brief Get the number of halo mesh vertices from a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberHaloVerticesMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Get global IDs of mesh vertices.
+   * \return Global vertex IDs.
+   */
+  vector<unsigned long> GetVertexIDs() const;
+  
+  /*!
+   * \brief Get global IDs of mesh vertices.
+   * \param[in] iMarker - Marker identifier.
+   * \return Global vertex IDs.
+   */
+  vector<unsigned long> GetVertexIDsMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Get global IDs of mesh elements.
+   * \return Global element IDs.
+   */
+  vector<unsigned long> GetElementIDs() const;
+  
+  /*!
+   * \brief Get global IDs of mesh elements.
+   * \param[in] iMarker - Marker identifier.
+   * \return Global element IDs.
+   */
+  vector<unsigned long> GetElementIDsMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Get the connected point IDs of mesh elements.
    * \return Element connectivities (nElem, nNode)
    */
-  vector<vector<unsigned long>> GetMeshConnectivity() const;
-
+  vector<vector<unsigned long>> GetConnectivity() const;
+  
   /*!
-   * \brief Get the connected point IDs of the mesh elements on a specified marker.
+   * \brief Get the connected point IDs of mesh elements on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return Element connectivities (nBound, nNode).
    */
-  vector<vector<unsigned long>> GetMeshConnectivityMarker(unsigned short iMarker) const;
+  vector<vector<unsigned long>> GetConnectivityMarker(unsigned short iMarker) const;
+    
+  /*!
+   * \brief Get halo node stauts of mesh vertices. 
+   * \return Point domain status.
+   */
+  vector<bool> GetDomain() const;
+
+  /*!
+   * \brief Get halo node stauts of mesh marker vertices. 
+   * \param[in] iMarker - Marker identifier.
+   * \return Point domain status.
+   */
+  vector<bool> GetDomainMarker(unsigned short iMarker) const;
 
   /*!
    * \brief Get the coordinates of the mesh points.
-   * \return Point coordinates (nPoint, nDim).
+   * \return Point coordinates (nPoint*nDim).
    */
-  vector<passivedouble> GetMeshCoordinates() const;
-
+  vector<passivedouble> GetCoordinates() const;
+  
   /*!
    * \brief Get the coordinates of the mesh points on the specified marker.
    * \param[in] iMarker - Marker identifier.
-   * \return Point coordinates (nVertex, nDim).
+   * \return Point coordinates (nVertex*nDim).
    */
-  vector<passivedouble> GetMeshCoordinatesMarker(unsigned short iMarker) const;
-
+  vector<passivedouble> GetCoordinatesMarker(unsigned short iMarker) const;
+  
   /*!
-   * \brief Set the coordinates of the mesh points.
+   * \brief Set the coordinates of the mesh points [DEBUGGING].
    * \param[in] values - Point coordinates (nPoint*nDim).
    */
-  void SetMeshCoordinates(vector<passivedouble> values);
-
+  void SetCoordinates(vector<passivedouble> values);
+  
   /*!
-   * \brief Set the coordinates of the mesh points on the specified marker.
+   * \brief Set the coordinates of the mesh points on the specified marker [DEBUGGING].
    * \param[in] iMarker - Marker identifier.
    * \param[in] values - Point coordinates (nVertex*nDim).
    */
-  void SetMeshCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
-
+  void SetCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
+  
+  /*!
+   * \brief Get the vertex displacements on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Vertex displacements (nVertex*nDim).
+   */
+  vector<passivedouble> GetDisplacementsMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Set the vertex displacements on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] values - Vertex displacements (nVertex*nDim).
+   */
+  void SetDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values);
+  
+  /*!
+   * \brief Get the vertex velocities on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Vertex velocities (nVertex*nDim).
+   */
+  vector<passivedouble> GetVelocitiesMarker(unsigned short iMarker) const;
+  
+  /*!
+   * \brief Set the vertex velocities on the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] values - Vertex velocities (nVertex*nDim).
+   */
+  void SetVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values);
+  
   /*!
    * \brief Set the x coordinate of a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
