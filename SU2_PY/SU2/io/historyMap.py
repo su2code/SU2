@@ -369,6 +369,10 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                            'GROUP': 'D_FLOW_COEFF',
                            'HEADER': 'd[Momentum_Distortion]',
                            'TYPE': 'D_COEFFICIENT'},
+ 'D_DC60_DISTORTION': {'DESCRIPTION': 'Derivative value',
+                       'GROUP': 'D_AERO_COEFF',
+                       'HEADER': 'd[DC60_Distortion]',
+                       'TYPE': 'D_COEFFICIENT'},
  'D_MOMENT_X': {'DESCRIPTION': 'Derivative value',
                 'GROUP': 'D_AERO_COEFF',
                 'HEADER': 'd[CMx]',
@@ -645,6 +649,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                          'GROUP': 'FLOW_COEFF',
                          'HEADER': 'Momentum_Distortion',
                          'TYPE': 'COEFFICIENT'},
+ 'DC60_DISTORTION': {'DESCRIPTION': 'Total DC60 distortion on '
+                                        'markers set in MARKER_ANALYZE',
+                     'GROUP': 'FLOW_COEFF',
+                     'HEADER': 'DC60_Distortion',
+                     'TYPE': 'COEFFICIENT'},
  'MOMENT_X': {'DESCRIPTION': 'Total momentum x-component on all surfaces set '
                              'with MARKER_MONITORING',
               'GROUP': 'AERO_COEFF',

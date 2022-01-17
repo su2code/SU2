@@ -6713,6 +6713,9 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
     case SURFACE_SECOND_OVER_UNIFORM:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
       break;
+    case SURFACE_DC60_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_DC60Distortion(0);
+      break;  
     case AVG_NORMAL_VEL:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NormalVelocity(0);
       break;  

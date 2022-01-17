@@ -898,7 +898,7 @@ void CConfig::SetPointersNull(void) {
   Outlet_MassFlow      = NULL;       Outlet_Density      = NULL;      Outlet_Area     = NULL;
 
   Surface_Uniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondOverUniform = NULL;
-  Surface_MomentumDistortion = NULL;
+  Surface_MomentumDistortion = NULL; Surface_DC60Distortion = NULL;
 
   Surface_IDC_Mach        = NULL;    Surface_IDR            = NULL;    ActDisk_Mach             = NULL;
   ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
@@ -3353,6 +3353,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         case SURFACE_SECONDARY:
         case SURFACE_MOM_DISTORTION:
         case SURFACE_SECOND_OVER_UNIFORM:
+        case SURFACE_DC60_DISTORTION:
         case SURFACE_PRESSURE_DROP:
         case AVG_NORMAL_VEL:
         case CUSTOM_OBJFUNC:
@@ -3362,7 +3363,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
                            string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+                           string("SURFACE_DC60_DISTORTION, SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
         default:
@@ -5019,6 +5020,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Surface_SecondaryStrength = new su2double[nMarker_Analyze] ();
   Surface_SecondOverUniform = new su2double[nMarker_Analyze] ();
   Surface_MomentumDistortion = new su2double[nMarker_Analyze] ();
+  Surface_DC60Distortion = new su2double[nMarker_Analyze] ();
   Surface_TotalTemperature = new su2double[nMarker_Analyze] ();
   Surface_TotalPressure = new su2double[nMarker_Analyze] ();
   Surface_PressureDrop = new su2double[nMarker_Analyze] ();
@@ -7513,6 +7515,7 @@ CConfig::~CConfig(void) {
   if (Surface_SecondaryStrength != NULL)    delete[]  Surface_SecondaryStrength;
   if (Surface_SecondOverUniform != NULL)    delete[]  Surface_SecondOverUniform;
   if (Surface_MomentumDistortion != NULL)    delete[]  Surface_MomentumDistortion;
+  if (Surface_DC60Distortion != NULL)    delete[]  Surface_DC60Distortion;
   if (Surface_TotalTemperature != NULL)    delete[]  Surface_TotalTemperature;
   if (Surface_TotalPressure!= NULL)    delete[]  Surface_TotalPressure;
   if (Surface_PressureDrop!= NULL)    delete[]  Surface_PressureDrop;
@@ -7844,6 +7847,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;
         case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
         case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
+        case SURFACE_DC60_DISTORTION:     AdjExt = "_dc60";     break;
         case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;

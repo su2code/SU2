@@ -439,6 +439,7 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_SECONDARY"           : "second"    ,
                  "SURFACE_MOM_DISTORTION"      : "distort"   ,
                  "SURFACE_SECOND_OVER_UNIFORM" : "sou"       ,
+                 "SURFACE_DC60_DISTORTION"     : "dc60"      ,
                  "SURFACE_PRESSURE_DROP"       : "dp"        ,
                  "CUSTOM_OBJFUNC"              : "custom"    ,
                  "AVG_NORMAL_VEL"              : "vn"        ,

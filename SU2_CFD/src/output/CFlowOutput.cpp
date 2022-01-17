@@ -61,6 +61,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   AddHistoryOutput("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total momentum distortion on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
   AddHistoryOutput("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary over uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: DC60 Distortion Metric
+  AddHistoryOutput("DC60_DISTORTION",           "DC60_Distortion",          ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total DC60 distortion on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
   AddHistoryOutput("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total temperature all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
@@ -96,6 +98,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Momentum distortion
   AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: DC60 distortion
+  AddHistoryOutputPerSurface("DC60_DISTORTION",          "DC60_Distortion",           ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
   AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
@@ -162,6 +166,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   su2double  Tot_Momentum_Distortion       = 0.0;
   su2double  Tot_SecondOverUniformity      = 0.0;
   su2double  Tot_Surface_PressureDrop      = 0.0;
+  su2double  Tot_DC60_Distortion           = 0.0;
 
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
 
@@ -323,6 +328,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   su2double *Surface_MassFlow_Abs_Total      = new su2double [nMarker_Analyze];
 
   su2double *Surface_MomentumDistortion_Total = new su2double [nMarker_Analyze];
+  su2double *Surface_DC60Distortion_Total     = new su2double [nMarker_Analyze];
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     Surface_MassFlow_Local[iMarker_Analyze]          = 0.0;
@@ -354,6 +360,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     Surface_MassFlow_Abs_Total[iMarker_Analyze]      = 0.0;
 
     Surface_MomentumDistortion_Total[iMarker_Analyze] = 0.0;
+    Surface_DC60Distortion_Total[iMarker_Analyze]     = 0.0;
 
   }
 
@@ -480,6 +487,180 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
   }
 
+  /*--- Compute DC60 Metric.   Future work should include MPI version and standalone function value ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Analyze(iMarker) == YES)  {
+
+      for (iMarker_Analyze= 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
+
+          // Initialize
+          su2double *r, PT, q, *PT_Sector, PT_Sector_Min, DC60, *PT_Station, *PT_Station_Min, *Mach_Station,
+            *Mach_Station_Min, IDR, IDC, IDC_Mach; su2double ***ProbeArray;
+
+          su2double TotalArea = 0.0, xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0;
+          su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0;
+
+          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            xCoord = geometry->node[iPoint]->GetCoord(0);
+            yCoord = geometry->node[iPoint]->GetCoord(1);
+            if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+
+            for (iDim = 0; iDim < nDim; iDim++) { Area += (Vector[iDim])* (Vector[iDim]);}
+            Area = sqrt(Area);
+      
+            TotalArea += Area;
+            xCoord_CG += xCoord*Area;
+            yCoord_CG += yCoord*Area;
+            zCoord_CG += zCoord*Area;
+          }
+  
+          xCoord_CG = xCoord_CG / TotalArea;
+          yCoord_CG = yCoord_CG / TotalArea;
+          zCoord_CG = zCoord_CG / TotalArea;
+
+          /*--- Compute AIP radius ---*/
+          su2double Radius = 1E-6;
+          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+            /*--- Current index position and global index ---*/
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            xCoord = geometry->node[iPoint]->GetCoord(0);
+            yCoord = geometry->node[iPoint]->GetCoord(1);
+            if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+
+            su2double Distance = 0.0;
+            if (nDim == 2)
+              Distance = sqrt((xCoord_CG-xCoord)*(xCoord_CG-xCoord) +
+                              (yCoord_CG-yCoord)*(yCoord_CG-yCoord));
+
+            if (nDim == 3)
+              Distance = sqrt((xCoord_CG-xCoord)*(xCoord_CG-xCoord) +
+                              (yCoord_CG-yCoord)*(yCoord_CG-yCoord) +
+                              (zCoord_CG-zCoord)*(zCoord_CG-zCoord));
+
+            if (Distance > Radius) Radius = Distance;
+          }
+
+          /*---                    ---*/
+          /*---Compute DC60 Metric ---*/
+          /*---                    ---*/
+          unsigned short Theta = 60, nStation = 5;
+          unsigned short nAngle = SU2_TYPE::Int(360/float(Theta));
+
+          /*--- Initialize "probes" ---*/
+          r = new su2double [nStation+1];
+
+          PT_Sector = new su2double [nAngle];
+          ProbeArray = new su2double ** [nAngle];
+          for (auto iAngle = 0; iAngle < nAngle; iAngle++) {
+            ProbeArray[iAngle] = new su2double * [nStation];
+            for (auto iStation = 0; iStation < nStation; iStation++) {
+              ProbeArray[iAngle][iStation] = new su2double [5];
+            }
+          }
+
+          /*--- Define the radius for each probe ---*/
+          r[0] = 0; r[nStation] = Radius;
+          for (auto iStation = 1; iStation < nStation; iStation++) {
+            r[iStation] = sqrt(  r[iStation-1]*r[iStation-1] + (r[nStation]*r[nStation] - r[0]*r[0])/float(nStation) );
+          }
+
+          /*--- Define the probe rack ---*/
+          su2double UpVector[3];
+          su2double RotatedVector[3];
+
+          UpVector[0] = 0.0; UpVector[1] = 0.0; UpVector[2] = 1.0;
+
+          for (auto iAngle = 0; iAngle < nAngle; iAngle++) {
+
+            su2double radians = -iAngle*Theta*2.0*PI_NUMBER/360;
+            RotatedVector[0] =  UpVector[0];
+            RotatedVector[1] =  UpVector[1] * cos(radians) - UpVector[2] * sin(radians);
+            RotatedVector[2] =  UpVector[1] * sin(radians) + UpVector[2] * cos(radians);
+
+            for (auto iStation = 1; iStation <= nStation; iStation++) {
+              ProbeArray[iAngle][iStation-1][0] = xCoord_CG+RotatedVector[0]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
+              ProbeArray[iAngle][iStation-1][1] = yCoord_CG+RotatedVector[1]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
+              ProbeArray[iAngle][iStation-1][2] = zCoord_CG+RotatedVector[2]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
+            }
+          }
+
+          /*--- Compute the Total pressure at each probe, closes grid point to the location ---*/
+
+          for (auto iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (auto iStation = 0; iStation < nStation; iStation++) {
+              su2double xCoord_ = ProbeArray[iAngle][iStation][0];
+              su2double yCoord_ = ProbeArray[iAngle][iStation][1];
+              su2double zCoord_ = ProbeArray[iAngle][iStation][2];
+
+              su2double MinDistance = 1E6;
+
+              for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                xCoord = geometry->node[iPoint]->GetCoord(0);
+                yCoord = geometry->node[iPoint]->GetCoord(1);
+                if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+
+                su2double dx = (xCoord_ - xCoord);
+                su2double dy = (yCoord_ - yCoord);
+                su2double dz = 0.0; if (nDim == 3) dz = (zCoord_ - zCoord);
+                su2double Distance;
+                Distance = dx*dx + dy*dy + dz*dz; Distance = sqrt(Distance);
+
+                su2double qv = 0.5*solver->GetNodes()->GetDensity(iPoint)*
+                                   solver->GetNodes()->GetVelocity2(iPoint);
+                Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/solver->GetNodes()->GetSoundSpeed(iPoint);
+                su2double PTv = solver->GetNodes()->GetPressure(iPoint) * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+                if (Distance <= MinDistance) {
+                  MinDistance = Distance;
+                  ProbeArray[iAngle][iStation][3] = PTv;
+                  ProbeArray[iAngle][iStation][4] = qv;
+                }
+              }
+            }
+          }
+
+          /*--- Evaluate the average pressure at each sector, fan face and dynamic pressure ---*/
+          su2double PT_Mean = 0.0, q_Mean = 0.0;
+          for (auto iAngle = 0; iAngle < nAngle; iAngle++) {
+            PT_Sector[iAngle] = 0.0;
+            for (auto iStation = 0; iStation < nStation; iStation++) {
+              PT_Sector[iAngle] += ProbeArray[iAngle][iStation][3]/float(nStation);
+              PT_Mean           += ProbeArray[iAngle][iStation][3]/float(nStation*nAngle);
+              q_Mean            += ProbeArray[iAngle][iStation][4]/float(nStation*nAngle);
+            }
+          }
+
+          /*--- Compute the min value of the averaged pressure at each sector ---*/
+          PT_Sector_Min = PT_Sector[0];
+          for (auto iAngle = 1; iAngle < nAngle; iAngle++) {
+            if (PT_Sector[iAngle] <= PT_Sector_Min) PT_Sector_Min = PT_Sector[iAngle];
+          }
+
+          /*--- Set the value of the distortion, it only works for one surface ---*/
+          if (q_Mean != 0.0) DC60 = ((PT_Mean - PT_Sector_Min))/q_Mean;
+          else DC60 = 0.0;
+
+          Surface_DC60Distortion_Total[iMarker_Analyze] = DC60;
+
+          /*--- Deallocate the memory ---*/
+          delete [] r;
+          delete [] PT_Sector;
+
+          for (auto iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (auto iStation = 0; iStation < nStation; iStation++) {
+              delete[] ProbeArray[iAngle][iStation];
+            }
+          }
+          delete[] ProbeArray;
+        }
+      }
+    }
+  } //END DC60
+
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
     su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
@@ -533,6 +714,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     Tot_Momentum_Distortion += MomentumDistortion;
     config->SetSurface_MomentumDistortion(iMarker_Analyze, MomentumDistortion);
 
+    su2double DC60Distortion = Surface_DC60Distortion_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("DC60_DISTORTION", DC60Distortion, iMarker_Analyze);
+    Tot_DC60_Distortion += DC60Distortion;
+    config->SetSurface_DC60Distortion(iMarker_Analyze, DC60Distortion);
+
     su2double SecondOverUniform = SecondaryStrength/Uniformity;
     SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY", SecondOverUniform, iMarker_Analyze);
     Tot_SecondOverUniformity += SecondOverUniform;
@@ -577,6 +763,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   SetHistoryOutputValue("UNIFORMITY", Tot_Surface_StreamVelocity2);
   SetHistoryOutputValue("SECONDARY_STRENGTH", Tot_Surface_TransvVelocity2);
   SetHistoryOutputValue("MOMENTUM_DISTORTION", Tot_Momentum_Distortion);
+  SetHistoryOutputValue("DC60_DISTORTION", Tot_DC60_Distortion);
   SetHistoryOutputValue("SECONDARY_OVER_UNIFORMITY", Tot_SecondOverUniformity);
   SetHistoryOutputValue("AVG_TOTALTEMP", Tot_Surface_TotalTemperature);
   SetHistoryOutputValue("AVG_TOTALPRESS", Tot_Surface_TotalPressure);
@@ -621,6 +808,9 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
       su2double MomentumDistortion = config->GetSurface_MomentumDistortion(iMarker_Analyze);
       cout << setw(20) << "Mom. Distortion: " << setw(15) << MomentumDistortion;
+
+      su2double DC60Distortion = config->GetSurface_DC60Distortion(iMarker_Analyze);
+      cout << setw(20) << "DC60 Distortion: " << setw(15) << DC60Distortion;
 
       su2double SecondOverUniform = config->GetSurface_SecondOverUniform(iMarker_Analyze);
       cout << setw(20) << "Second/Uniform: " << setw(15) << SecondOverUniform;
@@ -691,6 +881,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   delete [] Surface_Area_Total;
   delete [] Surface_MassFlow_Abs_Total;
   delete [] Surface_MomentumDistortion_Total;
+  delete [] Surface_DC60Distortion_Total;
 
   delete [] Surface_MassFlow;
   delete [] Surface_Mach;

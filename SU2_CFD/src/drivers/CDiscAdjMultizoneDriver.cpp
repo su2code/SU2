@@ -694,6 +694,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
           case SURFACE_SECONDARY:           FieldName = "SECONDARY_STRENGTH";        break;
           case SURFACE_MOM_DISTORTION:      FieldName = "MOMENTUM_DISTORTION";       break;
           case SURFACE_SECOND_OVER_UNIFORM: FieldName = "SECONDARY_OVER_UNIFORMITY"; break;
+          case SURFACE_DC60_DISTORTION:     FieldName = "DC60_DISTORTION";           break;
           case TOTAL_AVG_TEMPERATURE:       FieldName = "AVG_TOTALTEMP";             break;
           case SURFACE_TOTAL_PRESSURE:      FieldName = "AVG_TOTALPRESS";            break;
 
