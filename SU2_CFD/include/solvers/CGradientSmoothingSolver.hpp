@@ -35,7 +35,6 @@
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
  *  \author T. Dick.
- *  \date March 25, 2019.
  */
 class CGradientSmoothingSolver final : public CFEASolverBase {
 public:
@@ -43,15 +42,14 @@ public:
 /** Introduction of a new alias for the data type to allow compilation with forward mode.
  *
  * This is done for compatibility to the treatment of Jacobian and System in CSolver.hpp.
- * Note that the computations done here are always 'passive', i.e. not intended to be differentiated. We only need to
- * define functions depending on this once.
+ * Note that the computations done here are always 'passive', i.e. not intended to be differentiated.
+ * We only need to define functions depending on this once.
  */
 #ifndef CODI_FORWARD_TYPE
   typedef su2mixedfloat su2matvecscalar;
 #else
   typedef su2double su2matvecscalar;
 #endif
-  using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor, 64, DynamicSize, DynamicSize>;
 
  private:
   unsigned int curDim;                       /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
@@ -112,6 +110,7 @@ public:
                                 CConfig *config,
                                 su2double** Gradient) override;
 
+ private:
 
   /*!
    * \brief Assemble the stiffness matrix
@@ -180,11 +179,6 @@ public:
                                               su2double** Gradient) override;
 
   /*!
-   * \brief Return current parameter gradient.
-   */
-  inline const vector<su2double>& GetDeltaP() const { return deltaP; }
-
-  /*!
    * \brief write the DV gradient into a file
    */
   void OutputDVGradient(const CConfig* config, string out_file = "delta_p.txt");
@@ -231,21 +225,10 @@ public:
    */
   void ReadSensFromGeometry(const CGeometry *geometry) override;
 
- private:
   /*!
    * \brief Write the solution of the linear solver into the sensitivities of the nodes
    */
   void WriteSensitivity(CGeometry* geometry, const CConfig* config);
-
-  /*!
-   * \brief Copy sensitivities from a vector into the geometry
-   */
-  void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) const;
-
-  /*!
-   * \brief Copy sensitivities from the geometry into a vector
-   */
-  void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -301,7 +284,7 @@ public:
   /*!
    * \brief Return the current working dimension.
    */
-  inline const unsigned int& GetCurrentDim() const {
+  inline unsigned int GetCurrentDim() const {
     return curDim;
   }
 

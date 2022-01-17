@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@
  * \ingroup Grad_Smooth
  * \author T. Dick
  */
-class CGradSmoothing : public CNumerics {
+class CGradSmoothing final : public CNumerics {
   su2activematrix val_DHiDHj;
   su2activevector Ni_Vec;
 
@@ -55,10 +55,10 @@ class CGradSmoothing : public CNumerics {
   CGradSmoothing(unsigned short val_nDim, const CConfig* config);
 
   /*!
-   * \brief Destructor of the class.
+   * \brief Build the tangent stiffness matrix of an element.
+   * \param[in,out] element_container - Element whose tangent matrix is being built.
+   * \param[in] config - Definition of the problem.
    */
-  ~CGradSmoothing();
-
-  void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config);
+  void Compute_Tangent_Matrix(CElement *element_container, const CConfig *config) override;
 
 };

@@ -1761,7 +1761,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     }
   } else if ((Kind_SU2 == SU2_COMPONENT::SU2_DOT) && !ForwardProjectionDerivative) {
     // need to reset here, since we read out the whole vector, but are only interested in boundary derivatives.
-    if (config->GetSmoothGradient() && !ForwardProjectionDerivative) {
+    if (config->GetSmoothGradient()) {
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nDim + iDim;

@@ -42,12 +42,7 @@ class CSobolevSmoothingVariable final : public CVariable {
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSobolevSmoothingVariable(unsigned long npoint, unsigned long ndim, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSobolevSmoothingVariable() override = default;
+  CSobolevSmoothingVariable(unsigned long npoint, unsigned long ndim, const CConfig *config);
 
   /*!
    * \brief Set the sensitivity at the node

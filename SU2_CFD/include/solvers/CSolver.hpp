@@ -38,8 +38,6 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unordered_set>
-#include <unordered_map>
 
 #include "../fluid/CFluidModel.hpp"
 #include "../task_definition.hpp"

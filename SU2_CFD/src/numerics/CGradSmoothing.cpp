@@ -38,8 +38,6 @@ CGradSmoothing::CGradSmoothing(unsigned short val_nDim, const CConfig* config) :
   Ni_Vec.setConstant(0.0);
 }
 
-CGradSmoothing::~CGradSmoothing() {}
-
 void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
   unsigned int iDim, jDim, iGauss, nGauss, iShape, jShape, nNode;

@@ -27,7 +27,7 @@
 
 #include "../../include/variables/CSobolevSmoothingVariable.hpp"
 
-CSobolevSmoothingVariable::CSobolevSmoothingVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
+CSobolevSmoothingVariable::CSobolevSmoothingVariable(unsigned long npoint, unsigned long ndim, const CConfig *config) :
   CVariable(npoint, ndim, config) {
 
   nDim = ndim;

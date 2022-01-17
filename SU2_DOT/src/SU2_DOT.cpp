@@ -972,15 +972,14 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
 
   int rank = SU2_MPI::GetRank();
 
-  /*--- Warning if choosen mode is unsupported.
+  /*--- Warning if choosen smoothing mode is unsupported.
    * This is the default option if the user has not specified a mode in the config file. ---*/
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::NONE) {
-    if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
-    return;
+    SU2_MPI::Error("Unsupported operation modus for the Sobolev Smoothing Solver.", CURRENT_FUNCTION);
   }
 
   /*-- Construct the smoothing solver and numerics ---*/
-  CSolver* solver = new CGradientSmoothingSolver(geometry, config);
+  std::unique_ptr<CSolver> solver(new CGradientSmoothingSolver(geometry, config));
   CNumerics* numerics;
   if (config->GetSmoothOnSurface()) {
     numerics = new CGradSmoothing(geometry->GetnDim()-1, config);
@@ -1026,21 +1025,22 @@ void DerivativeTreatment_MeshSensitivity(CGeometry *geometry, CConfig *config, C
 
   }
 
+  delete numerics;
+
 }
 
 void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumetricMovement* grid_movement, CSurfaceMovement *surface_movement, su2double** Gradient) {
 
   int rank = SU2_MPI::GetRank();
 
-  /*--- Warning if choosen mode is unsupported.
+  /*--- Error if choosen smoothing mode is unsupported.
    * This is the default option if the user has not specified a mode in the config file. ---*/
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::NONE) {
-    if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
-    return;
+    SU2_MPI::Error("Unsupported operation modus for the Sobolev Smoothing Solver.", CURRENT_FUNCTION);
   }
 
   /*-- Construct the smoothing solver and numerics ---*/
-  CSolver* solver = new CGradientSmoothingSolver(geometry, config);
+  std::unique_ptr<CSolver> solver(new CGradientSmoothingSolver(geometry, config));
   CNumerics* numerics;
   if (config->GetSmoothOnSurface()) {
     numerics = new CGradSmoothing(geometry->GetnDim()-1, config);
@@ -1062,4 +1062,7 @@ void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumet
              config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
   }
+
+  delete numerics;
+
 }

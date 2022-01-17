@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <unordered_set>
+
 #include "CSolver.hpp"
 #include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"

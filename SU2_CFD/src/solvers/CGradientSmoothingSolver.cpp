@@ -31,8 +31,33 @@
 #include "../../include/solvers/CGradientSmoothingSolver.hpp"
 #include "../../include/variables/CSobolevSmoothingVariable.hpp"
 
+/*!
+ * \namespace CGradientSmoothingSolverDetails
+ * \brief Namespace to hide helper functions used by the CGradientSmoothingSolver class.
+ */
+namespace CGradientSmoothingSolverDetails {
+
+template<typename su2matvecscalar>
+void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) {
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++) {
+      geometry->SetSensitivity(iPoint,iDim, vector(iPoint, iDim));
+    }
+  }
+}
+
+template<typename su2matvecscalar>
+void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector) {
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++) {
+      vector(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
+    }
+  }
+}
+} // namespace CGradientSmoothingSolverDetails
+
 CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(LINEAR_SOLVER_MODE::GRADIENT_MODE) {
-  unsigned int iDim, marker_count = 0;
+  unsigned int marker_count = 0;
   unsigned long iPoint;
 
   /*--- This solver does not perform recording operations --*/
@@ -79,9 +104,6 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
       element_container[GRAD_TERM][EL_TRIA2] = new CTRIA3();
     }
   }
-
-  Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
-  Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
 
   /*--- initializations for linear equation systems ---*/
   if ( !config->GetSmoothOnSurface() ) {
@@ -142,16 +164,6 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
 }
 
 CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
-
-  if (element_container != nullptr) {
-    for (unsigned int iVar = 0; iVar < MAX_TERMS; iVar++) {
-      for (unsigned int jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
-        delete element_container[iVar][jVar];
-      }
-      delete [] element_container[iVar];
-    }
-    delete [] element_container;
-  }
 
   delete nodes;
 
@@ -288,9 +300,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
     } else {
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      WriteVectorToGeometry(geometry, helperVecIn);
+      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
-      ReadVectorToGeometry(geometry, helperVecIn);
+      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
 
       CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
       CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
@@ -305,9 +317,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
       }
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      WriteVectorToGeometry(geometry, helperVecOut);
+      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
-      ReadVectorToGeometry(geometry, helperVecOut);
+      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
 
     }
 
@@ -324,7 +336,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
     string hess_filename = config->GetObjFunc_Hess_FileName();
-    if (config->GetMultizone_Problem()) config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
+    if (config->GetMultizone_Problem()) hess_filename=config->GetMultizone_FileName(hess_filename, config->GetiZone(), ".dat");
     ofstream SysMatrix(hess_filename);
     SysMatrix.precision(config->GetOutput_Precision());
 
@@ -333,7 +345,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CNu
         SysMatrix << hessian(row,column);
         if (column!=nDVtotal-1) SysMatrix << ", ";
       }
-      if (row!=nDVtotal-1) SysMatrix << std::endl;
+      if (row!=nDVtotal-1) SysMatrix << '\n';
     }
     SysMatrix.close();
   }
@@ -463,8 +475,8 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
 
         /*--- Store if we set values for a given node already ---*/
-        if (visited[indexNode[iNode]]==false) { visited[indexNode[iNode]]=true; }
-        if (visited[indexNode[jNode]]==false) { visited[indexNode[jNode]]=true; }
+        visited[indexNode[iNode]]=true;
+        visited[indexNode[jNode]]=true;
 
       }
     }
@@ -476,6 +488,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConf
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
   std::array<unsigned long, MAXNNODE_3D> indexNode;
+  std::array<su2double, MAXNDIM> Residual;
   su2double Weight, Jac_X, val_Coord;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -534,7 +547,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
   int EL_KIND = 0;
   std::array<unsigned long, MAXNNODE_2D> indexNode;
   std::array<unsigned long, MAXNNODE_2D> indexVertex;
-  su2double Weight, Jac_X, normalSens = 0.0, norm, val_Coord;
+  su2double Weight, Jac_X, norm, val_Coord, normalSens = 0.0, Residual=0.0;
   su2double normal[MAXNDIM];
 
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
@@ -579,10 +592,10 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
           normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
         }
 
-        Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
-        LinSysRes.AddBlock(indexNode[iNode], Residual);
+        Residual += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
+        LinSysRes.AddBlock(indexNode[iNode], &Residual);
 
-        Residual[0] = 0;
+        Residual = 0;
         normalSens = 0;
       }
     }
@@ -691,7 +704,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   grid_movement->SetVolume_Deformation(geometry, config, false, true);
 
-  ReadVectorToGeometry(geometry, helperVecOut);
+  CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
 
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
@@ -721,7 +734,7 @@ void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string ou
   unsigned iDV;
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
-    if (config->GetMultizone_Problem()) config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
+    if (config->GetMultizone_Problem()) out_file=config->GetMultizone_FileName(out_file, config->GetiZone(), ".dat");
     ofstream delta_p (out_file);
     delta_p.precision(config->GetOutput_Precision());
 
@@ -927,26 +940,6 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
           nodes->SetSensitivity(iPoint, iDim, LinSysSol(iPoint, iDim));
         }
       }
-    }
-  }
-}
-
-void CGradientSmoothingSolver::WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) const {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->SetSensitivity(iPoint,iDim, vector(iPoint, iDim));
-    }
-  }
-}
-
-void CGradientSmoothingSolver::ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      vector(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
     }
   }
 }
