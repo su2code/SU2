@@ -78,8 +78,6 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-
-
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
