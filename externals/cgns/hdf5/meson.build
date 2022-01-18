@@ -8,6 +8,7 @@ else
                            '-Wno-sign-compare',
 			   '-Wno-stringop-overflow',
                            '-Wno-discarded-qualifiers',
+                           '-Wno-error=maybe-uninitialized',
                            '-Wno-pedantic']
 endif
 
