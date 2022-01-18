@@ -40,9 +40,12 @@ configure_file(input: 'cgnstypes.h.in',
   output: 'cgnstypes.h',
   configuration: cgns_conf_data)
 
-
 configure_file(input: 'cg_hash_types.h.in',
   output: 'cg_hash_types.h',
+  configuration: cgns_conf_data)
+
+configure_file(input: 'cgnsconfig.h.in',
+  output: 'cgnsconfig.h',
   configuration: cgns_conf_data)
 
 
