@@ -265,14 +265,14 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
 }
 
-void CNSSolver::Evaluate_ObjFunc(const CConfig *config) {
+void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
 
   /*--- Evaluate objective functions common to Euler and NS solvers ---*/
 
-  CEulerSolver::Evaluate_ObjFunc(config);
+  CEulerSolver::Evaluate_ObjFunc(config, nullptr);
 
   /*--- Evaluate objective functions specific to NS solver ---*/
 

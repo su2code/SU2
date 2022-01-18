@@ -80,7 +80,6 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string ConvCriteria;            // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -436,7 +435,7 @@ private:
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
-  bool AddIndNeighbor;         /*!< \brief Include indirect neighbor in the agglomeration process. */
+  string CustomObjFunc;        /*!< \brief User-defined objective function. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -662,9 +661,12 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
-  Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
+  Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
+  Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
+  Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,                    /*!< \brief Number of markers for the objective function. */
@@ -726,7 +728,7 @@ private:
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
-  unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
+  TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
@@ -1104,7 +1106,7 @@ private:
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
-  unsigned short* VolumeOutputFiles;  /*!< \brief File formats to output */
+  OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
   unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
@@ -4244,7 +4246,7 @@ public:
   unsigned short GetRef_Inc_NonDim(void) const { return Ref_Inc_NonDim; }
 
   /*!
-   * \brief Get the kind of SU2 software component.
+   * \brief Set the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
   void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
@@ -5178,6 +5180,11 @@ public:
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val) { Weight_ObjFunc[val_obj] = val; }
 
   /*!
+   * \brief Get the user expression for the custom objective function.
+   */
+  const string& GetCustomObjFunc() const { return CustomObjFunc; }
+
+  /*!
    * \brief Get the kind of sensitivity smoothing technique.
    * \return Kind of sensitivity smoothing technique.
    */
@@ -5220,6 +5227,24 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
+   * \brief Flag for whether restart solution files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Restart_Overwrite(void) const { return Wrt_Restart_Overwrite; }
+
+    /*!
+   * \brief Flag for whether visualization files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Surface_Overwrite(void) const { return Wrt_Surface_Overwrite; }
+
+   /*!
+   * \brief Flag for whether visualization files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
    * \brief Provides the number of varaibles.
@@ -5322,7 +5347,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetTabular_FileFormat(void) const { return Tab_FileFormat; }
+  TAB_OUTPUT GetTabular_FileFormat(void) const { return Tab_FileFormat; }
 
   /*!
    * \brief Get the output precision to be used in <ofstream>.precision(value) for history and SU2_DOT output.
@@ -5369,12 +5394,21 @@ public:
 
   /*!
    * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
-   * \param[in] config - Definition of the particular problem.
    * \param[in] filename - the base filename.
    * \param[in] ext - the extension to be added.
+   * \param[in] Iter - the current iteration
    * \return The new filename
    */
   string GetFilename(string filename, string ext, int Iter) const;
+
+  /*!
+   * \brief Add steady iteration number to the filename (does not overwrite previous files)
+   * \param[in] filename - the base filename.
+   * \param[in] inner_iter - the inner iterations
+   * \param[in] outer_iter - the outer iterations
+   * \return The new filename
+   */
+  string GetFilename_Iter(const string& filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5384,18 +5418,26 @@ public:
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iZone - the zone ID.
+   * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iInst - the current instance.
+   * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iInst - the current instance.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const;
@@ -5458,6 +5500,7 @@ public:
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
+   * \param[in] ext - the filename extension.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
   string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
@@ -5468,12 +5511,6 @@ public:
    * \return Name of the file with the appropriate objective function extension.
    */
   string GetObjFunc_Extension(string val_filename) const;
-
-  /*!
-   * \brief Get the criteria for structural residual (relative/absolute).
-   * \return Relative/Absolute criteria for structural convergence.
-   */
-  unsigned short GetResidual_Criteria_FEM(void) const { return Res_FEM_CRIT; }
 
   /*!
    * \brief Get functional that is going to be used to evaluate the residual flow convergence.
@@ -5589,6 +5626,7 @@ public:
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
    * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val_ind - value of initial deformation.
    * \param[in] val    - Value of the design variable.
    */
   void SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
@@ -5636,7 +5674,6 @@ public:
 
   /*!
    * \brief Set the type of dynamic mesh motion.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
    */
   void SetKind_GridMovement(unsigned short motion_Type) { Kind_GridMovement = motion_Type; }
@@ -5755,7 +5792,7 @@ public:
 
   /*!
    * \brief Get the pitching phase of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] iDim - spatial component.
    * \return pitching phase of the mesh.
    */
   su2double GetPitching_Phase(unsigned short iDim) const { return Pitching_Phase[iDim];}
@@ -5785,7 +5822,6 @@ public:
 
   /*!
    * \brief Get the plunging amplitude of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] iDim - spatial component
    * \return Plunging amplitude of the mesh.
    */
@@ -9377,7 +9413,7 @@ public:
   /*!
    * \brief GetVolumeOutputFiles
    */
-  const unsigned short* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
+  const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
 
   /*!
    * \brief GetnVolumeOutputFiles

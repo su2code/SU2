@@ -51,11 +51,6 @@ public:
   CElasticityOutput(CConfig *config, unsigned short nDim);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CElasticityOutput(void) override;
-
-  /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */

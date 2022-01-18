@@ -1140,6 +1140,12 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
+  /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_RESTART_OVERWRITE", Wrt_Restart_Overwrite, true);
+  /*!\brief WRT_SURFACE_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_SURFACE_OVERWRITE", Wrt_Surface_Overwrite, true);
+  /*!\brief WRT_VOLUME_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -1925,9 +1931,11 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
   addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
-  /*!\brief OBJECTIVE_FUNCTION
-   *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
+  /*!\brief OBJECTIVE_FUNCTION \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
+
+  /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
+  addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
@@ -1983,7 +1991,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to input/output files and formats ---*/
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
-  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
+  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
   /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
   addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
@@ -3272,17 +3280,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Set the default output files ---*/
   if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
-    VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
-    VolumeOutputFiles[0] = RESTART_BINARY;
-    VolumeOutputFiles[1] = PARAVIEW_XML;
-    VolumeOutputFiles[2] = SURFACE_PARAVIEW_XML;
+    VolumeOutputFiles = new OUTPUT_TYPE[nVolumeOutputFiles];
+    VolumeOutputFiles[0] = OUTPUT_TYPE::RESTART_BINARY;
+    VolumeOutputFiles[1] = OUTPUT_TYPE::PARAVIEW_XML;
+    VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
-    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::SURFACE_TECPLOT_BINARY) {
       SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
     }
   }
@@ -3291,19 +3299,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check if SU2 was build with CGNS support, as that is required for CGNS output. ---*/
 #ifndef HAVE_CGNS
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
-    if (VolumeOutputFiles[iVolumeFile] == CGNS ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_CGNS) {
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::CGNS ||
+        VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::SURFACE_CGNS) {
       SU2_MPI::Error(string("CGNS file requested in option OUTPUT_FILES but SU2 was built without CGNS support.\n"),CURRENT_FUNCTION);
     }
   }
 #endif
 
-  /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
+  /*--- STL_BINARY output not implemented yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
-    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY){
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
     }
-    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == STL || VolumeOutputFiles[iVolumeFile] == STL_BINARY)) {
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_ASCII || VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY)) {
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
     }
   }
@@ -3466,10 +3474,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         nObjW = nObj;
       }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n ") +
-                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
-                       string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
-                       string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
+        SU2_MPI::Error("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n"
+                       "For multiple surfaces per objective, either use one objective or list the objective multiple times.\n"
+                       "For multiple objectives per marker either use one marker or list the marker multiple times.\n"
+                       "Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION.",
                        CURRENT_FUNCTION);
       }
     }
@@ -3479,8 +3487,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (nObjW<nObj) {
     if (Weight_ObjFunc!= nullptr && nObjW>1) {
-      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+      SU2_MPI::Error("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"
+                     "be lenght 1, or be deleted from the config file (equal weights will be applied).", CURRENT_FUNCTION);
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
@@ -3512,19 +3520,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case SURFACE_SPECIES_VARIANCE:
         case CUSTOM_OBJFUNC:
           if (Kind_ObjFunc[iObj] != Obj_0) {
-            SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
-                           string("problem or as a single objective applied to multiple monitoring markers:\n")+
-                           string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
-                           string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
-                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n")+
-                           string("SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+            SU2_MPI::Error("The following objectives can only be used for the first surface in a multi-objective \n"
+                           "problem or as a single objective applied to multiple monitoring markers:\n"
+                           "INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n"
+                           "FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n"
+                           "SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n"
+                           "SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n"
+                           "SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n", CURRENT_FUNCTION);
           }
           break;
         default:
           break;
       }
     }
+  }
+
+  if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
+    SU2_MPI::Error("The expression for the custom objective function was not set.\n"
+                   "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
   }
 
   /*--- Check for unsteady problem ---*/
@@ -3566,6 +3579,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (TimeMarching != TIME_MARCHING::HARMONIC_BALANCE) { TimeMarching = TIME_MARCHING::STEADY; }
   }
+
+  if (Time_Domain && !GetWrt_Restart_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_RESTART_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+  if (Time_Domain && !GetWrt_Surface_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_SURFACE_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+  if (Time_Domain && !GetWrt_Volume_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_VOLUME_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
 
@@ -6840,8 +6864,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
 
     switch (Tab_FileFormat) {
-      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
-      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_OUTPUT::TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_OUTPUT::TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6866,8 +6890,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_SOL) {
     switch (Tab_FileFormat) {
-      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
-      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_OUTPUT::TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_OUTPUT::TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
@@ -7308,6 +7332,13 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   // now fill the option value vector
   option_value.clear();
   last_pos = value_part.find_first_not_of(delimiters, 0);
+
+  // detect a raw string
+  if (value_part[last_pos] == '\'' && value_part.back() == '\'') {
+    option_value.push_back(value_part.substr(last_pos+1, value_part.size()-last_pos-2));
+    return true;
+  }
+
   pos = value_part.find_first_of(delimiters, last_pos);
   while (string::npos != pos || string::npos != last_pos) {
     // add token to the vector<string>
@@ -8042,7 +8073,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, int Iter) const {
+string CConfig::GetFilename(string filename, string ext, int timeIter) const {
 
   /*--- Remove any extension --- */
 
@@ -8061,11 +8092,19 @@ string CConfig::GetFilename(string filename, string ext, int Iter) const {
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
+  /*--- Append the iteration number for unsteady problems ---*/
   if (GetTime_Domain()){
-    filename = GetUnsteady_FileName(filename, Iter, ext);
+    filename = GetUnsteady_FileName(filename, timeIter, ext);
   }
 
   return filename;
+}
+
+string CConfig::GetFilename_Iter(const string& filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const {
+  const auto iter = GetMultizone_Problem() ? curOuterIter : curInnerIter;
+  std::stringstream iter_ss;
+  iter_ss << filename_iter << "_" << std::setw(6) << std::setfill('0') << iter;
+  return iter_ss.str();
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) const {
@@ -8203,15 +8242,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_SPECIES_VARIANCE:    AdjExt = "_specvar";  break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
-        case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
-        case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
         case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
-        case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
-        case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
-        case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
-        case EULERIAN_WORK:               AdjExt = "_ew";       break;
         case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
-        case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
         case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
@@ -9996,7 +10028,7 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
 
   bool multiblockDriver = false;
   for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++){
-    if (driver_config->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+    if (driver_config->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
       multiblockDriver = true;
     }
   }
@@ -10005,7 +10037,7 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
   for (unsigned short iZone = 0; iZone < nZone; iZone++){
     multiblockZone = false;
     for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++){
-      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
         multiblockZone = true;
       }
     }
