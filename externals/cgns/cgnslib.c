@@ -5001,7 +5001,7 @@ int cg_poly_elements_general_read(int file_number, int B, int Z, int S,
            void* elements, void* connect_offset)
 {
     cgns_section* section;
-    cgsize_t size, n;
+    cgsize_t size = 0, n = 0;
     cgsize_t s_start[1], s_end[1], s_stride[1];
     cgsize_t m_start[1], m_end[2], m_stride[1], m_dim[1];
     CGNS_ENUMT(DataType_t) s_type;
