@@ -7,6 +7,7 @@ else
                            '-Wno-unused-but-set-variable',
                            '-Wno-sign-compare',
 			   '-Wno-stringop-overflow',
+                           '-Wno-discarded-qualifiers',
                            '-Wno-pedantic']
 endif
 
