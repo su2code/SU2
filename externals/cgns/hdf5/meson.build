@@ -9,6 +9,7 @@ else
 			   '-Wno-stringop-overflow',
                            '-Wno-discarded-qualifiers',
                            '-Wno-error=maybe-uninitialized',
+                           '-Wno-error=unused-function',
                            '-Wno-pedantic']
 endif
 
