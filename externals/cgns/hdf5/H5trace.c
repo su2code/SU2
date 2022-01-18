@@ -120,8 +120,8 @@ H5_trace(const double *returning, const char *func, const char *type, ...)
     void *            vp                  = NULL;
     FILE *            out                 = H5_debug_g.trace;
     static hbool_t    is_first_invocation = TRUE;
-    H5_timer_t        function_timer      = {{0}, {0}, {0}, FALSE};
-    H5_timevals_t     function_times;
+    H5_timer_t        function_timer      = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, FALSE};
+    H5_timevals_t     function_times      = {0.0, 0.0, 0.0};
     static H5_timer_t running_timer;
     H5_timevals_t     running_times;
     static int        current_depth   = 0;
