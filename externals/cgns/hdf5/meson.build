@@ -1156,7 +1156,7 @@ gen_SRCS = [ H5lib_settings_c, H5Tinit_c ]
 lib_hdf5_embedded = static_library('su2hdf5',
                           common_SRCS + gen_SRCS,
                           install : false,
-                          c_args: hdf5_default_warnings,
+                          c_args: hdf5_default_warnings + defs,
                           dependencies : ext_deps)
 
 hdf5_dep = declare_dependency(link_with: lib_hdf5_embedded, 
