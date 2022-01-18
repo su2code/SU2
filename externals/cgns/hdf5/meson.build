@@ -286,7 +286,6 @@ endif
 
 ####
 ####
-#cc = meson.get_compiler('c')
 
 hdf5_conf_data.set('H5_SIZEOF_CHAR', cc.sizeof('char'))
 
@@ -613,6 +612,7 @@ endif
 
 if mpi
   hdf5_conf_data.set('H5_HAVE_PARALLEL', 1)
+  ext_deps += mpi_dep
 else
   threads_dep = dependency('threads')
   ext_deps += threads_dep
