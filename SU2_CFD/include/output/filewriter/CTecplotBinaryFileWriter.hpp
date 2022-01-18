@@ -45,12 +45,11 @@ public:
 
   /*!
    * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    * \param[in] valTimeIter - The current time iteration
    * \param[in] valTimeStep - The current physical time step value
    */
-  CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+  CTecplotBinaryFileWriter(CParallelDataSorter* valDataSorter,
                            unsigned long valTimeIter, su2double valTimeStep);
 
   /*!
@@ -60,10 +59,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in tecplot binary file format
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
   /*!
    * \brief Calculate the partitioning of nodes to determine:

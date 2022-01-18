@@ -29,13 +29,18 @@
 
 const string CCGNSFileWriter::fileExt = ".cgns";
 
-CCGNSFileWriter::CCGNSFileWriter(string valFileName, CParallelDataSorter* valDataSorter, bool isSurf)
-    : CFileWriter(std::move(valFileName), valDataSorter, fileExt), isSurface(isSurf) {}
+CCGNSFileWriter::CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf)
+    : CFileWriter(valDataSorter, fileExt), isSurface(isSurf) {}
 
-void CCGNSFileWriter::Write_Data() {
+void CCGNSFileWriter::Write_Data(string val_filename) {
+
 #ifdef HAVE_CGNS
+
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
+    
   /*--- Open the CGNS file for writing.  ---*/
-  InitializeMeshFile();
+  InitializeMeshFile(val_filename);
 
   /*--- Write point coordinates. ---*/
   WriteField(0, "CoordinateX");
@@ -72,7 +77,7 @@ void CCGNSFileWriter::Write_Data() {
 }
 
 #ifdef HAVE_CGNS
-void CCGNSFileWriter::InitializeMeshFile() {
+void CCGNSFileWriter::InitializeMeshFile(string val_filename) {
   if (!dataSorter->GetConnectivitySorted()) {
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
@@ -88,10 +93,10 @@ void CCGNSFileWriter::InitializeMeshFile() {
 
   if (rank == MASTER_NODE) {
     /*--- Remove the previous file if present. ---*/
-    remove(fileName.c_str());
+    remove(val_filename.c_str());
 
     /*--- Create CGNS file and open in write mode. ---*/
-    CallCGNS(cg_open(fileName.c_str(), CG_MODE_WRITE, &cgnsFileID));
+    CallCGNS(cg_open(val_filename.c_str(), CG_MODE_WRITE, &cgnsFileID));
 
     /*--- Create Base. ---*/
     CallCGNS(cg_base_write(cgnsFileID, "Base", nCell, nDim, &cgnsBase));

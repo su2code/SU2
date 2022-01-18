@@ -1026,7 +1026,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
-  bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = false;
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
@@ -2383,7 +2382,6 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   su2double *U_outlet, *U_domain;
 
   bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool dynamic_grid = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
@@ -2404,6 +2402,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
       U_domain = nodes->GetSolution(iPoint);
 
       /*--- Allocate the value at the outlet ---*/
+      V_outlet = GetCharacPrimVar(val_marker, iVertex);
       V_outlet = V_domain;
       U_outlet = U_domain;
 

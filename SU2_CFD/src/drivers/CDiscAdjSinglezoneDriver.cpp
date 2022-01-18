@@ -434,9 +434,8 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 }
 
 void CDiscAdjSinglezoneDriver::MainRecording(){
-
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   *    as argument ensures that all information from a previous recording is removed. ---*/
+  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
+   *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 
   SetRecording(RECORDING::CLEAR_INDICES);
 
@@ -447,9 +446,8 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 }
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
-
-  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-   *    as argument ensures that all information from a previous recording is removed. ---*/
+  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
+   *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 
   SetRecording(RECORDING::CLEAR_INDICES);
 
