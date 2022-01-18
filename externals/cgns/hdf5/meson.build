@@ -204,6 +204,7 @@ if target_machine.system() != 'windows'
     hdf5_conf_data.set('H5_HAVE_LIBM', 0)
   else
     hdf5_conf_data.set('H5_HAVE_LIBM', 1)
+    ext_deps += libm
   endif
 endif
 
@@ -214,6 +215,7 @@ if target_machine.system() != 'windows'
     hdf5_conf_data.set('H5_HAVE_LIBDL', 0)
   else
     hdf5_conf_data.set('H5_HAVE_LIBDL', 1)
+    ext_deps += libdl
   endif
 endif
 
