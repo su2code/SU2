@@ -1428,26 +1428,10 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, jDim, iSpecies, iVar, jVar;
   unsigned long iPoint, iVertex;
 
-  su2double *Normal = nullptr, Area, UnitNormal[3], *NormalArea,
-  **Jacobian_b, **DubDu,
-  rho, cs, P, rhoE, rhoEve, conc, *u, *dPdU;
+  /*--- Allocate the necessary vector structures ---*/
+  su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  /*--- Allocate arrays ---*/
-  Normal     = new su2double[nDim];
-  NormalArea = new su2double[nDim];
-  Jacobian_b = new su2double*[nVar];
-  DubDu      = new su2double*[nVar];
-  u          = new su2double[nDim];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_b[iVar] = new su2double[nVar];
-    DubDu[iVar] = new su2double[nVar];
-  }
-
-  /*--- Get species molar mass ---*/
-  auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1460,15 +1444,14 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
       /*--- Calculate parameters from the geometry ---*/
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++){
-        NormalArea[iDim] = -Normal[iDim];
         UnitNormal[iDim] = -Normal[iDim]/Area;
       }
 
       /*--- Retrieve the pressure on the vertex ---*/
-      P   = nodes->GetPressure(iPoint);
+      su2double P = nodes->GetPressure(iPoint);
 
       /*--- Apply the flow-tangency b.c. to the convective flux ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1485,25 +1468,30 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
       if (implicit) {
 
+        /*--- Allocate arrays needed for implicit solver ---*/
+        su2double Velocity[MAXNDIM] = {0.0};
+
+        /*--- Get species molar mass ---*/
+        auto& Ms = FluidModel->GetSpeciesMolarMass();
+
         /*--- Initialize Jacobian ---*/
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
 
         /*--- Calculate state i ---*/
-        rho     = nodes->GetDensity(iPoint);
-        rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
-        rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
-        dPdU    = nodes->GetdPdU(iPoint);
+        su2double rho     = nodes->GetDensity(iPoint);
+        su2double rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
+        su2double rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
+        auto dPdU    = nodes->GetdPdU(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
-          u[iDim] = nodes->GetVelocity(iPoint,iDim);
+          Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
 
-        conc = 0.0;
+        su2double conc = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          cs    = nodes->GetMassFraction(iPoint,iSpecies);
+          su2double cs = nodes->GetMassFraction(iPoint,iSpecies);
           conc += cs * rho/Ms[iSpecies];
 
-          /////// NEW //////
           for (iDim = 0; iDim < nDim; iDim++) {
             Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
             Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
@@ -1512,7 +1500,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
+            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = Velocity[iDim]*UnitNormal[jDim]
                 + dPdU[nSpecies+jDim]*UnitNormal[iDim];
           }
           Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
@@ -1533,17 +1521,6 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       }
     }
   }
-  delete [] Normal;
-  delete [] NormalArea;
-  delete [] u;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] Jacobian_b[iVar];
-    delete [] DubDu[iVar];
-  }
-
-  delete [] Jacobian_b;
-  delete [] DubDu;
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
@@ -1553,7 +1530,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
 
-  su2double *V_infty, *V_domain;
+  su2double *V_infty, *V_domain, *U_infty, *U_domain;
 
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1578,10 +1555,13 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetNormal(Normal);
 
       /*--- Retrieve solution at the boundary node & free-stream ---*/
+      U_domain = nodes->GetSolution(iPoint);
       V_domain = nodes->GetPrimitive(iPoint);
+      U_infty  = node_infty->GetSolution(0);
       V_infty  = node_infty->GetPrimitive(0);
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
+      conv_numerics->SetConservative(U_domain, U_infty);
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Pass supplementary information to CNumerics ---*/
@@ -1611,6 +1591,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetNormal(Normal);
 
         /*--- Primitive variables, and gradient ---*/
+        visc_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                       node_infty->GetSolution(0) );
         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                                     node_infty->GetPrimitive(0) );
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -2398,6 +2380,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_outlet, *V_domain;
+  su2double *U_outlet, *U_domain;
 
   bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool dynamic_grid = config->GetGrid_Movement();
@@ -2418,9 +2401,11 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
 
       /*--- Current solution at this boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
+      U_domain = nodes->GetSolution(iPoint);
 
       /*--- Allocate the value at the outlet ---*/
       V_outlet = V_domain;
+      U_outlet = U_domain;
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -2429,6 +2414,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetConservative(U_domain, U_outlet);
 
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
