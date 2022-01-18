@@ -6,6 +6,7 @@ else
                            '-Wno-unused-variable',
                            '-Wno-unused-but-set-variable',
                            '-Wno-sign-compare',
+                           '-Wno-error=unused-function',
                            '-Wno-pedantic']
 endif
 
