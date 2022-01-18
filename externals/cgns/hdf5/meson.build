@@ -10,6 +10,7 @@ else
                            '-Wno-discarded-qualifiers',
                            '-Wno-error=maybe-uninitialized',
                            '-Wno-error=unused-function',
+                           '-Wno-error=unused-label',
                            '-Wno-pedantic']
 endif
 
