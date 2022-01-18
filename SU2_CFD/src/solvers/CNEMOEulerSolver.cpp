@@ -1542,6 +1542,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    /*--- Allocate the value at the infinity ---*/
+    V_infty = GetCharacPrimVar(val_marker, iVertex);
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
@@ -1930,8 +1933,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   bool gravity      = config->GetGravityForce();
   bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
-  su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+  su2double *U_domain;
+  su2double *U_outlet = new su2double[nVar];
+  su2double *V_domain, *V_outlet;
   su2double *Normal   = new su2double[nDim];
   su2double *Ys       = new su2double[nSpecies];
 
@@ -1949,6 +1953,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    /*--- Allocate the value at the outlet ---*/
+    V_outlet = GetCharacPrimVar(val_marker, iVertex);
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
@@ -1963,8 +1970,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint, iVar);
+      U_domain = nodes->GetSolution(iPoint);
+      V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Initialize solution at outlet ---*/
       for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = 0.0;
@@ -2154,10 +2161,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   }
 
   /*--- Free locally allocated memory ---*/
-  delete [] U_domain;
   delete [] U_outlet;
-  delete [] V_domain;
-  delete [] V_outlet;
   delete [] Normal;
   delete [] Ys;
 
