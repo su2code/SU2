@@ -1140,13 +1140,15 @@ H5_GENERATED_HEADERS = [
     
 # Generate 'H5detect to generate H5Tinit.c
 
-H5detect = executable('H5detect', 'H5detect.c')
+H5detect = executable('H5detect', 'H5detect.c',
+                      c_args: hdf5_default_warnings + defs, dependencies: ext_deps)
 
 H5Tinit_c = custom_target('H5T_init.c',
 	       output: 'H5T_init.c',
 	       command: [H5detect, '@OUTPUT@'])
 
-settings_comp = executable('H5make_libsettings', 'H5make_libsettings.c')
+settings_comp = executable('H5make_libsettings', 'H5make_libsettings.c',
+                      c_args: hdf5_default_warnings + defs, dependencies: ext_deps)
 
 H5lib_settings_c = custom_target('H5lib_settings.c',
 	       output: 'H5lib_settings.c',
