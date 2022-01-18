@@ -56,6 +56,8 @@ def init_submodules(method = 'auto'):
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
   sha_version_mpp = '5ff579f43781cae07411e5ab46291c9971536be6'
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
+  sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
+  github_repo_mel = 'https://github.com/pcarruscag/MEL'
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'
@@ -63,12 +65,14 @@ def init_submodules(method = 'auto'):
   meson_name = 'meson'
   ninja_name= 'ninja'
   mpp_name= 'Mutationpp'
+  mel_name = 'MEL'
   base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
   alt_name_medi = base_path + 'medi'
   alt_name_codi = base_path + 'codi'
   alt_name_opdi = base_path + 'opdi'
   alt_name_meson = base_path + 'meson'
   alt_name_ninja = base_path + 'ninja'
+  alt_name_mel = base_path + 'mel'
   alt_name_mpp = cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
 
   if method == 'auto':
@@ -90,6 +94,7 @@ def init_submodules(method = 'auto'):
     submodule_status(alt_name_meson, sha_version_meson)
     submodule_status(alt_name_ninja, sha_version_ninja)
     submodule_status(alt_name_mpp, sha_version_mpp)
+    submodule_status(alt_name_mel, sha_version_mel)
   # Otherwise download the zip file from git
   else:
     download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
@@ -98,6 +103,7 @@ def init_submodules(method = 'auto'):
     download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
     download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)
+    download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
 
 
 def is_git_directory(path = '.'):

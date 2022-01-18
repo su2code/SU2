@@ -42,20 +42,18 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, dimension.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    * \param[in] valiZone - The index of the current zone
    * \param[in] valnZone - The total number of zones
    */
-  CSU2MeshFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+  CSU2MeshFileWriter(CParallelDataSorter* valDataSorter,
                      unsigned short valiZone, unsigned short valnZone);
 
   /*!
    * \brief Write sorted data to file in SU2 mesh file format
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };
 

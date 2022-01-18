@@ -1054,7 +1054,7 @@ static const MapType<std::string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
  * \brief Types of wall functions.
  */
 enum class WALL_FUNCTIONS {
-  NONE                      ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  NONE                 ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_FUNCTION    ,   /*!< \brief Standard wall function. */
   ADAPTIVE_FUNCTION    ,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
   SCALABLE_FUNCTION    ,   /*!< \brief Scalable wall function. */
@@ -1450,7 +1450,7 @@ enum TURBO_MARKER_TYPE{
 /*!
  * \brief Types inlet boundary treatments
  */
-enum INLET_TYPE {
+enum class INLET_TYPE {
   TOTAL_CONDITIONS, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW,        /*!< \brief User specifies density and velocity (mass flow). */
   INPUT_FILE,       /*!< \brief User specifies an input file. */
@@ -1563,17 +1563,8 @@ enum ENUM_OBJECTIVE {
   SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
   SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  TOTAL_PRESSURE_LOSS = 39,
-  KINETIC_ENERGY_LOSS = 40,
-  TOTAL_EFFICIENCY = 41,
-  TOTAL_STATIC_EFFICIENCY = 42,
-  EULERIAN_WORK = 43,
-  TOTAL_ENTHALPY_IN = 44,
-  FLOW_ANGLE_IN = 45,
   FLOW_ANGLE_OUT = 46,
   MASS_FLOW_IN = 47,
-  MASS_FLOW_OUT = 48,
-  PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
@@ -1617,64 +1608,15 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
-  MakePair("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
-  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
-  MakePair("EULERIAN_WORK", EULERIAN_WORK)
-  MakePair("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
-  MakePair("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
   MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
   MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("MASS_FLOW_OUT", MASS_FLOW_OUT)
-  MakePair("PRESSURE_RATIO",  PRESSURE_RATIO)
   MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
-  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
-};
-
-/*!
- * \brief Types of residual criteria equations
- */
-enum ENUM_RESIDUAL {
-  RHO_RESIDUAL = 1,        /*!< \brief Rho equation residual criteria equation. */
-  RHO_ENERGY_RESIDUAL = 2  /*!< \brief RhoE equation residual criteria equation. */
-};
-static const MapType<std::string, ENUM_RESIDUAL> Residual_Map = {
-  MakePair("RHO", RHO_RESIDUAL)
-  MakePair("RHO_ENERGY", RHO_ENERGY_RESIDUAL)
-};
-
-/*!
- * \brief Types of residual criteria for structural problems
- */
-enum ENUM_RESFEM {
-  RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
-  RESFEM_ABSOLUTE = 2          /*!< \brief Absolute criteria: abs(Res). */
-};
-static const MapType<std::string, ENUM_RESFEM> ResFem_Map = {
-  MakePair("RELATIVE", RESFEM_RELATIVE)
-  MakePair("ABSOLUTE", RESFEM_ABSOLUTE)
-};
-
-/*!
- * \brief Types of sensitivities to compute
- */
-enum ENUM_SENS {
-  SENS_GEOMETRY = 1,    /*!< \brief Geometrical sensitivity. */
-  SENS_MACH = 2,        /*!< \brief Mach number sensitivity. */
-  SENS_AOA = 3,         /*!< \brief Angle of attack sensitivity. */
-  SENS_AOS = 4          /*!< \brief Angle of Sideslip sensitivity. */
-};
-static const MapType<std::string, ENUM_SENS> Sens_Map = {
-  MakePair("SENS_GEOMETRY", SENS_GEOMETRY)
-  MakePair("SENS_MACH", SENS_MACH)
-  MakePair("SENS_AOA", SENS_AOA)
-  MakePair("SENS_AOS", SENS_AOS)
 };
 
 /*!
@@ -1693,65 +1635,67 @@ static const MapType<std::string, ENUM_INPUT> Input_Map = {
   MakePair("BOX", BOX)
 };
 
+
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_OUTPUT {
-  TECPLOT                 = 1,  /*!< \brief Tecplot format for the solution output. */
-  TECPLOT_BINARY          = 2,  /*!< \brief Tecplot binary format for the solution output. */
-  SURFACE_TECPLOT         = 3,  /*!< \brief Tecplot format for the solution output. */
-  SURFACE_TECPLOT_BINARY  = 4,  /*!< \brief Tecplot binary format for the solution output. */
-  CSV                     = 5,  /*!< \brief Comma-separated values format for the solution output. */
-  SURFACE_CSV             = 6,  /*!< \brief Comma-separated values format for the solution output. */
-  PARAVIEW                = 7,  /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY         = 8,  /*!< \brief Paraview binary format for the solution output. */
-  SURFACE_PARAVIEW        = 9,  /*!< \brief Paraview ASCII format for the solution output. */
-  SURFACE_PARAVIEW_BINARY = 10, /*!< \brief Paraview binary format for the solution output. */
-  MESH                    = 11, /*!< \brief SU2 mesh format. */
-  RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
-  RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
-  STL                     = 14, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 15, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
-  PARAVIEW_XML            = 16, /*!< \brief Paraview XML with binary data format */
-  SURFACE_PARAVIEW_XML    = 17, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 18, /*!< \brief Paraview XML Multiblock */
-  CGNS                    = 19, /*!< \brief CGNS format. */
-  SURFACE_CGNS            = 20  /*!< \brief CGNS format. */
+enum class OUTPUT_TYPE {
+  TECPLOT_ASCII,           /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY,          /*!< \brief Tecplot binary format for the solution output. */
+  SURFACE_TECPLOT_ASCII,   /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY,  /*!< \brief Tecplot binary format for the solution output. */
+  CSV,                     /*!< \brief Comma-separated values format for the solution output. */
+  SURFACE_CSV,             /*!< \brief Comma-separated values format for the solution output. */
+  PARAVIEW_ASCII,          /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
+  MESH,                    /*!< \brief SU2 mesh format. */
+  RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
+  RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
+  PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML,    /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK,     /*!< \brief Paraview XML Multiblock */
+  CGNS,                    /*!< \brief CGNS format. */
+  SURFACE_CGNS,            /*!< \brief CGNS format. */
+  STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY,              /*!< \brief STL binary format for surface solution output. Not implemented yet. */
 };
-static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
-  MakePair("TECPLOT_ASCII", TECPLOT)
-  MakePair("TECPLOT", TECPLOT_BINARY)
-  MakePair("SURFACE_TECPLOT_ASCII", SURFACE_TECPLOT)
-  MakePair("SURFACE_TECPLOT", SURFACE_TECPLOT_BINARY)
-  MakePair("CSV", CSV)
-  MakePair("SURFACE_CSV", SURFACE_CSV)
-  MakePair("PARAVIEW_ASCII", PARAVIEW)
-  MakePair("PARAVIEW_LEGACY", PARAVIEW_BINARY)
-  MakePair("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
-  MakePair("SURFACE_PARAVIEW_LEGACY", SURFACE_PARAVIEW_BINARY)
-  MakePair("PARAVIEW", PARAVIEW_XML)
-  MakePair("SURFACE_PARAVIEW", SURFACE_PARAVIEW_XML)
-  MakePair("PARAVIEW_MULTIBLOCK", PARAVIEW_MULTIBLOCK)
-  MakePair("RESTART_ASCII", RESTART_ASCII)
-  MakePair("RESTART", RESTART_BINARY)
-  MakePair("CGNS", CGNS)
-  MakePair("SURFACE_CGNS", SURFACE_CGNS)
-  MakePair("STL", STL)
-  MakePair("STL_BINARY", STL_BINARY)
+static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
+  MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT_ASCII)
+  MakePair("TECPLOT", OUTPUT_TYPE::TECPLOT_BINARY)
+  MakePair("SURFACE_TECPLOT_ASCII", OUTPUT_TYPE::SURFACE_TECPLOT_ASCII)
+  MakePair("SURFACE_TECPLOT", OUTPUT_TYPE::SURFACE_TECPLOT_BINARY)
+  MakePair("CSV", OUTPUT_TYPE::CSV)
+  MakePair("SURFACE_CSV", OUTPUT_TYPE::SURFACE_CSV)
+  MakePair("PARAVIEW_ASCII", OUTPUT_TYPE::PARAVIEW_ASCII)
+  MakePair("PARAVIEW_LEGACY", OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY)
+  MakePair("SURFACE_PARAVIEW_ASCII", OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII)
+  MakePair("SURFACE_PARAVIEW_LEGACY", OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY)
+  MakePair("PARAVIEW", OUTPUT_TYPE::PARAVIEW_XML)
+  MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
+  MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
+  MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
+  MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
+  MakePair("CGNS", OUTPUT_TYPE::CGNS)
+  MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
+  MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
+  MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
 };
 
 /*!
  * \brief Return true if format is one of the Paraview options.
  */
-inline bool isParaview(ENUM_OUTPUT format) {
+inline bool isParaview(OUTPUT_TYPE format) {
   switch(format) {
-    case PARAVIEW:
-    case PARAVIEW_BINARY:
-    case SURFACE_PARAVIEW:
-    case SURFACE_PARAVIEW_BINARY:
-    case PARAVIEW_XML:
-    case SURFACE_PARAVIEW_XML:
-    case PARAVIEW_MULTIBLOCK:
+    case OUTPUT_TYPE::PARAVIEW_ASCII:
+    case OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::PARAVIEW_XML:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_XML:
+    case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
       return true;
     default:
       return false;
@@ -1761,12 +1705,12 @@ inline bool isParaview(ENUM_OUTPUT format) {
 /*!
  * \brief Return true if format is one of the Tecplot options.
  */
-inline bool isTecplot(ENUM_OUTPUT format) {
+inline bool isTecplot(OUTPUT_TYPE format) {
   switch(format) {
-    case TECPLOT:
-    case TECPLOT_BINARY:
-    case SURFACE_TECPLOT:
-    case SURFACE_TECPLOT_BINARY:
+    case OUTPUT_TYPE::TECPLOT_ASCII:
+    case OUTPUT_TYPE::TECPLOT_BINARY:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_BINARY:
       return true;
     default:
       return false;
@@ -1776,13 +1720,13 @@ inline bool isTecplot(ENUM_OUTPUT format) {
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_TAB_OUTPUT {
-  TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
-  TAB_TECPLOT = 2         /*!< \brief Tecplot format for the solution output. */
+enum class TAB_OUTPUT {
+  TAB_CSV,            /*!< \brief Comma-separated values format for the solution output. */
+  TAB_TECPLOT         /*!< \brief Tecplot format for the solution output. */
 };
-static const MapType<std::string, ENUM_TAB_OUTPUT> TabOutput_Map = {
-  MakePair("CSV", TAB_CSV)
-  MakePair("TECPLOT", TAB_TECPLOT)
+static const MapType<std::string, TAB_OUTPUT> TabOutput_Map = {
+  MakePair("CSV", TAB_OUTPUT::TAB_CSV)
+  MakePair("TECPLOT", TAB_OUTPUT::TAB_TECPLOT)
 };
 
 /*!
@@ -1821,32 +1765,6 @@ static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
   MakePair("V_CYCLE", V_CYCLE)
   MakePair("W_CYCLE", W_CYCLE)
   MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
-};
-
-/*!
- * \brief Type of solution output variables
- */
-enum ENUM_OUTPUT_VARS {
-  DENSITY = 1,      /*!< \brief Density. */
-  VEL_X = 2,        /*!< \brief X-component of velocity. */
-  VEL_Y = 3,        /*!< \brief Y-component of velocity. */
-  VEL_Z = 4,        /*!< \brief Z-component of velocity. */
-  PRESSURE = 5,     /*!< \brief Static pressure. */
-  MACH = 6,         /*!< \brief Mach number. */
-  TEMPERATURE = 7,  /*!< \brief Temperature. */
-  LAM_VISC = 8,     /*!< \brief Laminar viscosity. */
-  EDDY_VISC = 9     /*!< \brief Eddy viscosity. */
-};
-static const MapType<std::string, ENUM_OUTPUT_VARS> Output_Vars_Map = {
-  MakePair("DENSITY", DENSITY)
-  MakePair("VEL_X", VEL_X)
-  MakePair("VEL_Y", VEL_Y)
-  MakePair("VEL_Z", VEL_Z)
-  MakePair("PRESSURE", PRESSURE)
-  MakePair("MACH", MACH)
-  MakePair("TEMPERATURE", TEMPERATURE)
-  MakePair("LAM_VISC", LAM_VISC)
-  MakePair("EDDY_VISC", EDDY_VISC)
 };
 
 /*!
@@ -2352,17 +2270,20 @@ class COptionBase {
 private:
   std::vector<std::string> value;
 public:
-  COptionBase() {};
-  virtual  ~COptionBase() = 0;
+  virtual ~COptionBase() = default;
 
-  virtual std::string SetValue(std::vector<std::string> value){this->value = value; return "";}
-  std::vector<std::string> GetValue() {return value;}
+  const std::vector<std::string>& GetValue() const {return value;}
+
+  virtual std::string SetValue(const std::vector<std::string>& val) {
+    value = val;
+    return "";
+  }
   virtual void SetDefault() = 0;
 
-  std::string optionCheckMultipleValues(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
+  std::string optionCheckMultipleValues(const std::vector<std::string>& option_value,
+                                        std::string type_id, const std::string& option_name) {
     if (option_value.size() != 1) {
-      std::string newString;
-      newString.append(option_name);
+      std::string newString(option_name);
       newString.append(": multiple values for type ");
       newString.append(type_id);
       return newString;
@@ -2370,16 +2291,13 @@ public:
     return "";
   }
 
-  std::string badValue(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
-    std::string newString;
-    newString.append(option_name);
+  std::string badValue(std::string type_id, const std::string& option_name) {
+    std::string newString(option_name);
     newString.append(": improper option value for type ");
     newString.append(type_id);
     return newString;
   }
 };
-
-inline COptionBase::~COptionBase() {}
 
 #ifdef ENABLE_MAPS
 #include "option_structure.inl"
