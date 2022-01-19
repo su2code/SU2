@@ -1,15 +1,15 @@
-﻿/*!
- * \file CAdjFlowCompOutput.hpp
- * \brief Headers of the adjoint compressible flow output.
- * \author T. Albring
- * \version 7.0.6 "Blackbird"
+/*!
+ * \file CAdjFlowOutput.hpp
+ * \brief Headers of the adjoint flow output.
+ * \author T. Kattmann
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,81 +29,68 @@
 
 #include "COutput.hpp"
 
-/*! \class CAdjFlowCompOutput
- *  \brief Output class for compressible flow adjoint problems.
- *  \author R. Sanchez, T. Albring.
- *  \date June 5, 2018.
+/*! \class CAdjFlowOutput
+ *  \brief Output class for flow discrete adjoint problems.
+ *  \author T. Kattmann
+ *  \date December 3, 2021.
  */
-class CAdjFlowCompOutput final: public COutput {
-private:
+class CAdjFlowOutput : public COutput {
+ protected:
+  const TURB_MODEL turb_model; /*!< \brief The kind of turbulence model*/
+  const bool cont_adj;         /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
+  const bool frozen_visc;      /*!< \brief Boolean indicating whether frozen viscosity/turbulence is used. */
 
-  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjFlowCompOutput(CConfig *config, unsigned short nDim);
+  CAdjFlowOutput(CConfig* config, unsigned short nDim);
 
   /*!
-   * \brief Destructor of the class.
+   * \brief Add scalar (turbulence/species) history fields for the Residual RMS (FVMComp, FVMInc, FVMNEMO).
    */
-  ~CAdjFlowCompOutput(void) override;
+  void AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* config);
 
   /*!
-   * \brief Load the history output field values
+   * \brief Add scalar (turbulence/species) history fields for the max Residual (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* config);
+
+  /*!
+   * \brief Add scalar (turbulence/species) history fields for the BGS Residual (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* config);
+
+  /*!
+   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   */
+  void AddHistoryOutputFields_AdjScalarLinsol(const CConfig* config);
+
+  /*!
+   * \brief Set all scalar (turbulence/species) history field values.
+   */
+  void LoadHistoryData_AdjScalar(const CConfig* config, const CSolver* const* solver);
+
+  /*!
+   * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
+  void SetVolumeOutputFields_AdjScalarSolution(const CConfig* config);
 
   /*!
-   * \brief Set the available history output fields
+   * \brief Add scalar (turbulence/species) volume solution fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \note The order of fields in restart files is fixed. Therefore the split-up.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryOutputFields(CConfig *config) override;
+  void SetVolumeOutputFields_AdjScalarResidual(const CConfig* config);
 
   /*!
-   * \brief Set the available volume output fields
+   * \brief Set all scalar (turbulence/species) volume field values for a point.
    * \param[in] config - Definition of the particular problem.
-   */
-  void SetVolumeOutputFields(CConfig *config) override;
-
-  /*!
-   * \brief Set the values of the volume output fields for a point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - The container holding all solution data.
    * \param[in] iPoint - Index of the point.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
-
-  /*!
-   * \brief Set the values of the volume output fields for a surface point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver  - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] iMarker - Index of the surface marker.
-   * \param[in] iVertex - Index of the vertex on the marker.
-   */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
-                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
-
-  /*!
-   * \brief Check whether the base values for relative residuals should be initialized
-   * \param[in] config - Definition of the particular problem.
-   * \return <TRUE> if the residuals should be initialized.
-   */
-  bool SetInit_Residuals(CConfig *config) override;
-
-  /*!
-   * \brief Check whether the averaged values should be updated
-   * \param[in] config - Definition of the particular problem.
-   * \return <TRUE> averages should be updated.
-   */
-  bool SetUpdate_Averages(CConfig *config) override;
-
+  void LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
 };

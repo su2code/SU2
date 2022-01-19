@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,19 +37,25 @@
  */
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double
-  constants[10] = {0.0}, /*!< \brief Constants for the model. */
-  kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
-  omega_Inf;             /*!< \brief Free-stream specific dissipation. */
+  su2double constants[10] = {0.0}; /*!< \brief Constants for the model. */
+
+  /*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetTurbVars_WF(CGeometry *geometry,
+                     CSolver **solver_container,
+                     const CConfig *config,
+                     unsigned short val_marker);
 
 public:
   /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSSTSolver(void);
-
-  /*!
-   * \overload
+   * \brief Constructor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -59,7 +65,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void) override;
+  ~CTurbSSTSolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -90,6 +96,18 @@ public:
                       CSolver **solver_container,
                       CConfig *config,
                       unsigned short iMesh) override;
+
+  /*!
+   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* numerics, CConfig* config) override;
 
   /*!
    * \brief Source term computation.
@@ -236,17 +254,6 @@ public:
   inline const su2double* GetConstants() const override { return constants; }
 
   /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetFreeStream_Solution(CConfig *config) override {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-      nodes->SetSolution(iPoint, 0, kine_Inf);
-      nodes->SetSolution(iPoint, 1, omega_Inf);
-    }
-  }
-
-  /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
@@ -271,6 +278,7 @@ public:
                              string val_marker,
                              const CGeometry *geometry,
                              const CConfig *config) const override;
+
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -286,12 +294,13 @@ public:
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */
-  inline su2double GetTke_Inf(void) const override { return kine_Inf; }
+  inline su2double GetTke_Inf(void) const override { return Solution_Inf[0]; }
 
   /*!
    * \brief Get the value of the turbulent frequency.
    * \return Value of the turbulent frequency.
    */
-  inline su2double GetOmega_Inf(void) const override { return omega_Inf; }
+  inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
+
 
 };

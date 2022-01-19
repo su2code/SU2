@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CDualGrid.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -74,17 +74,16 @@ public:
    * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) = 0;
+  virtual void SetNodes_Coord(const su2double *val_coord_Edge_CG, const su2double *val_coord_FaceElem_CG,
+                              const su2double *val_coord_Elem_CG) = 0;
 
   /*!
    * \overload
    * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) = 0;
+  virtual void SetNodes_Coord(const su2double *val_coord_Edge_CG, const su2double *val_coord_Elem_CG) = 0;
 
   /*!
    * \brief A pure virtual member.

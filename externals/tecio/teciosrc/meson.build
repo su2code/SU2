@@ -12,6 +12,15 @@ if (host_machine.system() == 'windows')
   tecio_cpp_flags += ['-DMSWIN']
 endif
 
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    tecio_cpp_flags += ['-Wno-misleading-indentation',
+                        '-Wno-uninitialized',
+                        '-Wno-placement-new',
+                        '-Wno-pedantic']
+  endif
+endif
+
 tecio_include = include_directories('../', './')
 tecio = static_library('tecio',
            'ClassicZoneWriterAbstract.cpp',

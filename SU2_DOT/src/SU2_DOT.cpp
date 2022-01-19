@@ -2,14 +2,14 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,22 +36,27 @@ int main(int argc, char *argv[]) {
 
   char config_file_name[MAX_STRING_SIZE];
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   /*--- MPI initialization, and buffer setting ---*/
 
-#ifdef HAVE_MPI
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
+
+  /*--- AD initialization ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().initialize();
+#endif
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -73,7 +78,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = nullptr;
-  config = new CConfig(config_file_name, SU2_DOT);
+  config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DOT);
 
   const auto nZone = config->GetnZone();
 
@@ -92,7 +97,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DOT, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -109,10 +114,10 @@ int main(int argc, char *argv[]) {
 
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
@@ -241,11 +246,6 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." << endl;
       geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
 
-    /*--- Compute center of gravity ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry_container[iZone][INST_0]->SetCoord_CG();
-
     /*--- Create the dual control volume structures ---*/
 
     if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
@@ -292,26 +292,24 @@ int main(int argc, char *argv[]) {
     SetSensitivity_Files(geometry_container, config_container, nZone);
   }
 
+  /*--- Initialize structure to store the gradient ---*/
+  su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+
+  for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
+    /*--- Initialize to zero ---*/
+    Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
+  }
+
+  ofstream Gradient_file;
+  Gradient_file.precision(config->OptionIsSet("OUTPUT_PRECISION") ? config->GetOutput_Precision() : 6);
+
+  /*--- For multizone computations the gradient contributions are summed up and written into one file. ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     if ((config_container[iZone]->GetDesign_Variable(0) != NONE) &&
         (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) {
 
-      /*--- Initialize structure to store the gradient ---*/
-
-      su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
-
-      for (auto iDV = 0u; iDV  < config_container[iZone]->GetnDV(); iDV++) {
-        Gradient[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)] ();
-      }
-
       if (rank == MASTER_NODE)
         cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
-
-      /*--- Write the gradient in a external file ---*/
-
-      ofstream Gradient_file;
-      if (rank == MASTER_NODE)
-        Gradient_file.open(config_container[iZone]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
       /*--- Definition of the Class for surface deformation ---*/
 
@@ -329,16 +327,22 @@ int main(int argc, char *argv[]) {
       else
         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
 
-      /*--- Print gradients to screen and file ---*/
-
-      OutputGradient(Gradient, config_container[iZone], Gradient_file);
-
-      for (auto iDV = 0u; iDV  < config_container[iZone]->GetnDV(); iDV++){
-        delete [] Gradient[iDV];
-      }
-      delete [] Gradient;
     }
+  } // for iZone
+
+  /*--- Write the gradient to a file ---*/
+
+  if (rank == MASTER_NODE)
+    Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
+
+  /*--- Print gradients to screen and writes to file ---*/
+
+  OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
+
+  for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+    delete [] Gradient[iDV];
   }
+  delete [] Gradient;
 
   delete config;
   config = nullptr;
@@ -411,11 +415,16 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
 
-  /*--- Finalize MPI parallelization ---*/
-
-#ifdef HAVE_MPI
-  SU2_MPI::Finalize();
+  /*--- Finalize AD, if necessary. ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().finalize();
 #endif
+
+  /*--- Finalize MPI parallelization. ---*/
+  SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 
@@ -601,11 +610,11 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetParabolic(geometry, config);
     }
 
-    /*--- Design variable not implement ---*/
+    /*--- Design variable not implemented ---*/
 
     else {
       if (rank == MASTER_NODE)
-        cout << "Design Variable not implement yet" << endl;
+        cout << "Design Variable not implemented yet" << endl;
     }
 
     /*--- Load the delta change in the design variable (finite difference step). ---*/
@@ -656,7 +665,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         }
       }
 
-      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       Gradient[iDV][0] += localGradient;
     }
   }
@@ -679,17 +688,15 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
 
-  su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
+  su2double *VarCoord = nullptr, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
+  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV;
   unsigned long iVertex, nVertex, iPoint;
 
-  int rank = SU2_MPI::GetRank();
+  const int rank = SU2_MPI::GetRank();
 
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
-
-  VarCoord = nullptr;
 
   /*--- Discrete adjoint gradient computation ---*/
 
@@ -703,21 +710,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
 
-
-
   for (iDV = 0; iDV < nDV; iDV++){
 
-    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      config->SetDV_Value(iDV, iDV_Value, 0.0);
 
-      /*--- Initilization with su2double resets the index ---*/
-
-      DV_Value = 0.0;
-
-      AD::RegisterInput(DV_Value);
-
-      config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      AD::RegisterInput(config->GetDV_Value(iDV, iDV_Value));
     }
   }
 
@@ -733,10 +732,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
    * We need that to make sure to set the sensitivity of surface points only once
    *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
 
-  bool* visited = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-    visited[iPoint] = false;
-  }
+  vector<bool> visited(geometry->GetnPoint(), false);
 
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
@@ -770,23 +766,18 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     }
   }
 
-  delete [] visited;
-
   /*--- Compute derivatives and extract gradient ---*/
 
   AD::ComputeAdjoint();
 
   for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-      localGradient = my_Gradient;
-#endif
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
+
+      my_Gradient = SU2_TYPE::GetDerivative(config->GetDV_Value(iDV, iDV_Value));
+
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
       /*--- Angle of Attack design variable (this is different,
        the value comes form the input file) ---*/
 
@@ -898,11 +889,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE ) ||
-         (config[iZone]->GetMarker_All_DV(iMarker) == YES )) {
+      if(config[iZone]->GetSolid_Wall(iMarker) || (config[iZone]->GetMarker_All_DV(iMarker) == YES )) {
 
         nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
 
@@ -948,17 +935,17 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
 
-    /*--- Set the surface filename ---*/
+    /*--- Set the volume filename ---*/
 
     output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
 
     /*--- Write to file ---*/
 
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
-      unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
-      if (FileFormat[iFile] != RESTART_ASCII &&
-          FileFormat[iFile] != RESTART_BINARY &&
-          FileFormat[iFile] != CSV)
+      auto FileFormat = config[iZone]->GetVolumeOutputFiles();
+      if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII &&
+          FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY &&
+          FileFormat[iFile] != OUTPUT_TYPE::CSV)
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
 

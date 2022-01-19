@@ -1,14 +1,10 @@
 common_include = include_directories('./')
 common_src =files(['graph_coloring_structure.cpp',
            'CConfig.cpp',
-           'blas_structure.cpp',
            'basic_types/ad_structure.cpp',
-           'grid_movement_structure.cpp',
-           'grid_adaptation_structure.cpp',
            'wall_model.cpp',
-           'adt_structure.cpp',
-           'mpi_structure.cpp',
-           'CMultiGridQueue.cpp'])
+           '../include/parallelization/mpi_structure.cpp',
+           '../include/parallelization/omp_structure.cpp'])
 
 subdir('linear_algebra')
 subdir('toolboxes')
@@ -19,6 +15,8 @@ subdir('geometry/primal_grid')
 subdir('geometry/meshreader')
 subdir('interface_interpolation')
 subdir('fem')
+subdir('grid_movement')
+subdir('adt')
 
 if get_option('enable-normal')
   common = static_library('SU2Common', 

@@ -2,14 +2,14 @@
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -108,14 +108,12 @@ public:
    */
   inline void SetConvergence(bool value) { Convergence = value; }
 
-
   /*!
    * \brief Set the indicator of the convergence for FSI.
    * \param[in] valueFSI - <code>TRUE</code> means that the convergence criteria for FSI is satisfied;
    *            otherwise <code>FALSE</code>.
    */
   inline void SetConvergence_FSI(bool valueFSI) { Convergence_FSI = valueFSI; }
-
 
   /*!
    * \brief Get the indicator of the convergence for the full multigrid problem.
@@ -125,20 +123,20 @@ public:
   inline bool GetConvergence_FullMG(void) const { return Convergence_FullMG; }
 
   /*!
-   * \brief Save the solution, and volume at different time steps.
+   * \brief Save the geometry at different time steps.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow solution.
+   * \param[in] solver - Mesh solver.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
+  void SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh);
 
   /*!
-   * \brief Save the structural solution at different time steps.
+   * \brief Save the solution at different time steps, and reset certain fields for the next timestep.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Structural solution.
+   * \param[in] solver - Some solver.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetStructural_Solver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  virtual void SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief A virtual member.

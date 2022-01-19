@@ -2,14 +2,14 @@
  * \file CTetrahedron.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,66 +26,24 @@
  */
 
 #include "../../../include/geometry/primal_grid/CTetrahedron.hpp"
+#include "../../../include/option_structure.hpp"
 
-unsigned short CTetrahedron::Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
-
-unsigned short CTetrahedron::Neighbor_Nodes[4][3]={{1,2,3},{0,2,3},{0,1,3},{0,1,2}};
-
-unsigned short CTetrahedron::nNodesFace[4]={3,3,3,3};
-
-unsigned short CTetrahedron::nNeighbor_Nodes[4]={3,3,3,3};
-
-unsigned short CTetrahedron::nFaces = 4;
-
-unsigned short CTetrahedron::nNodes = 4;
-
-unsigned short CTetrahedron::nNeighbor_Elements = 4;
-
-unsigned short CTetrahedron::VTK_Type = 10;
-
-unsigned short CTetrahedron::maxNodesFace = 3;
+constexpr unsigned short CTetrahedronConnectivity::nNodesFace[4];
+constexpr unsigned short CTetrahedronConnectivity::Faces[4][3];
+constexpr unsigned short CTetrahedronConnectivity::nNeighbor_Nodes[4];
+constexpr unsigned short CTetrahedronConnectivity::Neighbor_Nodes[4][3];
 
 CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
-               unsigned long val_point_2, unsigned long val_point_3) : CPrimalGrid() {
-  unsigned short iDim, iFace, iNeighbor_Elements;
-
-  /*--- Allocate CG coordinates ---*/
-  nDim = 3;
-  Coord_CG = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord_CG[iDim] = 0.0;
-  Coord_FaceElems_CG = new su2double* [nFaces];
-  for (iFace = 0; iFace < nFaces; iFace++) {
-    Coord_FaceElems_CG[iFace] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Coord_FaceElems_CG[iFace][iDim] = 0.0;
-  }
-
-  /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+               unsigned long val_point_2, unsigned long val_point_3):
+  CPrimalGridWithConnectivity<CTetrahedronConnectivity>(false)
+{
+  /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
-
-  /*--- Allocate and define neighbor elements to a element ---*/
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
-    Neighbor_Elements[iNeighbor_Elements]=-1;
-  }
-
 }
 
-CTetrahedron::~CTetrahedron() {
-  unsigned short iFaces;
-
-  for (iFaces = 0; iFaces < nFaces; iFaces++)
-    if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
-  delete[] Coord_FaceElems_CG;
-
-}
-
-void CTetrahedron::Change_Orientation(void) {
-  swap(Nodes[0],Nodes[1]);
+void CTetrahedron::Change_Orientation() {
+  std::swap(Nodes[0],Nodes[1]);
 }

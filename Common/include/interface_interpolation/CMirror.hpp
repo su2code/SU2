@@ -2,14 +2,14 @@
  * \file CMirror.hpp
  * \brief Mirror interpolation for the conservative (work-wise) approach in FSI problems.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,16 +33,21 @@
  * \note Requires that the opposing mesh has already run interpolation (jZone > iZone), otherwise throws.
  */
 class CMirror final : public CInterpolator {
+private:
+  const CInterpolator* const transpInterpolator; /*! \brief The transpose interpolator (from j to i). */
+
 public:
   /*!
    * \brief Constructor of the class.
    * \note Data is set in geometry[targetZone].
    * \param[in] geometry_container
    * \param[in] config - config container
+   * \param[in] interpolator - Transpose interpolator
    * \param[in] iZone - First zone
    * \param[in] jZone - Second zone
    */
-  CMirror(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CMirror(CGeometry ****geometry_container, const CConfig* const* config,
+          const CInterpolator* interpolator, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes

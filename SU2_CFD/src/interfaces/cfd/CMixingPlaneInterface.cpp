@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,31 +27,17 @@
  */
 
 #include "../../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
-CMixingPlaneInterface::CMixingPlaneInterface(void) : CInterface() {
-
-}
-
-CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                             CConfig *donor_config, CConfig *target_config){
-  unsigned short iVar;
+CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst){
   nVar = val_nVar;
-
-  Donor_Variable     = new su2double[nVar + 5];
-  Target_Variable    = new su2double[nVar + 5];
-
-  for (iVar = 0; iVar < nVar + 5; iVar++){
-    Donor_Variable[iVar]  = 0.0;
-    Target_Variable[iVar] = 0.0;
-  }
+  Donor_Variable     = new su2double[nVar + 5]();
+  Target_Variable    = new su2double[nVar + 5]();
 }
 
-CMixingPlaneInterface::~CMixingPlaneInterface(void) {
-}
-
-
-
-void CMixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config){
+void CMixingPlaneInterface::SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config){
 
   unsigned short iSpan;
   nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
@@ -65,15 +51,14 @@ void CMixingPlaneInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *ta
     SpanValueCoeffTarget[iSpan] = 0.0;
     SpanLevelDonor[iSpan]       = 1;
   }
-
 }
 
 void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                              CConfig *donor_config, unsigned long Marker_Donor,
+                                              const CConfig *donor_config, unsigned long Marker_Donor,
                                               unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
-  bool turbulent = (donor_config->GetKind_Turb_Model() != NONE);
+  bool turbulent = (donor_config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
 
 
@@ -104,11 +89,11 @@ void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry
 
 
 void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                               CConfig *target_config, unsigned long Marker_Target,
+                                               const CConfig *target_config, unsigned long Marker_Target,
                                                unsigned long iSpan, unsigned long rank) {
 
   unsigned short nDim = nVar - 2;
-  bool turbulent = (target_config->GetKind_Turb_Model() != NONE);
+  bool turbulent = (target_config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
 
   target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);

@@ -2,14 +2,14 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 #include "libxsmm.h"
 #endif
 
-/* Include file, needed for the runtime NaN catching. */
+/* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
 using namespace std;
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v7.0.6 \"Blackbird\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v7.2.1 \"Blackbird\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -56,28 +56,25 @@ int main(int argc, char *argv[]) {
 
   CLI11_PARSE(app, argc, argv)
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   omp_set_num_threads(num_threads);
 
   /*--- MPI initialization, and buffer setting ---*/
 
-#ifdef HAVE_MPI
-  int  buffsize;
-  char *buffptr;
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int required = use_thread_mult? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, required, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
-  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+  // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
   /*--- Initialize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
@@ -96,17 +93,17 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
 
-  CConfig* config = new CConfig(config_file_name, SU2_CFD);
-  unsigned short nZone = config->GetnZone();
-  bool turbo = config->GetBoolTurbomachinery();
+  const CConfig config(config_file_name, SU2_COMPONENT::SU2_CFD);
+  const unsigned short nZone = config.GetnZone();
+  const bool turbo = config.GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  bool disc_adj = config->GetDiscrete_Adjoint();
-  bool multizone = config->GetMultizone_Problem();
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool disc_adj = config.GetDiscrete_Adjoint();
+  const bool multizone = config.GetMultizone_Problem();
+  const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
   if (dry_run) {
 
@@ -117,7 +114,7 @@ int main(int argc, char *argv[]) {
   else if ((!multizone && !harmonic_balance && !turbo) || (turbo && disc_adj)) {
 
     /*--- Generic single zone problem: instantiate the single zone driver class. ---*/
-    if (nZone != 1 )
+    if (nZone != 1)
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
 
     if (disc_adj) {
@@ -150,16 +147,7 @@ int main(int argc, char *argv[]) {
     /*--- Turbomachinery problem. ---*/
     driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
 
-  }
-  else {
-
-    /*--- Instantiate the class for external aerodynamics by default. ---*/
-    driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
-
-  }
-
-  delete config;
-  config = nullptr;
+  } /*--- These are all the possible cases ---*/
 
   /*--- Launch the main external loop of the solver. ---*/
 
@@ -170,19 +158,22 @@ int main(int argc, char *argv[]) {
   driver->Postprocessing();
 
   delete driver;
-  driver = nullptr;
 
   /*---Finalize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
 #endif
 
-  /*--- Finalize MPI parallelization. ---*/
-#ifdef HAVE_MPI
-  SU2_MPI::Buffer_detach(&buffptr, &buffsize);
-  free(buffptr);
-  SU2_MPI::Finalize();
+  /*--- Finalize AD, if necessary. ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().finalize();
 #endif
+
+  /*--- Finalize MPI parallelization. ---*/
+  SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 

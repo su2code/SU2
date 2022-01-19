@@ -2,14 +2,14 @@
  * \file CDiscAdjMeshSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint mesh problem.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,28 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
 #include "../../include/solvers/CDiscAdjMeshSolver.hpp"
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(void) : CSolver (){
-
-  KindDirect_Solver = 0;
-
-  direct_solver = nullptr;
-
-}
-
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config)  : CSolver(){
-
-  KindDirect_Solver = 0;
-
-}
-
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver)  : CSolver(){
-
-  unsigned short iVar, iDim;
+CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver) : CSolver() {
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();
@@ -57,42 +39,24 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
-  Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,1.0);
+  Residual_Max.resize(nVar,1.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
 
   if (config->GetMultizone_Residual()){
 
-    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
-
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
-
-  /*--- Define some auxiliary vectors related to the solution ---*/
-
-  Solution = new su2double[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 1e-16;
 
   /*--- Initialize the node structure ---*/
   nodes = new CDiscAdjMeshBoundVariable(nPoint,nDim,config);
@@ -100,9 +64,11 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 
   /*--- Set which points are vertices and allocate boundary data. ---*/
 
+  vector<su2double> Solution(nVar,1e-16);
+
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    nodes->SetSolution(iPoint,Solution);
+    nodes->SetSolution(iPoint,Solution.data());
 
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
@@ -116,58 +82,51 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 
 }
 
-CDiscAdjMeshSolver::~CDiscAdjMeshSolver(void){
-  delete nodes;
-}
-
-
-void CDiscAdjMeshSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
-
-
-}
+CDiscAdjMeshSolver::~CDiscAdjMeshSolver() { delete nodes; }
 
 void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-
-  unsigned long iPoint;
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     direct_solver->GetNodes()->SetBound_Disp(iPoint,nodes->GetBoundDisp_Direct(iPoint));
   }
-
-  /*--- Set indices to zero ---*/
-
-  RegisterVariables(geometry, config, true);
+  END_SU2_OMP_FOR
 
 }
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   /*--- Register reference mesh coordinates ---*/
-  bool input = true;
-  direct_solver->GetNodes()->Register_MeshCoord(input);
+  direct_solver->GetNodes()->Register_MeshCoord();
 
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
-  /*--- Register boundary displacements as input ---*/
-  bool input = true;
-  direct_solver->GetNodes()->Register_BoundDisp(input);
+  /*--- Register boundary displacements as input.
+   * Except for FSI, where they are determined by the FEA solver. ---*/
 
+  if (config->GetFSI_Simulation()) return;
+
+  SU2_OMP_MASTER {
+    direct_solver->GetNodes()->Register_BoundDisp();
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
-void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
+void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution from the original mesh coordinates ---*/
 
+    su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjoint_MeshCoord(iPoint,Solution);
 
     /*--- Store the adjoint solution (the container is reused) ---*/
@@ -175,68 +134,72 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
     nodes->SetSolution(iPoint,Solution);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint;
+  /*--- Extract the sensitivities of the boundary displacements, except for FSI. ---*/
 
-  /*--- Extract the sensitivities of the boundary displacements ---*/
+  if (config->GetFSI_Simulation()) return;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
 
-    /*--- Extract the adjoint solution of the boundary displacements ---*/
-
+    su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjoint_BoundDisp(iPoint,Solution);
-
-    /*--- Store the sensitivities of the boundary displacements ---*/
 
     nodes->SetBoundDisp_Sens(iPoint,Solution);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
-void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
 
-  unsigned long iPoint;
-  unsigned short iDim;
-  su2double Sensitivity, eps;
-  bool time_stepping = (config->GetTime_Marching() != STEADY);
+  SU2_OMP_PARALLEL {
+
+  const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
+  const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   /*--- Extract the sensitivities ---*/
-  ExtractAdjoint_Solution(geometry, config);
+  ExtractAdjoint_Solution(geometry, config, false);
 
   /*--- Extract the adjoint variables: sensitivities of the boundary displacements ---*/
   ExtractAdjoint_Variables(geometry, config);
 
   /*--- Store the sensitivities in the flow adjoint container ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
+    /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+    su2double limiter = 1.0;
+    if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
+      limiter = 0.0;
+    }
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       /*--- The sensitivity was extracted using ExtractAdjoint_Solution ---*/
-      Sensitivity = nodes->GetSolution(iPoint,iDim);
-
-      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-      if (config->GetSens_Remove_Sharp()) {
-        eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->nodes->GetSharpEdge_Distance(iPoint) < config->GetAdjSharp_LimiterCoeff()*eps )
-          Sensitivity = 0.0;
-      }
+      const su2double Sensitivity = limiter * nodes->GetSolution(iPoint,iDim);
 
       /*--- Store the sensitivities ---*/
       if (!time_stepping) {
-        solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint, iDim, Sensitivity);
+        solver->GetNodes()->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
-        solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint, iDim,
-          solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint, iDim) + Sensitivity);
+        solver->GetNodes()->SetSensitivity(iPoint, iDim,
+          solver->GetNodes()->GetSensitivity(iPoint, iDim) + Sensitivity);
       }
     }
   }
-  solver[ADJFLOW_SOL]->SetSurface_Sensitivity(geometry, config);
+  END_SU2_OMP_FOR
 
+  solver->SetSurface_Sensitivity(geometry, config);
+
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {

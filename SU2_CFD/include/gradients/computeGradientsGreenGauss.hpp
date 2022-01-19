@@ -4,14 +4,14 @@
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,11 +27,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
+namespace detail {
 
 /*!
  * \brief Compute the gradient of a field using the Green-Gauss theorem.
+ * \note Template nDim to allow efficient unrolling of inner loops.
  * \note Gradients can be computed only for a contiguous range of variables, defined
  *       by [varBegin, varEnd[ (e.g. 0,1 computes the gradient of the 1st variable).
  *       This can be used, for example, to compute only velocity gradients.
@@ -48,7 +50,7 @@
  * \param[in] varEnd - Index of last variable for which to compute the gradient.
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  */
-template<class FieldType, class GradientType>
+template<size_t nDim, class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver,
                                 MPI_QUANTITIES kindMpiComm,
                                 PERIODIC_QUANTITIES kindPeriodicComm,
@@ -59,14 +61,12 @@ void computeGradientsGreenGauss(CSolver* solver,
                                 size_t varEnd,
                                 GradientType& gradient)
 {
-  size_t nPointDomain = geometry.GetnPointDomain();
-  size_t nDim = geometry.GetnDim();
+  const size_t nPointDomain = geometry.GetnPointDomain();
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
 
-  size_t chunkSize = computeStaticChunkSize(nPointDomain,
-                     omp_get_max_threads(), OMP_MAX_CHUNK);
+  const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
@@ -76,7 +76,8 @@ void computeGradientsGreenGauss(CSolver* solver,
   {
     auto nodes = geometry.nodes;
 
-    AD::StartPreacc();
+    /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+    if (omp_get_num_threads() == 1) AD::StartPreacc();
     AD::SetPreaccIn(nodes->GetVolume(iPoint));
     AD::SetPreaccIn(nodes->GetPeriodicVolume(iPoint));
 
@@ -103,10 +104,10 @@ void computeGradientsGreenGauss(CSolver* solver,
       /*--- Determine if edge points inwards or outwards of iPoint.
        *    If inwards we need to flip the area vector. ---*/
 
-      su2double dir = (iPoint == geometry.edges->GetNode(iEdge,0))? 1.0 : -1.0;
+      su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
       su2double weight = dir * halfOnVol;
 
-      const su2double* area = geometry.edges->GetNormal(iEdge);
+      const auto area = geometry.edges->GetNormal(iEdge);
       AD::SetPreaccIn(area, nDim);
 
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -127,12 +128,14 @@ void computeGradientsGreenGauss(CSolver* solver,
 
     AD::EndPreacc();
   }
+  END_SU2_OMP_FOR
 
   /*--- Add boundary fluxes. ---*/
 
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
   {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
     {
       /*--- Work is shared in inner loop as two markers
@@ -150,7 +153,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
 
-        const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+        const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
         for (size_t iVar = varBegin; iVar < varEnd; iVar++)
         {
@@ -160,6 +163,7 @@ void computeGradientsGreenGauss(CSolver* solver,
             gradient(iPoint, iVar, iDim) -= flux * area[iDim];
         }
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -180,4 +184,33 @@ void computeGradientsGreenGauss(CSolver* solver,
   solver->InitiateComms(&geometry, &config, kindMpiComm);
   solver->CompleteComms(&geometry, &config, kindMpiComm);
 
+}
+} // end namespace
+
+/*!
+ * \brief Instantiations for 2D and 3D.
+ */
+template<class FieldType, class GradientType>
+void computeGradientsGreenGauss(CSolver* solver,
+                                MPI_QUANTITIES kindMpiComm,
+                                PERIODIC_QUANTITIES kindPeriodicComm,
+                                CGeometry& geometry,
+                                const CConfig& config,
+                                const FieldType& field,
+                                size_t varBegin,
+                                size_t varEnd,
+                                GradientType& gradient) {
+  switch (geometry.GetnDim()) {
+  case 2:
+    detail::computeGradientsGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry,
+                                          config, field, varBegin, varEnd, gradient);
+    break;
+  case 3:
+    detail::computeGradientsGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry,
+                                          config, field, varBegin, varEnd, gradient);
+    break;
+  default:
+    SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
+    break;
+  }
 }

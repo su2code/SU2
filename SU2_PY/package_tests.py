@@ -3,14 +3,14 @@
 ## \file package_tests.py
 #  \brief _____________.
 #  \author T. Lukaczyk
-#  \version 7.0.6 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -66,8 +66,6 @@ def main():
     #level3()    # working
     #level4()    # working
     #level5()    # working
-    
-    mesh0()
     
     print('DONE!')
     
@@ -305,25 +303,6 @@ def level5():
         SU2.opt.SLSQP(project,x0,xb,its)
     
     wait = 0
-    
-def mesh0():
-    
-    folder='mesh_level0'; pull='config_NACA0012.cfg'; link='mesh_NACA0012.su2'
-    with SU2.io.redirect_folder(folder,pull,link):
-        
-        # Setup
-        config_name = 'config_NACA0012.cfg'
-        config = SU2.io.Config(config_name)
-        config.EXT_ITER = 9
-        config.NUMBER_PART = 2
-                
-        SU2.run.CFD(config)    
-        
-        SU2.io.restart2solution(config)
-        
-        SU2.run.MSH(config)
-        
-        
 
 if __name__ == '__main__':
     main()

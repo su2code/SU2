@@ -2,14 +2,14 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "C2DContainer.hpp"
-#include "../omp_structure.hpp"
+#include "../containers/C2DContainer.hpp"
+#include "../parallelization/omp_structure.hpp"
 
 #include <set>
 #include <vector>
@@ -65,6 +65,22 @@ private:
 public:
   using IndexType = Index_t;
 
+  /*!
+   * \brief Type to allow range for loops over inner indices.
+   */
+  struct CInnerIter {
+    const IndexType* const m_first = nullptr;
+    const IndexType* const m_last = nullptr;
+    CInnerIter(const IndexType* first, const IndexType* last) :
+      m_first(first), m_last(last) {
+    }
+    const IndexType* begin() const { return m_first; }
+    const IndexType* end() const { return m_last; }
+  };
+
+  /*!
+   * \brief Default construction.
+   */
   CCompressedSparsePattern() = default;
 
   /*!
@@ -150,6 +166,7 @@ public:
     SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
     for(Index_t k = 0; k < getOuterSize(); ++k)
       m_diagPtr(k) = findInnerIdx(k,k);
+    END_SU2_OMP_PARALLEL
   }
 
   /*!
@@ -168,6 +185,7 @@ public:
         assert(m_innerIdxTransp(k) != m_innerIdx.size() && "The pattern is not symmetric.");
       }
     }
+    END_SU2_OMP_PARALLEL
   }
 
   /*!
@@ -217,6 +235,15 @@ public:
   inline Index_t& getInnerIdx(Index_t iOuterIdx, Index_t iNonZero) {
     assert(iNonZero >= 0 && iNonZero < getNumNonZeros(iOuterIdx));
     return m_innerIdx(m_outerPtr(iOuterIdx) + iNonZero);
+  }
+
+  /*!
+   * \param[in] iOuterIdx - Outer index.
+   * \return Iterator to inner dimension to use in range for loops.
+   */
+  inline CInnerIter getInnerIter(Index_t iOuterIdx) const {
+    return CInnerIter(m_innerIdx.data()+m_outerPtr(iOuterIdx),
+                      m_innerIdx.data()+m_outerPtr(iOuterIdx+1));
   }
 
   /*!
@@ -386,20 +413,16 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry,
         if(type == ConnectivityType::FiniteVolume)
         {
           /*--- For FVM we know the neighbors of point j directly. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnPoint(jPoint); ++iNeigh)
-          {
-            Index_t kPoint = geometry.nodes->GetPoint(jPoint, iNeigh);
-
+          for(Index_t kPoint : geometry.nodes->GetPoints(jPoint))
             if(neighbors.count(kPoint) == 0) // no duplication
               newNeighbors.insert(kPoint);
-          }
         }
         else // FiniteElement
         {
           /*--- For FEM we need the nodes of all elements that contain point j. ---*/
-          for(unsigned short iNeigh = 0; iNeigh < geometry.nodes->GetnElem(jPoint); ++iNeigh)
+          for(auto iElem : geometry.nodes->GetElems(jPoint))
           {
-            auto elem = geometry.elem[geometry.nodes->GetElem(jPoint, iNeigh)];
+            auto elem = geometry.elem[iElem];
 
             for(unsigned short iNode = 0; iNode < elem->GetnNodes(); ++iNode)
             {
@@ -504,7 +527,7 @@ T createNaturalColoring(Index_t numInnerIndexes)
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
-template<class T, typename Color_t = char, size_t MaxColors = 32, size_t MaxMB = 128>
+template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {

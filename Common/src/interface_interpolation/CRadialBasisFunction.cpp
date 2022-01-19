@@ -2,14 +2,14 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,8 +45,9 @@ extern "C" void dgemm_(const char*, const char*, const int*, const int*, const i
 #endif
 
 
-CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
+                                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -63,30 +64,30 @@ void CRadialBasisFunction::PrintStatistics() const {
   cout.unsetf(ios::floatfield);
 }
 
-su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
+su2double CRadialBasisFunction::Get_RadialBasisValue(RADIAL_BASIS type, const su2double radius, const su2double dist)
 {
   su2double rbf = dist/radius;
 
   switch (type) {
 
-    case WENDLAND_C2:
+    case RADIAL_BASIS::WENDLAND_C2:
       if(rbf < 1) rbf = pow(pow((1-rbf),2),2)*(4*rbf+1); // double use of pow(x,2) for optimization
       else        rbf = 0.0;
       break;
 
-    case GAUSSIAN:
+    case RADIAL_BASIS::GAUSSIAN:
       rbf = exp(-rbf*rbf);
       break;
 
-    case THIN_PLATE_SPLINE:
+    case RADIAL_BASIS::THIN_PLATE_SPLINE:
       if(rbf < numeric_limits<float>::min()) rbf = 0.0;
       else rbf *= rbf*log(rbf);
       break;
 
-    case MULTI_QUADRIC:
-    case INV_MULTI_QUADRIC:
+    case RADIAL_BASIS::MULTI_QUADRIC:
+    case RADIAL_BASIS::INV_MULTI_QUADRIC:
       rbf = sqrt(1.0+rbf*rbf);
-      if(type == INV_MULTI_QUADRIC) rbf = 1.0/rbf;
+      if(type == RADIAL_BASIS::INV_MULTI_QUADRIC) rbf = 1.0/rbf;
       break;
   }
 
@@ -96,7 +97,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, cons
 void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- RBF options. ---*/
-  const auto kindRBF = static_cast<ENUM_RADIALBASIS>(config[donorZone]->GetKindRadialBasisFunction());
+  const auto kindRBF = config[donorZone]->GetKindRadialBasisFunction();
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
   const su2double paramRBF = config[donorZone]->GetRadialBasisFunctionParameter();
   const su2double pruneTol = config[donorZone]->GetRadialBasisFunctionPruneTol();
@@ -106,6 +107,8 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
 
   /*--- Process interface patches in parallel, fetch all donor point coordinates,
    *    then distribute interpolation matrix computation over ranks and threads.
@@ -140,10 +143,10 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                                     Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
     /*--- Gather coordinates and global point indices. ---*/
-    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
+    Buffer_Send_GlobalPoint.resize(MaxLocalVertex_Donor);
+    Buffer_Receive_Coord.resize(nProcessor * MaxLocalVertex_Donor, nDim);
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
 
@@ -160,18 +163,13 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       auto offset = iProcessor * MaxLocalVertex_Donor;
       for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
         for (int iDim = 0; iDim < nDim; ++iDim)
-          donorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord(offset+iVertex, iDim);
         donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
         donorProc[iCount] = iProcessor;
         ++iCount;
       }
     }
     assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_GlobalPoint;
 
     /*--- Give an MPI-independent order to the points (required due to high condition
      *    number of the RBF matrix, avoids diff results with diff number of ranks. ---*/
@@ -215,6 +213,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                              keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
@@ -247,25 +246,25 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
 #ifdef HAVE_MPI
     /*--- For simplicity, broadcast small information about the interpolation matrix. ---*/
-    SU2_MPI::Bcast(&nPolynomial, 1, MPI_INT, iProcessor, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(keepPolynomialRow.data(), nDim, MPI_INT, iProcessor, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&nPolynomial, 1, MPI_INT, iProcessor, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(keepPolynomialRow.data(), nDim, MPI_INT, iProcessor, SU2_MPI::GetComm());
 
     /*--- Send C_inv_trunc only to the ranks that need it (those with target points),
      *    partial broadcast. MPI wrapper not used due to passive double. ---*/
     vector<unsigned long> allNumVertex(nProcessor);
     SU2_MPI::Allgather(&nVertexTarget, 1, MPI_UNSIGNED_LONG,
-      allNumVertex.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      allNumVertex.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     if (rank == iProcessor) {
       for (int jProcessor = 0; jProcessor < nProcessor; ++jProcessor)
         if ((jProcessor != iProcessor) && (allNumVertex[jProcessor] != 0))
           MPI_Send(C_inv_trunc.data(), C_inv_trunc.size(),
-                   MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD);
+                   MPI_DOUBLE, jProcessor, 0, SU2_MPI::GetComm());
     }
     else if (nVertexTarget != 0) {
       C_inv_trunc.resize(1+nPolynomial+nGlobalVertexDonor, nGlobalVertexDonor);
       MPI_Recv(C_inv_trunc.data(), C_inv_trunc.size(), MPI_DOUBLE,
-               iProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+               iProcessor, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
     }
 #endif
 
@@ -274,22 +273,15 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
      *    of the entire function matrix (A) and of the result (H), but work
      *    on a slab (set of rows) of A/H to amortize accesses to C_inv_trunc. ---*/
 
-    /*--- Fetch domain target vertices. ---*/
+    /*--- Fetch target vertex coordinates. ---*/
 
-    vector<CVertex*> targetVertices; targetVertices.reserve(nVertexTarget);
-    vector<const su2double*> targetCoord; targetCoord.reserve(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
+    vector<const su2double*> targetCoord(nVertexTarget);
 
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; ++iVertexTarget) {
-
-      auto targetVertex = target_geometry->vertex[markTarget][iVertexTarget];
-      auto pointTarget = targetVertex->GetNode();
-
-      if (target_geometry->nodes->GetDomain(pointTarget)) {
-        targetVertices.push_back(targetVertex);
-        targetCoord.push_back(target_geometry->nodes->GetCoord(pointTarget));
-      }
+      const auto pointTarget = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      targetCoord[iVertexTarget] = target_geometry->nodes->GetCoord(pointTarget);
     }
-    nVertexTarget = targetVertices.size();
     totalTargetPoints += nVertexTarget;
     denseSize += nVertexTarget*nGlobalVertexDonor;
 
@@ -359,7 +351,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       /*--- Set interpolation coefficients. ---*/
 
       for (auto k = 0ul; k < slabSize; ++k) {
-        auto targetVertex = targetVertices[iVertexTarget+k];
+        auto& targetVertex = targetVertices[markTarget][iVertexTarget+k];
 
         /*--- Prune small coefficients. ---*/
         auto info = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
@@ -372,20 +364,20 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         maxCorr = max(maxCorr, corr);
 
         /*--- Allocate and set donor information for this target point. ---*/
-        targetVertex->Allocate_DonorInfo(nnz);
+        targetVertex.resize(nnz);
 
         for (unsigned long iVertex = 0, iSet = 0; iVertex < nGlobalVertexDonor; ++iVertex) {
           auto coeff = interpMat(k,iVertex);
           if (fabs(coeff) > 0.0) {
-            targetVertex->SetInterpDonorProcessor(iSet, donorProc[iVertex]);
-            targetVertex->SetInterpDonorPoint(iSet, donorPoint[iVertex]);
-            targetVertex->SetDonorCoeff(iSet, coeff);
+            targetVertex.processor[iSet] = donorProc[iVertex];
+            targetVertex.globalPoint[iSet] = donorPoint[iVertex];
+            targetVertex.coefficient[iSet] = coeff;
             ++iSet;
           }
         }
       }
     } // end target vertex loop
-
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalDonorPoints += totalDonors;
@@ -394,7 +386,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       AvgCorrection += sumCorr;
       MaxCorrection = max(MaxCorrection, maxCorr);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free global data that will no longer be used. ---*/
     donorCoord.resize(0,0);
@@ -407,7 +401,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   /*--- Final reduction of interpolation statistics and basic sanity checks. ---*/
   auto Reduce = [](SU2_MPI::Op op, unsigned long &val) {
     auto tmp = val;
-    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, SU2_MPI::GetComm());
   };
   Reduce(MPI_SUM, totalTargetPoints);
   Reduce(MPI_SUM, totalDonorPoints);
@@ -416,8 +410,8 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   Reduce(MPI_MAX, MaxDonors);
 #ifdef HAVE_MPI
   passivedouble tmp1 = AvgCorrection, tmp2 = MaxCorrection;
-  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
   if (totalTargetPoints == 0)
     SU2_MPI::Error("Somehow there are no target interpolation points.", CURRENT_FUNCTION);
@@ -435,7 +429,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
 }
 
-void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial,
+void CRadialBasisFunction::ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePolynomial,
                            su2double radius, const su2activematrix& coords, int& nPolynomial,
                            vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc) {
 
@@ -453,7 +447,8 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
                                    GeometryToolbox::Distance(nDim, coords[iVertex], coords[jVertex])));
 
   /*--- Invert M matrix (operation is in-place). ---*/
-  const bool kernelIsSPD = (type==WENDLAND_C2) || (type==GAUSSIAN) || (type==INV_MULTI_QUADRIC);
+  const bool kernelIsSPD = (type==RADIAL_BASIS::WENDLAND_C2) || (type==RADIAL_BASIS::GAUSSIAN) ||
+                           (type==RADIAL_BASIS::INV_MULTI_QUADRIC);
   global_M.Invert(kernelIsSPD);
 
   /*--- Compute C_inv_trunc. ---*/

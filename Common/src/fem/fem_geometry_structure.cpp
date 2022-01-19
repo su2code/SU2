@@ -2,14 +2,14 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,8 @@
 #include "../../include/fem/fem_geometry_structure.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
-#include "../../include/adt_structure.hpp"
+#include "../../include/adt/CADTElemClass.hpp"
+#include "../../include/adt/CADTPointsOnlyClass.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined (HAVE_MKL) || defined(HAVE_LAPACK)
@@ -264,11 +265,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- and must be generalized later. As this number is also needed   ---*/
   /*--- in the solver, it is worthwhile to create a separate function  ---*/
   /*--- for this purpose.                                              ---*/
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  const bool compressible = (Kind_Solver == FEM_EULER) ||
-                            (Kind_Solver == FEM_NAVIER_STOKES) ||
-                            (Kind_Solver == FEM_RANS) ||
-                            (Kind_Solver == FEM_LES);
+  MAIN_SOLVER Kind_Solver = config->GetKind_Solver();
+  const bool compressible = (Kind_Solver == MAIN_SOLVER::FEM_EULER) ||
+                            (Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES) ||
+                            (Kind_Solver == MAIN_SOLVER::FEM_RANS) ||
+                            (Kind_Solver == MAIN_SOLVER::FEM_LES);
 
   unsigned short nVar;
   if( compressible ) nVar = nDim + 2;
@@ -318,7 +319,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   vector<int> sizeRecv(size, 1);
 
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
@@ -467,11 +468,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     int dest = MI->first;
     SU2_MPI::Isend(shortSendBuf[i].data(), shortSendBuf[i].size(), MPI_SHORT,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[3*i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[3*i]);
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[3*i+1]);
+                   dest, dest+1, SU2_MPI::GetComm(), &commReqs[3*i+1]);
     SU2_MPI::Isend(doubleSendBuf[i].data(), doubleSendBuf[i].size(), MPI_DOUBLE,
-                   dest, dest+2, MPI_COMM_WORLD, &commReqs[3*i+2]);
+                   dest, dest+2, SU2_MPI::GetComm(), &commReqs[3*i+2]);
   }
 
   /* Loop over the number of ranks from which I receive data. */
@@ -480,7 +481,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with shorts arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -489,24 +490,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(shortRecvBuf[i].data(), sizeMess, MPI_SHORT,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    SU2_MPI::Probe(source, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(source, rank+1, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
 
     /* Idem for the message with doubles. */
-    SU2_MPI::Probe(source, rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(source, rank+2, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
-                  source, rank+2, MPI_COMM_WORLD, &status);
+                  source, rank+2, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -514,7 +515,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -700,7 +701,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&maxTimeLevelLoc, &maxTimeLevelGlob,
-                     1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+                     1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   const unsigned short nTimeLevels = maxTimeLevelGlob+1;
@@ -762,7 +763,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /* Loop over the local halo elements to fill the communication buffers. */
@@ -807,7 +808,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankSend; ++i, ++MI) {
     int dest = MI->first;
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[i]);
   }
 
   /* Loop over the number of ranks from which I receive data. */
@@ -816,7 +817,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message and receive it. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -824,7 +825,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     longSecondRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -894,7 +895,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
     int dest = sourceRank[i];
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest+1, SU2_MPI::GetComm(), &commReqs[i]);
 #endif
   }
 
@@ -913,7 +914,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -922,13 +923,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the long receive buffer and receive the message. */
     longSecondRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends and synchronize the ranks, because
      wild cards have been used. */
   SU2_MPI::Waitall(nRankRecv, commReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -999,7 +1000,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /* Copy the data to be sent to the send buffers. */
@@ -1029,7 +1030,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankSend; ++i, ++MI) {
     int dest = MI->first;
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[i]);
   }
 
   /* Resize the vector to store the ranks from which the message came. */
@@ -1041,7 +1042,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message and receive it. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1049,13 +1050,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     longSecondRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends and synchronize the ranks,
      because wild cards have been used. */
   SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -1214,7 +1215,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   unsigned long nRanksTooManyPartChunks = tooManyPartChunksLoc;
 #ifdef HAVE_MPI
   SU2_MPI::Reduce(&tooManyPartChunksLoc, &nRanksTooManyPartChunks, 1,
-                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
   if((rank == MASTER_NODE) && (nRanksTooManyPartChunks != 0) && (size > 1)) {
@@ -1403,7 +1404,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   unsigned long nEmptyPartitions = 0;
 
   SU2_MPI::Reduce(&thisPartitionEmpty, &nEmptyPartitions, 1,
-                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
   if(rank == MASTER_NODE && nEmptyPartitions) {
     cout << endl << "         WARNING" << endl;
@@ -1670,11 +1671,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
     int dest = sourceRank[i];
     SU2_MPI::Isend(shortSendBuf[i].data(), shortSendBuf[i].size(), MPI_SHORT,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[3*i]);
+                   dest, dest+1, SU2_MPI::GetComm(), &commReqs[3*i]);
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+2, MPI_COMM_WORLD, &commReqs[3*i+1]);
+                   dest, dest+2, SU2_MPI::GetComm(), &commReqs[3*i+1]);
     SU2_MPI::Isend(doubleSendBuf[i].data(), doubleSendBuf[i].size(), MPI_DOUBLE,
-                   dest, dest+3, MPI_COMM_WORLD, &commReqs[3*i+2]);
+                   dest, dest+3, SU2_MPI::GetComm(), &commReqs[3*i+2]);
 #endif
   }
 
@@ -1699,7 +1700,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with shorts arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1708,24 +1709,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(shortRecvBuf[i].data(), sizeMess, MPI_SHORT,
-                  sourceRank[i], rank+1, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+1, SU2_MPI::GetComm(), &status);
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    SU2_MPI::Probe(sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(sourceRank[i], rank+2, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+2, SU2_MPI::GetComm(), &status);
 
     /* Idem for the message with doubles. */
-    SU2_MPI::Probe(sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(sourceRank[i], rank+3, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
-                  sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+3, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -1733,7 +1734,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -2307,7 +2308,7 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
                                         CConfig      *config) {
 
   /* Determine whether or not the viscous terms are needed. */
-  const bool viscousTerms = (config->GetKind_Solver() != FEM_EULER && config->GetKind_Solver() != DISC_ADJ_FEM_EULER);
+  const bool viscousTerms = (config->GetKind_Solver() != MAIN_SOLVER::FEM_EULER && config->GetKind_Solver() != MAIN_SOLVER::DISC_ADJ_FEM_EULER);
 
   /*--- Loop over the boundary faces stored on this rank. ---*/
   for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
@@ -2419,7 +2420,7 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 
 #ifdef HAVE_MPI
   su2double locArea = PositiveZArea;
-  SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /*---------------------------------------------------------------------------*/
@@ -3503,7 +3504,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
   vector<int> sizeReduce(size, 1);
 
   SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /* Resize ranksSend and the first index of entitiesSend to the number of
      ranks to which this rank has to send data. */
@@ -3516,7 +3517,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
     int dest = ranksRecv[i];
     SU2_MPI::Isend(longBuf[i].data(), longBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[i]);
   }
 
   /* Loop over the number of ranks from which I receive data about the
@@ -3525,7 +3526,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 
     /* Block until a message arrivesi and determine the source. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     ranksSend[i] = status.MPI_SOURCE;
 
     /* Determine the size of the message, allocate the memory for the
@@ -3535,7 +3536,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 
     entitiesSend[i].resize(sizeMess);
     SU2_MPI::Recv(entitiesSend[i].data(), sizeMess, MPI_UNSIGNED_LONG,
-                  ranksSend[i], rank, MPI_COMM_WORLD, &status);
+                  ranksSend[i], rank, SU2_MPI::GetComm(), &status);
 
     /* Convert the global indices currently stored in entitiesSend[i]
        to local indices. */
@@ -3553,7 +3554,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
   /* Complete the non-blocking sends and synchronize the rank, because
      wild cards have been used. */
   SU2_MPI::Waitall(ranksRecv.size(), commReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
   /* Sequential mode. Resize ranksSend and the first index of entitiesSend to
@@ -5014,7 +5015,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
 void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
   /* Determine whether or not the viscous terms are needed. */
-  bool viscousTerms = (config->GetKind_Solver() != FEM_EULER && config->GetKind_Solver() != DISC_ADJ_FEM_EULER);
+  bool viscousTerms = (config->GetKind_Solver() != MAIN_SOLVER::FEM_EULER && config->GetKind_Solver() != MAIN_SOLVER::DISC_ADJ_FEM_EULER);
 
   /* Loop over the internal matching faces. */
   for(unsigned long i=0; i<matchingFaces.size(); ++i) {
@@ -5177,7 +5178,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
       /* Send the data. */
       SU2_MPI::Isend(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
-                     ranksRecv[i], ranksRecv[i]+10, MPI_COMM_WORLD,
+                     ranksRecv[i], ranksRecv[i]+10, SU2_MPI::GetComm(),
                      &recvRequests[nRecvRequests++]);
     }
   }
@@ -5192,7 +5193,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
       sendBuf[i].resize(entitiesSend[i].size());
 
       SU2_MPI::Irecv(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
-                     ranksSend[i], rank+10, MPI_COMM_WORLD,
+                     ranksSend[i], rank+10, SU2_MPI::GetComm(),
                      &sendRequests[nSendRequests++]);
     }
   }
@@ -5295,7 +5296,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
       /* Send the data. */
       SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
-                     ranksSend[i], ranksSend[i]+20, MPI_COMM_WORLD,
+                     ranksSend[i], ranksSend[i]+20, SU2_MPI::GetComm(),
                      &sendRequests[nSendRequests++]);
     }
   }
@@ -5308,7 +5309,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
       /* Post the nonblocking receive. */
       SU2_MPI::Irecv(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
-                     ranksRecv[i], rank+20, MPI_COMM_WORLD,
+                     ranksRecv[i], rank+20, SU2_MPI::GetComm(),
                      &recvRequests[nRecvRequests++]);
     }
   }
@@ -5369,14 +5370,14 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   bool FullMassMatrix   = false, FullInverseMassMatrix = false;
   bool LumpedMassMatrix = false, DerMetricTerms = false;
 
-  if(config->GetTime_Marching() == STEADY ||
-     config->GetTime_Marching() == ROTATIONAL_FRAME) {
+  if(config->GetTime_Marching() == TIME_MARCHING::STEADY ||
+     config->GetTime_Marching() == TIME_MARCHING::ROTATIONAL_FRAME) {
     if( UseLumpedMassMatrix) LumpedMassMatrix      = true;
     else                     FullInverseMassMatrix = true;
   }
-  else if(config->GetTime_Marching() == DT_STEPPING_1ST ||
-          config->GetTime_Marching() == DT_STEPPING_2ND ||
-          config->GetTime_Marching() == HARMONIC_BALANCE) {
+  else if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+          config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND ||
+          config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     if( UseLumpedMassMatrix ) FullMassMatrix = LumpedMassMatrix = true;
     else                      FullInverseMassMatrix = true;
   }
@@ -5388,8 +5389,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
     /* For ADER-DG, check if the derivative of the metric terms are needed. */
     if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
-      unsigned short solver = config->GetKind_Solver();
-      if(solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
+      MAIN_SOLVER solver = config->GetKind_Solver();
+      if(solver == MAIN_SOLVER::FEM_NAVIER_STOKES || solver == MAIN_SOLVER::FEM_RANS || solver == MAIN_SOLVER::FEM_LES) {
         if(config->GetKind_ADER_Predictor() == ADER_NON_ALIASED_PREDICTOR)
           DerMetricTerms = true;
       }
@@ -6127,7 +6128,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -6234,19 +6235,19 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* An LES wall model is used for this boundary marker. Determine
              which wall model and allocate the memory for the member variable. */
           switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
-            case EQUILIBRIUM_WALL_MODEL: {
+            case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
               boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
               break;
             }
-            case LOGARITHMIC_WALL_MODEL: {
+            case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
 
@@ -6588,7 +6589,7 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 }
 
-void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
+void CMeshFEM_DG::InitStaticMeshMovement(const CConfig        *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 

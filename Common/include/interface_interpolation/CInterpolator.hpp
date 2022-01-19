@@ -2,14 +2,14 @@
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,8 +27,10 @@
 #pragma once
 
 #include "../../include/basic_types/datatype_structure.hpp"
-#include "../../include/toolboxes/C2DContainer.hpp"
+#include "../../include/containers/C2DContainer.hpp"
+#include "../../include/containers/container_decorators.hpp"
 #include <vector>
+#include <algorithm>
 
 class CConfig;
 class CGeometry;
@@ -53,17 +55,21 @@ protected:
   Buffer_Send_nVertex_Donor[1],      /*!< \brief Buffer to send number of vertices on the local processor. */
   *Buffer_Receive_nVertex_Donor;     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain. */
 
-  long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices. */
-  *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
+  su2vector<unsigned long> Buffer_Send_GlobalPoint;     /*!< \brief Buffer to send global point indices. */
+  su2vector<unsigned long> Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
 
-  su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values. */
-  *Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
+  su2activematrix Buffer_Send_Coord;      /*!< \brief Buffer to send coordinate values. */
+  su2activematrix Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
-  unsigned long
-  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node. */
-  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge. */
-  *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
-  *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node. */
+  /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
+  su2vector<unsigned long> Buffer_Receive_nLinkedNodes;
+  /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
+  su2vector<unsigned long> Buffer_Receive_StartLinkedNodes;
+  /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
+   * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
+  su2vector<unsigned long> Buffer_Receive_LinkedNodes;
+  /*! \brief Buffer to receive the rank that owns the vertex. */
+  su2vector<unsigned long> Buffer_Receive_Proc;
 
   unsigned long
   nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary. */
@@ -78,14 +84,30 @@ protected:
   CGeometry* const target_geometry;  /*! \brief Target geometry. */
 
 public:
+  struct CDonorInfo {
+    vector<int> processor;
+    vector<unsigned long> globalPoint;
+    vector<su2double> coefficient;
+
+    unsigned long nDonor() const { return processor.size(); }
+
+    void resize(size_t nDonor) {
+      processor.resize(nDonor);
+      globalPoint.resize(nDonor);
+      coefficient.resize(nDonor);
+    }
+  };
+  vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
+
   /*!
    * \brief Constructor of the class.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone
-   * \param[in] jZone - index of the target zone
+   * \param[in] iZone - index of the donor zone.
+   * \param[in] jZone - index of the target zone.
    */
-  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
+                unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief No default construction allowed to force zones and geometry to always be set.
@@ -125,7 +147,7 @@ public:
 
 protected:
   /*!
-   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
+   * \brief Reconstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads.
    * \param[in] val_zone   - index of the zone
    * \param[in] val_marker - index of the marker
    */

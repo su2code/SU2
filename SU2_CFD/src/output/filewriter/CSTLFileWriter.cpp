@@ -2,14 +2,14 @@
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
  * \author T. Kattmann, T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,14 +34,17 @@
 const string CSTLFileWriter::fileExt = ".stl";
 
 
-CSTLFileWriter::CSTLFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
+CSTLFileWriter::CSTLFileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){}
 
 
 CSTLFileWriter::~CSTLFileWriter(){}
 
 
-void CSTLFileWriter::Write_Data(){
+void CSTLFileWriter::Write_Data(string val_filename){
+  
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   /*--- This Write_Data routine has 3 major parts where the first two are transfered in external functions:
     1. Prerequisite info: The parallel data-sorter distributes nodes of the primal mesh onto the processes
@@ -71,7 +74,8 @@ void CSTLFileWriter::Write_Data(){
     /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
     /*--- Open the STL file and write the header line. ---*/
     Surf_file.precision(6);
-    Surf_file.open(fileName.c_str(), ios::out);
+  
+    Surf_file.open(val_filename.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
 
     /*--- Loop through all of the collected data and write each node's coordinate values. ---*/
@@ -112,9 +116,9 @@ void CSTLFileWriter::Write_Data(){
 
 void CSTLFileWriter::ReprocessElementConnectivity(){
 
-  
+
   const vector<string>& fieldNames = dataSorter->GetFieldNames();
-  
+
   /*--- Re-process the element connectivity information and store that appropriatly such that
     this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp +162 and mildly modified. ---*/
 
@@ -157,7 +161,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   for (unsigned long i = 0; i < num_halo_nodes; ++i)
     ++num_nodes_to_receive[neighbor_partitions[i]];
   num_nodes_to_send.resize(size);
-  SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, SU2_MPI::GetComm());
 
   /* Now send the global node numbers whose data we need,
      and receive the same from all other ranks.
@@ -182,7 +186,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   if (sorted_halo_nodes.empty()) sorted_halo_nodes.resize(1); /* Avoid crash. */
   SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
                      &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 
   /* Now actually send and receive the data */
   data_to_send.resize(max<unsigned long>(1, total_num_nodes_to_send * fieldNames.size()));
@@ -211,7 +215,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
   SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                      &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 }
 
 
@@ -244,12 +248,12 @@ void CSTLFileWriter::GatherCoordData(){
    to the master node with collective calls. ---*/
 
   SU2_MPI::Allreduce(&nLocalTriaAll, &max_nLocalTriaAll, 1,
-                     MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
 
   SU2_MPI::Gather(&nLocalTriaAll   , 1, MPI_UNSIGNED_LONG,
                   buffRecvTriaCount, 1, MPI_UNSIGNED_LONG,
-                  MASTER_NODE, MPI_COMM_WORLD);
+                  MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Allocate buffer for send/recv of the coordinate data. Only the master rank allocates buffers for the recv. ---*/
   buffSendCoords = new su2double[max_nLocalTriaAll*N_POINTS_TRIANGLE*3]; /* Triangle has 3 Points with 3 coords each */
@@ -262,7 +266,7 @@ void CSTLFileWriter::GatherCoordData(){
   /*--- Collective comms of the solution data and global IDs. ---*/
   SU2_MPI::Gather(buffSendCoords, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
                   buffRecvCoords, static_cast<int>(max_nLocalTriaAll*N_POINTS_TRIANGLE*3), MPI_DOUBLE,
-                  MASTER_NODE, MPI_COMM_WORLD);
+                  MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Free temporary memory. ---*/
   delete [] buffSendCoords;

@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,23 +27,26 @@
  */
 
 #include "../../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                             CConfig *config, bool integrate_tractions_) :
-  CFlowTractionInterface(val_nVar, val_nConst, config, integrate_tractions_) {
-
+                                                             const CConfig *config, bool conservative_) :
+  CFlowTractionInterface(val_nVar, val_nConst, config, conservative_) {
 }
 
 void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
                                                           CGeometry *flow_geometry, CGeometry *struct_geometry,
-                                                          CConfig *flow_config, CConfig *struct_config){
+                                                          const CConfig *flow_config, const CConfig *struct_config){
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
+
+  if (!conservative) ComputeVertexAreas(struct_config, struct_geometry, struct_solution);
 
   /*--- No ramp applied ---*/
   Physical_Constants[1] = 1.0;

@@ -1,15 +1,15 @@
 /*!
- * \file output_adj_flow_comp.cpp
+ * \file CAdjFlowCompOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,16 +26,12 @@
  */
 
 
-#include "../../include/output/CAdjFlowOutput.hpp"
+#include "../../include/output/CAdjFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
-
-  turb_model = config->GetKind_Turb_Model();
-
-  cont_adj = config->GetContinuous_Adjoint();
+CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : CAdjFlowOutput(config, nDim) {
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -110,21 +106,8 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint momentum z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint energy.
   AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
-      AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case SST:
-      /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
-      AddHistoryOutput("RMS_ADJ_TKE", "rms[A_k]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
-      AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", ScreenOutputFormat::FIXED, "RMS_RES", " Root-mean square residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    default: break;
-    }
-  }
+
+  AddHistoryOutputFields_AdjScalarRMS_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -138,21 +121,8 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint energy.
   AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
-  if (!config->GetFrozen_Visc_Disc()){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
-      AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case SST:
-      /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
-      AddHistoryOutput("MAX_ADJ_TKE", "max[A_k]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: Maximum residual of the adjoint dissipation.
-      AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    default: break;
-    }
-  }
+
+  AddHistoryOutputFields_AdjScalarMAX_RES(config);
   /// END_GROUP
 
 
@@ -167,22 +137,8 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint energy.
   AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
-  if (!config->GetFrozen_Visc_Disc()){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: BGS residual of the adjoint nu tilde.
-      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case SST:
-      /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
-      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: BGS residual of the adjoint dissipation.
-      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    default: break;
-    }
-  }
 
+  AddHistoryOutputFields_AdjScalarBGS_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.
@@ -201,6 +157,8 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
+  AddHistoryOutputFields_AdjScalarLinsol(config);
+
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_ITER", "DeformIter", ScreenOutputFormat::INTEGER, "DEFORM", "Linear solver iterations for the mesh deformation");
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
@@ -211,7 +169,6 @@ void CAdjFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
 
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
-  CSolver* adjturb_solver = solver[ADJTURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
@@ -223,18 +180,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
   } else {
     SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(adjflow_solver->GetRes_RMS(3)));
   }
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
-      break;
-    case SST:
-      SetHistoryOutputValue("RMS_ADJ_TKE", log10(adjturb_solver->GetRes_RMS(0)));
-      SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
-      break;
-    default: break;
-    }
-  }
+
   SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjflow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_Max(2)));
@@ -243,18 +189,6 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(4)));
   } else {
     SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(3)));
-  }
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_Max(0)));
-      break;
-    case SST:
-      SetHistoryOutputValue("MAX_ADJ_TKE", log10(adjturb_solver->GetRes_Max(0)));
-      SetHistoryOutputValue("MAX_ADJ_DISSIPATION", log10(adjturb_solver->GetRes_Max(1)));
-      break;
-    default: break;
-    }
   }
 
   if (multiZone){
@@ -266,18 +200,6 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
       SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(4)));
     } else {
       SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(3)));
-    }
-    if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-      switch(turb_model){
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
-        break;
-      case SST:
-        SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
-        break;
-      default: break;
-      }
     }
   }
 
@@ -295,6 +217,7 @@ void CAdjFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(mesh_solver->System.GetResidual()));
   }
 
+  LoadHistoryData_AdjScalar(config, solver);
 }
 
 void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -317,21 +240,8 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "SOLUTION", "z-component of the adjoint momentum vector");
   /// DESCRIPTION: Adjoint energy.
   AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION", "Adjoint energy");
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: Adjoint nu tilde.
-      AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION", "Adjoint Spalart-Allmaras variable");
-      break;
-    case SST:
-      /// DESCRIPTION: Adjoint kinetic energy.
-      AddVolumeOutput("ADJ_TKE", "Adjoint_TKE", "SOLUTION", "Adjoint kinetic energy");
-      /// DESCRIPTION: Adjoint dissipation.
-      AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION", "Adjoint rate of dissipation");
-      break;
-    default: break;
-    }
-  }
+
+  SetVolumeOutputFields_AdjScalarSolution(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables.
@@ -346,21 +256,8 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("RES_ADJ_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL", "Residual of the adjoint z-momentum");
   /// DESCRIPTION: Residual of the adjoint energy.
   AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL", "Residual of the adjoint energy");
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: Residual of the nu tilde.
-      AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
-      break;
-    case SST:
-      /// DESCRIPTION: Residual of the adjoint kinetic energy.
-      AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL", "Residual of the turb. kinetic energy");
-      /// DESCRIPTION: Residual of the adjoint dissipation.
-      AddVolumeOutput("RES_ADJ_DISSIPATION", "Residual_Adjoint_Omega", "RESIDUAL", "Residual of the rate of dissipation");
-      break;
-    default: break;
-    }
-  }
+
+  SetVolumeOutputFields_AdjScalarResidual(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
@@ -380,14 +277,7 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjTurb = nullptr;
   CPoint*    Node_Geo     = geometry->nodes;
-
-  if (config->GetKind_Turb_Model() != NONE &&
-      ((!config->GetFrozen_Visc_Disc() && !cont_adj) ||
-       (!config->GetFrozen_Visc_Cont() && cont_adj))){
-    Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
-  }
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
@@ -404,22 +294,6 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
     SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
   }
 
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    // Turbulent
-    switch(turb_model){
-    case SST:
-      SetVolumeOutputValue("ADJ_TKE",         iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
-      SetVolumeOutputValue("ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1));
-      break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
-      SetVolumeOutputValue("ADJ_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0));
-      break;
-    case NONE:
-      break;
-    }
-  }
-
   // Residuals
   SetVolumeOutputValue("RES_ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(iPoint, 0) - Node_AdjFlow->GetSolution_Old(iPoint, 0));
   SetVolumeOutputValue("RES_ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1) - Node_AdjFlow->GetSolution_Old(iPoint, 1));
@@ -431,26 +305,12 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
     SetVolumeOutputValue("RES_ADJ_ENERGY", iPoint, Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
   }
 
-  if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-    switch(config->GetKind_Turb_Model()){
-    case SST:
-      SetVolumeOutputValue("RES_ADJ_TKE",         iPoint, Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
-      SetVolumeOutputValue("RES_ADJ_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(iPoint, 1) - Node_AdjTurb->GetSolution_Old(iPoint, 1));
-      break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
-      SetVolumeOutputValue("RES_ADJ_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(iPoint, 0) - Node_AdjTurb->GetSolution_Old(iPoint, 0));
-      break;
-    case NONE:
-      break;
-    }
-  }
-
   SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 0));
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 2));
 
+  LoadVolumeData_AdjScalar(config, solver, iPoint);
 }
 
 void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
@@ -460,17 +320,9 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 }
 
 
-bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
+bool CAdjFlowCompOutput::SetInit_Residuals(const CConfig *config){
 
-  return ((config->GetTime_Marching() != STEADY) && (curInnerIter == 0)) ||
-         ((config->GetTime_Marching() == STEADY) && (curInnerIter < 2));
-
-}
-
-bool CAdjFlowCompOutput::SetUpdate_Averages(CConfig *config){
-  return false;
-
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && (curInnerIter == 0)) ||
+         ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));
 
 }
-

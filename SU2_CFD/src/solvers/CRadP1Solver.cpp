@@ -2,14 +2,14 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/variables/CRadP1Variable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
@@ -34,7 +35,7 @@ CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   unsigned short direct_diff = config->GetDirectDiff();
   bool multizone = config->GetMultizone_Problem();
 
@@ -47,20 +48,17 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   nVarGrad = nVar;
 
-  Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-  Solution = new su2double[nVar]; Residual_Max = new su2double[nVar];
+  Residual = new su2double[nVar];
+  Solution = new su2double[nVar];
 
   Res_Visc = new su2double[nVar];
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -105,26 +103,19 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   SetTemperature_Inf(Temperature_Inf);
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  /*--- Initialize the BGS residuals. ---*/
   if (multizone){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
   su2double init_val;
   switch(config->GetKind_P1_Init()){
-    case P1_INIT_ZERO: init_val = 0.0; break;
-    case P1_INIT_TEMP: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
+    case P1_INIT::ZERO: init_val = 0.0; break;
+    case P1_INIT::TEMPERATURE: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
     default: init_val = 0.0; break;
   }
 
@@ -179,7 +170,7 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     Energy = nodes->GetSolution(iPoint, 0);
 
     /*--- Retrieve temperature from the flow solver ---*/
-    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,nDim+1);
+    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
     /*--- Compute the divergence of the radiative flux ---*/
     SourceTerm = Absorption_Coeff*(Energy - 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0));
@@ -269,7 +260,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
@@ -303,10 +294,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
 
@@ -346,7 +334,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
@@ -380,10 +368,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
 
@@ -424,7 +409,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
@@ -454,10 +439,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
 
@@ -473,7 +455,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
       /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
       /*--- Retrieve temperature from the flow solver ---*/
-      Temperature = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, nDim+1);
+      Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
       /*--- Compute the blackbody intensity at the wall. ---*/
       Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0);
@@ -509,10 +491,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
+
   /*--- Build implicit system ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -541,7 +521,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
@@ -584,7 +564,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
-  unsigned short iDim, iMarker;
+  unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
@@ -609,7 +589,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Get the edge's normal vector to compute the edge's area ---*/
     Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Viscous contribution ---*/
 
@@ -628,7 +608,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Viscous contribution ---*/
 
@@ -670,10 +650,10 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     su2double sbuf_time;
     sbuf_time = Min_Delta_Time;
-    SU2_MPI::Allreduce(&sbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
     sbuf_time = Max_Delta_Time;
-    SU2_MPI::Allreduce(&sbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
   }
 
 }

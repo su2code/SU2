@@ -2,14 +2,14 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/integration/CIntegration.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CIntegration::CIntegration() {
@@ -46,8 +46,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short iMarker, KindBC;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- Compute inviscid residuals ---*/
 
@@ -57,9 +57,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       break;
     case SPACE_UPWIND:
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics, config, iMesh);
-      break;
-    case FINITE_ELEMENT:
-      solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
       break;
   }
 
@@ -78,6 +75,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   CNumerics* conv_bound_numerics = numerics[CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
   CNumerics* visc_bound_numerics = numerics[VISC_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Pause preaccumulation in boundary conditions for hybrid parallel AD. ---*/
+  /// TODO: Check if this is really needed.
+  //const auto pausePreacc = (omp_get_num_threads() > 1) && AD::PausePreaccumulation();
 
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
@@ -140,14 +141,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case SYMMETRY_PLANE:
         solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
-      case ELECTRODE_BOUNDARY:
-        solver_container[MainSolver]->BC_Electrode(geometry, solver_container, conv_bound_numerics, config, iMarker);
-        break;
-      case DIELEC_BOUNDARY:
-        solver_container[MainSolver]->BC_Dielec(geometry, solver_container, conv_bound_numerics, config, iMarker);
-        break;
     }
   }
+
+  /*--- Modification of the system on the whole domain, like for a strong BC. ---*/
+  solver_container[MainSolver]->Impose_Fixed_Values(geometry, config);
 
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 
@@ -159,11 +157,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
+      case HEAT_TRANSFER:
+        solver_container[MainSolver]->BC_HeatTransfer_Wall(geometry, config, iMarker);
+        break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case CHT_WALL_INTERFACE:
-        if ((MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+        if ((MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics, config, iMarker);
         }
         else {
@@ -178,11 +179,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. ---*/
+   accumulated correctly during the communications. ---*/
 
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
+
+  //AD::ResumePreaccumulation(pausePreacc);
 
 }
 
@@ -208,14 +211,10 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh) {
 
   SU2_OMP_PARALLEL
   {
-  /*--- Store old solution, volumes and coordinates (in case there is grid movement). ---*/
-
-  solver->GetNodes()->Set_Solution_time_n1();
-  solver->GetNodes()->Set_Solution_time_n();
 
   geometry->nodes->SetVolume_nM1();
   geometry->nodes->SetVolume_n();
@@ -225,8 +224,23 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     geometry->nodes->SetCoord_n();
   }
 
+  if ((iMesh==MESH_0) && config->GetDeform_Mesh()) mesh_solver->SetDualTime_Mesh();
+
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+
+  SU2_OMP_PARALLEL
+  {
+  /*--- Store old solution ---*/
+  solver->GetNodes()->Set_Solution_time_n1();
+  solver->GetNodes()->Set_Solution_time_n();
+
   SU2_OMP_MASTER
   solver->ResetCFLAdapt();
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
@@ -238,114 +252,8 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     /*--- Initialize the local CFL number ---*/
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
   }
-
-  /*--- Store old aeroelastic solutions ---*/
-  SU2_OMP_MASTER
-  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
-
-    config->SetAeroelastic_n1();
-    config->SetAeroelastic_n();
-
-    /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
-
-#ifdef HAVE_MPI
-    su2double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
-    unsigned short iMarker, iMarker_Monitoring;
-    unsigned long iProcessor, owner, *owner_all = NULL;
-
-    string Marker_Tag, Monitoring_Tag;
-    int nProcessor = size;
-
-    /*--- Only if master node allocate memory ---*/
-
-    if (rank == MASTER_NODE) {
-      plunge_all = new su2double[nProcessor];
-      pitch_all  = new su2double[nProcessor];
-      owner_all  = new unsigned long[nProcessor];
-    }
-
-    /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
-
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
-        } else {
-          owner = 0;
-        }
-
-      }
-      plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
-      pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
-
-      /*--- Gather the data on the master node. ---*/
-
-      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-      /*--- Set plunge and pitch on the master node ---*/
-
-      if (rank == MASTER_NODE) {
-        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
-          if (owner_all[iProcessor] == 1) {
-            config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
-            config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
-            break;
-          }
-        }
-      }
-
-    }
-
-    if (rank == MASTER_NODE) {
-      delete [] plunge_all;
-      delete [] pitch_all;
-      delete [] owner_all;
-    }
-#endif
-  }
-  SU2_OMP_BARRIER
-
-  } // end SU2_OMP_PARALLEL
-
-}
-
-void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-
-  bool fsi = config->GetFSI_Simulation();
-
-  /*--- Update the solution according to the integration scheme used ---*/
-
-  switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
-      break;
-    case (NEWMARK_IMPLICIT):
-      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, config);
-      break;
-    case (GENERALIZED_ALPHA):
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, config);
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, config);
-      break;
-  }
-
-  /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-
-  solver_container[FEA_SOL]->GetNodes()->Set_Solution_time_n();
-  solver_container[FEA_SOL]->GetNodes()->SetSolution_Vel_time_n();
-  solver_container[FEA_SOL]->GetNodes()->SetSolution_Accel_time_n();
-
-  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-
-  if (fsi) {
-
-    su2double WAitk=0.0;
-
-    WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
-    solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
+  END_SU2_OMP_FOR
 
   }
+  END_SU2_OMP_PARALLEL
 }

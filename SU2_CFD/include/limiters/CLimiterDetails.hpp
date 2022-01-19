@@ -3,14 +3,14 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,22 +64,28 @@ struct CLimiterDetails
 /*!
  * \brief Common small functions used by limiters.
  */
-namespace LimiterHelpers
+template<class Type = su2double>
+struct LimiterHelpers
 {
-  inline passivedouble epsilon() {return std::numeric_limits<passivedouble>::epsilon();}
+  FORCEINLINE static Type epsilon() {return std::numeric_limits<passivedouble>::epsilon();}
 
-  inline su2double venkatFunction(su2double proj, su2double delta, su2double eps2)
+  FORCEINLINE static Type venkatFunction(const Type& proj, const Type& delta, const Type& eps2)
   {
-    su2double y = delta*(delta+proj) + eps2;
+    Type y = delta*(delta+proj) + eps2;
     return (y + delta*proj) / (y + 2*proj*proj);
   }
 
-  inline su2double raisedSine(su2double dist)
+  FORCEINLINE static Type vanAlbadaFunction(const Type& proj, const Type& delta, const Type& eps)
   {
-    su2double factor = 0.5*(1.0+dist+sin(PI_NUMBER*dist)/PI_NUMBER);
+    return delta * (2*proj + delta) / (4*pow(proj, 2) + pow(delta, 2) + eps);
+  }
+
+  FORCEINLINE static Type raisedSine(const Type& dist)
+  {
+    Type factor = 0.5*(1.0+dist+sin(PI_NUMBER*dist)/PI_NUMBER);
     return max(0.0, min(factor, 1.0));
   }
-}
+};
 
 
 /*!
@@ -94,7 +100,7 @@ struct CLimiterDetails<BARTH_JESPERSEN>
    * \brief Set a small epsilon to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(Ts&...) {eps2 = LimiterHelpers::epsilon();}
+  inline void preprocess(Ts&...) {eps2 = LimiterHelpers<>::epsilon();}
 
   /*!
    * \brief No geometric modification for this kind of limiter.
@@ -107,7 +113,7 @@ struct CLimiterDetails<BARTH_JESPERSEN>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers::venkatFunction(proj, delta, eps2);
+    return LimiterHelpers<>::venkatFunction(proj, delta, eps2);
   }
 };
 
@@ -130,7 +136,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    eps2 = max(eps1*eps1*eps1, LimiterHelpers::epsilon());
+    eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -144,7 +150,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers::venkatFunction(proj, delta, eps2);
+    return LimiterHelpers<>::venkatFunction(proj, delta, eps2);
   }
 };
 
@@ -177,6 +183,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMin.resize(varEnd) = largeNum;
       sharedMax.resize(varEnd) =-largeNum;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Per thread reduction. ---*/
@@ -185,7 +192,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     localMin = largeNum;
     localMax =-largeNum;
 
-    SU2_OMP(for schedule(static, 512) nowait)
+    SU2_OMP_FOR_(schedule(static, 512) SU2_NOWAIT)
     for(size_t iPoint = 0; iPoint < geometry.GetnPointDomain(); ++iPoint)
     {
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -194,6 +201,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
         localMax(iVar) = max(localMax(iVar), field(iPoint, iVar));
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Per rank reduction. ---*/
 
@@ -203,6 +211,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMin(iVar) = min(sharedMin(iVar), localMin(iVar));
       sharedMax(iVar) = max(sharedMax(iVar), localMax(iVar));
     }
+    END_SU2_OMP_CRITICAL
     SU2_OMP_BARRIER
 
     /*--- Global reduction. ---*/
@@ -210,11 +219,12 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     SU2_OMP_MASTER
     {
       localMin = sharedMin;
-      SU2_MPI::Allreduce(localMin.data(), sharedMin.data(), varEnd, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(localMin.data(), sharedMin.data(), varEnd, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       localMax = sharedMax;
-      SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Compute eps^2 (each thread has its own copy of it). ---*/
@@ -225,7 +235,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
     {
       su2double range = sharedMax(iVar) - sharedMin(iVar);
-      eps2(iVar) = max(pow(K*range, 2), LimiterHelpers::epsilon());
+      eps2(iVar) = max(pow(K*range, 2), LimiterHelpers<>::epsilon());
     }
   }
 
@@ -241,7 +251,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
   inline su2double limiterFunction(size_t iVar, su2double proj, su2double delta) const
   {
     AD::SetPreaccIn(eps2(iVar));
-    return LimiterHelpers::venkatFunction(proj, delta, eps2(iVar));
+    return LimiterHelpers<>::venkatFunction(proj, delta, eps2(iVar));
   }
 };
 
@@ -264,7 +274,7 @@ struct CLimiterDetails<SHARP_EDGES>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     eps1 = fabs(L*K);
-    eps2 = max(eps1*eps1*eps1, LimiterHelpers::epsilon());
+    eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -274,7 +284,7 @@ struct CLimiterDetails<SHARP_EDGES>
   {
     AD::SetPreaccIn(geometry.nodes->GetSharpEdge_Distance(iPoint));
     su2double dist = geometry.nodes->GetSharpEdge_Distance(iPoint)/(sharpCoeff*eps1)-1.0;
-    return LimiterHelpers::raisedSine(dist);
+    return LimiterHelpers<>::raisedSine(dist);
   }
 
   /*!
@@ -282,7 +292,7 @@ struct CLimiterDetails<SHARP_EDGES>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers::venkatFunction(proj, delta, eps2);
+    return LimiterHelpers<>::venkatFunction(proj, delta, eps2);
   }
 };
 
@@ -305,7 +315,7 @@ struct CLimiterDetails<WALL_DISTANCE>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     eps1 = fabs(L*K);
-    eps2 = max(eps1*eps1*eps1, LimiterHelpers::epsilon());
+    eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -315,7 +325,7 @@ struct CLimiterDetails<WALL_DISTANCE>
   {
     AD::SetPreaccIn(geometry.nodes->GetWall_Distance(iPoint));
     su2double dist = geometry.nodes->GetWall_Distance(iPoint)/(sharpCoeff*eps1)-1.0;
-    return LimiterHelpers::raisedSine(dist);
+    return LimiterHelpers<>::raisedSine(dist);
   }
 
   /*!
@@ -323,6 +333,6 @@ struct CLimiterDetails<WALL_DISTANCE>
    */
   inline su2double limiterFunction(size_t, su2double proj, su2double delta) const
   {
-    return LimiterHelpers::venkatFunction(proj, delta, eps2);
+    return LimiterHelpers<>::venkatFunction(proj, delta, eps2);
   }
 };

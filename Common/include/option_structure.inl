@@ -3,14 +3,14 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,335 +26,254 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-template <class Tenum>
-class COptionEnum : public COptionBase {
+#include "parallelization/mpi_structure.hpp"
+using namespace std;
 
-  map<string, Tenum> m;
-  unsigned short & field; // Reference to the feildname
-  Tenum def; // Default value
-  string name; // identifier for the option
+template <class Tenum, class TField>
+class COptionEnum final : public COptionBase {
+
+  const map<string, Tenum>& m;
+  TField& field; // Reference to the fieldname
+  const Tenum def; // Default value
+  const string name; // identifier for the option
 
 public:
-  COptionEnum(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field) {
-    this->m = m;
-    this->def = default_value;
-    this->name = option_field_name;
+  COptionEnum() = delete;
+
+  COptionEnum(string option_field_name, const map<string, Tenum>& m_, TField& option_field, Tenum default_value) :
+    m(m_),
+    field(option_field),
+    def(default_value),
+    name(std::move(option_field_name)) {
   }
 
-  ~COptionEnum() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check if there is more than one string
-    string out = optionCheckMultipleValues(option_value, "enum", this->name);
+    string out = optionCheckMultipleValues(option_value, "enum", name);
     if (out.compare("") != 0) {
       return out;
     }
 
     // Check to see if the enum value is in the map
-    if (this->m.find(option_value[0]) == m.end()) {
-      string str;
-      str.append(this->name);
-      str.append(": invalid option value ");
-      str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
-      return str;
+    auto it = m.find(option_value[0]);
+
+    if (it == m.cend()) {
+      stringstream ss;
+      ss << name << ": invalid option value " << option_value[0] << ".\nDid you mean";
+      for (auto& item : m) ss << ", " << item.first;
+      ss << "?";
+      return ss.str();
     }
     // If it is there, set the option value
-    Tenum val = this->m[option_value[0]];
-    this->field = val;
+    field = it->second;
+    return "";
+  }
+
+  void SetDefault() override { field = def; }
+};
+
+template<typename Scalar>
+class COptionScalar : public COptionBase {
+protected:
+  Scalar& field; // Reference to the fieldname
+  const Scalar def; // Default value
+  const string name; // identifier for the option
+  const string typeName; // name for the scalar type
+
+public:
+  COptionScalar() = delete;
+
+  COptionScalar(const string& type_name,
+                const string& option_field_name,
+                Scalar& option_field,
+                Scalar default_value) :
+    field(option_field),
+    def(default_value),
+    name(option_field_name),
+    typeName(type_name) {
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+
+    string out = optionCheckMultipleValues(option_value, typeName, name);
+    if (!out.empty()) return out;
+
+    istringstream is(option_value.front());
+    if (is >> field) return "";
+
+    return badValue(typeName, name);
+  }
+
+  void SetDefault() final {
+    field = def;
+  }
+};
+
+class COptionDouble final : public COptionScalar<su2double> {
+public:
+  template<class... Ts>
+  COptionDouble(Ts&&... args) :
+    COptionScalar<su2double>("su2double", args...) {
+  }
+};
+
+class COptionInt final : public COptionScalar<int> {
+public:
+  template<class... Ts>
+  COptionInt(Ts&&... args) :
+    COptionScalar<int>("int", args...) {
+  }
+};
+
+class COptionULong final : public COptionScalar<unsigned long> {
+public:
+  template<class... Ts>
+  COptionULong(Ts&&... args) :
+    COptionScalar<unsigned long>("unsigned long", args...) {
+  }
+};
+
+class COptionUShort final : public COptionScalar<unsigned short> {
+public:
+  template<class... Ts>
+  COptionUShort(Ts&&... args) :
+    COptionScalar<unsigned short>("unsigned short", args...) {
+  }
+};
+
+class COptionLong final : public COptionScalar<long> {
+public:
+  template<class... Ts>
+  COptionLong(Ts&&... args) :
+    COptionScalar<long>("long", args...) {
+  }
+};
+
+class COptionBool final : public COptionScalar<bool> {
+public:
+  template<class... Ts>
+  COptionBool(Ts&&... args) :
+    COptionScalar<bool>("bool", args...) {
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+
+    string result;
+    auto msg = COptionScalar<string>("bool",name,result,"").SetValue(option_value);
+
+    if (!msg.empty()) return msg;
+
+    if (result.compare("YES") == 0) {
+      field = true;
+      return "";
+    }
+    if (result.compare("NO") == 0) {
+      field = false;
+      return "";
+    }
+
+    return badValue("bool", name);
+  }
+};
+
+class COptionString final : public COptionBase {
+protected:
+  string& field; // Reference to the fieldname
+  const string def; // Default value
+  const string name; // identifier for the option
+
+public:
+  COptionString() = delete;
+
+  COptionString(const string& option_field_name,
+                string& option_field,
+                string default_value) :
+    field(option_field),
+    def(default_value),
+    name(option_field_name) {
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+
+    string out = optionCheckMultipleValues(option_value, "string", name);
+    if (!out.empty()) return out;
+
+    field = option_value.front();
     return "";
   }
 
   void SetDefault() override {
-    this->field = this->def;
+    field = def;
   }
 };
 
-class COptionDouble : public COptionBase {
-  su2double & field; // Reference to the fieldname
-  su2double def; // Default value
-  string name; // identifier for the option
+template <class Tenum, class TField>
+class COptionEnumList final : public COptionBase {
+
+  const map<string, Tenum>& m;
+  TField*& field;
+  unsigned short& mySize;
+  const string name;
 
 public:
-  COptionDouble(string option_field_name, su2double & option_field, su2double default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
+  COptionEnumList() = delete;
+
+  COptionEnumList(string option_field_name, const map<string,Tenum>& m_, TField*& option_field, unsigned short& list_size) :
+    m(m_),
+    field(option_field),
+    mySize(list_size),
+    name(option_field_name) {
   }
 
-  ~COptionDouble() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "su2double", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    su2double val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "su2double", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-class COptionString : public COptionBase {
-  string & field; // Reference to the fieldname
-  string def; // Default value
-  string name; // identifier for the option
-
-public:
-  COptionString(string option_field_name, string & option_field, string default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionString() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "su2double", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    this->field.assign(option_value[0]);
-    return "";
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-class COptionInt : public COptionBase {
-  int & field; // Reference to the feildname
-  int def; // Default value
-  string name; // identifier for the option
-
-public:
-  COptionInt(string option_field_name, int & option_field, int default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionInt() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "int", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    int val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "int", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-class COptionULong : public COptionBase {
-  unsigned long & field; // Reference to the feildname
-  unsigned long def; // Default value
-  string name; // identifier for the option
-
-public:
-  COptionULong(string option_field_name, unsigned long & option_field, unsigned long default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionULong() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    unsigned long val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "unsigned long", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-class COptionUShort : public COptionBase {
-  unsigned short & field; // Reference to the feildname
-  unsigned short def; // Default value
-  string name; // identifier for the option
-
-public:
-  COptionUShort(string option_field_name, unsigned short & option_field, unsigned short default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionUShort() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    unsigned short val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "unsigned short", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-class COptionLong : public COptionBase {
-  long & field; // Reference to the feildname
-  long def; // Default value
-  string name; // identifier for the option
-
-public:
-  COptionLong(string option_field_name, long & option_field, long default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionLong() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "long", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    long val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "long", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-class COptionBool : public COptionBase {
-  bool & field; // Reference to the feildname
-  bool def; // Default value
-  string name; // identifier for the option
-
-public:
-  COptionBool(string option_field_name, bool & option_field, bool default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionBool() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "bool", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    if (option_value[0].compare("YES") == 0) {
-      this->field = true;
-      return "";
-    }
-    if (option_value[0].compare("NO") == 0) {
-      this->field = false;
-      return "";
-    }
-    return badValue(option_value, "bool", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
-  }
-};
-
-template <class Tenum>
-class COptionEnumList : public COptionBase {
-
-  map<string, Tenum> m;
-  unsigned short * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
-public:
-  COptionEnumList(string option_field_name, const map<string, Tenum> m, unsigned short * & option_field, unsigned short & list_size) : field(option_field) , size(list_size) {
-    this->m = m;
-    this->name = option_field_name;
-  }
-
-  ~COptionEnumList() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
-      this->size = 0;
+      mySize = 0;
       return "";
     }
     // size is the length of the option list
-    this->size = option_value.size();
-    unsigned short * enums = new unsigned short[size];
-    for (int i  = 0; i < this->size; i++) {
+    mySize = option_value.size();
+    field = new TField[mySize];
+
+    for (unsigned short i = 0; i < mySize; i++) {
       // Check to see if the enum value is in the map
-      if (this->m.find(option_value[i]) == m.end()) {
-        string str;
-        str.append(this->name);
-        str.append(": invalid option value ");
-        str.append(option_value[i]);
-        str.append(". Check current SU2 options in config_template.cfg.");
-        return str;
+
+      auto it = m.find(option_value[i]);
+
+      if (it == m.cend()) {
+        stringstream ss;
+        ss << name << ": invalid option value " << option_value[i] << ".\nDid you mean";
+        for (auto& item : m) ss << ", " << item.first;
+        ss << "?";
+        return ss.str();
       }
       // If it is there, set the option value
-      enums[i] = this->m[option_value[i]];
+      field[i] = it->second;
     }
-    this->field = enums;
     return "";
   }
 
-  void SetDefault() override {
-    // No default to set
-    size = 0;
-  }
+  void SetDefault() override { mySize = 0; }
 };
 
-class COptionDoubleArray : public COptionBase {
-  su2double * & field; // Reference to the feildname
-  string name; // identifier for the option
-  const int size;
-  su2double * def;
-  su2double * vals;
-  su2double * default_value;
+template<class Type>
+class COptionArray final : public COptionBase {
+  string name; // Identifier for the option
+  const int size; // Number of elements
+  Type* field; // Reference to the field
 
 public:
-  COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-    this->default_value = default_value;
-    def  = nullptr;
-    vals = nullptr;
+  COptionArray(string option_field_name, const int list_size, Type* option_field) :
+    name(option_field_name),
+    size(list_size),
+    field(option_field) {
   }
 
-  ~COptionDoubleArray() override {
-     delete [] def;
-     delete [] vals;
-  };
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
     if (option_value.size() != (unsigned long)this->size) {
@@ -371,188 +290,95 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    vals = new su2double[this->size];
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
-      su2double val;
-      if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "su2double array", this->name);
+      if (!(is >> field[i])) {
+        return badValue(" array", this->name);
       }
-      vals[i] = val;
     }
-    this->field = vals;
     return "";
   }
 
-  void SetDefault() override {
-    def = new su2double [size];
-    for (int i = 0; i < size; i++) {
-      def[i] = default_value[i];
-    }
-    this->field = def;
-  }
+  void SetDefault() override {}
 };
 
-class COptionDoubleList : public COptionBase {
-  su2double * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
+template<typename Scalar>
+class COptionScalarList : public COptionBase {
+  Scalar*& field; // reference to the field
+  const string name; // identifier for the option
+  unsigned short& mySize; // size of the list
+  const string typeName; // name of the scalar type
 
 public:
-  COptionDoubleList(string option_field_name, unsigned short & list_size, su2double * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
+  COptionScalarList() = delete;
+
+  COptionScalarList(const string& type_name,
+                    const string& option_field_name,
+                    unsigned short& list_size,
+                    Scalar*& option_field) :
+    field(option_field),
+    name(option_field_name),
+    mySize(list_size),
+    typeName(type_name) {
   }
 
-  ~COptionDoubleList() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) final {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
+    mySize = option_value.size();
+    if (mySize == 1 && option_value[0].compare("NONE") == 0) {
       // No options
-      this->size = 0;
+      mySize = 0;
       return "";
     }
 
-    this->size = option_size;
-
     // Parse all of the options
-    su2double * vals = new su2double[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
+    field = new Scalar[mySize];
+    for (unsigned short i = 0; i < mySize; i++) {
       istringstream is(option_value[i]);
-      su2double val;
+      Scalar val;
       if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "su2double list", this->name);
+        return badValue(typeName+" list", name);
       }
-      vals[i] = val;
+      field[i] = std::move(val);
     }
-    this->field = vals;
     return "";
   }
 
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+  void SetDefault() final {
+    mySize = 0; // There is no default value for list
   }
 };
 
-class COptionShortList : public COptionBase {
-  short * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
+class COptionDoubleList final : public COptionScalarList<su2double> {
 public:
-  COptionShortList(string option_field_name, unsigned short & list_size,  short * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-  }
-
-  ~COptionShortList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
-      // No options
-      this->size = 0;
-      return "";
-    }
-    this->size = option_size;
-
-    // Parse all of the options
-    short * vals = new  short[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
-      istringstream is(option_value[i]);
-      unsigned short val;
-      if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "short", this->name);
-      }
-      vals[i] = val;
-    }
-    this->field = vals;
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+  template<class... Ts>
+  COptionDoubleList(Ts&&... args) :
+    COptionScalarList<su2double>("su2double", args...) {
   }
 };
 
-class COptionUShortList : public COptionBase {
-  unsigned short * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
+class COptionShortList final : public COptionScalarList<short> {
 public:
-  COptionUShortList(string option_field_name, unsigned short & list_size, unsigned short * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-  }
-
-  ~COptionUShortList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
-      // No options
-      this->size = 0;
-      return "";
-    }
-    this->size = option_size;
-
-    // Parse all of the options
-    unsigned short * vals = new unsigned short[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
-      istringstream is(option_value[i]);
-      unsigned short val;
-      if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "unsigned short", this->name);
-      }
-      vals[i] = val;
-    }
-    this->field = vals;
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+  template<class... Ts>
+  COptionShortList(Ts&&... args) :
+    COptionScalarList<short>("short", args...) {
   }
 };
 
-class COptionStringList : public COptionBase {
-  string * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
+class COptionUShortList final : public COptionScalarList<unsigned short> {
 public:
-  COptionStringList(string option_field_name, unsigned short & list_size, string * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
+  template<class... Ts>
+  COptionUShortList(Ts&&... args) :
+    COptionScalarList<unsigned short>("unsigned short", args...) {
   }
+};
 
-  ~COptionStringList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
-      this->size = 0;
-      return "";
-    }
-    this->size = option_size;
-
-    // Parse all of the options
-    string * vals = new string[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
-      vals[i].assign(option_value[i]);
-    }
-    this->field = vals;
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+class COptionStringList final : public COptionScalarList<string> {
+public:
+  template<class... Ts>
+  COptionStringList(Ts&&... args) :
+    COptionScalarList<string>("string", args...) {
   }
 };
 
@@ -566,7 +392,7 @@ public:
   COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field)
     : name(option_field_name), space(space_field), centered(centered_field), upwind(upwind_field) { }
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -588,7 +414,7 @@ public:
     }
     // Make them defined in case something weird happens
     SetDefault();
-    return badValue(option_value, "convect", this->name);
+    return badValue("convect", this->name);
 
   }
 
@@ -610,7 +436,7 @@ public:
   }
 
   ~COptionFEMConvect() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
 
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -626,7 +452,7 @@ public:
 
     // Make them defined in case something weird happens
     this->fem = NO_FEM;
-    return badValue(option_value, "convect", this->name);
+    return badValue("convect", this->name);
 
   }
 
@@ -646,50 +472,47 @@ class COptionMathProblem : public COptionBase {
 
 public:
   COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
-    this->name = option_field_name;
-    this->cont_adjoint_def = cont_adjoint_default;
-    this->disc_adjoint_def = disc_adjoint_default;
-    this->restart_def = restart_default;
+    name = option_field_name;
+    cont_adjoint_def = cont_adjoint_default;
+    disc_adjoint_def = disc_adjoint_default;
+    restart_def = restart_default;
   }
 
   ~COptionMathProblem() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    string out = optionCheckMultipleValues(option_value, "unsigned short", name);
     if (out.compare("") != 0) {
       return out;
     }
-    if (option_value[0] == "ADJOINT") {
-      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", this->name);
+    else if (option_value[0] == "ADJOINT") {
+      return badValue("math problem (try CONTINUOUS_ADJOINT)", name);
     }
-    if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()) {
-      return badValue(option_value, "math problem", this->name);
-    }
-    if (option_value[0] == "DIRECT") {
-      this->cont_adjoint = false;
-      this->disc_adjoint = false;
-      this->restart = false;
+    else if (option_value[0] == "DIRECT") {
+      cont_adjoint = false;
+      disc_adjoint = false;
+      restart = false;
       return "";
     }
-    if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      this->cont_adjoint= true;
-      this->disc_adjoint = false;
-      this->restart= true;
+    else if (option_value[0] == "CONTINUOUS_ADJOINT") {
+      cont_adjoint= true;
+      disc_adjoint = false;
+      restart= true;
       return "";
     }
-    if (option_value[0] == "DISCRETE_ADJOINT") {
-      this->disc_adjoint = true;
-      this->cont_adjoint= false;
-      this->restart = true;
+    else if (option_value[0] == "DISCRETE_ADJOINT") {
+      disc_adjoint = true;
+      cont_adjoint= false;
+      restart = true;
       return "";
     }
-    return "option in math problem map not considered in constructor";
+    return badValue("math problem", name);
   }
 
   void SetDefault() override {
-    this->cont_adjoint = this->cont_adjoint_def;
-    this->disc_adjoint = this->disc_adjoint_def;
-    this->restart = this->restart_def;
+    cont_adjoint = cont_adjoint_def;
+    disc_adjoint = disc_adjoint_def;
+    restart = restart_def;
   }
 
 };
@@ -708,7 +531,7 @@ public:
 
   ~COptionDVParam() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV = 0;
@@ -880,7 +703,7 @@ public:
 
   ~COptionDVValue() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV_Value = nullptr;
@@ -986,7 +809,7 @@ public:
 
   ~COptionFFDDef() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
@@ -1081,7 +904,7 @@ public:
 
   ~COptionFFDDegree() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
@@ -1157,58 +980,6 @@ public:
 
 };
 
-// Class where the option is represented by (String, su2double, string, su2double, ...)
-class COptionStringDoubleList : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & size; // how many strings are there (same as number of su2doubles)
-
-  string * & s_f; // Reference to the string fields
-  su2double* & d_f; // reference to the su2double fields
-
-public:
-  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, su2double* & double_field) : size(list_size), s_f(string_field), d_f(double_field) {
-    this->name = option_field_name;
-  }
-
-  ~COptionStringDoubleList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // There must be an even number of entries (same number of strings and doubles
-    unsigned short totalVals = option_value.size();
-    if ((totalVals % 2) != 0) {
-      if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-        // It's okay to say its NONE
-        this->size = 0;
-        return "";
-      }
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have an even number of entries");
-      return newstring;
-    }
-    unsigned short nVals = totalVals / 2;
-    this->size = nVals;
-    this->s_f = new string[nVals];
-    this->d_f = new su2double[nVals];
-
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->s_f[i].assign(option_value[2*i]); // 2 because have su2double and string
-      istringstream is(option_value[2*i + 1]);
-      su2double val;
-      if (!(is >> val)) {
-        return badValue(option_value, "string su2double", this->name);
-      }
-      this->d_f[i] = val;
-    }
-    // Need to return something...
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
-  }
-};
-
 class COptionInlet : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
@@ -1223,7 +994,7 @@ public:
   }
 
   ~COptionInlet() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1261,23 +1032,23 @@ public:
       this->marker[i].assign(option_value[6*i]);
       istringstream ss_1st(option_value[6*i + 1]);
       if (!(ss_1st >> this->ttotal[i])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue("inlet", this->name);
       }
       istringstream ss_2nd(option_value[6*i + 2]);
       if (!(ss_2nd >> this->ptotal[i])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue("inlet", this->name);
       }
       istringstream ss_3rd(option_value[6*i + 3]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue("inlet", this->name);
       }
       istringstream ss_4th(option_value[6*i + 4]);
       if (!(ss_4th >> this->flowdir[i][1])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue("inlet", this->name);
       }
       istringstream ss_5th(option_value[6*i + 5]);
       if (!(ss_5th >> this->flowdir[i][2])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue("inlet", this->name);
       }
     }
 
@@ -1292,6 +1063,101 @@ public:
     this->size = 0; // There is no default value for list
   }
 };
+
+// Base helper for when T is not an array, does dummy allocation and de-allocation.
+template <class T>
+struct CStringValuesListHelper {
+  static T resize(unsigned short) { return T(); }
+  static T& access(T& val, unsigned short) { return val; }
+};
+
+// Specialization for pointer types (multiple values per string).
+template <class T>
+struct CStringValuesListHelper<T*> {
+  static T* resize(unsigned short n) { return new T[n]; }
+  static T& access(T* ptr, unsigned short i) { return ptr[i]; }
+};
+
+// Class where the option is represented by (string, N * "some type", string, N * "some type", ...)
+template <class Type>
+class COptionStringValuesList final : public COptionBase {
+  const string name;     // identifier for the option
+  unsigned short& size;  // number of string-value pairs
+  string*& strings;      // the strings in the option
+  Type*& values;         // the values per string
+  unsigned short& num_vals; // how many values per string
+  unsigned short optional_num_vals = 0; // num_vals points to this when it is not provided in the ctor.
+
+public:
+  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_,
+                          Type*& values_, unsigned short& num_vals_) :
+    name(name_), size(size_), strings(strings_), values(values_), num_vals(num_vals_) {
+  }
+
+  COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_) :
+    name(name_), size(size_), strings(strings_), values(values_), num_vals(optional_num_vals) {
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+    unsigned short option_size = option_value.size();
+    if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
+      size = 0;
+      num_vals = 0;
+      return "";
+    }
+
+    /*--- Determine the number of strings: A new string is found if the first char in the option is a letter.
+     * This will fail in if a string starts with a number! Additionally, determine the number of values that
+     * are prescribed per string. ---*/
+    vector<unsigned short> num_vals_per_string;
+    /*--- Loop through the fields of the option. ---*/
+    for (const auto& val : option_value) {
+      if (isalpha(val[0])) {
+        num_vals_per_string.push_back(0);
+      } else {
+        num_vals_per_string.back()++;
+      }
+    }
+
+    /*--- Check that the same amount of values are defined per string. ---*/
+    for (auto n : num_vals_per_string) {
+      if (num_vals_per_string[0] != n)
+        SU2_MPI::Error(string("Unequal number of values defined for ") + name, CURRENT_FUNCTION);
+    }
+    num_vals = num_vals_per_string[0];
+    size = num_vals_per_string.size();
+
+    /*--- If num_vals was taken as optional, it can only be one. ---*/
+    if (optional_num_vals > 1)
+      SU2_MPI::Error(string("More than one value provided for \"string-value\" pair, in ") + name, CURRENT_FUNCTION);
+
+    strings = new string[size];
+    values = new Type[size];
+
+    auto option_it = option_value.begin();
+    for (unsigned short i = 0; i < size; i++) {
+      strings[i].assign(*option_it);
+      ++option_it;
+
+      values[i] = CStringValuesListHelper<Type>::resize(num_vals);
+      for (unsigned short j = 0; j < num_vals; j++) {
+        istringstream ss_nd(*option_it);
+        ++option_it;
+        if (!(ss_nd >> CStringValuesListHelper<Type>::access(values[i], j))) {
+          return badValue("\"string + values\"", name);
+        }
+      }
+    }
+    return "";
+  }
+
+  void SetDefault() override {
+    size = 0; // There is no default value for lists
+    num_vals = 0;
+  }
+};
+
 
 template <class Tenum>
 class COptionRiemann : public COptionBase {
@@ -1314,7 +1180,7 @@ public:
   }
   ~COptionRiemann() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1368,23 +1234,23 @@ public:
 
       istringstream ss_1st(option_value[7*i + 2]);
       if (!(ss_1st >> this->var1[i])) {
-        return badValue(option_value, "Riemann", this->name);
+        return badValue("Riemann", this->name);
       }
       istringstream ss_2nd(option_value[7*i + 3]);
       if (!(ss_2nd >> this->var2[i])) {
-        return badValue(option_value, "Riemann", this->name);
+        return badValue("Riemann", this->name);
       }
       istringstream ss_3rd(option_value[7*i + 4]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
-        return badValue(option_value, "Riemann", this->name);
+        return badValue("Riemann", this->name);
       }
       istringstream ss_4th(option_value[7*i + 5]);
       if (!(ss_4th >> this->flowdir[i][1])) {
-        return badValue(option_value, "Riemann", this->name);
+        return badValue("Riemann", this->name);
       }
       istringstream ss_5th(option_value[7*i + 6]);
       if (!(ss_5th >> this->flowdir[i][2])) {
-        return badValue(option_value, "Riemann", this->name);
+        return badValue("Riemann", this->name);
       }
     }
 
@@ -1422,7 +1288,7 @@ public:
   }
   ~COptionGiles() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1482,31 +1348,31 @@ public:
 
       istringstream ss_1st(option_value[9*i + 2]);
       if (!(ss_1st >> this->var1[i])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
       istringstream ss_2nd(option_value[9*i + 3]);
       if (!(ss_2nd >> this->var2[i])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
       istringstream ss_3rd(option_value[9*i + 4]);
       if (!(ss_3rd >> this->flowdir[i][0])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
       istringstream ss_4th(option_value[9*i + 5]);
       if (!(ss_4th >> this->flowdir[i][1])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
       istringstream ss_5th(option_value[9*i + 6]);
       if (!(ss_5th >> this->flowdir[i][2])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
       istringstream ss_6th(option_value[9*i + 7]);
       if (!(ss_6th >> this->relfac1[i])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
       istringstream ss_7th(option_value[9*i + 8]);
       if (!(ss_7th >> this->relfac2[i])) {
-        return badValue(option_value, "Giles BC", this->name);
+        return badValue("Giles BC", this->name);
       }
     }
 
@@ -1539,7 +1405,7 @@ public:
 
   ~COptionExhaust() override {};
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
@@ -1571,10 +1437,10 @@ public:
       this->marker[i].assign(option_value[3*i]);
       istringstream ss_1st(option_value[3*i + 1]);
       if (!(ss_1st >> this->ttotal[i]))
-        return badValue(option_value, "exhaust fixed", this->name);
+        return badValue("exhaust fixed", this->name);
       istringstream ss_2nd(option_value[3*i + 2]);
       if (!(ss_2nd >> this->ptotal[i]))
-        return badValue(option_value, "exhaust fixed", this->name);
+        return badValue("exhaust fixed", this->name);
     }
 
     return "";
@@ -1606,7 +1472,7 @@ public:
   }
 
   ~COptionPeriodic() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 11;
 
@@ -1654,39 +1520,39 @@ public:
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
       if (!(ss_1st >> this->rot_center[i][0])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_2nd(option_value[mod_num*i + 3]);
       if (!(ss_2nd >> this->rot_center[i][1])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_3rd(option_value[mod_num*i + 4]);
       if (!(ss_3rd >> this->rot_center[i][2])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_4th(option_value[mod_num*i + 5]);
       if (!(ss_4th >> this->rot_angles[i][0])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_5th(option_value[mod_num*i + 6]);
       if (!(ss_5th >> this->rot_angles[i][1])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_6th(option_value[mod_num*i + 7]);
       if (!(ss_6th >> this->rot_angles[i][2])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_7th(option_value[mod_num*i + 8]);
       if (!(ss_7th >> this->translation[i][0])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_8th(option_value[mod_num*i + 9]);
       if (!(ss_8th >> this->translation[i][1])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_9th(option_value[mod_num*i + 10]);
       if (!(ss_9th >> this->translation[i][2])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       this->rot_angles[i][0] *= deg2rad;
       this->rot_angles[i][1] *= deg2rad;
@@ -1698,39 +1564,39 @@ public:
       this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
       istringstream ss_1st(option_value[mod_num*(i-nVals/2) + 2]);
       if (!(ss_1st >> this->rot_center[i][0])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_2nd(option_value[mod_num*(i-nVals/2) + 3]);
       if (!(ss_2nd >> this->rot_center[i][1])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_3rd(option_value[mod_num*(i-nVals/2) + 4]);
       if (!(ss_3rd >> this->rot_center[i][2])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_4th(option_value[mod_num*(i-nVals/2) + 5]);
       if (!(ss_4th >> this->rot_angles[i][0])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_5th(option_value[mod_num*(i-nVals/2) + 6]);
       if (!(ss_5th >> this->rot_angles[i][1])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_6th(option_value[mod_num*(i-nVals/2) + 7]);
       if (!(ss_6th >> this->rot_angles[i][2])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_7th(option_value[mod_num*(i-nVals/2) + 8]);
       if (!(ss_7th >> this->translation[i][0])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_8th(option_value[mod_num*(i-nVals/2) + 9]);
       if (!(ss_8th >> this->translation[i][1])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       istringstream ss_9th(option_value[mod_num*(i-nVals/2) + 10]);
       if (!(ss_9th >> this->translation[i][2])) {
-        return badValue(option_value, "periodic", this->name);
+        return badValue("periodic", this->name);
       }
       /*--- Mirror the rotational angles and translation vector (rotational
        center does not need to move) ---*/
@@ -1771,7 +1637,7 @@ public:
   }
 
   ~COptionTurboPerformance() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 2;
 
@@ -1821,7 +1687,7 @@ public:
   }
   ~COptionPython() override {};
   // No checking happens with python options
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     return "";
   }
@@ -1851,7 +1717,7 @@ public:
   }
 
   ~COptionActDisk() override {};
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 8;
     unsigned short totalVals = option_value.size();
@@ -1890,27 +1756,27 @@ public:
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
       if (!(ss_1st >> this->press_jump[i][0])) {
-        return badValue(option_value, tname, this->name);
+        return badValue(tname, this->name);
       }
       istringstream ss_2nd(option_value[mod_num*i + 3]);
       if (!(ss_2nd >> this->temp_jump[i][0])) {
-        return badValue(option_value, tname, this->name);
+        return badValue(tname, this->name);
       }
       istringstream ss_3rd(option_value[mod_num*i + 4]);
       if (!(ss_3rd >> this->omega[i][0])) {
-        return badValue(option_value, tname, this->name);
+        return badValue(tname, this->name);
       }
       istringstream ss_4th(option_value[mod_num*i + 5]);
       if (!(ss_4th >> this->press_jump[i][1])) {
-        return badValue(option_value, tname, this->name);
+        return badValue(tname, this->name);
       }
       istringstream ss_5th(option_value[mod_num*i + 6]);
       if (!(ss_5th >> this->temp_jump[i][1])) {
-        return badValue(option_value, tname, this->name);
+        return badValue(tname, this->name);
       }
       istringstream ss_6th(option_value[mod_num*i + 7]);
       if (!(ss_6th >> this->omega[i][1])) {
-        return badValue(option_value, tname, this->name);
+        return badValue(tname, this->name);
       }
     }
     return "";
@@ -1930,13 +1796,13 @@ class COptionWallFunction : public COptionBase {
   string name; // identifier for the option
   unsigned short &nMarkers;
   string* &markers;
-  unsigned short*  &walltype;
+  WALL_FUNCTIONS*  &walltype;
   unsigned short** &intInfo;
   su2double**      &doubleInfo;
 
 public:
   COptionWallFunction(const string name, unsigned short &nMarker_WF,
-                      string* &Marker_WF, unsigned short* &type_WF,
+                      string* &Marker_WF, WALL_FUNCTIONS* &type_WF,
                       unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
   nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
   intInfo(intInfo_WF), doubleInfo(doubleInfo_WF) {
@@ -1945,7 +1811,7 @@ public:
 
   ~COptionWallFunction() override{}
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     /*--- First check if NONE is specified. ---*/
     unsigned short totalSize = option_value.size();
@@ -1968,14 +1834,16 @@ public:
          If not, create an error message and return. */
       ++counter;
       const unsigned short indWallType = counter;
-      unsigned short typeWF = NO_WALL_FUNCTION;
+      auto typeWF = WALL_FUNCTIONS::NONE;
       bool validWF = true;
       if (counter == totalSize) validWF = false;
       else {
-        map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+        map<string, WALL_FUNCTIONS>::const_iterator it;
         it = Wall_Functions_Map.find(option_value[counter]);
-        if(it == Wall_Functions_Map.end()) validWF = false;
-        else                               typeWF  = it->second;
+        if(it == Wall_Functions_Map.end())
+          validWF = false;
+        else
+          typeWF  = it->second;
       }
 
       if (!validWF ) {
@@ -1995,9 +1863,9 @@ public:
             must be specified. Hence the counter must be updated
             accordingly. ---*/
       switch( typeWF ) {
-        case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
-        case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
-        case LOGARITHMIC_WALL_MODEL: counter += 3; break;
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL:    counter += 3; break;
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: counter += 2; break;
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: counter += 3; break;
         default: break;
       }
 
@@ -2018,7 +1886,7 @@ public:
     /* Allocate the memory to store the data for the wall function markers. */
     this->nMarkers   = nVals;
     this->markers    = new string[nVals];
-    this->walltype   = new unsigned short[nVals];
+    this->walltype   = new WALL_FUNCTIONS[nVals];
     this->intInfo    = new unsigned short*[nVals];
     this->doubleInfo = new su2double*[nVals];
 
@@ -2037,7 +1905,7 @@ public:
 
       /* Determine the wall function type. As their validaties have
          already been tested, there is no need to do so again. */
-      map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+      map<string, WALL_FUNCTIONS>::const_iterator it;
       it = Wall_Functions_Map.find(option_value[counter++]);
 
       this->walltype[i] = it->second;
@@ -2046,7 +1914,7 @@ public:
             is needed, which is extracted from option_value. ---*/
       switch( this->walltype[i] ) {
 
-        case EQUILIBRIUM_WALL_MODEL: {
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
 
           /* LES equilibrium wall model. The exchange distance, stretching
              factor and number of points in the wall model must be specified. */
@@ -2055,23 +1923,23 @@ public:
 
           istringstream ss_1st(option_value[counter++]);
           if (!(ss_1st >> this->doubleInfo[i][0])) {
-            return badValue(option_value, "su2double", this->name);
+            return badValue("su2double", this->name);
           }
 
           istringstream ss_2nd(option_value[counter++]);
           if (!(ss_2nd >> this->doubleInfo[i][1])) {
-            return badValue(option_value, "su2double", this->name);
+            return badValue("su2double", this->name);
           }
 
           istringstream ss_3rd(option_value[counter++]);
           if (!(ss_3rd >> this->intInfo[i][0])) {
-            return badValue(option_value, "unsigned short", this->name);
+            return badValue("unsigned short", this->name);
           }
 
           break;
         }
 
-        case NONEQUILIBRIUM_WALL_MODEL: {
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: {
 
           /* LES non-equilibrium model. The RANS turbulence model and
              the exchange distance need to be specified. */
@@ -2079,7 +1947,7 @@ public:
           this->doubleInfo[i] = new su2double[1];
 
           /* Check for a valid RANS turbulence model. */
-          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          map<string, TURB_MODEL>::const_iterator iit;
           iit = Turb_Model_Map.find(option_value[counter++]);
           if(iit == Turb_Model_Map.end()) {
             string newstring;
@@ -2094,17 +1962,15 @@ public:
             return newstring;
           }
 
-          this->intInfo[i][0] = iit->second;
-
           /* Extract the exchange distance. */
           istringstream ss_1st(option_value[counter++]);
           if (!(ss_1st >> this->doubleInfo[i][0])) {
-            return badValue(option_value, "su2double", this->name);
+            return badValue("su2double", this->name);
           }
 
           break;
         }
-        case LOGARITHMIC_WALL_MODEL: {
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
 
           /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
            factor and number of points in the wall model must be specified. */
@@ -2113,17 +1979,17 @@ public:
 
           istringstream ss_1st(option_value[counter++]);
           if (!(ss_1st >> this->doubleInfo[i][0])) {
-            return badValue(option_value, "su2double", this->name);
+            return badValue("su2double", this->name);
           }
 
           istringstream ss_2nd(option_value[counter++]);
           if (!(ss_2nd >> this->doubleInfo[i][1])) {
-            return badValue(option_value, "su2double", this->name);
+            return badValue("su2double", this->name);
           }
 
           istringstream ss_3rd(option_value[counter++]);
           if (!(ss_3rd >> this->intInfo[i][0])) {
-            return badValue(option_value, "unsigned short", this->name);
+            return badValue("unsigned short", this->name);
           }
 
           break;

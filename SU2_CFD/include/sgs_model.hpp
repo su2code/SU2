@@ -2,14 +2,14 @@
  * \file sgs_model.hpp
  * \brief Headers of the LES subgrid scale models of the SU2 solvers.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -38,7 +38,7 @@ using namespace std;
  * \class CSGSModel
  * \brief Base class for defining the LES subgrid scale model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CSGSModel {
 
@@ -224,7 +224,7 @@ public:
  * \class CSmagorinskyModel
  * \brief Derived class for defining the Smagorinsky SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CSmagorinskyModel : public CSGSModel {
 
@@ -413,7 +413,7 @@ public:
  * \class CWALEModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CWALEModel : public CSGSModel {
 
@@ -601,23 +601,23 @@ public:
  * \class CVremanModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk, E. Molina
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CVremanModel : public CSGSModel {
-  
+
 public:
   su2double const_Vreman; /*!< \brief Vreman Constant c=2.5*Cs*Cs.  */
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CVremanModel(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CVremanModel(void) override;
-  
+
   /*!
    * \brief Function to determine the eddy viscosity for
    the given function arguments for a 2D simulation.
@@ -637,7 +637,7 @@ public:
                                     const su2double dvdy,
                                     const su2double lenScale,
                                     const su2double distToWall) override;
-  
+
   /*!
    * \brief Function to determine the eddy viscosity for
    the given function arguments for a 3D simulation.
@@ -667,7 +667,7 @@ public:
                                     const su2double dwdz,
                                     const su2double lenScale,
                                     const su2double distToWall) override;
-  
+
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
    for the given function arguments for a 2D simulation.
@@ -706,7 +706,7 @@ public:
                                    const su2double distToWall,
                                    su2double &dMuTdx,
                                    su2double &dMuTdy) override;
-  
+
   /*!
    * \brief function to determine the gradients of the eddy viscosity
    for the given function arguments for a 3D simulation.

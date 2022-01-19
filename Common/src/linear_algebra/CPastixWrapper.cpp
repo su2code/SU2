@@ -3,14 +3,14 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,8 @@
 
 #ifdef HAVE_PASTIX
 
-#include "../../include/mpi_structure.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CPastixWrapper.hpp"
@@ -113,7 +113,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *
 
 #ifdef HAVE_MPI
   vector<unsigned long> domain_sizes(mpi_size);
-  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   for (int i=0; i<mpi_rank; ++i) offset += domain_sizes[i];
 #endif
 
@@ -148,7 +148,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *
       /*--- Send and Receive data ---*/
       MPI_Sendrecv(Buffer_Send.data(), nVertexS, MPI_UNSIGNED_LONG, sender, 0,
                    Buffer_Recv.data(), nVertexR, MPI_UNSIGNED_LONG, recver, 0,
-                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                   SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
       /*--- Store received data---*/
       for (unsigned long iVertex = 0; iVertex < nVertexR; iVertex++)
@@ -224,7 +224,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *
 
 template<class ScalarType>
 void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, const CConfig *config,
-                                           unsigned short kind_fact, bool transposed) {
+                                           unsigned short kind_fact) {
   using namespace PaStiX;
 
   /*--- Detect a possible change of settings between direct and adjoint that requires a reset ---*/
@@ -257,7 +257,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, const CConfig *c
   if (kind_fact == PASTIX_LDLT || kind_fact == PASTIX_LDLT_P)
     iparm[IPARM_TRANSPOSE_SOLVE] = API_NO; // symmetric so no need for slower transp. solve
   else
-    iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
+    iparm[IPARM_TRANSPOSE_SOLVE] = API_YES; // negated due to CSR to CSC copy
 
   /*--- Is factorizing needed on this iteration? ---*/
 
@@ -333,5 +333,8 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, const CConfig *c
 template class CPastixWrapper<su2double>;
 #else
 template class CPastixWrapper<su2mixedfloat>;
+#ifdef USE_MIXED_PRECISION
+template class CPastixWrapper<passivedouble>;
+#endif
 #endif
 #endif

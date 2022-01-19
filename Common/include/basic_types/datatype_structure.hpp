@@ -2,14 +2,14 @@
  * \file datatype_structure.hpp
  * \brief Headers for generalized datatypes, defines an interface for AD types.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,63 +30,9 @@
 #include <iostream>
 #include <complex>
 #include <cstdio>
-#include <type_traits>
 
-#if defined(_MSC_VER)
-#define FORCEINLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-#define FORCEINLINE inline __attribute__((always_inline))
-#else
-#define FORCEINLINE inline
-#endif
-
-/*--- Depending on the datatype defined during the configuration,
- * include the correct definition, and create the main typedef. ---*/
-
-#if defined(CODI_REVERSE_TYPE) // reverse mode AD
-#include "codi.hpp"
-#include "codi/tools/dataStore.hpp"
-
-#ifndef CODI_INDEX_TAPE
-#define CODI_INDEX_TAPE 0
-#endif
-#ifndef CODI_PRIMAL_TAPE
-#define CODI_PRIMAL_TAPE 0
-#endif
-#ifndef CODI_PRIMAL_INDEX_TAPE
-#define CODI_PRIMAL_INDEX_TAPE 0
-#endif
-
-#if CODI_INDEX_TAPE
-using su2double = codi::RealReverseIndex;
-#elif CODI_PRIMAL_TAPE
-using su2double = codi::RealReversePrimal;
-#elif CODI_PRIMAL_INDEX_TAPE
-using su2double = codi::RealReversePrimalIndex;
-#else
-using su2double = codi::RealReverse;
-#endif
-
-#elif defined(CODI_FORWARD_TYPE) // forward mode AD
-#include "codi.hpp"
-using su2double = codi::RealForward;
-
-#else // primal / direct / no AD
-using su2double = double;
-#endif
-
+#include "../code_config.hpp"
 #include "ad_structure.hpp"
-
-/*--- This type can be used for (rare) compatiblity cases or for
- * computations that are intended to be (always) passive. ---*/
-using passivedouble = double;
-
-/*--- Define a type for potentially lower precision operations. ---*/
-#ifdef USE_MIXED_PRECISION
-using su2mixedfloat = float;
-#else
-using su2mixedfloat = passivedouble;
-#endif
 
 /*!
  * \namespace SU2_TYPE
@@ -149,19 +95,9 @@ namespace SU2_TYPE {
 
   FORCEINLINE void SetDerivative(su2double& data, const passivedouble &val) {data.setGradient(val);}
 
-#ifdef CODI_REVERSE_TYPE
-  FORCEINLINE passivedouble GetSecondary(const su2double& data) {
-    return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);
-  }
-
-  FORCEINLINE passivedouble GetDerivative(const su2double& data) {
-    return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);
-  }
-#else // forward
   FORCEINLINE passivedouble GetSecondary(const su2double& data) {return data.getGradient();}
 
   FORCEINLINE passivedouble GetDerivative(const su2double& data) {return data.getGradient();}
-#endif
 
 #else // passive type, no AD
 
@@ -194,10 +130,10 @@ namespace SU2_TYPE {
 
   /*--- Special handling of the sprintf routine for non-primitive types. ---*/
   /*--- Pass-through for built-in types. ---*/
-  template<class T, typename std::enable_if<std::is_trivial<T>::value,bool>::type = 0>
+  template<class T, su2enable_if<std::is_trivial<T>::value> = 0>
   FORCEINLINE const T& _printGetValue(const T& val) {return val;}
   /*--- Overload for expressions of active types. ---*/
-  template<class T, typename std::enable_if<!std::is_trivial<T>::value,bool>::type = 0>
+  template<class T, su2enable_if<!std::is_trivial<T>::value> = 0>
   FORCEINLINE passivedouble _printGetValue(const T& val) { return val.getValue(); }
 
   /*!

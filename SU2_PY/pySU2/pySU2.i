@@ -4,14 +4,14 @@
 # \file pySU2.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas
-#  \version 7.0.6 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -46,8 +46,9 @@ threads="1"
 %}
 
 // ----------- USED MODULES ------------
+%import "../../Common/include/code_config.hpp"
 %import "../../Common/include/basic_types/datatype_structure.hpp"
-%import "../../Common/include/mpi_structure.hpp"
+%import "../../Common/include/parallelization/mpi_structure.hpp"
 %include "std_string.i"
 %include "std_vector.i"
 %include "std_map.i"
@@ -72,13 +73,12 @@ namespace std {
 /*!
  * \brief different software components of SU2
  */
-enum SU2_COMPONENT {
-  SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
-  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
-  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
-  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
-  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
+enum class SU2_COMPONENT {
+  SU2_CFD, /*!< \brief Running the SU2_CFD software. */
+  SU2_DEF, /*!< \brief Running the SU2_DEF software. */
+  SU2_DOT, /*!< \brief Running the SU2_DOT software. */
+  SU2_GEO, /*!< \brief Running the SU2_GEO software. */
+  SU2_SOL  /*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */

@@ -2,14 +2,14 @@
  * \file CSU2FileWriter.cpp
  * \brief Filewriter class SU2 native ASCII (CSV) format.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,82 +29,56 @@
 
 const string CSU2FileWriter::fileExt = ".csv";
 
-CSU2FileWriter::CSU2FileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){}
+CSU2FileWriter::CSU2FileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){}
 
-
-CSU2FileWriter::~CSU2FileWriter(){
-
-}
-
-void CSU2FileWriter::Write_Data(){
-
-  /*--- Local variables ---*/
-
-  unsigned short iVar;
-  unsigned long iPoint;
+void CSU2FileWriter::Write_Data(string val_filename){
 
   ofstream restart_file;
-
-  int iProcessor;
   const vector<string> fieldNames = dataSorter->GetFieldNames();
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   /*--- Set a timer for the file writing. ---*/
 
   startTime = SU2_MPI::Wtime();
 
-  /*--- Only the master node writes the header. ---*/
+  /*--- Only the FIRST node writes the header (it does not matter if that is the master). ---*/
 
-  if (rank == MASTER_NODE) {
-    restart_file.open(fileName.c_str(), ios::out);
-    restart_file.precision(15);
+  if (rank == 0) {
+    restart_file.open(val_filename);
     restart_file << "\"PointID\"";
-    for (iVar = 0; iVar < fieldNames.size()-1; iVar++)
-      restart_file << ",\"" << fieldNames[iVar] << "\"";
-    restart_file << ",\"" << fieldNames[fieldNames.size()-1] << "\"" << endl;
+    for (auto& field : fieldNames) restart_file << ",\"" << field << "\"";
+    restart_file << "\n";
     restart_file.close();
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
+  /*--- Serialize the writes to the restart file. ---*/
 
-  /*--- All processors open the file. ---*/
-
-  restart_file.open(fileName.c_str(), ios::out | ios::app);
-  restart_file.precision(15);
-
-  /*--- Write the restart file in parallel, processor by processor. ---*/
-
-  unsigned long myPoint = 0, Global_Index;
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+  for (int iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      for (iPoint = 0; iPoint < dataSorter->GetnPoints(); iPoint++) {
+      restart_file.open(val_filename, ios::app);
+      restart_file.precision(15);
 
-        /*--- Global Index of the current point. (note outer loop over procs) ---*/
+      for (auto iPoint = 0ul; iPoint < dataSorter->GetnPoints(); iPoint++) {
 
-        Global_Index = dataSorter->GetGlobalIndex(iPoint);
+        /*--- Write global index of the current point. ---*/
 
-        /*--- Write global index. (note outer loop over procs) ---*/
+        restart_file << dataSorter->GetGlobalIndex(iPoint);
 
-        restart_file << Global_Index << ", ";
-        myPoint++;
+        /*--- Loop over the variables and write the values to file. ---*/
 
-        /*--- Loop over the variables and write the values to file ---*/
-
-        for (iVar = 0; iVar < fieldNames.size()-1; iVar++) {
-          restart_file << scientific << dataSorter->GetData(iVar, iPoint) << ", ";
-        }
-        restart_file << scientific << dataSorter->GetData(fieldNames.size()-1, iPoint) << "\n";
+        for (size_t iVar = 0; iVar < fieldNames.size(); iVar++)
+          restart_file << ", " << scientific << dataSorter->GetData(iVar, iPoint);
+        restart_file << "\n";
       }
 
+      restart_file.close();
     }
-    /*--- Flush the file and wait for all processors to arrive. ---*/
-    restart_file.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
 
+    /*--- Wait for iProcessor to finish and close the file. ---*/
+
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   }
 
   /*--- Compute and store the write time. ---*/
@@ -115,13 +89,9 @@ void CSU2FileWriter::Write_Data(){
 
   /*--- Determine the file size ---*/
 
-  fileSize = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 
   bandwidth = fileSize/(1.0e6)/usedTime;
-
-  /*--- All processors close the file. ---*/
-
-  restart_file.close();
 }

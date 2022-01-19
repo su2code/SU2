@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.hpp
  * \brief Headers of the CFEM_DG_EulerSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -92,6 +92,7 @@ protected:
   AllBound_CEff_Inv;  /*!< \brief Total efficiency (Cl/Cd) (inviscid contribution) for all the boundaries. */
 
   su2double
+  AeroCoeffForceRef,   /*!< \brief Reference force for coefficients */
   Total_CL,      /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CD,        /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CSF,       /*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -306,7 +307,6 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
-  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
@@ -1127,6 +1127,11 @@ public:
    * \param[in] val_Total_CL - Value of the total lift coefficient.
    */
   inline void SetTotal_CL(su2double val_Total_CL) final { Total_CL = val_Total_CL; }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.

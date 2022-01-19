@@ -2,14 +2,14 @@
  * \file CFEMDataSorter.hpp
  * \brief Headers fo the FEM data sorter class.
  * \author T. Albring, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,11 +42,6 @@ public:
   CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames);
 
   /*!
-   * \brief Destructor
-   */
-  ~CFEMDataSorter() override;
-
-  /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -60,7 +55,7 @@ public:
    * \return Global index of a specific point.
    */
   unsigned long GetGlobalIndex(unsigned long iPoint) const override{
-    return linearPartitioner->GetFirstIndexOnRank(rank) + iPoint;
+    return linearPartitioner.GetFirstIndexOnRank(rank) + iPoint;
   }
 
 private:

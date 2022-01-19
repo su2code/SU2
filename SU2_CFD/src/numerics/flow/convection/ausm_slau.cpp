@@ -2,14 +2,14 @@
  * \file ausm_slau.cpp
  * \brief Implementations of the AUSM-family of schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/ausm_slau.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                              CNumerics(val_nDim, val_nVar, config) {
@@ -345,10 +346,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
@@ -846,10 +844,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(V_j, nDim+4);
 
   /*--- Face area (norm or the normal vector) ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)

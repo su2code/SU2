@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.6 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.559002, -8.926022, -0.000000, 0.005588] #last 4 columns
+    discadj_naca0012.test_vals = [-3.561506, -8.926634, -0.000000, 0.005587]
     discadj_naca0012.su2_exec  = "SU2_CFD_AD"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.759637, -3.864023, -0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.737675, -3.842311, -0.000000, 0.000000]
     discadj_cylinder3D.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -69,9 +69,9 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.108283, 1.574295, 47250.0, 0.0]#last 4 columns
+    discadj_arina2k.test_vals    = [-3.087863, -3.481496, 6.8879e-02, 0]
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
-    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.timeout      = 1600
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
 
@@ -84,7 +84,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230556, 0.696586, 0.180740, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.230555, 0.645023, 0.180740, -0.000018, 5.000000, -4.275184, 5.000000, -8.892454] #last 8 columns
     discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -95,7 +95,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221040, -0.492202, 0.557470, 0.000027] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-2.221792, -0.491367, 0.182010, -0.000018]
     discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -110,7 +110,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.0, -4.092007, -2.652750, 0.0] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.092007, -2.652750, 0.000000]
     discadj_incomp_NACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -125,7 +125,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.374306, -2.371564, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -198,7 +198,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.223509, -1.646090, -0.007671, 0.000013] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.218846, -1.645199, -0.007645, 0.000013]
     discadj_pitchingNACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -210,7 +210,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.867980, -1.741743, 1090.200000, 0.000006] #last 4 columns
+    unst_deforming_naca0012.test_vals = [-1.958006, -1.841808, 1081.700000, 0.000004]
     unst_deforming_naca0012.su2_exec  = "SU2_CFD_AD"
     unst_deforming_naca0012.timeout   = 1600
     unst_deforming_naca0012.tol       = 0.00001
@@ -241,26 +241,11 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.271573, 0.671242, -3.172000, -8.231600] #last 4 columns
+    discadj_heat.test_vals = [-2.271569, 0.671288, -3.172000, -8.231500] #last 4 columns
     discadj_heat.su2_exec  = "SU2_CFD_AD"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001
     test_list.append(discadj_heat)
-
-    ###################################
-    ### Coupled RHT-CFD Adjoint     ###
-    ###################################
-
-    # Coupled discrete adjoint for radiative heat transfer in heated cylinder
-    discadj_rht                = TestCase('discadj_rht')
-    discadj_rht.cfg_dir        = "radiation/p1adjoint"
-    discadj_rht.cfg_file       = "configp1adjoint.cfg"
-    discadj_rht.test_iter      = 10
-    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
-    discadj_rht.timeout        = 1600
-    discadj_rht.reference_file = "of_grad_cd.csv.ref"
-    discadj_rht.test_file      = "of_grad_cd.csv"
-    test_list.append(discadj_rht)
 
     ###################################
     ### Coupled FSI Adjoint         ###
@@ -286,7 +271,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.381658, -3.099873, -3.099844, -3.099841] #last 4 columns
+    discadj_cht.test_vals = [-2.364405, -3.085551, -3.085518, -3.085513] #last 4 columns
     discadj_cht.su2_exec  = "SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
@@ -298,6 +283,22 @@ def main():
 
     pass_list = [ test.run_test() for test in test_list ]
     
+    ###################################
+    ### Coupled RHT-CFD Adjoint     ###
+    ###################################
+
+    # Coupled discrete adjoint for radiative heat transfer in heated cylinder
+    discadj_rht                = TestCase('discadj_rht')
+    discadj_rht.cfg_dir        = "radiation/p1adjoint"
+    discadj_rht.cfg_file       = "configp1adjoint.cfg"
+    discadj_rht.test_iter      = 10
+    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
+    discadj_rht.timeout        = 1600
+    discadj_rht.reference_file = "of_grad_cd.csv.ref"
+    discadj_rht.test_file      = "of_grad_cd.csv"
+    pass_list.append(discadj_rht.run_filediff())
+    test_list.append(discadj_rht)
+
     ######################################
     ### RUN PYTHON TESTS               ###
     ######################################

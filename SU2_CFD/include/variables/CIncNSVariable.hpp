@@ -3,14 +3,14 @@
  * \brief Class for defining the variables of the incompressible
           Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,9 +38,7 @@
  */
 class CIncNSVariable final : public CIncEulerVariable {
 private:
-  MatrixType Vorticity;    /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;    /*!< \brief Magnitude of rate of strain tensor. */
-
+  VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
 
 public:
@@ -55,75 +53,71 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
-                 unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CIncNSVariable() override = default;
+                 unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
    * \brief Set the laminar viscosity.
    */
   inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
-    Primitive(iPoint,nDim+4) = laminarViscosity;
+    Primitive(iPoint, indices.LaminarViscosity()) = laminarViscosity;
   }
-
-  /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity_StrainMag() override;
 
   /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
   inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override {
-    Primitive(iPoint,nDim+5) = eddy_visc;
+    Primitive(iPoint, indices.EddyViscosity()) = eddy_visc;
   }
 
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+4); }
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.LaminarViscosity());
+  }
 
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
-  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+5); }
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.EddyViscosity());
+  }
 
   /*!
    * \brief Set the thermal conductivity.
    */
   inline void SetThermalConductivity(unsigned long iPoint, su2double thermalConductivity) override {
-    Primitive(iPoint,nDim+6) = thermalConductivity;
+    Primitive(iPoint, indices.ThermalConductivity()) = thermalConductivity;
   }
 
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+6); }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
-
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.ThermalConductivity());
+  }
 
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
   bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
+
+  /*!
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  inline void SetTau_Wall(unsigned long iPoint, su2double tau_wall) override { Tau_Wall(iPoint) = tau_wall; }
+
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  inline su2double GetTau_Wall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  inline const VectorType& GetTau_Wall() const { return Tau_Wall; }
 
   /*!
    * \brief Set the DES Length Scale.

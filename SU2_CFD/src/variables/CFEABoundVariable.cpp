@@ -2,14 +2,14 @@
  * \file CFEABoundVariable.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,8 +45,7 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   /*--- Allocate ---*/
 
-  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);
-  fsi_analysis   = config->GetFSI_Simulation();
+  fsi_analysis = config->GetFSI_Simulation();
 
   /*--- Surface residual ---*/
   Residual_Ext_Surf.resize(nBoundPt,nVar) = su2double(0.0);
@@ -55,7 +54,7 @@ void CFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
   if (fsi_analysis) FlowTraction.resize(nBoundPt,nVar) = su2double(0.0);
 
   /*--- Generalized alpha integration method requires storing the old residuals ---*/
-  if (gen_alpha) {
+  if (config->GetKind_TimeIntScheme_FEA() == STRUCT_TIME_INT::GENERALIZED_ALPHA) {
     Residual_Ext_Surf_n.resize(nBoundPt,nVar) = su2double(0.0);
 
     if (fsi_analysis) FlowTraction_n.resize(nBoundPt,nVar) = su2double(0.0);

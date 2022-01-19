@@ -1,15 +1,15 @@
 /*!
  * \file C1DInterpolation.cpp
- * \brief Inlet_interpolation_functions
- * \author Aman Baig
- * \version 7.0.6 "Blackbird"
+ * \brief Classes for 1D interpolation.
+ * \author Aman Baig, P. Gomes
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,93 +25,123 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/toolboxes/C1DInterpolation.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 
-su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp){
+#include <iostream>
+#include <fstream>
+#include <cmath>
 
-  Point_Match = false;
+using namespace std;
 
-  for (int i=0; i<n-1; i++)
-    if(Point_Interp>=x[i] && Point_Interp<=x[i+1])
-      Point_Match = true;
+su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp) const {
 
-  if (Point_Match == false){
-    cout<<"WARNING: Extrapolating data for radius: "<<Point_Interp<<endl;
-    Point_Match = true;
-  }
+  const auto i = lower_bound(Point_Interp);
 
-  int i=0, j=n-1;
+  if (i >= x.size()-1) return (Point_Interp <= x[0])? y.front() : y.back();
 
-  while (j-i>1){
-    int m = (i+j) / 2;
-    if (Point_Interp>x[m]) {i = m;}
-    else {j = m;}
-  }
-
-  su2double h=Point_Interp-x[i];
+  const su2double h = Point_Interp-x[i];
 
   return y[i]+h*(b[i]+h*(c[i]+h*d[i]));
 }
 
-su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp){
+su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp) const {
 
-  Point_Match = false;
+  const auto i = lower_bound(Point_Interp);
 
-  for (int i=0; i<n-1; i++){
-    if(Point_Interp>=x[i] && Point_Interp<=x[i+1]){
-      Point_Match = true;
-      return (Point_Interp-x[i])*dydx[i]+y[i];
-    }
-  }
-  return 0;
+  if (i >= x.size()-1) return (Point_Interp <= x[0])? y.front() : y.back();
+
+  return y[i] + (Point_Interp-x[i]) * (y[i+1]-y[i]) / (x[i+1]-x[i]);
 }
 
-void CLinearInterpolation::SetSpline(const vector<su2double> &X, const vector<su2double> &Data){
+void CCubicSpline::SetSpline(const vector<su2double> &X, const vector<su2double> &Data) {
 
-  n = X.size();
-  su2double h;
-  x.resize(n);
-  y.resize(n);
-  dydx.resize(n-1);
+  C1DInterpolation::SetSpline(X,Data);
 
-  x = X;
-  y = Data;
+  const int N = x.size();
 
-  for (int i=0; i<n-1;i ++){
-    h = x[i+1]-x[i];
-    dydx[i] = (y[i+1]-y[i])/h;
+  /*--- Alias the vectors of coefficients to build the tridiagonal system. ---*/
+
+  auto& lower = b; b.resize(N);
+  auto& main = c; c.resize(N);
+  auto& upper = d; d.resize(N);
+  vector<su2double> rhs(N);
+
+  /*--- Main part of the tridiagonal system. ---*/
+
+  for (int i=1; i<N-1; i++) {
+    lower[i] = x[i]-x[i-1];
+    main[i] = (x[i+1]-x[i-1])*2;
+    upper[i] = x[i+1]-x[i];
+    rhs[i] = 6*((y[i+1]-y[i])/upper[i] - (y[i]-y[i-1])/lower[i]);
+  }
+
+  /*--- Start condition. ---*/
+
+  if (startDer == SECOND) {
+    main[0] = 1.0;
+    upper[0] = 0;
+    rhs[0] = startVal;
+  }
+  else { // FIRST
+    main[0] = 2*lower[1];
+    upper[0] = lower[1];
+    rhs[0] = 6*((y[1]-y[0])/lower[1] - startVal);
+  }
+
+  /*--- End condition. ---*/
+
+  if (endDer == SECOND) {
+    main[N-1] = 1.0;
+    lower[N-1] = 0;
+    rhs[N-1] = endVal;
+  }
+  else { // FIRST
+    main[N-1] = 2*upper[N-2];
+    lower[N-1] = upper[N-2];
+    rhs[N-1] = 6*(endVal - (y[N-1]-y[N-2])/upper[N-2]);
+  }
+
+  /*--- Solve system for 2nd derivative at the knots. ---*/
+
+  CBlasStructure::tdma(lower, main, upper, rhs);
+  const auto& d2y = rhs;
+
+  /*--- Compute the polynomial coefficients. ---*/
+
+  for (int i=0; i<N-1; i++) {
+    su2double dx = x[i+1]-x[i];
+    c[i] = 0.5*d2y[i];
+    d[i] = (d2y[i+1]-d2y[i]) / (6*dx);
+    b[i] = (y[i+1]-y[i])/dx - (c[i]+d[i]*dx)*dx;
   }
 }
 
-void CAkimaInterpolation::SetSpline(const vector<su2double> &X,const vector<su2double> &Data){
+void CAkimaInterpolation::SetSpline(const vector<su2double> &X, const vector<su2double> &Data){
 
-  n = X.size();
+  C1DInterpolation::SetSpline(X,Data);
+
+  const int n = X.size();
   vector<su2double> h (n-1);
   vector<su2double> p (n-1);
 
   /*---calculating finite differences (h) and gradients (p) ---*/
-  for (int i=0; i<n-1;i++){
-      h[i]=X[i+1]-X[i];
-      p[i]=(Data[i+1]-Data[i])/h[i];
-      }
+  for (int i=0; i<n-1; i++){
+    h[i]=X[i+1]-X[i];
+    p[i]=(Data[i+1]-Data[i])/h[i];
+  }
 
-  /*---b,c,d are the akima spline's cofficient for the cubic equation---*/
-  x.resize(n);
-  y.resize(n);
+  /*--- b,c,d are the akima spline's cofficient for the cubic equation ---*/
   b.resize(n);
-  c.resize(n-1);
-  d.resize(n-1);
+  c.resize(n);
+  d.resize(n);
 
-  x=X;
-  y=Data;
+  b[0] = p[0];
+  b[1] = (p[0] + p[1])/2;
+  b[n-1] = p[n-2];
+  b[n-2] = (p[n-2]+p[n-3])/2;
 
-  b[0] = p[0] ;
-  b[1] =(p[0]+ p[1])/2 ;
-  b[n-1]=p[n-2];
-  b[n-2]=(p[n-2]+p[n-3])/2;
-
-  for (int i = 2; i < n-2; i ++){
+  for (int i = 2; i < n-2; i++){
     su2double w1=fabs(p[i+1]-p[i]) , w2=fabs(p[i-1]-p[i-2]);
     if (w1+w2<0.0001) {
       b[i] = (p[i-1]+p[i])/2 ;
@@ -121,10 +151,12 @@ void CAkimaInterpolation::SetSpline(const vector<su2double> &X,const vector<su2d
     }
   }
 
-  for (int i = 0; i < n-1; i ++){
+  for (int i = 0; i < n-1; i++){
     c[i] = (3*p[i]-2*b[i]-b[i+1])/h[i] ;
     d[i] = (b[i+1]+b[i]-2*p[i])/h[i]/h[i];
   }
+  b.back() = c.back() = 0;
+
 }
 
 vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolated ,
@@ -132,7 +164,7 @@ vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolat
                                        unsigned short nDim,
                                        const su2double *Coord,
                                        unsigned short nVar_Turb,
-                                       ENUM_INLET_INTERPOLATIONTYPE Interpolation_Type){
+                                       INLET_INTERP_TYPE Interpolation_Type){
 
   unsigned short size_columns=Inlet_Interpolated.size()+nDim;
   vector<su2double> Inlet_Values(size_columns);
@@ -155,12 +187,12 @@ vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolat
 
   /*--- Correct for Interpolation Type now ---*/
   switch(Interpolation_Type){
-    case(VR_VTHETA):
+    case(INLET_INTERP_TYPE::VR_VTHETA):
       unit_r = Inlet_Interpolated[nDim];
       unit_Theta = Inlet_Interpolated[nDim+1];
       break;
 
-    case(ALPHA_PHI):
+    case(INLET_INTERP_TYPE::ALPHA_PHI):
       Alpha = Inlet_Interpolated[nDim]*PI_NUMBER/180;
       Phi = Inlet_Interpolated[nDim+1]*PI_NUMBER/180;
       unit_m = sqrt(1/(1+pow(tan(Alpha),2)));

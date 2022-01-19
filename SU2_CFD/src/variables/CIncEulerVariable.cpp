@@ -2,14 +2,14 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,51 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CIncEulerVariable.hpp"
+#include "../../include/fluid/CFluidModel.hpp"
 
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+                                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+    indices(ndim, 0) {
 
-CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
-                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
-                                     Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
-
-  bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                      (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool viscous      = config->GetViscous();
-  bool axisymmetric = config->GetAxisymmetric();
-
-  /*--- Allocate and initialize the primitive variables and gradients ---*/
-
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-
-  /*--- Allocate residual structures ---*/
-
-  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
-
-  /*--- Only for residual smoothing (multigrid) ---*/
-
-  for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
-      Residual_Sum.resize(nPoint,nVar);
-      Residual_Old.resize(nPoint,nVar);
-      break;
-    }
-  }
-
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-
-  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-    Undivided_Laplacian.resize(nPoint,nVar);
-
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Solution initialization ---*/
 
@@ -82,6 +48,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Solution_Old = Solution;
 
+  if (classical_rk4) Solution_New = Solution;
+
   /*--- Allocate and initialize solution for dual time strategy ---*/
 
   if (dual_time) {
@@ -89,55 +57,16 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     Solution_time_n1 = Solution;
   }
 
-  /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
-
-  Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
-
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
-        We need P, and rho for running the adjoint problem ---*/
-
-  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
-
-  if (config->GetReconstructionGradientRequired()) {
-    Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
+    Streamwise_Periodic_RecoveredPressure.resize(nPoint) = su2double(0.0);
+    if (config->GetStreamwise_Periodic_Temperature())
+      Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
   }
-  
-  if (config->GetLeastSquaresRequired()) {
-    Rmatrix.resize(nPoint,nDim,nDim,0.0);
-  }
-  
-  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-  
-  if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
-
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
-
-  Density_Old.resize(nPoint) = su2double(0.0);
-  Velocity2.resize(nPoint) = su2double(0.0);
-  Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
-  Delta_Time.resize(nPoint) = su2double(0.0);
-  Lambda.resize(nPoint) = su2double(0.0);
-  Sensor.resize(nPoint) = su2double(0.0);
-
-  /* Under-relaxation parameter. */
-  UnderRelaxation.resize(nPoint) = su2double(1.0);
-  LocalCFL.resize(nPoint) = su2double(0.0);
-  
-  /* Non-physical point (first-order) initialization. */
-  Non_Physical.resize(nPoint) = false;
-  Non_Physical_Counter.resize(nPoint) = 0;
-  
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  unsigned long iVar;
-  bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-
-  Density_Old(iPoint) = GetDensity(iPoint);
+  bool physical = true;
 
   /*--- Set the value of the pressure ---*/
 
@@ -145,8 +74,8 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution(iPoint,nDim+1);
-  check_temp = SetTemperature(iPoint,Temperature);
+  su2double Temperature = Solution(iPoint, nDim+1);
+  const auto check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -158,7 +87,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set the value of the density ---*/
 
-  check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
@@ -166,7 +95,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
     /*--- Copy the old solution ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
 
     /*--- Recompute the primitive variables ---*/

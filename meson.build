@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.6 "Blackbird"',
+        version: '7.2.1 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -12,14 +12,17 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-if build_machine.system() == 'windows'
-  default_warning_flags = []
-else
-  default_warning_flags = ['-Wno-unused-parameter',
-                           '-Wno-empty-body',
-                           '-Wno-format-security',
-                           '-Wno-deprecated-declarations',
-                           '-Wno-non-virtual-dtor']
+default_warning_flags = []
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    default_warning_flags += ['-Wno-empty-body']
+  endif
+  default_warning_flags += ['-Wno-unused-parameter',
+                            '-Wno-deprecated-declarations']
+
+  if get_option('enable-autodiff') or get_option('enable-directdiff')
+    default_warning_flags += ['-Wno-non-virtual-dtor']
+  endif
 endif
 
 # meson script path
@@ -50,8 +53,18 @@ endif
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
-  codi_rev_args = '-DCODI_REVERSE_TYPE'
-  codi_for_args = '-DCODI_FORWARD_TYPE'
+  codi_rev_args = ['-DCODI_REVERSE_TYPE']
+  codi_for_args = ['-DCODI_FORWARD_TYPE']
+endif
+
+if get_option('enable-autodiff')
+  if get_option('codi-tape') == 'JacobianIndex'
+    codi_rev_args += '-DCODI_INDEX_TAPE'
+  #elif get_option('codi-tape') == 'PrimalLinear'
+  #  codi_rev_args += '-DCODI_PRIMAL_TAPE'
+  #elif get_option('codi-tape') == 'PrimalIndex'
+  #  codi_rev_args += '-DCODI_PRIMAL_INDEX_TAPE'
+  endif
 endif
 
 # add cgns library
@@ -101,6 +114,21 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+
+  # add opdi dependency
+  if get_option('enable-autodiff')
+    codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+
+    if get_option('opdi-backend') == 'macro'
+      su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
+    elif get_option('opdi-backend') == 'ompt'
+      su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
+    endif
+
+    if get_option('opdi-shared-read-opt') == false
+      su2_cpp_args += '-DOPDI_VARIABLE_ADJOINT_ACCESS_MODE=0'
+    endif
+  endif
 endif
 
 if get_option('enable-tecio')
@@ -155,7 +183,48 @@ elif get_option('enable-openblas')
 
 endif
 
+if get_option('enable-librom')
+   
+   assert(get_option('librom_root')!='',
+       'Must specify librom folder (-Dlibrom_root=path/to/libROM)')
+   
+   su2_cpp_args += '-DHAVE_LIBROM'
+
+   librom_root = get_option('librom_root')
+   librom_dep = declare_dependency(include_directories: librom_root+'/lib',
+                                   link_args: ['-L'+librom_root+'/build', '-lROM'])
+
+   su2_deps += librom_dep
+
+endif
+
+mel_dep = declare_dependency(include_directories: 'externals/mel')
+su2_deps += mel_dep
+
+extra_deps = get_option('extra-deps').split(',')
+foreach dep : extra_deps
+  if dep != ''
+    su2_deps += dependency(dep)
+  endif
+endforeach
+
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
+
+if get_option('enable-mpp')
+  cmake = import('cmake')
+  mpp_subproj = cmake.subproject('Mutationpp')
+  mpp_dep = mpp_subproj.dependency('mutation++')
+  su2_deps     += mpp_dep
+  su2_cpp_args += '-DHAVE_MPP'
+endif
+
+if omp and get_option('enable-autodiff')
+  py = find_program('python3','python')
+  p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
+endif
 
 # compile common library
 subdir('Common/src')
@@ -167,8 +236,6 @@ subdir('SU2_DOT/src')
 subdir('SU2_DEF/src')
 # compile SU2_GEO executable
 subdir('SU2_GEO/src')
-# compile SU2_MSH executable
-subdir('SU2_MSH/src')
 # compile SU2_SOL executable
 subdir('SU2_SOL/src')
 # install python scripts
@@ -182,7 +249,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.6 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.2.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -199,6 +266,7 @@ message('''---------------------------------------------------------------------
          OpenBlas:       @8@
          PaStiX:         @9@
          Mixed Float:    @10@
+         libROM:         @11@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -210,8 +278,25 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @11@ install' to compile and install SU2
+         Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
 
+if get_option('enable-mpp')
+  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+          ''')
+endif
+
+if get_option('enable-librom')
+  message(''' To run SU2 with libROM library, add this line to your .bashrc file:
+
+          export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
+          
+          '''.format(get_option('librom_root')))
+
+endif

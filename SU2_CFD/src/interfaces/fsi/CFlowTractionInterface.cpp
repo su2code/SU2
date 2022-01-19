@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,16 +27,19 @@
  */
 
 #include "../../../include/interfaces/fsi/CFlowTractionInterface.hpp"
-
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include <unordered_set>
 
 CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                               CConfig *config, bool integrate_tractions_) :
-  CInterface(val_nVar, val_nConst, config),
-  integrate_tractions(integrate_tractions_) {
-
+                                               const CConfig *config, bool conservative_) :
+  CInterface(val_nVar, val_nConst),
+  conservative(conservative_) {
 }
 
-void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
+void CFlowTractionInterface::Preprocess(const CConfig *flow_config) {
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   const su2double *Velocity_ND, *Velocity_Real;
@@ -58,15 +61,73 @@ void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
   Physical_Constants[0] = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
 }
 
+void CFlowTractionInterface::ComputeVertexAreas(const CConfig *config,
+                                                CGeometry *geometry,
+                                                CSolver *solution) {
+  constexpr size_t MAXNDIM = 3;
+  const auto nodes = solution->GetNodes();
+  const auto nDim = nVar;
+
+  /*--- Compute current area associated with each vertex. ---*/
+
+  vertexArea.clear();
+  unordered_set<short> processedMarkers({-1});
+
+  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair. ---*/
+    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
+    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
+    if (processedMarkers.count(iMarker) > 0) continue;
+    processedMarkers.insert(iMarker);
+
+    for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
+      /*--- Define the boundary element. ---*/
+      unsigned long nodeList[N_POINTS_MAXIMUM] = {0};
+      su2double coords[N_POINTS_MAXIMUM][MAXNDIM] = {{0.0}};
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      auto nNode = quad? 4u : nDim;
+
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
+        nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
+        for (auto iDim = 0u; iDim < nDim; ++iDim)
+          coords[iNode][iDim] = geometry->nodes->GetCoord(nodeList[iNode], iDim)+
+                                nodes->GetSolution(nodeList[iNode],iDim);
+      }
+
+      /*--- Compute the area contribution to each node. ---*/
+      su2double normal[MAXNDIM] = {0.0};
+
+      switch (nNode) {
+        case 2: GeometryToolbox::LineNormal(coords, normal); break;
+        case 3: GeometryToolbox::TriangleNormal(coords, normal); break;
+        case 4: GeometryToolbox::QuadrilateralNormal(coords, normal); break;
+      }
+
+      su2double area = GeometryToolbox::Norm(MAXNDIM, normal) / nNode;
+
+      /*--- Update area of nodes. ---*/
+      for (auto iNode = 0u; iNode < nNode; ++iNode) {
+        auto iPoint = nodeList[iNode];
+        if (vertexArea.count(iPoint) == 0)
+          vertexArea[iPoint] = area;
+        else
+          vertexArea[iPoint] += area;
+      }
+    }
+  }
+}
+
 void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
                                                    CGeometry *flow_geometry, CGeometry *struct_geometry,
-                                                   CConfig *flow_config, CConfig *struct_config) {
+                                                   const CConfig *flow_config, const CConfig *struct_config) {
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
+
+  if (!conservative) ComputeVertexAreas(struct_config, struct_geometry, struct_solution);
 
   /*--- Apply a ramp to the transfer of the fluid loads ---*/
 
@@ -98,21 +159,8 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
 }
 
 void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                                               CConfig *flow_config, unsigned long Marker_Flow,
+                                               const CConfig *flow_config, unsigned long Marker_Flow,
                                                unsigned long Vertex_Flow, unsigned long Point_Struct) {
-  unsigned short iVar, jVar;
-
-  // Check the kind of fluid problem
-  bool viscous_flow;
-  switch (flow_config->GetKind_Solver()) {
-    case RANS: case INC_RANS:
-    case NAVIER_STOKES: case INC_NAVIER_STOKES:
-    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
-      viscous_flow = true; break;
-    default:
-      viscous_flow = false; break;
-  }
 
   const auto Point_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNode();
 
@@ -121,11 +169,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   // If we do not want integrated tractions, i.e. forces, we will need to divide by area.
   su2double oneOnArea = 1.0;
-  if (!integrate_tractions) {
-    oneOnArea = 0.0;
-    for (iVar = 0; iVar < nVar; ++iVar) oneOnArea += pow(Normal_Flow[iVar], 2);
-    oneOnArea = 1.0 / sqrt(oneOnArea);
-  }
+  if (!conservative) oneOnArea = 1.0 / GeometryToolbox::Norm(nVar, Normal_Flow);
 
   // Retrieve the values of pressure
 
@@ -135,48 +179,43 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
 
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0u; iVar < nVar; iVar++)
     Donor_Variable[iVar] = -(Pn-Pinf)*Normal_Flow[iVar];
 
   // Calculate tn in the fluid nodes for the viscous term
 
-  if (viscous_flow) {
+  if (flow_config->GetViscous()) {
 
     su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
-    const su2double* const* GradVel = &flow_nodes->GetGradient_Primitive(Point_Flow)[1];
-
-    // Divergence of the velocity
-    su2double DivVel = 0.0;
-    for (iVar = 0; iVar < nVar; iVar++) DivVel += GradVel[iVar][iVar];
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-
-      for (jVar = 0 ; jVar < nVar; jVar++) {
-
-        // Viscous stress
-        su2double delta_ij = (iVar == jVar);
-        su2double tau_ij = Viscosity*(GradVel[jVar][iVar] + GradVel[iVar][jVar] - TWO3*DivVel*delta_ij);
-
+    su2double tau[3][3];
+    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetVelocityGradient(Point_Flow), Viscosity);
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
         // Viscous component in the tn vector --> Units of force (non-dimensional).
-        Donor_Variable[iVar] += tau_ij * Normal_Flow[jVar];
+        Donor_Variable[iVar] += tau[iVar][jVar] * Normal_Flow[jVar];
       }
     }
+
   }
 
   // Redimensionalize and take into account ramp transfer of the loads
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Donor_Variable[iVar] *= Physical_Constants[0] * Physical_Constants[1] * oneOnArea;
   }
 
 }
 
 void CFlowTractionInterface::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-                                                CConfig *fea_config, unsigned long Marker_Struct,
+                                                const CConfig *fea_config, unsigned long Marker_Struct,
                                                 unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
-  /*--- Add to the Flow traction. If nonconservative interpolation is in use,
-        this is a stress and is integrated by the structural solver later on. ---*/
-  fea_solution->GetNodes()->Add_FlowTraction(Point_Struct,Target_Variable);
+  /*--- Add the Flow traction, if consistent interpolation is in use the traction needs to be integrated. ---*/
+  if (!conservative) {
+    assert(vertexArea.count(Point_Struct));
+    const auto area = vertexArea.at(Point_Struct);
+    for (auto iVar = 0u; iVar < nVar; ++iVar) Target_Variable[iVar] *= area;
+  }
 
+  fea_solution->GetNodes()->Add_FlowTraction(Point_Struct, Target_Variable);
 }

@@ -2,14 +2,14 @@
  * \file CMMSIncNSSolution.cpp
  * \brief Implementations of the member functions of CMMSIncNSSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,15 +62,15 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
   epsilon = 0.001;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_NAVIER_STOKES)
+  if(Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES)
     SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
@@ -78,7 +78,7 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
     SU2_MPI::Error("Constant density fluid model must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Constant viscosity must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 

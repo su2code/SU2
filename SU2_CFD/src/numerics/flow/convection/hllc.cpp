@@ -2,14 +2,14 @@
  * \file hllc.cpp
  * \brief Implementations of HLLC schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/hllc.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
@@ -87,11 +88,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim] * Normal[iDim];
-
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
 
@@ -615,11 +612,7 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim] * Normal[iDim];
-
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
 

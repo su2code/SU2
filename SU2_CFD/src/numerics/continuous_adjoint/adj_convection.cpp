@@ -2,14 +2,14 @@
  * \file adj_convection.cpp
  * \brief Implementation of adjoint convection numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/numerics/continuous_adjoint/adj_convection.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentLax_AdjFlow::CCentLax_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
@@ -62,16 +63,16 @@ void CCentLax_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
   MeanPsiE =  0.5*(Psi_i[nVar-1]+Psi_j[nVar-1]);
 
   /*--- Evaluation at point i ---*/
-  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0; Area = 0;
+  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1] / U_i[0];
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjPhi += MeanPhi[iDim]*Normal[iDim];
     ProjPhi_Vel += MeanPhi[iDim]*Velocity_i[iDim];
     sq_vel += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
+
   phis1 = ProjPhi + ProjVelocity_i*MeanPsiE;
   phis2 = MeanPsiRho + ProjPhi_Vel + Enthalpy_i*MeanPsiE;
 
@@ -272,16 +273,15 @@ void CCentJST_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
 
   /*--- Point i convective residual evaluation ---*/
 
-  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0; Area = 0;
+  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1] / U_i[0];
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjPhi += MeanPhi[iDim]*Normal[iDim];
     ProjPhi_Vel += MeanPhi[iDim]*Velocity_i[iDim];
     sq_vel += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
   phis1 = ProjPhi + ProjVelocity_i*MeanPsiE;
   phis2 = MeanPsiRho + ProjPhi_Vel + Enthalpy_i*MeanPsiE;
 
@@ -829,8 +829,8 @@ void CUpwSca_AdjTurb::ComputeResidual (su2double *val_residual_i, su2double *val
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
     Velocity_j[iDim] = U_j[iDim+1]/U_j[0];
-    proj_conv_flux_i += (TurbVar_Grad_i[0][iDim]/sigma - Velocity_i[iDim])*Normal[iDim]; // projection of convective flux at iPoint
-    proj_conv_flux_j += (TurbVar_Grad_j[0][iDim]/sigma - Velocity_j[iDim])*Normal[iDim]; // projection of convective flux at jPoint
+    proj_conv_flux_i += (ScalarVar_Grad_i[0][iDim]/sigma - Velocity_i[iDim])*Normal[iDim]; // projection of convective flux at iPoint
+    proj_conv_flux_j += (ScalarVar_Grad_j[0][iDim]/sigma - Velocity_j[iDim])*Normal[iDim]; // projection of convective flux at jPoint
   }
   proj_conv_flux_ij = 0.5*fabs(proj_conv_flux_i+proj_conv_flux_j); // projection of average convective flux
 

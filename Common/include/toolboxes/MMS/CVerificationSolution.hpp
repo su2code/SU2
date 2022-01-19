@@ -3,14 +3,14 @@
  * \brief Header file for the base class CVerificationSolution.
  *        The implementations are in the <i>CVerificationSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ protected:
   unsigned short nDim;  /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;  /*!< \brief Number of variables of the problem  */
 
-  unsigned short Kind_Solver;                  /*!< \brief The kind of solver we are running. */
+  MAIN_SOLVER Kind_Solver;                  /*!< \brief The kind of solver we are running. */
 
 private:
 

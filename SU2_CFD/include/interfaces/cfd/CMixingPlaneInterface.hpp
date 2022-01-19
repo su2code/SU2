@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,33 +31,19 @@
 #include "../CInterface.hpp"
 
 class CMixingPlaneInterface : public CInterface {
-
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CMixingPlaneInterface(void);
-
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
-   * \param[in] config - Definition of the particular problem.
    */
-  CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config);
+  CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst);
 
   /*!
-   * \brief Destructor of the class.
+   * \brief Initialize quantities for spanwise sections for interpolation.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  ~CMixingPlaneInterface(void) override;
-
-
-  /*!
- * \brief Initialize quantities for spanwise sections for interpolation.
- * \param[in] donor_config - Definition of the problem at the donor mesh.
- * \param[in] target_config - Definition of the problem at the target mesh.
- */
-  void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) override;
+  void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) override;
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -68,7 +54,7 @@ public:
    * \param[in] Vertex_Donor - Index of the donor vertex.
    * \param[in] Point_Donor - Index of the donor point.
    */
-  void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+  void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, const CConfig *donor_config,
                          unsigned long Marker_Donor, unsigned long val_Span, unsigned long Point_Donor) override;
 
   /*!
@@ -80,7 +66,7 @@ public:
    * \param[in] Vertex_Target - Index of the target vertex.
    * \param[in] Point_Target - Index of the target point.
    */
-  void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+  void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long val_Span, unsigned long Point_Target) override;
 
   /*!

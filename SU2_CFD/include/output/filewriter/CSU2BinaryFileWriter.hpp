@@ -2,14 +2,14 @@
  * \file CSU2BinaryFileWriter.hpp
  * \brief Headers fo the SU2 binary file writer class.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,10 +40,9 @@ public:
 
   /*!
    * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    */
-  CSU2BinaryFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
+  CSU2BinaryFileWriter(CParallelDataSorter* valDataSorter);
 
   /*!
    * \brief Destructor
@@ -52,7 +51,8 @@ public:
 
   /*!
    * \brief Write sorted data to file in SU2 binary file format
+   * \param[in] filename - The filename to write
    */
-  void Write_Data() override;
+  void Write_Data(string filename) override;
 
 };

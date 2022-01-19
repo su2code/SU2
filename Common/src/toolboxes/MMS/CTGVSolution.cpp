@@ -2,14 +2,14 @@
  * \file CTGVSolution.cpp
  * \brief Implementations of the member functions of CTGVSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,20 +58,20 @@ CTGVSolution::CTGVSolution(unsigned short val_nDim,
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
 
-  if((config->GetTime_Marching() != TIME_STEPPING) &&
-     (config->GetTime_Marching() != DT_STEPPING_1ST) &&
-     (config->GetTime_Marching() != DT_STEPPING_2ND))
+  if((config->GetTime_Marching() != TIME_MARCHING::TIME_STEPPING) &&
+     (config->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_1ST) &&
+     (config->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_2ND))
     SU2_MPI::Error("Unsteady mode must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
-     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
-     Kind_Solver != FEM_LES)
+  if(Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::RANS &&
+     Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::FEM_RANS &&
+     Kind_Solver != MAIN_SOLVER::FEM_LES)
     SU2_MPI::Error("Compressible flow equations must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if((Kind_Solver != NAVIER_STOKES) &&
-     (Kind_Solver != FEM_NAVIER_STOKES))
+  if((Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) &&
+     (Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES))
     SU2_MPI::Error("Navier Stokes equations must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
@@ -80,11 +80,11 @@ CTGVSolution::CTGVSolution(unsigned short val_nDim,
     SU2_MPI::Error("Standard air or ideal gas must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Constant viscosity must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 }

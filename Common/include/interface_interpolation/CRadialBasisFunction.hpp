@@ -2,14 +2,14 @@
  * \file CRadialBasisFunction.hpp
  * \brief Radial basis function interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,14 +28,13 @@
 
 #include "CInterpolator.hpp"
 #include "../option_structure.hpp"
-#include "../toolboxes/C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 
 /*!
  * \brief Radial basis function interpolation.
  */
 class CRadialBasisFunction final : public CInterpolator {
-  static_assert(su2passivematrix::Storage == StorageType::RowMajor,
-                "This class relies on row major storage throughout.");
+  static_assert(su2passivematrix::IsRowMajor, "This class relies on row major storage throughout.");
 private:
   unsigned long MinDonors = 0, AvgDonors = 0, MaxDonors = 0;
   passivedouble Density = 0.0, AvgCorrection = 0.0, MaxCorrection = 0.0;
@@ -45,8 +44,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone
-   * \param[in] jZone - index of the target zone
+   * \param[in] iZone - index of the donor zone.
+   * \param[in] jZone - index of the target zone.
    */
   CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
                        unsigned int iZone, unsigned int jZone);
@@ -69,7 +68,7 @@ public:
    * \param[in] dist - distance
    * \return value of the RBF.
    */
-  static su2double Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist);
+  static su2double Get_RadialBasisValue(RADIAL_BASIS type, const su2double radius, const su2double dist);
 
   /*!
    * \brief Compute the RBF "generator" matrix with or without polynomial terms.
@@ -84,7 +83,7 @@ public:
    * \param[out] keepPolynomialRow - Size nDim, signals which (if any) iDim was removed from polynomial term.
    * \param[out] C_inv_trunc - The generator matrix as described above.
    */
-  static void ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial, su2double radius,
+  static void ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePolynomial, su2double radius,
                                      const su2activematrix& coords, int& nPolynomial,
                                      vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc);
 

@@ -3,14 +3,14 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.6 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -223,6 +223,8 @@ def aerodynamics( config, state=None ):
     name = su2io.expand_part(name,config)
     link.extend(name)
 
+    pull.extend(config.get('CONFIG_LIST',[]))
+
     # files: restarts
     if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') =='YES':
         if  'RESTART_FILE_1' in files: # not the case for directdiff restart
@@ -292,10 +294,6 @@ def aerodynamics( config, state=None ):
             name = su2io.expand_time(name,konfig)
             push.extend(name)
             
-            # equivarea files to push
-            if 'WEIGHT_NF' in info.FILES:
-                push.append(info.FILES['WEIGHT_NF'])
-
             # pressure files to push
             if 'TARGET_CP' in info.FILES:
                 push.append(info.FILES['TARGET_CP'])
@@ -311,10 +309,9 @@ def aerodynamics( config, state=None ):
     su2io.update_persurface(konfig,state)
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.historyOutFields:
-        if key in state['FUNCTIONS']:
+    for key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
-            
+    
     return funcs
 
 #: def aerodynamics()
@@ -909,7 +906,9 @@ def update_mesh(config,state=None):
         pull = []
         link = config['MESH_FILENAME']
         link = su2io.expand_part(link,config)
-        
+
+        pull.extend(config.get('CONFIG_LIST',[]))
+
         # output redirection
         with redirect_folder('DEFORM',pull,link) as push:
             with redirect_output(log_deform):

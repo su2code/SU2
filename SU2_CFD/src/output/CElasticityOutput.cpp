@@ -1,15 +1,15 @@
 /*!
- * \file output_elasticity.cpp
+ * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,9 +33,9 @@
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
-  linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  dynamic = (config->GetTime_Domain());  // Dynamic analysis.
+  linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+  dynamic = (config->GetTime_Domain());
 
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
@@ -72,6 +72,11 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
+    if (dynamic) {
+      requestedVolumeFields.emplace_back("VELOCITY");
+      requestedVolumeFields.emplace_back("ACCELERATION");
+    }
+    if (config->GetTopology_Optimization()) requestedVolumeFields.emplace_back("TOPOLOGY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -96,8 +101,6 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
   if (convFields.empty() ) convFields.emplace_back("RMS_DISP_X");
 
 }
-
-CElasticityOutput::~CElasticityOutput(void) {}
 
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
@@ -133,34 +136,55 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
 
-  SetHistoryOutputValue("COMBO", fea_solver->GetTotal_ComboObj());
+  SetHistoryOutputValue("REFERENCE_NODE", fea_solver->GetTotal_OFRefNode());
+  SetHistoryOutputValue("TOPOL_COMPLIANCE", fea_solver->GetTotal_OFCompliance());
+  SetHistoryOutputValue("STRESS_PENALTY", fea_solver->GetTotal_OFStressPenalty());
+  if (config->GetRefGeom()) {
+    SetHistoryOutputValue("REFERENCE_GEOMETRY", fea_solver->GetTotal_OFRefGeom());
+  }
+  if (config->GetTopology_Optimization()) {
+    SetHistoryOutputValue("VOLUME_FRACTION", fea_solver->GetTotal_OFVolFrac());
+    SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
+  }
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+  SetCustomAndComboObjectives(FEA_SOL, config, solver);
 
 }
 
-void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
+void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
 
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  // Residuals
+  if (nonlinear_analysis) {
+    AddHistoryOutput("RMS_UTOL", "rms[U]", ScreenOutputFormat::FIXED, "RMS_RES", "Norm of displacement increment", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_RTOL", "rms[R]", ScreenOutputFormat::FIXED, "RMS_RES", "Norm of residual", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_ETOL", "rms[E]", ScreenOutputFormat::FIXED, "RMS_RES", "Norm of energy/work increment", HistoryFieldType::RESIDUAL);
+  } else if (linear_analysis) {
+    AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED, "RMS_RES", "Residual of X displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED, "RMS_RES", "Residual of Y displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED, "RMS_RES", "Residual of Z displacement", HistoryFieldType::RESIDUAL);
+  }
+  if (multiZone) {
+    AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of X displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of Y displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of Z displacement", HistoryFieldType::RESIDUAL);
+  }
+  AddHistoryOutput("VMS", "VonMises", ScreenOutputFormat::SCIENTIFIC, "Maximum Von-Misses stress", "VMS");
+  AddHistoryOutput("LOAD_RAMP", "Load_Ramp", ScreenOutputFormat::FIXED, "Fraction of total load (ramped)", "LOAD_RAMP");
+  AddHistoryOutput("LOAD_INCREMENT", "Load[%]", ScreenOutputFormat::PERCENT, "Percent of total load (incremental)", "LOAD_INCREMENT");
 
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-
-  AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
-
-  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("REFERENCE_NODE", "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Distance to reference node", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOPOL_COMPLIANCE", "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Structural compliance", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("STRESS_PENALTY", "StressPen", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Aggregate stress penalty", HistoryFieldType::COEFFICIENT);
+  if (config->GetRefGeom()) {
+    AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "L2 norm of difference wrt reference geometry", HistoryFieldType::COEFFICIENT);
+  }
+  if (config->GetTopology_Optimization()) {
+    AddHistoryOutput("VOLUME_FRACTION", "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Fraction of solid material", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Discreteness of the material distribution", HistoryFieldType::COEFFICIENT);
+  }
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 
 }
 
@@ -198,6 +222,9 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   }
   SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress(iPoint));
 
+  if (config->GetTopology_Optimization()) {
+    SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
+  }
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -234,8 +261,12 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
 
+  if (config->GetTopology_Optimization()) {
+    AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
+  }
 }
-bool CElasticityOutput::SetInit_Residuals(CConfig *config){
+
+bool CElasticityOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 

@@ -2,14 +2,14 @@
  * \file ausm.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,6 @@
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 'Falcon'
  */
 class CUpwAUSM_NEMO : public CNEMONumerics {
 private:
@@ -42,14 +41,15 @@ private:
   su2double *dmLP, *dmRM, *dpLP, *dpRM;
   su2double *daL, *daR;
   su2double ProjVel_i, ProjVel_j;
-  su2double sq_vel, Proj_ModJac_Tensor_ij;
- 
+
 public:
 
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem
+   * \param[in] val_nPrimVarGrad - Number of grad primitive variables of the problem
    * \param[in] config - Definition of the particular problem.
    */
   CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad, CConfig *config);

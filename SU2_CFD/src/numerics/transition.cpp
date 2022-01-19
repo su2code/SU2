@@ -2,14 +2,14 @@
  * \file transition.cpp
  * \brief Implementation of numerics classes for transition problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 CUpwLin_TransLM::CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -121,7 +121,7 @@ CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_n
   unsigned short iVar;
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -234,7 +234,7 @@ CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, un
   unsigned short iVar;
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -270,7 +270,7 @@ void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2doub
   //    /*--- Compute mean effective viscosity ---*/
   //    nu_i = Laminar_Viscosity_i/U_i[0];
   //    nu_j = Laminar_Viscosity_j/U_j[0];
-  //    nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
+  //    nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
   //
   //    /*--- Compute vector going from iPoint to jPoint ---*/
   //    dist_ij_2 = 0; proj_vector_ij = 0;
@@ -287,13 +287,13 @@ void CAvgGradCorrected_TransLM::ComputeResidual(su2double *val_residual, su2doub
   //      Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
   //      Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
   //      for (iDim = 0; iDim < nDim; iDim++) {
-  //        Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
+  //        Mean_GradTurbVar[iVar][iDim] = 0.5*(ScalarVar_Grad_i[iVar][iDim] + ScalarVar_Grad_j[iVar][iDim]);
   //        Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
   //        Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
   //      }
   //      Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
   //      Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-  //          (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+  //          (ScalarVar_j[iVar]-ScalarVar_i[iVar])*proj_vector_ij;
   //    }
   //
   //    val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
@@ -399,7 +399,9 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, 
   /* -- These lines must be manually reinserted into the differentiated routine! --*/
 //  rey  = config->GetReynolds();
 //  mach = config->GetMach();
-  tu   = config->GetTurbulenceIntensity_FreeStream();
+
+  /*--- turbulence intensity in the transition model is a percentage, so multiply by 100 ---*/
+  tu   = 100.0 * config->GetTurbulenceIntensity_FreeStream();
   //SU2_CPP2C COMMENT END
 
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
@@ -586,7 +588,8 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
 //  tu = 0.0;
 //  rey  = config->GetReynolds();
 //  mach = config->GetMach();
-  tu   = config->GetTurbulenceIntensity_FreeStream();
+  /* --- turbulence intensity for transition models is in percentages, so multiply by 100 ---*/ 
+  tu   = 100.0 * config->GetTurbulenceIntensity_FreeStream();
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
   Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);
   /*-- Strain = sqrt(2*Sij*Sij) --*/

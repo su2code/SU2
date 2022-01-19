@@ -2,14 +2,14 @@
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -68,30 +68,16 @@ protected:
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
 
   /*!
-   * \brief Add a correction using a Quadratic Constitutive Relation
-   *
-   * This function requires that the stress tensor already be
-   * computed using \ref GetStressTensor
-   *
-   * See: Spalart, P. R., "Strategies for Turbulence Modelling and
-   * Simulation," International Journal of Heat and Fluid Flow, Vol. 21,
-   * 2000, pp. 252-263
-   *
-   * \param[in] val_gradprimvar
-   */
-  void AddQCR(const su2double* const *val_gradprimvar);
-
-  /*!
    * \brief Scale the stress tensor using a predefined wall stress.
    *
    * This function requires that the stress tensor already be
    * computed using \ref GetStressTensor
    *
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_tau_wall - The wall stress
+   * \param[in] UnitNormal - Unit normal vector.
+   * \param[in] TauWall - The wall stress.
    */
-  void AddTauWall(const su2double *val_normal,
-                  su2double val_tau_wall);
+  void AddTauWall(const su2double *UnitNormal,
+                  su2double TauWall);
 
   /**
    * \brief Calculate the Jacobian of the viscous + turbulent stress tensor
@@ -176,26 +162,6 @@ protected:
                        su2double val_dist_ij_2,
                        const unsigned short val_nPrimVar);
 
-  /*!
-   * \brief Initialize the Reynolds Stress Matrix
-   * \param[in] turb_ke turbulent kinetic energy of node
-   */
-  void SetReynoldsStressMatrix(su2double turb_ke);
-
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
-   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
-   */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-
-  /*!
-   * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param[in] S_ij
-   */
-  void GetMeanRateOfStrainMatrix(su2double **S_ij) const;
-
 public:
 
   /*!
@@ -220,7 +186,7 @@ public:
    * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
-  inline void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) override {
+  inline void SetTau_Wall(su2double val_tauwall_i, su2double val_tauwall_j) override {
     TauWall_i = val_tauwall_i;
     TauWall_j = val_tauwall_j;
   }
