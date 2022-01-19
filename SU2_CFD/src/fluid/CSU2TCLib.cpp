@@ -1003,7 +1003,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega00(4,2,0) = -1.0885815E-03;  Omega00(4,2,1) = 1.1883688E-02;   Omega00(4,2,2) = -2.1844909E-01;  Omega00(4,2,3) = 7.5512560E+01;
     Omega00(4,3,0) = -7.8147689E-03;  Omega00(4,3,1) = 1.6792705E-01;   Omega00(4,3,2) = -1.4308628E+00;  Omega00(4,3,3) = 1.6628859E+03;
     Omega00(4,4,0) = -6.4040535E-03;  Omega00(4,4,1) = 1.4629949E-01;   Omega00(4,4,2) = -1.3892121E+00;  Omega00(4,4,3) = 2.0903441E+03;
- 
+
     // Omega(1,1) ----------------------
     //N2
     Omega11(0,0,0) = -7.6303990E-03;  Omega11(0,0,1) = 1.6878089E-01;   Omega11(0,0,2) = -1.4004234E+00;  Omega11(0,0,3) = 2.1427708E+03;
@@ -1058,7 +1058,7 @@ void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_tem
 }
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
-//TODO: iElectron is now index 0.....
+  //TODO: iElectron is now index 0.....
 
   unsigned short iElectron = nSpecies-1;
 
@@ -1421,6 +1421,29 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
                                                                              dTvedU[jVar];//TODO * Volume;
       }
     }
+<<<<<<< HEAD:SU2_CFD/src/fluid/CSU2TCLib.cpp
+
+    /*--- Reactants ---*/
+    iSpecies = Reactions(iReaction,0,ii);
+    if (iSpecies != nSpecies) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        val_jacobian[iSpecies][iVar] -= MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]);//TODO * Volume;
+        val_jacobian[nEve][iVar] -=     MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
+                                                                                         eve[iSpecies];//TODO * Volume;
+      }
+
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * cvve[iSpecies] *
+                                                                              dTvedU[jVar];//TODO * Volume;
+      }
+    }
+  } // ii
+}
+void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
+
+=======
 
     /*--- Reactants ---*/
     iSpecies = Reactions(iReaction,0,ii);
@@ -1796,7 +1819,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
       }
     }
     //if (ionization) {
-//TODO UPDATE WITH PROPER iElectron value.....
+    //TODO UPDATE WITH PROPER iElectron value.....
     //  jSpecies = nSpecies-1;
     //  su2double Mj       = MolarMass[jSpecies];
     //  su2double gam_j    = rhos[iSpecies] / (Density*Mj);
@@ -1815,7 +1838,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
   // if (ionization) {
-//TODO: Update correct iElectron....
+  //TODO: Update correct iElectron....
   //   iSpecies = nSpecies-1;
 
   //   /*--- Initialize the species diffusion coefficient ---*/
@@ -1895,7 +1918,7 @@ void CSU2TCLib::ViscosityGY(){
     Mu += (Mi/Na * gam_i) / denom;
   }
   // if (ionization) {
-//TODO iElectron value!!!!
+  //TODO iElectron value!!!!
   //   iSpecies = nSpecies-1;
   //   denom = 0.0;
   //   /*--- Calculate molar concentration ---*/
