@@ -34,20 +34,9 @@
 
 const string CParaviewVTMFileWriter::fileExt = ".vtm";
 
-CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFolderName, su2double valTime,
+CParaviewVTMFileWriter::CParaviewVTMFileWriter(su2double valTime,
                                                unsigned short valiZone, unsigned short valnZone)
-  : CFileWriter(std::move(valFileName), fileExt),
-    folderName(std::move(valFolderName)), iZone(valiZone), nZone(valnZone), curTime(valTime){
-
-  if (rank == MASTER_NODE){
-#if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
-    _mkdir(this->folderName.c_str());
-    _mkdir((this->folderName + "/zone_" + to_string(iZone)).c_str());
-#else
-    mkdir(this->folderName.c_str(), 0777);
-    mkdir((this->folderName + "/zone_" + to_string(valiZone)).c_str(), 0777);
-#endif
-  }
+  : CFileWriter(fileExt), iZone(valiZone), nZone(valnZone), curTime(valTime){
 
   nWrittenDatasets = 0;
   accumulatedBandwidth = 0;
@@ -58,17 +47,20 @@ CParaviewVTMFileWriter::~CParaviewVTMFileWriter(){
 
 }
 
-void CParaviewVTMFileWriter::Write_Data(){
+void CParaviewVTMFileWriter::Write_Data(string val_filename){
+
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   /*--- If we are in the first zone, create new file and write the file header,
    * otherwise append to already existing file ---*/
 
   if (rank == MASTER_NODE){
-    ofstream multiBlockFile;
+   ofstream multiBlockFile;
     if (iZone == 0)
-      multiBlockFile.open (fileName.c_str());
+      multiBlockFile.open (val_filename.c_str());
     else
-      multiBlockFile.open(fileName.c_str(), ios::app);
+      multiBlockFile.open(val_filename.c_str(), ios::app);
 
     if (iZone == 0){
       multiBlockFile << "<VTKFile type=\"vtkMultiBlockDataSet\" version=\"1.0\">" << endl;
@@ -95,16 +87,17 @@ void CParaviewVTMFileWriter::Write_Data(){
 
 }
 
-void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataSorter* dataSorter){
+void CParaviewVTMFileWriter::AddDataset(string foldername, string name, string file, CParallelDataSorter* dataSorter){
 
   /*--- Construct the full file name incl. folder ---*/
+  /*--- Note that the folder name is simply the filename ---*/
 
-  string fullFilename = folderName + "/zone_" + to_string(iZone) + "/" + file;
+  string fullFilename = foldername + "/zone_" + to_string(iZone) + "/" + file;
 
   /*--- Create an XML writer and dump data into file ---*/
 
-  CParaviewXMLFileWriter XMLWriter(fullFilename, dataSorter);
-  XMLWriter.Write_Data();
+  CParaviewXMLFileWriter XMLWriter(dataSorter);
+  XMLWriter.Write_Data(fullFilename);
 
   /*--- Add the dataset to the vtm file ---*/
 
@@ -117,4 +110,85 @@ void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataS
   accumulatedBandwidth += XMLWriter.Get_Bandwidth();
 
   bandwidth = accumulatedBandwidth/nWrittenDatasets;
+}
+
+
+
+void CParaviewVTMFileWriter::WriteFolderData(string foldername, CConfig *config,
+                                             string multiZoneHeaderString,
+                                             CParallelDataSorter* volumeDataSorter,
+                                             CParallelDataSorter* surfaceDataSorter,
+                                             CGeometry *geometry){
+
+  if (rank == MASTER_NODE){
+#if defined(_WIN32) || defined(_WIN64) || defined (__WINDOWS__)
+    _mkdir(foldername.c_str());
+    _mkdir((foldername + "/zone_" + to_string(iZone)).c_str());
+#else
+    mkdir(foldername.c_str(), 0777);
+    //mkdir((this->folderName + "/zone_" + to_string(valiZone)).c_str(), 0777);
+    mkdir((foldername + "/zone_" + to_string(iZone)).c_str(), 0777);
+#endif
+  }
+
+   /*--- Open a block for the zone ---*/
+
+  StartBlock(multiZoneHeaderString);
+
+  StartBlock("Internal");
+  AddDataset(foldername,"Internal", "Internal", volumeDataSorter);
+  EndBlock();
+
+  /*--- Open a block for the boundary ---*/
+
+  StartBlock("Boundary");
+
+  /*--- Loop over all markers used in the config file ---*/
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_CfgFile(); iMarker++){
+
+    /*--- Get the name of the marker ---*/
+
+    string markerTag = config->GetMarker_CfgFile_TagBound(iMarker);
+
+    /*--- If the current marker can be found on this partition store its name.
+     * Note that we have to provide a vector of markers to the sorter routine, although we only do
+     * one marker at a time, i.e. ::marker always contains one item. ---*/
+
+    vector<string> marker;
+    for (unsigned short jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++){
+
+      /*--- We want to write all markers except send-receive markers ---*/
+
+      if (config->GetMarker_All_TagBound(jMarker) == markerTag &&
+        config->GetMarker_All_KindBC(jMarker) != SEND_RECEIVE){
+          marker.push_back(markerTag);
+        }
+    }
+
+    /*--- Only sort if there is at least one processor that has this marker ---*/
+
+    int globalMarkerSize = 0, localMarkerSize = marker.size();
+    SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+
+    if (globalMarkerSize > 0){
+
+      /*--- Sort connectivity of the current marker ---*/
+
+      surfaceDataSorter->SortConnectivity(config, geometry, marker);
+      surfaceDataSorter->SortOutputData();
+
+      /*--- Add the dataset ---*/
+
+      AddDataset(foldername, markerTag, markerTag, surfaceDataSorter);
+
+    }
+  }
+
+  /*--- End "Boundary" block ---*/
+  EndBlock();
+  /*--- End "Zone" block ---*/
+  EndBlock();
+
+
 }

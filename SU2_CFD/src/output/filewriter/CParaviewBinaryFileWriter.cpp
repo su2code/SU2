@@ -29,8 +29,8 @@
 
 const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
-CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){
+CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){
 
   /* Check for big endian. We have to swap bytes otherwise.
    * Since size of character is 1 byte when the character pointer
@@ -48,7 +48,7 @@ CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
 
 }
 
-void CParaviewBinaryFileWriter::Write_Data(){
+void CParaviewBinaryFileWriter::Write_Data(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -65,7 +65,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
 
   const int NCOORDS = 3;
 
-  OpenMPIFile();
+  OpenMPIFile(val_filename);
 
   string header = "# vtk DataFile Version 3.0\n"
                   "vtk output\n"

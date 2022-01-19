@@ -287,8 +287,8 @@ public:
   /*!
    * \brief Load the data from the solvers into the data sorters and sort it for the linear partitioning.
    *
-   * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - The container holding all solution data.
    */
   void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
@@ -304,6 +304,7 @@ public:
    * \brief Preprocess the history output by setting the history fields and opening the history file.
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] driver_config - Base definition of the particular problem.
    * \param[in] wrt - If <TRUE> prepares history file for writing.
    */
   void PreprocessMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, bool wrt = true);
@@ -333,7 +334,6 @@ public:
    *  monitors the convergence and writes to screen and history file.
 
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] driver_config - Base definition of the particular problem.
    * \param[in] TimeIter - Value of the time iteration index
@@ -399,6 +399,12 @@ public:
     return historyOutput_Map.at(field).value;
   }
 
+ /*!
+  * \brief Get the value of particular surface history output field
+  * \param[in] field - Name of the field
+  * \param[in] iMarker - Index of the surface marker
+  * \return Value of the field
+  */
   su2double GetHistoryFieldValuePerSurface(const string& field, unsigned short iMarker) const {
     return historyOutputPerSurface_Map.at(field)[iMarker].value;
   }
@@ -460,13 +466,12 @@ public:
   void SetConvergence(const bool conv) {convergence = conv;}
 
   /*!
-     * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] Iteration - Index of the current iteration.
-     * \return Boolean indicating whether the problem is converged.
-     */
+   * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iteration - Index of the current iteration.
+   * \return Boolean indicating whether the problem is converged.
+   */
   bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
-
 
   /*!
    * \brief Print a list of all history output fields to screen.
@@ -506,7 +511,7 @@ public:
    * \param[in] format - The output format.
    * \param[in] fileName - The file name. If empty, the filenames are automatically determined.
    */
-  void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
+  void WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName = "");
 
 protected:
 
@@ -627,13 +632,14 @@ protected:
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
-   * \param[in] value - The new value of this field.
+   * \param[in] iPoint - The point location in the field.
    */
   su2double GetVolumeOutputValue(string name, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
+   * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
   void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
@@ -641,6 +647,7 @@ protected:
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
+   * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
   void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
@@ -809,6 +816,8 @@ protected:
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
    */
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
 

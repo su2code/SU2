@@ -1597,6 +1597,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetNormal(Normal);
 
       /*--- Retrieve solution at the boundary node & free-stream ---*/
+      U_domain = nodes->GetSolution(iPoint);
       V_domain = nodes->GetPrimitive(iPoint);
       V_temp = node_infty->GetPrimitive(0);
 
@@ -1621,6 +1622,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       V_infty[RHOCVVE_INDEX]=V_temp[RHOCVVE_INDEX];
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
+      conv_numerics->SetConservative(U_domain, U_infty);
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Pass supplementary information to CNumerics ---*/
@@ -1650,6 +1652,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetNormal(Normal);
 
         /*--- Primitive variables, and gradient ---*/
+        visc_numerics->SetConservative(nodes->GetSolution(iPoint),
+                                       node_infty->GetSolution(0) );
         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                                     node_infty->GetPrimitive(0) );
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -1992,7 +1996,9 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   }
 
   /*--- Free locally allocated memory ---*/
+  delete [] U_domain;
   delete [] U_inlet;
+  delete [] V_domain;
   delete [] V_inlet;
   delete [] Normal;
   delete [] Ys;
@@ -2465,6 +2471,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_outlet, *V_domain;
+  su2double *U_outlet, *U_domain;
 
   bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool dynamic_grid = config->GetGrid_Movement();
@@ -2485,10 +2492,12 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
 
       /*--- Current solution at this boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
+      U_domain = nodes->GetSolution(iPoint);
 
       /*--- Allocate the value at the outlet ---*/
       V_outlet = GetCharacPrimVar(val_marker, iVertex);
       V_outlet = V_domain;
+      U_outlet = U_domain;
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -2497,6 +2506,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetConservative(U_domain, U_outlet);
 
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
