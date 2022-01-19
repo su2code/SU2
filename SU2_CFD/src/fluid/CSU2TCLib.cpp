@@ -1057,7 +1057,7 @@ void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_tem
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
+vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
   //TODO: iElectron is now index 0.....
 
   unsigned short iElectron = nSpecies-1;
@@ -1421,29 +1421,6 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
                                                                              dTvedU[jVar];//TODO * Volume;
       }
     }
-<<<<<<< HEAD:SU2_CFD/src/fluid/CSU2TCLib.cpp
-
-    /*--- Reactants ---*/
-    iSpecies = Reactions(iReaction,0,ii);
-    if (iSpecies != nSpecies) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        val_jacobian[iSpecies][iVar] -= MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
-                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]);//TODO * Volume;
-        val_jacobian[nEve][iVar] -=     MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
-                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
-                                                                                         eve[iSpecies];//TODO * Volume;
-      }
-
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * cvve[iSpecies] *
-                                                                              dTvedU[jVar];//TODO * Volume;
-      }
-    }
-  } // ii
-}
-void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
-
-=======
 
     /*--- Reactants ---*/
     iSpecies = Reactions(iReaction,0,ii);
