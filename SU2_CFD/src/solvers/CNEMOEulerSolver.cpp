@@ -1559,6 +1559,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *V_infty, *V_domain, *V_temp;
+  su2double *U_infty, *U_domain;
 
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1600,6 +1601,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       U_domain = nodes->GetSolution(iPoint);
       V_domain = nodes->GetPrimitive(iPoint);
       V_temp = node_infty->GetPrimitive(0);
+      U_infty  = node_infty->GetSolution(0);
 
       vector<su2double> rhos;
       rhos.resize(nSpecies,0.0);
@@ -1657,7 +1659,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                                     node_infty->GetPrimitive(0) );
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          nodes->GetGradient_Primitive(iPoint) );
+                                          node_infty->GetGradient_Primitive(0) );
 
         /*--- Pass supplementary information to CNumerics ---*/
         visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
