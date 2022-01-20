@@ -781,7 +781,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-    if(vibe_only == true) {eves[iSpecies] = Ev;}
+    if (vibe_only == true) {eves[iSpecies] = Ev;}
     else {eves[iSpecies] = Ev + Eel;}
   }
 
