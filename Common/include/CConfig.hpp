@@ -4285,7 +4285,7 @@ public:
   unsigned short GetRef_Inc_NonDim(void) const { return Ref_Inc_NonDim; }
 
   /*!
-   * \brief Get the kind of SU2 software component.
+   * \brief Set the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
   void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
