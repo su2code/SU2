@@ -45,7 +45,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOCompOutput(CConfig *config, unsigned short nDim);
+  CNEMOCompOutput(const CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Load the history output field values

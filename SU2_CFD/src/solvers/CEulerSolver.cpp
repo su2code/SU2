@@ -8434,8 +8434,6 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
 
 }
 
-
-
 void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint;
@@ -8506,7 +8504,6 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
         }
       }
     }
-
 
 #ifdef HAVE_MPI
 
