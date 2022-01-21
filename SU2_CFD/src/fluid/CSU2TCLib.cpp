@@ -40,7 +40,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
   /*--- Allocate vectors for gas properties ---*/
   nElStates.resize(nSpecies,0);
-  Wall_Catalycity.resize(nSpecies,0.0);
   CharVibTemp.resize(nSpecies,0.0);
   RotationModes.resize(nSpecies,0.0);
   Diss.resize(nSpecies,0.0);
@@ -137,9 +136,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Tcb_b.resize(nReactions,0.0);
 
     /*--- Assign gas properties ---*/
-    // Wall mass fractions for catalytic boundaries
-    Wall_Catalycity[0] = 0.999;
-    Wall_Catalycity[1] = 0.001;
     // Rotational modes of energy storage
     RotationModes[0] = 2.0;
     RotationModes[1] = 0.0;
@@ -282,12 +278,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Tcb_a.resize(nReactions,0.0);
     Tcb_b.resize(nReactions,0.0);
 
-    // Wall mass fractions for catalytic boundaries
-    Wall_Catalycity[0] = 0.4;
-    Wall_Catalycity[1] = 0.4;
-    Wall_Catalycity[2] = 0.1;
-    Wall_Catalycity[3] = 0.05;
-    Wall_Catalycity[4] = 0.05;
     /*--- Assign gas properties ---*/
     // Rotational modes of energy storage
     RotationModes[0] = 2.0;
@@ -319,9 +309,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Ref_Temperature[2] = 0.0;
     Ref_Temperature[3] = 0.0;
     Ref_Temperature[4] = 0.0;
-    //        Ref_Temperature[2] = 298.15;
-    //        Ref_Temperature[3] = 298.15;
-    //        Ref_Temperature[4] = 298.15
     // Blottner viscosity coefficients
     // A                        // B                        // C
     Blottner(0,0) = 2.68E-2;   Blottner(0,1) =  3.18E-1;  Blottner(0,2) = -1.13E1;  // N2
@@ -612,12 +599,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
   }
 
-   else if (String_GasModel == "AIR-7"){
+  else if (String_GasModel == "AIR-7"){
+
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 7) {
-
       SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition", CURRENT_FUNCTION);
     }
+
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
@@ -639,229 +627,227 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Tcb_a.resize(nReactions,0.0);
     Tcb_b.resize(nReactions,0.0);
     
-    // Wall mass fractions for catalytic boundaries
-    Wall_Catalycity[0] = 0.4;
-    Wall_Catalycity[1] = 0.4;
-    Wall_Catalycity[2] = 0.1;
-    Wall_Catalycity[3] = 0.05;
-    Wall_Catalycity[4] = 0.05;
-    Wall_Catalycity[5] = 0.00;
-    Wall_Catalycity[6] = 0.00;
     /*--- Assign gas properties ---*/
     // Rotational modes of energy storage
-    RotationModes[0] = 2.0;
-    RotationModes[1] = 2.0;
-    RotationModes[2] = 2.0;
-    RotationModes[3] = 0.0;
-    RotationModes[4] = 0.0;
-    RotationModes[5] = 2.0;
-    RotationModes[6] = 0.0;
+    RotationModes[0] = 0.0; // e-
+    RotationModes[1] = 2.0; // N2
+    RotationModes[2] = 2.0; // O2
+    RotationModes[3] = 2.0; // NO
+    RotationModes[4] = 0.0; // N
+    RotationModes[5] = 0.0; // O
+    RotationModes[6] = 2.0; // NO+
+    
     // Molar mass [kg/kmol]
-    MolarMass[0] = 2.0*14.0067;
-    MolarMass[1] = 2.0*15.9994;
-    MolarMass[2] = 14.0067+15.9994;
-    MolarMass[3] = 14.0067;
-    MolarMass[4] = 15.9994;
-    MolarMass[5] = 14.0067+15.9994;
-    MolarMass[6] = 5.4858E-04;
+    MolarMass[0] = 5.4858E-04;      // e-
+    MolarMass[1] = 2.0*14.0067;     // N2
+    MolarMass[2] = 2.0*15.9994;     // O2
+    MolarMass[3] = 14.0067+15.9994; // NO
+    MolarMass[4] = 14.0067;         // N
+    MolarMass[5] = 15.9994;         // O
+    MolarMass[6] = 14.0067+15.9994; // NO+
+
     //Characteristic vibrational temperatures
-    CharVibTemp[0] = 3395.0;
-    CharVibTemp[1] = 2239.0;
-    CharVibTemp[2] = 2817.0;
-    CharVibTemp[3] = 0.0;
-    CharVibTemp[4] = 0.0;
-    CharVibTemp[5] = 2817.0;
-    CharVibTemp[6] = 0.0;
+    CharVibTemp[0] = 0.0;    // e-
+    CharVibTemp[1] = 3395.0; // N2
+    CharVibTemp[2] = 2239.0; // O2
+    CharVibTemp[3] = 2817.0; // NO
+    CharVibTemp[4] = 0.0;    // N
+    CharVibTemp[5] = 0.0;    // O
+    CharVibTemp[6] = 2817.0; // NO+
+
     // Formation enthalpy: (Scalabrin values, J/kg)
-    Enthalpy_Formation[0] = 0.0;      //N2
-    Enthalpy_Formation[1] = 0.0;      //O2
-    Enthalpy_Formation[2] = 3.0E6;    //NO
-    Enthalpy_Formation[3] = 3.36E7;   //N
-    Enthalpy_Formation[4] = 1.54E7;   //O
-    Enthalpy_Formation[5] = 3.28E7;  //NO+
-    Enthalpy_Formation[6] = 0.0;      //e
+    Enthalpy_Formation[0] = 0.0;    // e-
+    Enthalpy_Formation[1] = 0.0;    // N2
+    Enthalpy_Formation[2] = 0.0;    // O2
+    Enthalpy_Formation[3] = 3.0E6;  // NO
+    Enthalpy_Formation[4] = 3.36E7; // N
+    Enthalpy_Formation[5] = 1.54E7; // O
+    Enthalpy_Formation[6] = 3.28E7; // NO+
+
     // Reference temperature (JANAF values, [K])
-    Ref_Temperature[0] = 0.0;
+    Ref_Temperature[0] = 0.0; 
     Ref_Temperature[1] = 0.0;
     Ref_Temperature[2] = 0.0;
     Ref_Temperature[3] = 0.0;
     Ref_Temperature[4] = 0.0;
     Ref_Temperature[5] = 0.0;
     Ref_Temperature[6] = 0.0;
-    //        Ref_Temperature[2] = 298.15;
-    //        Ref_Temperature[3] = 298.15;
-    //        Ref_Temperature[4] = 298.15
+
     // Blottner viscosity coefficients
     // A                        // B                        // C
-    Blottner(0,0) = 2.68E-2;   Blottner(0,1) =  3.18E-1;  Blottner(0,2) = -1.13E1;  // N2
-    Blottner(1,0) = 4.49E-2;   Blottner(1,1) = -8.26E-2;  Blottner(1,2) = -9.20E0;  // O2
-    Blottner(2,0) = 4.36E-2;   Blottner(2,1) = -3.36E-2;  Blottner(2,2) = -9.58E0;  // NO
-    Blottner(3,0) = 1.16E-2;   Blottner(3,1) =  6.03E-1;  Blottner(3,2) = -1.24E1;  // N
-    Blottner(4,0) = 2.03E-2;   Blottner(4,1) =  4.29E-1;  Blottner(4,2) = -1.16E1;  // O
-    Blottner(5,0) = 3.02E-1;   Blottner(5,1) =  -3.50E0;  Blottner(5,2) = -3.74E0;  // NO+
-    Blottner(6,0) = 0.00E+0;   Blottner(6,1) =  0.00E+0;  Blottner(6,2) = -1.20E1;  //e-
+    Blottner(0,0) = 0.00E+0;   Blottner(0,1) =  0.00E+0;  Blottner(0,2) = -1.20E1;  // e-
+    Blottner(1,0) = 2.68E-2;   Blottner(1,1) =  3.18E-1;  Blottner(1,2) = -1.13E1;  // N2
+    Blottner(2,0) = 4.49E-2;   Blottner(2,1) = -8.26E-2;  Blottner(2,2) = -9.20E0;  // O2
+    Blottner(3,0) = 4.36E-2;   Blottner(3,1) = -3.36E-2;  Blottner(3,2) = -9.58E0;  // NO
+    Blottner(4,0) = 1.16E-2;   Blottner(4,1) =  6.03E-1;  Blottner(4,2) = -1.24E1;  // N
+    Blottner(5,0) = 2.03E-2;   Blottner(5,1) =  4.29E-1;  Blottner(5,2) = -1.16E1;  // O
+    Blottner(6,0) = 3.02E-1;   Blottner(6,1) =  -3.50E0;  Blottner(6,2) = -3.74E0;  // NO+
+
     // Number of electron states
-    nElStates[0] = 15;                    // N2
-    nElStates[1] = 7;                     // O2
-    nElStates[2] = 16;                    // NO
-    nElStates[3] = 3;                     // N
-    nElStates[4] = 5;                     // O
-    nElStates[5] = 8;                     //NO+
-    nElStates[6] = 1;                     //e
+    nElStates[0] = 1;  // e-
+    nElStates[1] = 15; // N2
+    nElStates[2] = 7;  // O2
+    nElStates[3] = 16; // NO
+    nElStates[4] = 3;  // N
+    nElStates[5] = 5;  // O
+    nElStates[6] = 8;  // NO+
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       maxEl = max(maxEl, nElStates[iSpecies]);
+
     /*--- Allocate and initialize electron data arrays ---*/
     CharElTemp.resize(nSpecies,maxEl) = su2double(0.0);
     ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);      
    
     //N2: 15 states
-    CharElTemp(0,0)  = 0.000000000000000E+00;
-    CharElTemp(0,1)  = 7.223156514095200E+04;
-    CharElTemp(0,2)  = 8.577862640384000E+04;
-    CharElTemp(0,3)  = 8.605026716160000E+04;
-    CharElTemp(0,4)  = 9.535118627874400E+04;
-    CharElTemp(0,5)  = 9.805635702203200E+04;
-    CharElTemp(0,6)  = 9.968267656935200E+04;
-    CharElTemp(0,7)  = 1.048976467715200E+05;
-    CharElTemp(0,8)  = 1.116489555200000E+05;
-    CharElTemp(0,9)  = 1.225836470400000E+05;
-    CharElTemp(0,10) = 1.248856873600000E+05;
-    CharElTemp(0,11) = 1.282476158188320E+05;
-    CharElTemp(0,12) = 1.338060936000000E+05;
-    CharElTemp(0,13) = 1.404296391107200E+05;
-    CharElTemp(0,14) = 1.504958859200000E+05;
-    ElDegeneracy(0,0)  = 1;
-    ElDegeneracy(0,1)  = 3;
-    ElDegeneracy(0,2)  = 6;
-    ElDegeneracy(0,3)  = 6;
-    ElDegeneracy(0,4)  = 3;
-    ElDegeneracy(0,5)  = 1;
-    ElDegeneracy(0,6)  = 2;
-    ElDegeneracy(0,7)  = 2;
-    ElDegeneracy(0,8)  = 5;
-    ElDegeneracy(0,9)  = 1;
-    ElDegeneracy(0,10) = 6;
-    ElDegeneracy(0,11) = 6;
-    ElDegeneracy(0,12) = 10;
-    ElDegeneracy(0,13) = 6;
-    ElDegeneracy(0,14) = 6;
+    CharElTemp(1,0)  = 0.000000000000000E+00;
+    CharElTemp(1,1)  = 7.223156514095200E+04;
+    CharElTemp(1,2)  = 8.577862640384000E+04;
+    CharElTemp(1,3)  = 8.605026716160000E+04;
+    CharElTemp(1,4)  = 9.535118627874400E+04;
+    CharElTemp(1,5)  = 9.805635702203200E+04;
+    CharElTemp(1,6)  = 9.968267656935200E+04;
+    CharElTemp(1,7)  = 1.048976467715200E+05;
+    CharElTemp(1,8)  = 1.116489555200000E+05;
+    CharElTemp(1,9)  = 1.225836470400000E+05;
+    CharElTemp(1,10) = 1.248856873600000E+05;
+    CharElTemp(1,11) = 1.282476158188320E+05;
+    CharElTemp(1,12) = 1.338060936000000E+05;
+    CharElTemp(1,13) = 1.404296391107200E+05;
+    CharElTemp(1,14) = 1.504958859200000E+05;
+    ElDegeneracy(1,0)  = 1;
+    ElDegeneracy(1,1)  = 3;
+    ElDegeneracy(1,2)  = 6;
+    ElDegeneracy(1,3)  = 6;
+    ElDegeneracy(1,4)  = 3;
+    ElDegeneracy(1,5)  = 1;
+    ElDegeneracy(1,6)  = 2;
+    ElDegeneracy(1,7)  = 2;
+    ElDegeneracy(1,8)  = 5;
+    ElDegeneracy(1,9)  = 1;
+    ElDegeneracy(1,10) = 6;
+    ElDegeneracy(1,11) = 6;
+    ElDegeneracy(1,12) = 10;
+    ElDegeneracy(1,13) = 6;
+    ElDegeneracy(1,14) = 6;
     // O2: 7 states
-    CharElTemp(1,0) = 0.000000000000000E+00;
-    CharElTemp(1,1) = 1.139156019700800E+04;
-    CharElTemp(1,2) = 1.898473947826400E+04;
-    CharElTemp(1,3) = 4.755973576639200E+04;
-    CharElTemp(1,4) = 4.991242097343200E+04;
-    CharElTemp(1,5) = 5.092268575561600E+04;
-    CharElTemp(1,6) = 7.189863255967200E+04;
-    ElDegeneracy(1,0) = 3;
-    ElDegeneracy(1,1) = 2;
-    ElDegeneracy(1,2) = 1;
-    ElDegeneracy(1,3) = 1;
-    ElDegeneracy(1,4) = 6;
-    ElDegeneracy(1,5) = 3;
-    ElDegeneracy(1,6) = 3;
+    CharElTemp(2,0) = 0.000000000000000E+00;
+    CharElTemp(2,1) = 1.139156019700800E+04;
+    CharElTemp(2,2) = 1.898473947826400E+04;
+    CharElTemp(2,3) = 4.755973576639200E+04;
+    CharElTemp(2,4) = 4.991242097343200E+04;
+    CharElTemp(2,5) = 5.092268575561600E+04;
+    CharElTemp(2,6) = 7.189863255967200E+04;
+    ElDegeneracy(2,0) = 3;
+    ElDegeneracy(2,1) = 2;
+    ElDegeneracy(2,2) = 1;
+    ElDegeneracy(2,3) = 1;
+    ElDegeneracy(2,4) = 6;
+    ElDegeneracy(2,5) = 3;
+    ElDegeneracy(2,6) = 3;
     // NO: 16 states
-    CharElTemp(2,0)  = 0.000000000000000E+00;
-    CharElTemp(2,1)  = 5.467345760000000E+04;
-    CharElTemp(2,2)  = 6.317139627802400E+04;
-    CharElTemp(2,3)  = 6.599450342445600E+04;
-    CharElTemp(2,4)  = 6.906120960000000E+04;
-    CharElTemp(2,5)  = 7.049998480000000E+04;
-    CharElTemp(2,6)  = 7.491055017560000E+04;
-    CharElTemp(2,7)  = 7.628875293968000E+04;
-    CharElTemp(2,8)  = 8.676188537552000E+04;
-    CharElTemp(2,9)  = 8.714431182368000E+04;
-    CharElTemp(2,10) = 8.886077063728000E+04;
-    CharElTemp(2,11) = 8.981755614528000E+04;
-    CharElTemp(2,12) = 8.988445919208000E+04;
-    CharElTemp(2,13) = 9.042702132000000E+04;
-    CharElTemp(2,14) = 9.064283760000000E+04;
-    CharElTemp(2,15) = 9.111763341600000E+04;
-    ElDegeneracy(2,0)  = 4;
-    ElDegeneracy(2,1)  = 8;
-    ElDegeneracy(2,2)  = 2;
-    ElDegeneracy(2,3)  = 4;
-    ElDegeneracy(2,4)  = 4;
-    ElDegeneracy(2,5)  = 4;
-    ElDegeneracy(2,6)  = 4;
-    ElDegeneracy(2,7)  = 2;
-    ElDegeneracy(2,8)  = 4;
-    ElDegeneracy(2,9)  = 2;
-    ElDegeneracy(2,10) = 4;
-    ElDegeneracy(2,11) = 4;
-    ElDegeneracy(2,12) = 2;
-    ElDegeneracy(2,13) = 2;
-    ElDegeneracy(2,14) = 2;
-    ElDegeneracy(2,15) = 4;
+    CharElTemp(3,0)  = 0.000000000000000E+00;
+    CharElTemp(3,1)  = 5.467345760000000E+04;
+    CharElTemp(3,2)  = 6.317139627802400E+04;
+    CharElTemp(3,3)  = 6.599450342445600E+04;
+    CharElTemp(3,4)  = 6.906120960000000E+04;
+    CharElTemp(3,5)  = 7.049998480000000E+04;
+    CharElTemp(3,6)  = 7.491055017560000E+04;
+    CharElTemp(3,7)  = 7.628875293968000E+04;
+    CharElTemp(3,8)  = 8.676188537552000E+04;
+    CharElTemp(3,9)  = 8.714431182368000E+04;
+    CharElTemp(3,10) = 8.886077063728000E+04;
+    CharElTemp(3,11) = 8.981755614528000E+04;
+    CharElTemp(3,12) = 8.988445919208000E+04;
+    CharElTemp(3,13) = 9.042702132000000E+04;
+    CharElTemp(3,14) = 9.064283760000000E+04;
+    CharElTemp(3,15) = 9.111763341600000E+04;
+    ElDegeneracy(3,0)  = 4;
+    ElDegeneracy(3,1)  = 8;
+    ElDegeneracy(3,2)  = 2;
+    ElDegeneracy(3,3)  = 4;
+    ElDegeneracy(3,4)  = 4;
+    ElDegeneracy(3,5)  = 4;
+    ElDegeneracy(3,6)  = 4;
+    ElDegeneracy(3,7)  = 2;
+    ElDegeneracy(3,8)  = 4;
+    ElDegeneracy(3,9)  = 2;
+    ElDegeneracy(3,10) = 4;
+    ElDegeneracy(3,11) = 4;
+    ElDegeneracy(3,12) = 2;
+    ElDegeneracy(3,13) = 2;
+    ElDegeneracy(3,14) = 2;
+    ElDegeneracy(3,15) = 4;
     // N: 3 states
-    CharElTemp(3,0) = 0.000000000000000E+00;
-    CharElTemp(3,1) = 2.766469645581980E+04;
-    CharElTemp(3,2) = 4.149309313560210E+04;
-    ElDegeneracy(3,0)= 4;
-    ElDegeneracy(3,1)= 10;
-    ElDegeneracy(3,2)= 6;
-    // O: 5 states
     CharElTemp(4,0) = 0.000000000000000E+00;
-    CharElTemp(4,1) = 2.277077570280000E+02;
-    CharElTemp(4,2) = 3.265688785704000E+02;
-    CharElTemp(4,3) = 2.283028632262240E+04;
-    CharElTemp(4,4) = 4.861993036434160E+04;
-    ElDegeneracy(4,0) = 5;
-    ElDegeneracy(4,1) = 3;
-    ElDegeneracy(4,2) = 1;
-    ElDegeneracy(4,3) = 5;
-    ElDegeneracy(4,4) = 1;
-    // NO+: 8 states
+    CharElTemp(4,1) = 2.766469645581980E+04;
+    CharElTemp(4,2) = 4.149309313560210E+04;
+    ElDegeneracy(4,0)= 4;
+    ElDegeneracy(4,1)= 10;
+    ElDegeneracy(4,2)= 6;
+    // O: 5 states
     CharElTemp(5,0) = 0.000000000000000E+00;
-    CharElTemp(5,1) = 7.508967768800000E+04;
-    CharElTemp(5,2) = 8.525462447600000E+04;
-    CharElTemp(5,3) = 8.903572570160000E+04;
-    CharElTemp(5,4) = 9.746982592400000E+04;
-    CharElTemp(5,5) = 1.000553049584000E+05;
-    CharElTemp(5,6) = 1.028033655904000E+05;
-    CharElTemp(5,7) = 1.057138639424800E+05;
-    ElDegeneracy(5,0) = 1;
+    CharElTemp(5,1) = 2.277077570280000E+02;
+    CharElTemp(5,2) = 3.265688785704000E+02;
+    CharElTemp(5,3) = 2.283028632262240E+04;
+    CharElTemp(5,4) = 4.861993036434160E+04;
+    ElDegeneracy(5,0) = 5;
     ElDegeneracy(5,1) = 3;
-    ElDegeneracy(5,2) = 6;
-    ElDegeneracy(5,3) = 6;
-    ElDegeneracy(5,4) = 3;
-    ElDegeneracy(5,5) = 1;
-    ElDegeneracy(5,6) = 2;
-    ElDegeneracy(5,7) = 2;
-    // e: 1 state
+    ElDegeneracy(5,2) = 1;
+    ElDegeneracy(5,3) = 5;
+    ElDegeneracy(5,4) = 1;
+    // NO+: 8 states
     CharElTemp(6,0) = 0.000000000000000E+00;
+    CharElTemp(6,1) = 7.508967768800000E+04;
+    CharElTemp(6,2) = 8.525462447600000E+04;
+    CharElTemp(6,3) = 8.903572570160000E+04;
+    CharElTemp(6,4) = 9.746982592400000E+04;
+    CharElTemp(6,5) = 1.000553049584000E+05;
+    CharElTemp(6,6) = 1.028033655904000E+05;
+    CharElTemp(6,7) = 1.057138639424800E+05;
     ElDegeneracy(6,0) = 1;
+    ElDegeneracy(6,1) = 3;
+    ElDegeneracy(6,2) = 6;
+    ElDegeneracy(6,3) = 6;
+    ElDegeneracy(6,4) = 3;
+    ElDegeneracy(6,5) = 1;
+    ElDegeneracy(6,6) = 2;
+    ElDegeneracy(6,7) = 2;
+    // e: 1 state
+    CharElTemp(0,0) = 0.000000000000000E+00;
+    ElDegeneracy(0,0) = 1;
+
     /*--- Set reaction maps ---*/
     // N2 dissociation
-    Reactions(0,0,0)=0;    Reactions(0,0,1)=0;   Reactions(0,0,2)=nSpecies;    Reactions(0,1,0)=3;   Reactions(0,1,1)=3;   Reactions(0,1,2) =0;
-    Reactions(1,0,0)=0;    Reactions(1,0,1)=1;   Reactions(1,0,2)=nSpecies;    Reactions(1,1,0)=3;   Reactions(1,1,1)=3;   Reactions(1,1,2) =1;
-    Reactions(2,0,0)=0;    Reactions(2,0,1)=2;   Reactions(2,0,2)=nSpecies;    Reactions(2,1,0)=3;   Reactions(2,1,1)=3;   Reactions(2,1,2) =2;
-    Reactions(3,0,0)=0;    Reactions(3,0,1)=3;   Reactions(3,0,2)=nSpecies;    Reactions(3,1,0)=3;   Reactions(3,1,1)=3;   Reactions(3,1,2) =3;
-    Reactions(4,0,0)=0;    Reactions(4,0,1)=4;   Reactions(4,0,2)=nSpecies;    Reactions(4,1,0)=3;   Reactions(4,1,1)=3;   Reactions(4,1,2) =4;
-    Reactions(5,0,0)=0;    Reactions(5,0,1)=5;   Reactions(5,0,2)=nSpecies;    Reactions(5,1,0)=3;   Reactions(5,1,1)=3;   Reactions(5,1,2) =5;            
+    Reactions(0,0,0)=1;    Reactions(0,0,1)=1;   Reactions(0,0,2)=nSpecies;    Reactions(0,1,0)=4;   Reactions(0,1,1)=4;   Reactions(0,1,2) =1;
+    Reactions(1,0,0)=1;    Reactions(1,0,1)=2;   Reactions(1,0,2)=nSpecies;    Reactions(1,1,0)=4;   Reactions(1,1,1)=4;   Reactions(1,1,2) =2;
+    Reactions(2,0,0)=1;    Reactions(2,0,1)=3;   Reactions(2,0,2)=nSpecies;    Reactions(2,1,0)=4;   Reactions(2,1,1)=4;   Reactions(2,1,2) =3;
+    Reactions(3,0,0)=1;    Reactions(3,0,1)=4;   Reactions(3,0,2)=nSpecies;    Reactions(3,1,0)=4;   Reactions(3,1,1)=4;   Reactions(3,1,2) =4;
+    Reactions(4,0,0)=1;    Reactions(4,0,1)=5;   Reactions(4,0,2)=nSpecies;    Reactions(4,1,0)=4;   Reactions(4,1,1)=4;   Reactions(4,1,2) =5;
+    Reactions(5,0,0)=1;    Reactions(5,0,1)=6;   Reactions(5,0,2)=nSpecies;    Reactions(5,1,0)=4;   Reactions(5,1,1)=4;   Reactions(5,1,2) =6;            
     // O2 dissociation
-    Reactions(6,0,0)=1;    Reactions(6,0,1)=0;   Reactions(6,0,2)=nSpecies;    Reactions(6,1,0)=4;   Reactions(6,1,1)=4;   Reactions(6,1,2) =0;
-    Reactions(7,0,0)=1;    Reactions(7,0,1)=1;   Reactions(7,0,2)=nSpecies;    Reactions(7,1,0)=4;   Reactions(7,1,1)=4;   Reactions(7,1,2) =1;
-    Reactions(8,0,0)=1;    Reactions(8,0,1)=2;   Reactions(8,0,2)=nSpecies;    Reactions(8,1,0)=4;   Reactions(8,1,1)=4;   Reactions(8,1,2) =2;
-    Reactions(9,0,0)=1;    Reactions(9,0,1)=3;   Reactions(9,0,2)=nSpecies;    Reactions(9,1,0)=4;   Reactions(9,1,1)=4;   Reactions(9,1,2) =3;
-    Reactions(10,0,0)=1;   Reactions(10,0,1)=4;  Reactions(10,0,2)=nSpecies;   Reactions(10,1,0)=4;  Reactions(10,1,1)=4;  Reactions(10,1,2) =4;
-    Reactions(11,0,0)=1;   Reactions(11,0,1)=5;  Reactions(11,0,2)=nSpecies;   Reactions(11,1,0)=4;  Reactions(11,1,1)=4;  Reactions(11,1,2) =5;
+    Reactions(6,0,0)=2;    Reactions(6,0,1)=1;   Reactions(6,0,2)=nSpecies;    Reactions(6,1,0)=5;   Reactions(6,1,1)=5;   Reactions(6,1,2) =1;
+    Reactions(7,0,0)=2;    Reactions(7,0,1)=2;   Reactions(7,0,2)=nSpecies;    Reactions(7,1,0)=5;   Reactions(7,1,1)=5;   Reactions(7,1,2) =2;
+    Reactions(8,0,0)=2;    Reactions(8,0,1)=3;   Reactions(8,0,2)=nSpecies;    Reactions(8,1,0)=5;   Reactions(8,1,1)=5;   Reactions(8,1,2) =3;
+    Reactions(9,0,0)=2;    Reactions(9,0,1)=4;   Reactions(9,0,2)=nSpecies;    Reactions(9,1,0)=5;   Reactions(9,1,1)=5;   Reactions(9,1,2) =4;
+    Reactions(10,0,0)=2;   Reactions(10,0,1)=5;  Reactions(10,0,2)=nSpecies;   Reactions(10,1,0)=5;  Reactions(10,1,1)=5;  Reactions(10,1,2) =5;
+    Reactions(11,0,0)=2;   Reactions(11,0,1)=6;  Reactions(11,0,2)=nSpecies;   Reactions(11,1,0)=5;  Reactions(11,1,1)=5;  Reactions(11,1,2) =6;
     // NO dissociation
-    Reactions(12,0,0)=2;   Reactions(12,0,1)=0;  Reactions(12,0,2)=nSpecies;   Reactions(12,1,0)=5;  Reactions(12,1,1)=5;  Reactions(12,1,2) =0;
-    Reactions(13,0,0)=2;   Reactions(13,0,1)=1;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=5;  Reactions(13,1,1)=5;  Reactions(13,1,2) =1;
-    Reactions(14,0,0)=2;   Reactions(14,0,1)=2;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=5;  Reactions(14,1,1)=5;  Reactions(14,1,2) =2;
-    Reactions(15,0,0)=2;   Reactions(15,0,1)=3;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=5;  Reactions(15,1,1)=5;  Reactions(15,1,2) =3;
-    Reactions(16,0,0)=2;   Reactions(16,0,1)=4;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=5;  Reactions(16,1,1)=5;  Reactions(16,1,2) =4;    
-    Reactions(17,0,0)=2;   Reactions(17,0,1)=5;  Reactions(17,0,2)=nSpecies;   Reactions(17,1,0)=5;  Reactions(17,1,1)=5;  Reactions(17,1,2) =5;
+    Reactions(12,0,0)=3;   Reactions(12,0,1)=1;  Reactions(12,0,2)=nSpecies;   Reactions(12,1,0)=6;  Reactions(12,1,1)=6;  Reactions(12,1,2) =1;
+    Reactions(13,0,0)=3;   Reactions(13,0,1)=2;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=6;  Reactions(13,1,1)=6;  Reactions(13,1,2) =2;
+    Reactions(14,0,0)=3;   Reactions(14,0,1)=3;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=6;  Reactions(14,1,1)=6;  Reactions(14,1,2) =3;
+    Reactions(15,0,0)=3;   Reactions(15,0,1)=4;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=6;  Reactions(15,1,1)=6;  Reactions(15,1,2) =4;
+    Reactions(16,0,0)=3;   Reactions(16,0,1)=5;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=6;  Reactions(16,1,1)=6;  Reactions(16,1,2) =5;    
+    Reactions(17,0,0)=3;   Reactions(17,0,1)=6;  Reactions(17,0,2)=nSpecies;   Reactions(17,1,0)=6;  Reactions(17,1,1)=6;  Reactions(17,1,2) =6;
     // N2 + O -> NO + N
-    Reactions(18,0,0)=0;   Reactions(18,0,1)=4;  Reactions(18,0,2)=nSpecies;   Reactions(18,1,0)=2;  Reactions(18,1,1)=3;  Reactions(18,1,2)= nSpecies;
+    Reactions(18,0,0)=1;   Reactions(18,0,1)=5;  Reactions(18,0,2)=nSpecies;   Reactions(18,1,0)=3;  Reactions(18,1,1)=4;  Reactions(18,1,2)= nSpecies;
     // NO + O -> O2 + N
-    Reactions(19,0,0)=2;   Reactions(19,0,1)=4;  Reactions(19,0,2)=nSpecies;   Reactions(19,1,0)=1;  Reactions(19,1,1)=3;  Reactions(19,1,2)= nSpecies;
+    Reactions(19,0,0)=3;   Reactions(19,0,1)=5;  Reactions(19,0,2)=nSpecies;   Reactions(19,1,0)=2;  Reactions(19,1,1)=4;  Reactions(19,1,2)= nSpecies;
     //N + O -> NO+ + e
-    Reactions(20,0,0)=3;   Reactions(20,0,1)=4;  Reactions(20,0,2)=nSpecies;   Reactions(20,1,0)=5;  Reactions(20,1,1)=6;  Reactions(20,1,2)= nSpecies;
+    Reactions(20,0,0)=4;   Reactions(20,0,1)=5;  Reactions(20,0,2)=nSpecies;   Reactions(20,1,0)=6;  Reactions(20,1,1)=0;  Reactions(20,1,2)= nSpecies;
     //N2 + e -> N + N + e
-    Reactions(21,0,0)=0;   Reactions(21,0,1)=6;  Reactions(21,0,2)=nSpecies;   Reactions(21,1,0)=3;  Reactions(21,1,1)=3;  Reactions(21,1,2)= 6;
+    Reactions(21,0,0)=1;   Reactions(21,0,1)=0;  Reactions(21,0,2)=nSpecies;   Reactions(21,1,0)=4;  Reactions(21,1,1)=4;  Reactions(21,1,2)= 6;
+
     /*--- Set Arrhenius coefficients for reactions ---*/
     // Pre-exponential factor
     ArrheniusCoefficient[0]  = 7.0E21;
@@ -934,6 +920,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     ArrheniusTheta[19] = 19450.0;
     ArrheniusTheta[20] = 31900.0;
     ArrheniusTheta[21] = 113200.0;
+
     /*--- Set rate-controlling temperature exponents ---*/
     //  -----------  Tc = Ttr^a * Tve^b  -----------
     //
@@ -972,6 +959,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     //TODO: Implement Collision Integral Data for AIR-7 (JN)
     /*--- Collision integral data ---*/
+    //TODO: ELECTRONS HAvE NO OMEGAS....NEED TO ALTER LOOPS? or add dummy vector.....
     // Omega(0,0) ----------------------
     //N2
     Omega00(0,0,0) = -6.0614558E-03;  Omega00(0,0,1) = 1.2689102E-01;   Omega00(0,0,2) = -1.0616948E+00;  Omega00(0,0,3) = 8.0955466E+02;
@@ -980,11 +968,11 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega00(0,3,0) = -1.0796249E-02;  Omega00(0,3,1) = 2.2656509E-01;   Omega00(0,3,2) = -1.7910602E+00;  Omega00(0,3,3) = 4.0455218E+03;
     Omega00(0,4,0) = -2.7244269E-03;  Omega00(0,4,1) = 6.9587171E-02;   Omega00(0,4,2) = -7.9538667E-01;  Omega00(0,4,3) = 4.0673730E+02;
     //O2
-    Omega00(1,0,0) = -3.7959091E-03;  Omega00(1,0,1) = 9.5708295E-02;   Omega00(1,0,2) = -1.0070611E+00;  Omega00(1,0,3) = 8.9392313E+02;
-    Omega00(1,1,0) = -8.0682650E-04;  Omega00(1,1,1) = 1.6602480E-02;   Omega00(1,1,2) = -3.1472774E-01;  Omega00(1,1,3) = 1.4116458E+02;
-    Omega00(1,2,0) = -6.4433840E-04;  Omega00(1,2,1) = 8.5378580E-03;   Omega00(1,2,2) = -2.3225102E-01;  Omega00(1,2,3) = 1.1371608E+02;
-    Omega00(1,3,0) = -1.1453028E-03;  Omega00(1,3,1) = 1.2654140E-02;   Omega00(1,3,2) = -2.2435218E-01;  Omega00(1,3,3) = 7.7201588E+01;
-    Omega00(1,4,0) = -4.8405803E-03;  Omega00(1,4,1) = 1.0297688E-01;   Omega00(1,4,2) = -9.6876576E-01;  Omega00(1,4,3) = 6.1629812E+02;
+    Omega00(2,0,0) = -3.7959091E-03;  Omega00(1,0,1) = 9.5708295E-02;   Omega00(1,0,2) = -1.0070611E+00;  Omega00(1,0,3) = 8.9392313E+02;
+    Omega00(2,1,0) = -8.0682650E-04;  Omega00(1,1,1) = 1.6602480E-02;   Omega00(1,1,2) = -3.1472774E-01;  Omega00(1,1,3) = 1.4116458E+02;
+    Omega00(2,2,0) = -6.4433840E-04;  Omega00(1,2,1) = 8.5378580E-03;   Omega00(1,2,2) = -2.3225102E-01;  Omega00(1,2,3) = 1.1371608E+02;
+    Omega00(2,3,0) = -1.1453028E-03;  Omega00(1,3,1) = 1.2654140E-02;   Omega00(1,3,2) = -2.2435218E-01;  Omega00(1,3,3) = 7.7201588E+01;
+    Omega00(2,4,0) = -4.8405803E-03;  Omega00(1,4,1) = 1.0297688E-01;   Omega00(1,4,2) = -9.6876576E-01;  Omega00(1,4,3) = 6.1629812E+02;
     //NO
     Omega00(2,0,0) = -1.9295666E-03;  Omega00(2,0,1) = 2.7995735E-02;   Omega00(2,0,2) = -3.1588514E-01;  Omega00(2,0,3) = 1.2880734E+02;
     Omega00(2,1,0) = -6.4433840E-04;  Omega00(2,1,1) = 8.5378580E-03;   Omega00(2,1,2) = -2.3225102E-01;  Omega00(2,1,3) = 1.1371608E+02;
