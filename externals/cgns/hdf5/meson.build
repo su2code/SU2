@@ -1165,10 +1165,12 @@ if cc_can_run
   gen_SRCS = [ H5lib_settings_c, H5Tinit_c ]
 else
   configure_file(input: 'H5T_init.cross',
-                 output: 'H5T_init.c')
+                 output: 'H5T_init.c',
+                 copy: true)
 
   configure_file(input: 'H5lib_settings.cross',
-                  output: 'H5lib_settings.c')
+                 output: 'H5lib_settings.c',
+                 copy: true)
 
   gen_SRCS = ['H5T_init.c', 'H5lib_settings.c']
 endif
