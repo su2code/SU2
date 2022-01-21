@@ -1145,26 +1145,33 @@ H5_GENERATED_HEADERS = [
 
     
 # Generate 'H5detect to generate H5Tinit.c
-
-H5detect = executable('H5detect', 'H5detect.c',
+if cc_can_run:
+  H5detect = executable('H5detect', 'H5detect.c',
                       c_args: hdf5_default_warnings + defs,
-		      dependencies: ext_deps,
-		      native: true)
+		      dependencies: ext_deps)
 
-H5Tinit_c = custom_target('H5T_init.c',
+  H5Tinit_c = custom_target('H5T_init.c',
 	       output: 'H5T_init.c',
 	       command: [H5detect, '@OUTPUT@'])
 
-settings_comp = executable('H5make_libsettings', 'H5make_libsettings.c',
+  settings_comp = executable('H5make_libsettings', 'H5make_libsettings.c',
                       c_args: hdf5_default_warnings + defs,
-		      dependencies: ext_deps,
-		      native: true)
+		      dependencies: ext_deps)
 
-H5lib_settings_c = custom_target('H5lib_settings.c',
+  H5lib_settings_c = custom_target('H5lib_settings.c',
 	       output: 'H5lib_settings.c',
 	       command: [settings_comp, '@OUTPUT@'])
 
-gen_SRCS = [ H5lib_settings_c, H5Tinit_c ]
+  gen_SRCS = [ H5lib_settings_c, H5Tinit_c ]
+else
+  configure_file(input: 'H5T_init.cross',
+                 output: 'H5T_init.c')
+
+  configure_file(input: 'H5lib_settings.cross',
+                  output: 'H5lib_settings.c')
+
+  gen_SRCS = ['H5T_init.c', 'H5lib_settings.c']
+endif
 
 
 lib_hdf5_embedded = static_library('su2hdf5',
