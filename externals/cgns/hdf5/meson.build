@@ -15,6 +15,9 @@ else
 endif
 
 cc = meson.get_compiler('c')
+# Check if can run tests
+cc_can_run = not meson.is_cross_build() or meson.has_exe_wrapper()
+
 
 hdf5_conf_data = configuration_data()
 hdf5_conf_data.set('version', '1.12.1')
@@ -393,7 +396,7 @@ int main ()
 '''
 
 result = cc.compiles(code_dev_t, name : 'check dev_t')
-if result
+if result and cc_can_run
   result_dev = cc.run(code_dev_t, name : 'check dev_t scalar')
   hdf5_conf_data.set('H5_DEV_T_IS_SCALAR', result_dev.returncode())
 else
@@ -573,7 +576,7 @@ int main ()
 }
 '''
   result = cc.compiles(code_ioeo, name : 'check ioeo')
-  if result
+  if result and cc_can_run
     result_ioeo = cc.run(code_ioeo, name : 'check ioeo works')
     hdf5_conf_data.set('H5_HAVE_IOEO', result_ioeo.returncode())
   else
