@@ -1046,14 +1046,10 @@ void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_tem
 }
 
 vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
-  //TODO: iElectron is now index 0.....
 
-  unsigned short iElectron = nSpecies-1;
-
-  if(ionization) {
-    Cvtrs[iElectron] = 0.0;}
+  if(ionization) Cvtrs[0] = 0.0;
  
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
 
   return Cvtrs;
@@ -1062,7 +1058,7 @@ vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
 vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
-  unsigned short iElectron = nSpecies-1;
+  unsigned short iElectron = 0;
 
   /*--- Loop through species ---*/
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
@@ -1070,7 +1066,6 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
     /*--- If requesting electron specific heat ---*/
     if (ionization && iSpecies == iElectron) {
       Cvvs = 0.0;
-//TODO UPDATE THIS BAD BOI, iElectron.....
       Cves = 3.0/2.0 * Ru/MolarMass[nSpecies-1];
     }
 
@@ -1121,7 +1116,18 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
   su2double rhoEve  = 0.0;
   su2double denom   = 0.0;
 
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
+  // Electrons
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+
+    // Species formation energy
+    Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
+
+    // Electron t-r mode contributes to mixture vib-el energy
+    rhoEve += (3.0/2.0) * Ru/MolarMass[iSpecies] * (Tve - Ref_Temperature[iSpecies]); //bug? not multiplying by rhos[iSpecies]
+  }
+
+
+  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++){
 
     // Species formation energy
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
@@ -1149,14 +1155,6 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
   }
 
-  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-
-    // Species formation energy
-    Ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1] * Ref_Temperature[nSpecies-1];
-
-    // Electron t-r mode contributes to mixture vib-el energy
-    rhoEve += (3.0/2.0) * Ru/MolarMass[nSpecies-1] * (Tve - Ref_Temperature[nSpecies-1]); //bug? not multiplying by rhos[iSpecies]
-  }
 
   energies[0] = rhoEmix/Density;
   energies[1] = rhoEve/Density;
@@ -1168,7 +1166,7 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   su2double Ev, Eel, Ef, num, denom;
-  unsigned short iElectron = nSpecies-1;
+  unsigned short iElectron = 0;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
@@ -1428,6 +1426,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
     }
   } // ii
 }
+
 void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii;
@@ -1575,6 +1574,7 @@ void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *ev
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 }
+
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
@@ -1993,7 +1993,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double rhoE_f   = 0.0;
   su2double rhoE_ref = 0.0;
   su2double rhoCvtr  = 0.0;
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  //TODO; WHY DONT ELECTRONS COUNTS?
+  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
@@ -2048,6 +2049,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
 void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
 
+  //TODO: THIS NEEDS TO BE UPDATED!!!!!!!!!!
   if (gas_model == "O2"){
 
     //O2 + M -> 2O + M
