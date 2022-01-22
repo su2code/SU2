@@ -39,19 +39,17 @@ parser.add_option("-r", "--releasename", dest="releasename",
 parser.add_option("-y", action="store_true", dest="yes", help="Answer yes to all questions", metavar="YES")
 (options, args)=parser.parse_args()
 
-#if not options.version:
-#    parser.error("new version number must be provided with -v option")
+if not options.version:
+    parser.error("new version number must be provided with -v option")
 
-#oldvers = '2012-2018'
-#newvers = '2012-2019'
-#oldvers  = '7.2.1 "Blackbird"'
-#oldvers_q= r'7.2.1 \"Blackbird\"'
-#newvers  = str(options.version) + ' "' + str(options.releasename) + '"'
-#newvers_q= str(options.version) + ' \\"' + str(options.releasename) + '\\"'
-oldvers = 'Copyright 2012-2022, SU2'
-oldvers_q = oldvers
-newvers = 'Copyright 2012-2022, SU2'
-newvers_q = newvers
+oldvers  = '7.2.1 "Blackbird"'
+oldvers_q= r'7.2.1 \"Blackbird\"'
+newvers  = str(options.version) + ' "' + str(options.releasename) + '"'
+newvers_q= str(options.version) + ' \\"' + str(options.releasename) + '\\"'
+#oldvers = 'Copyright 2012-2022, SU2'
+#oldvers_q = oldvers
+#newvers = 'Copyright 2012-2022, SU2'
+#newvers_q = newvers
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.
