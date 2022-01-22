@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1045,6 +1045,15 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the velocity gradient.
+   */
+  inline virtual CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const {
+    return CMatrixView<const su2double>();
+  }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Norm 2 of the velocity vector.
    */
   inline virtual su2double GetVelocity2(unsigned long iPoint) const { return 0.0; }
@@ -1118,6 +1127,7 @@ public:
    * \return Value of the vorticity.
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
+  inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -1412,18 +1422,6 @@ public:
    * \param[in] config - Configuration parameters.
    */
   inline virtual void SetPrimitive(unsigned long iPoint, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double Temperature_Wall) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Temperature_Wall - Value of the Temperature at the wall
-   */
-  inline virtual void SetWallTemperature(unsigned long iPoint, su2double* Temperature_Wall) {}
 
   /*!
    * \brief Set the thermal coefficient.

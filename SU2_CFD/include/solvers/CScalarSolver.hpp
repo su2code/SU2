@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@ template <class VariableType>
 class CScalarSolver : public CSolver {
  protected:
   enum : size_t { MAXNDIM = 3 };      /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t { MAXNVAR = 2 };      /*!< \brief Max number of variables, used in some static arrays. */
+  static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
   enum : size_t { MAXNVARFLOW = 12 }; /*!< \brief Max number of flow variables, used in some static arrays. */
 
   enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
@@ -49,11 +49,11 @@ class CScalarSolver : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-  su2double lowerlimit[MAXNVAR] = {0.0}; /*!< \brief contains lower limits for turbulence variables. Note that ::min()
-                                            returns the smallest positive value for floats. */
-  su2double upperlimit[MAXNVAR] = {0.0}; /*!< \brief contains upper limits for turbulence variables. */
+  su2double lowerlimit[MAXNVAR]; /*!< \brief contains lower limits for turbulence variables. Note that ::min()
+                                             returns the smallest positive value for floats. */
+  su2double upperlimit[MAXNVAR]; /*!< \brief contains upper limits for turbulence variables. */
 
-  su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
+  su2double Solution_Inf[MAXNVAR]; /*!< \brief Far-field solution. */
 
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
 
@@ -135,6 +135,14 @@ class CScalarSolver : public CSolver {
     }
   }
 
+  /*!
+   * \brief Gradient and Limiter computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether the residual+jacobian should be zeroed.
+   */
+  void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
+
  private:
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -171,11 +179,6 @@ class CScalarSolver : public CSolver {
   virtual void ComputeUnderRelaxationFactor(const CConfig* config) {}
 
  public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CScalarSolver(bool conservative);
-
   /*!
    * \brief Destructor of the class.
    */
@@ -265,6 +268,14 @@ class CScalarSolver : public CSolver {
   void CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
 
   /*!
+   * \brief Update the solution using the explicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container, CConfig* config) final;
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -292,7 +303,8 @@ class CScalarSolver : public CSolver {
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  virtual void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) override = 0;
+  void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                           bool val_update_geo) override = 0;
 
   /*!
    * \brief Scalar solvers support OpenMP+MPI.

@@ -3,14 +3,14 @@
  * \brief Delarations of numerics classes for integration of source
  *        terms in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -125,8 +125,11 @@ public:
  * \ingroup SourceDiscr
  * \author A. Bueno.
  */
+template <class FlowIndices>
 class CSourcePieceWise_TurbSA final : public CSourceBase_TurbSA {
 private:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
@@ -135,7 +138,7 @@ private:
   unsigned short iDim;
   bool transition;
   bool axisymmetric;
-  
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -159,10 +162,13 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
+template <class FlowIndices>
 class CSourcePieceWise_TurbSA_COMP final : public CSourceBase_TurbSA {
 private:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
@@ -194,10 +200,13 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
+template <class FlowIndices>
 class CSourcePieceWise_TurbSA_E final : public CSourceBase_TurbSA {
 private:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
@@ -227,10 +236,13 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
+template <class FlowIndices>
 class CSourcePieceWise_TurbSA_E_COMP : public CSourceBase_TurbSA {
 private:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
@@ -238,7 +250,6 @@ private:
   su2double dr, dg, dfw;
   su2double Sbar;
   su2double aux_cc, CompCorrection, c5;
-  unsigned short jDim;
 
 public:
   /*!
@@ -263,8 +274,11 @@ public:
  * \ingroup SourceDiscr
  * \author F. Palacios
  */
+template <class FlowIndices>
 class CSourcePieceWise_TurbSA_Neg : public CSourceBase_TurbSA {
 private:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
@@ -295,8 +309,11 @@ public:
  * \ingroup SourceDiscr
  * \author A. Campos.
  */
+template <class FlowIndices>
 class CSourcePieceWise_TurbSST final : public CNumerics {
 private:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+
   su2double F1_i,
   F1_j,
   F2_i,
@@ -317,9 +334,9 @@ private:
 
   su2double kAmb, omegaAmb;
 
-  su2double Residual[2],
-  *Jacobian_i[2] = {nullptr},
-  Jacobian_Buffer[4] = {0.0}; /// Static storage for the Jacobian (which needs to be pointer for return type).
+  su2double Residual[2];
+  su2double* Jacobian_i[2];
+  su2double Jacobian_Buffer[4]; /// Static storage for the Jacobian (which needs to be pointer for return type).
 
   bool incompressible;
   bool sustaining_terms;
@@ -334,7 +351,7 @@ private:
   /*!
    * \brief Add contribution due to axisymmetric formulation to 2D residual
    */
-  inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta){
+  inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta) {
 
     if (Coord_i[1] < EPS) return;
 
@@ -354,7 +371,7 @@ private:
     sigma_w_i = F1_i*sigma_w_1+(1.0-F1_i)*sigma_w_2;
 
     /*--- Production ---*/
-    pk_axi = max(0.0,2.0/3.0*rhov*k*(2.0/zeta*(yinv*V_i[2]-PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0])-1.0));
+    pk_axi = max(0.0,2.0/3.0*rhov*k*((2.0*yinv*V_i[2]-PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0])/zeta-1.0));
     pw_axi = alfa_blended*zeta/k*pk_axi;
 
     /*--- Convection-Diffusion ---*/

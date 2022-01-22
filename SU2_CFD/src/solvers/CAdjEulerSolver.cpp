@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,9 +49,9 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 }
 
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex, iMarker, jMarker;
   string text_line, mesh_filename;
-  unsigned short iDim, iVar, iMarker, nLineLets;
+  unsigned short iDim, iVar, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, *Normal;
@@ -69,7 +69,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
   su2double *Velocity_Inf;
   string Marker_Tag, Monitoring_Tag;
-  unsigned short iMarker_Monitoring, jMarker, ObjFunc;
+  unsigned short iMarker_Monitoring, ObjFunc;
   bool grid_movement  = config->GetGrid_Movement();
 
   /*--- Array initialization ---*/
@@ -124,8 +124,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Solution_j = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar]   = 0.0;
 
   /*--- Define some auxiliary arrays related to the flow solution ---*/
-  FlowPrimVar_i = new su2double[nDim+7]; for (iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_i[iVar] = 0.0;
-  FlowPrimVar_j = new su2double[nDim+7]; for (iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_j[iVar] = 0.0;
+  FlowPrimVar_i = new su2double[nDim+7]();
+  FlowPrimVar_j = new su2double[nDim+7]();
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
   Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
@@ -689,9 +689,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double dCMx_dCL         = config->GetdCMx_dCL();
   su2double dCMy_dCL         = config->GetdCMy_dCL();
   su2double dCMz_dCL         = config->GetdCMz_dCL();
-  su2double dCD_dCMy         = config->GetdCD_dCMy();
   bool Fixed_CL              = config->GetFixed_CL_Mode();
-  bool Fixed_CM              = config->GetFixed_CM_Mode();
 
   ForceProj_Vector = new su2double[nDim];
 
@@ -757,7 +755,6 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               /*--- Modification to run at a fixed CL and CM value ---*/
 
               if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCMy*Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += dCD_dCMy*Weight_ObjFunc*(x - x_origin)/RefLength; }
 
             }
             if (nDim == 3) {
@@ -769,7 +766,6 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               /*--- Modification to run at a fixed CL value ---*/
 
               if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCMy*Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCMy*Weight_ObjFunc*(x - x_origin)/RefLength; }
 
             }
             break;

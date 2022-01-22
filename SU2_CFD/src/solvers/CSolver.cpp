@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
-CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
+CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_mode) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -341,6 +341,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   /*--- Check for dummy communication. ---*/
 
   if (commType == PERIODIC_NONE) return;
+
+  if (rotate_periodic && config->GetNEMOProblem()) {
+    SU2_MPI::Error("The NEMO solvers do not support rotational periodicity yet.", CURRENT_FUNCTION);
+  }
 
   /*--- Local variables ---*/
 
@@ -816,7 +820,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 Rotate(translation, distance, rotCoord_j);
 
-                /*--- Get conservative solution and rotte if necessary. ---*/
+                /*--- Get conservative solution and rotate if necessary. ---*/
 
                 for (iVar = 0; iVar < ICOUNT; iVar++)
                   rotPrim_j[iVar] = field(jPoint,iVar);
@@ -3526,8 +3530,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   auto profile_filename = config->GetInlet_FileName();
 
-  unsigned short nVar_Turb = 0;
-  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  const auto turbulence = config->GetKind_Turb_Model() != TURB_MODEL::NONE;
+  const unsigned short nVar_Turb = turbulence ? solver[MESH_0][TURB_SOL]->GetnVar() : 0;
+
+  const auto species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
+  const unsigned short nVar_Species = species ? solver[MESH_0][SPECIES_SOL]->GetnVar() : 0;
 
   /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
@@ -3540,7 +3547,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    necessary in case we are writing a template profile file or for Inlet
    Interpolation purposes. ---*/
 
-  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb + nVar_Species;
 
   /*--- for incompressible flow, we can switch the energy equation off ---*/
   /*--- for now, we write the temperature even if we are not using it ---*/
@@ -3612,17 +3619,27 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
     if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
 
-    switch (config->GetKind_Turb_Model()) {
-      case TURB_MODEL::NONE: break;
-      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::NONE: break;
+      case TURB_FAMILY::SA:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE   " << setw(24);
-        columnValue << config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND() <<"\t";
+        columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() / config->GetDensity_FreeStream() <<"\t";
         break;
-      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /*--- 2-equation turbulence model (SST) ---*/
-        columnName << "TKE        " << setw(24) << "DISSIPATION";
+        columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
+        break;
+    }
+
+    switch (config->GetKind_Species_Model()) {
+      case SPECIES_MODEL::NONE: break;
+      case SPECIES_MODEL::PASSIVE_SCALAR:
+        for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
+          columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
+        }
         break;
     }
 
@@ -3984,7 +4001,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         if (viscous_flow) {
           su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
           su2double Tau[3][3];
-          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
           }
@@ -4077,31 +4094,31 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
         allocate memory for the corresponding class. ---*/
   switch( config->GetVerification_Solution() ) {
 
-    case NO_VERIFICATION_SOLUTION:
+    case VERIFICATION_SOLUTION::NONE:
       VerificationSolution = nullptr; break;
-    case INVISCID_VORTEX:
+    case VERIFICATION_SOLUTION::INVISCID_VORTEX:
       VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
-    case RINGLEB:
+    case VERIFICATION_SOLUTION::RINGLEB:
       VerificationSolution = new CRinglebSolution(nDim, nVar, MGLevel, config); break;
-    case NS_UNIT_QUAD:
+    case VERIFICATION_SOLUTION::NS_UNIT_QUAD:
       VerificationSolution = new CNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
-    case TAYLOR_GREEN_VORTEX:
+    case VERIFICATION_SOLUTION::TAYLOR_GREEN_VORTEX:
       VerificationSolution = new CTGVSolution(nDim, nVar, MGLevel, config); break;
-    case INC_TAYLOR_GREEN_VORTEX:
+    case VERIFICATION_SOLUTION::INC_TAYLOR_GREEN_VORTEX:
       VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_UNIT_QUAD:
+    case VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_UNIT_QUAD_WALL_BC:
+    case VERIFICATION_SOLUTION::MMS_NS_UNIT_QUAD_WALL_BC:
       VerificationSolution = new CMMSNSUnitQuadSolutionWallBC(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_TWO_HALF_CIRCLES:
+    case VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_CIRCLES:
       VerificationSolution = new CMMSNSTwoHalfCirclesSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_NS_TWO_HALF_SPHERES:
+    case VERIFICATION_SOLUTION::MMS_NS_TWO_HALF_SPHERES:
       VerificationSolution = new CMMSNSTwoHalfSpheresSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_INC_EULER:
+    case VERIFICATION_SOLUTION::MMS_INC_EULER:
       VerificationSolution = new CMMSIncEulerSolution(nDim, nVar, MGLevel, config); break;
-    case MMS_INC_NS:
+    case VERIFICATION_SOLUTION::MMS_INC_NS:
       VerificationSolution = new CMMSIncNSSolution(nDim, nVar, MGLevel, config); break;
-    case USER_DEFINED_SOLUTION:
+    case VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION:
       VerificationSolution = new CUserDefinedSolution(nDim, nVar, MGLevel, config); break;
   }
 }

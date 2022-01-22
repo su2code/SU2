@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,6 +44,9 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
  protected:
+  /*!< \brief Object with indices of primitive variables. */
+  const typename VariableType::template CIndices<unsigned short> prim_idx;
+
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
 
@@ -149,9 +152,6 @@ class CFVMFlowSolverBase : public CSolver {
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
   su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
-  su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
-  su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
-  su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
@@ -226,9 +226,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
   /*!
-   * \brief Default constructor, this class is not directly instantiable.
+   * \brief Protected constructor, this class is not directly instantiable.
    */
-  CFVMFlowSolverBase() : CSolver() {}
+  CFVMFlowSolverBase(const CGeometry& geometry, const CConfig& config)
+    : CSolver(), prim_idx(geometry.GetnDim(), config.GetnSpecies()) {}
 
   /*!
    * \brief Set reference values for pressure, forces, etc., e.g. "AeroCoeffForceRef".
@@ -775,13 +776,8 @@ class CFVMFlowSolverBase : public CSolver {
     const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
     const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
 
-    /*--- Set shared residual variables to 0 and declare
-     *    local ones for current thread to work on. ---*/
-
-    SetResToZero();
-
+    /*--- Local residual variables for current thread ---*/
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     /*--- Update the solution and residuals ---*/
@@ -832,23 +828,13 @@ class CFVMFlowSolverBase : public CSolver {
           }
 
           /*--- Update residual information for current thread. ---*/
-          resRMS[iVar] += Res*Res;
-          if (fabs(Res) > resMax[iVar]) {
-            resMax[iVar] = fabs(Res);
-            idxMax[iVar] = iPoint;
-            coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-          }
+          ResidualReductions_PerThread(iPoint, iVar, Res, resRMS, resMax, idxMax);
         }
       }
       END_SU2_OMP_FOR
       /*--- Reduce residual information over all threads in this rank. ---*/
-      SU2_OMP_CRITICAL
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        Residual_RMS[iVar] += resRMS[iVar];
-        AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-      }
-      END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
+      ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+
     }
 
     /*--- MPI solution ---*/
@@ -857,9 +843,6 @@ class CFVMFlowSolverBase : public CSolver {
     CompleteComms(geometry, config, SOLUTION);
 
     if (!adjoint) {
-      /*--- Compute the root mean square residual ---*/
-      SetResidual_RMS(geometry, config);
-
       /*--- For verification cases, compute the global error metrics. ---*/
       ComputeVerificationError(geometry, config);
     }
@@ -893,12 +876,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-    /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
-
-    SetResToZero();
-
+    /*--- Local residual variables for current thread ---*/
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-    const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
     /*--- Add pseudotime term to Jacobian. ---*/
@@ -948,26 +927,15 @@ class CFVMFlowSolverBase : public CSolver {
         LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
         LinSysSol[total_index] = 0.0;
 
-        su2double Res = fabs(LinSysRes[total_index]);
-        resRMS[iVar] += Res*Res;
-        if (Res > resMax[iVar]) {
-          resMax[iVar] = Res;
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Residual_RMS[iVar] += resRMS[iVar];
-      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-    }
-    END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    /*--- Compute the root mean square residual ---*/
-    SetResidual_RMS(geometry, config);
+    /*--- "Add" residuals from all threads to global residual variables. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+
   }
 
   /*!
@@ -1005,95 +973,8 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
-   * \tparam VelocityOffset - Index in the primitive variables where the velocity starts.
    */
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh,
-                                    const size_t VelocityOffset = 1) {
-
-    auto& StrainMag = nodes->GetStrainMag();
-
-    ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
-
-    su2double strainMax = 0.0, omegaMax = 0.0;
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-      const auto VelocityGradient = nodes->GetGradient_Primitive(iPoint, VelocityOffset);
-      auto Vorticity = nodes->GetVorticity(iPoint);
-
-      /*--- Vorticity ---*/
-
-      Vorticity[0] = 0.0;
-      Vorticity[1] = 0.0;
-      Vorticity[2] = VelocityGradient(1,0)-VelocityGradient(0,1);
-
-      if (nDim == 3) {
-        Vorticity[0] = VelocityGradient(2,1)-VelocityGradient(1,2);
-        Vorticity[1] = -(VelocityGradient(2,0)-VelocityGradient(0,2));
-      }
-
-      /*--- Strain Magnitude ---*/
-
-      AD::StartPreacc();
-      AD::SetPreaccIn(VelocityGradient, nDim, nDim);
-
-      su2double Div = 0.0;
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        Div += VelocityGradient(iDim, iDim);
-      Div /= 3.0;
-
-      StrainMag(iPoint) = 0.0;
-
-      /*--- Add diagonal part ---*/
-
-      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-        StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
-      }
-      if (nDim == 2) {
-        StrainMag(iPoint) += pow(Div, 2);
-      }
-
-      /*--- Add off diagonals ---*/
-
-      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
-
-      if (nDim == 3) {
-        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
-        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
-      }
-
-      StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-      AD::SetPreaccOut(StrainMag(iPoint));
-
-      /*--- Max is not differentiable, so we not register them for preacc. ---*/
-      strainMax = max(strainMax, StrainMag(iPoint));
-      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-
-      AD::EndPreacc();
-    }
-    END_SU2_OMP_FOR
-
-    if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
-      SU2_OMP_CRITICAL {
-        StrainMag_Max = max(StrainMag_Max, strainMax);
-        Omega_Max = max(Omega_Max, omegaMax);
-      }
-      END_SU2_OMP_CRITICAL
-
-      SU2_OMP_BARRIER
-      SU2_OMP_MASTER {
-        su2double MyOmega_Max = Omega_Max;
-        su2double MyStrainMag_Max = StrainMag_Max;
-
-        SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-        SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-      }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
-    }
-
-  }
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh);
 
   /*!
    * \brief Destructor.
@@ -2112,20 +1993,6 @@ class CFVMFlowSolverBase : public CSolver {
   inline void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) final { Total_CNearFieldOF = val_cnearfieldpress; }
 
   /*!
-   * \author H. Kline
-   * \brief Set the total "combo" objective (weighted sum of other values).
-   * \param[in] ComboObj - Value of the combined objective.
-   */
-  inline void SetTotal_ComboObj(su2double ComboObj) final { Total_ComboObj = ComboObj; }
-
-  /*!
-   * \author H. Kline
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   * \return Value of the "combo" objective values.
-   */
-  inline su2double GetTotal_ComboObj() const final { return Total_ComboObj; }
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
@@ -2142,24 +2009,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
-
-  /*!
-   * \brief Set the value of the custom objective function.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc = val_total_custom_objfunc * val_weight;
-  }
-
-  /*!
-   * \brief Add the value of the custom objective function.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc += val_total_custom_objfunc * val_weight;
-  }
 
   /*!
    * \brief Provide the total heat load.
@@ -2184,12 +2033,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_Total_Heat - Value of the heat load.
    */
   inline void SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) final { Total_MaxHeat = val_Total_MaxHeat; }
-
-  /*!
-   * \brief Provide the total custom objective function.
-   * \return Value of the custom objective function.
-   */
-  inline su2double GetTotal_Custom_ObjFunc() const final { return Total_Custom_ObjFunc; }
 
   /*!
    * \brief Provide the Pressure coefficient.

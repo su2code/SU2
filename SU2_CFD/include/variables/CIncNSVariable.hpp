@@ -3,14 +3,14 @@
  * \brief Class for defining the variables of the incompressible
           Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,7 +59,7 @@ public:
    * \brief Set the laminar viscosity.
    */
   inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
-    Primitive(iPoint,nDim+4) = laminarViscosity;
+    Primitive(iPoint, indices.LaminarViscosity()) = laminarViscosity;
   }
 
   /*!
@@ -67,33 +67,39 @@ public:
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
   inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override {
-    Primitive(iPoint,nDim+5) = eddy_visc;
+    Primitive(iPoint, indices.EddyViscosity()) = eddy_visc;
   }
 
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+4); }
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.LaminarViscosity());
+  }
 
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
-  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+5); }
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.EddyViscosity());
+  }
 
   /*!
    * \brief Set the thermal conductivity.
    */
   inline void SetThermalConductivity(unsigned long iPoint, su2double thermalConductivity) override {
-    Primitive(iPoint,nDim+6) = thermalConductivity;
+    Primitive(iPoint, indices.ThermalConductivity()) = thermalConductivity;
   }
 
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
-  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+6); }
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.ThermalConductivity());
+  }
 
   /*!
    * \brief Set all the primitive variables for incompressible flows

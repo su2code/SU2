@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -95,6 +95,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     break;
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
+    break;
+  case RUNTIME_SPECIES_SYS:
+    SolverName = "ADJ.SPECIES";
     break;
   case RUNTIME_RADIATION_SYS:
     SolverName = "ADJ.RAD";
@@ -305,9 +308,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   const su2double relax = (config->GetInnerIter()==0) ? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
   /*--- Thread-local residual variables. ---*/
-
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Set the old solution and compute residuals. ---*/
@@ -329,13 +330,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->AddSolution(iPoint, iVar, relax*residual);
 
       if (iPoint < nPointDomain) {
-        /*--- Update residual information for current thread. ---*/
-        resRMS[iVar] += residual*residual;
-        if (fabs(residual) > resMax[iVar]) {
-          resMax[iVar] = fabs(residual);
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint,iVar,residual,resRMS,resMax,idxMax);
       }
     }
   }
@@ -344,18 +340,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
   if (CrossTerm) return;
 
-  SetResToZero();
-
-  /*--- Reduce residual information over all threads in this rank. ---*/
-  SU2_OMP_CRITICAL
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
-
-  SetResidual_RMS(geometry, config);
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
 
   SU2_OMP_MASTER {
     SetIterLinSolver(direct_solver->System.GetIterations());
@@ -586,6 +572,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                    unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -619,8 +606,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Skip flow adjoint variables ---*/
-  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+  if (KindDirect_Solver == RUNTIME_TURB_SYS) {
     skipVars += nDim + 2;
+  }
+
+  if (KindDirect_Solver == RUNTIME_SPECIES_SYS) {
+    // Skip the number of Flow Vars and Turb Vars to get to the adjoint species vars
+    skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Skip flow adjoint and turbulent variables ---*/

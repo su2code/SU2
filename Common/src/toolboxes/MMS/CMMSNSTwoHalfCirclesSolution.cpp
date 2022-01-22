@@ -2,14 +2,14 @@
  * \file CMMSNSTwoHalfCirclesSolution.cpp
  * \brief Implementations of the member functions of CMMSNSTwoHalfCirclesSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -83,13 +83,13 @@ CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(unsigned short val_nD
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS &&
-     Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS &&
-     Kind_Solver != FEM_LES)    SU2_MPI::Error("Compressible flow equations must be selected for the MMS NS Two Half Circles case",
+  if(Kind_Solver != MAIN_SOLVER::EULER && Kind_Solver != MAIN_SOLVER::NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::RANS &&
+     Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::FEM_RANS &&
+     Kind_Solver != MAIN_SOLVER::FEM_LES)    SU2_MPI::Error("Compressible flow equations must be selected for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 
-  if((Kind_Solver != NAVIER_STOKES) &&
-     (Kind_Solver != FEM_NAVIER_STOKES))
+  if((Kind_Solver != MAIN_SOLVER::NAVIER_STOKES) &&
+     (Kind_Solver != MAIN_SOLVER::FEM_NAVIER_STOKES))
     SU2_MPI::Error("Navier Stokes equations must be selected for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 
