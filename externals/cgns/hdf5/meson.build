@@ -6,7 +6,7 @@ else
                            '-Wno-unused-variable',
                            '-Wno-unused-but-set-variable',
                            '-Wno-sign-compare',
-			   '-Wno-stringop-overflow',
+                           '-Wno-stringop-overflow',
                            '-Wno-discarded-qualifiers',
                            '-Wno-error=maybe-uninitialized',
                            '-Wno-error=unused-function',

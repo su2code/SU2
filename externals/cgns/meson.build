@@ -55,7 +55,7 @@ cgns_include = include_directories('adf', 'adfh', './')
 lib_cgns = static_library('cgns',
                           cgns_sources,
                           install : false,
-			  dependencies : hdf5_dep,
+                          dependencies : hdf5_dep,
                           c_args: cgns_default_warnings)
 
 cgns_dep = declare_dependency(link_with: lib_cgns,
