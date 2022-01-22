@@ -81,6 +81,10 @@ else
   hdf5_conf_data.set('H5_DEFAULT_PLUGINDIR', '/usr/local/hdf5/lib/plugin')
 endif
 
+if build_machine.system()=='darwin'
+  hdf5_conf_data.set('H5_HAVE_DARWIN', 1)
+endif
+
 #if cc.has_function('difftime', prefix : '#include <time.h>')
 #  # function exists, do whatever is required.
 #endif
@@ -253,15 +257,16 @@ else
   hdf5_conf_data.set('H5_HAVE_LIBUCB', 1)
 endif
 
-
-defs = [
-	'-D_FILE_OFFSET_BITS=64',
- 	'-D_LARGEFILE64_SOURCE',
- 	'-D_LARGEFILE_SOURCE',
-]
-
+defs = []
 #if  not windows or mingw
-defs += ['-D_POSIX_C_SOURCE=200809L', '-D_GNU_SOURCE',]
+if build_machine.system()!='darwin'
+  defs += [
+        '-D_FILE_OFFSET_BITS=64',
+        '-D_LARGEFILE64_SOURCE',
+        '-D_LARGEFILE_SOURCE',]
+
+  defs += ['-D_POSIX_C_SOURCE=200809L', '-D_GNU_SOURCE',]
+endif
 #endif
 
 if not(cc.has_function('lseek64', prefix: '''#include <sys/types.h>
@@ -613,11 +618,6 @@ hdf5_conf_data.set('H5_WANT_DCONV_EXCEPTION', 1)
 hdf5_conf_data.set('H5_USE_FILE_LOCKING', 1)
 hdf5_conf_data.set('H5_IGNORE_DISABLED_FILE_LOCKS', 1)
 hdf5_conf_data.set('H5_HAVE_LARGE_HSIZET', 1)
-
-if build_machine.system() == 'darwin'
-  hdf5_conf_data.set('H5_HAVE_DARWIN', 1)
-endif
-
 
 if mpi
   hdf5_conf_data.set('H5_HAVE_PARALLEL', 1)
@@ -1145,7 +1145,7 @@ H5_GENERATED_HEADERS = [
 
     
 # Generate 'H5detect to generate H5Tinit.c
-if cc_can_run
+if false
   H5detect = executable('H5detect', 'H5detect.c',
                       c_args: hdf5_default_warnings + defs,
 		      dependencies: ext_deps)
