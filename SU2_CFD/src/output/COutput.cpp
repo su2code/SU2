@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -376,7 +376,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-      
+
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
@@ -400,13 +400,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-        
+
 
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 ASCII restart" << fileName + extension;
 
         if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;  
+          (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;
       }
 
       fileWriter = new CSU2FileWriter(volumeDataSorter);
@@ -422,8 +422,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-        
-      
+
+
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 binary restart" << fileName + extension;
 
@@ -433,8 +433,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       }
 
       fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
-      
-  
+
+
       break;
 
     case OUTPUT_TYPE::MESH:
@@ -575,7 +575,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       {
 
         extension = CParaviewVTMFileWriter::fileExt;
-       
+
         /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
 
         fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
@@ -602,7 +602,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
 
         CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
-        
+
         /*--- then we write the data into the folder---*/
         vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
 
@@ -880,12 +880,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
     fileWriter->Write_Data(fileName);
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
-  
+
     /*--- Write data with iteration number to file ---*/
 
     if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
-      fileWriter->Write_Data(filename_iter); 
-    
+      fileWriter->Write_Data(filename_iter);
+
       /*--- overwrite bandwidth ---*/
       BandWidth = fileWriter->Get_Bandwidth();
 

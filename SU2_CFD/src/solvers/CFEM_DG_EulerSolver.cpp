@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -5757,7 +5757,7 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
     case FEM_SHOCK_CAPTURING_DG::NONE:
       break;
     case FEM_SHOCK_CAPTURING_DG::PERSSON:
-      // to be done 
+      // to be done
       //Shock_Capturing_DG_Persson(elemBeg, elemEnd, workArray);
       break;
   }

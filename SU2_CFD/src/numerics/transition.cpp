@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -588,7 +588,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
 //  tu = 0.0;
 //  rey  = config->GetReynolds();
 //  mach = config->GetMach();
-  /* --- turbulence intensity for transition models is in percentages, so multiply by 100 ---*/ 
+  /* --- turbulence intensity for transition models is in percentages, so multiply by 100 ---*/
   tu   = 100.0 * config->GetTurbulenceIntensity_FreeStream();
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
   Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);
