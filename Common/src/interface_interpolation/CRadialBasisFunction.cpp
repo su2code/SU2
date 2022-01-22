@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

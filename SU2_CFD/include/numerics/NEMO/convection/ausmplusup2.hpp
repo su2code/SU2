@@ -2,7 +2,7 @@
  * \file ausmplusup2.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

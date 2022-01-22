@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -3,7 +3,7 @@
  * \brief Header file for the class CBoxMeshReaderFVM.
  *        The implementations are in the <i>CBoxMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

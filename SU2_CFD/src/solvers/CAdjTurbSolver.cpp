@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

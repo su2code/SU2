@@ -2,7 +2,7 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

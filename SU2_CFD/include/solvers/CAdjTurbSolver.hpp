@@ -2,7 +2,7 @@
  * \file CAdjTurbSolver.hpp
  * \brief Headers of the CAdjTurbSolver class
  * \author F. Palacios, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

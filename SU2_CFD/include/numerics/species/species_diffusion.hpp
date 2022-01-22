@@ -3,7 +3,7 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in species problems.
  * \author T. Kattmann
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

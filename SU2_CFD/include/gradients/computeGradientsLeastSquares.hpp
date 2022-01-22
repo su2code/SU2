@@ -3,7 +3,7 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

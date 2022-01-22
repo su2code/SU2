@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

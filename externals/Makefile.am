@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for external libraries
 # \author B. Kirk, T. Economon, F. Palacios
-# \version 7.2.1 "Blackbird"
+# \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

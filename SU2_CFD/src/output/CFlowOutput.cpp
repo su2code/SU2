@@ -2,7 +2,7 @@
  * \file CFlowOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1981,7 +1981,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.2.1 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.3.0 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";

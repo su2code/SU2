@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
