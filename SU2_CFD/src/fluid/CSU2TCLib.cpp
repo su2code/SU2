@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -801,7 +801,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
   su2double Keq;
   ws.resize(nSpecies,0.0);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
-    ws[iSpecies] = 0.0; 
+    ws[iSpecies] = 0.0;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -881,7 +881,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
   return ws;
 }
 
-void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, 
+void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
                                   const su2double* eve, const su2double *cvve,
                                   const su2double* dTdU, const su2double* dTvedU,
                                   su2double **val_jacobian) {
@@ -892,7 +892,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
 
   su2double T_min   = 800.0;
   su2double epsilon = 80;
-    
+
   /*--- Initializing derivative variables ---*/
   dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
   dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
@@ -902,7 +902,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
    dkf[iVar]=0.0; dRfok[iVar]=0.0;
    dkb[iVar]=0.0; dRbok[iVar]=0.0;
   }
-  
+
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
    alphak[iSpecies]=0; betak[iSpecies]=0;
   }
@@ -1102,7 +1102,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
       mu(iSpecies,jSpecies) = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
       A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
       B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
-      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42); 
+      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
 
       num   += MolarFrac[jSpecies];
       denom += MolarFrac[jSpecies] / tau_sr;

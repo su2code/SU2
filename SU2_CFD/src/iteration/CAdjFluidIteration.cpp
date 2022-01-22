@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -139,7 +139,7 @@ void CAdjFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
     case MAIN_SOLVER::ADJ_RANS:
       config[val_iZone]->SetGlobalParam(MAIN_SOLVER::ADJ_RANS, RUNTIME_ADJFLOW_SYS);
       break;
-    
+
     default:
       break;
   }
