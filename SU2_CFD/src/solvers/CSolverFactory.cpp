@@ -163,7 +163,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[ADJSPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
-      break;
+    break;
     case MAIN_SOLVER::DISC_ADJ_HEAT:
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);

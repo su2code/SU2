@@ -56,6 +56,8 @@
  */
 class CElement {
 protected:
+  enum : size_t {MAXNDIM = 3};
+
   std::vector<CGaussVariable> GaussPoint;  /*!< \brief Vector of Gaussian Points. */
 
   su2activematrix CurrentCoord;       /*!< \brief Coordinates in the current frame. */
@@ -80,6 +82,9 @@ protected:
   unsigned short nGaussPoints;        /*!< \brief Number of gaussian points. */
   unsigned short nNodes;              /*!< \brief Number of geometric points. */
   unsigned short nDim;                /*!< \brief Number of dimension of the problem. */
+
+  su2activematrix HiHj = 0.0;                        /*!< \brief Scalar product of 2 ansatz functions. */
+  std::vector<std::vector<su2activematrix>> DHiDHj;  /*!< \brief Scalar product of the gradients of 2 ansatz functions. */
 
 public:
   enum FrameType {REFERENCE=1, CURRENT=2}; /*!< \brief Type of nodal coordinates. */
@@ -114,6 +119,12 @@ public:
    * \note The current coordinates need to be set before calling this method.
    */
   virtual void ComputeGrad_NonLinear(void) = 0;
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions wrt the reference configuration.
+   * \note This method assumes that we have a surface element embedded in higher dimensions.
+   */
+  virtual void ComputeGrad_SurfaceEmbedded(void) = 0;
 
   /*!
    * \brief Sets matrices to 0.
@@ -419,6 +430,13 @@ public:
   inline unsigned long Get_iProp(void) const {return iProp;}
 
   /*!
+   * \brief Compute the value of the length of the element.
+   * \param[in] mode - Type of coordinates to consider in the computation.
+   * \return Length of the (1D) element.
+   */
+  inline virtual su2double ComputeLength(const FrameType mode = REFERENCE) const {return 0.0;}
+
+  /*!
    * \brief Compute the value of the area of the element.
    * \param[in] mode - Type of coordinates to consider in the computation.
    * \return Area of the (2D) element.
@@ -450,9 +468,9 @@ public:
    * because inactive variables are ignored.
    */
   inline void SetPreaccIn_Coords(bool nonlinear = true) {
-    AD::SetPreaccIn(RefCoord.data(), nNodes*nDim);
+    AD::SetPreaccIn(RefCoord.data(), nNodes*MAXNDIM);
     if (nonlinear)
-      AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
+      AD::SetPreaccIn(CurrentCoord.data(), nNodes*MAXNDIM);
   }
 
   /*!
@@ -477,6 +495,62 @@ public:
     AD::SetPreaccOut(FDL_a.data(), nNodes*nDim);
   }
 
+ /*!
+  * \brief Add the scalar product of the shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[in] val - value of the scalar product of ansatz function.
+  */
+  inline void Add_HiHj(su2double val, unsigned short nodeA, unsigned short nodeB) { HiHj[nodeA][nodeB] += val; }
+
+  /*!
+   * \brief Add the scalar product of the gradients of shape functions to the tangent matrix.
+   * \param[in] nodeA - index of Node a.
+   * \param[in] nodeB - index of Node b.
+   * \param[in] val - value of the scalar product of gradients of ansatz function.
+   */
+  template <class MatrixType>
+  inline void Add_DHiDHj(const MatrixType& val, unsigned short nodeA, unsigned short nodeB) {
+    unsigned short iDim, jDim;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        DHiDHj[nodeA][nodeB][iDim][jDim] += val[iDim][jDim];
+      }
+    }
+  }
+
+ /*!
+  * \brief Add the transposed scalar product of the gradients of shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[in] val - value of the term that will contribute.
+  */
+  template <class MatrixType>
+  inline void Add_DHiDHj_T(const MatrixType& val, unsigned short nodeA, unsigned short nodeB) {
+    unsigned short iDim, jDim;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        DHiDHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
+      }
+    }
+  }
+
+ /*!
+  * \brief Get the scalar product of the shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[out] val - value of the scalar product of ansatz function.
+  */
+ inline su2double Get_HiHj(unsigned short nodeA, unsigned short nodeB)  { return HiHj[nodeA][nodeB]; }
+
+ /*!
+  * \brief Get the scalar product of the gradients of shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \return val - value of the scalar product of gradients of ansatz function.
+  */
+ inline su2activematrix& Get_DHiDHj(unsigned short nodeA, unsigned short nodeB) { return DHiDHj[nodeA][nodeB];}
+
 };
 
 /*!
@@ -487,6 +561,14 @@ public:
 template<unsigned short NGAUSS, unsigned short NNODE, unsigned short NDIM>
 class CElementWithKnownSizes : public CElement {
 private:
+
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][1], su2double ad[][1]) {
+    /*--- Adjoint to Jacobian, we put 1.0 here so that ad/detJac is the inverse later ---*/
+    ad[0][0] = 1.0;
+    /*--- Determinant of Jacobian ---*/
+    return Jacobian[0][0];
+  }
+
   FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][2], su2double ad[][2]) {
     ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
     ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
@@ -509,7 +591,7 @@ private:
   }
 
 protected:
-  static_assert(NDIM==2 || NDIM==3, "ComputeGrad_impl expects 2D or 3D");
+  static_assert(NDIM==1 || NDIM==2 || NDIM==3, "ComputeGrad_impl expects 1D, 2D or 3D");
 
   su2double GaussCoord[NGAUSS][NDIM];   /*!< \brief Coordinates of the integration points. */
   su2double dNiXj[NGAUSS][NNODE][NDIM]; /*!< \brief Shape function derivatives evaluated at the Gauss points. */
@@ -549,6 +631,11 @@ protected:
           for (jDim = 0; jDim < NDIM; jDim++)
             Jacobian[iDim][jDim] += Coord(iNode,jDim) * dNiXj[iGauss][iNode][iDim];
 
+      if (NDIM==1) {
+        /*--- Obviously the Jacobian is the slope of the line ---*/
+        Jacobian[0][0] = (Coord[1][0] - Coord[0][0]);
+      }
+
       /*--- Adjoint to the Jacobian and determinant ---*/
 
       auto detJac = JacobianAdjoint(Jacobian, ad);
@@ -583,6 +670,109 @@ protected:
 
   }
 
+  template<FrameType FRAME>
+  void ComputeGrad_impl_surf_embedded() {
+
+    /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
+          for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
+    const su2activematrix& Coord = (FRAME==REFERENCE) ? RefCoord : CurrentCoord;
+
+    if (NDIM==1) {
+      unsigned short iNode, iDim, iGauss;
+      su2double Jacobian[2];
+      su2double val_grad;
+
+      Jacobian[0] = (Coord[1][0] - Coord[0][0]);
+      Jacobian[1] = (Coord[1][1] - Coord[0][1]);
+      const su2double JTJ = Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1];
+      const su2double volJacobian = sqrt(JTJ);
+
+      for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
+
+        GaussPoint[iGauss].SetJ_X(volJacobian);
+
+        for (iNode = 0; iNode < NNODE; iNode++) {
+          for (iDim=0; iDim<NDIM+1; iDim++) {
+            val_grad = Jacobian[iDim]*dNiXj[iGauss][iNode][0]/JTJ;
+            GaussPoint[iGauss].SetGradNi_Xj( val_grad, iDim, iNode);
+          }
+        }
+      }
+
+    } else if (NDIM==2) {
+
+      su2double Jacobian[NDIM+1][NDIM], JTJ[NDIM][NDIM];
+      su2double volJacobian;
+      unsigned short iShape, iDim, jDim, jVertex, kDim, iGauss;
+
+      for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
+
+        /*--- Jacobian transformation ---*/
+        /*--- This does dX/dXi transpose ---*/
+        if(NNODE==3) {
+          for (iDim = 0; iDim < NDIM+1; iDim++) {
+            for (jVertex = 0; jVertex < NDIM; jVertex++) {
+              Jacobian[iDim][jVertex] = Coord[jVertex+1][iDim] - Coord[0][iDim];
+            }
+          }
+        }
+        if (NNODE==4) {
+          for (iDim = 0; iDim < NDIM+1; iDim++) {
+            Jacobian[iDim][0] = (Coord[1][iDim] - Coord[0][iDim])/2;
+            Jacobian[iDim][1] = (Coord[3][iDim] - Coord[0][iDim])/2;
+          }
+        }
+
+        for (iDim = 0; iDim < NDIM; iDim++) {
+          for (jDim = 0; jDim < NDIM; jDim++) {
+            JTJ[iDim][jDim] = 0.0;
+            for (kDim = 0; kDim < NDIM+1; kDim++) {
+              JTJ[iDim][jDim] += Jacobian[kDim][iDim]*Jacobian[kDim][jDim];
+            }
+          }
+        }
+
+        /*--- matrix volume of Jacobian ---*/
+        const su2double detJacobian=JTJ[0][0]*JTJ[1][1]-JTJ[0][1]*JTJ[1][0];
+
+        volJacobian = sqrt(detJacobian);
+
+        GaussPoint[iGauss].SetJ_X(volJacobian);
+
+        /*--- Derivatives with respect to global coordinates ---*/
+
+        su2double JTJinv[2][2];
+        JTJinv[0][0]=JTJ[1][1]/detJacobian;
+        JTJinv[1][1]=JTJ[0][0]/detJacobian;
+        JTJinv[0][1]=-JTJ[0][1]/detJacobian;
+        JTJinv[1][0]=-JTJ[1][0]/detJacobian;
+
+        su2double Jdagger[2][3];
+
+        for (iDim = 0; iDim < NDIM; iDim++) {
+          for (jDim = 0; jDim < NDIM+1; jDim++) {
+            Jdagger[iDim][jDim] = 0.0;
+            for (kDim = 0; kDim < NDIM; kDim++) {
+              Jdagger[iDim][jDim] += JTJinv[iDim][kDim]*Jacobian[jDim][kDim];
+            }
+          }
+        }
+
+        su2double GradOut[NDIM+1];
+        for (iShape = 0; iShape < NNODE; iShape++) {
+          for (iDim = 0; iDim < NDIM+1; iDim++) {
+            GradOut[iDim] = 0.0;
+            for (jDim = 0; jDim < NDIM; jDim++) {
+              GradOut[iDim] += Jdagger[jDim][iDim]*dNiXj[iGauss][iShape][jDim];
+            }
+            GaussPoint[iGauss].SetGradNi_Xj(GradOut[iDim], iDim, iShape);
+          }
+        }
+
+      }
+    }
+  }
+
 public:
   /*!
    * \brief Set the value of the gradient of the shape functions wrt the reference configuration.
@@ -593,6 +783,11 @@ public:
    * \brief Set the value of the gradient of the shape functions wrt the current configuration.
    */
   void ComputeGrad_NonLinear(void) final { ComputeGrad_impl<CURRENT>(); }
+
+  /*!
+   * \brief Overload needed for deformed 2D elements on a surface in 3D or 1D elements on a 2D curve.
+   */
+  void ComputeGrad_SurfaceEmbedded() final { ComputeGrad_impl_surf_embedded<REFERENCE>(); }
 
 };
 
@@ -772,3 +967,106 @@ public:
 
 };
 
+/*!
+ * \class CTRIA3
+ * \brief Tria element with 3 Gauss Points
+ * \author T.Dick
+ */
+class CTRIA3 final : public CElementWithKnownSizes<3,3,2> {
+private:
+  enum : unsigned short {NGAUSS = 3};
+  enum : unsigned short {NNODE = 3};
+  enum : unsigned short {NDIM = 2};
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTRIA3();
+
+  /*!
+   * \brief Compute the value of the area of the element.
+   * \param[in] mode - Type of coordinates to consider in the computation.
+   * \return Area of the element.
+   */
+  su2double ComputeArea(const FrameType mode = REFERENCE) const override;
+
+};
+
+/*!
+ * \class CTETRA4
+ * \brief Tetrahedral element with 4 Gauss Points
+ * \author T.Dick
+ */
+class CTETRA4 final : public CElementWithKnownSizes<4,4,3> {
+private:
+  enum : unsigned short {NGAUSS = 4};
+  enum : unsigned short {NNODE = 4};
+  enum : unsigned short {NDIM = 3};
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTETRA4();
+
+  /*!
+   * \brief Compute the value of the area of the element.
+   * \param[in] mode - Type of coordinates to consider in the computation.
+   * \return Area of the element.
+   */
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
+
+};
+
+/*!
+ * \class CPYRAM6
+ * \brief Pyramid element with 6 Gauss Points
+ * \author T.Dick
+ */
+class CPYRAM6 final : public CElementWithKnownSizes<6,5,3> {
+private:
+  enum : unsigned short {NGAUSS = 6};
+  enum : unsigned short {NNODE = 5};
+  enum : unsigned short {NDIM = 3};
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPYRAM6();
+
+  /*!
+   * \brief Compute the value of the volume of the element.
+   * \param[in] mode - Type of coordinates to consider in the computation.
+   * \return Volume of the element.
+   */
+  su2double ComputeVolume(const FrameType mode = REFERENCE) const override;
+
+};
+
+/*!
+ * \class CLINE
+ * \brief line element with 2 Gauss Points
+ * \author T.Dick
+ */
+class CLINE final : public CElementWithKnownSizes<2,2,1> {
+private:
+  enum : unsigned short {NGAUSS = 2};
+  enum : unsigned short {NNODE = 2};
+  enum : unsigned short {NDIM = 1};
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CLINE();
+
+  /*!
+   * \brief Compute the value of the area of the element.
+   * \param[in] mode - Type of coordinates to consider in the computation.
+   * \return Area of the element.
+   */
+  su2double ComputeLength(const FrameType mode = REFERENCE) const override;
+
+};

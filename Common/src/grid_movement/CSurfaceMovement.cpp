@@ -2979,7 +2979,7 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 
         /*--- CST computation ---*/
         su2double fact_n = 1;
-  su2double fact_cst = 1;
+        su2double fact_cst = 1;
         su2double fact_cst_n = 1;
 
   for (int i = 1; i <= maxKulfanNum; i++) {

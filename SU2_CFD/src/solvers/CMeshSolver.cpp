@@ -33,7 +33,7 @@
 using namespace GeometryToolbox;
 
 
-CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true) {
+CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINEAR_SOLVER_MODE::MESH_DEFORM) {
 
   /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 

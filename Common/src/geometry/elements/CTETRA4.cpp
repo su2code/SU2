@@ -1,7 +1,7 @@
 /*!
- * \file CTETRA1.cpp
- * \brief Definition of 4-node tetra element with 1 Gauss point.
- * \author R. Sanchez
+ * \file CTETRA4.cpp
+ * \brief Definition of 4-node tetrahedral element with 4 Gauss point.
+ * \author T. Dick
  * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,18 +28,23 @@
 #include "../../../include/geometry/elements/CElement.hpp"
 #include "../../../include/toolboxes/geometry_toolbox.hpp"
 
-CTETRA1::CTETRA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
+CTETRA4::CTETRA4() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight(0) = 1.0/6.0;
+  su2double r = ((5.0-sqrt(5.0))/20);
+  su2double s = ((5.0+3*sqrt(5.0))/20);
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight(0) = 1.0/24.0;
+  GaussCoord[0][0] = s;  GaussCoord[0][1] = r; GaussCoord[0][2] = r;  GaussWeight(1) = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = s; GaussCoord[0][2] = r;  GaussWeight(2) = 1.0/24.0;
+  GaussCoord[0][0] = r;  GaussCoord[0][1] = r; GaussCoord[0][2] = s;  GaussWeight(3) = 1.0/24.0;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
   unsigned short iGauss;
   su2double Xi, Eta, Zeta, val_Ni;
 
-  for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
 
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
@@ -60,7 +65,7 @@ CTETRA1::CTETRA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
   }
 
   /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
-  /*--- The stress is constant at a TETRA1 element ---*/
+  /*--- TODO: Use correct extrapolation, currently assumes stress is constant similar to TETRA1 element ---*/
 
   NodalExtrap[0][0] = 1.0;
   NodalExtrap[1][0] = 1.0;
@@ -69,7 +74,7 @@ CTETRA1::CTETRA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
 }
 
-su2double CTETRA1::ComputeVolume(const FrameType mode) const {
+su2double CTETRA4::ComputeVolume(const FrameType mode) const {
 
   unsigned short iDim;
   su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};

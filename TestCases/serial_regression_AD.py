@@ -279,7 +279,7 @@ def main():
 
     ######################################
     ### RUN TESTS                      ###
-    ######################################  
+    ######################################
 
     pass_list = [ test.run_test() for test in test_list ]
     
@@ -388,6 +388,23 @@ def main():
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+
+
+    ###################################
+    ### Sobolev Gradient Smoothing  ###
+    ###################################
+
+    grad_smooth_naca0012           = TestCase('grad_smooth_naca0012')
+    grad_smooth_naca0012.cfg_dir   = "grad_smooth/naca0012"
+    grad_smooth_naca0012.cfg_file  = "inv_NACA0012_gradsmooth.cfg"
+    grad_smooth_naca0012.test_iter = 1
+    grad_smooth_naca0012.su2_exec  = "SU2_DOT_AD"
+    grad_smooth_naca0012.timeout   = 1600
+    grad_smooth_naca0012.tol       = 0.00001
+    grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
+    grad_smooth_naca0012.test_file = "of_hess.dat"
+    pass_list.append(grad_smooth_naca0012.run_filediff())
+    test_list.append(grad_smooth_naca0012)
 
     # Tests summary
     print('==================================================================')

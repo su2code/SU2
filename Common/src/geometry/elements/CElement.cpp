@@ -36,8 +36,10 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
 
   /*--- Allocate structures. ---*/
 
-  CurrentCoord.resize(nNodes, nDim) = su2double(0.0);
-  RefCoord.resize(nNodes, nDim) = su2double(0.0);
+  /*--- Always allocate MAXNDIM to have enough space in all cases.
+   * e.g. elements embedded on a curved surfaces. ---*/
+  CurrentCoord.resize(nNodes, MAXNDIM) = su2double(0.0);
+  RefCoord.resize(nNodes, MAXNDIM) = su2double(0.0);
 
   GaussPoint.reserve(nGaussPoints);
   for(unsigned short iGauss = 0; iGauss < nGaussPoints; ++iGauss)
@@ -56,6 +58,13 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
   Kt_a.resize(nNodes, nDim);
   FDL_a.resize(nNodes, nDim);
 
+  HiHj.resize(nNodes,nNodes);
+  DHiDHj.resize(nNodes);
+  for(auto& DHiDHj_a : DHiDHj) {
+    DHiDHj_a.resize(nNodes);
+    for(auto& DHiDHj_ab : DHiDHj_a) DHiDHj_ab.resize(nDim,nDim);
+  }
+
   ClearElement();
 }
 
@@ -66,6 +75,10 @@ void CElement::ClearElement(void) {
   FDL_a.setConstant(0.0);
   Ks_ab.setConstant(0.0);
 
+  HiHj.setConstant(0.0);
+  for(auto& DHiDHj_a : DHiDHj) {
+    for(auto& DHiDHj_ab : DHiDHj_a) DHiDHj_ab.setConstant(0.0);
+  }
   for(auto& kab_i : Kab)
     kab_i.setConstant(0.0);
 }

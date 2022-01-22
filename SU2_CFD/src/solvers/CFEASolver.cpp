@@ -31,28 +31,15 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
-#include <unordered_set>
-#include <unordered_map>
 
 using namespace GeometryToolbox;
 
 
-CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
-
-  nElement = 0;
-  nDim = 0;
-  nMarker = 0;
-
-  nPoint = 0;
-  nPointDomain = 0;
+CFEASolver::CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode) : CFEASolverBase(mesh_deform_mode) {
 
   Total_CFEA = 0.0;
   WAitken_Dyn = 0.0;
   WAitken_Dyn_tn1 = 0.0;
-
-  element_container = new CElement** [MAX_TERMS]();
-  for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   topol_filter_applied = false;
   element_based = false;
@@ -60,7 +47,7 @@ CFEASolver::CFEASolver(bool mesh_deform_mode) : CSolver(mesh_deform_mode) {
 
 }
 
-CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
+CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(geometry, config) {
 
   bool dynamic = (config->GetTime_Domain());
 
@@ -72,19 +59,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   topol_filter_applied = false;
   initial_calc = true;
 
-  nElement      = geometry->GetnElem();
-  nDim          = geometry->GetnDim();
-  nMarker       = geometry->GetnMarker();
-
-  nPoint        = geometry->GetnPoint();
-  nPointDomain  = geometry->GetnPointDomain();
-
   /*--- Here is where we assign the kind of each element ---*/
-
-  /*--- First level: different possible terms of the equations ---*/
-  element_container = new CElement** [MAX_TERMS]();
-  for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS*omp_get_max_threads()]();
 
   SU2_OMP_PARALLEL
   {
@@ -242,16 +217,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 CFEASolver::~CFEASolver(void) {
 
-  if (element_container != nullptr) {
-    for (unsigned int iVar = 0; iVar < MAX_TERMS; iVar++) {
-      for (unsigned int jVar = 0; jVar < MAX_FE_KINDS*omp_get_max_threads(); jVar++) {
-        delete element_container[iVar][jVar];
-      }
-      delete [] element_container[iVar];
-    }
-    delete [] element_container;
-  }
-
   if (element_properties != nullptr) {
     for (unsigned long iElem = 0; iElem < nElement; iElem++)
       delete element_properties[iElem];
@@ -260,12 +225,12 @@ CFEASolver::~CFEASolver(void) {
 
   delete [] iElem_iDe;
 
-  delete nodes;
-
   if (LockStrategy) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       omp_destroy_lock(&UpdateLocks[iPoint]);
   }
+
+  delete nodes;
 }
 
 void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
@@ -584,42 +549,7 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
     }
   }
 
-  const unordered_set<unsigned long> markerPoints(myPoints.begin(), myPoints.end());
-
-  vector<unsigned long> numPoints(size);
-  unsigned long num = myPoints.size();
-  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
-  /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
-  unordered_map<unsigned long, unsigned long> Global2Local;
-  for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
-    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
-  }
-
-  /*--- Populate elimination list. ---*/
-  ExtraVerticesToEliminate.clear();
-
-  for (int i = 0; i < size; ++i) {
-    /*--- Send our point list. ---*/
-    if (rank == i) {
-      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, SU2_MPI::GetComm());
-      continue;
-    }
-
-    /*--- Receive point list. ---*/
-    vector<unsigned long> theirPoints(numPoints[i]);
-    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, SU2_MPI::GetComm());
-
-    for (auto iPointGlobal : theirPoints) {
-      /*--- Check if the rank has the point. ---*/
-      auto it = Global2Local.find(iPointGlobal);
-      if (it == Global2Local.end()) continue;
-
-      /*--- If the point is not covered by this rank's markers, mark it for elimination. ---*/
-      if (markerPoints.count(iPointGlobal) == 0)
-        ExtraVerticesToEliminate.push_back(it->second);
-    }
-  }
+  CommunicateExtraEliminationVertices(geometry, myPoints);
 
 }
 

@@ -38,6 +38,7 @@
 #include <string>
 
 #include "CSysVector.hpp"
+#include "../option_structure.hpp"
 
 class CConfig;
 class CGeometry;
@@ -75,9 +76,10 @@ public:
 
 private:
   const ScalarType eps;      /*!< \brief Machine epsilon used in this class. */
-  bool mesh_deform;          /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
   ScalarType Residual=1e-20; /*!< \brief Residual at the end of a call to Solve or Solve_b. */
   unsigned long Iterations=0;/*!< \brief Iterations done in Solve or Solve_b. */
+
+  LINEAR_SOLVER_MODE lin_sol_mode;  /*!< \brief Type of operation for the linear system solver, changes the source of solver options. */
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
@@ -290,9 +292,9 @@ public:
 
   /*!
    * \brief default constructor of the class.
-   * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
+   * \param[in] linear_solver_mode - enum, to let CSysSolve know in what context it is
    */
-  CSysSolve(const bool mesh_deform_mode = false);
+  CSysSolve(LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
