@@ -3,7 +3,7 @@
 ## \file pysu2_nastran.py
 #  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #

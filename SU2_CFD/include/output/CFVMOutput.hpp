@@ -2,7 +2,7 @@
  * \file CFVMOutput.hpp
  * \brief  Headers of the Finite Volume Method output.
  * \author T. Kattmann
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

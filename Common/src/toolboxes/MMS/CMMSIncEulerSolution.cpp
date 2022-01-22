@@ -2,7 +2,7 @@
  * \file CMMSIncEulerSolution.cpp
  * \brief Implementations of the member functions of CMMSIncEulerSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

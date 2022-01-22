@@ -2,7 +2,7 @@
  * \file graph_coloring_structure.cpp
  * \brief Functions used to carry out the coloring of a given graph.
  * \author E. van der Weide
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

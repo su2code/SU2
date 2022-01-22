@@ -3,7 +3,7 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

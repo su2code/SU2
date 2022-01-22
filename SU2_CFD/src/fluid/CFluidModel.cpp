@@ -2,7 +2,7 @@
  * \file CFluidModel.cpp
  * \brief Source of the fluid model base class containing thermo-physical subroutines.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

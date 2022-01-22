@@ -1,7 +1,7 @@
 ﻿/*!
  * \file scalar_sources.hpp
  * \brief Delarations of numerics classes for integration of source terms in scalar problems.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

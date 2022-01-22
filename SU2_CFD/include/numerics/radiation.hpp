@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the classes used to compute
  *        residual terms in radiation problems.
  * \author Ruben Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

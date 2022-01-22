@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for integration of source
  *        terms in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -162,7 +162,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_COMP final : public CSourceBase_TurbSA {
@@ -200,7 +200,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_E final : public CSourceBase_TurbSA {
@@ -236,7 +236,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
 template <class FlowIndices>
 class CSourcePieceWise_TurbSA_E_COMP : public CSourceBase_TurbSA {

@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
