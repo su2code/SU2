@@ -1,4 +1,4 @@
-if build_machine.system() == 'windows' or meson.get_compiler('c').get_id() == 'intel'
+if target_machine.system() == 'windows' or meson.get_compiler('c').get_id() == 'intel'
   hdf5_default_warnings = []
 else
   hdf5_default_warnings = ['-Wno-unused-result',
@@ -46,7 +46,7 @@ if opt_szip.found()
 endif
 
 
-if build_machine.system() == 'windows'
+if target_machine.system() == 'windows'
   hdf5_conf_data.set('H5_HAVE_WINDOWS', 1)
   hdf5_conf_data.set('H5_HAVE_WINDOW_PATH', 1)
   hdf5_conf_data.set('H5_HAVE_MINGW', 1)
@@ -66,8 +66,8 @@ if build_machine.system() == 'windows'
   hdf5_conf_data.set('H5_HAVE_LIBWSOCK32', 1)
 endif
 
-if build_machine.system() != 'windows'
-  if build_machine.endian() == 'big'
+if target_machine.system() != 'windows'
+  if target_machine.endian() == 'big'
     hdf5_conf_data.set('H5_WORDS_BIGENDIAN', 1)
   else
     hdf5_conf_data.set('H5_WORDS_BIGENDIAN', 0)
@@ -75,10 +75,14 @@ if build_machine.system() != 'windows'
 endif
 
 
-if build_machine.system() == 'windows'
+if target_machine.system() == 'windows'
   hdf5_conf_data.set('H5_DEFAULT_PLUGINDIR', '%ALLUSERSPROFILE%\\\\hdf5\\\\lib\\\\plugin')
 else
   hdf5_conf_data.set('H5_DEFAULT_PLUGINDIR', '/usr/local/hdf5/lib/plugin')
+endif
+
+if target_machine.system()=='darwin'
+  hdf5_conf_data.set('H5_HAVE_DARWIN', 1)
 endif
 
 #if cc.has_function('difftime', prefix : '#include <time.h>')
@@ -143,7 +147,7 @@ if cc.has_header('io.h')
   hdf5_conf_data.set('H5_HAVE_IO_H', 1)
 endif
 
-if build_machine.system() != 'windows'
+if target_machine.system() != 'windows'
   hdf5_conf_data.set('H5_HAVE_WINSOCK2_H', cc.has_header('winsock2.h'))
 endif
 
@@ -253,15 +257,16 @@ else
   hdf5_conf_data.set('H5_HAVE_LIBUCB', 1)
 endif
 
-
-defs = [
-	'-D_FILE_OFFSET_BITS=64',
- 	'-D_LARGEFILE64_SOURCE',
- 	'-D_LARGEFILE_SOURCE',
-]
-
+defs = []
 #if  not windows or mingw
-defs += ['-D_POSIX_C_SOURCE=200809L', '-D_GNU_SOURCE',]
+if target_machine.system()!='darwin'
+  defs += [
+        '-D_FILE_OFFSET_BITS=64',
+        '-D_LARGEFILE64_SOURCE',
+        '-D_LARGEFILE_SOURCE',]
+
+  defs += ['-D_POSIX_C_SOURCE=200809L', '-D_GNU_SOURCE',]
+endif
 #endif
 
 if not(cc.has_function('lseek64', prefix: '''#include <sys/types.h>
@@ -305,7 +310,7 @@ hdf5_conf_data.set('H5_SIZEOF_INT', cc.sizeof('int'))
 hdf5_conf_data.set('H5_SIZEOF_UNSIGNED', cc.sizeof('unsigned'))
 
 
-if build_machine.system() != 'darwin'
+if target_machine.system() != 'darwin'
   hdf5_conf_data.set('H5_SIZEOF_LONG', cc.sizeof('long'))
 endif
 
@@ -347,7 +352,7 @@ hdf5_conf_data.set('H5_SIZEOF_INT_LEAST64_T',    cc.sizeof ('int_least64_t', pre
 hdf5_conf_data.set('H5_SIZEOF_UINT_LEAST64_T',   cc.sizeof ('uint_least64_t', prefix:'#include <stdint.h>'))
 hdf5_conf_data.set('H5_SIZEOF_INT_FAST64_T',     cc.sizeof ('int_fast64_t', prefix:'#include <stdint.h>'))  
 hdf5_conf_data.set('H5_SIZEOF_UINT_FAST64_T',    cc.sizeof ('uint_fast64_t', prefix:'#include <stdint.h>'))
-if build_machine.system() != 'darwin'
+if target_machine.system() != 'darwin'
   hdf5_conf_data.set('H5_SIZEOF_SIZE_T', cc.sizeof('size_t'))
   hdf5_conf_data.set('H5_SIZEOF_SSIZE_T', cc.sizeof('ssize_t'))
   if hdf5_conf_data.get('H5_SIZEOF_SSIZE_T') < 1
@@ -467,7 +472,7 @@ hdf5_conf_data.set('H5_GETTIMEOFDAY_GIVE_TZ', cc.compiles(code_gettimeofday_give
 hdf5_conf_data.set('H5_HAVE_TM_ZONE', 1)
 hdf5_conf_data.set('H5_HAVE_STRUCT_TM_TM_ZONE', 1)
 
-if build_machine.system() != 'windows'
+if target_machine.system() != 'windows'
   hdf5_conf_data.set('H5_HAVE_TIMEZONE', 1)
 endif
 
@@ -559,7 +564,7 @@ hdf5_conf_data.set('H5_HAVE_SOCKLEN_T', 1)
 #
 
 # Check IOEO
-if build_machine.system() == 'windows'
+if target_machine.system() == 'windows'
   code_ioeo='''
 #include <windows.h>
 typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
@@ -613,11 +618,6 @@ hdf5_conf_data.set('H5_WANT_DCONV_EXCEPTION', 1)
 hdf5_conf_data.set('H5_USE_FILE_LOCKING', 1)
 hdf5_conf_data.set('H5_IGNORE_DISABLED_FILE_LOCKS', 1)
 hdf5_conf_data.set('H5_HAVE_LARGE_HSIZET', 1)
-
-if build_machine.system() == 'darwin'
-  hdf5_conf_data.set('H5_HAVE_DARWIN', 1)
-endif
-
 
 if mpi
   hdf5_conf_data.set('H5_HAVE_PARALLEL', 1)
