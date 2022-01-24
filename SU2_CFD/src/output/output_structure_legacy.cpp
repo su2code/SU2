@@ -2794,8 +2794,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
     Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2022, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
-    Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
+    Breakdown_file << "| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
