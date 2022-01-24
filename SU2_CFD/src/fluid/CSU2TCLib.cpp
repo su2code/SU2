@@ -2,14 +2,14 @@
  * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1198,7 +1198,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-    if(vibe_only == true) {eves[iSpecies] = Ev;}
+    if (vibe_only == true) {eves[iSpecies] = Ev;}
     else {eves[iSpecies] = Ev + Eel;}
   }
 
@@ -1218,7 +1218,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
   su2double Keq;
   ws.resize(nSpecies,0.0);
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
-    ws[iSpecies] = 0.0; 
+    ws[iSpecies] = 0.0;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -1298,7 +1298,7 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
   return ws;
 }
 
-void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, 
+void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
                                   const su2double* eve, const su2double *cvve,
                                   const su2double* dTdU, const su2double* dTvedU,
                                   su2double **val_jacobian) {
@@ -1309,7 +1309,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
 
   su2double T_min   = 800.0;
   su2double epsilon = 80;
-    
+
   /*--- Initializing derivative variables ---*/
   dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
   dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
@@ -1319,7 +1319,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V,
    dkf[iVar]=0.0; dRfok[iVar]=0.0;
    dkb[iVar]=0.0; dRbok[iVar]=0.0;
   }
-  
+
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
    alphak[iSpecies]=0; betak[iSpecies]=0;
   }

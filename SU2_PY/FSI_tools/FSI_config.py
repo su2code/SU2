@@ -3,7 +3,7 @@
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

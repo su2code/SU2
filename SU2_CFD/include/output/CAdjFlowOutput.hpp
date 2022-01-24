@@ -2,14 +2,14 @@
  * \file CAdjFlowOutput.hpp
  * \brief Headers of the adjoint flow output.
  * \author T. Kattmann
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 /*! \class CAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
  *  \author T. Kattmann
- *  \date December 3, 2021.
+ *  \date December 3, 2022.
  */
 class CAdjFlowOutput : public COutput {
  protected:

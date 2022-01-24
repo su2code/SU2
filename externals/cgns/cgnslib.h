@@ -24,10 +24,15 @@
 
   3. This notice may not be removed or altered from any source distribution.
 
- * -------------------------------------------------------------------------
- * 
- *  DEVELOPER'S NOTE:
- *    When adding a defined constant to this file, also add the same defined 
+ *    _____ __  __ _____   ____  _____ _______       _   _ _______
+ *   |_   _|  \/  |  __ \ / __ \|  __ \__   __|/\   | \ | |__   __|
+ *     | | | \  / | |__) | |  | | |__) | | |  /  \  |  \| |  | |
+ *     | | | |\/| |  ___/| |  | |  _  /  | | / /\ \ | . ` |  | |
+ *    _| |_| |  | | |    | |__| | | \ \  | |/ ____ \| |\  |  | |
+ *   |_____|_|  |_|_|     \____/|_|  \_\ |_/_/    \_\_| \_|  |_|
+ *
+ * -------------------  DEVELOPER'S NOTES  ---------------------------
+ *    (1) When adding a defined constant to this file, also add the same defined 
  *    constant to cgns_f.F90
  *          
  * ------------------------------------------------------------------------- */
@@ -35,8 +40,8 @@
 #ifndef CGNSLIB_H
 #define CGNSLIB_H
 
-#define CGNS_VERSION 4000
-#define CGNS_DOTVERS 4.00
+#define CGNS_VERSION 4200
+#define CGNS_DOTVERS 4.20
 
 #define CGNS_COMPATVERSION 2540
 #define CGNS_COMPATDOTVERS 2.54
@@ -90,7 +95,6 @@
 #define CG_MODE_READ	0
 #define CG_MODE_WRITE	1
 #define CG_MODE_MODIFY  2
-#define CG_MODE_CLOSED  3
 
 /* file types */
 
@@ -125,8 +129,19 @@
 #define CG_CONFIG_FILE_TYPE  5
 #define CG_CONFIG_RIND_INDEX 6
 
-#define CG_CONFIG_HDF5_COMPRESS   201
-#define CG_CONFIG_HDF5_MPI_COMM   202
+#define CG_CONFIG_HDF5_COMPRESS        201
+#define CG_CONFIG_HDF5_MPI_COMM        202
+#define CG_CONFIG_HDF5_DISKLESS        203
+#define CG_CONFIG_HDF5_DISKLESS_INCR   204
+#define CG_CONFIG_HDF5_DISKLESS_WRITE  205
+#define CG_CONFIG_HDF5_ALIGNMENT       206
+#define CG_CONFIG_HDF5_MD_BLOCK_SIZE   207
+#define CG_CONFIG_HDF5_BUFFER          208
+#define CG_CONFIG_HDF5_SIEVE_BUF_SIZE  209
+
+#define CG_CONFIG_RESET 1000
+
+#define CG_CONFIG_RESET_HDF5 1
 
 /* HDF5 dataset storage layout */
 
@@ -473,10 +488,12 @@ typedef enum {
   CGNS_ENUMV( RealSingle ) =3,
   CGNS_ENUMV( RealDouble ) =4,
   CGNS_ENUMV( Character ) =5,
-  CGNS_ENUMV( LongInteger ) =6
+  CGNS_ENUMV( LongInteger ) =6,
+  CGNS_ENUMV( ComplexSingle ) =7,
+  CGNS_ENUMV( ComplexDouble ) =8
 } CGNS_ENUMT( DataType_t );
 
-#define NofValidDataTypes 7
+#define NofValidDataTypes 9
 
 extern CGNSDLL const char * DataTypeName[NofValidDataTypes];
 
@@ -869,6 +886,14 @@ CGNSDLL int cg_family_name_read(int file_number, int B, int F,
 CGNSDLL int cg_family_name_write(int file_number, int B, int F,
 	const char *name, const char *family);
 
+/* FamilyTree extension */ /* ** FAMILY TREE ** */
+CGNSDLL int cg_node_family_write( const char* family_name, int* F);
+CGNSDLL int cg_node_nfamilies( int* nfamilies );
+CGNSDLL int cg_node_family_read( int F, char* family_name, int* nFamBC, int *nGeo );
+CGNSDLL int cg_node_family_name_write( const char* node_name, const char* family_name );
+CGNSDLL int cg_node_nfamily_names( int* nnames );
+CGNSDLL int cg_node_family_name_read(int N, char* node_name, char* family_name );
+  
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write FamilyName_t Nodes                                *
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -885,18 +910,31 @@ CGNSDLL int cg_multifam_write(const char *name, const char *family);
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 CGNSDLL int cg_fambc_read(int file_number, int B, int F, int BC,
-	char *fambc_name, CGNS_ENUMT(BCType_t) *bocotype);
+    char *fambc_name, CGNS_ENUMT(BCType_t) *bocotype);
 CGNSDLL int cg_fambc_write(int file_number, int B, int F,
-	const char * fambc_name, CGNS_ENUMT(BCType_t) bocotype, int *BC);
+    const char * fambc_name, CGNS_ENUMT(BCType_t) bocotype, int *BC);
+
+/* FamilyTree extension */ /* ** FAMILY TREE ** */
+
+CGNSDLL int cg_node_fambc_read( int BC, char* fambc_name,
+        CGNS_ENUMT(BCType_t) *bocotype);
+CGNSDLL int cg_node_fambc_write( const char* fambc_name,
+        CGNS_ENUMT(BCType_t) bocotype, int *BC );
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write GeometryReference_t Nodes                         *
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 CGNSDLL int cg_geo_read(int file_number, int B, int F, int G, char *geo_name,
-	char **geo_file, char *CAD_name, int *npart);
+    char **geo_file, char *CAD_name, int *npart);
 CGNSDLL int cg_geo_write(int file_number, int B, int F, const char * geo_name,
-	const char * filename, const char * CADname, int *G);
+    const char * filename, const char * CADname, int *G);
+
+/* FamilyTree extension */ /* ** FAMILY TREE ** */
+CGNSDLL int cg_node_geo_read( int G, char *geo_name,
+        char **geo_file, char *CAD_name, int *npart );
+CGNSDLL int cg_node_geo_write( const char *geo_name,
+        const char *filename, const char *CADname, int *G);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write GeometryEntity_t Nodes                            *
@@ -907,6 +945,10 @@ CGNSDLL int cg_part_read(int file_number, int B, int F, int G, int P,
 CGNSDLL int cg_part_write(int file_number, int B, int F, int G,
 	const char * part_name, int *P);
 
+/* FamilyTree extension */ /* ** FAMILY TREE ** */
+CGNSDLL int cg_node_part_read(int G, int P, char *part_name);
+CGNSDLL int cg_node_part_write(int G, const char * part_name, int *P);
+
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write GridCoordinates_t Nodes                           *
 \* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -915,6 +957,10 @@ CGNSDLL int cg_ngrids(int file_number, int B, int Z, int *ngrids);
 CGNSDLL int cg_grid_read(int file_number, int B, int Z, int G, char *gridname);
 CGNSDLL int cg_grid_write(int file_number, int B, int Z,
 	const char * zcoorname, int *G);
+CGNSDLL int cg_grid_bounding_box_read(int file_number, int B, int Z, int G,
+        CGNS_ENUMT(DataType_t) type, void* boundingbox);
+CGNSDLL int cg_grid_bounding_box_write(int file_number, int B, int Z, int G,
+        CGNS_ENUMT(DataType_t) type, void* boundingbox);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *\
  *      Read and write GridCoordinates_t/DataArray_t Nodes               *
@@ -966,6 +1012,12 @@ CGNSDLL int cg_poly_section_write(int file_number, int B, int Z,
 	const char * SectionName, CGNS_ENUMT(ElementType_t) type,
 	cgsize_t start, cgsize_t end, int nbndry, const cgsize_t * elements,
 	const cgsize_t * connect_offset, int *S);
+CGNSDLL int cg_section_general_write(int file_number, int B, int Z,
+        const char * SectionName, const CGNS_ENUMT(ElementType_t) type,
+        const CGNS_ENUMT(DataType_t) elementDataType, cgsize_t start,
+        cgsize_t end, cgsize_t elementDataSize, int nbndry, int *S);
+CGNSDLL int cg_section_initialize(int file_number, int B, int Z, int S);
+
 CGNSDLL int cg_parent_data_write(int file_number, int B, int Z, int S,
 	const cgsize_t * parent_data);
 CGNSDLL int cg_npe( CGNS_ENUMT(ElementType_t) type, int *npe);
@@ -978,8 +1030,15 @@ CGNSDLL int cg_section_partial_write(int file_number, int B, int Z,
 
 CGNSDLL int cg_elements_partial_write(int fn, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, const cgsize_t *elements);
+CGNSDLL int cg_elements_general_write(int fn, int B, int Z, int S,
+	cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type,
+        const void *elements);
+
 CGNSDLL int cg_poly_elements_partial_write(int fn, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, const cgsize_t *elements, const cgsize_t *connect_offset);
+CGNSDLL int cg_poly_elements_general_write(int fn, int B, int Z, int S,
+    cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type,
+    const void *elements, const void *connect_offset);
 
 CGNSDLL int cg_parent_data_partial_write(int fn, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, const cgsize_t *ParentData);
@@ -988,6 +1047,17 @@ CGNSDLL int cg_elements_partial_read(int file_number, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, cgsize_t *elements, cgsize_t *parent_data);
 CGNSDLL int cg_poly_elements_partial_read(int file_number, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, cgsize_t *elements, cgsize_t *connect_offset, cgsize_t *parent_data);
+
+/* For reading with a datatype different from cgsize_t. Use at your own risk */
+CGNSDLL int cg_elements_general_read(int file_number, int B, int Z, int S,
+    cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type, void* elements);
+CGNSDLL int cg_poly_elements_general_read(int file_number, int B, int Z, int S,
+    cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type, void* elements, void* connect_offset);
+CGNSDLL int cg_parent_elements_general_read(int file_number, int B, int Z, int S,
+    cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type, void* parelem);
+CGNSDLL int cg_parent_elements_position_general_read(int file_number, int B, int Z, int S,
+    cgsize_t start, cgsize_t end, CGNS_ENUMT(DataType_t) m_type, void* parface);
+
 
 CGNSDLL int cg_ElementPartialSize(int file_number, int B, int Z, int S,
 	cgsize_t start, cgsize_t end, cgsize_t *ElementDataSize);
