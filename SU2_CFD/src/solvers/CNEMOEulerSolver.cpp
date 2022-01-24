@@ -2153,6 +2153,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       V_outlet[H_INDEX]= (U_outlet[nVar-2]+Pressure)/Density;
 
       /*--- Set various quantities in the solver class ---*/
+      cout <<"V OUTLET"<<endl;
+      for (iVar = 0; iVar<nVar;iVar++)
+        cout <<V_outlet[iVar]<<endl;
       conv_numerics->SetConservative(U_domain, U_outlet);
       conv_numerics->SetPrimitive(V_domain,V_outlet);
 
