@@ -2,14 +2,14 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,7 +110,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eves);
   for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
     Enthalpys(iPoint, iSpecies) = hs[iSpecies];
-  
+
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
   const auto& thermalconductivities = fluidmodel->GetThermalConductivities();

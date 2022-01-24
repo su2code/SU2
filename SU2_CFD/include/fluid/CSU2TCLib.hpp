@@ -2,14 +2,14 @@
  * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -145,7 +145,7 @@ public:
                                                su2double **val_jacobian) final;
 
   /*!
-   * \brief Compute chemical source term jacobian. 
+   * \brief Compute chemical source term jacobian.
    */
   void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve,
                          const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,

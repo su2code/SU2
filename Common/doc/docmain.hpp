@@ -2,7 +2,7 @@
  * \file docmain.hpp
  * \brief This file contains documentation for Doxygen and does not have any significance with respect to C++.
  * \author F. Palacios
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -15,7 +15,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2022, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -33,7 +33,7 @@
  */
 
 /*! 
- * \mainpage SU2 version 7.2.1 "Blackbird"
+ * \mainpage SU2 version 7.3.0 "Blackbird"
  * SU2 suite is an open-source collection of C++ based software tools
  * to perform PDE analysis and PDE constrained optimization problems.  The toolset is designed with 
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to
