@@ -2,14 +2,14 @@
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
  * \author T. Kattmann, T. Albring
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ CSTLFileWriter::~CSTLFileWriter(){}
 
 
 void CSTLFileWriter::Write_Data(string val_filename){
-  
+
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
 
@@ -74,7 +74,7 @@ void CSTLFileWriter::Write_Data(string val_filename){
     /*--- For information how an ASCII .stl file is structured: https://en.wikipedia.org/wiki/STL_(file_format)  ---*/
     /*--- Open the STL file and write the header line. ---*/
     Surf_file.precision(6);
-  
+
     Surf_file.open(val_filename.c_str(), ios::out);
     Surf_file << "solid SU2_output" << endl;
 
