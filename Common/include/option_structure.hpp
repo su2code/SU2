@@ -1652,6 +1652,7 @@ static const MapType<std::string, ENUM_INPUT> Input_Map = {
   MakePair("BOX", BOX)
 };
 
+
 /*!
  * \brief Type of solution output file formats
  */
