@@ -126,6 +126,8 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+      cout<<"Predicted Eddy: "<<eddy_visc<<endl;
+      eddy_visc = 6e-6;
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
@@ -671,12 +673,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Apply to the linear system ---*/
-    Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-                                 (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
-    Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
+    //Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+    //                             (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
+    //Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
     
-    //Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
-    //Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dist_ij;
+    Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
+    Res_Visc[nSpecies+nDim+1] = 0.0; //(kve*(Twall-Tvej))*Area/dist_ij;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
     if (implicit) {
