@@ -1,3 +1,15 @@
+extraction:
+  cpp:
+     prepare:
+        packages: 
+          - libboost-all-dev
+     configure:
+        command:
+        - ./meson.py build --optimization=1
+     index:
+        build_command:
+        - ./ninja -C build
+
 path_classifiers:
   test:
     - TestCases/*
