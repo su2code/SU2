@@ -1736,7 +1736,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  if (config->GetFixed_CL_Mode()){
+  if (config->GetFixed_CL_Mode() ||
+      (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)){
     WriteMetaData(config);
   }
 
@@ -1757,6 +1758,8 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
   /*--- All processors open the file. ---*/
 
   if (rank == MASTER_NODE) {
+    cout << "Writing Flow Meta-Data file: " << filename << endl;
+
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
 
@@ -1782,6 +1785,10 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
       meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
+    }
+
+    if(config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      meta_file << "STREAMWISE_PERIODIC_PRESSURE_DROP=" << GetHistoryFieldValue("STREAMWISE_DP") << endl;
     }
   }
 

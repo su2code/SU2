@@ -91,8 +91,15 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Read and store the restart metadata. ---*/
 
-//    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    filename_ = "flow";
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
+  }
+  if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
+    string filename_ = "flow";
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
   }
 
   /*--- Set the gamma value ---*/
