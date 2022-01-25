@@ -2,7 +2,7 @@
  * \file CBaslineSolver_FEM.hpp
  * \brief Headers of the CBaselineSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CBaselineSolver_FEM final : public CSolver {
 protected:

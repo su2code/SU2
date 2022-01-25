@@ -2,7 +2,7 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -170,7 +170,7 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     Energy = nodes->GetSolution(iPoint, 0);
 
     /*--- Retrieve temperature from the flow solver ---*/
-    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint,nDim+1);
+    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
     /*--- Compute the divergence of the radiative flux ---*/
     SourceTerm = Absorption_Coeff*(Energy - 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0));
@@ -455,7 +455,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
       /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
       /*--- Retrieve temperature from the flow solver ---*/
-      Temperature = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint, nDim+1);
+      Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
       /*--- Compute the blackbody intensity at the wall. ---*/
       Ib_w = 4.0*STEFAN_BOLTZMANN*pow(Temperature,4.0);

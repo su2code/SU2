@@ -2,7 +2,7 @@
  * \file CMirror.hpp
  * \brief Mirror interpolation for the conservative (work-wise) approach in FSI problems.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

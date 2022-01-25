@@ -2,7 +2,7 @@
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -186,7 +186,7 @@ public:
    * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
-  inline void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) override {
+  inline void SetTau_Wall(su2double val_tauwall_i, su2double val_tauwall_j) override {
     TauWall_i = val_tauwall_i;
     TauWall_j = val_tauwall_j;
   }

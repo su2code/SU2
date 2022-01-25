@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -212,6 +212,8 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 
   /*--- Primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
+  su2double Flux_Tensor[5][3];
+
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
@@ -363,6 +365,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
@@ -547,6 +550,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(PrimVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
@@ -675,6 +679,8 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
                                              su2double val_thermal_conductivity) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
@@ -862,6 +868,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;

@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -610,11 +610,11 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetParabolic(geometry, config);
     }
 
-    /*--- Design variable not implement ---*/
+    /*--- Design variable not implemented ---*/
 
     else {
       if (rank == MASTER_NODE)
-        cout << "Design Variable not implement yet" << endl;
+        cout << "Design Variable not implemented yet" << endl;
     }
 
     /*--- Load the delta change in the design variable (finite difference step). ---*/
@@ -943,9 +943,9 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
       auto FileFormat = config[iZone]->GetVolumeOutputFiles();
-      if (FileFormat[iFile] != RESTART_ASCII &&
-          FileFormat[iFile] != RESTART_BINARY &&
-          FileFormat[iFile] != CSV)
+      if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII &&
+          FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY &&
+          FileFormat[iFile] != OUTPUT_TYPE::CSV)
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
 

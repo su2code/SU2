@@ -3,7 +3,7 @@
 ## \file updateHistoryMap.py
 #  \brief Python script for updating the historyMap.py file.
 #  \author T. Albring
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -34,6 +34,7 @@ fileList = ['CFlowOutput.cpp',
 'CHeatOutput.cpp',
 'CFlowCompFEMOutput.cpp',
 'CElasticityOutput.cpp',
+'CAdjFlowOutput.cpp',
 'CAdjHeatOutput.cpp',
 'CAdjFlowIncOutput.cpp',
 'CAdjFlowCompOutput.cpp',

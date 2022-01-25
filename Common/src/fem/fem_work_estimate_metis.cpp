@@ -3,7 +3,7 @@
  * \brief This file contains the implementation of the member functions WorkEstimateMetis
           for the FEM standard elements.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -27,6 +27,10 @@
 
 #pragma once
 
+#define ENABLE_MAPS
+#include "../../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
+
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"

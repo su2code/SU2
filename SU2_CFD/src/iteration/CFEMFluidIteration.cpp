@@ -2,7 +2,7 @@
  * \file CFEMFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,17 +47,17 @@ void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Update global parameters ---*/
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_EULER || config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)
-    config[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_EULER || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_EULER)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_EULER, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES ||
-      config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)
-    config[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES ||
+      config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_NS)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS)
-    config[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_RANS)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_RANS, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_LES) config[val_iZone]->SetGlobalParam(FEM_LES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_LES) config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_LES, RUNTIME_FLOW_SYS);
 
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
 

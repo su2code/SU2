@@ -3,7 +3,7 @@
 </p>
 
 
-# SU2 (ver. 7.1.1 "Blackbird"): The Open-Source CFD Code
+# SU2 (ver. 7.2.1 "Blackbird"): The Open-Source CFD Code
 
 Computational analysis tools have revolutionized the way we design engineering systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making multiphysics analysis and design optimization freely available as open-source software and involving everyone in its creation and development. 
 
@@ -38,7 +38,7 @@ You will find more information and the latest news in:
 
 ## Precompiled binaries for Linux, MacOS, Windows
 
-You can find precompiled binaries of the latest version on our [download page](https://su2code.github.io/download/) or under [releases](https://github.com/su2code/SU2/releases).
+You can find precompiled binaries of the latest version on our [download page](https://su2code.github.io/download.html) or under [releases](https://github.com/su2code/SU2/releases).
 
 ## Build SU2
 The build system of SU2 is based on a combination of [meson](http://mesonbuild.com/) (as the front-end) and [ninja](https://ninja-build.org/) (as the back-end). Meson is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible. Ninja is a small low-level build system with a focus on speed. 

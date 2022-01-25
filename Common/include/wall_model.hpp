@@ -2,7 +2,7 @@
  * \file wall_model.hpp
  * \brief Headers for the wall model functions for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,7 @@ class CFluidModel;
  * \class CWallModel
  * \brief Base class for defining the LES wall model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CWallModel {
 

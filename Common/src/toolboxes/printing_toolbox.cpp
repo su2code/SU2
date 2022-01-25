@@ -2,7 +2,7 @@
  * \file printing_toolbox.cpp
  * \brief Printing tools
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,10 +41,6 @@ PrintingToolbox::CTablePrinter::CTablePrinter(std::ostream * output, const std::
   align_ = RIGHT;
   inner_separator_ = separator;
   precision_ = 6;
-}
-
-PrintingToolbox::CTablePrinter::~CTablePrinter(){
-
 }
 
 int PrintingToolbox::CTablePrinter::GetNumColumns() const {
@@ -102,8 +98,6 @@ void PrintingToolbox::CTablePrinter::PrintHorizontalLine() {
 
 void PrintingToolbox::CTablePrinter::PrintHeader(){
 
-
-
   if (print_header_top_line_) PrintHorizontalLine();
   *out_stream_ << separator_;
   int indent = 0;
@@ -140,4 +134,3 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
 void PrintingToolbox::CTablePrinter::PrintFooter(){
   PrintHorizontalLine();
 }
-

@@ -2,7 +2,7 @@
  * \file CAdjEulerVariable.hpp
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,6 @@ protected:
   MatrixType Psi;                /*!< \brief Vector of the adjoint variables. */
   MatrixType ForceProj_Vector;   /*!< \brief Vector d. */
   MatrixType ObjFuncSource;      /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  MatrixType IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   MatrixType HB_Source;          /*!< \brief Harmonic balance source term. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
@@ -95,14 +94,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the interior boundary jump vector vector.
-   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
-   */
-  inline void SetIntBoundary_Jump(unsigned long iPoint, const su2double *val_IntBoundary_Jump) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump(iPoint,iVar) = val_IntBoundary_Jump[iVar];
-  }
-
-  /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
    */
@@ -141,12 +132,6 @@ public:
   inline su2double *GetObjFuncSource(unsigned long iPoint) final { return ObjFuncSource[iPoint]; }
 
   /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  inline su2double *GetIntBoundary_Jump(unsigned long iPoint) final { return IntBoundary_Jump[iPoint]; }
-
-  /*!
    * \brief Set the harmonic balance source term.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
@@ -169,7 +154,9 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final {
+    return Gradient_Reconstruction[iPoint];
+  }
 
   /*!
    * \brief Get the reconstruction gradient for variables at all points.

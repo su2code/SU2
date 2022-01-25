@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,24 +47,19 @@ void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *do
                                           const CConfig *donor_config, unsigned long Marker_Donor,
                                           unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned short iVar, nDonorVar;
-  nDonorVar = donor_solution->GetnPrimVar();
-
-  /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
-  bool turbulent = (nDonorVar == 2) ;
-
+  const auto nDonorVar = donor_solution->GetnPrimVar();
+  /// TODO: Replace with approach compatible with any number of variables (e.g. encapsulate in a "solver info" object).
+  const bool turbulent = nDonorVar <= 2;
   if (turbulent){
-
-    /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
-    Donor_Variable[0] = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
-    Donor_Variable[1] = donor_solution->GetNodes()->GetSolution(Point_Donor,1);
-
-  } else{
-
-    /*---  Retrieve primitive variables and set them as the donor variables ---*/
-    for (iVar = 0; iVar < nDonorVar; iVar++)
-      Donor_Variable[iVar] = donor_solution->GetNodes()->GetPrimitive(Point_Donor,iVar);
-
+    /*---  For turbulent solver retrieve solution variables and set then as the donor variables. ---*/
+    for (unsigned short iVar = 0; iVar < nDonorVar; iVar++) {
+      Donor_Variable[iVar] = donor_solution->GetNodes()->GetSolution(Point_Donor, iVar);
+    }
+  } else {
+    /*---  For flow solver retrieve primitive variables and set them as the donor variables. ---*/
+    for (unsigned short iVar = 0; iVar < nDonorVar; iVar++) {
+      Donor_Variable[iVar] = donor_solution->GetNodes()->GetPrimitive(Point_Donor, iVar);
+    }
   }
 }
 

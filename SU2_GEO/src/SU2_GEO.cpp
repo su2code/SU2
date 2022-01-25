@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 
   }
 
-  bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_TECPLOT;
+  bool tabTecplot = config_container[ZONE_0]->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT;
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 

@@ -2,7 +2,7 @@
  * \file CHeatOutput.hpp
  * \brief Headers of the heat output.
  * \author R. Sanchez, T. Albring.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,11 +43,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CHeatOutput(CConfig *config, unsigned short nDim);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatOutput(void) override;
 
   /*!
    * \brief Set the available history output fields

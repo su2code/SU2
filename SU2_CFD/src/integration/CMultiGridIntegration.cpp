@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,20 +41,20 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   bool direct;
   switch (config[iZone]->GetKind_Solver()) {
-    case EULER:
-    case NAVIER_STOKES:
-    case NEMO_EULER:
-    case NEMO_NAVIER_STOKES:
-    case RANS:
-    case FEM_EULER:
-    case FEM_NAVIER_STOKES:
-    case FEM_RANS:
-    case FEM_LES:
-    case DISC_ADJ_EULER:
-    case DISC_ADJ_NAVIER_STOKES:
-    case DISC_ADJ_FEM_EULER:
-    case DISC_ADJ_FEM_NS:
-    case DISC_ADJ_RANS:
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_EULER:
+    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::FEM_EULER:
+    case MAIN_SOLVER::FEM_NAVIER_STOKES:
+    case MAIN_SOLVER::FEM_RANS:
+    case MAIN_SOLVER::FEM_LES:
+    case MAIN_SOLVER::DISC_ADJ_EULER:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_FEM_EULER:
+    case MAIN_SOLVER::DISC_ADJ_FEM_NS:
+    case MAIN_SOLVER::DISC_ADJ_RANS:
       direct = true;
       break;
     default:
@@ -185,8 +185,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         solver_fine->Set_OldSolution();
 
-        if (classical_rk4)
-          solver_fine->Set_NewSolution();
+        if (classical_rk4) solver_fine->Set_NewSolution();
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
 
@@ -435,6 +434,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(32)
@@ -547,10 +547,12 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
 void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver) {
 
+  AD::StartNoSharedReading();
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     solver->LinSysRes.AddBlock(iPoint, solver->GetNodes()->GetResTruncError(iPoint));
   END_SU2_OMP_FOR
+  AD::EndNoSharedReading();
 
 }
 
@@ -641,7 +643,6 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iDim, iChildren;
   su2double Area_Parent, Area_Children;
-  const su2double* const* Gradient_fine = nullptr;
 
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -661,7 +662,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
     for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
-      Gradient_fine = sol_fine->GetNodes()->GetGradient(Point_Fine);
+      auto Gradient_fine = sol_fine->GetNodes()->GetGradient(Point_Fine);
 
       for (iVar = 0; iVar < nVar; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)

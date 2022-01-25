@@ -2,7 +2,7 @@
  * \file CMMSIncNSSolution.cpp
  * \brief Implementations of the member functions of CMMSIncNSSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,11 +66,11 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_NAVIER_STOKES)
+  if(Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES)
     SU2_MPI::Error("Navier Stokes equations must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 

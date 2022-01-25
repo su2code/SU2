@@ -2,7 +2,7 @@
  * \file CTecplotFileWriter.cpp
  * \brief Filewriter class for Tecplot ASCII format.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,13 +29,16 @@
 
 const string CTecplotFileWriter::fileExt = ".dat";
 
-CTecplotFileWriter::CTecplotFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
+CTecplotFileWriter::CTecplotFileWriter(CParallelDataSorter *valDataSorter,
                                        unsigned long valTimeIter, su2double valTimeStep) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
+  CFileWriter(valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
 CTecplotFileWriter::~CTecplotFileWriter(){}
 
-void CTecplotFileWriter::Write_Data(){
+void CTecplotFileWriter::Write_Data(string val_filename){
+
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -78,7 +81,7 @@ void CTecplotFileWriter::Write_Data(){
   /*--- Open Tecplot ASCII file and write the header. ---*/
 
   if (rank == MASTER_NODE) {
-    Tecplot_File.open(fileName.c_str(), ios::out);
+    Tecplot_File.open(val_filename.c_str(), ios::out);
     Tecplot_File.precision(6);
     Tecplot_File << "TITLE = \"Visualization of the solution\"" << endl;
 
@@ -123,7 +126,7 @@ void CTecplotFileWriter::Write_Data(){
 
   /*--- Each processor opens the file. ---*/
 
-  Tecplot_File.open(fileName.c_str(), ios::out | ios::app);
+  Tecplot_File.open(val_filename.c_str(), ios::out | ios::app);
 
   /*--- Write surface and volumetric solution data. ---*/
 
@@ -216,7 +219,7 @@ void CTecplotFileWriter::Write_Data(){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

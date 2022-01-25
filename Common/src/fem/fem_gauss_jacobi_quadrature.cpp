@@ -4,7 +4,7 @@
           quadrature rules. All the functions in this file are based on the
           program JACOBI_RULE of John Burkardt.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

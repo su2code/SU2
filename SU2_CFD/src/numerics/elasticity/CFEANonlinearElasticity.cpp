@@ -3,7 +3,7 @@
  * \brief This file contains the routines for setting the tangent matrix and
  *        residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

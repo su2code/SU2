@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DEF.
  *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,10 @@
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
+
+#define ENABLE_MAPS
+#include "../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
 
 #include "drivers/CDeformationDriver.hpp"
 

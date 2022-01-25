@@ -2,7 +2,7 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,18 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CMultizoneOutput.hpp"
 
-CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, unsigned short nDim) : COutput(driver_config, nDim, false) {
+CMultizoneOutput::CMultizoneOutput(const CConfig* driver_config, const CConfig* const* config, unsigned short nDim) :
+  COutput(driver_config, nDim, false) {
 
   unsigned short iZone = 0;
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
 
   nZone = driver_config->GetnZone();
-
-  fieldWidth = 12;
 
   bgs_res_name = "BGS_RES";
 
@@ -72,73 +68,65 @@ CMultizoneOutput::CMultizoneOutput(CConfig* driver_config, CConfig** config, uns
   /*--- Add the correct file extension depending on the file format ---*/
 
   string hist_ext = ".csv";
-  if (driver_config->GetTabular_FileFormat() == TAB_TECPLOT) hist_ext = ".dat";
+  if (driver_config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
 
   historyFilename += hist_ext;
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("AVG_BGS_RES[0]");
+  if (convFields.empty()) convFields.emplace_back("AVG_BGS_RES[0]");
 
 }
 
-CMultizoneOutput::~CMultizoneOutput() {}
+void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output) {
 
+  string nameMultizone, zoneIndex;
+  su2double comboValue = 0;
 
-void CMultizoneOutput::LoadMultizoneHistoryData(COutput **output, CConfig **config) {
+  for (unsigned short iZone = 0; iZone < nZone; iZone++) {
+    zoneIndex = "[" + PrintingToolbox::to_string(iZone) + "]";
 
-  unsigned short iZone, iField, nField;
-  string name, header;
-
-  for (iZone = 0; iZone < nZone; iZone++){
-
-    map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
-    vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
-
-    nField = ZoneHistoryNames.size();
-
-
-    /*-- For all the variables per solver --*/
-    for (iField = 0; iField < nField; iField++){
-
-      if (ZoneHistoryNames[iField] != "TIME_ITER" && ZoneHistoryNames[iField] != "OUTER_ITER"){
-
-        name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
-
-        SetHistoryOutputValue(name, ZoneHistoryFields[ZoneHistoryNames[iField]].value);
-
+    /*--- For all the variables per solver ---*/
+    for (const auto& item : output[iZone]->GetHistoryFields()) {
+      const auto& name = item.first;
+      if (name != "TIME_ITER" && name != "OUTER_ITER") {
+        nameMultizone = name + zoneIndex;
+        SetHistoryOutputValue(nameMultizone, item.second.value);
+      }
+      if (name == "COMBO") {
+        comboValue += item.second.value;
       }
     }
   }
+  SetHistoryOutputValue("COMBO", comboValue);
 }
 
-void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) {
+void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* output) {
 
-  unsigned short iZone, iField, nField;
-  string name, header, group;
+  string name, header, group, zoneIndex;
 
   /*--- Set the fields ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
+  for (unsigned short iZone = 0; iZone < nZone; iZone++) {
 
-    map<string, HistoryOutputField> ZoneHistoryFields = output[iZone]->GetHistoryFields();
-    vector<string>                  ZoneHistoryNames  = output[iZone]->GetHistoryOutput_List();
+    const auto& ZoneHistoryFields = output[iZone]->GetHistoryFields();
+    zoneIndex = "[" + PrintingToolbox::to_string(iZone) + "]";
 
-    nField = ZoneHistoryNames.size();
+    /*--- For all the variables per solver ---*/
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutput_List()) {
 
+      if (nameSinglezone != "TIME_ITER" && nameSinglezone != "OUTER_ITER") {
 
-    /*-- For all the variables per solver --*/
-    for (iField = 0; iField < nField; iField++){
+        const auto& field = ZoneHistoryFields.at(nameSinglezone);
 
-      if (ZoneHistoryNames[iField] != "TIME_ITER" && ZoneHistoryNames[iField] != "OUTER_ITER"){
+        name   = nameSinglezone + zoneIndex;
+        header = field.fieldName + zoneIndex;
+        group  = field.outputGroup + zoneIndex;
 
-        name   = ZoneHistoryNames[iField]+ "[" + PrintingToolbox::to_string(iZone) + "]";
-        header = ZoneHistoryFields[ZoneHistoryNames[iField]].fieldName + "[" + PrintingToolbox::to_string(iZone) + "]";
-        group  = ZoneHistoryFields[ZoneHistoryNames[iField]].outputGroup + "[" + PrintingToolbox::to_string(iZone) + "]";
-
-        AddHistoryOutput(name, header, ZoneHistoryFields[ZoneHistoryNames[iField]].screenFormat, group, "", ZoneHistoryFields[ZoneHistoryNames[iField]].fieldType );
+        AddHistoryOutput(name, header, field.screenFormat, group, "", field.fieldType );
       }
     }
   }
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {

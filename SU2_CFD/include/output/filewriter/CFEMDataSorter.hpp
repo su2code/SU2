@@ -2,7 +2,7 @@
  * \file CFEMDataSorter.hpp
  * \brief Headers fo the FEM data sorter class.
  * \author T. Albring, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
