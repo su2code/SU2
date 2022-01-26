@@ -296,7 +296,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
     su2double Mass      = 0.0;
 
     for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-      Mass += V_i[iSpecies]*Ms[iSpecies];
+      Mass += V_i[iSpecies]/rho*Ms[iSpecies];
 
     su2double heat_capacity_cp_i   = V_i[RHOCVTR_INDEX]/rho + Ru/Mass;
     su2double total_viscosity_i    = Laminar_Viscosity_i + Eddy_Viscosity_i;
