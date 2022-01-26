@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_SOL
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.2.1 "Blackbird"
+# \version 7.3.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2022, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
