@@ -126,8 +126,8 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      cout<<"Predicted Eddy: "<<eddy_visc<<endl;
-      eddy_visc = 6e-6;
+      //cout<<"Predicted Eddy: "<<eddy_visc<<endl;
+      //eddy_visc = 0.0;
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
       nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
