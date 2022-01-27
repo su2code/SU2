@@ -148,12 +148,14 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*--- Read farfield conditions from the config file ---*/
-  Mach_Inf            = config->GetMach();
-  Density_Inf         = config->GetDensity_FreeStreamND();
-  Pressure_Inf        = config->GetPressure_FreeStreamND();
-  Velocity_Inf        = config->GetVelocity_FreeStreamND();
-  Temperature_Inf     = config->GetTemperature_FreeStreamND();
-  Temperature_ve_Inf  = config->GetTemperature_ve_FreeStreamND();
+  Mach_Inf           = config->GetMach();
+  Density_Inf        = config->GetDensity_FreeStreamND();
+  Pressure_Inf       = config->GetPressure_FreeStreamND();
+  Velocity_Inf       = config->GetVelocity_FreeStreamND();
+  Temperature_Inf    = config->GetTemperature_FreeStreamND();
+  Temperature_ve_Inf = config->GetTemperature_ve_FreeStreamND();
+  Energy_Inf         = config->GetEnergy_FreeStreamND();
+  Energy_ve_Inf      = config->GetEnergy_ve_FreeStreamND();   
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(direct_diff) {
@@ -197,23 +199,23 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes      = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf,
-                                         Temperature_Inf, Temperature_ve_Inf,
+    nodes      = new CNEMONSVariable    (Density_Inf, MassFrac_Inf, Velocity_Inf,
+                                         Energy_Inf, Energy_ve_Inf,
                                          nPoint, nDim, nVar, nPrimVar, nPrimVarGrad,
                                          config, FluidModel);
-    node_infty = new CNEMONSVariable    (Pressure_Inf, MassFrac_Inf, Mvec_Inf,
-                                        Temperature_Inf, Temperature_ve_Inf,
-                                        1, nDim, nVar, nPrimVar, nPrimVarGrad,
-                                        config, FluidModel);
+    node_infty = new CNEMONSVariable    (Density_Inf, MassFrac_Inf, Velocity_Inf,
+                                         Energy_Inf, Energy_ve_Inf,
+                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                         config, FluidModel);
   } else {
-    nodes      = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
-                                        Temperature_Inf, Temperature_ve_Inf,
-                                        nPoint, nDim, nVar, nPrimVar, nPrimVarGrad,
-                                        config, FluidModel);
-    node_infty = new CNEMOEulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
-                                        Temperature_Inf, Temperature_ve_Inf,
-                                        1, nDim, nVar, nPrimVar, nPrimVarGrad,
-                                        config, FluidModel);
+    nodes      = new CNEMOEulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf,
+                                         Energy_Inf, Energy_ve_Inf,
+                                         nPoint, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                         config, FluidModel);
+    node_infty = new CNEMOEulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf,
+                                         Energy_Inf, Energy_ve_Inf,
+                                         1, nDim, nVar, nPrimVar, nPrimVarGrad,
+                                         config, FluidModel);;
   }
   SetBaseClassPointerToNodes();
 
@@ -1000,15 +1002,16 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   su2double
   Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream         = 0.0,
-  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, ModVel_FreeStreamND         = 0.0,
-  Velocity_Reynolds      = 0.0, Omega_FreeStream          = 0.0, Omega_FreeStreamND          = 0.0,
-  Viscosity_FreeStream   = 0.0, Density_FreeStream        = 0.0, Pressure_FreeStream         = 0.0,
-  Tke_FreeStream         = 0.0, Length_Ref                = 0.0, Density_Ref                 = 0.0,
-  Pressure_Ref           = 0.0, Velocity_Ref              = 0.0, Temperature_Ref             = 0.0,
-  Temperature_ve_Ref     = 0.0, Time_Ref                  = 0.0, Omega_Ref                   = 0.0,
-  Force_Ref              = 0.0, Gas_Constant_Ref          = 0.0, Viscosity_Ref               = 0.0,
-  Conductivity_Ref       = 0.0, Energy_Ref                = 0.0, Pressure_FreeStreamND       = 0.0,
-  Energy_FreeStreamND    = 0.0, Temperature_FreeStreamND  = 0.0, Temperature_ve_FreeStreamND = 0.0,
+  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, Energy_ve_Freestream        = 0.0,
+  ModVel_FreeStreamND    = 0.0, Velocity_Reynolds         = 0.0, Omega_FreeStream            = 0.0,
+  Omega_FreeStreamND     = 0.0, Viscosity_FreeStream      = 0.0, Density_FreeStream          = 0.0,
+  Pressure_FreeStream    = 0.0, Tke_FreeStream            = 0.0, Length_Ref                  = 0.0,
+  Density_Ref            = 0.0, Pressure_Ref              = 0.0, Velocity_Ref                = 0.0,
+  Temperature_Ref        = 0.0, Temperature_ve_Ref        = 0.0, Time_Ref                    = 0.0,
+  Omega_Ref              = 0.0, Force_Ref                 = 0.0, Gas_Constant_Ref            = 0.0,
+  Viscosity_Ref          = 0.0, Conductivity_Ref          = 0.0, Energy_Ref                  = 0.0,
+  Energy_ve_Ref          = 0.0, Pressure_FreeStreamND     = 0.0, Energy_FreeStreamND         = 0.0,
+  Energy_ve_FreeStreamND = 0.0, Temperature_FreeStreamND  = 0.0, Temperature_ve_FreeStreamND = 0.0,
   Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, sqvel                       = 0.0,
   Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
   soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
@@ -1112,6 +1115,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       /*--- Thermodynamics quantities based initialization ---*/
       Viscosity_FreeStream = FluidModel->GetViscosity();
       Energy_FreeStream    = energies[0] + 0.5*sqvel;
+      Energy_ve_FreeStream = energies[1];
 
     } else {
 
@@ -1133,13 +1137,16 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
     Energy_FreeStream    = energies[0] + 0.5*sqvel;
+    Energy_ve_FreeStream = energies[1];
 
   }
 
   config->SetDensity_FreeStream(Density_FreeStream);
 
-  /*-- Compute the freestream energy. ---*/
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
+  /*-- Compute and the freestream energyies. ---*/
+  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+  config->SetEnergy_FreeStream(Energy_FreeStream);
+  config->SetEnergy_ve_FreeStream(Energy_ve_FreeStream);
 
   /*--- Compute non dimensional quantities. By definition,
      Lref is one because we have converted the grid to meters. ---*/
@@ -1217,7 +1224,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
-  Energy_FreeStreamND = energies[0] + 0.5*ModVel_FreeStreamND *ModVel_FreeStreamND;
+  Energy_FreeStreamND    = energies[0] + 0.5*ModVel_FreeStreamND *ModVel_FreeStreamND;
+  Energy_ve_FreestreamND = energies[1];
 
   if (viscous) {
 
@@ -1236,7 +1244,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
 
-  Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+  Energy_Ref    = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+  Energy_ve_Ref = Energy_ve_Freestream/Energy_ve_FreeStreamND; config->SetEnergy_ve_Ref(Energy_ve_Ref );
 
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
@@ -1362,6 +1371,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
     else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
     NonDimTable << "Total Energy" << config->GetEnergy_FreeStream() << config->GetEnergy_Ref() << Unit.str() << config->GetEnergy_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
+    else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
+    NonDimTable << "Vibe-el Energy" << config->GetEnergy_ve_FreeStream() << config->GetEnergy_ve_Ref() << Unit.str() << config->GetEnergy_ve_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "m/s";
     else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
