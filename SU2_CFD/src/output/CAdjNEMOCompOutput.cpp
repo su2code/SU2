@@ -123,7 +123,8 @@ void CAdjNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the adjoint density.
-  AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint density.", HistoryFieldType::RESIDUAL);
+  for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    AddHistoryOutput("MAX_ADJ_DENSITY_" + std::to_string(iSpecies), "max[A_Rho_" + std::to_string(iSpecies) + "]",   ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the species adjoint density " + std::to_string(iSpecies) + ".", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum x-component
   AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum y-component
@@ -141,7 +142,8 @@ void CAdjNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   ///  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The Block Gauss Seidel residuals of the SOLUTION variables.
   /// DESCRIPTION: BGS residual of the adjoint density.
-  AddHistoryOutput("BGS_ADJ_DENSITY",    "bgs[A_Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint density.", HistoryFieldType::RESIDUAL);
+  for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    AddHistoryOutput("BGS_ADJ_DENSITY_" + std::to_string(iSpecies), "bgs[A_Rho_" + std::to_string(iSpecies) + "]",   ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the species adjoint density " + std::to_string(iSpecies) + ".", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint momentum x-component
   AddHistoryOutput("BGS_ADJ_MOMENTUM-X", "bgs[A_RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint momentum y-component
@@ -260,7 +262,7 @@ void CAdjNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   /// BEGIN_GROUP: SOLUTION, DESCRIPTION: The SOLUTION variables of the adjoint solver.
   /// DESCRIPTION: Adjoint density.
   for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("ADJ_DENSITY_" + std::to_string(iSpecies),  "Density_" + std::to_string(iSpecies),  "SOLUTION", "Density_"  + std::to_string(iSpecies));
+    AddVolumeOutput("ADJ_DENSITY_" + std::to_string(iSpecies),  "Adjoint_Density_" + std::to_string(iSpecies),  "SOLUTION", "Adjoint_Density_"  + std::to_string(iSpecies));
   /// DESCRIPTION: Adjoint momentum x-component.
   AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "SOLUTION", "x-component of the adjoint momentum vector");
   /// DESCRIPTION: Adjoint momentum y-component.
@@ -279,7 +281,7 @@ void CAdjNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables.
   /// DESCRIPTION: Residual of the adjoint density.
   for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("RES_ADJ_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
+    AddVolumeOutput("RES_ADJ_DENSITY_" + std::to_string(iSpecies), "Residual_Adjoint_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
   /// DESCRIPTION: Residual of the adjoint momentum x-component.
   AddVolumeOutput("RES_ADJ_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL", "Residual of the adjoint x-momentum");
   /// DESCRIPTION: Residual of the adjoint momentum y-component.
