@@ -108,11 +108,9 @@ class CNEMOEulerVariable : public CFlowVariable {
    * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOEulerVariable(su2double val_pressure, const su2double *val_massfrac,
-                     const su2double *val_mach, su2double val_temperature,
-                     su2double val_temperature_ve, unsigned long npoint,
-                     unsigned long ndim,
-                     unsigned long nvar, unsigned long nvalprim,
+  CNEMOEulerVariable(su2double val_density, const su2double *val_massfrac, const su2double *val_velocity,
+                     su2double val_energy, su2double val_energy_ve, unsigned long npoint,
+                     unsigned long ndim, unsigned long nvar, unsigned long nvalprim,
                      unsigned long nvarprimgrad, const CConfig *config, CNEMOGas *fluidmodel);
 
   /*---------------------------------------*/
