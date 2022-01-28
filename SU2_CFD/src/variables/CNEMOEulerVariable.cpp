@@ -40,9 +40,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double density, const su2double *mass_
 
   unsigned short iDim, iSpecies;
 
-  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  //const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+  //                       (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  //const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Setting variable amounts ---*/
 
@@ -90,22 +90,22 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double density, const su2double *mass_
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      solution(iPoint,iVar) = density * mass_frac[iVar];
+      Solution(iPoint,iSpecies) = density * mass_frac[iSpecies];
     for (iDim = 0; iDim < nDim; iDim++)
-      solution(iPoint, nSpecies+iDim) = density * velocity[iDim];
+      Solution(iPoint, nSpecies+iDim) = density * velocity[iDim];
     Solution(iPoint, nVar-1) = density * energy;
     Solution(iPoint, nVar) = density * energy_ve;
 
   }  
 
-  if (classical_rk4) Solution_New = Solution;
+  //if (classical_rk4) Solution_New = Solution;
 
   /*--- Allocate and initializate solution for dual time strategy ---*/
 
-  if (dual_time) {
-    Solution_time_n = Solution;
-    Solution_time_n1 = Solution;
-  }
+  //if (dual_time) {
+  //  Solution_time_n = Solution;
+  //  Solution_time_n1 = Solution;
+  //}
 }
 
 void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {

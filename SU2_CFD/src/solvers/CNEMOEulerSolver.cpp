@@ -1002,7 +1002,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   su2double
   Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream         = 0.0,
-  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, Energy_ve_Freestream        = 0.0,
+  ModVel_FreeStream      = 0.0, Energy_FreeStream         = 0.0, Energy_ve_FreeStream        = 0.0,
   ModVel_FreeStreamND    = 0.0, Velocity_Reynolds         = 0.0, Omega_FreeStream            = 0.0,
   Omega_FreeStreamND     = 0.0, Viscosity_FreeStream      = 0.0, Density_FreeStream          = 0.0,
   Pressure_FreeStream    = 0.0, Tke_FreeStream            = 0.0, Length_Ref                  = 0.0,
@@ -1225,7 +1225,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   Energy_FreeStreamND    = energies[0] + 0.5*ModVel_FreeStreamND *ModVel_FreeStreamND;
-  Energy_ve_FreestreamND = energies[1];
+  Energy_ve_FreeStreamND = energies[1];
 
   if (viscous) {
 
@@ -1245,7 +1245,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
 
   Energy_Ref    = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
-  Energy_ve_Ref = Energy_ve_Freestream/Energy_ve_FreeStreamND; config->SetEnergy_ve_Ref(Energy_ve_Ref );
+  Energy_ve_Ref = Energy_ve_FreeStream/Energy_ve_FreeStreamND; config->SetEnergy_ve_Ref(Energy_ve_Ref );
 
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);

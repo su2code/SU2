@@ -30,7 +30,7 @@
 
 CNEMONSVariable::CNEMONSVariable(su2double val_density, const su2double *val_massfrac,
                                  const su2double *val_velocity,
-                                 su2double val_energy, su2double val_energy,
+                                 su2double val_energy, su2double val_energy_ve,
                                  unsigned long npoint, unsigned long val_ndim,
                                  unsigned long val_nvar, unsigned long val_nvarprim,
                                  unsigned long val_nvarprimgrad,
