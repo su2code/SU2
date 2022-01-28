@@ -839,7 +839,6 @@ private:
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
-  Energy_ve_FreeStream,            /*!< \brief Free-stream vibe-el energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
@@ -872,8 +871,7 @@ private:
   Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
-  Energy_Ref,                 /*!< \brief Reference energy for non-dimensionalization. */
-  Energy_ve_Ref,              /*!< \brief Reference vibe-el energy for non-dimensionalization. */
+  Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
   Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
   Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
@@ -884,7 +882,6 @@ private:
   Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
-  Energy_ve_FreeStreamND,     /*!< \brief Farfield vibe-el energy value (external flow). */
   Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
@@ -1678,12 +1675,6 @@ public:
   su2double GetEnergy_FreeStream(void) const { return Energy_FreeStream; }
 
   /*!
-   * \brief Get the value of the freestream vibe-el energy.
-   * \return Freestream vibe-el energy.
-   */
-  su2double GetEnergy_ve_FreeStream(void) const { return Energy_ve_FreeStream; }
-
-  /*!
    * \brief Get the value of the freestream viscosity.
    * \return Freestream temperature.
    */
@@ -1773,12 +1764,6 @@ public:
    * \return Reference energy for non-dimensionalization.
    */
   su2double GetEnergy_Ref(void) const { return Energy_Ref; }
-
-  /*!
-   * \brief Get the value of the reference vibe-el enegry for non-dimensionalization.
-   * \return Reference vibe-el energy for non-dimensionalization.
-   */
-  su2double GetEnergy_ve_Ref(void) const { return Energy_ve_Ref; }
 
   /*!
    * \brief Get the value of the reference temperature for non-dimensionalization.
@@ -1907,12 +1892,6 @@ public:
    * \return Non-dimensionalized freestream energy.
    */
   su2double GetEnergy_FreeStreamND(void) const { return Energy_FreeStreamND; }
-
-  /*!
-   * \brief Get the value of the non-dimensionalized freestream vibe-el energy.
-   * \return Non-dimensionalized freestream vibe-el energy.
-   */
-  su2double GetEnergy_ve_FreeStreamND(void) const { return Energy_ve_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -2425,12 +2404,6 @@ public:
   void SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
   /*!
-   * \brief Set the reference vibe-el energy for nondimensionalization.
-   * \param[in] val_energy_ve_ref - Value of the reference vibe-el energy.
-   */
-  void SetEnergy_ve_Ref(su2double val_energy_ve_ref) { Energy_ve_Ref = val_energy_ve_ref; }
-
-  /*!
    * \brief Set the reference Omega for nondimensionalization.
    * \param[in] val_omega_ref - Value of the reference omega.
    */
@@ -2631,22 +2604,10 @@ public:
   void SetEnergy_FreeStreamND(su2double val_energy_freestreamnd) { Energy_FreeStreamND = val_energy_freestreamnd; }
 
   /*!
-   * \brief Set the non-dimensional freestream vibe-el energy.
-   * \param[in] val_energy_ve_freestreamnd - Value of the non-dimensional freestream vibe-el energy.
-   */
-  void SetEnergy_ve_FreeStreamND(su2double val_energy_ve_freestreamnd) { Energy_ve_FreeStreamND = val_energy_ve_freestreamnd; }
-
-  /*!
    * \brief Set the freestream energy.
    * \param[in] val_energy_freestream - Value of the freestream energy.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
-
-  /*!
-   * \brief Set the freestream vibe-el energy.
-   * \param[in] val_energy_ve_freestream - Value of the freestream vibe-el energy.
-   */
-  void SetEnergy_ve_FreeStream(su2double val_energy_ve_freestream) { Energy_ve_FreeStream = val_energy_ve_freestream; }
 
   /*!
    * \brief Set the thermal diffusivity for solids.

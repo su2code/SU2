@@ -72,7 +72,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMONSVariable(su2double val_density, const su2double *val_massfrac, const su2double *val_velocity,
-                  su2double val_energy, su2double val_energy_ve, unsigned long npoint,
+                  su2double val_temperature, su2double val_temperature_ve, unsigned long npoint,
                   unsigned long val_nDim, unsigned long val_nVar, unsigned long val_nPrimVar,
                   unsigned long val_nPrimVarGrad, const CConfig *config, CNEMOGas *fluidmodel);
 
