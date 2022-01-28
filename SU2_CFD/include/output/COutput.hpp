@@ -433,11 +433,27 @@ public:
   }
 
   /*!
+   * \brief Get the list of all per-surface fields
+   * \return Vector container all output per-surface fields
+   */
+  const vector<string>& GetHistoryOutputPerSurface_List() const {
+    return historyOutputPerSurface_List;
+  }
+
+  /*!
    * \brief Get the map containing all output fields
    * \return Map containing all output fields
    */
   const map<string, HistoryOutputField>& GetHistoryFields() const {
     return historyOutput_Map;
+  }
+
+  /*!
+   * \brief Get the map containing all output per-surface fields
+   * \return Map containing all output per-surface fields
+   */
+  const map<string, vector<HistoryOutputField>>& GetHistoryPerSurfaceFields() const {
+    return historyOutputPerSurface_Map;
   }
 
   /*!
@@ -837,7 +853,7 @@ protected:
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
    */
-  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output) {}
+  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
    * \brief Write any additional files defined for the current solver.
