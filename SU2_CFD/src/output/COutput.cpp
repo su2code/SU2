@@ -1365,7 +1365,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
-  SetMultizoneHistoryOutputFields(output);
+  SetMultizoneHistoryOutputFields(output, config);
 
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 

@@ -73,7 +73,7 @@ public:
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
    */
-  void SetMultizoneHistoryOutputFields(const COutput* const* output) override;
+  void SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) override;
 
   /*!
    * \brief Determines if the history file output.

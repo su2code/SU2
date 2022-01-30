@@ -101,7 +101,7 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output) {
   SetHistoryOutputValue("COMBO", comboValue);
 }
 
-void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* output) {
+void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) {
 
   string name, header, group, zoneIndex;
 
@@ -123,6 +123,41 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
         group  = field.outputGroup + zoneIndex;
 
         AddHistoryOutput(name, header, field.screenFormat, group, "", field.fieldType );
+      }
+    }
+    /*--- Also add the PerSurface outputs ---*/
+    const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
+
+    vector<string> Marker_Analyze;
+    for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[iZone]->GetnMarker_Analyze(); iMarker_Analyze++){
+      Marker_Analyze.push_back(config[iZone]->GetMarker_Analyze_TagBound(iMarker_Analyze));
+    }
+    //Marker_Analyze.push_back("test");
+
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurface_List()) {
+
+      if (nameSinglezone != "TIME_ITER" && nameSinglezone != "OUTER_ITER") {
+
+        const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
+
+        name   = nameSinglezone + zoneIndex;
+
+        // field[0].fieldName contains names like Avg_Massflow(fluid_outlet) but looking at CFlowOutput.cpp it is also:
+        // AddHistoryOutputPerSurface("SURFACE_MASSFLOW",         "Avg_Massflow", ... without the markerTag already attached
+        // So first the fieldName for one of the markers (here the 0th) is taken and the markerTag in brackets is removed
+        string baseheader = field[0].fieldName;
+        std::string::size_type pos = baseheader.find('(');
+        if (pos != std::string::npos)
+            baseheader = baseheader.substr(0, pos);
+        else
+            SU2_MPI::Error("Cannot proccess PerSurface *_SURF history output.", CURRENT_FUNCTION);
+
+        header = baseheader + zoneIndex; // field[i] where i is the marker
+        group  = field[0].outputGroup + zoneIndex;
+
+        AddHistoryOutputPerSurface(name, header, field[0].screenFormat, group, Marker_Analyze, field[0].fieldType );
+        //AddHistoryOutputPerSurface("SURFACE_MASSFLOW", "Avg_Massflow", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+        //AddHistoryOutput           "SURFACE_MASSFLOW", "Avg_Massflow", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF",      "desc",         HistoryFieldType::COEFFICIENT);
       }
     }
   }
