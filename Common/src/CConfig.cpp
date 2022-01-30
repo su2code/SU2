@@ -5733,7 +5733,10 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         break;
       }
     }
-    if(!found) {
+    // In case of multiple zones, the markers might appear only in zonal config and not in the Master.
+    // A loop over all zones would need to be included which is not straight forward as this can only be
+    // checked once all zonal configs are read.
+    if(!found && (nZone==1)) {
       SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
     }
   }
