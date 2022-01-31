@@ -21,3 +21,6 @@
 [submodule "externals/mel"]
 	path = externals/mel
 	url = https://github.com/pcarruscag/MEL.git
+[submodule "externals/amgio"]
+	path = externals/amgio
+	url = https://github.com/bmunguia/amgio
