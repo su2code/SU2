@@ -1047,7 +1047,7 @@ void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_tem
 
 vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
 
-  if(ionization) Cvtrs[0] = 0.0;
+  if(ionization) Cvtrs[0] = 0.0; //TODO: is this zero?
  
   for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
@@ -1066,7 +1066,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
     /*--- If requesting electron specific heat ---*/
     if (ionization && iSpecies == iElectron) {
       Cvvs = 0.0;
-      Cves = 3.0/2.0 * Ru/MolarMass[nSpecies-1];
+      Cves = 3.0/2.0 * Ru/MolarMass[iSpecies];
     }
 
     /*--- Heavy particle specific heat ---*/
@@ -1154,7 +1154,6 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
     rhoEve += rhos[iSpecies] * (Ev + Ee);
 
   }
-
 
   energies[0] = rhoEmix/Density;
   energies[1] = rhoEve/Density;
@@ -1995,7 +1994,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double rhoCvtr  = 0.0;
   //TODO; WHY DONT ELECTRONS COUNTS?
   for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
-    rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
+    rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];  //TODO CVTRS for eLECT =0
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
   }
@@ -2015,7 +2014,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   unsigned short maxBIter = 50;        // Maximum Bisection method iterations
 
   //Initialize solution
-  Tve   = T;
+  Tve = T;
 
   // Execute the root-finding method
   bool Bconvg = false;

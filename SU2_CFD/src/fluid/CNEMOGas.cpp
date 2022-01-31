@@ -91,6 +91,8 @@ su2double CNEMOGas::ComputeSoundSpeed(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density+=rhos[iSpecies];
 
+  // Should this have ionization? TODO
+  // probably conc is too small?
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++){
     conc += rhos[iSpecies]/MolarMass[iSpecies];
     rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies];
@@ -119,7 +121,7 @@ su2double CNEMOGas::ComputeGasConstant(){
 
   su2double Mass = 0.0;
 
-  // TODO - extend for ionization
+  // TODO - extend for ionization -> does it need to be?
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
@@ -184,7 +186,7 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
   /*--- Rename for convenience ---*/
   su2double rhoCvtr = V[RHOCVTR_INDEX];
   su2double rhoCvve = V[RHOCVVE_INDEX];
-  T       = V[T_INDEX];
+  T = V[T_INDEX];
 
   /*--- Pre-compute useful quantities ---*/
   su2double CvtrBAR = 0.0;
@@ -204,8 +206,8 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
     val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
                          (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
                          ef + 0.5*sqvel);
-
   }
+
   if (ionization) {
     for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
       //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
