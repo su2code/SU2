@@ -98,6 +98,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   HeatFlux_per_Marker.resize(nMarker, 0.0);
   AverageT_per_Marker.resize(nMarker, 0.0);
+  Surface_Areas.resize(config->GetnMarker_HeatFlux(), 0.0);
 
   Set_Heatflux_Areas(geometry, config);
 
@@ -518,8 +519,14 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
-  su2double Local_HeatFlux_Areas_Monitor, Area, *Normal;
+  string HeatFlux_Tag, Marker_Tag;
 
+  su2double *Local_Surface_Areas, Local_HeatFlux_Areas_Monitor, Area, *Normal;
+  Local_Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
+
+  for (auto  iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+    Local_Surface_Areas[iMarker_HeatFlux] = 0.0;
+  }
   Local_HeatFlux_Areas_Monitor = 0.0;
 
   for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
@@ -528,10 +535,12 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
     for (auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
 
-      const auto HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
-      const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
       if (Marker_Tag == HeatFlux_Tag) {
+
+        Local_Surface_Areas[iMarker_HeatFlux] = 0.0;
 
         for(auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
 
@@ -542,6 +551,8 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = GeometryToolbox::Norm(nDim, Normal);
 
+          Local_Surface_Areas[iMarker_HeatFlux] += Area;
+
           if(Monitoring == YES)
             Local_HeatFlux_Areas_Monitor += Area;
 
@@ -550,12 +561,15 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
     }
   }
 
+  SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas.data(), Surface_Areas.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   Total_HeatFlux_Areas = 0.0;
   for(auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
     Total_HeatFlux_Areas += Surface_Areas[iMarker_HeatFlux];
   }
+
+  delete[] Local_Surface_Areas;
 }
 
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
