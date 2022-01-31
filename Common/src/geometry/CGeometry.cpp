@@ -2505,7 +2505,7 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
 
 void CGeometry::ComputeSurfaceArea(const CConfig *config) {
   const auto nMarker_Global = config->GetnMarker_CfgFile();
-  SurfaceArea.resize(nMarker_Global);
+  SurfaceAreaCfgFile.resize(nMarker_Global);
   vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
 
   /*--- Loop over all local markers ---*/
@@ -2535,7 +2535,7 @@ void CGeometry::ComputeSurfaceArea(const CConfig *config) {
     }//for iMarker_Global
   }//for iMarker
 
-  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceArea.data(), SurfaceArea.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 }
 
 void CGeometry::ComputeSurf_Straightness(CConfig *config,

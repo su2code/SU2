@@ -199,7 +199,7 @@ public:
   unsigned long *nElem_Bound{nullptr};   /*!< \brief Number of elements of the boundary. */
   string *Tag_to_Marker{nullptr};        /*!< \brief Names of boundary markers. */
   vector<bool> bound_is_straight;        /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
-  vector<su2double> SurfaceArea;         /*!< \brief Total Surface area for all markers. */
+  vector<su2double> SurfaceAreaCfgFile;         /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
 

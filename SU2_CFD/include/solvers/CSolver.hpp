@@ -1001,7 +1001,7 @@ public:
       const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
 
       if (Marker_Tag == Global_TagBound) {
-        *Wall_HeatFlux /= geometry->SurfaceArea[iMarker_Global];
+        *Wall_HeatFlux /= geometry->SurfaceAreaCfgFile[iMarker_Global];
         break;
       }
     }
