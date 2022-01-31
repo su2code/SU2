@@ -599,7 +599,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
   }
 
-  else if (String_GasModel == "AIR-7"){
+  else if (gas_model == "AIR-7"){
 
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 7) {
