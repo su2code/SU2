@@ -54,7 +54,6 @@ protected:
   su2double AllBound_AverageT;
   vector<su2double>  Primitive_Flow_i;
   vector<su2double> Primitive_Flow_j;
-  vector<su2double> Surface_Areas;
   su2double Total_HeatFlux_Areas;
   su2double Total_HeatFlux_Areas_Monitor;
   vector<su2activematrix> ConjugateVar;
