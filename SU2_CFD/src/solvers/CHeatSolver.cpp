@@ -621,21 +621,19 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                   unsigned short val_marker) {
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
-  if(config->GetIntegrated_HeatFlux()) {
+  if (config->GetIntegrated_HeatFlux()) {
     Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
   }
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     if (geometry->nodes->GetDomain(iPoint)) {
-
       const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -647,7 +645,6 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
-
   }
 }
 
