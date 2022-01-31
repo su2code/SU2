@@ -421,9 +421,8 @@ void CNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *c
   BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
 
-void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfig *config,
-                                         unsigned short val_marker, unsigned short kind_boundary) {
-
+void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfig* config, unsigned short val_marker,
+                                         unsigned short kind_boundary) {
   /*--- Identify the boundary by string name and get the specified wall
    heat flux from config as well as the wall function treatment. ---*/
 
@@ -435,15 +434,15 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
   su2double Wall_HeatFlux = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
 
   if (kind_boundary == HEAT_FLUX) {
-    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-    if(config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+    if (config->GetIntegrated_HeatFlux()) {
       Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
     }
-  }
-  else if (kind_boundary == HEAT_TRANSFER) {
+  } else if (kind_boundary == HEAT_TRANSFER) {
     /*--- The required heatflux will be computed for each iPoint individually based on local Temperature. ---*/
-    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-    Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
+                           config->GetHeat_Flux_Ref();
+    Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
   }
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);

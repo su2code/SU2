@@ -384,19 +384,20 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   su2double Wall_HeatFlux = 0.0, Twall = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
 
-  switch(kind_boundary) {
+  switch (kind_boundary) {
     case HEAT_FLUX:
-      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-      if(config->GetIntegrated_HeatFlux()) {
+      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+      if (config->GetIntegrated_HeatFlux()) {
         Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
       }
       break;
     case ISOTHERMAL:
-      Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+      Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
       break;
     case HEAT_TRANSFER:
-      Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-      Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+      Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
+                             config->GetHeat_Flux_Ref();
+      Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
       break;
     default:
       SU2_MPI::Error("Unknown type of boundary condition.", CURRENT_FUNCTION);
