@@ -251,6 +251,9 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Local variables ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  if(config->GetIntegrated_HeatFlux()) {
+    UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config, geometry);
+  }
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -406,6 +409,9 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
   /*--- Get the specified wall heat flux from config ---*/
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  if(config->GetIntegrated_HeatFlux()) {
+    UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config, geometry);
+  }
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX    = nodes->GetTIndex();
