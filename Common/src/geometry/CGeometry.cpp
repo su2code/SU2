@@ -2503,6 +2503,40 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   }
 }
 
+void CGeometry::ComputeSurfaceArea(const CConfig *config) {
+  const auto nMarker_Global = config->GetnMarker_CfgFile();
+  SurfaceArea.resize(nMarker_Global);
+  vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
+
+  /*--- Loop over all local markers ---*/
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    const auto Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Loop over all global markers, and find the local-global pair via
+          matching unique string tags. ---*/
+    for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+      if (Local_TagBound == Global_TagBound) {
+
+        for(auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++ ) {
+
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          if(!nodes->GetDomain(iPoint)) continue;
+
+          const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
+          const auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
+
+          LocalSurfaceArea[iMarker_Global] += Area;
+        }// for iVertex
+      }//if Local == Global
+    }//for iMarker_Global
+  }//for iMarker
+
+  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceArea.data(), SurfaceArea.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+}
 
 void CGeometry::ComputeSurf_Straightness(CConfig *config,
                                          bool    print_on_screen) {

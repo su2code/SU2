@@ -436,6 +436,20 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
 
   if (kind_boundary == HEAT_FLUX) {
     Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+
+    /*---For integrated Heatflux in [W] instead [W/m^2] find the precomputed marker Surface Area by local-global string-matching. ---*/
+    if(config->GetIntegrated_HeatFlux()) {
+
+      for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
+
+        const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+        if (Marker_Tag == Global_TagBound) {
+          Wall_HeatFlux /= geometry->SurfaceArea[iMarker_Global];
+          break;
+        }
+      }
+    }
   }
   else if (kind_boundary == HEAT_TRANSFER) {
     /*--- The required heatflux will be computed for each iPoint individually based on local Temperature. ---*/

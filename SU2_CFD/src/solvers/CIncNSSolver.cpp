@@ -387,6 +387,20 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   switch(kind_boundary) {
     case HEAT_FLUX:
       Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+
+      /*---For integrated Heatflux in [W] instead [W/m^2] find the precomputed marker Surface Area by local-global string-matching. ---*/
+      if(config->GetIntegrated_HeatFlux()) {
+
+        for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
+
+          const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+          if (Marker_Tag == Global_TagBound) {
+            Wall_HeatFlux /= geometry->SurfaceArea[iMarker_Global];
+            break;
+          }
+        }
+      }
       break;
     case ISOTHERMAL:
       Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
