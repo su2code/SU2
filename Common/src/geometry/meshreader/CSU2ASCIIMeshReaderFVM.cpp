@@ -99,7 +99,7 @@ bool CSU2ASCIIMeshReaderFVM::ReadMetadata(const bool single_pass, CConfig *confi
   string text_line;
   if ((nZones > 1 && multizone_file) || harmonic_balance) {
     if (harmonic_balance) {
-      cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
+      if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
     }
     else {
       bool foundZone = false;
@@ -109,7 +109,7 @@ bool CSU2ASCIIMeshReaderFVM::ReadMetadata(const bool single_pass, CConfig *confi
           text_line.erase (0,6);
           unsigned short jZone = atoi(text_line.c_str());
           if (jZone == myZone+1) {
-            cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
+            if (rank == MASTER_NODE) cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
             foundZone = true;
             break;
           }
