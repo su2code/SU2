@@ -985,29 +985,6 @@ public:
                                        unsigned short val_marker) { }
 
   /*!
-   * \brief Adapt Heatflux value for integrated heatflux.
-   * \param[in,out] Wall_HeatFlux - Heatflux in [W] which is to be adapted to [W/m^2].
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void UpdateIntegrated_Heatflux(su2double* Wall_HeatFlux, unsigned short val_marker, const CConfig *config,
-                                 const CGeometry* geometry) const {
-    /*---For integrated Heatflux in [W] instead [W/m^2] find the precomputed marker Surface Area by local-global string-matching. ---*/
-    const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-    for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
-
-      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
-
-      if (Marker_Tag == Global_TagBound) {
-        *Wall_HeatFlux /= geometry->SurfaceAreaCfgFile[iMarker_Global];
-        break;
-      }
-    }
-  }
-
-  /*!
    * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

@@ -437,7 +437,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
   if (kind_boundary == HEAT_FLUX) {
     Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
     if(config->GetIntegrated_HeatFlux()) {
-      UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config, geometry);
+      geometry->UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config);
     }
   }
   else if (kind_boundary == HEAT_TRANSFER) {

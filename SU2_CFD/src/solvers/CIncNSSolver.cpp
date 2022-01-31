@@ -388,7 +388,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     case HEAT_FLUX:
       Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
       if(config->GetIntegrated_HeatFlux()) {
-        UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config, geometry);
+        geometry->UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config);
       }
       break;
     case ISOTHERMAL:

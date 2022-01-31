@@ -2538,6 +2538,27 @@ void CGeometry::ComputeSurfaceArea(const CConfig *config) {
   SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 }
 
+/*!
+  * \brief Adapt Heatflux value for integrated heatflux.
+  * \param[in,out] Wall_HeatFlux - Heatflux in [W] which is to be adapted to [W/m^2].
+  * \param[in] config - Definition of the particular problem.
+  * \param[in] val_marker - Surface marker where the boundary condition is applied.
+  */
+void CGeometry::UpdateIntegrated_Heatflux(su2double* Wall_HeatFlux, unsigned short val_marker, const CConfig *config) const {
+  /*---For integrated Heatflux in [W] instead [W/m^2] find the precomputed marker Surface Area by local-global string-matching. ---*/
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
+
+    const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+    if (Marker_Tag == Global_TagBound) {
+      *Wall_HeatFlux /= SurfaceAreaCfgFile[iMarker_Global];
+      break;
+    }
+  }
+}
+
 void CGeometry::ComputeSurf_Straightness(CConfig *config,
                                          bool    print_on_screen) {
 

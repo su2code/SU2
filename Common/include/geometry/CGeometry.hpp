@@ -918,6 +918,14 @@ public:
   void ComputeSurfaceArea(const CConfig *config);
 
   /*!
+  * \brief Adapt Heatflux value for integrated heatflux.
+  * \param[in,out] Wall_HeatFlux - Heatflux in [W] which is to be adapted to [W/m^2].
+  * \param[in] config - Definition of the particular problem.
+  * \param[in] val_marker - Surface marker where the boundary condition is applied.
+  */
+  void UpdateIntegrated_Heatflux(su2double* Wall_HeatFlux, unsigned short val_marker, const CConfig *config) const;
+
+  /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
    *        only and store the information in bound_is_straight. For all other boundary types
    *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
