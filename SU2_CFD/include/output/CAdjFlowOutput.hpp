@@ -32,7 +32,6 @@
 /*! \class CAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
  *  \author T. Kattmann
- *  \date December 3, 2022.
  */
 class CAdjFlowOutput : public COutput {
  protected:

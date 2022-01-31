@@ -558,22 +558,12 @@ def header():
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| The current SU2 release has been coordinated by the                   | \n'\
-          '| SU2 International Developers Society <www.su2devsociety.org>          | \n'\
-          '| with selected contributions from the open-source community.           | \n'\
+          '| SU2 Project Website: https://su2code.github.io                        | \n'\
+          '|                                                                       | \n'\
+          '| The SU2 Project is maintained by the SU2 Foundation                   | \n'\
+          '| (http://su2foundation.org)                                            | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| The main research teams contributing to the current release are:      | \n'\
-          '| - Prof. Juan J. Alonso\'s group at Stanford University.                | \n'\
-          '| - Prof. Piero Colonna\'s group at Delft University of Technology.      | \n'\
-          '| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. | \n'\
-          '| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  | \n'\
-          '| - Prof. Rafael Palacios\' group at Imperial College London.            | \n'\
-          '| - Prof. Vincent Terrapon\'s group at the University of Liege.          | \n'\
-          '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
-          '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
-          '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2022, Francisco D. Palacios, Thomas D. Economon,       | \n'\
-          '|                      Tim Albring, and the SU2 contributors.           | \n'\
+          '| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\
           '| modify it under the terms of the GNU Lesser General Public            | \n'\
