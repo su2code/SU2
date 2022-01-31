@@ -915,7 +915,7 @@ public:
    * \brief Compute the surface area of all global markers.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeSurfaceArea(const CConfig *config);
+  void ComputeSurfaceAreaCfgFile(const CConfig *config);
 
   /*!
   * \brief Adapt Heatflux value for integrated heatflux.

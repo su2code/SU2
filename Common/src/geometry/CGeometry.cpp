@@ -2436,6 +2436,8 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   }
 
+  /*--- Compute the global surface areas for all markers. ---*/
+  geometry_container[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 }
 
 void CGeometry::SetCustomBoundary(CConfig *config) {
@@ -2503,7 +2505,7 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   }
 }
 
-void CGeometry::ComputeSurfaceArea(const CConfig *config) {
+void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
   const auto nMarker_Global = config->GetnMarker_CfgFile();
   SurfaceAreaCfgFile.resize(nMarker_Global);
   vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);

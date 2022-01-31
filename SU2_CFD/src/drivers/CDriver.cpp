@@ -814,7 +814,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Compute the global surface areas for all markers. ---*/
 
-  geometry[MESH_0]->ComputeSurfaceArea(config);
+  geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 
   /*--- Check for periodicity and disable MG if necessary. ---*/
 
