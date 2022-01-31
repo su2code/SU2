@@ -627,7 +627,7 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
   if(config->GetIntegrated_HeatFlux()) {
-    geometry->UpdateIntegrated_Heatflux(&Wall_HeatFlux, val_marker, config);
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
   }
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
