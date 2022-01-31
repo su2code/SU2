@@ -622,28 +622,22 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                                     unsigned short val_marker) {
+                                   unsigned short val_marker) {
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double Area, *Normal;
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
   if(config->GetIntegrated_HeatFlux()) {
 
-    string HeatFlux_Tag, Marker_Tag;
+    for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
 
-    for (auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
 
-      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
-      Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-      if (Marker_Tag == HeatFlux_Tag) {
-        Wall_HeatFlux = Wall_HeatFlux / Surface_Areas[iMarker_HeatFlux];
+      if (Marker_Tag == Global_TagBound) {
+        Wall_HeatFlux = Wall_HeatFlux / geometry->SurfaceArea[iMarker_Global];
+        break;
       }
     }
   }
-  Wall_HeatFlux = Wall_HeatFlux/config->GetHeat_Flux_Ref();
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -651,8 +645,8 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
       Res_Visc[0] = 0.0;
 
