@@ -2552,6 +2552,9 @@ su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_ma
       return SurfaceAreaCfgFile[iMarker_Global];
 
   }
+
+  SU2_MPI::Error("Unable to match local-marker with cfg-marker for Surface Area.", CURRENT_FUNCTION);
+  return 0.0;
 }
 
 void CGeometry::ComputeSurf_Straightness(CConfig *config,
