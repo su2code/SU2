@@ -2541,7 +2541,7 @@ void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
 }
 
 su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_marker) const {
-  /*---For integrated Heatflux in [W] instead [W/m^2] find the precomputed marker Surface Area by local-global string-matching. ---*/
+  /*---Find the precomputed marker surface area by local-global string-matching. ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
