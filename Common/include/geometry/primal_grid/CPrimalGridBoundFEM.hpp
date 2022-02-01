@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridBoundFEM.cpp</i> file.
  * \author F. Palacios
- * \version 7.3.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 /*!
  * \class CPrimalGridBoundFEM
  * \brief Class to define primal grid boundary element for the FEM solver.
- * \version 7.3.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  */
 class CPrimalGridBoundFEM final: public CPrimalGrid {
 private:

@@ -2,14 +2,14 @@
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.3.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -234,7 +234,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   GetPMatrix_inv(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, invP_Tensor);
 
   /*--- Projected flux (f-) ---*/
-  su2double Proj_ModJac_Tensor_j;
+  su2double Proj_ModJac_Tensor_j; 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
       Proj_ModJac_Tensor_j = 0.0;

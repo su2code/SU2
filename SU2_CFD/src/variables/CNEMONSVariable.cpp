@@ -2,14 +2,14 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.3.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,6 +78,8 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
+  unsigned long iVar, iSpecies;
+
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
@@ -85,7 +87,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
-    for (auto iVar = 0u; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute Primitive from previous solution ---*/
@@ -98,7 +100,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   SetVelocity2(iPoint);
 
   const auto& Ds = fluidmodel->GetDiffusionCoeff();
-  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
 
   su2double T   =  Primitive(iPoint,nSpecies);
@@ -106,9 +108,9 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   su2double* val_eves = GetEve(iPoint);
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eves);
-  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++)
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Enthalpys(iPoint, iSpecies) = hs[iSpecies];
-
+  
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
   const auto& thermalconductivities = fluidmodel->GetThermalConductivities();

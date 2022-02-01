@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.0 "Blackbird"
+#  \version 7.2.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -210,17 +210,6 @@ def main():
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
     test_list.append(flatplate)
-
-    # Custom objective function
-    flatplate_udobj           = TestCase('flatplate_udobj')
-    flatplate_udobj.cfg_dir   = "user_defined_functions"
-    flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
-    flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.653802, -1.18143, -0.794887, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 1.7147]
-    flatplate_udobj.su2_exec  = "mpirun -n 2 SU2_CFD"
-    flatplate_udobj.timeout   = 1600
-    flatplate_udobj.tol       = 0.00001
-    test_list.append(flatplate_udobj)
 
     # Laminar cylinder (steady)
     cylinder           = TestCase('cylinder')
@@ -1377,7 +1366,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
     solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
     solid_periodic_pins.timeout   = 1600
     solid_periodic_pins.tol       = 0.00001
@@ -1416,7 +1405,7 @@ def main():
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247026, -0.811632, -0.982066, -0.753312, 208.023676, 350.180000] #last 7 lines
     sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
@@ -1428,7 +1417,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451962, -0.008477, 214.707868, 365.670000] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451732, -0.008477, 214.707868, 365.670000] #last 7 lines
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
@@ -1609,6 +1598,18 @@ def main():
     species2_primitiveVenturi.tol       = 0.00001
     test_list.append(species2_primitiveVenturi)
 
+    # 3 species (2 eq) primitive venturi mixing
+    species3_primitiveVenturi           = TestCase('species3_primitiveVenturi')
+    species3_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
+    species3_primitiveVenturi.test_iter = 50
+    species3_primitiveVenturi.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300, 1.645644, 0.499064, 0.601230, 0.545351]
+    species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species3_primitiveVenturi.timeout   = 1600
+    species3_primitiveVenturi.new_output = True
+    species3_primitiveVenturi.tol       = 0.00001
+    test_list.append(species3_primitiveVenturi)
+
     # 3 species (2 eq) primitive venturi mixing with inlet files.
     # Note that the residuals are exactly the same as for the non-inlet case which should be the case for a fresh inlet file.
     species3_primitiveVenturi_inletFile           = TestCase('species3_primitiveVenturi_inletFile')
@@ -1627,7 +1628,7 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -4.316833, 10.000000, -4.523292, 8.000000, -5.173152]
     species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
     species_passive_val.timeout   = 1600
     species_passive_val.new_output = True

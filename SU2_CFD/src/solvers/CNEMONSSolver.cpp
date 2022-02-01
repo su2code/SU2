@@ -2,14 +2,14 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.3.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,11 +96,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     SetPrimitive_Limiter(geometry, config);
   }
 
-  /*--- Compute vorticity and strain mag. ---*/
-
   ComputeVorticityAndStrainMag(*config, iMesh);
-
-  /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
     SetTau_Wall_WF(geometry, solver_container, config);
@@ -323,9 +319,10 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++){
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-    nodes->SetVel_ResTruncError_Zero(iPoint);
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -638,9 +635,10 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Initialize viscous residual to zero ---*/
     for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++){
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-    nodes->SetVel_ResTruncError_Zero(iPoint);
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
 
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
