@@ -1411,12 +1411,12 @@ def main():
     cht_compressible.tol       = 0.00001
     test_list.append(cht_compressible)
 
-    # 2D CHT case streamwise periodicity
+    # 2D CHT case streamwise periodicity. Also test Multizone PerSurface screen output.
     sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000, -8.9660e-10, -7.5332e-01, 7.5332e-01]
     sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
