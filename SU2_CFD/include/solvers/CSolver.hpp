@@ -4294,6 +4294,82 @@ public:
   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
+  /*!
+   * \brief Correct the metric at boundaries.
+   */
+  void CorrectBoundMetric(const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Make the eigenvalues of the Hessians positive.
+   */
+  void SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint);
+
+  /*!
+   * \brief Compute the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the convective terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void ConvectiveMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                        unsigned long iPoint, vector<vector<su2double> > &weights);
+
+  /*!
+   * \brief Compute the viscous terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void ViscousMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                     unsigned long iPoint, vector<vector<su2double> > &weights);
+
+  /*!
+   * \brief Compute the turbulent terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  virtual void TurbulentMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                               unsigned long iPoint, vector<vector<su2double> > &weights) { }
+
+  /*!
+   * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void SumWeightedHessians(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                           unsigned long iPoint, vector<vector<su2double> > &weights);
+
+  /*!
+   * \brief Perform an Lp-norm normalization of the metric (2D).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void NormalizeMetric2(const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Perform an Lp-norm normalization of the metric (3D).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void NormalizeMetric3(const CGeometry *geometry, const CConfig *config);
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.

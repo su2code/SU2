@@ -4317,3 +4317,755 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 #endif
 
 }
+
+void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint) {
+  
+  su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
+
+  for(auto iVar = 0; iVar < nVar; iVar++){
+    if (nDim == 2) {
+      //--- Get upper triangle
+      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+      
+      A[0][0] = a; A[0][1] = b;
+      A[1][0] = b; A[1][1] = c;
+
+      //--- Compute eigenvalues and eigenvectors
+      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+      
+      //--- If NaN detected, set values to zero.
+      //--- Otherwise, store recombined matrix.
+      bool check_hess = true;
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if (EigVal[iDim] != EigVal[iDim]) {
+          check_hess = false;
+        }
+        for (auto jDim = 0; jDim < nDim; jDim++) {
+          if (EigVec[iDim][jDim] != EigVec[iDim][jDim]) {
+            check_hess = false;
+            break;
+          }
+        }
+        if (!check_hess) break;
+      }
+
+      if (check_hess){
+        for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
+        CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+      }
+      else {
+        for(auto iDim = 0; iDim < nDim; ++iDim)
+          for (auto jDim = 0; jDim < nDim; ++jDim)
+            A[iDim][jDim] = 0.;
+      }
+
+      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+      base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
+    }
+    else {
+      //--- Get upper triangle
+      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
+      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
+      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
+      const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
+      const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
+      const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
+
+      A[0][0] = a; A[0][1] = b; A[0][2] = c;
+      A[1][0] = b; A[1][1] = d; A[1][2] = e;
+      A[2][0] = c; A[2][1] = e; A[2][2] = f;
+
+      //--- Compute eigenvalues and eigenvectors
+      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+      
+      //--- If NaN detected, set values to zero.
+      //--- Otherwise, store recombined matrix.
+      bool check_hess = true;
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if (EigVal[iDim] != EigVal[iDim]) {
+          check_hess = false;
+        }
+        for (auto jDim = 0; jDim < nDim; jDim++) {
+          if (EigVec[iDim][jDim] != EigVec[iDim][jDim]) {
+            check_hess = false;
+            break;
+          }
+        }
+        if (!check_hess) break;
+      }
+
+      if (check_hess){
+        for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
+        CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+      }
+      else {
+        for(auto iDim = 0; iDim < nDim; ++iDim)
+          for (auto jDim = 0; jDim < nDim; ++jDim)
+            A[iDim][jDim] = 0.;
+      }
+
+      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
+      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
+      base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
+      base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
+      base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
+      base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
+    }
+  }
+}
+
+void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config) {
+
+  unsigned long nPointDomain = geometry->GetnPointDomain();
+
+  bool visc = (config->GetViscous());
+  bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
+  //--- Vector to store weights from various error contributions
+  unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();
+  if(turb) nVarTot += solver[TURB_SOL]->GetnVar();
+
+  //--- Compute weights for Hessians
+  vector<vector<su2double> > HessianWeights(3, vector<su2double>(nVarTot));
+  for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    for (auto& hw : HessianWeights) fill(hw.begin(), hw.end(), 0.0);
+    //--- Convective terms
+    ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
+
+    //--- Viscous terms
+    if (visc) ViscousMetric(solver, geometry, config, iPoint, HessianWeights);
+
+    //--- Turbulent terms
+    if (turb) solver[TURB_SOL]->TurbulentMetric(solver, geometry, config, iPoint, HessianWeights);
+    
+    //--- Make Hessians positive definite
+    SetPositiveDefiniteHessian(geometry, config, iPoint);
+    if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
+
+    //--- Add Hessians
+    SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
+  }
+  
+  //--- Apply correction to wall boundary
+  CorrectBoundMetric(geometry, config);
+
+  if(nDim == 2) NormalizeMetric2(geometry, config);
+  else          NormalizeMetric3(geometry, config);
+
+}
+
+void CSolver::ConvectiveMetric(CSolver **solver, const CGeometry*geometry, const CConfig *config, 
+                               unsigned long iPoint, vector<vector<su2double> > &weights) {
+
+  auto varFlo    = solver[FLOW_SOL]->GetNodes();
+  auto varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+            
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool sst  = ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST));
+
+  CVariable *varTur = nullptr, *varAdjTur = nullptr;
+  if (turb) {
+    varTur    = solver[TURB_SOL]->GetNodes();
+    varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+  }
+
+  unsigned short iDim, iVar, jVar;
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+  vector<vector<su2double> > A(nDim+2, vector<su2double>(nDim+2, 0.0)),
+                             B(nDim+2, vector<su2double>(nDim+2, 0.0)),
+                             C(nDim+2, vector<su2double>(nDim+2, 0.0));
+
+  //--- Inviscid terms
+  const su2double u  = varFlo->GetVelocity(iPoint, 0);
+  const su2double v  = varFlo->GetVelocity(iPoint, 1);
+  const su2double w  = (nDim == 3)? varFlo->GetVelocity(iPoint, 2): 0.;
+  const su2double v2 = varFlo->GetVelocity2(iPoint);
+  const su2double e  = varFlo->GetEnergy(iPoint);
+  const su2double g  = config->GetGamma();
+
+  //--- Store transposed Jacobians
+  if(nDim == 2) {
+    A[0][1] = -u*u + (g-1.)/2.*v2; A[0][2] = -u*v; A[0][3] = -u*(g*e-(g-1)*v2);
+    A[1][0] = 1.; A[1][1] = (3.-g)*u; A[1][2] = v; A[1][3] = g*e-(g-1.)/2.*(v2+2*u*u);
+    A[2][1] = -(g-1.)*v; A[2][2] = u; A[2][3] = -(g-1.)*u*v;
+    A[3][1] = g-1.; A[3][3] = g*u;
+
+    B[0][1] = -u*v; B[0][2] = -v*v + (g-1.)/2.*v2; B[0][3] = -v*(g*e-(g-1)*v2);
+    B[1][1] = v; B[1][2] = -(g-1.)*u; B[1][3] = -(g-1.)*u*v;
+    B[2][0] = 1.; B[2][1] = u; B[2][2] = (3.-g)*v; B[2][3] = g*e-(g-1.)/2.*(v2+2*v*v);
+    B[3][2] = g-1.; B[3][3] = g*v;
+
+  }
+  else{
+    A[0][1] = -u*u + (g-1.)/2.*v2; A[0][2] = -u*v; A[0][3] = -u*w; A[0][4] = -u*(g*e-(g-1)*v2);
+    A[1][0] = 1.; A[1][1] = (3.-g)*u; A[1][2] = v; A[1][3] = w;    A[1][4] = g*e-(g-1.)/2.*(v2+2*u*u);
+    A[2][1] = -(g-1.)*v; A[2][2] = u; A[2][4] = -(g-1.)*u*v;
+    A[3][1] = -(g-1.)*w; A[3][3] = u; A[3][4] = -(g-1.)*u*w;
+    A[4][1] = g-1.; A[4][4] = g*u;
+
+    B[0][1] = -u*v; B[0][2] = -v*v + (g-1.)/2.*v2; B[0][3] = -v*w; B[0][4] = -v*(g*e-(g-1)*v2);
+    B[1][1] = v; B[1][2] = -(g-1.)*u; B[1][4] = -(g-1.)*u*v;
+    B[2][0] = 1.; B[2][1] = u; B[2][2] = (3.-g)*v; B[2][3] = w; B[2][4] = g*e-(g-1.)/2.*(v2+2*v*v);
+    B[3][2] = -(g-1.)*w; B[3][3] = v; B[3][4] = -(g-1.)*v*w;
+    B[4][2] = g-1.; B[4][4] = g*v;
+
+    C[0][1] = -u*w; C[0][2] = -v*w; C[0][3] = -w*w + (g-1.)/2.*v2; C[0][4] = -w*(g*e-(g-1)*v2);
+    C[1][1] = w; C[1][3] = -(g-1.)*u; C[1][4] = -(g-1.)*u*w;
+    C[2][2] = w; C[2][3] = -(g-1.)*v; C[2][4] = -(g-1.)*v*w;
+    C[3][0] = 1.; C[3][1] = u; C[3][2] = v; C[3][3] = (3.-g)*w; C[3][4] = g*e-(g-1.)/2.*(v2+2*w*w);
+    C[4][3] = (g-1.); C[4][4] = g*w;
+  }
+  
+  //--- Contribution of k to dp/dr and dp/d(re)
+  if (sst) {
+    const su2double k = varTur->GetPrimitive(iPoint,0);
+    if (nDim == 2) {
+      A[0][3] += (g-1.)*k*u;
+      A[1][3] += -(g-1.)*k;
+      
+      B[0][3] += (g-1.)*k*v;
+      B[2][3] += -(g-1.)*k;
+    }
+    else {
+      A[0][4] += (g-1.)*k*u;
+      A[1][4] += -(g-1.)*k;
+      
+      B[0][4] += (g-1.)*k*v;
+      B[2][4] += -(g-1.)*k;
+      
+      C[0][4] += (g-1.)*k*w;
+      C[3][4] += -(g-1.)*k;
+    }
+  }
+
+  for (iVar = 0; iVar < nVarFlo; ++iVar) {
+    for (jVar = 0; jVar < nVarFlo; ++jVar) {
+      const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 0),
+                      adjy = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 1);
+      weights[1][iVar] += -A[iVar][jVar]*adjx - B[iVar][jVar]*adjy;
+      if(nDim == 3) {
+        const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, jVar, 2);
+        weights[1][iVar] += -C[iVar][jVar]*adjz;
+      }
+    }
+  }
+
+  //--- Turbulent terms
+  if(turb) {
+    const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+    if (sst) {
+      for (iVar = 0; iVar < nVarTur; ++iVar){
+        const su2double adjx = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 0),
+                        adjy = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 1),
+                        val  = varTur->GetPrimitive(iPoint, iVar);
+        weights[1][nVarFlo+iVar] += - u*adjx - v*adjy;
+        weights[1][0]            += val*u*adjx + val*v*adjy;
+        weights[1][1]            += - val*adjx;
+        weights[1][2]            += - val*adjy;
+        if (nDim == 3) {
+          const su2double adjz = varAdjTur->GetGradient_Adaptation(iPoint, iVar, 2);
+          weights[1][nVarFlo+iVar] += - w*adjz;
+          weights[1][0]            += val*w*adjz;
+          weights[1][3]            += - val*adjz;
+        }
+      }
+      
+      //--- Contribution of k to dp/d(rk)
+      //--- Momentum equation
+      for (iDim = 0; iDim < nDim; iDim++) {
+        const su2double adj = varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim);
+        weights[1][nVarFlo+0] += (g-1.)*adj;
+      }
+      //--- Energy equation
+      const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 0),
+                      adjy = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 1);
+      weights[1][nVarFlo+0] += (g-1.)*(u*adjx+v*adjy);
+      if (nDim == 3) {
+        const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 2);
+        weights[1][nVarFlo+0] += (g-1.)*w*adjz;
+      }
+    }
+    else {
+      //--- TODO: Code SA
+    }
+  }
+
+}
+
+void CSolver::ViscousMetric(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+                            unsigned long iPoint, vector<vector<su2double> > &weights) {
+
+  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool sst  = ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST));
+
+  CVariable *varTur = nullptr, *varAdjTur = nullptr;
+  if (turb) {
+    varTur    = solver[TURB_SOL]->GetNodes();
+    varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+  }
+
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+    
+  //--- First-order terms (error due to viscosity)
+  su2double r, u[3], e, k,
+            T, mu, mut, lam, lamt, dmudT, 
+            Tref, S, muref, 
+            R, cv, cp, g, Pr, Prt;
+
+  r = varFlo->GetDensity(iPoint);
+  u[0] = varFlo->GetVelocity(iPoint, 0);
+  u[1] = varFlo->GetVelocity(iPoint, 1);
+  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  e = varFlo->GetEnergy(iPoint);
+  k = 0.;
+  if(sst) {
+    k = varTur->GetPrimitive(iPoint, 0);
+  }
+
+  T   = varFlo->GetTemperature(iPoint);
+  mu  = varFlo->GetLaminarViscosity(iPoint);
+  mut = varFlo->GetEddyViscosity(iPoint);
+
+  Tref  = config->GetMu_Temperature_RefND();
+  S     = config->GetMu_SND();
+  muref = config->GetMu_RefND();
+  dmudT = muref*(Tref+S)/pow(Tref,1.5) * (3.*S*sqrt(T) + pow(T,1.5))/(2.*pow((T+S),2.));
+
+  g    = config->GetGamma();
+  R    = config->GetGas_ConstantND();
+  cp   = (g/(g-1.))*R;
+  cv   = cp/g;
+  Pr   = config->GetPrandtl_Lam();
+  Prt  = config->GetPrandtl_Turb();
+  lam  = cp*mu/Pr;
+  lamt = cp*mut/Prt;
+
+  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, tau[3][3],
+            delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto jDim = 0 ; jDim < nDim; jDim++) {
+      gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
+    }
+    gradT[iDim] = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
+    if (sst) {
+      gradk[iDim]     = varTur->GetGradient(iPoint, 0, iDim);
+      gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
+    }
+    else {
+      //--- TODO: Code SA
+    }
+  }
+  
+  //--- Account for wall functions
+  // su2double wf = varFlo->GetTauWallFactor(iPoint);
+  su2double wf = 1.0;
+
+  divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    for (auto jDim = 0; jDim < nDim; ++jDim) {
+      tau[iDim][jDim]  = wf*((mu+mut)*( gradu[jDim][iDim] + gradu[iDim][jDim] )
+                       - TWO3*((mu+mut)*divu+r*k)*delta[iDim][jDim]);
+    }
+  }
+
+  su2double factor = 0.0;
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    for (auto jDim = 0; jDim < nDim; ++jDim) {
+      auto iVar = iDim+1;
+      factor += (tau[iDim][jDim]+wf*TWO3*r*k*delta[iDim][jDim])/(mu+mut)
+              * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
+              + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+    }
+    factor += cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
+    if (sst) {
+      factor += gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+                            +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
+              + gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    }
+  }
+  factor *= dmudT/(r*cv);
+
+  //--- Momentum weights
+  vector<su2double> TmpWeights(nVarFlo, 0.0);
+  TmpWeights[1] += -u[0]*factor;
+  TmpWeights[2] += -u[1]*factor;
+  if(nDim == 3) TmpWeights[3] += -u[2]*factor;
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    for (auto jDim = 0; jDim < nDim; ++jDim) {
+      TmpWeights[iDim+1] += 1./r*tau[iDim][jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), jDim);
+    }
+  }
+
+  //--- Energy weight
+  TmpWeights[nVarFlo-1] += factor;
+  
+  //--- k weight
+  if (sst) {
+    weights[1][nVarFlo] += -factor;
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+      weights[1][nVarFlo] += -TWO3*wf*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+                                        + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+    }
+  }
+
+  //--- Density weight
+  for (auto iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
+  TmpWeights[0] += -e*TmpWeights[nVarFlo-1];
+  if (sst) TmpWeights[0] += k*factor;
+
+  //--- Add TmpWeights to weights, then reset for second-order terms
+  for (auto iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar];
+  fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+
+  //--- Second-order terms (error due to gradients)
+  if(nDim == 3) {
+    const unsigned short rui = 1, rvi = 2, rwi = 3, rei = 4,
+                         xxi = 0, xyi = 1, xzi = 2, yyi = 3, yzi = 4, zzi = 5;
+    TmpWeights[1] += -(mu+mut)*wf/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, zzi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                      +varAdjFlo->GetHessian(iPoint, rwi, xzi)
+                                      +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                      +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi)
+                                      +u[2]*varAdjFlo->GetHessian(iPoint, rei, xzi))
+                   + (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhou
+    TmpWeights[2] += -(mu+mut)*wf/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rvi, xxi)
+                                      +4.*varAdjFlo->GetHessian(iPoint, rvi, yyi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rvi, zzi)
+                                      +varAdjFlo->GetHessian(iPoint, rui, xyi)
+                                      +varAdjFlo->GetHessian(iPoint, rwi, yzi)
+                                      +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                      +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi)
+                                      +u[2]*varAdjFlo->GetHessian(iPoint, rei, yzi))
+                   + (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhov
+    TmpWeights[3] += -(mu+mut)*wf/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rwi, xxi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rwi, yyi)
+                                      +4.*varAdjFlo->GetHessian(iPoint, rwi, zzi)
+                                      +varAdjFlo->GetHessian(iPoint, rui, xzi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, yzi)
+                                      +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +3.*u[2]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +4.*u[2]*varAdjFlo->GetHessian(iPoint, rei, zzi)
+                                      +u[0]*varAdjFlo->GetHessian(iPoint, rei, xzi)
+                                      +u[1]*varAdjFlo->GetHessian(iPoint, rei, yzi))
+                   + (lam+lamt)/(r*cv)*u[2]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhow
+    TmpWeights[4] += -(lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hrhoe
+    TmpWeights[0] += -u[0]*TmpWeights[1]-u[1]*TmpWeights[2]-u[2]*TmpWeights[3]-e*TmpWeights[4]; // Hrho
+  }
+  else {
+    const unsigned short rui = 1, rvi = 2, rei = 3,
+                         xxi = 0, xyi = 1, yyi = 2;
+    TmpWeights[1] += -(mu+mut)*wf/(3.*r)*(4.*varAdjFlo->GetHessian(iPoint, rui, xxi)
+                                      +3.*varAdjFlo->GetHessian(iPoint, rui, yyi)
+                                      +varAdjFlo->GetHessian(iPoint, rvi, xyi)
+                                      +4.*u[0]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +3.*u[0]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +u[1]*varAdjFlo->GetHessian(iPoint, rei, xyi))
+                   + (lam+lamt)/(r*cv)*u[0]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhou
+    TmpWeights[2] += -(mu+mut)*wf/(3.*r)*(3.*varAdjFlo->GetHessian(iPoint, rvi, xxi)
+                                      +4.*varAdjFlo->GetHessian(iPoint, rvi, yyi)
+                                      +varAdjFlo->GetHessian(iPoint, rui, xyi)
+                                      +3.*u[1]*varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                      +4.*u[1]*varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                      +u[0]*varAdjFlo->GetHessian(iPoint, rei, xyi))
+                   + (lam+lamt)/(r*cv)*u[1]*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                            +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhov
+    TmpWeights[3] += -(lam+lamt)/(r*cv)*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                        +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hrhoe
+    TmpWeights[0] += -u[0]*TmpWeights[1]-u[1]*TmpWeights[2]-e*TmpWeights[3]; // Hrho
+  }
+
+  //--- Add TmpWeights to weights
+  for (auto iVar = 0; iVar < nVarFlo; ++iVar) weights[2][iVar] += TmpWeights[iVar];
+
+}
+
+void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+                                  unsigned long iPoint, vector<vector<su2double> > &weights) {
+  
+  auto varFlo = solver[FLOW_SOL]->GetNodes();
+
+  const unsigned short nMet = 3*(nDim-1);
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  
+  //--- Mean flow variables
+  for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
+
+    for (auto im = 0; im < nMet; ++im) {
+      const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
+      // const su2double part = fabs((weights[0][iVar])
+      //                            +(weights[1][iVar])
+      //                            +(weights[2][iVar]))*hess;
+      const su2double part = (fabs(weights[0][iVar])
+                             +fabs(weights[1][iVar])
+                             +fabs(weights[2][iVar]))*hess;
+      varFlo->AddMetric(iPoint, im, part);
+    }
+  }
+
+  //--- Turbulent variables
+  if(turb) {
+    auto varTur = solver[TURB_SOL]->GetNodes();
+    const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+    for (auto iVar = 0; iVar < nVarTur; ++iVar) {
+
+      for (auto im = 0; im < nMet; ++im) {
+        const su2double hess = varTur->GetHessian(iPoint, iVar, im);
+        // const su2double part = fabs((weights[0][nVarFlo+iVar])
+        //                            +(weights[1][nVarFlo+iVar])
+        //                            +(weights[2][nVarFlo+iVar]))*hess;
+        const su2double part = (fabs(weights[0][nVarFlo+iVar])
+                               +fabs(weights[1][nVarFlo+iVar])
+                               +fabs(weights[2][nVarFlo+iVar]))*hess;
+        varFlo->AddMetric(iPoint, im, part);
+      }
+    }
+  }
+}
+
+void CSolver::NormalizeMetric2(const CGeometry *geometry, const CConfig *config) {
+  
+  const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+  su2double localScale = 0.0,
+            globalScale = 0.0;
+
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
+  
+  const su2double p = config->GetAdap_Norm(),
+                  eigmax = 1./(pow(config->GetAdap_Hmin(),2.0)),
+                  eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
+                  armax2 = pow(config->GetAdap_ARmax(), 2.0),
+                  outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+
+  su2double **A      = new su2double*[nDim],
+            **EigVec = new su2double*[nDim], 
+            *EigVal  = new su2double[nDim];
+
+  su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
+
+  //--- set tolerance and obtain global scaling
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
+    
+    A[0][0] = a; A[0][1] = b;
+    A[1][0] = b; A[1][1] = c;
+
+    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+    const su2double Vol = geometry->nodes->GetVolume(iPoint);
+
+    localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+  globalScale = localScale;
+#endif
+
+  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
+    
+    A[0][0] = a; A[0][1] = b;
+    A[1][0] = b; A[1][1] = c;
+
+    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    
+    unsigned short iMax = 0;
+    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+
+    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+    base_nodes->SetMetric(iPoint, 0, A[0][0]);
+    base_nodes->SetMetric(iPoint, 1, A[0][1]);
+    base_nodes->SetMetric(iPoint, 2, A[1][1]);
+
+    //--- compute min, max, total complexity
+    const su2double Vol = geometry->nodes->GetVolume(iPoint);
+    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]));
+    const su2double hmin    = 1./sqrt(max(EigVal[0], EigVal[1]));
+    const su2double hmax    = 1./sqrt(min(EigVal[0], EigVal[1]));
+
+    localMinDensity = min(localMinDensity, density);
+    localMaxDensity = max(localMaxDensity, density);
+    localMaxAspectR = max(hmax/hmin, localMaxAspectR);
+    localTotComplex += density*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+  globalMinDensity = localMinDensity;
+  globalMaxDensity = localMaxDensity;
+  globalMaxAspectR = localMaxAspectR;
+  globalTotComplex = localTotComplex;
+#endif
+
+  if(rank == MASTER_NODE) {
+    cout << "Minimum density: " << globalMinDensity << "." << endl;
+    cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
+    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
+  }
+}
+
+void CSolver::NormalizeMetric3(const CGeometry *geometry, const CConfig *config) {
+
+  const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+  su2double localScale = 0.0,
+            globalScale = 0.0;
+
+  su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
+  
+  const su2double p = config->GetAdap_Norm(),
+                  eigmax = 1./(pow(config->GetAdap_Hmin(),2.0)),
+                  eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
+                  armax2 = pow(config->GetAdap_ARmax(), 2.0),
+                  outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+
+  su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
+
+  //--- set tolerance and obtain global scaling
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
+    const su2double d = base_nodes->GetMetric(iPoint, 3);
+    const su2double e = base_nodes->GetMetric(iPoint, 4);
+    const su2double f = base_nodes->GetMetric(iPoint, 5);
+
+    A[0][0] = a; A[0][1] = b; A[0][2] = c;
+    A[1][0] = b; A[1][1] = d; A[1][2] = e;
+    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+
+    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+    const su2double Vol = geometry->nodes->GetVolume(iPoint);
+
+    localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+  globalScale = localScale;
+#endif
+
+  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+    const su2double a = base_nodes->GetMetric(iPoint, 0);
+    const su2double b = base_nodes->GetMetric(iPoint, 1);
+    const su2double c = base_nodes->GetMetric(iPoint, 2);
+    const su2double d = base_nodes->GetMetric(iPoint, 3);
+    const su2double e = base_nodes->GetMetric(iPoint, 4);
+    const su2double f = base_nodes->GetMetric(iPoint, 5);
+
+    A[0][0] = a; A[0][1] = b; A[0][2] = c;
+    A[1][0] = b; A[1][1] = d; A[1][2] = e;
+    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+
+    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    
+    unsigned short iMax = 0;
+    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+
+    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+    //--- store lower triangle to be consistent with AMG
+    base_nodes->SetMetric(iPoint, 0, A[0][0]);
+    base_nodes->SetMetric(iPoint, 1, A[1][0]);
+    base_nodes->SetMetric(iPoint, 2, A[1][1]);
+    base_nodes->SetMetric(iPoint, 3, A[2][0]);
+    base_nodes->SetMetric(iPoint, 4, A[2][1]);
+    base_nodes->SetMetric(iPoint, 5, A[2][2]);
+
+    //--- compute min, max, total complexity
+    const su2double Vol = geometry->nodes->GetVolume(iPoint);
+    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+    const su2double hmin    = 1./sqrt(max(max(EigVal[0], EigVal[1]), EigVal[2]));
+    const su2double hmax    = 1./sqrt(min(min(EigVal[0], EigVal[1]), EigVal[2]));
+
+    localMinDensity = min(localMinDensity, density);
+    localMaxDensity = max(localMaxDensity, density);
+    localMaxAspectR = max(hmax/hmin, localMaxAspectR);
+    localTotComplex += density*Vol;
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+  globalMinDensity = localMinDensity;
+  globalMaxDensity = localMaxDensity;
+  globalMaxAspectR = localMaxAspectR;
+  globalTotComplex = localTotComplex;
+#endif
+
+  if(rank == MASTER_NODE) {
+    cout << "Minimum density: " << globalMinDensity << "." << endl;
+    cout << "Maximum density: " << globalMaxDensity << "." << endl;
+    cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
+    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
+  }
+
+  for (auto iDim = 0u; iDim < nDim; ++iDim){
+    delete [] A[iDim];
+    delete [] EigVec[iDim];
+  }
+  delete [] A;
+  delete [] EigVec;
+  delete [] EigVal;
+}
