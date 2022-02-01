@@ -4324,7 +4324,7 @@ public:
   */
   inline virtual void ComputeBFMSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources) {};
 
-  inline su2double GetBody_Force(unsigned short iDim){return 0;}
+  inline virtual su2double GetBody_Force(unsigned short iDim){return 0;}
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.

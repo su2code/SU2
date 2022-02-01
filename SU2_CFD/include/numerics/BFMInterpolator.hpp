@@ -35,6 +35,8 @@ class BFMInterpolator
     private:
     su2double *Rotation_Axis;   // BFM rotation axis (Cartesian)
     su2double *axial_direction; // Axial direction unit vector (Cartesian)
+    su2double *right_up_axis;
+
     su2double BFM_radius;
     /*! 
     * \brief 2D interpolation of blade geometric parameters onto mesh nodes.
@@ -46,6 +48,9 @@ class BFMInterpolator
     */
     void Interp2D(su2double axis, su2double radius, unsigned long iPoint, const ReadBFMInput * reader, CSolver * solver_container);
 
+    void Interp3D(su2double axis, su2double radius, su2double theta, unsigned long iPoint, const ReadBFMInput * reader, CSolver * solver_container);
+
+    bool Interp_ax_rad(su2double axis, su2double radius, unsigned long iPoint, const ReadBFMInput * reader, unsigned long iRow, unsigned long iTang, vector<su2double> *interp_solution);
     /*!
     * \brief Ray-cast inclusion algorithm which checks for query point inclusion whithin cell.
     * \param [in] axis - Axial coordinate of query point.

@@ -2044,10 +2044,11 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
             LinSysRes(iPoint, iDim) -= geometry->nodes->GetVolume(iPoint) * BFM_sources[iDim];
       }
+
       /*--- Storing Cartesian body-forces ---*/
-      BFM_solver->GetNodes()->SetBodyForce(iPoint, 0, BFM_solver->GetBody_Force(0));
-      BFM_solver->GetNodes()->SetBodyForce(iPoint, 1, BFM_solver->GetBody_Force(1));
-      BFM_solver->GetNodes()->SetBodyForce(iPoint, 2, BFM_solver->GetBody_Force(2));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 0, BFM_solver->GetNodes()->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR) * BFM_solver->GetBody_Force(0));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 1, BFM_solver->GetNodes()->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR) * BFM_solver->GetBody_Force(1));
+      BFM_solver->GetNodes()->SetBodyForce(iPoint, 2, BFM_solver->GetNodes()->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR) * BFM_solver->GetBody_Force(2));
 
     }
     END_SU2_OMP_FOR

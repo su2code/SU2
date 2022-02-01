@@ -65,7 +65,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
     file_stream.open(input_file.c_str(), ifstream::in);
 
     if (!file_stream.is_open()) {
-        SU2_MPI::Error(string("There is no look-up-table file file called ") + input_file,
+        SU2_MPI::Error(string("There is no BFM input file file called ") + input_file,
                 CURRENT_FUNCTION);
     }
 

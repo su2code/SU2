@@ -684,8 +684,19 @@ su2double CBFMSolver::ComputeKMach(CSolver **solver_container, unsigned long iPo
     if(M_rel == 1.0){
         M_rel -= 1e-6;
     }
-    su2double K_prime = M_rel < 1 ? 1/sqrt(1 - M_rel * M_rel) : 2 / (PI_NUMBER * sqrt(M_rel*M_rel - 1));
-    su2double K_Mach = K_prime <= 3 ? K_prime : 3;
+
+    su2double K_prime, K_Mach;
+    if(M_rel < 1){
+        K_prime = 1/sqrt(1 - M_rel*M_rel);
+    }else{
+        K_prime = 2/(PI_NUMBER*sqrt(M_rel * M_rel - 1));
+    }
+
+    if(K_prime <= 3){
+        K_Mach = K_prime;
+    }else{
+        K_Mach = 3;
+    }
     if (isnan(K_Mach)) K_Mach = 3;
 
     return K_Mach;
@@ -701,9 +712,21 @@ su2double CBFMSolver::ComputeKMach(CSolver **solver_container, unsigned long iPo
     if(M_rel == 1.0){
         M_rel -= 1e-6;
     }
-    su2double K_prime = M_rel < 1 ? 1/sqrt(1 - M_rel * M_rel) : 2 / (PI_NUMBER * sqrt(M_rel*M_rel - 1));
-    su2double K_Mach = K_prime <= 3 ? K_prime : 3;
-    if (isnan(K_Mach)) K_Mach = 3;
+    // su2double K_prime = M_rel < 1 ? 1/sqrt(1 - M_rel * M_rel) : 2 / (PI_NUMBER * sqrt(M_rel*M_rel - 1));
+    // su2double K_Mach = K_prime <= 3 ? K_prime : 3;
+
+    su2double K_prime, K_Mach;
+    if(M_rel < 1){
+        K_prime = 1/sqrt(1 - M_rel*M_rel);
+    }else{
+        K_prime = 2/(PI_NUMBER*sqrt(M_rel * M_rel - 1));
+    }
+
+    if(K_prime <= 3){
+        K_Mach = K_prime;
+    }else{
+        K_Mach = 3;
+    }
 
     return K_Mach;
 }
