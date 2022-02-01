@@ -11,6 +11,7 @@ class DivergenceFailure(EvaluationFailure):
 # It's important for the whole python package to be accessible with one import SU2
 # See issue #246
 
+from SU2 import amginria
 from SU2 import run
 from SU2 import io
 from SU2 import eval

@@ -31,6 +31,7 @@ bin_SCRIPTS = \
     continuous_adjoint.py \
     compute_uncertainty.py \
     finite_differences.py \
+    mesh_adaptation.py \
     mesh_deformation.py \
     parallel_computation.py \
     parallel_computation_fsi.py \
@@ -49,6 +50,9 @@ bin_SCRIPTS = \
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA= \
     SU2/__init__.py \
+    SU2/amginria/interface.py \
+    SU2/amginria/tools.py \
+    SU2/amginria/__init__.py \
     SU2/eval/design.py \
     SU2/eval/functions.py \
     SU2/eval/gradients.py \
@@ -66,6 +70,7 @@ nobase_dist_mypkg_DATA= \
     SU2/opt/scipy_tools.py \
     SU2/opt/__init__.py \
     SU2/run/adjoint.py \
+    SU2/run/amg.py \
     SU2/run/deform.py \
     SU2/run/direct.py \
     SU2/run/interface.py \

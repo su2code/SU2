@@ -111,6 +111,25 @@ def init_submodules(method = 'auto'):
     download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
     download_module(amg_name, alt_name_amg, github_repo_amg, sha_version_amg)
 
+  # Setup AMG interface
+  # Require at least python 3.7 for pyamg
+  if sys.version_info >= (3, 7):
+    import pkg_resources
+    required = {'pyamg','_amgio'}
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = required - installed
+
+    if '_amgio' in missing:
+      print('Installing _amgio.')
+      cmd = sys.executable
+      amg_ext_dir  = alt_name_amg + '/su2io'
+      subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
+      subprocess.call([cmd,'setup.py','install'], cwd = amg_ext_dir, stdout = log, stderr = err)
+
+    # Setup pyamg
+    if 'pyamg' in missing:
+      install_pyamg(log, err)
+
 
 def is_git_directory(path = '.'):
   try:
