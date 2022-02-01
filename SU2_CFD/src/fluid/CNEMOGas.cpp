@@ -91,8 +91,6 @@ su2double CNEMOGas::ComputeSoundSpeed(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density+=rhos[iSpecies];
 
-  // Should this have ionization? TODO
-  // probably conc is too small?
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++){
     conc += rhos[iSpecies]/MolarMass[iSpecies];
     rhoCvtr += rhos[iSpecies] * Cvtrs[iSpecies];
@@ -121,7 +119,6 @@ su2double CNEMOGas::ComputeGasConstant(){
 
   su2double Mass = 0.0;
 
-  // TODO - extend for ionization -> does it need to be?
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
@@ -263,9 +260,9 @@ void CNEMOGas::ComputedTdU(const su2double *V, su2double *val_dTdU){
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
   }
 
-  if (ionization) {
-    SU2_MPI::Error("NEED TO IMPLEMENT dTdU for IONIZED MIX",CURRENT_FUNCTION);
-  }
+  //if (ionization) {
+  //  SU2_MPI::Error("NEED TO IMPLEMENT dTdU for IONIZED MIX",CURRENT_FUNCTION);
+  //}
 
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)

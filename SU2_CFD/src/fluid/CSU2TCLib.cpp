@@ -1047,7 +1047,7 @@ void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_tem
 
 vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
 
-  if(ionization) Cvtrs[0] = 0.0; //TODO: is this zero?
+  if(ionization) Cvtrs[0] = 0.0;
  
   for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
@@ -1125,7 +1125,6 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
     // Electron t-r mode contributes to mixture vib-el energy
     rhoEve += (3.0/2.0) * Ru/MolarMass[iSpecies] * (Tve - Ref_Temperature[iSpecies]); //bug? not multiplying by rhos[iSpecies]
   }
-
 
   for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++){
 
@@ -1577,7 +1576,7 @@ void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *ev
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
-
+  //TODO: ADD Electrons?
   cvtrs = GetSpeciesCvTraRot();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
@@ -1992,9 +1991,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double rhoE_f   = 0.0;
   su2double rhoE_ref = 0.0;
   su2double rhoCvtr  = 0.0;
-  //TODO; WHY DONT ELECTRONS COUNTS?
   for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
-    rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];  //TODO CVTRS for eLECT =0
+    rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
   }
