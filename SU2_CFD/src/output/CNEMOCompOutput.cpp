@@ -209,6 +209,14 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("CL_DRIVER_COMMAND", "CL_Driver_Command", ScreenOutputFormat::SCIENTIFIC, "FIXED_CL", "CL Driver's control command", HistoryFieldType::RESIDUAL);
   }
 
+  if (config->GetReduced_Model()) {
+    /// BEGIN_GROUP: ROM variables.
+    ///   /// DESCRIPTION: Root-mean square residual of the reduced coordinates.
+    AddHistoryOutput("NORM_ROM",    "norm[r_hat]",  ScreenOutputFormat::SCIENTIFIC, "RMS_RES", "Norm residual of the reduced  variables (rom).", HistoryFieldType::RESIDUAL);
+    ///   /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("ROM_COORD_1",    "ROM_Coord_1",  ScreenOutputFormat::SCIENTIFIC, "ROM_COORD", "Value of the reduced coordinate  (rom).", HistoryFieldType::RESIDUAL);
+  }
+  
   if (config->GetDeform_Mesh()){
     AddHistoryOutput("DEFORM_MIN_VOLUME", "MinVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Minimum volume in the mesh");
     AddHistoryOutput("DEFORM_MAX_VOLUME", "MaxVolume", ScreenOutputFormat::SCIENTIFIC, "DEFORM", "Maximum volume in the mesh");
