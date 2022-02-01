@@ -32,10 +32,15 @@
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  nPrimVar = nVar;
+
+  Primitive.resize(nPoint, nPrimVar) = su2double(0.0);
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
-    Solution(iPoint,0) = kine;
-    Solution(iPoint,1) = omega;
+    Primitive(iPoint,0) = kine;
+    Primitive(iPoint,1) = omega;
+    Solution(iPoint,0) = mut*omega;
+    Solution(iPoint,1) = mut*omega*omega/kine;
   }
 
   Solution_Old = Solution;
@@ -46,6 +51,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   F1.resize(nPoint) = su2double(1.0);
   F2.resize(nPoint) = su2double(0.0);
   CDkw.resize(nPoint) = su2double(0.0);
+  CDkwLimited.resize(nPoint) = false;
 
   muT.resize(nPoint) = mut;
 }
@@ -57,7 +63,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::StartPreacc();
   AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
-  AD::SetPreaccIn(Solution[iPoint], nVar);
+  AD::SetPreaccIn(Primitive[iPoint], nVar);
   AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
 
   /*--- Cross diffusion ---*/
@@ -65,15 +71,16 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   CDkw(iPoint) = 0.0;
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
-  CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
+  CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
   CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
+  CDkwLimited(iPoint) = (CDkw(iPoint) < pow(10.0, -20.0));
 
   /*--- F1 ---*/
 
-  arg2A = sqrt(Solution(iPoint,0))/(beta_star*Solution(iPoint,1)*val_dist+EPS*EPS);
-  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution(iPoint,1)+EPS*EPS);
+  arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*val_dist+EPS*EPS);
+  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Primitive(iPoint,1)+EPS*EPS);
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
