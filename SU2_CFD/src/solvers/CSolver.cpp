@@ -4303,6 +4303,7 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   
   ifstream in_init(init_filename);
   ifstream in_init_coord(init_coord_filename);
+  bool restart = config->GetRestart();
   s = 0; iPoint = 0; iVar = 0;
   
   if (in_init) {
@@ -4360,6 +4361,20 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         nodes->SetSolution(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
         nodes->SetSolution_Old(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
       }
+    }
+  }
+  else if (restart) {
+    /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
+    std::cout << "Using restart file for initial condition" << std::endl;
+    for (i = 0; i < nsnaps; i++) {
+      double sum = 0.0;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          sum += TrialBasis[iPoint*nVar + iVar][i] *
+          (nodes->GetSolution(iPoint, iVar) - nodes->Get_RefSolution(iPoint, iVar));
+        }
+      }
+      GenCoordsY.push_back(sum);
     }
   }
   else std::cout << "ERROR: Did not read file for initial solution or coordinates (ROM)." << std::endl;
