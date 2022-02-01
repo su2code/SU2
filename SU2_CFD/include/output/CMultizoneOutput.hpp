@@ -66,8 +66,9 @@ public:
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
+   * \param[in] config - Definition of the particular problem.
    */
-  void LoadMultizoneHistoryData(const COutput* const* output) override;
+  void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) override;
 
   /*!
    * \brief Set the available multizone history output fields

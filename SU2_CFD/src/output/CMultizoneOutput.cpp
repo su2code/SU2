@@ -78,7 +78,7 @@ CMultizoneOutput::CMultizoneOutput(const CConfig* driver_config, const CConfig* 
 
 }
 
-void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output) {
+void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {
 
   string nameMultizone, zoneIndex;
   su2double comboValue = 0;
@@ -97,6 +97,28 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output) {
         comboValue += item.second.value;
       }
     }
+
+    for (const auto& item : output[iZone]->GetHistoryPerSurfaceFields()) {
+      const auto& name = item.first;
+      nameMultizone = name + zoneIndex;
+      const auto& group = item.second[0].outputGroup;
+
+      /*--- Determine whether nMaker_Analyze/Monitoring has to be looped. ---*/
+      unsigned short nMarker = 1;
+      if (group == "FLOW_COEFF_SURF")
+        nMarker = config[iZone]->GetnMarker_Analyze();
+      else if (group == "AERO_COEFF_SURF")
+        nMarker = config[iZone]->GetnMarker_Monitoring();
+      else
+        SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
+
+      for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+        SetHistoryOutputPerSurfaceValue(nameMultizone, item.second[iMarker].value, iMarker);
+        if (name == "COMBO") {
+          comboValue += item.second[iMarker].value;
+        }
+      }// for iMarker
+    }// for HistPerSurfFields
   }
   SetHistoryOutputValue("COMBO", comboValue);
 }
@@ -125,14 +147,19 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
         AddHistoryOutput(name, header, field.screenFormat, group, "", field.fieldType );
       }
     }
-    /*--- Also add the PerSurface outputs ---*/
-    const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
 
     vector<string> Marker_Analyze;
-    for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[iZone]->GetnMarker_Analyze(); iMarker_Analyze++){
+    for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[iZone]->GetnMarker_Analyze(); iMarker_Analyze++) {
       Marker_Analyze.push_back(config[iZone]->GetMarker_Analyze_TagBound(iMarker_Analyze));
     }
-    //Marker_Analyze.push_back("test");
+
+    vector<string> Marker_Monitoring;
+    for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      Marker_Monitoring.push_back(config[iZone]->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
+    }
+
+    /*--- Also add the PerSurface outputs ---*/
+    const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
 
     for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurface_List()) {
 
@@ -153,11 +180,20 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
             SU2_MPI::Error("Cannot proccess PerSurface *_SURF history output.", CURRENT_FUNCTION);
 
         header = baseheader + zoneIndex; // field[i] where i is the marker
-        group  = field[0].outputGroup + zoneIndex;
+        group  = field[0].outputGroup; // Attach zone-index to the group after determining which group it is
 
-        AddHistoryOutputPerSurface(name, header, field[0].screenFormat, group, Marker_Analyze, field[0].fieldType );
-        //AddHistoryOutputPerSurface("SURFACE_MASSFLOW", "Avg_Massflow", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-        //AddHistoryOutput           "SURFACE_MASSFLOW", "Avg_Massflow", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF",      "desc",         HistoryFieldType::COEFFICIENT);
+        /*--- Determine whether nMaker_Analyze/Monitoring has to be used. ---*/
+        vector<string> Marker;
+        if (group == "FLOW_COEFF_SURF")
+          Marker = Marker_Analyze;
+        else if (group == "AERO_COEFF_SURF")
+          Marker = Marker_Monitoring;
+        else
+          SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
+
+        group += zoneIndex;
+
+        AddHistoryOutputPerSurface(name, header, field[0].screenFormat, group, Marker, field[0].fieldType );
       }
     }
   }

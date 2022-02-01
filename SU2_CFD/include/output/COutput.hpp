@@ -840,8 +840,9 @@ protected:
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
+   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void LoadMultizoneHistoryData(const COutput* const* output) {}
+  inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
    * \brief Set the available history output fields

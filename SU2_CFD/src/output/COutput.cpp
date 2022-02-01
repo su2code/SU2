@@ -236,7 +236,7 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   LoadCommonHistoryData(driver_config);
 
-  LoadMultizoneHistoryData(output);
+  LoadMultizoneHistoryData(output, config);
 
   Convergence_Monitoring(driver_config, curOuterIter);
 
