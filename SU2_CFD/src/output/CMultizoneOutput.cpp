@@ -98,13 +98,14 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output, co
       }
     }
 
+    /*-- Load the PerSurface values.- ---*/
     for (const auto& item : output[iZone]->GetHistoryPerSurfaceFields()) {
       const auto& name = item.first;
       nameMultizone = name + zoneIndex;
-      const auto& group = item.second[0].outputGroup;
 
       /*--- Determine whether nMaker_Analyze/Monitoring has to be looped. ---*/
-      unsigned short nMarker = 1;
+      const auto& group = item.second[0].outputGroup;
+      unsigned short nMarker = 0;
       if (group == "FLOW_COEFF_SURF")
         nMarker = config[iZone]->GetnMarker_Analyze();
       else if (group == "AERO_COEFF_SURF")
@@ -148,6 +149,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       }
     }
 
+    /*--- Prepare Marker lists that are passed to 'AddHistoryOutputPerSurface'. ---*/
     vector<string> Marker_Analyze;
     for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[iZone]->GetnMarker_Analyze(); iMarker_Analyze++) {
       Marker_Analyze.push_back(config[iZone]->GetMarker_Analyze_TagBound(iMarker_Analyze));
@@ -158,43 +160,39 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       Marker_Monitoring.push_back(config[iZone]->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
     }
 
-    /*--- Also add the PerSurface outputs ---*/
+    /*--- Add the PerSurface outputs. ---*/
     const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
 
     for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurface_List()) {
 
-      if (nameSinglezone != "TIME_ITER" && nameSinglezone != "OUTER_ITER") {
+      const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
 
-        const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
+      name = nameSinglezone + zoneIndex;
 
-        name   = nameSinglezone + zoneIndex;
+      /*--- Remove the unnecessary Marker name from the fieldName, i.e. "Avg_Massflow(inlet)"->"Avg_Massflow". ---*/
+      string baseheader = field[0].fieldName;
+      std::string::size_type pos = baseheader.find('(');
+      if (pos != std::string::npos)
+        baseheader = baseheader.substr(0, pos);
+      else
+        SU2_MPI::Error("Cannot proccess PerSurface *_SURF history output: " + baseheader, CURRENT_FUNCTION);
 
-        // field[0].fieldName contains names like Avg_Massflow(fluid_outlet) but looking at CFlowOutput.cpp it is also:
-        // AddHistoryOutputPerSurface("SURFACE_MASSFLOW",         "Avg_Massflow", ... without the markerTag already attached
-        // So first the fieldName for one of the markers (here the 0th) is taken and the markerTag in brackets is removed
-        string baseheader = field[0].fieldName;
-        std::string::size_type pos = baseheader.find('(');
-        if (pos != std::string::npos)
-            baseheader = baseheader.substr(0, pos);
-        else
-            SU2_MPI::Error("Cannot proccess PerSurface *_SURF history output.", CURRENT_FUNCTION);
+      header = baseheader + zoneIndex;
+      /*--- Attach zone-index to the group after determining which group it is. ---*/
+      group  = field[0].outputGroup;
 
-        header = baseheader + zoneIndex; // field[i] where i is the marker
-        group  = field[0].outputGroup; // Attach zone-index to the group after determining which group it is
+      /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
+      vector<string> Marker;
+      if (group == "FLOW_COEFF_SURF")
+        Marker = Marker_Analyze;
+      else if (group == "AERO_COEFF_SURF")
+        Marker = Marker_Monitoring;
+      else
+        SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
 
-        /*--- Determine whether nMaker_Analyze/Monitoring has to be used. ---*/
-        vector<string> Marker;
-        if (group == "FLOW_COEFF_SURF")
-          Marker = Marker_Analyze;
-        else if (group == "AERO_COEFF_SURF")
-          Marker = Marker_Monitoring;
-        else
-          SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
+      group += zoneIndex;
 
-        group += zoneIndex;
-
-        AddHistoryOutputPerSurface(name, header, field[0].screenFormat, group, Marker, field[0].fieldType );
-      }
+      AddHistoryOutputPerSurface(name, header, field[0].screenFormat, group, Marker, field[0].fieldType );
     }
   }
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
