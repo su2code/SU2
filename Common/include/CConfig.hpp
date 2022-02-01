@@ -1676,7 +1676,7 @@ public:
 
   /*!
    * \brief Get the value of the freestream viscosity.
-   * \return Freestream temperature.
+   * \return Freestream viscosity.
    */
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
