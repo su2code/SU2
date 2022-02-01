@@ -29,6 +29,7 @@
 
 bin_SCRIPTS = \
     continuous_adjoint.py \
+    compute_metric.py \
     compute_uncertainty.py \
     finite_differences.py \
     mesh_adaptation.py \
