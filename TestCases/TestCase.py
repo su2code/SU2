@@ -76,10 +76,10 @@ class TestCase:
     def run_test(self):
 
         print('==================== Start Test: %s ===================='%self.tag)
-        passed       = True
+        passed       = False
         exceed_tol   = False
         timed_out    = False
-        iter_missing = False
+        iter_missing = True
         start_solver = True
 
         # if root, add flag to mpirun
