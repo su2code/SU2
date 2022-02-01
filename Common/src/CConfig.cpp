@@ -2881,6 +2881,77 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
+  /*--- Options used for mesh adaptation ---*/
+  /* DESCRIPTION: Compute an error estimate */
+  addBoolOption("COMPUTE_METRIC", Bool_Compute_Metric, false);
+  
+  /*!\brief NUM_METHOD_HESS
+   *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
+  addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
+
+  /* DESCRIPTION: Lp-norm for mesh adaptation */
+  addDoubleOption("ADAP_NORM", Adap_Norm, 1.0);
+
+  /* DESCRIPTION: Constraint maximum cell size */
+  addDoubleOption("ADAP_HMAX", Adap_Hmax, 10.0);
+
+  /* DESCRIPTION: Constraint minimum cell size */
+  addDoubleOption("ADAP_HMIN", Adap_Hmin, 1.0E-8);
+  
+  /* DESCRIPTION: Constraint maximum cell aspect ratio */
+  addDoubleOption("ADAP_ARMAX", Adap_ARmax, 1.0E6);
+
+  /* DESCRIPTION: Constraint mesh complexity */
+  addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_COMPLEXITY");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_SUBITE");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_FLOW_ITER");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ADJ_ITER");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_FLOW_CFL");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ADJ_CFL");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_BACK");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_RESIDUAL_REDUCTION");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_SENSOR");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_HMAX");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_HMIN");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ARMAX");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_HGRAD");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_INV_BACK");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_ORTHO");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("PYADAP_RDG");
+
   /* END_CONFIG_OPTIONS */
 
 }

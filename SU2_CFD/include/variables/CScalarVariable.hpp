@@ -39,8 +39,9 @@ class CScalarVariable : public CVariable {
 
   CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL
                                                reconstruction for the convective term */
-  CVectorOfMatrix
-      Gradient_Aux; /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix Gradient_Aux; /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  C3DDoubleMatrix &Smatrix_Reconstruction;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  C3DDoubleMatrix Smatrix_Aux;               /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
  public:
   /*!
@@ -67,6 +68,30 @@ class CScalarVariable : public CVariable {
    */
   inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
   inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
+
+  /*!
+   * \brief Add <i>value</i> to the Smatrix for reconstruction least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix_Reconstruction entry.
+   */
+  inline void AddSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix_Reconstruction(iPoint,iDim,jDim) += value; }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for reconstruction least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix_Reconstruction entry.
+   */
+  inline su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix_Reconstruction(iPoint,iDim,jDim);; }
+
+  /*!
+   * \brief Get the value Smatrix_Reconstruction for the entire domain.
+   * \return Reference to the Smatrix_Reconstruction.
+   */
+  inline C3DDoubleMatrix& GetSmatrix_Reconstruction(void) { return Smatrix_Reconstruction; }
 
   /*!
    * \brief Set the harmonic balance source term.

@@ -102,6 +102,7 @@ const su2double ONE2 = 0.5;         /*!< \brief One divided by two. */
 const su2double ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
 const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
 const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
+const su2double FIVE3 = 5.0 / 3.0;  /*!< \brief Five divided by three. */
 
 const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
 
@@ -2150,6 +2151,17 @@ enum MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  WALL_FUNCTION        ,  /*!< \brief Wall function variables. */
+  ANISO_GRADIENT       ,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
+  HESSIAN              ,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+  PRIMITIVE            ,  /*!< \brief Primitive variables. */
+  METRIC               ,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+  NON_PHYSICAL         ,  /*!< \brief Whether node is non-physical. */
+  PRIMITIVE_GRAD_REC   ,  /*!< \brief Primitive gradient communication. */
+  SOLUTION_GRAD_REC    ,   /*!< \brief Conservative solution gradient communication. */
+  SMATRIX              ,  /*!< \brief Conservative solution gradient basis communication. */
+  SMATRIX_RECON        ,  /*!< \brief Conservative solution gradient basis communication. */
+  VOLUME               ,   /*!< \brief Dual cell volume communication. */
 };
 
 /*!

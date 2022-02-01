@@ -76,6 +76,11 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+
+  if (config->GetBool_Compute_Metric()) {
+    Gradient_Adaptation.resize(nPoint,nVar,nDim,0.0);
+    Hessian.resize(nPoint,nVar,3*(nDim-1),0.0);
+  }
 }
 
 void CVariable::Set_OldSolution() {

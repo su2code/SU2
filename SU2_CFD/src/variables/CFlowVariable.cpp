@@ -60,6 +60,9 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint, nDim, nDim, 0.0);
+    Smatrix.resize(nPoint,nDim,nDim,0.0);
+    if (config->GetLeastSquaresReconstructionRequired())
+      Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
   }
 
   /*--- Allocate undivided laplacian (centered) ---*/

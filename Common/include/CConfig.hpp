@@ -1189,6 +1189,21 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
   unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
 
+  /*--- Mesh adaptation options ---*/
+  bool Bool_Compute_Metric;            /*!< \brief Determines if error estimation is taking place */
+  unsigned short Kind_Hessian_Method;  /*!< \brief Numerical method for computation of Hessians. */
+  su2double Adap_Norm,                 /*!< \brief Lp-norm for mesh adaptation */
+            Adap_Hmax,                 /*!< \brief Maximum cell size */
+            Adap_Hmin,                 /*!< \brief Minimum cell size */
+            Adap_ARmax;                /*!< \brief Maximum cell aspect ratio */
+  unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
+
+  bool Use_Accurate_Visc_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG/LS gradients (CNSSolver)  */
+       Use_Accurate_Turb_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG/LS gradients (CTurbSolver) */
+       Use_Accurate_Kappa_Jacobians;   /*!< \brief Whether to numerically differentiate the convective flux due to kappa scheme (CEulerSolver/CTurbSolver) */
+
+  su2double Weighted_Least_SquaresCoeff;  /*!< \brief Coefficient for least squares weights, where weights are given  by (d_ij)^-N. */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9636,5 +9651,46 @@ public:
    * \return Max number of iterations of the linear solver for the gradient smoothing.
    */
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
+  /*!
+   * \brief Check if error estimation is being carried out
+   * \return <code>TRUE<\code> if error estimation is taking place
+  */
+  bool GetBool_Compute_Metric(void) const { return Bool_Compute_Metric; }
+  
+  /*!
+   * \brief Get the kind of method for computation of Hessians used for anisotropy.
+   * \return Numerical method for computation of Hessians used for anisotropy.
+   */
+  unsigned short GetKind_Hessian_Method(void) const { return Kind_Hessian_Method; }
+
+  /*!
+   * \brief Get adaptation norm value (Lp)
+   */
+  su2double GetAdap_Norm(void) const { return Adap_Norm; }
+
+  /*!
+   * \brief Get maximum cell size
+   * \return Maximum cell size
+   */
+  su2double GetAdap_Hmax(void) const { return Adap_Hmax; }
+
+  /*!
+   * \brief Get minimum cell size
+   * \return Minimum cell size
+   */
+  su2double GetAdap_Hmin(void) const { return Adap_Hmin; }
+  
+  /*!
+   * \brief Get maximum cell aspect ratio
+   * \return Maximum cell aspect ratio
+   */
+  su2double GetAdap_ARmax(void) const { return Adap_ARmax; }
+
+  /*!
+   * \brief Get constraint complexity
+   * \return Mesh complexity
+   */
+  unsigned long GetAdap_Complexity(void) const { return Adap_Complexity; }
 
 };

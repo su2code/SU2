@@ -70,6 +70,7 @@ protected:
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  C3DDoubleMatrix Smatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
@@ -90,6 +91,10 @@ protected:
   MatrixType Residual_Sum;    /*!< \brief Auxiliary structure for residual smoothing. */
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
+
+  CVectorOfMatrix Gradient_Adaptation;        /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Hessian;                    /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  MatrixType Metric;                         /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
@@ -722,6 +727,54 @@ public:
    * \return Reference to the Rmatrix.
    */
   inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
+
+  /*!
+   * \brief Add <i>value</i> to the Smatrix for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix entry.
+   */
+  inline void AddSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix(iPoint,iDim,jDim) += value; }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double GetSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix(iPoint,iDim,jDim); }
+
+  /*!
+   * \brief Get the value Smatrix for the entire domain.
+   * \return Reference to the Smatrix.
+   */
+  inline C3DDoubleMatrix& GetSmatrix(void) { return Smatrix; }
+
+  /*!
+   * \brief Add <i>value</i> to the Smatrix for reconstruction least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix_Reconstruction entry.
+   */
+  inline virtual void AddSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for reconstruction least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix_Reconstruction entry.
+   */
+  inline virtual su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return 0.0; }
+
+  /*!
+   * \brief Get the value Smatrix_Reconstruction for the entire domain.
+   * \return Reference to the Smatrix_Reconstruction.
+   */
+  inline virtual C3DDoubleMatrix& GetSmatrix_Reconstruction(void) { return Smatrix; }
 
   /*!
    * \brief Get the slope limiter.
@@ -2241,5 +2294,62 @@ public:
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
+   * \brief Set the gradient of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] gradient - Gradient of the solution.
+   */
+  inline void SetGradient_Adaptation(unsigned long iPoint, su2double **gradient) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        Gradient_Adaptation(iPoint,iVar,iDim) = gradient[iVar][iDim];
+  }
+
+  /*!
+   * \brief Get the gradient of the entire solution.
+   * \return Reference to gradient.
+   */
+  inline CVectorOfMatrix& GetGradient_Adaptation(void) { return Gradient_Adaptation; }
+
+  /*!
+   * \brief Get the value of the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \return Value of the gradient solution.
+   */
+  inline CMatrixView<su2double> GetGradient_Adaptation(unsigned long iPoint) { return Gradient_Adaptation[iPoint]; }
+
+  /*!
+   * \brief Get the value of the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the solution gradient.
+   */
+  inline su2double GetGradient_Adaptation(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_Adaptation(iPoint,iVar,iDim); }
+
+  /*!
+   * \brief Set the hessian of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \param[in] iHess - Hessian index.
+   * \param[in] hessian - Hessian of the solution.
+   */
+  inline void SetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess, su2double hessian) { Hessian(iPoint,iVar,iHess) = hessian; }
+
+  /*!
+   * \brief Get the hesian of the entire solution.
+   * \return Reference to hessian.
+   */
+  inline CVectorOfMatrix& GetHessian(void) { return Hessian; }
+
+  /*!
+   * \brief Get the value of the hessian.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iHess - Index of the hessian.
+   * \return Value of the hessian.
+   */
+  inline su2double GetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess) const { return Hessian(iPoint,iVar,iHess); }
 
 };
