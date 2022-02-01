@@ -73,6 +73,8 @@ protected:
   C3DDoubleMatrix Smatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
+  MatrixType LimiterDerivativeDelta;  /*!< \brief Derivative of the limiter wrt the difference. */
+  MatrixType LimiterDerivativeGrad;   /*!< \brief Derivative of the limiter wrt the gradient. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
   MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
@@ -1717,6 +1719,11 @@ public:
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+  inline virtual bool GetCrossDiffLimited(unsigned long iPoint) const { return false; }
+
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
@@ -2351,5 +2358,25 @@ public:
    * \return Value of the hessian.
    */
   inline su2double GetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess) const { return Hessian(iPoint,iVar,iHess); }
+
+  /*!  
+   * \brief Set the value of the metric.  
+   * \param[in] iMetr - Index value.
+   * \param[in] metric - Metric value. 
+   */ 
+  inline void SetMetric(unsigned long iPoint, unsigned short iMetr, su2double metric) { Metric(iPoint,iMetr) = metric; }
+
+  /*!  
+   * \brief Add the value of the metric.  
+   * \param[in] iMetr - Index value.
+   * \param[in] metric - Metric value. 
+   */ 
+  inline void AddMetric(unsigned long iPoint, unsigned short iMetr, su2double metric) { Metric(iPoint,iMetr) += metric; }
+
+  /*!  
+   * \brief Get the value of the metric.  
+   * \param[in] iMetr  - Index value.
+   */ 
+  inline su2double GetMetric(unsigned long iPoint, unsigned short iMetr) { return Metric(iPoint,iMetr); }
 
 };

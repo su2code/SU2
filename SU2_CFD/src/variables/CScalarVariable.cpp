@@ -29,7 +29,8 @@
 
 CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CVariable(npoint, ndim, nvar, config),
-      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient),
+      Smatrix_Reconstruction(config->GetLeastSquaresReconstructionRequired() ? Smatrix_Aux : Smatrix) {
   /*--- Gradient related fields ---*/
 
   Gradient.resize(nPoint, nVar, nDim, 0.0);
@@ -40,12 +41,19 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
 
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint, nDim, nDim, 0.0);
+    Smatrix.resize(nPoint,nDim,nDim,0.0);
+    if (config->GetLeastSquaresReconstructionRequired())
+      Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
   }
 
   /*--- Always allocate the slope limiter, and the auxiliary
    variables (check the logic - JST with 2nd order Turb model) ---*/
 
   Limiter.resize(nPoint, nVar) = su2double(0.0);
+  if (config->GetUse_Accurate_Kappa_Jacobians()) {
+    LimiterDerivativeDelta.resize(nPoint,nVar) = su2double(0.0);
+    LimiterDerivativeGrad.resize(nPoint,nVar) = su2double(0.0);
+  }
   Solution_Max.resize(nPoint, nVar) = su2double(0.0);
   Solution_Min.resize(nPoint, nVar) = su2double(0.0);
 

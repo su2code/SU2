@@ -4055,6 +4055,14 @@ public:
   bool GetLeastSquaresRequired(void) const { return LeastSquaresRequired; }
 
   /*!
+   * \brief Get flag for whether a least-squares gradient method is being applied to upwind reconstruction.
+   * \return <code>TRUE</code> means that a least-squares gradient method is being applied to upwind reconstruction.
+   */
+  bool GetLeastSquaresReconstructionRequired(void) const { return ReconstructionGradientRequired && 
+                                                                 (Kind_Gradient_Method_Recon == LEAST_SQUARES || 
+                                                                  Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES); }
+
+  /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
@@ -4436,6 +4444,24 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for CNSSolver.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Visc_Jacobians(void) const { return Use_Accurate_Visc_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for CTurbSolver.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for kappa scheme extrapolation.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Kappa_Jacobians(void) const { return Use_Accurate_Kappa_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)

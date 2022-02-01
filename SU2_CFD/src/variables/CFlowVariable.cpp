@@ -30,7 +30,8 @@
 CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, unsigned long nprimvar,
                              unsigned long nprimvargrad, const CConfig* config)
     : CVariable(npoint, ndim, nvar, config),
-      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
+      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive),
+      Smatrix_Reconstruction(config->GetLeastSquaresReconstructionRequired() ? Smatrix_Aux : Smatrix) {
   nPrimVar = nprimvar;
   nPrimVarGrad = nprimvargrad;
 
@@ -75,6 +76,11 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     Limiter_Primitive.resize(nPoint, nPrimVarGrad) = su2double(0.0);
+    Limiter.resize(nPoint,nVar) = su2double(1.0);
+    if (config->GetUse_Accurate_Kappa_Jacobians()) {
+      LimiterDerivativeDelta.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+      LimiterDerivativeGrad.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    }
     Solution_Max.resize(nPoint, nPrimVarGrad) = su2double(0.0);
     Solution_Min.resize(nPoint, nPrimVarGrad) = su2double(0.0);
   }
@@ -99,6 +105,10 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     HB_Source.resize(nPoint, nVar) = su2double(0.0);
+  }
+
+  if (config->GetBool_Compute_Metric()) {
+    Metric.resize(nPoint,3*(nDim-1)) = su2double(0.0);
   }
 }
 

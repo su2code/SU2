@@ -1872,6 +1872,12 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, ad_coeff_heat);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
+  /*!\brief USE_ACCURATE_VISSC_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for GG/LS in NS solver \ingroup Config*/
+  addBoolOption("USE_ACCURATE_VISC_JACOBIANS", Use_Accurate_Visc_Jacobians, false);
+  /*!\brief USE_ACCURATE_TURB_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for GG/LS in turb solver \ingroup Config*/
+  addBoolOption("USE_ACCURATE_TURB_JACOBIANS", Use_Accurate_Turb_Jacobians, false);
+  /*!\brief USE_ACCURATE_KAPPA_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for kappa scheme (convective terms) \ingroup Config*/
+  addBoolOption("USE_ACCURATE_KAPPA_JACOBIANS", Use_Accurate_Kappa_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \ingroup Config*/
