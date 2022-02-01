@@ -170,16 +170,18 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       name = nameSinglezone + zoneIndex;
 
       /*--- Remove the unnecessary Marker name from the fieldName, i.e. "Avg_Massflow(inlet)"->"Avg_Massflow". ---*/
+      /*--- Note that index zero in 'field[0]' refers to a specific Marker. Some attributes remain constant over the markers
+            like the first part of the name, the screenFormat and the fieldType. ---*/
       string baseheader = field[0].fieldName;
       std::string::size_type pos = baseheader.find('(');
       if (pos != std::string::npos)
         baseheader = baseheader.substr(0, pos);
       else
-        SU2_MPI::Error("Cannot proccess PerSurface *_SURF history output: " + baseheader, CURRENT_FUNCTION);
+        SU2_MPI::Error("Cannot process PerSurface *_SURF history output: " + baseheader, CURRENT_FUNCTION);
 
       header = baseheader + zoneIndex;
       /*--- Attach zone-index to the group after determining which group it is. ---*/
-      group  = field[0].outputGroup;
+      group = field[0].outputGroup;
 
       /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
       vector<string> Marker;
