@@ -5990,6 +5990,11 @@ public:
   su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
 
   /*!
+   * \brief Set the value of the pressure delta from which body force vector is computed. Necessary for Restart metadata.
+   */
+  void SetStreamwise_Periodic_PressureDrop(su2double Streamwise_Periodic_PressureDrop_) { Streamwise_Periodic_PressureDrop = Streamwise_Periodic_PressureDrop_; }
+
+  /*!
    * \brief Get the value of the massflow from which body force vector is computed.
    * \return Massflow for body force computation.
    */

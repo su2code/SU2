@@ -176,7 +176,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     } // loop periodic boundaries
   } // loop MarkerAll
 
-  // MPI Communication: Sum Area, Sum rho*A & T*A and divide by AreaGlobbal, sum massflow
+  // MPI Communication: Sum Area, Sum rho*A & T*A and divide by AreaGlobal, sum massflow
   su2double Area_Global(0), Average_Density_Global(0), MassFlow_Global(0), Temperature_Global(0);
   SU2_MPI::Allreduce(&Area_Local,            &Area_Global,            1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Average_Density_Local, &Average_Density_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -216,10 +216,10 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
           (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts
           it gets called 2x before the restart files are read such that the current massflow is
           Area*inital-velocity which can be way off!
-          With this there is still a slight inconsitency wrt to a non-restarted simulation: The restarted "zero-th"
+          With this there is still a slight inconsistency wrt to a non-restarted simulation: The restarted "zero-th"
           iteration does not get a pressure-update but the continuing simulation would have an update here. This can be
           fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at
-          best ---*/
+          best. ---*/
     if((nZone==1 && InnerIter>0) ||
        (nZone>1  && OuterIter>0)) {
       SPvals.Streamwise_Periodic_PressureDrop = Pressure_Drop_new;
@@ -232,7 +232,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     /*---------------------------------------------------------------------------------------------*/
     /*--- 3. Compute the integrated Heatflow [W] for the energy equation source term, heatflux  ---*/
     /*---    boundary term and recovered Temperature. The computation is not completely clear.  ---*/
-    /*---    Here the Heatflux from all Bounary markers in the config-file is used.             ---*/
+    /*---    Here the Heatflux from all Boundary markers in the config-file is used.            ---*/
     /*---------------------------------------------------------------------------------------------*/
 
     su2double HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;

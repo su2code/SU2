@@ -4788,8 +4788,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    pressure drop objective function is selected. ---*/
 
   for (unsigned short iObj = 0; iObj < nObj; iObj++) {
-    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze != 2)) {
-      SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
+    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze < 2)) {
+      SU2_MPI::Error("Must list the first two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name, ...).", CURRENT_FUNCTION);
     }
   }
 
@@ -5733,8 +5733,16 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         break;
       }
     }
+    
     if(!found) {
-      SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      if (nZone==1)
+        SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      // In case of multiple zones, the markers might appear only in zonal config and not in the Master.
+      // A loop over all zones would need to be included which is not straight forward as this can only be
+      // checked once all zonal configs are read.
+      else if (rank == MASTER_NODE)
+        cout << "Warning: DV_MARKER contains marker names that do not exist in the lists of BCs of the master config file.\n"
+                "Make sure the marker names exist in the zonal config files" << endl;
     }
   }
 

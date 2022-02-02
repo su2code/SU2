@@ -79,7 +79,7 @@ class TestCase:
         passed       = True
         exceed_tol   = False
         timed_out    = False
-        iter_missing = False
+        iter_missing = True
         start_solver = True
 
         # if root, add flag to mpirun
