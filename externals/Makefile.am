@@ -34,7 +34,7 @@ if BUILD_TECIO
   SUBDIRS += tecio
 endif
 
-if BUILD_INRIA
+if BUILD_AMG
   SUBDIRS += amgio
 endif
 

@@ -68,10 +68,10 @@ if get_option('enable-autodiff')
 endif
 
 # add amgio library
-if get_option('enable-inria')
+if get_option('enable-amg')
   subdir('externals/amgio/sources')
   su2_deps += libmeshb7_dep
-  su2_cpp_args += '-DHAVE_INRIA'
+  su2_cpp_args += '-DHAVE_AMG'
 endif
 
 # add cgns library
@@ -266,14 +266,15 @@ message('''---------------------------------------------------------------------
          ---------------------
          TecIO:          @2@
          CGNS:           @3@
-         AD (reverse):   @4@
-         AD (forward):   @5@
-         Python Wrapper: @6@
-         Intel-MKL:      @7@
-         OpenBlas:       @8@
-         PaStiX:         @9@
-         Mixed Float:    @10@
-         libROM:         @11@
+         GMF:            @4@
+         AD (reverse):   @5@
+         AD (forward):   @6@
+         Python Wrapper: @7@
+         Intel-MKL:      @8@
+         OpenBlas:       @9@
+         PaStiX:         @10@
+         Mixed Float:    @11@
+         libROM:         @12@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -286,7 +287,7 @@ message('''---------------------------------------------------------------------
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
          Use './ninja -C @12@ install' to compile and install SU2
-'''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
+'''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'), get_option('enable-amg'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
 

@@ -168,14 +168,14 @@ AC_CONFIG_FILES([externals/tecio/teciosrc/Makefile])
 AC_CONFIG_FILES([externals/tecio/teciompisrc/Makefile])
 
 # AMG interface
-CONFIGURE_INRIA
-if (test $enableinria = yes); then
-  su2_externals_INCLUDES="-DHAVE_INRIA $INRIA_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$INRIA_LIB $su2_externals_LIBS"
+CONFIGURE_AMG
+if (test $enableamg = yes); then
+  su2_externals_INCLUDES="-DHAVE_AMG $AMG_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$AMG_LIB $su2_externals_LIBS"
 else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
-AM_CONDITIONAL(BUILD_INRIA, test x$enableinria = xyes)
+AM_CONDITIONAL(BUILD_AMG, test x$enableamg = xyes)
 AC_CONFIG_FILES([externals/amgio/Makefile])
 
 # Metis
@@ -389,7 +389,7 @@ Build Configuration Summary:
     Metis support:        $enablemetis
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
-    GMF support:          $enableinria
+    GMF support:          $enableamg
     CGNS support:         $enablecgns
     Mutation++ support:   $have_MPP
     MKL support:          $have_MKL
