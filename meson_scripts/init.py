@@ -113,6 +113,8 @@ def init_submodules(method = 'auto'):
 
   # Setup AMG interface
   # Require at least python 3.7 for pyamg
+  log = open( 'amgio.log', 'w' )
+  err = open( 'amgio.err', 'w' )
   if sys.version_info >= (3, 7):
     import pkg_resources
     required = {'pyamg','_amgio'}
@@ -244,6 +246,25 @@ def download_module(name, alt_name, git_repo, commit_sha):
       f = open(module_identifier, 'w')
       f.close()
 
+def install_pyamg(log, err):
+  # Install pyAMG
+  if sys.platform == 'linux' or sys.platform == 'linux2':
+      print('Installing pyAMG for Linux.')
+      pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
+
+  elif sys.platform == 'darwin':
+      print('Installing pyAMG for Mac.')
+      pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
+
+  pyamg_whl = 'externals/amgio/pyamg/Python3/' + pyamg_whl
+  try:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
+    log.close()
+    err.close()
+  except:
+      print('pyAMG installation failed')
+
+  return True
 
 if __name__ == '__main__':
   if sys.version_info[0] < 3:

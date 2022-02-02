@@ -4,7 +4,7 @@ option('enable-tecio', type : 'boolean', value : true, description: 'enable TECI
 option('enable-cgns',  type : 'boolean', value : true, description: 'enable CGNS support')
 option('enable-autodiff',  type : 'boolean', value : false, description: 'enable AD (reverse) support')
 option('enable-directdiff',  type : 'boolean', value : false, description: 'enable AD (forward) support')
-option('enable-amg',  type : 'boolean', value : true, description: 'enable Gamma Mesh Format (GMF) support and AMG mesh adaptation')
+option('enable-amg',  type : 'boolean', value : false, description: 'enable Gamma Mesh Format (GMF) support and AMG mesh adaptation')
 option('enable-pywrapper',  type : 'boolean', value : false, description: 'enable Python wrapper support')
 option('enable-normal',  type : 'boolean', value : true, description: 'enable normal build')
 option('enable-mkl', type : 'boolean', value : false, description: 'enable Intel-MKL support')
