@@ -1666,6 +1666,7 @@ enum class OUTPUT_TYPE {
   SURFACE_CGNS,            /*!< \brief CGNS format. */
   STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
   STL_BINARY,              /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  GMF,                     /*!< \brief GMF for use with AMG mesh adaptation library. */
 };
 static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT_ASCII)
@@ -1688,6 +1689,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
   MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
   MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
+  MakePair("GMF", OUTPUT_TYPE::GMF)
 };
 
 /*!

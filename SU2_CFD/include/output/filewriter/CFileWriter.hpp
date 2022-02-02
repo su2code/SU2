@@ -34,6 +34,12 @@
 #include <cstring>
 #include <fstream>
 
+#ifdef HAVE_AMG
+  extern "C" {
+    #include "libmeshb7.h"
+  }
+#endif
+
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
 using namespace std;
