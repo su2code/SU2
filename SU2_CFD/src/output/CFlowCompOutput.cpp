@@ -308,6 +308,30 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
+  // Anisotropic metric
+  if(config->GetBool_Compute_Metric()) {
+    if (nDim == 2){
+      AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "GRADIENT_ADAPT", "x-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "GRADIENT_ADAPT", "y-component of the density gradient");
+
+      AddVolumeOutput("METRIC_XX", "Metric_xx", "METRIC", "x-x-component of the metric");
+      AddVolumeOutput("METRIC_XY", "Metric_xy", "METRIC", "x-y-component of the metric");
+      AddVolumeOutput("METRIC_YY", "Metric_yy", "METRIC", "y-y-component of the metric");
+    }
+    else{
+      AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "GRADIENT_ADAPT", "x-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "GRADIENT_ADAPT", "y-component of the density gradient");
+      AddVolumeOutput("GRADIENT_RHO_Z", "Grad(Rho)_z", "GRADIENT_ADAPT", "z-component of the density gradient");
+
+      AddVolumeOutput("METRIC_XX", "Metric_xx", "METRIC", "x-x-component of the metric");
+      AddVolumeOutput("METRIC_XY", "Metric_xy", "METRIC", "x-y-component of the metric");
+      AddVolumeOutput("METRIC_YY", "Metric_yy", "METRIC", "y-y-component of the metric");
+      AddVolumeOutput("METRIC_XZ", "Metric_xz", "METRIC", "x-z-component of the metric");
+      AddVolumeOutput("METRIC_YZ", "Metric_yz", "METRIC", "y-z-component of the metric");
+      AddVolumeOutput("METRIC_ZZ", "Metric_zz", "METRIC", "z-z-component of the metric");
+    }
+  }
+
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -380,6 +404,29 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   LoadVolumeData_Scalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
+
+  if(config->GetBool_Compute_Metric()) {
+    if (nDim == 2){
+      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 0));
+      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 1));
+      
+      SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
+      SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
+      SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
+    }
+    else{
+      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 0));
+      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 1));
+      SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 2));
+
+      SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
+      SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
+      SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
+      SetVolumeOutputValue("METRIC_XZ", iPoint, Node_Flow->GetMetric(iPoint, 3));
+      SetVolumeOutputValue("METRIC_YZ", iPoint, Node_Flow->GetMetric(iPoint, 4));
+      SetVolumeOutputValue("METRIC_ZZ", iPoint, Node_Flow->GetMetric(iPoint, 5));
+    }
+  }
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);

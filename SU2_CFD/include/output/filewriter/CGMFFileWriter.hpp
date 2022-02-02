@@ -51,6 +51,6 @@ class CGMFFileWriter final: public CFileWriter{
   /*!
    * \brief Write sorted data to file in GMF file format
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };

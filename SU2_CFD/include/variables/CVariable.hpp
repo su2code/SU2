@@ -2377,6 +2377,6 @@ public:
    * \brief Get the value of the metric.  
    * \param[in] iMetr  - Index value.
    */ 
-  inline su2double GetMetric(unsigned long iPoint, unsigned short iMetr) { return Metric(iPoint,iMetr); }
+  inline su2double GetMetric(unsigned long iPoint, unsigned short iMetr) const { return Metric(iPoint,iMetr); }
 
 };

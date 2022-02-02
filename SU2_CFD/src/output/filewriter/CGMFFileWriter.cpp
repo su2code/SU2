@@ -50,7 +50,7 @@ CGMFFileWriter::~CGMFFileWriter(){
   
 }
 
-void CGMFFileWriter::Write_Data() {
+void CGMFFileWriter::Write_Data(string val_filename) {
   
 #ifdef HAVE_GMF
   
