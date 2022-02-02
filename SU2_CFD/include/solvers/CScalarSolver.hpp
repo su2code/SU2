@@ -143,6 +143,31 @@ class CScalarSolver : public CSolver {
    */
   void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
+  /*!
+   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
+
+  /*!
+   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
+
+  /*!
+   * \brief Compute the limiter of the primitive variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
+
  private:
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.

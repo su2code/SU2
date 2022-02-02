@@ -101,19 +101,72 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
 
   if (config->GetReconstructionGradientRequired()) {
     switch(config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
-      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
-      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+      case GREEN_GAUSS: SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config, true); break;
+      case WEIGHTED_LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config, true); break;
     }
   }
 
   switch(config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
-    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
+    case GREEN_GAUSS: SetPrimitive_Gradient_GG(geometry, config); break;
+    case WEIGHTED_LEAST_SQUARES: SetPrimitive_Gradient_LS(geometry, config); break;
   }
 
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+  if (limiter && muscl) SetPrimitive_Limiter(geometry, config);
 }
+
+/*--- BEGIN: Hack to use conservatives in SST ---*/
+
+template <class V>
+void CScalarSolver<V>::SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config,
+                                                        bool reconstruction) {
+  const auto& primitives = nodes->GetPrimitive();
+  auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+  const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
+
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
+}
+
+template <class V>
+void CScalarSolver<V>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config,
+                                                        bool reconstruction) {
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+  bool weighted;
+  PERIODIC_QUANTITIES commPer;
+
+  if (reconstruction) {
+    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+    commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
+  }
+  else {
+    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+    commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+  }
+
+  const auto& primitives = nodes->GetPrimitive();
+  auto& rmatrix = nodes->GetRmatrix();
+  auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
+                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
+}
+
+template <class V>
+void CScalarSolver<V>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
+  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
+  const auto& primitives = nodes->GetPrimitive();
+  const auto& gradient = nodes->GetGradient_Reconstruction();
+  auto& primMin = nodes->GetSolution_Min();
+  auto& primMax = nodes->GetSolution_Max();
+  auto& limiter = nodes->GetLimiter();
+
+  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2, *geometry, *config, 0,
+                  nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
+}
+
+/*--- END: Hack to use conservatives in SST ---*/
 
 template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
@@ -173,8 +226,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
       /*--- Scalar variables w/o reconstruction ---*/
 
-      const auto Scalar_i = nodes->GetSolution(iPoint);
-      const auto Scalar_j = nodes->GetSolution(jPoint);
+      const auto Scalar_i = nodes->GetPrimitive(iPoint);
+      const auto Scalar_j = nodes->GetPrimitive(jPoint);
       numerics->SetScalarVar(Scalar_i, Scalar_j);
 
       /*--- Grid Movement ---*/
@@ -377,8 +430,10 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
-        const su2double density = flowNodes->GetDensity(iPoint);
-        const su2double density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
+        // const su2double density = flowNodes->GetDensity(iPoint);
+        // const su2double density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
+        const su2double density = 1.0;
+        const su2double density_old = 1.0;
 
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),

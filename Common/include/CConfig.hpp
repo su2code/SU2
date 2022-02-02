@@ -9679,6 +9679,13 @@ public:
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
 
   /*!
+   * \brief Get the kind of the turbulence model.
+   * \return Kind of the turbulence model.
+   */
+  bool GetBool_Turb_Model_SST(void) const { return ((Kind_Turb_Model == TURB_MODEL::SST) || 
+                                                    (Kind_Turb_Model == TURB_MODEL::SST_SUST)); }
+
+  /*!
    * \brief Check if error estimation is being carried out
    * \return <code>TRUE<\code> if error estimation is taking place
   */

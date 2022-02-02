@@ -43,6 +43,9 @@ class CScalarVariable : public CVariable {
   C3DDoubleMatrix &Smatrix_Reconstruction;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
   C3DDoubleMatrix Smatrix_Aux;               /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
+  MatrixType &Primitive;     /*!< \brief Primitive variables, equivalent to Solution for non-SST. */
+  MatrixType Primitive_Aux;  /*!< \brief Primitive variables, equivalent to Solution for non-SST. */
+
  public:
   /*!
    * \brief Constructor of the class.

@@ -4503,8 +4503,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Turbulent kinetic energy ---*/
 
         if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                              solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
 
         /*--- Compute and update viscous residual ---*/
 
