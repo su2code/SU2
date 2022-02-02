@@ -5740,8 +5740,8 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
       // In case of multiple zones, the markers might appear only in zonal config and not in the Master.
       // A loop over all zones would need to be included which is not straight forward as this can only be
       // checked once all zonal configs are read.
-      else
-        cout << "Warning: DV_MARKER contains marker names that do not exist in the lists of BCs of the master config file.\n" <<
+      else if (rank == MASTER_NODE)
+        cout << "Warning: DV_MARKER contains marker names that do not exist in the lists of BCs of the master config file.\n"
                 "Make sure the marker names exist in the zonal config files" << endl;
     }
   }
