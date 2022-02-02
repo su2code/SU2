@@ -115,9 +115,6 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output, co
 
       for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
         SetHistoryOutputPerSurfaceValue(nameMultizone, item.second[iMarker].value, iMarker);
-        if (name == "COMBO") {
-          comboValue += item.second[iMarker].value;
-        }
       }// for iMarker
     }// for HistPerSurfFields
   }
@@ -172,10 +169,10 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       /*--- Remove the unnecessary Marker name from the fieldName, i.e. "Avg_Massflow(inlet)"->"Avg_Massflow". ---*/
       /*--- Note that index zero in 'field[0]' refers to a specific Marker. Some attributes remain constant over the markers
             like the first part of the name, the screenFormat and the fieldType. ---*/
-      string baseheader = field[0].fieldName;
-      std::string::size_type pos = baseheader.find('(');
+      string baseheader;
+      const auto pos = field[0].fieldName.find('(');
       if (pos != std::string::npos)
-        baseheader = baseheader.substr(0, pos);
+        baseheader = field[0].fieldName.substr(0, pos);
       else
         SU2_MPI::Error("Cannot process PerSurface *_SURF history output: " + baseheader, CURRENT_FUNCTION);
 
