@@ -3,6 +3,7 @@ project('SU2', 'c', 'cpp',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
+                          'c_std=c99',
                           'cpp_std=c++11'])
 
 
