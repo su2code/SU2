@@ -147,7 +147,7 @@ class CSourceBase_TurbSA : public CNumerics {
     Jacobian_i[0] = 0.0;
 
     /*--- Evaluate Omega ---*/
-    Omega_class::get(model_var);
+    Omega_class::get<*this>(model_var);
 
     /*--- Rotational correction term ---*/
 
@@ -161,7 +161,7 @@ class CSourceBase_TurbSA : public CNumerics {
        model_var.S = model_var.Omega;
 
        model_var.dist_i_2 = dist_i * dist_i;
-       su2double nu = Laminar_Viscosity_i / Density_i;
+       su2double const nu = Laminar_Viscosity_i / Density_i;
        model_var.inv_k2_d2 = 1.0 / (model_var.k2 * model_var.dist_i_2);
 
       /*--- Modified values for roughness ---*/
@@ -183,15 +183,15 @@ class CSourceBase_TurbSA : public CNumerics {
       model_var.d_fv2 = -(1.0 / nu - Ji_2 * model_var.d_fv1) / pow(1.0 + model_var.Ji * model_var.fv1, 2.0);
 
       /*--- Compute ft2 term ---*/
-      ft2_class::get(model_var);
+      ft2_class::get<*this>(model_var);
 
       /*--- Compute modified vorticity ---*/
-      ModVort_class::get(model_var);
+      ModVort_class::get<*this>(model_var);
 
       model_var.inv_Shat = 1.0 / model_var.Shat;
 
       /*--- Compute auxiliary function r ---*/
-      r_class::get(model_var);
+      r_class::get<*this>(model_var);
 
       model_var.g = model_var.r + model_var.cw2 * (pow(model_var.r, 6.0) - model_var.r);
       model_var.g_6 = pow(model_var.g, 6.0);
@@ -206,7 +206,7 @@ class CSourceBase_TurbSA : public CNumerics {
         model_var.norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
-      SourceTerms_class::get(model_var, &Production, &Destruction, &CrossProduction, &Jacobian_i[0]);
+      SourceTerms_class::get<*this>(model_var, &Production, &Destruction, &CrossProduction, &Jacobian_i[0]);
 
       /*--- Compute any necessary additional source term and jacobian contribution ---*/
 
@@ -217,15 +217,37 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Jacobian ---*/
       Jacobian_i[0] *= Volume;
     }
+
+    //  AD::SetPreaccOut(Residual);
+    //  AD::EndPreacc();
+
+    return ResidualType<>(&Residual, &Jacobian_i, nullptr);
   }
 };
+
+/* =============================================================================
+ * SPALART-ALLMARAS VARIANT CLASSES
+ * ============================================================================*/
 
 /*------------------------------------------------------------------------------
 | Structure with SA common auxiliary functions and constants
 ------------------------------------------------------------------------------*/
 struct CommonVariables {
+
    /*--- List of constants ---*/
-   su2double cv1_3, k2, cb1, cw2, ct3, ct4, cw3_6, cb2_sigma, sigma, cb2, cw1, cr1;
+   const su2double
+     cv1_3 = pow(7.1, 3.0),
+     k2    = pow(0.41, 2.0),
+     cb1   = 0.1355,
+     cw2   = 0.3,
+     ct3   = 1.2,
+     ct4   = 0.5,
+     cw3_6 = pow(2.0, 6.0),
+     sigma = 2./3.,
+     cb2   = 0.622,
+     cb2_sigma = cb2/sigma,
+     cw1 = cb1/k2+(1.0+cb2)/sigma,
+     cr1 = 0.5;
 
    /*--- List of auxiliary functions ---*/
    su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
@@ -263,6 +285,7 @@ struct Omega_Edw {
       using Base::PrimVar_Grad_i;
       using Base::idx;
 
+      using Base::nDim;
       unsigned short iDim, jDim;
 
       su2double Sbar = 0.0;
@@ -342,6 +365,8 @@ struct ModVort_Bsl {
 struct ModVort_Edw {
    template <class Base>
    static void get(CommonVariables &model_var) {
+
+      using Base::nu;
 
       model_var.Shat = max(model_var.S*((1.0/max(model_var.Ji,1.0e-16))+model_var.fv1),1.0e-16);
       model_var.Shat = max(model_var.Shat, 1.0e-10);
@@ -492,24 +517,68 @@ struct SourceTerms_Neg {
    }
 };
 
+
+/* =============================================================================
+ * SPALART-ALLMARAS ADDITIONAL SOURCE TERMS DECORATORS
+ * ============================================================================*/
+
+/*--- Decorator ---*/
+class AdditionalSourceTerms : public CNumerics {
+
+protected:
+    CNumerics& m_Decorator;
+
+public:
+    AdditionalSourceTerms(CNumerics& decorator):m_Decorator(decorator) {}
+
+    ResidualType<> ComputeResidual(const CConfig* config) {
+        m_Decorator.ComputeResidual(config);
+    }
+
+};
+
 /*------------------------------------------------------------------------------
 | Additional source terms
 ------------------------------------------------------------------------------*/
 
-///*!
-// * \brief Baseline
-// */
-//template <class Base>
-//class CrossProduction_Bsl {
-//  using Base::cb2_sigma;
-//  using Base::norm2_Grad;
 
-//  static constexpr su2double nue = Base::ScalarVar_i[0];
+/*!
+ * \brief Mixing Layer Compressibility Correction (SA-comp)
+ */
+class CompressiblityCorrection : public AdditionalSourceTerms {
 
-//  static double get(su2double* CrossProd, su2double* d_CrossProd) {
-//    *CrossProd = cb2_sigma * norm2_Grad;
+private:
 
-//    // No cross production influence in the Jacobian
-//    *d_CrossProd = 0.0;
-//  }
-//};
+   const su2double c5 = 3.5;
+
+
+public:
+
+     CompressiblityCorrection(CNumerics& decorator):AdditionalSourceTerms(decorator) {}
+
+     ResidualType<> ComputeResidual(const CConfig* config) final {
+
+        /*--- Compressibility Correction term ---*/
+        Pressure_i = V_i[idx.Pressure()];
+        SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+        su2double aux_cc=0;
+        for(iDim=0;iDim<nDim;++iDim){
+          for(jDim=0;jDim<nDim;++jDim){
+            aux_cc += pow(PrimVar_Grad_i[idx.Velocity()+iDim][jDim], 2);
+          }
+        }
+        const su2double CompCorrection = c5*(ScalarVar_i[0]*ScalarVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+
+        const su2double d_CompCorrection = 2.0*c5*(ScalarVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+
+        /*--- Residual from standard SA ---*/
+        auto Residual = m_Decorator.ComputeResidual(config);
+
+        /*--- Decorator residual contribution ---*/
+        *Residual -= CompCorrection;
+        *Residual.jacobian_i -= d_CompCorrection;
+
+
+        return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+     }
+};
