@@ -123,6 +123,11 @@ public:
   void SecondaryRecording(void);
 
   /*!
+   * \brief Perform all steps to compute the metric.
+   */
+  void ComputeMetric(void);
+
+  /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */

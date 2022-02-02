@@ -65,6 +65,7 @@ using namespace std;
 class CSolver {
 protected:
   enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
   int rank,       /*!< \brief MPI Rank. */
   size;           /*!< \brief MPI Size. */
@@ -574,6 +575,22 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief Compute the Green-Gauss Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+  /*!
+   * \brief Compute the Least Squares Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -4293,6 +4310,16 @@ public:
    * \param[in] converged - Whether or not solution has converged.
   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
+
+  /*!
+   * \brief Correct the gradient at symmetry planes.
+   */
+  void CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+  
+  /*!
+   * \brief Correct the gradient at symmetry planes.
+   */
+  void CorrectWallGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
    * \brief Correct the metric at boundaries.

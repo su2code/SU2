@@ -2307,7 +2307,7 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
    */
-  inline void SetGradient_Adaptation(unsigned long iPoint, su2double **gradient) {
+  inline void SetGradient_Adaptation(unsigned long iPoint, const su2double** gradient) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       for (unsigned long iDim = 0; iDim < nDim; iDim++)
         Gradient_Adaptation(iPoint,iVar,iDim) = gradient[iVar][iDim];

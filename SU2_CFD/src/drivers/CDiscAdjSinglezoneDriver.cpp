@@ -241,6 +241,30 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   }//switch
 
+  if (config->GetBool_Compute_Metric()) {
+    /*--- Reset solution and primitives ---*/
+    AD::Reset();
+    iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, NONE);
+    iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, NONE);
+    
+    /*--- Compute metric for anisotropic mesh adaptation ---*/
+    ComputeMetric();
+
+    direct_output->PreprocessVolumeOutput(config);
+    
+    /*--- Load the data --- */
+    direct_output->Load_Data(geometry, config, solver);
+    
+    /*--- Set the filenames ---*/
+    direct_output->SetVolume_Filename(config->GetVolume_FileName());
+    direct_output->SetSurface_Filename(config->GetSurfCoeff_FileName());
+    
+    for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config->GetVolumeOutputFiles();
+      direct_output->WriteToFile(config, geometry, FileFormat[iFile]);
+    }
+  }
+
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
@@ -481,4 +505,58 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+}
+
+void CDiscAdjSinglezoneDriver::ComputeMetric() {
+
+  auto solver_flow    = solver[FLOW_SOL];
+  auto solver_turb    = solver[TURB_SOL];
+  auto solver_adjflow = solver[ADJFLOW_SOL];
+  auto solver_adjturb = solver[ADJTURB_SOL];
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
+  
+  if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
+    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    
+    if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+    solver_flow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
+    solver_flow->CorrectBoundHessian(geometry, config, RUNTIME_FLOW_SYS);
+    
+    if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+    solver_adjflow->SetHessian_GG(geometry, config, RUNTIME_ADJFLOW_SYS);
+    solver_adjflow->CorrectBoundHessian(geometry, config, RUNTIME_ADJFLOW_SYS);
+    
+    if ( config->GetKind_Turb_Model() != NONE) {
+      if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+      solver_turb->SetHessian_GG(geometry, config, RUNTIME_TURB_SYS);
+      solver_turb->CorrectBoundHessian(geometry, config, RUNTIME_TURB_SYS);
+      
+      if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+      solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_ADJTURB_SYS);
+      solver_adjturb->CorrectBoundHessian(geometry, config, RUNTIME_ADJTURB_SYS);
+    }
+  }
+  else {
+    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    
+    if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+    solver_flow->SetHessian_LS(geometry, config, RUNTIME_FLOW_SYS);
+    
+    if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+    solver_adjflow->SetHessian_LS(geometry, config, RUNTIME_FLOW_SYS);
+    
+    if ( config->GetKind_Turb_Model() != NONE) {
+      if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+      solver_turb->SetHessian_LS(geometry, config, RUNTIME_TURB_SYS);
+      
+      if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+      solver_adjturb->SetHessian_LS(geometry, config, RUNTIME_TURB_SYS);
+    }
+  }
+
+  //--- Metric
+  if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+  solver_flow->ComputeMetric(solver, geometry, config);
 }
