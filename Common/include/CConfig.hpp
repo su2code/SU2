@@ -9104,7 +9104,7 @@ public:
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
-  bool GetIntegrated_HeatFlux(void) const { return Integrated_HeatFlux; }
+  bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
    * \brief Get Compute Average.
