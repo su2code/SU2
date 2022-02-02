@@ -30,6 +30,33 @@
 
 #include "../scalar/scalar_sources.hpp"
 
+/*------------------------------------------------------------------------------
+| Structure with SA common auxiliary functions and constants
+------------------------------------------------------------------------------*/
+struct CommonSAVariables {
+
+   /*--- List of constants ---*/
+   const su2double
+     cv1_3 = pow(7.1, 3.0),
+     k2    = pow(0.41, 2.0),
+     cb1   = 0.1355,
+     cw2   = 0.3,
+     ct3   = 1.2,
+     ct4   = 0.5,
+     cw3_6 = pow(2.0, 6.0),
+     sigma = 2./3.,
+     cb2   = 0.622,
+     cb2_sigma = cb2/sigma,
+     cw1 = cb1/k2+(1.0+cb2)/sigma,
+     cr1 = 0.5;
+
+   /*--- List of auxiliary functions ---*/
+   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
+
+   /*--- List of helpers ---*/
+   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
+};
+
 /*!
  * \class CSourcePieceWise_TurbSA
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
@@ -41,7 +68,7 @@ class CSourceBase_TurbSA : public CNumerics {
  protected:
 
    /* For performance we should cut down on "aux" class variables.
-    * Such variables are now declared in the struct CommonVariables
+    * Such variables are now declared in the struct CommonSAVariables
     * which can then be a local variable in ComputeResidual.
     */
 
@@ -131,7 +158,7 @@ class CSourceBase_TurbSA : public CNumerics {
   ResidualType<> ComputeResidual(const CConfig* config) final {
 
     /*--- Model common auxiliary and constant variables ---*/
-    CommonVariables model_var;
+    CommonSAVariables model_var;
 
     // Set the boolean here depending on whether the point is closest to a rough wall or not.
     roughwall = (roughness_i > 0.0);
@@ -147,7 +174,7 @@ class CSourceBase_TurbSA : public CNumerics {
     Jacobian_i[0] = 0.0;
 
     /*--- Evaluate Omega ---*/
-    Omega_class::get<*this>(model_var);
+    Omega_class::get<nDim>(Vorticity_i, PrimVar_Grad_i, idx.Velocity(), model_var);
 
     /*--- Rotational correction term ---*/
 
@@ -161,7 +188,7 @@ class CSourceBase_TurbSA : public CNumerics {
        model_var.S = model_var.Omega;
 
        model_var.dist_i_2 = dist_i * dist_i;
-       su2double const nu = Laminar_Viscosity_i / Density_i;
+       const su2double nu = Laminar_Viscosity_i / Density_i;
        model_var.inv_k2_d2 = 1.0 / (model_var.k2 * model_var.dist_i_2);
 
       /*--- Modified values for roughness ---*/
@@ -183,30 +210,30 @@ class CSourceBase_TurbSA : public CNumerics {
       model_var.d_fv2 = -(1.0 / nu - Ji_2 * model_var.d_fv1) / pow(1.0 + model_var.Ji * model_var.fv1, 2.0);
 
       /*--- Compute ft2 term ---*/
-      ft2_class::get<*this>(model_var);
+      ft2_class::get(model_var);
 
       /*--- Compute modified vorticity ---*/
-      ModVort_class::get<*this>(model_var);
+      ModVort_class::get(ScalarVar_i[0], nu, model_var);
 
       model_var.inv_Shat = 1.0 / model_var.Shat;
 
       /*--- Compute auxiliary function r ---*/
-      r_class::get<*this>(model_var);
+      r_class::get(ScalarVar_i[0], model_var);
 
       model_var.g = model_var.r + model_var.cw2 * (pow(model_var.r, 6.0) - model_var.r);
       model_var.g_6 = pow(model_var.g, 6.0);
       model_var.glim = pow((1.0 + model_var.cw3_6) / (model_var.g_6 + model_var.cw3_6), 1.0 / 6.0);
       model_var.fw = model_var.g * model_var.glim;
 
-      model_var.d_g = model_var.d_r * (1. + model_var.cw2 * (6.0 * pow(model_var.r, 5.0) - 1.0));
-      model_var.dfw = model_var.d_g * model_var.glim * (1. - model_var.g_6 / (model_var.g_6 + model_var.cw3_6));
+      model_var.d_g  = model_var.d_r * (1. + model_var.cw2 * (6.0 * pow(model_var.r, 5.0) - 1.0));
+      model_var.d_fw = model_var.d_g * model_var.glim * (1. - model_var.g_6 / (model_var.g_6 + model_var.cw3_6));
 
       model_var.norm2_Grad = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         model_var.norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
-      SourceTerms_class::get<*this>(model_var, &Production, &Destruction, &CrossProduction, &Jacobian_i[0]);
+      SourceTerms_class::get(model_var, &Production, &Destruction, &CrossProduction, &Jacobian_i[0]);
 
       /*--- Compute any necessary additional source term and jacobian contribution ---*/
 
@@ -227,47 +254,33 @@ class CSourceBase_TurbSA : public CNumerics {
 
 /* =============================================================================
  * SPALART-ALLMARAS VARIANT CLASSES
+ *
+ * Templating the methods "get" with Base and using the variables from Base, will
+ * require that the variables from Base are public. Since Base is the CNumerics
+ * class and they are protected, it is better to do not template "get".
+ * Hence, pass the additional required variables to the method.
  * ============================================================================*/
 
 /*------------------------------------------------------------------------------
-| Structure with SA common auxiliary functions and constants
-------------------------------------------------------------------------------*/
-struct CommonVariables {
-
-   /*--- List of constants ---*/
-   const su2double
-     cv1_3 = pow(7.1, 3.0),
-     k2    = pow(0.41, 2.0),
-     cb1   = 0.1355,
-     cw2   = 0.3,
-     ct3   = 1.2,
-     ct4   = 0.5,
-     cw3_6 = pow(2.0, 6.0),
-     sigma = 2./3.,
-     cb2   = 0.622,
-     cb2_sigma = cb2/sigma,
-     cw1 = cb1/k2+(1.0+cb2)/sigma,
-     cr1 = 0.5;
-
-   /*--- List of auxiliary functions ---*/
-   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
-
-   /*--- List of helpers ---*/
-   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
-};
-
-/*------------------------------------------------------------------------------
 | Strain rate
+|
+| \param nDim: problem dimension
+| \param Vorticity_i: vorticity array
+| \param PrimVar_Grad_i: primitive variables gradient at point i
+| \param Velocity index
+| \param model_var: Common SA varibales struct
+|
 ------------------------------------------------------------------------------*/
 
 /*!
  * \brief Baseline
  */
 struct Omega_Bsl {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
+//   template <class Base>
+   template<int nDim>
+   static void get(const su2double* Vorticity_i, const su2double** PrimVar_Grad_i, const unsigned short vel_idx, CommonSAVariables &model_var) {
 
-      using Base::Vorticity_i;
+//      using Base::Vorticity_i;
 
       model_var.Omega = sqrt(Vorticity_i[0] * Vorticity_i[0] + Vorticity_i[1] * Vorticity_i[1] + Vorticity_i[2] * Vorticity_i[2]);
    }
@@ -279,24 +292,20 @@ struct Omega_Bsl {
  * Here Omega is the Strain Rate
  */
 struct Omega_Edw {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
+   template<int nDim>
+   static void get(const su2double* Vorticity_i, const su2double** PrimVar_Grad_i, const unsigned short vel_idx, CommonSAVariables &model_var) {
 
-      using Base::PrimVar_Grad_i;
-      using Base::idx;
-
-      using Base::nDim;
       unsigned short iDim, jDim;
 
       su2double Sbar = 0.0;
       for(iDim=0;iDim<nDim;++iDim){
         for(jDim=0;jDim<nDim;++jDim){
-          Sbar+= (PrimVar_Grad_i[idx.Velocity()+iDim][jDim]+
-                  PrimVar_Grad_i[idx.Velocity()+jDim][iDim]) * PrimVar_Grad_i[idx.Velocity()+iDim][jDim];
+          Sbar+= (PrimVar_Grad_i[vel_idx+iDim][jDim]+
+                  PrimVar_Grad_i[vel_idx+jDim][iDim]) * PrimVar_Grad_i[vel_idx+iDim][jDim];
         }
       }
       for(iDim=0;iDim<nDim;++iDim){
-        Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[idx.Velocity()+iDim][iDim], 2));
+        Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[vel_idx+iDim][iDim], 2));
       }
 
       model_var.Omega = sqrt(max(Sbar, 0.0));
@@ -306,14 +315,17 @@ struct Omega_Edw {
 
 /*------------------------------------------------------------------------------
 | ft2-term and its derivative
+|
+| \param model_var: Common SA varibales struct
+|
 ------------------------------------------------------------------------------*/
 
 /*!
  * \brief SU2 baseline ft2 term value and its derivative. ft2=0.0
  */
 struct ft2_Bsl {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
+
+   static void get(CommonSAVariables &model_var) {
       model_var.ft2 = 0.0;
       model_var.d_ft2 = 0.0;
    }
@@ -323,28 +335,30 @@ struct ft2_Bsl {
  * \brief non-zero ft2 term according to the literature and its derivative.
  */
 struct ft2_nonzero {
-   template <class Base>
-   static void get(CommonVariables *model_var) {
+
+   static void get(CommonSAVariables *model_var) {
       const su2double xsi2 = pow(model_var->Ji, 2);
       model_var->ft2  = model_var->ct3 * exp(-model_var->ct4 * xsi2);
       model_var->d_ft2 = -2.0 * model_var->ct4 * model_var->Ji * model_var->ft2 * model_var->d_Ji;
    }
 };
 
+
 /*------------------------------------------------------------------------------
 | Modified vorticity (\tilde{S}) and its derivative
+|
+| \param nue: SA variable
+| \param nu: laminar viscosity
+| \param model_var: Common SA varibales struct
+|
 ------------------------------------------------------------------------------*/
 
 /*!
  * \brief Baseline
- *
- * Required values: S, fv2, d_fv2, inv_k2_d2
  */
 struct ModVort_Bsl {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
 
-      su2double nue = Base::ScalarVar_i[0];
+   static void get(const su2double nue, const su2double nu, CommonSAVariables &model_var) {
 
       const su2double Sbar = nue * model_var.fv2 * model_var.inv_k2_d2;
 
@@ -359,14 +373,10 @@ struct ModVort_Bsl {
 
 /*!
  * \brief Edward
- *
- * Required values: S, nu, Ji, fv1, d_fv1, fv2, d_fv2, inv_k2_d2
  */
 struct ModVort_Edw {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
 
-      using Base::nu;
+   static void get(const su2double nue, const su2double nu, CommonSAVariables &model_var) {
 
       model_var.Shat = max(model_var.S*((1.0/max(model_var.Ji,1.0e-16))+model_var.fv1),1.0e-16);
       model_var.Shat = max(model_var.Shat, 1.0e-10);
@@ -377,41 +387,39 @@ struct ModVort_Edw {
 
 /*!
  * \brief Negative
- *
- * Required values: same as baseline model
  */
 struct ModVort_Neg {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
 
-      su2double nue = Base::ScalarVar_i[0];
+   static void get(const su2double nue, const su2double nu, CommonSAVariables &model_var) {
 
       if (nue > 0.0) {
-         // Don't check whether Sbar <>= -cv2*S.
-         // Ref: Steven R. Allmaras, Forrester T. Johnson and Philippe R. Spalart - "Modifications and Clarications for the Implementation of the Spalart-Allmaras Turbulence Model" eq. 12
          // Baseline solution
-         ModVort_Bsl::get<Base>(model_var);
+         ModVort_Bsl::get(nue, nu, model_var);
       }
+      /*!
+       * Don't check whether Sbar <>= -cv2*S.
+       * Ref: Steven R. Allmaras, Forrester T. Johnson and Philippe R. Spalart - "Modifications and Clarications for the Implementation of the Spalart-Allmaras Turbulence Model" eq. 12
+       * No need for Sbar
+       */
       //    else {
-      //      // No need for Sbar
       //    }
    }
 };
 
+
 /*------------------------------------------------------------------------------
 | Auxiliary function r and its derivative.
+|
+| \param nue: SA variable
+|
 ------------------------------------------------------------------------------*/
 
 /*!
  * \brief Baseline
- *
- * Requires: Shat, d_Shat, inv_Shat, inv_k2_d2
  */
 struct r_Bsl {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
 
-      su2double nue = Base::ScalarVar_i[0];
+   static void get(const su2double nue, CommonSAVariables &model_var) {
 
       model_var.r = min(nue * model_var.inv_Shat * model_var.inv_k2_d2, 10.0);
       model_var.d_r = (model_var.Shat - nue * model_var.d_Shat) * model_var.inv_Shat * model_var.inv_Shat * model_var.inv_k2_d2;
@@ -421,14 +429,10 @@ struct r_Bsl {
 
 /*!
  * \brief Edward
- *
- * Requires: Shat, d_Shat, inv_Shat, inv_k2_d2
  */
 struct r_Edw {
-   template <class Base>
-   static void get(CommonVariables &model_var) {
 
-      su2double nue = Base::ScalarVar_i[0];
+   static void get(const su2double nue, CommonSAVariables &model_var) {
 
       model_var.r = min(nue * model_var.inv_Shat * model_var.inv_k2_d2, 10.0);
       model_var.r = tanh(model_var.r) / tanh(1.0);
@@ -438,18 +442,21 @@ struct r_Edw {
    }
 };
 
+
 /*------------------------------------------------------------------------------
 | Compute source terms: production, destruction and cross-productions term and their derivatives.
+|
+| \brief get:
+| \param nue: SA variable
+|
 ------------------------------------------------------------------------------*/
 
 /*!
  * \brief Baseline (Original SA model)
  */
 struct SourceTerms_Bsl {
-   template <class Base>
-   static void get(CommonVariables &model_var, su2double* Production, su2double* Destruction, su2double* CrossProduction, su2double* Jacobian) {
 
-      su2double nue = Base::ScalarVar_i[0];
+   static void get(const su2double nue, const CommonSAVariables &model_var, su2double* Production, su2double* Destruction, su2double* CrossProduction, su2double* Jacobian) {
 
       ComputeProduction(nue, model_var, Production, Jacobian);
 
@@ -458,37 +465,33 @@ struct SourceTerms_Bsl {
       ComputeCrossProduction(nue, model_var, CrossProduction, Jacobian);
    }
 
-   static void ComputeProduction(const su2double nue, const CommonVariables &model_var, su2double* Production, su2double* Jacobian) {
+   static void ComputeProduction(const su2double nue, const CommonSAVariables &model_var, su2double* Production, su2double* Jacobian) {
       *Production = model_var.cb1 * (1.0 - model_var.ft2) * model_var.Shat * nue;
       *Jacobian  += model_var.cb1 * (-model_var.Shat * nue * model_var.d_ft2 + (1.0 - model_var.ft2) * (nue * model_var.d_Shat + model_var.Shat));
    }
 
-   static void ComputeDestruction(const su2double nue, const CommonVariables &model_var, su2double* Destruction, su2double* Jacobian) {
+   static void ComputeDestruction(const su2double nue, const CommonSAVariables &model_var, su2double* Destruction, su2double* Jacobian) {
       *Destruction = (model_var.cw1 * model_var.fw - model_var.cb1 * model_var.ft2 / model_var.k2) * nue * nue / model_var.dist_i_2;
       *Jacobian   -= (model_var.cw1 * model_var.d_fw - model_var.cb1 / model_var.k2 * model_var.d_ft2) * nue * nue / model_var.dist_i_2 + (model_var.cw1 * model_var.fw - model_var.cb1 * model_var.ft2 / model_var.k2) * 2.0 * nue / model_var.dist_i_2;
    }
 
-   static void ComputeCrossProduction(const su2double nue, const CommonVariables &model_var, su2double* CrossProduction, su2double* Jacobian) {
+   static void ComputeCrossProduction(const su2double nue, const CommonSAVariables &model_var, su2double* CrossProduction, su2double* Jacobian) {
       *CrossProduction = model_var.cb2_sigma * model_var.norm2_Grad;
       /*--- No contribution to the jacobian ---*/
    }
-
-
 };
 
 /*!
  * \brief Negative
  */
 struct SourceTerms_Neg {
-   template <class Base>
-   static void get(CommonVariables &model_var, su2double* Production, su2double* Destruction, su2double* CrossProduction, su2double* Jacobian) {
 
-      su2double nue = Base::ScalarVar_i[0];
+   static void get(const su2double nue, const CommonSAVariables &model_var, su2double* Production, su2double* Destruction, su2double* CrossProduction, su2double* Jacobian) {
 
       if (nue > 0.0) {
 
          // Baseline solution
-         SourceTerms_Bsl::get<Base>(model_var, Production, Destruction, CrossProduction, Jacobian);
+         SourceTerms_Bsl::get(nue, model_var, Production, Destruction, CrossProduction, Jacobian);
 
       } else {
 
@@ -501,17 +504,17 @@ struct SourceTerms_Neg {
       }
    }
 
-   static void ComputeProduction(const su2double nue, const CommonVariables &model_var, su2double* Production, su2double* Jacobian) {
+   static void ComputeProduction(const su2double nue, const CommonSAVariables &model_var, su2double* Production, su2double* Jacobian) {
       *Production = model_var.cb1 * (1.0 - model_var.ct3) * model_var.S * nue;
       *Jacobian  += model_var.cb1 * (1.0 - model_var.ct3) * model_var.S;
    }
 
-   static void ComputeDestruction(const su2double nue, const CommonVariables &model_var, su2double* Destruction, su2double* Jacobian) {
+   static void ComputeDestruction(const su2double nue, const CommonSAVariables &model_var, su2double* Destruction, su2double* Jacobian) {
       *Destruction = model_var.cw1 * nue * nue / model_var.dist_i_2;
       *Jacobian   -= 2.0 * model_var.cw1 * nue / model_var.dist_i_2;
    }
 
-   static void ComputeCrossProduction(const su2double nue, const CommonVariables &model_var, su2double* CrossProduction, su2double* Jacobian) {
+   static void ComputeCrossProduction(const su2double nue, const CommonSAVariables &model_var, su2double* CrossProduction, su2double* Jacobian) {
       /*--- Same cross production as baseline. No need to duplicate code. ---*/
       SourceTerms_Bsl::ComputeCrossProduction(nue, model_var, CrossProduction, Jacobian);
    }
@@ -522,7 +525,9 @@ struct SourceTerms_Neg {
  * SPALART-ALLMARAS ADDITIONAL SOURCE TERMS DECORATORS
  * ============================================================================*/
 
-/*--- Decorator ---*/
+/*!
+ * \brief Decorator
+ */
 class AdditionalSourceTerms : public CNumerics {
 
 protected:
@@ -534,7 +539,6 @@ public:
     ResidualType<> ComputeResidual(const CConfig* config) {
         m_Decorator.ComputeResidual(config);
     }
-
 };
 
 /*------------------------------------------------------------------------------
@@ -543,14 +547,13 @@ public:
 
 
 /*!
- * \brief Mixing Layer Compressibility Correction (SA-comp)
+ * \brief Mixing Layer Compressibility Correction (SA-comp) decorator
  */
 class CompressiblityCorrection : public AdditionalSourceTerms {
 
 private:
 
    const su2double c5 = 3.5;
-
 
 public:
 
@@ -575,7 +578,7 @@ public:
         auto Residual = m_Decorator.ComputeResidual(config);
 
         /*--- Decorator residual contribution ---*/
-        *Residual -= CompCorrection;
+        *Residual.residual -= CompCorrection;
         *Residual.jacobian_i -= d_CompCorrection;
 
 
