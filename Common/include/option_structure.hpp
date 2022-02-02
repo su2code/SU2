@@ -2159,8 +2159,6 @@ enum MPI_QUANTITIES {
   PRIMITIVE            ,  /*!< \brief Primitive variables. */
   METRIC               ,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */
   NON_PHYSICAL         ,  /*!< \brief Whether node is non-physical. */
-  PRIMITIVE_GRAD_REC   ,  /*!< \brief Primitive gradient communication. */
-  SOLUTION_GRAD_REC    ,   /*!< \brief Conservative solution gradient communication. */
   SMATRIX              ,  /*!< \brief Conservative solution gradient basis communication. */
   SMATRIX_RECON        ,  /*!< \brief Conservative solution gradient basis communication. */
   VOLUME               ,   /*!< \brief Dual cell volume communication. */

@@ -1374,6 +1374,14 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case GRADIENT_ADAPT:
+      COUNT_PER_POINT  = nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case HESSIAN:
+      COUNT_PER_POINT  = 3*(nDim-1)*nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -1388,6 +1396,8 @@ namespace CommHelpers {
       case PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
       case PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
       case AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
+      case GRADIENT_ADAPT: return nodes->GetGradient_Adaptation();
+      case HESSIAN: return nodes->GetHessian();
       default: return nodes->GetGradient();
     }
   }
@@ -1404,7 +1414,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, iHess;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
 
@@ -1430,6 +1440,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
   /*--- Handle the different types of gradient and limiter. ---*/
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
+  const auto nHess = 3*(nDim-1);
+  const auto nVarHess = COUNT_PER_POINT / nHess;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1498,9 +1510,15 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
           case AUXVAR_GRADIENT:
+          case GRADIENT_ADAPT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
+            break;
+          case HESSIAN:
+            for (iVar = 0; iVar < nVarHess; iVar++)
+              for (iHess = 0; iHess < nHess; iHess++)
+                bufDSend[buf_offset+iVar*nHess+iHess] = gradient(iPoint, iVar, iHess);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1546,7 +1564,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, iHess;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE = 0;
@@ -1567,6 +1585,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Handle the different types of gradient and limiter. ---*/
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
+  const auto nHess = 3*(nDim-1);
+  const auto nVarHess = COUNT_PER_POINT / nHess;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1649,9 +1669,15 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
           case AUXVAR_GRADIENT:
+          case GRADIENT_ADAPT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
+            break;
+          case HESSIAN:
+            for (iVar = 0; iVar < nVarHess; iVar++)
+              for (iHess = 0; iHess < nHess; iHess++)
+                gradient(iPoint, iVar, iHess) = bufDRecv[buf_offset+iVar*nHess+iHess];
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
