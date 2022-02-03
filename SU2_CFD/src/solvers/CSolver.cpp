@@ -4730,7 +4730,7 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
   //--- Compute weights for Hessians
   vector<vector<su2double> > HessianWeights(3, vector<su2double>(nVarTot));
   for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    for (auto& hw : HessianWeights) fill(hw.begin(), hw.end(), 0.0);
+    for (auto& hw : HessianWeights) std::fill(hw.begin(), hw.end(), 0.0);
     //--- Convective terms
     ConvectiveMetric(solver, geometry, config, iPoint, HessianWeights);
 
@@ -5023,7 +5023,7 @@ void CSolver::ViscousMetric(CSolver **solver, const CGeometry*geometry, const CC
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (auto iVar = 0; iVar < nVarFlo; ++iVar) weights[1][iVar] += TmpWeights[iVar];
-  fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+  std::fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
 
   //--- Second-order terms (error due to gradients)
   if(nDim == 3) {

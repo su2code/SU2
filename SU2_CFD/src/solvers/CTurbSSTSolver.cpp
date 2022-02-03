@@ -1170,7 +1170,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[1][iVar] += TmpWeights[iVar];
-  fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+  std::fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
 
   //--- Second-order terms (error due to gradients)
   if(nDim == 3) {
