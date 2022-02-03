@@ -621,7 +621,7 @@ protected:
     if (it != historyOutputPerSurface_Map.end()) {
       it->second[iMarker].value = value;
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   }
 

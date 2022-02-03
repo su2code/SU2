@@ -201,7 +201,7 @@ def main():
     flatplate           = TestCase('flatplate')
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
-    flatplate.test_iter = 125
+    flatplate.test_iter = 100
     flatplate.test_vals = [-12.022962, -6.535702, 0.001112, 0.036277, 2.3615, -2.3253, -2.2795, -2.2795, 5]
     flatplate.su2_exec  = "SU2_CFD"
     flatplate.new_output = True

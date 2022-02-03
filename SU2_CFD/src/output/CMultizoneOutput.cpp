@@ -103,20 +103,11 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output, co
       const auto& name = item.first;
       nameMultizone = name + zoneIndex;
 
-      /*--- Determine whether nMaker_Analyze/Monitoring has to be looped. ---*/
-      const auto& group = item.second[0].outputGroup;
-      unsigned short nMarker = 0;
-      if (group == "FLOW_COEFF_SURF")
-        nMarker = config[iZone]->GetnMarker_Analyze();
-      else if (group == "AERO_COEFF_SURF")
-        nMarker = config[iZone]->GetnMarker_Monitoring();
-      else
-        SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
-
-      for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-        SetHistoryOutputPerSurfaceValue(nameMultizone, item.second[iMarker].value, iMarker);
-      }// for iMarker
-    }// for HistPerSurfFields
+      unsigned short iMarker = 0;
+      for (const auto& field : item.second) {
+        SetHistoryOutputPerSurfaceValue(nameMultizone, field.value, iMarker++);
+      }
+    }
   }
   SetHistoryOutputValue("COMBO", comboValue);
 }
