@@ -4571,6 +4571,52 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
   delete [] GradDotn;
 }
 
+void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+  constexpr size_t MAXNMET = 30;
+  const unsigned short nMet = 3*(nDim-1);
+
+  for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetSolid_Wall(iMarker)) {
+
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        auto nodes = geometry->nodes;
+
+        if (nodes->GetDomain(iPoint)) {
+
+          //--- Correct if any of the neighbors belong to the volume
+          unsigned short counter = 0;
+          su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
+          for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+            const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+            if(!nodes->GetSolidBoundary(jPoint)) {
+              const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
+              suminvdist += 1./dist;
+              for(unsigned short iVar = 0; iVar < nVar; iVar++){
+                const unsigned short i = iVar*nMet;
+                for(unsigned short iMet = 0; iMet < nMet; iMet++) {
+                  hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
+                }// iMet
+              }// iVar
+              counter ++;
+            }// if boundary
+          }// iNeigh
+          if(counter > 0) {
+            for(unsigned short iVar = 0; iVar < nVar; iVar++){
+              const unsigned short i = iVar*nMet;
+              for(unsigned short iMet = 0; iMet < nMet; iMet++) {
+                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/suminvdist);
+              }// iMet
+            }// iVar
+          }// if counter
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+}
+
 void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint) {
   
   su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
@@ -4703,7 +4749,7 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
   }
   
   //--- Apply correction to wall boundary
-  CorrectBoundMetric(geometry, config);
+  // CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);

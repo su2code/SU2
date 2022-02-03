@@ -275,7 +275,7 @@ void computeHessiansGreenGauss(CSolver* solver,
         for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
         {
           size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-          auto node = geometry.nodes;
+          auto nodes = geometry.nodes;
 
           /*--- Halo points do not need to be considered. ---*/
 

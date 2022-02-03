@@ -4322,9 +4322,9 @@ public:
   void CorrectWallGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
-   * \brief Correct the metric at boundaries.
+   * \brief Correct the Hessian at boundaries.
    */
-  void CorrectBoundMetric(const CGeometry *geometry, const CConfig *config);
+  void CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
    * \brief Make the eigenvalues of the Hessians positive.
