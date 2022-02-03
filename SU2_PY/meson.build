@@ -48,6 +48,7 @@ install_data(['SU2/opt/project.py',
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 
 install_data(['SU2/run/adjoint.py',
+              'SU2/run/amg.py',
               'SU2/run/deform.py',
               'SU2/run/direct.py',
               'SU2/run/interface.py',
