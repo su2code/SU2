@@ -5117,10 +5117,6 @@ void CSolver::NormalizeMetric2(const CGeometry *geometry, const CConfig *config)
                   armax2 = pow(config->GetAdap_ARmax(), 2.0),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  su2double **A      = new su2double*[nDim],
-            **EigVec = new su2double*[nDim], 
-            *EigVal  = new su2double[nDim];
-
   su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
 
   //--- set tolerance and obtain global scaling
@@ -5313,12 +5309,4 @@ void CSolver::NormalizeMetric3(const CGeometry *geometry, const CConfig *config)
     cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
-
-  for (auto iDim = 0u; iDim < nDim; ++iDim){
-    delete [] A[iDim];
-    delete [] EigVec[iDim];
-  }
-  delete [] A;
-  delete [] EigVec;
-  delete [] EigVal;
 }
