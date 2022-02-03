@@ -87,6 +87,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
   const bool limiter = (config->GetKind_SlopeLimit() != NO_LIMITER) &&
+                       (config->GetKind_SlopeLimit() != VAN_ALBADA_EDGE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Clear residual and system matrix, not needed for
