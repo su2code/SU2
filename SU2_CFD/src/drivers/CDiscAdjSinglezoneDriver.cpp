@@ -244,8 +244,15 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   if (config->GetBool_Compute_Metric()) {
     /*--- Reset solution and primitives ---*/
     AD::Reset();
-    iteration->SetRecording(solver_container, geometry_container, config_container, ZONE_0, INST_0, NONE);
-    iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, NONE);
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+        auto solver = solver_container[ZONE_0][INST_0][iMesh][iSol];
+        if (solver && solver->GetAdjoint()) {
+          solver->SetRecording(geometry_container[ZONE_0][INST_0][iMesh], config_container[ZONE_0]);
+        }
+      }
+    }
+    iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, RECORDING::CLEAR_INDICES);
     
     /*--- Compute metric for anisotropic mesh adaptation ---*/
     ComputeMetric();
@@ -260,7 +267,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
     direct_output->SetSurface_Filename(config->GetSurfCoeff_FileName());
     
     for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-      unsigned short* FileFormat = config->GetVolumeOutputFiles();
+      auto FileFormat = config->GetVolumeOutputFiles();
       direct_output->WriteToFile(config, geometry, FileFormat[iFile]);
     }
   }
