@@ -191,7 +191,7 @@ void computeHessiansGreenGauss(CSolver* solver,
                                MPI_QUANTITIES kindMpiComm,
                                PERIODIC_QUANTITIES kindPeriodicComm,
                                CGeometry& geometry,
-                               CConfig& config,
+                               const CConfig& config,
                                const GradientType& gradient,
                                size_t varBegin,
                                size_t varEnd,
@@ -275,7 +275,7 @@ void computeHessiansGreenGauss(CSolver* solver,
         for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
         {
           size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-          auto node = geometry.node[iPoint];
+          auto node = geometry.nodes;
 
           /*--- Halo points do not need to be considered. ---*/
 
