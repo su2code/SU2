@@ -1658,31 +1658,31 @@ public:
   su2double GetHeat_Flux_Ref(void) const { return Heat_Flux_Ref; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
+   * \brief Get the value of the freestream temperature.
    * \return Freestream temperature.
    */
   su2double GetTemperature_FreeStream(void) const { return Temperature_FreeStream; }
   /*!
-   * \brief Get the value of the frestream vibrational-electronic temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream vibrational-electronic temperature.
+   * \return Freestream vibe-el temperature.
    */
   su2double GetTemperature_ve_FreeStream(void) const { return Temperature_ve_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream energy.
+   * \return Freestream energy.
    */
   su2double GetEnergy_FreeStream(void) const { return Energy_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream viscosity.
+   * \return Freestream viscosity.
    */
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream density.
+   * \return Freestream density.
    */
   su2double GetDensity_FreeStream(void) const { return Density_FreeStream; }
 
@@ -1760,8 +1760,8 @@ public:
   su2double GetPressure_Ref(void) const { return Pressure_Ref; }
 
   /*!
-   * \brief Get the value of the reference pressure for non-dimensionalization.
-   * \return Reference pressure for non-dimensionalization.
+   * \brief Get the value of the reference energy for non-dimensionalization.
+   * \return Reference energy for non-dimensionalization.
    */
   su2double GetEnergy_Ref(void) const { return Energy_Ref; }
 
