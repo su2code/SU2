@@ -26,6 +26,7 @@
 
 #include "../gradients/computeGradientsGreenGauss.hpp"
 #include "../gradients/computeGradientsLeastSquares.hpp"
+#include "../limiters/computeLimiters.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
