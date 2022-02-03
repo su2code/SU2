@@ -676,6 +676,7 @@ private:
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Restart_CFL,                        /*!< \brief Restart CFL (for direct, adjoint, and linearized problems).*/
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
@@ -5301,6 +5302,12 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void) const { return Restart; }
+
+  /*!
+   * \brief Provides the restart information.
+   * \return Restart information, if <code>TRUE</code> then the code will use the local CFL from the restart file.
+   */
+  bool GetRestart_CFL(void) const { return Restart_CFL; }
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are read.
