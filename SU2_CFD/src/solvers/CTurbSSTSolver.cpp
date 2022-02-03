@@ -190,7 +190,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   CommonPreprocessing(geometry, config, Output);
 
   /*--- Compute primitives and gradients ---*/
-  Postprocessing(geometry, solver, config, iMesh);
+  Postprocessing(geometry, solver_container, config, iMesh);
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
