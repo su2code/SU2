@@ -202,8 +202,7 @@ void computeHessiansGreenGauss(CSolver* solver,
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
 
-  size_t chunkSize = computeStaticChunkSize(nPointDomain,
-                     omp_get_max_threads(), OMP_MAX_CHUNK);
+  const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
   /*--- Start OpenMP parallel section. ---*/
@@ -215,7 +214,7 @@ void computeHessiansGreenGauss(CSolver* solver,
     SU2_OMP_FOR_DYN(chunkSize)
     for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
     {
-      auto node = geometry.node[iPoint];
+      auto nodes = geometry.nodes;
 
       /*--- Clear the Hessian. --*/
 
@@ -225,22 +224,22 @@ void computeHessiansGreenGauss(CSolver* solver,
 
       /*--- Handle averaging and division by volume in one constant. ---*/
 
-      su2double halfOnVol = 0.5 / (node->GetVolume()+node->GetPeriodicVolume());
+      su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint)+nodes->GetPeriodicVolume(iPoint));
 
       /*--- Add a contribution due to each neighbor. ---*/
 
-      for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
+      for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
       {
-        size_t iEdge = node->GetEdge(iNeigh);
-        size_t jPoint = node->GetPoint(iNeigh);
+        size_t iEdge = nodes->GetEdge(iPoint,iNeigh);
+        size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
 
         /*--- Determine if edge points inwards or outwards of iPoint.
          *    If inwards we need to flip the area vector. ---*/
 
-        su2double dir = (iPoint == geometry.edge[iEdge]->GetNode(0))? 1.0 : -1.0;
+        su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
         su2double weight = dir * halfOnVol;
 
-        const su2double* area = geometry.edge[iEdge]->GetNormal();
+        const auto area = geometry.edges->GetNormal(iEdge);
 
         for (size_t jDim = 0; jDim < nDim; ++jDim)
         {
@@ -280,9 +279,9 @@ void computeHessiansGreenGauss(CSolver* solver,
 
           /*--- Halo points do not need to be considered. ---*/
 
-          if (!node->GetDomain()) continue;
+          if (!nodes->GetDomain(iPoint)) continue;
 
-          su2double volume = node->GetVolume() + node->GetPeriodicVolume();
+          su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
 
           const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
@@ -361,18 +360,18 @@ void computeHessiansGreenGauss(CSolver* solver,
                                PERIODIC_QUANTITIES kindPeriodicComm,
                                CGeometry& geometry,
                                const CConfig& config,
-                               const FieldType& field,
+                               const GradientType& gradient,
                                size_t varBegin,
                                size_t varEnd,
-                               GradientType& gradient) {
+                               GradientType& hessian) {
   switch (geometry.GetnDim()) {
   case 2:
     detail::computeHessiansGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry,
-                                         config, field, varBegin, varEnd, gradient);
+                                         config, gradient, varBegin, varEnd, hessian);
     break;
   case 3:
     detail::computeHessiansGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry,
-                                         config, field, varBegin, varEnd, gradient);
+                                         config, gradient, varBegin, varEnd, hessian);
     break;
   default:
     SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
