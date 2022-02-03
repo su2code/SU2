@@ -2,14 +2,14 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -729,68 +729,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
 
         direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
-
-        solvers[FLOW_SOL]->Evaluate_ObjFunc(config);
+        ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
+        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+        ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 
-      default:
-        break;
-    }
-  }
-
-  /*--- Extract objective function values. ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    auto config = config_container[iZone];
-    auto solvers = solver_container[iZone][INST_0][MESH_0];
-
-    const auto Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-
-    switch (config->GetKind_Solver()) {
-
-      case MAIN_SOLVER::DISC_ADJ_EULER:     case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:     case MAIN_SOLVER::DISC_ADJ_RANS:
-      case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-      {
-        auto val = solvers[FLOW_SOL]->GetTotal_ComboObj();
-
-        if (config->GetWeakly_Coupled_Heat()) {
-          if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
-            val += solvers[HEAT_SOL]->GetTotal_HeatFlux();
-          }
-          else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
-            val += solvers[HEAT_SOL]->GetTotal_AvgTemperature();
-          }
-        }
-        ObjFunc += val*Weight_ObjFunc;
-        break;
-      }
-      case MAIN_SOLVER::DISC_ADJ_HEAT:
-      {
-        switch(config->GetKind_ObjFunc()) {
-          case TOTAL_HEATFLUX:
-            ObjFunc += solvers[HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
-            break;
-          case AVG_TEMPERATURE:
-            ObjFunc += solvers[HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
-            break;
-        }
-        break;
-      }
-      case MAIN_SOLVER::DISC_ADJ_FEM:
-      {
-        solvers[FEA_SOL]->Evaluate_ObjFunc(config);
-        ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj()*Weight_ObjFunc;
-        break;
-      }
       default:
         break;
     }

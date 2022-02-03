@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -80,7 +80,6 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string ConvCriteria;            // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -147,11 +146,7 @@ private:
   su2double dCMx_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMy_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMz_dCL;          /*!< \brief Fixed Cl mode derivate. */
-  su2double dCD_dCMy;          /*!< \brief Fixed Cl mode derivate. */
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
-  su2double CM_Target;         /*!< \brief Fixed Cl mode Target CM. */
-  su2double *HTP_Min_XCoord,
-  *HTP_Min_YCoord;                   /*!< \brief Identification of the HTP. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
@@ -440,8 +435,22 @@ private:
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
+  /* Gradient smoothing options */
+  su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
+  su2double SmoothingEps2;          /*!< \brief Parameter for the Laplace part in gradient smoothing. */
+  bool SmoothGradient;              /*!< \brief Flag for enabling gradient smoothing. */
+  bool SmoothSepDim;                /*!< \brief Flag for enabling separated calculation for every dimension. */
+  bool SmoothOnSurface;             /*!< \brief Flag for assembling the system only on the surface. */
+  bool SmoothDirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
+  ENUM_SOBOLEV_MODUS SmoothNumMode; /*!< \brief The mode in which the Sobolev smoothing solver is applied. */
+
+  unsigned short  Kind_Grad_Linear_Solver,  /*!< Numerical method to smooth the gradient */
+  Kind_Grad_Linear_Solver_Prec;             /*!< \brief Preconditioner of the linear solver. */
+  su2double Grad_Linear_Solver_Error;       /*!< \brief Min error of the linear solver for the gradient smoothing. */
+  unsigned long Grad_Linear_Solver_Iter; /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
+
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
-  bool AddIndNeighbor;         /*!< \brief Include indirect neighbor in the agglomeration process. */
+  string CustomObjFunc;        /*!< \brief User-defined objective function. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -641,11 +650,9 @@ private:
   iH, AoS, AoA_Offset,
   AoS_Offset, AoA_Sens;       /*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;         /*!< \brief Activate fixed CL mode (external flow only). */
-  bool Fixed_CM_Mode;         /*!< \brief Activate fixed CL mode (external flow only). */
   bool Eval_dOF_dCX;          /*!< \brief Activate fixed CL mode (external flow only). */
   bool Discard_InFiles;       /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;        /*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double Target_CM;        /*!< \brief Specify a target CM instead of AoA (external flow only). */
   su2double Total_CM;         /*!< \brief Specify a Total CM instead of AoA (external flow only). */
   su2double Total_CD;         /*!< \brief Specify a target CD instead of AoA (external flow only). */
   su2double dCL_dAlpha;       /*!< \brief value of dCl/dAlpha. */
@@ -661,7 +668,6 @@ private:
   bool Update_AoA;                      /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   unsigned long Update_AoA_Iter_Limit;  /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode. */
   bool Finite_Difference_Mode;        /*!< \brief Flag to run the finite difference mode in fixed Cl mode. */
-  bool Update_HTPIncidence;           /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   su2double ChargeCoeff;              /*!< \brief Charge coefficient (just for poisson problems). */
   unsigned short Cauchy_Func_Flow,    /*!< \brief Function where to apply the convergence criteria in the flow problem. */
   Cauchy_Func_AdjFlow,                /*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -670,9 +676,12 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
-  Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
+  Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
+  Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
+  Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,                    /*!< \brief Number of markers for the objective function. */
@@ -682,7 +691,8 @@ private:
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
-  nMarker_WallFunctions;              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
   string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
   *Marker_Designing,                  /*!< \brief Markers to design. */
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
@@ -692,7 +702,8 @@ private:
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
-  *Marker_WallFunctions;              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
@@ -714,6 +725,7 @@ private:
   *Marker_All_Fluid_Load,            /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,              /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,             /*!< \brief Global index for moving using the grid information. */
+  *Marker_All_SobolevBC,             /*!< \brief Global index for boundary condition applied to gradient smoothing. */
   *Marker_CfgFile_Monitoring,            /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,             /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,               /*!< \brief Global index for monitoring using the config information. */
@@ -729,12 +741,13 @@ private:
   *Marker_CfgFile_Fluid_Load,         /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,           /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,                 /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_CfgFile_PerBound;           /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PerBound,           /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_SobolevBC;          /*!< \brief Global index for boundary condition applied to gradient smoothing using the config information. */
   string *PlaneTag;                   /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
-  unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
+  TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
@@ -783,7 +796,8 @@ private:
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1080,7 +1094,6 @@ private:
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
   ad_coeff_heat[2],      /*!< \brief artificial dissipation (heat) array for the COption class. */
-  obj_coeff[5],          /*!< \brief objective array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
   geo_loc[2],            /*!< \brief SU2_GEO section locations array for the COption class. */
@@ -1123,7 +1136,7 @@ private:
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
-  unsigned short* VolumeOutputFiles;  /*!< \brief File formats to output */
+  OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
   unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
@@ -1162,7 +1175,7 @@ private:
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
-  
+
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
@@ -1565,12 +1578,6 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
-
-  /*!
-   * \brief Get the values of the CFL adapation.
-   * \return Value of CFL adapation
-   */
-  su2double GetHTP_Axis(unsigned short val_index) const { return htp_axis[val_index]; }
 
   /*!
    * \brief Get the value of the limits for the sections.
@@ -2812,6 +2819,18 @@ public:
   unsigned short GetnDV_Value(unsigned short iDV) const { return nDV_Value[iDV]; }
 
   /*!
+   * \brief Get the total number of design variables.
+   */
+  unsigned short GetnDV_Total(void) const {
+    if (!nDV_Value) return 0;
+    unsigned short sum = 0;
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      sum += nDV_Value[iDV];
+    }
+    return sum;
+  }
+
+  /*!
    * \brief Get the number of FFD boxes.
    * \return Number of FFD boxes.
    */
@@ -2990,6 +3009,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Moving(void) const { return nMarker_Moving; }
+
+  /*!
+   * \brief Get the total number of markers for gradient treatment.
+   * \return Total number of markers for gradient treatment.
+   */
+  unsigned short GetnMarker_SobolevBC(void) const { return nMarker_SobolevBC; }
 
   /*!
    * \brief Get the total number of Python customizable markers.
@@ -3354,6 +3379,13 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
   /*!
+   * \brief Set if a marker how <i>val_marker</i> is going to be applied in gradient treatment.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_sobolev - 0 or 1 depending if the marker is selected.
+   */
+  void SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev) { Marker_All_SobolevBC[val_marker] = val_sobolev; }
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
@@ -3496,6 +3528,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker) const { return Marker_All_Moving[val_marker]; }
+
+  /*!
+   * \brief Get the information if gradient treatment uses a marker <i>val_marker</i>.
+   * \param[in] val_marker
+   * \return 0 or 1 depending if the marker is going to be selected.
+   */
+  unsigned short GetMarker_All_SobolevBC(unsigned short val_marker) const { return Marker_All_SobolevBC[val_marker]; }
 
   /*!
    * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH marker
@@ -4032,18 +4071,6 @@ public:
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
 
   /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
    * \brief Get min error of the linear solver for the implicit formulation.
    * \return Min error of the linear solver for the implicit formulation.
    */
@@ -4270,7 +4297,7 @@ public:
   unsigned short GetRef_Inc_NonDim(void) const { return Ref_Inc_NonDim; }
 
   /*!
-   * \brief Get the kind of SU2 software component.
+   * \brief Set the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
   void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
@@ -5204,13 +5231,9 @@ public:
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val) { Weight_ObjFunc[val_obj] = val; }
 
   /*!
-   * \author H. Kline
-   * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
-   * \note This objective is only applicable to gradient calculations. Objective value must be
-   * calculated using the area averaged outlet values of density, velocity, and pressure.
-   * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
+   * \brief Get the user expression for the custom objective function.
    */
-  su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return obj_coeff[iVar]; }
+  const string& GetCustomObjFunc() const { return CustomObjFunc; }
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.
@@ -5255,6 +5278,24 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
+   * \brief Flag for whether restart solution files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Restart_Overwrite(void) const { return Wrt_Restart_Overwrite; }
+
+    /*!
+   * \brief Flag for whether visualization files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Surface_Overwrite(void) const { return Wrt_Surface_Overwrite; }
+
+   /*!
+   * \brief Flag for whether visualization files are overwritten.
+   * \return Flag for overwriting. If Flag=false, iteration nr is appended to filename
+   */
+  bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
    * \brief Provides the number of varaibles.
@@ -5427,7 +5468,7 @@ public:
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
-  unsigned short GetTabular_FileFormat(void) const { return Tab_FileFormat; }
+  TAB_OUTPUT GetTabular_FileFormat(void) const { return Tab_FileFormat; }
 
   /*!
    * \brief Get the output precision to be used in <ofstream>.precision(value) for history and SU2_DOT output.
@@ -5474,12 +5515,21 @@ public:
 
   /*!
    * \brief Add any numbers necessary to the filename (iteration number, zone ID ...)
-   * \param[in] config - Definition of the particular problem.
    * \param[in] filename - the base filename.
    * \param[in] ext - the extension to be added.
+   * \param[in] Iter - the current iteration
    * \return The new filename
    */
   string GetFilename(string filename, string ext, int Iter) const;
+
+  /*!
+   * \brief Add steady iteration number to the filename (does not overwrite previous files)
+   * \param[in] filename - the base filename.
+   * \param[in] inner_iter - the inner iterations
+   * \param[in] outer_iter - the outer iterations
+   * \return The new filename
+   */
+  string GetFilename_Iter(const string& filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5489,18 +5539,26 @@ public:
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iZone - the zone ID.
+   * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultizone_HistoryFileName(string val_filename, int val_iZone, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iInst - the current instance.
+   * \param[in] ext - the filename extension.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const;
 
   /*!
    * \brief Append the instance index to the restart or the solution files.
+   * \param[in] val_filename - the base filename.
+   * \param[in] val_iInst - the current instance.
    * \return Name of the restart file for the flow variables.
    */
   string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const;
@@ -5563,6 +5621,7 @@ public:
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
+   * \param[in] ext - the filename extension.
    * \return Name of the file with the iteration number for an unsteady solution file.
    */
   string GetUnsteady_FileName(string val_filename, int val_iter, string ext) const;
@@ -5573,12 +5632,6 @@ public:
    * \return Name of the file with the appropriate objective function extension.
    */
   string GetObjFunc_Extension(string val_filename) const;
-
-  /*!
-   * \brief Get the criteria for structural residual (relative/absolute).
-   * \return Relative/Absolute criteria for structural convergence.
-   */
-  unsigned short GetResidual_Criteria_FEM(void) const { return Res_FEM_CRIT; }
 
   /*!
    * \brief Get functional that is going to be used to evaluate the residual flow convergence.
@@ -5694,6 +5747,7 @@ public:
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
    * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val_ind - value of initial deformation.
    * \param[in] val    - Value of the design variable.
    */
   void SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
@@ -5741,7 +5795,6 @@ public:
 
   /*!
    * \brief Set the type of dynamic mesh motion.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
    */
   void SetKind_GridMovement(unsigned short motion_Type) { Kind_GridMovement = motion_Type; }
@@ -5860,7 +5913,7 @@ public:
 
   /*!
    * \brief Get the pitching phase of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] iDim - spatial component.
    * \return pitching phase of the mesh.
    */
   su2double GetPitching_Phase(unsigned short iDim) const { return Pitching_Phase[iDim];}
@@ -5890,7 +5943,6 @@ public:
 
   /*!
    * \brief Get the plunging amplitude of the mesh.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] iDim - spatial component
    * \return Plunging amplitude of the mesh.
    */
@@ -6018,6 +6070,11 @@ public:
    * \return Delta Pressure for body force computation.
    */
   su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
+
+  /*!
+   * \brief Set the value of the pressure delta from which body force vector is computed. Necessary for Restart metadata.
+   */
+  void SetStreamwise_Periodic_PressureDrop(su2double Streamwise_Periodic_PressureDrop_) { Streamwise_Periodic_PressureDrop = Streamwise_Periodic_PressureDrop_; }
 
   /*!
    * \brief Get the value of the massflow from which body force vector is computed.
@@ -6201,6 +6258,12 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
 
   /*!
+   * \brief Get the gradient boundary information from the config definition for the marker <i>val_marker</i>.
+   * \return Gradient boundary information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_SobolevBC(string val_marker) const;
+
+  /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
    * \return DEFORM_MESH information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -6345,18 +6408,6 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdCD_dCMy(void) const { return dCD_dCMy; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
-  su2double GetCM_Target(void) const { return CM_Target; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
   su2double GetdCD_dCL(void) const { return dCD_dCL; }
 
   /*!
@@ -6412,12 +6463,6 @@ public:
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCM_diH(su2double val_dcm_dhi) { dCM_diH = val_dcm_dhi; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
-  void SetdCD_dCMy(su2double val_dcd_dcmy) { dCD_dCMy = val_dcd_dcmy; }
 
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -6562,6 +6607,12 @@ public:
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Fluid_Load(string val_marker) const;
+
+  /*!
+   * \brief Get the internal index for a gradient boundary condition <i>val_marker</i>.
+   * \return Internal index for a gradient boundary  condition <i>val_marker</i>.
+   */
+  unsigned short GetMarker_SobolevBC(string val_marker) const;
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -8439,12 +8490,6 @@ public:
    * \brief Get information about whether to use fixed CL mode.
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
    */
-  bool GetFixed_CM_Mode(void) const { return Fixed_CM_Mode; }
-
-  /*!
-   * \brief Get information about whether to use fixed CL mode.
-   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
-   */
   bool GetEval_dOF_dCX(void) const { return Eval_dOF_dCX; }
 
   /*!
@@ -9147,7 +9192,7 @@ public:
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
-  bool GetIntegrated_HeatFlux(void) const { return Integrated_HeatFlux; }
+  bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
    * \brief Get Compute Average.
@@ -9512,7 +9557,7 @@ public:
   /*!
    * \brief GetVolumeOutputFiles
    */
-  const unsigned short* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
+  const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
 
   /*!
    * \brief GetnVolumeOutputFiles
@@ -9588,28 +9633,101 @@ public:
    * \return True if specified in config file.
    */
   bool GetSave_libROM(void) const {return libROM; }
-  
+
   /*!
    * \brief Get the name of the file for libROM to save.
    * \return Filename prefix for libROM to save to (default: "su2").
    */
   string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
-  
+
   /*!
    * \brief Static or incremental toggle for POD basis generation type.
    * \return Type of POD generation type
    */
   POD_KIND GetKind_PODBasis(void) const { return POD_Basis_Gen; }
-  
+
   /*!
    * \brief Get maximum number of POD basis dimensions (default: 100).
    * \return Maximum number of POD basis vectors.
    */
   unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
-  
+
   /*!
    * \brief Get frequency of unsteady time steps to save (default: 1).
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+
+  /*!
+   * \brief Check if the gradient smoothing is active
+   * \return true means that smoothing is applied to the sensitivities
+   */
+  bool GetSmoothGradient(void) const {return SmoothGradient; }
+
+  /*!
+   * \brief Gets the factor epsilon in front of the Laplace term
+   * \return epsilon
+   */
+  su2double GetSmoothingEps1(void) const { return SmoothingEps1; }
+
+  /*!
+   * \brief Gets the factor zeta in front of the identity term
+   * \return zeta
+   */
+  su2double GetSmoothingEps2(void) const { return SmoothingEps2; }
+
+  /*!
+   * \brief Check if we split in the dimensions
+   * \return true means that smoothing is for each dimension separate
+   */
+  bool GetSmoothSepDim(void) const { return SmoothSepDim; }
+
+  /*!
+   * \brief Check if we assemble the operator on the surface
+   * \return true means that smoothing is done on the surface level
+   */
+  bool GetSmoothOnSurface(void) const { return SmoothOnSurface; }
+
+  /*!
+   * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
+   * \return true means that we use zero Dirichlet boundary
+   */
+  bool GetDirichletSurfaceBound(void) const { return SmoothDirichletSurfaceBound; }
+
+  /*!
+   * \brief The modus of operation for the Sobolev solver
+   * \return returns on what level we operate
+   */
+  ENUM_SOBOLEV_MODUS GetSobMode(void) const { return SmoothNumMode; }
+
+  /*!
+   * \brief Get the name of the file with the hessian of the objective function.
+   * \return Name of the file with the hessian of the objective function.
+   */
+  string GetObjFunc_Hess_FileName(void) const { return ObjFunc_Hess_FileName; }
+
+  /*!
+   * \brief Get min error of the linear solver for the gradient smoothing.
+   * \return Min error of the linear solver for the gradient smoothing.
+   */
+  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
+
+  /*!
+   * \brief Get the kind of solver for the gradient smoothing.
+   * \return Numerical solver for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
+
+  /*!
+   * \brief Get the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
+
+    /*!
+   * \brief Get max number of iterations of the for the gradient smoothing.
+   * \return Max number of iterations of the linear solver for the gradient smoothing.
+   */
+  unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
 };

@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes in NEMO.
  * \author S. R. Copeland, W. Maier, C. Garbacz
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -128,7 +128,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   su2double ProjVelocity   = GeometryToolbox::DotProduct(nDim, &RoeV[VEL_INDEX], UnitNormal);
   su2double ProjVelocity_i = GeometryToolbox::DotProduct(nDim, &V_i[VEL_INDEX], UnitNormal);
   su2double ProjVelocity_j = GeometryToolbox::DotProduct(nDim, &V_j[VEL_INDEX], UnitNormal);
- 
+
   su2double RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
                             RoeV[P_INDEX]/RoeV[RHO_INDEX]);
 

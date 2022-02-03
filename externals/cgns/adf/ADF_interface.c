@@ -1371,7 +1371,7 @@ ADFI_chase_link( ID, &LID, &file_index,  &block_offset, &node, error_return ) ;
 CHECK_ADF_ABORT( *error_return ) ;
 
 	/** Copy the blank-filled data-type into a C string **/
-ADFI_string_2_C_string( node.data_type, ADF_DATA_TYPE_LENGTH, data_type,
+ADFI_string_2_C_string( node.data_type, ADF_CGIO_DATA_TYPE_LENGTH, data_type,
 		error_return ) ;
 CHECK_ADF_ABORT( *error_return ) ;
 
@@ -2601,6 +2601,7 @@ output: int *error_return	Error return.
 ***********************************************************************/
 void	ADF_Read_All_Data(
 		const double ID,
+                const char *m_data_type,
 		char *data,
 		int *error_return )
 {
@@ -2629,7 +2630,16 @@ if( data == NULL ) {
 ADFI_chase_link( ID, &LID, &file_index,  &block_offset, &node, error_return ) ;
 CHECK_ADF_ABORT( *error_return ) ;
 
+/* if it was provided, check to make sure the data types match */
+if( m_data_type != NULL ) {
+  if(strncmp(m_data_type, node.data_type, 2) != 0){
+    *error_return = INVALID_DATA_TYPE;
+    CHECK_ADF_ABORT( *error_return );
+  }
+}
+
 	/** Get datatype size **/
+
 ADFI_evaluate_datatype( file_index, node.data_type, &file_bytes, &memory_bytes,
 	tokenized_data_type, &file_format, &machine_format, error_return ) ;
 CHECK_ADF_ABORT( *error_return ) ;
@@ -2916,6 +2926,7 @@ void	ADF_Read_Data(
 		const cgsize_t m_start[],
 		const cgsize_t m_end[],
 		const cgsize_t m_stride[],
+                const char *m_data_type,
 		char *data,
 		int *error_return )
 {
@@ -2951,6 +2962,14 @@ if( (s_start == NULL) || (s_end == NULL) || (s_stride == NULL) ||
 
 ADFI_chase_link( ID, &LID, &file_index,  &block_offset, &node, error_return ) ;
 CHECK_ADF_ABORT( *error_return ) ;
+
+/* if it was provided, check to make sure the data types match */
+if( m_data_type != NULL ) {
+  if(strncmp(m_data_type, node.data_type, 2) != 0){
+    *error_return = INVALID_DATA_TYPE;
+    CHECK_ADF_ABORT( *error_return );
+  }
+}
 
 	/** Get datatype length **/
 ADFI_evaluate_datatype( file_index, node.data_type, &file_bytes, &memory_bytes,
