@@ -204,9 +204,9 @@ def main():
     flatplate           = TestCase('flatplate')
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
-    flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360, 9.0144e-04, 2.3622e+00, -2.3613e+00]
-    flatplate.su2_exec  = "parallel_computation.py -f"
+    flatplate.test_iter = 100
+    flatplate.test_vals = [-9.336395, -3.849426, 0.001112, 0.036276, 2.361500, -2.325300, -2.279700, -2.279700]
+    flatplate.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
     test_list.append(flatplate)
