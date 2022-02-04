@@ -172,15 +172,11 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       group = field[0].outputGroup;
 
       /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
-      vector<string>* Marker;
+      auto* Marker = &Marker_Monitoring;
       if (group == "FLOW_COEFF_SURF")
         Marker = &Marker_Analyze;
-      else if (group == "AERO_COEFF_SURF")
-        Marker = &Marker_Monitoring;
-      else {
-        Marker = &Marker_Analyze;  // dummy to suppress maybe-uninitialized warning
+      else if (group != "AERO_COEFF_SURF" && group != "HEAT_SURF")
         SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
-      }
 
       group += zoneIndex;
 

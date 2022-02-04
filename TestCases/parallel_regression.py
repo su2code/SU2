@@ -205,7 +205,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-12.022986, -6.535729, 0.001112, 0.036277, 2.361500, -2.325300, -2.279500, -2.279500, 5]
+    flatplate.test_vals = [-9.336395, -3.849426, 0.001112, 0.036276, 2.361500, -2.325300, -2.279700, -2.279700]
     flatplate.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
