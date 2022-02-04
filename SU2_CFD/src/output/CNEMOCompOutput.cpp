@@ -171,28 +171,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
   AddHistoryOutputFields_ScalarLinsol(config);
 
-
-  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
-  /// DESCRIPTION: Merit
-  AddHistoryOutput("FIGURE_OF_MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: CT
-  AddHistoryOutput("THRUST",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: CQ
-  AddHistoryOutput("TORQUE",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
-  /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Nearfield obj. function
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
-  ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
-  /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Maximal heatflux
-  AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
   AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
   AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
@@ -224,7 +202,9 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddAerodynamicCoefficients(config);
 
-  /*--- Add Cp diff fields ---*/
+  AddHeatCoefficients(config);
+
+  AddRotatingFrameCoefficients();
 
   Add_CpInverseDesignOutput();
 
@@ -436,8 +416,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_ENERGY", log10(NEMO_solver->GetRes_BGS(4)));
     }
   }
-  SetHistoryOutputValue("TOTAL_HEATFLUX",   NEMO_solver->GetTotal_HeatFlux());
-  SetHistoryOutputValue("MAXIMUM_HEATFLUX", NEMO_solver->GetTotal_MaxHeatFlux());
 
   SetHistoryOutputValue("MIN_CFL", NEMO_solver->GetMin_CFL_Local());
   SetHistoryOutputValue("MAX_CFL", NEMO_solver->GetMax_CFL_Local());
@@ -469,6 +447,10 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, NEMO_solver);
+
+  SetHeatCoefficients(config, NEMO_solver);
+
+  SetRotatingFrameCoefficients(NEMO_solver);
 
   /*--- Set Cp diff fields ---*/
 

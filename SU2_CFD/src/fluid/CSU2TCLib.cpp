@@ -597,9 +597,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,2,0) = -1.0066279E-03;  Omega11(4,2,1) = 1.1029264E-02;   Omega11(4,2,2) = -2.0671266E-01;  Omega11(4,2,3) = 8.2644384E+01;
     Omega11(4,3,0) = -5.0478143E-03;  Omega11(4,3,1) = 1.0236186E-01;   Omega11(4,3,2) = -9.0058935E-01;  Omega11(4,3,3) = 4.4472565E+02;
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
-  }
 
-  else if (gas_model == "AIR-7"){
+  } else if (gas_model == "AIR-7"){
 
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 7) {
@@ -2046,9 +2045,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
 void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
 
-  //TODO: THIS NEEDS TO BE UPDATED!!!!!!!!!!
   if (gas_model == "O2"){
-
+    // THESE ARE UNUSED.  SHOULD WE KEEP????  Good for future?
     //O2 + M -> 2O + M
     RxnConstantTable(0,0) = 1.8103;  RxnConstantTable(0,1) = 1.9607;  RxnConstantTable(0,2) = 3.5716;  RxnConstantTable(0,3) = -7.3623;   RxnConstantTable(0,4) = 0.083861;
     RxnConstantTable(1,0) = 0.91354; RxnConstantTable(1,1) = 2.3160;  RxnConstantTable(1,2) = 2.2885;  RxnConstantTable(1,3) = -6.7969;   RxnConstantTable(1,4) = 0.046338;
@@ -2058,16 +2056,6 @@ void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(5,0) = 0.50989; RxnConstantTable(5,1) = 2.4773;  RxnConstantTable(5,2) = 1.7132;  RxnConstantTable(5,3) = -6.5441;   RxnConstantTable(5,4) = 0.029591;
 
   } else if (gas_model == "N2"){
-
-    //N2 + M -> 2N + M
-    RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14
-    RxnConstantTable(1,0) = 2.0723;  RxnConstantTable(1,1) = 1.38970; RxnConstantTable(1,2) = 2.0617;  RxnConstantTable(1,3) = -11.828; RxnConstantTable(1,4) = 0.015105;  //n = 1E15
-    RxnConstantTable(2,0) = 1.6060;  RxnConstantTable(2,1) = 1.57320; RxnConstantTable(2,2) = 1.3923;  RxnConstantTable(2,3) = -11.533; RxnConstantTable(2,4) = -0.004543; //n = 1E16
-    RxnConstantTable(3,0) = 1.5351;  RxnConstantTable(3,1) = 1.60610; RxnConstantTable(3,2) = 1.2993;  RxnConstantTable(3,3) = -11.494; RxnConstantTable(3,4) = -0.00698;  //n = 1E17
-    RxnConstantTable(4,0) = 1.4766;  RxnConstantTable(4,1) = 1.62910; RxnConstantTable(4,2) = 1.2153;  RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.00944;  //n = 1E18
-    RxnConstantTable(5,0) = 1.4766;  RxnConstantTable(5,1) = 1.62910; RxnConstantTable(5,2) = 1.2153;  RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.00944;  //n = 1E19
-
-  } else if (gas_model == "ARGON_SID"){
 
     //N2 + M -> 2N + M
     RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14

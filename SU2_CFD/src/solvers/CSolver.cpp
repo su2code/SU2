@@ -3332,6 +3332,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   su2double dCMx_dCL_ = config->GetdCMx_dCL();
   su2double dCMy_dCL_ = config->GetdCMy_dCL();
   su2double dCMz_dCL_ = config->GetdCMz_dCL();
+  su2double SPPressureDrop_ = config->GetStreamwise_Periodic_PressureDrop();
   string::size_type position;
   unsigned long InnerIter_ = 0;
   ifstream restart_file;
@@ -3357,6 +3358,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("ITER=",0);
       if (position != string::npos) {
+        // TODO: 'ITER=' has 5 chars, not 9!
         text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
       }
 
@@ -3407,6 +3409,14 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       position = text_line.find ("DCMZ_DCL_VALUE=",0);
       if (position != string::npos) {
         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- Streamwise periodic pressure drop for prescribed massflow cases. ---*/
+
+      position = text_line.find ("STREAMWISE_PERIODIC_PRESSURE_DROP=",0);
+      if (position != string::npos) {
+        // Erase the name from the line, 'STREAMWISE_PERIODIC_PRESSURE_DROP=' has 34 chars.
+        text_line.erase (0,34); SPPressureDrop_ = atof(text_line.c_str());
       }
 
     }
@@ -3498,6 +3508,16 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
 
+  }
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
+    config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
+  }
+  else {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the STREAMWISE_PERIODIC_PRESSURE_DROP in the direct solution file." << endl;
   }
 
   /*--- External iteration ---*/
