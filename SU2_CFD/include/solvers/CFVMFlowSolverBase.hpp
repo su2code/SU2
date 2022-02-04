@@ -2014,7 +2014,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Provide the total heat load.
    * \return Value of the heat load (viscous contribution).
    */
-  inline su2double GetTotal_HeatFlux(void) const final { return Total_Heat; }
+  inline su2double GetTotal_HeatFlux() const final { return Total_Heat; }
 
   /*!
    * \brief Provide the total heat load.
