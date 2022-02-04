@@ -28,7 +28,7 @@
 #pragma once
 
 #include "CFileWriter.hpp"
-#include "../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/CConfig.hpp"
 
 
 class CParaviewVTMFileWriter final: public CFileWriter{
