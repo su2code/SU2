@@ -1614,6 +1614,24 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     } // if turbulent
 
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      /*---------------------------------------------------------------------------------------------*/
+      /*--- Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/
+      /*--- The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
+      /*---------------------------------------------------------------------------------------------*/
+
+      /*--- Compute update to Delta p based on massflow-difference ---*/
+      const su2double Average_Density_Global = SPvals.Streamwise_Periodic_AvgDensity;
+      const su2double Area_Global = SPvals.Streamwise_Periodic_BoundaryArea;
+      const su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+      const su2double MassFlow_Global = SPvals.Streamwise_Periodic_MassFlow;
+      const su2double ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
+
+      /*--- Store updated pressure difference ---*/
+      const su2double damping_factor = config->GetInc_Outlet_Damping();
+      SPvals.Streamwise_Periodic_PressureDrop = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
+    }
+
     /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
     numerics->SetStreamwisePeriodicValues(SPvals);
 
