@@ -5992,6 +5992,11 @@ public:
   su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
 
   /*!
+   * \brief Set the value of the pressure delta from which body force vector is computed. Necessary for Restart metadata.
+   */
+  void SetStreamwise_Periodic_PressureDrop(su2double Streamwise_Periodic_PressureDrop_) { Streamwise_Periodic_PressureDrop = Streamwise_Periodic_PressureDrop_; }
+
+  /*!
    * \brief Get the value of the massflow from which body force vector is computed.
    * \return Massflow for body force computation.
    */
@@ -9101,7 +9106,7 @@ public:
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
-  bool GetIntegrated_HeatFlux(void) const { return Integrated_HeatFlux; }
+  bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
    * \brief Get Compute Average.

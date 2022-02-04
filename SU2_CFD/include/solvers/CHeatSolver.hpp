@@ -313,15 +313,17 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    */
   void Evaluate_ObjFunc(const CConfig *config, CSolver**) override {
+    const auto weight = config->GetWeight_ObjFunc(0);
+
     switch (config->GetKind_ObjFunc()) {
       case TOTAL_HEATFLUX:
-        Total_ComboObj = Total_HeatFlux;
+        Total_ComboObj = weight * Total_HeatFlux;
         break;
       case AVG_TEMPERATURE:
-        Total_ComboObj = Total_AverageT;
+        Total_ComboObj = weight * Total_AverageT;
         break;
       case CUSTOM_OBJFUNC:
-        Total_ComboObj = Total_Custom_ObjFunc;
+        Total_ComboObj = weight * Total_Custom_ObjFunc;
         break;
       default:
         Total_ComboObj = 0.0;

@@ -251,7 +251,10 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 
   /*--- Local variables ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+  }
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -406,7 +409,10 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Get the specified wall heat flux from config ---*/
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+  }
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX    = nodes->GetTIndex();
@@ -672,12 +678,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
     /*--- Apply to the linear system ---*/
-    //Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-    //                             (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
-    //Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
+    Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+                                 (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dist_ij;
+    Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dist_ij;
     
-    Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
-    Res_Visc[nSpecies+nDim+1] = 0.0; //(kve*(Twall-Tvej))*Area/dist_ij;
+    //Res_Visc[nSpecies+nDim] = (ktr*(Twall-Tj))*Area/dist_ij;
+    //Res_Visc[nSpecies+nDim+1] = 0.0; //(kve*(Twall-Tvej))*Area/dist_ij;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
     if (implicit) {
