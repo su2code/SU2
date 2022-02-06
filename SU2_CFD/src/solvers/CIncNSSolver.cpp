@@ -55,8 +55,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Set the initial Streamwise periodic pressure drop value. ---*/
 
-  if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
+  if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
+    // Note during restarts, the flow.meta is read first. But theat sets the cfg-value so we are good here!
     SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop();
+    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from cfg file: " << SPvals.Streamwise_Periodic_PressureDrop << endl;
+  }
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,

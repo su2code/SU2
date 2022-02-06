@@ -59,6 +59,7 @@ protected:
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
+  su2double Adjoint_DP; // The adjoint value of streamwise periodic pressure drop (the derivative extracted at dp after every iteration). Init with 1e-16 just as the solution
 
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 

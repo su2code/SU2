@@ -149,6 +149,9 @@ protected:
   vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
+ public:
+  StreamwisePeriodicValues SPvals;
+ protected:
 
   /*!
    * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".

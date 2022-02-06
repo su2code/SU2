@@ -82,9 +82,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     SU2_MPI::Error("Oops! The CDiscAdjSolver static array sizes are not large enough.",CURRENT_FUNCTION);
   }
 
-  vector<su2double> Solution(nVar,1e-16);
+  vector<su2double> Solution(nVar,1e-16); //TK::Why 1e-16 and not 1 or 0?
   nodes = new CDiscAdjVariable(Solution.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
+  Adjoint_DP = 1e-16; // init adjoint dp just as the solution
 
   switch(KindDirect_Solver){
   case RUNTIME_FLOW_SYS:
@@ -122,6 +123,9 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
     direct_solver->GetNodes()->SetSolution(iPoint, nodes->GetSolution_Direct(iPoint));
   }
   END_SU2_OMP_FOR
+
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)
+    direct_solver->SPvals.Streamwise_Periodic_PressureDrop = nodes->spDP_Direct;
 
   if (time_n_needed) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -162,6 +166,11 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
+
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    AD::RegisterInput(direct_solver->SPvals.Streamwise_Periodic_PressureDrop);
+    AD::SetIndex(nodes->AD_spDP_InputIndex, direct_solver->SPvals.Streamwise_Periodic_PressureDrop);
+  }
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
@@ -298,6 +307,13 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
 
   direct_solver->GetNodes()->RegisterSolution(false);
+  //TK:: Here also the question is, which one is the "true" dp? the config one or the SP_vals one? -> the SPvals one!
+  //TK::Also register dp here... Where should be the dp update for massflow ... before or after the iteration? maybe it makes more sense after the iteration, ?
+  //TK:: or does it not matter as long as the update is in there?
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    AD::RegisterOutput(direct_solver->SPvals.Streamwise_Periodic_PressureDrop);
+    AD::SetIndex(nodes->AD_spDP_OutputIndex, direct_solver->SPvals.Streamwise_Periodic_PressureDrop);
+  }
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
@@ -336,6 +352,11 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
   }
   END_SU2_OMP_FOR
+
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    su2double local_Adjoint_DP = AD::GetDerivative(nodes->AD_spDP_InputIndex); // corresponds to default relax=1.0
+    SU2_MPI::Allreduce(&local_Adjoint_DP, &Adjoint_DP,       1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm()); // MPI comm necessary as there is only 1 dp but each proc has one
+  }
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
   if (CrossTerm) return;
@@ -468,6 +489,11 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
   END_SU2_OMP_FOR
+
+  //TK::Also set adj_dp into bar(dp) of the direct solver here
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    AD::SetDerivative(nodes->AD_spDP_OutputIndex, SU2_TYPE::GetValue(Adjoint_DP));
+  }
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {

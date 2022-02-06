@@ -94,6 +94,13 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
+ public: // Make public for easy debug access
+  int AD_spDP_InputIndex = -1; // As we have an input delta_pressure (DP) and output DP we store those indices to seed the adjoint and extract it properly. Just like the solution itself.
+  int AD_spDP_OutputIndex = -1; // init with -1 for easy debugging
+  su2double spDP_Direct = -1; // stores the streamwise periodic pressure drop in order to reset it later
+
+
+ protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */

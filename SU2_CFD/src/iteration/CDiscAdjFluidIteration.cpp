@@ -314,6 +314,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       for (auto iPoint = 0ul; iPoint < geometries[iMesh]->GetnPoint(); iPoint++)
         solvers[ADJFLOW_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers[FLOW_SOL]->GetNodes()->GetSolution(iPoint));
       END_SU2_OMP_FOR
+      // Set sstreamwise pressure drop in order to be able to reset it later TK::Make sure that here the flow.meta was already loaded -> it is
+      if (config[iZone]->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)
+        solvers[ADJFLOW_SOL]->GetNodes()->spDP_Direct = solvers[FLOW_SOL]->SPvals.Streamwise_Periodic_PressureDrop;
     }
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       SU2_OMP_FOR_STAT(1024)

@@ -39,7 +39,6 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
-  StreamwisePeriodicValues SPvals;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
