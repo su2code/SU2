@@ -1630,7 +1630,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Store updated pressure difference ---*/
       const su2double damping_factor = config->GetInc_Outlet_Damping();
-      SPvals.Streamwise_Periodic_PressureDrop = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
+      SPvals.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
     }
 
     /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
