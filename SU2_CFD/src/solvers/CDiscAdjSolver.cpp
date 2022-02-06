@@ -354,8 +354,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   END_SU2_OMP_FOR
 
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    su2double local_Adjoint_DP = AD::GetDerivative(nodes->AD_spDP_InputIndex); // corresponds to default relax=1.0
-    SU2_MPI::Allreduce(&local_Adjoint_DP, &Adjoint_DP,       1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm()); // MPI comm necessary as there is only 1 dp but each proc has one
+    // su2double local_Adjoint_DP = AD::GetDerivative(nodes->AD_spDP_InputIndex); // corresponds to default relax=1.0
+    // SU2_MPI::Allreduce(&local_Adjoint_DP, &Adjoint_DP,       1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm()); // MPI comm necessary as there is only 1 dp but each proc has one
+    Adjoint_DP = AD::GetDerivative(nodes->AD_spDP_InputIndex); // corresponds to default relax=1.0
   }
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
