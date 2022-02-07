@@ -45,7 +45,7 @@ def main():
     channel.cfg_dir   = "vandv/rans/30p30n"
     channel.cfg_file  = "config.cfg"
     channel.test_iter = 20
-    channel.test_vals = [-10.731407, -10.312481, -10.517059, -10.348701, -13.517110,  0.050962, 2.828564, 1.317850, -0.240861]
+    channel.test_vals = [-10.628370, -10.299097, -10.485327, -10.238060, -13.517229, 0.050962, 2.828563, 1.317849, -0.227233]
     test_list.append(channel)
 
     #################
