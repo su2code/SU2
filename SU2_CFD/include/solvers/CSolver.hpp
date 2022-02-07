@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -99,6 +99,9 @@ protected:
   vector<unsigned long> Point_Max_BGS; /*!< \brief Vector with the maximal residual for each variable. */
   su2activematrix Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
   su2activematrix Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+
+  su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
+  su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
   /*--- Variables that need to go. ---*/
 
@@ -220,7 +223,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(bool mesh_deform_mode = false);
+  CSolver(LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Destructor of the class.
@@ -772,8 +775,9 @@ public:
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
+  inline virtual void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {};
 
   /*!
    * \brief A virtual member.
@@ -1261,7 +1265,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *visc_numerics,
                                               CConfig *config,
@@ -1780,20 +1784,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_Total_CT - Value of the total thrust coefficient.
    */
   inline virtual void SetTotal_CT(su2double val_Total_CT) { }
@@ -1851,6 +1841,19 @@ public:
                                           CSolver **solver_container,
                                           CNumerics *numerics,
                                           CConfig *config) { }
+
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  inline su2double GetTotal_ComboObj() const { return Total_ComboObj; }
+
+  /*!
+   * \brief Sets the value of the custom objective function.
+   * \param[in] value - Value of the total custom objective function.
+   */
+  inline void SetTotal_Custom_ObjFunc(su2double value) { Total_Custom_ObjFunc = value; }
 
   /*!
    * \brief A virtual member.
@@ -2269,20 +2272,6 @@ public:
   inline virtual su2double GetCD_Visc(unsigned short val_marker) const { return 0; }
 
   /*!
-   * \author H. Kline
-   * \brief Set the total "combo" objective (weighted sum of other values).
-   * \param[in] ComboObj - Value of the combined objective.
-   */
-  inline virtual void SetTotal_ComboObj(su2double ComboObj) {}
-
-  /*!
-   * \author H. Kline
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   * \return Value of the "combo" objective values.
-   */
-  inline virtual su2double GetTotal_ComboObj(void) const { return 0;}
-
-  /*!
    * \brief A virtual member.
    * \return Value of the sideforce coefficient (inviscid + viscous contribution).
    */
@@ -2365,13 +2354,6 @@ public:
    * \return Value of the Near-Field Pressure coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_CNearFieldOF() const { return 0; }
-
-  /*!
-   * \author H. Kline
-   * \brief Add to the value of the total 'combo' objective.
-   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
-   */
-  inline virtual void AddTotal_ComboObj(su2double val_obj) {}
 
   /*!
    * \brief A virtual member.
@@ -2556,12 +2538,6 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   inline virtual su2double GetTotal_DC60() const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the custom objective function.
-   */
-  inline virtual su2double GetTotal_Custom_ObjFunc() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -4249,6 +4225,59 @@ public:
   inline virtual void SetMesh_Stiffness(CGeometry **geometry,
                                         CNumerics **numerics,
                                         CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   *
+   */
+  virtual void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
+   */
+  virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
+                                        CNumerics *numerics,
+                                        CSurfaceMovement *surface_movement,
+                                        CVolumetricMovement *grid_movement,
+                                        CConfig *config,
+                                        su2double** Gradient) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
+                                                     CSurfaceMovement *surface_movement,
+                                                     CVolumetricMovement *grid_movement,
+                                                     CConfig *config,
+                                                     su2double** Gradient) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void ReadSensFromGeometry(const CGeometry* geometry) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WriteSensToGeometry(CGeometry* geometry) const {}
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

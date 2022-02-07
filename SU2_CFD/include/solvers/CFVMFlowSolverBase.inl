@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2468,7 +2468,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
   su2double Viscosity = 0.0, Area, Density = 0.0, GradTemperature = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
@@ -2477,27 +2476,19 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   string Marker_Tag, Monitoring_Tag;
 
-  su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
-  su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
-  su2double RefLength = config->GetRefLength();
-  su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
+  const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
+  const su2double RefLength = config->GetRefLength();
+  const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
 
-  su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  bool energy = config->GetEnergy_Equation();
-  bool QCR = config->GetQCR();
-  bool axisymmetric = config->GetAxisymmetric();
-  bool roughwall = (config->GetnRoughWall() > 0);
-  bool nemo = config->GetNEMOProblem();
-
-  /*--- Get the locations of the primitive variables for NEMO ---*/
-  if (nemo) {
-    unsigned short nSpecies = config->GetnSpecies();
-    T_INDEX       = nSpecies;
-    TVE_INDEX     = nSpecies+1;
-    VEL_INDEX     = nSpecies+2;
-  }
+  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  const bool energy = config->GetEnergy_Equation();
+  const bool QCR = config->GetQCR();
+  const bool axisymmetric = config->GetAxisymmetric();
+  const bool roughwall = (config->GetnRoughWall() > 0);
+  const bool nemo = config->GetNEMOProblem();
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
   const su2double factorFric = config->GetRefArea() * factor;
@@ -2559,15 +2550,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       for (iDim = 0; iDim < nDim; iDim++) {
         for (jDim = 0; jDim < nDim; jDim++) {
-          if (!nemo) Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, iDim + 1, jDim);
-          else       Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, iDim + VEL_INDEX, jDim);
+          Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
         }
-
-        /// TODO: Move the temperature index logic to a function.
-
-        if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
-
-        if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
+        Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
@@ -2630,6 +2615,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
+
       if (!wallfunctions) {
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
@@ -2659,9 +2645,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
         const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
 
-        su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
-        su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
-        
+        su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[prim_idx.Temperature()], UnitNormal);
+        su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[prim_idx.Temperature_ve()], UnitNormal);
+
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
         enthalpy transport due to mass diffusion ---*/
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
@@ -3013,6 +2999,12 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case SURFACE_PRESSURE_DROP:
       objFun += weight * config.GetSurface_PressureDrop(0);
+      break;
+    case SURFACE_SPECIES_0:
+      objFun += weight * config.GetSurface_Species_0(0);
+      break;
+    case SURFACE_SPECIES_VARIANCE:
+      objFun += weight * config.GetSurface_Species_Variance(0);
       break;
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;

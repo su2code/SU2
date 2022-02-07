@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
-CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
+CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_mode) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -341,6 +341,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   /*--- Check for dummy communication. ---*/
 
   if (commType == PERIODIC_NONE) return;
+
+  if (rotate_periodic && config->GetNEMOProblem()) {
+    SU2_MPI::Error("The NEMO solvers do not support rotational periodicity yet.", CURRENT_FUNCTION);
+  }
 
   /*--- Local variables ---*/
 
@@ -816,7 +820,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 Rotate(translation, distance, rotCoord_j);
 
-                /*--- Get conservative solution and rotte if necessary. ---*/
+                /*--- Get conservative solution and rotate if necessary. ---*/
 
                 for (iVar = 0; iVar < ICOUNT; iVar++)
                   rotPrim_j[iVar] = field(jPoint,iVar);
@@ -3328,6 +3332,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   su2double dCMx_dCL_ = config->GetdCMx_dCL();
   su2double dCMy_dCL_ = config->GetdCMy_dCL();
   su2double dCMz_dCL_ = config->GetdCMz_dCL();
+  su2double SPPressureDrop_ = config->GetStreamwise_Periodic_PressureDrop();
   string::size_type position;
   unsigned long InnerIter_ = 0;
   ifstream restart_file;
@@ -3353,6 +3358,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("ITER=",0);
       if (position != string::npos) {
+        // TODO: 'ITER=' has 5 chars, not 9!
         text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
       }
 
@@ -3403,6 +3409,14 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       position = text_line.find ("DCMZ_DCL_VALUE=",0);
       if (position != string::npos) {
         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- Streamwise periodic pressure drop for prescribed massflow cases. ---*/
+
+      position = text_line.find ("STREAMWISE_PERIODIC_PRESSURE_DROP=",0);
+      if (position != string::npos) {
+        // Erase the name from the line, 'STREAMWISE_PERIODIC_PRESSURE_DROP=' has 34 chars.
+        text_line.erase (0,34); SPPressureDrop_ = atof(text_line.c_str());
       }
 
     }
@@ -3494,6 +3508,16 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
 
+  }
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
+    config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
+  }
+  else {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the STREAMWISE_PERIODIC_PRESSURE_DROP in the direct solution file." << endl;
   }
 
   /*--- External iteration ---*/
@@ -3615,14 +3639,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
     if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
 
-    switch (config->GetKind_Turb_Model()) {
-      case TURB_MODEL::NONE: break;
-      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::NONE: break;
+      case TURB_FAMILY::SA:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE   " << setw(24);
         columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() / config->GetDensity_FreeStream() <<"\t";
         break;
-      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         /*--- 2-equation turbulence model (SST) ---*/
         columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";

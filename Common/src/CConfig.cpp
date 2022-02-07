@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -809,6 +809,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
   Marker_CfgFile_Deform_Mesh_Sym_Plane   = nullptr;  Marker_All_Deform_Mesh_Sym_Plane   = nullptr;
   Marker_CfgFile_Fluid_Load    = nullptr;  Marker_All_Fluid_Load    = nullptr;
+  Marker_CfgFile_SobolevBC     = nullptr;  Marker_All_SobolevBC     = nullptr;
 
   Marker_CfgFile_Turbomachinery       = nullptr; Marker_All_Turbomachinery       = nullptr;
   Marker_CfgFile_TurbomachineryFlag   = nullptr; Marker_All_TurbomachineryFlag   = nullptr;
@@ -819,7 +820,7 @@ void CConfig::SetPointersNull(void) {
   Marker_DV                   = nullptr;   Marker_Moving            = nullptr;    Marker_Monitoring = nullptr;
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
-  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_SobolevBC  = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -849,6 +850,7 @@ void CConfig::SetPointersNull(void) {
 
     /*--- Boundary Condition settings ---*/
 
+  Isothermal_Temperature = nullptr;    HeatTransfer_Coeff     = nullptr;    HeatTransfer_WallTemp  = nullptr;
   Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
   FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
   Roughness_Height       = nullptr;
@@ -858,6 +860,7 @@ void CConfig::SetPointersNull(void) {
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;    Inlet_MassFrac    = nullptr;
+  Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -909,7 +912,8 @@ void CConfig::SetPointersNull(void) {
   ActDisk_ReverseMassFlow = nullptr;    Surface_MassFlow        = nullptr;   Surface_Mach             = nullptr;
   Surface_Temperature      = nullptr;   Surface_Pressure         = nullptr;  Surface_Density          = nullptr;   Surface_Enthalpy          = nullptr;
   Surface_NormalVelocity   = nullptr;   Surface_TotalTemperature = nullptr;  Surface_TotalPressure    = nullptr;   Surface_PressureDrop    = nullptr;
-  Surface_DC60             = nullptr;    Surface_IDC = nullptr;
+  Surface_DC60             = nullptr;   Surface_IDC = nullptr;
+  Surface_Species_Variance = nullptr;   Surface_Species_0 = nullptr;
 
   Outlet_MassFlow      = nullptr;       Outlet_Density      = nullptr;      Outlet_Area     = nullptr;
 
@@ -1090,7 +1094,7 @@ void CConfig::SetConfig_Options() {
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, false, Reduced_Model, false);
-  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
+  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
@@ -1138,6 +1142,12 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
+  /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_RESTART_OVERWRITE", Wrt_Restart_Overwrite, true);
+  /*!\brief WRT_SURFACE_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_SURFACE_OVERWRITE", Wrt_Surface_Overwrite, true);
+  /*!\brief WRT_VOLUME_OVERWRITE \n DESCRIPTION: overwrite visualisation files or append iteration number. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -1352,16 +1362,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("AOA", AoA, 0.0);
   /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
-  /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
-  addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
   addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
-  addDoubleOption("TARGET_CM", Target_CM, 0.0);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
@@ -1567,6 +1573,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
+  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -1583,8 +1591,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("HIGHLITE_AREA", Highlite_Area, 1.0);
   /* DESCRIPTION: Fan poly efficiency */
   addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
-  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
-  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
@@ -1783,8 +1789,6 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -1929,9 +1933,11 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
   addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
-  /*!\brief OBJECTIVE_FUNCTION
-   *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
+  /*!\brief OBJECTIVE_FUNCTION \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
+
+  /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
+  addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
@@ -1941,16 +1947,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DCMY_DCL_VALUE", dCMy_dCL, 0.0);
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCMZ_DCL_VALUE", dCMz_dCL, 0.0);
-
-  /* DESCRIPTION: parameter for the definition of a complex objective function */
-  addDoubleOption("DCD_DCMY_VALUE", dCD_dCMy, 0.0);
-
-  obj_coeff[0]=0.0; obj_coeff[1]=0.0; obj_coeff[2]=0.0; obj_coeff[3]=0.0; obj_coeff[4]=0.0;
-  /*!\brief OBJ_CHAIN_RULE_COEFF
-  * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
-  * with area-averaged outlet primitive variables. This is used with the genereralized outflow
-  * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF", 5, obj_coeff);
 
   geo_loc[0] = 0.0; geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
@@ -1974,7 +1970,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
-  /* DESCRIPTION: Sensitivity smoothing  */
+  /* DESCRIPTION: Sensitivity smoothing */
   addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
   /* DESCRIPTION: Continuous Adjoint frozen viscosity */
   addBoolOption("FROZEN_VISC_CONT", Frozen_Visc_Cont, true);
@@ -2009,11 +2005,41 @@ void CConfig::SetConfig_Options() {
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
   addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
   
+  /*!\par CONFIG_CATEGORY: Sobolev Gradient Solver Parameters \ingroup Config */
+  /*--- Options related to the Sobolev smoothing solver ---*/
+
+  /* DESCRIPTION: Switch to activate gradient smoothing */
+  addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
+  /* DESCRIPTION: Epsilon of the identity term in the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_EPSILON1",SmoothingEps1, 1.0);
+  /* DESCRIPTION: Epsilon of the Laplace term in the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
+  /* DESCRIPTION: Switch to calculate for each dimension separately */
+  addBoolOption("SEPARATE_DIMENSIONS", SmoothSepDim, false);
+  /* DESCRIPTION: Switch to activate working on the design surfaces only */
+  addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
+  /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
+  addBoolOption("DIRICHLET_SURFACE_BOUNDARY", SmoothDirichletSurfaceBound, false);
+  /* DESCRIPTION: Switch to activate the debbuging modus */
+  addEnumOption("SOBOLEV_MODE", SmoothNumMode, Sobolev_Modus_Map, ENUM_SOBOLEV_MODUS::NONE);
+  /*!\brief HESS_OBJFUNC_FILENAME
+   *  \n DESCRIPTION: Output filename for the Sobolev Hessian approximation.  \ingroup Config*/
+  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
+
+  /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: ILU \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
+
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
-  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
+  addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_OUTPUT::TAB_CSV);
   /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
   addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
@@ -2098,6 +2124,8 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("SURFACE_MOVEMENT",nKind_SurfaceMovement, Kind_SurfaceMovement, SurfaceMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  /* DESCRIPTION: Marker(s) of gradient problem boundaries. */
+  addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_SobolevBC);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -2869,6 +2897,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2979,19 +3008,18 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("UNST_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
           else if (!option_name.compare("DYN_RESTART_ITER"))
             newString.append("DYN_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
-          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-          /*else if (!option_name.compare("CONV_CRITERIA"))
-            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
-                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
-          if (!option_name.compare("THERMAL_DIFFUSIVITY"))
+          else if (!option_name.compare("CONV_CRITERIA"))
+            newString.append("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
+                             "RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+          else if (!option_name.compare("THERMAL_DIFFUSIVITY"))
             newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
-          if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
+          else if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
             newString.append("THERMAL_DIFFUSIVITY_SOLID is deprecated. Set THERMAL_CONDUCTIVITY_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
-          if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
+          else if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
             newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use THERMAL_CONDUCTIVITY_CONSTANT instead.\n\n");
-          if (!option_name.compare("SOLID_DENSITY"))
+          else if (!option_name.compare("SOLID_DENSITY"))
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
-          if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
+          else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
@@ -3184,7 +3212,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.2.1 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.3.0 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3201,7 +3229,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2021, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2022, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3302,17 +3330,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Set the default output files ---*/
   if (!OptionIsSet("OUTPUT_FILES")){
     nVolumeOutputFiles = 3;
-    VolumeOutputFiles = new unsigned short[nVolumeOutputFiles];
-    VolumeOutputFiles[0] = RESTART_BINARY;
-    VolumeOutputFiles[1] = PARAVIEW_XML;
-    VolumeOutputFiles[2] = SURFACE_PARAVIEW_XML;
+    VolumeOutputFiles = new OUTPUT_TYPE[nVolumeOutputFiles];
+    VolumeOutputFiles[0] = OUTPUT_TYPE::RESTART_BINARY;
+    VolumeOutputFiles[1] = OUTPUT_TYPE::PARAVIEW_XML;
+    VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
-    if (VolumeOutputFiles[iVolumeFile] == TECPLOT_BINARY ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::TECPLOT_BINARY ||
+        VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::SURFACE_TECPLOT_BINARY) {
       SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
     }
   }
@@ -3321,19 +3349,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check if SU2 was build with CGNS support, as that is required for CGNS output. ---*/
 #ifndef HAVE_CGNS
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
-    if (VolumeOutputFiles[iVolumeFile] == CGNS ||
-        VolumeOutputFiles[iVolumeFile] == SURFACE_CGNS) {
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::CGNS ||
+        VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::SURFACE_CGNS) {
       SU2_MPI::Error(string("CGNS file requested in option OUTPUT_FILES but SU2 was built without CGNS support.\n"),CURRENT_FUNCTION);
     }
   }
 #endif
 
-  /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
+  /*--- STL_BINARY output not implemented yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
-    if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
+    if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY){
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL_BINARY' output not implemented. Use 'STL' for ASCII output.\n"), CURRENT_FUNCTION);
     }
-    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == STL || VolumeOutputFiles[iVolumeFile] == STL_BINARY)) {
+    if (val_nDim == 2 && (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_ASCII || VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY)) {
       SU2_MPI::Error(string("OUTPUT_FILES: 'STL(_BINARY)' output only reasonable for 3D cases.\n"), CURRENT_FUNCTION);
     }
   }
@@ -3389,12 +3417,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
 
     }
-  }
-
-  /*--- Fixed CM mode requires a static movement of the grid ---*/
-
-  if (Fixed_CM_Mode) {
-    Kind_GridMovement = MOVING_HTP;
   }
 
   /*--- Initialize the AoA and Sideslip variables for the incompressible
@@ -3502,10 +3524,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         nObjW = nObj;
       }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n ") +
-                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
-                       string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
-                       string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
+        SU2_MPI::Error("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n"
+                       "For multiple surfaces per objective, either use one objective or list the objective multiple times.\n"
+                       "For multiple objectives per marker either use one marker or list the marker multiple times.\n"
+                       "Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION.",
                        CURRENT_FUNCTION);
       }
     }
@@ -3515,8 +3537,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (nObjW<nObj) {
     if (Weight_ObjFunc!= nullptr && nObjW>1) {
-      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+      SU2_MPI::Error("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"
+                     "be lenght 1, or be deleted from the config file (equal weights will be applied).", CURRENT_FUNCTION);
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
@@ -3544,20 +3566,28 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case SURFACE_MOM_DISTORTION:
         case SURFACE_SECOND_OVER_UNIFORM:
         case SURFACE_PRESSURE_DROP:
+        case SURFACE_SPECIES_0:
+        case SURFACE_SPECIES_VARIANCE:
         case CUSTOM_OBJFUNC:
           if (Kind_ObjFunc[iObj] != Obj_0) {
-            SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
-                           string("problem or as a single objective applied to multiple monitoring markers:\n")+
-                           string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
-                           string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
-                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+            SU2_MPI::Error("The following objectives can only be used for the first surface in a multi-objective \n"
+                           "problem or as a single objective applied to multiple monitoring markers:\n"
+                           "INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n"
+                           "FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n"
+                           "SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n"
+                           "SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, SURFACE_SPECIES_0\n"
+                           "SURFACE_SPECIES_VARIANCE, CUSTOM_OBJFUNC.\n", CURRENT_FUNCTION);
           }
           break;
         default:
           break;
       }
     }
+  }
+
+  if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
+    SU2_MPI::Error("The expression for the custom objective function was not set.\n"
+                   "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
   }
 
   /*--- Check for unsteady problem ---*/
@@ -3599,6 +3629,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (TimeMarching != TIME_MARCHING::HARMONIC_BALANCE) { TimeMarching = TIME_MARCHING::STEADY; }
   }
+
+  if (Time_Domain && !GetWrt_Restart_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_RESTART_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+  if (Time_Domain && !GetWrt_Surface_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_SURFACE_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+  if (Time_Domain && !GetWrt_Volume_Overwrite()){
+    SU2_MPI::Error("Appending iterations to the filename (WRT_VOLUME_OVERWRITE=NO) is incompatible with transient problems.", CURRENT_FUNCTION);
+  }
+
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
 
@@ -4544,7 +4585,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    the AoA with each iteration to false  ---*/
 
   if (Fixed_CL_Mode) Update_AoA = false;
-  if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
@@ -4613,11 +4653,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (!ContinuousAdjoint & !DiscreteAdjoint) {
     if (Fixed_CL_Mode) nInnerIter += Iter_dCL_dAlpha;
-
-    if (Fixed_CM_Mode) {
-      nInnerIter += Iter_dCL_dAlpha;
-      MinLogResidual = -24;
-    }
   }
 
   /* --- Set Finite Difference mode to false by default --- */
@@ -4770,8 +4805,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    pressure drop objective function is selected. ---*/
 
   for (unsigned short iObj = 0; iObj < nObj; iObj++) {
-    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze != 2)) {
-      SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
+    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze < 2)) {
+      SU2_MPI::Error("Must list the first two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name, ...).", CURRENT_FUNCTION);
     }
   }
 
@@ -5152,13 +5187,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   else {monoatomic = false;}
 
   /*--- Set number of Turbulence Variables. ---*/
-  switch(Kind_Turb_Model) {
-    case TURB_MODEL::NONE:
+  switch (TurbModelFamily(Kind_Turb_Model)) {
+    case TURB_FAMILY::NONE:
       nTurbVar = 0; break;
-    case TURB_MODEL::SA: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_NEG:
+    case TURB_FAMILY::SA:
       nTurbVar = 1; break;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       nTurbVar = 2; break;
   }
 
@@ -5173,6 +5207,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS)
       SU2_MPI::Error("Species transport currently only avaialble for compressible and incompressible flow.", CURRENT_FUNCTION);
+
+    /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
+    for (unsigned short iObj = 0; iObj < nObj; iObj++) {
+      if ((Kind_ObjFunc[iObj] == SURFACE_SPECIES_0 ||
+           Kind_ObjFunc[iObj] == SURFACE_SPECIES_VARIANCE) &&
+          nMarker_Analyze > 1) {
+        SU2_MPI::Error("SURFACE_SPECIES_0 and SURFACE_SPECIES_VARIANCE currently can only handle one entry to MARKER_ANALYZE.", CURRENT_FUNCTION);
+      }
+    }
 
     // For now, do not allow axisymmetric simulations
     if (Axisymmetric) SU2_MPI::Error("Species transport currently not possible with axissymmetric flow.", CURRENT_FUNCTION);
@@ -5235,11 +5278,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   } // species transport checks
 
-  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
-    cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
-            "That is, RESIDUAL for any RMS_* BGS_* value, and CAUCHY for coefficients such as DRAG etc.\n" << endl;
-  }
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -5253,7 +5291,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_DV, iMarker_Moving, iMarker_SobolevBC, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
@@ -5303,6 +5341,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
+  Marker_All_SobolevBC      = new unsigned short[nMarker_All] (); // Store wether the boundary should apply to the gradient smoothing.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
@@ -5328,6 +5367,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = "SEND_RECEIVE";
@@ -5349,6 +5389,8 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Surface_TotalTemperature = new su2double[nMarker_Analyze] ();
   Surface_TotalPressure = new su2double[nMarker_Analyze] ();
   Surface_PressureDrop = new su2double[nMarker_Analyze] ();
+  Surface_Species_0 = new su2double[nMarker_Analyze] ();
+  Surface_Species_Variance = new su2double[nMarker_Analyze] ();
   Surface_DC60 = new su2double[nMarker_Analyze] ();
   Surface_IDC = new su2double[nMarker_Analyze] ();
   Surface_IDC_Mach = new su2double[nMarker_Analyze] ();
@@ -5708,8 +5750,16 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         break;
       }
     }
+    
     if(!found) {
-      SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      if (nZone==1)
+        SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      // In case of multiple zones, the markers might appear only in zonal config and not in the Master.
+      // A loop over all zones would need to be included which is not straight forward as this can only be
+      // checked once all zonal configs are read.
+      else if (rank == MASTER_NODE)
+        cout << "Warning: DV_MARKER contains marker names that do not exist in the lists of BCs of the master config file.\n"
+                "Make sure the marker names exist in the zonal config files" << endl;
     }
   }
 
@@ -5748,6 +5798,13 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_SobolevBC[iMarker_CfgFile] = NO;
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_SobolevBC[iMarker_SobolevBC])
+        Marker_CfgFile_SobolevBC[iMarker_CfgFile] = YES;
+  }
+
 }
 
 void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
@@ -5764,7 +5821,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_Emissivity,
-  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
+  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
+  iMarker_SobolevBC;
 
   bool fea = ((Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM));
 
@@ -5823,14 +5881,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == SU2_NONEQ){
+        if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == SU2_NONEQ){
+        if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
@@ -5876,7 +5934,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       case MAIN_SOLVER::MULTIPHYSICS:
         cout << "Multiphysics solver" << endl;
-        break;  
+        break;
       default:
         SU2_MPI::Error("No valid solver was chosen", CURRENT_FUNCTION);
 
@@ -5892,10 +5950,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
       }
-      if (Fixed_CM_Mode) {
-          cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
-          cout << "HTP rotation axis (X,Z): ("<< htp_axis[0] <<", "<< htp_axis[1] <<")."<< endl;
-      }
     }
 
     if (EquivArea) {
@@ -5909,7 +5963,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       switch (Kind_GridMovement) {
         case NO_MOVEMENT:     cout << "no direct movement." << endl; break;
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
-        case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
@@ -6261,7 +6314,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:           cout << "CD objective function";
           if (Fixed_CL_Mode) {           cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
-          else if (Fixed_CM_Mode) {      cout << " using fixed CMy mode, dCD/dCMy = " << dCD_dCMy << "." << endl; }
           else {                         cout << "." << endl; }
           break;
         case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
@@ -6887,8 +6939,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
 
     switch (Tab_FileFormat) {
-      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
-      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_OUTPUT::TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_OUTPUT::TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6913,8 +6965,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_SOL) {
     switch (Tab_FileFormat) {
-      case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
-      case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_OUTPUT::TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
+      case TAB_OUTPUT::TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
@@ -7283,6 +7335,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_SobolevBC != 0) {
+    BoundaryTable << "Sobolev boundary";
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++) {
+      BoundaryTable << Marker_SobolevBC[iMarker_SobolevBC];
+      if (iMarker_SobolevBC < nMarker_SobolevBC-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_ActDiskOutlet != 0) {
     if (GetKind_ActDisk() == VARIABLE_LOAD) {
       cout << endl << "Actuator disk with variable load." << endl;
@@ -7355,6 +7416,13 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   // now fill the option value vector
   option_value.clear();
   last_pos = value_part.find_first_not_of(delimiters, 0);
+
+  // detect a raw string
+  if (value_part[last_pos] == '\'' && value_part.back() == '\'') {
+    option_value.push_back(value_part.substr(last_pos+1, value_part.size()-last_pos-2));
+    return true;
+  }
+
   pos = value_part.find_first_of(delimiters, last_pos);
   while (string::npos != pos || string::npos != last_pos) {
     // add token to the vector<string>
@@ -7587,6 +7655,13 @@ unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_SobolevBC(string val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
+}
+
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
@@ -7752,6 +7827,9 @@ CConfig::~CConfig(void) {
   delete [] Marker_CfgFile_MixingPlaneInterface;
   delete [] Marker_All_MixingPlaneInterface;
 
+  delete [] Marker_CfgFile_SobolevBC;
+  delete [] Marker_All_SobolevBC;
+
   delete[] Marker_DV;
   delete[] Marker_Moving;
   delete[] Marker_Monitoring;
@@ -7764,6 +7842,7 @@ CConfig::~CConfig(void) {
   delete[] Marker_CHTInterface;
   delete [] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
+  delete[] Marker_SobolevBC;
 
   delete[] Kind_Inc_Inlet;
   delete[] Kind_Inc_Outlet;
@@ -7898,6 +7977,8 @@ CConfig::~CConfig(void) {
      delete[]  Surface_TotalTemperature;
      delete[]  Surface_TotalPressure;
      delete[]  Surface_PressureDrop;
+     delete[]  Surface_Species_0;
+     delete[]  Surface_Species_Variance;
      delete[]  Surface_DC60;
      delete[]  Surface_IDC;
      delete[]  Surface_IDC_Mach;
@@ -8087,7 +8168,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, int Iter) const {
+string CConfig::GetFilename(string filename, string ext, int timeIter) const {
 
   /*--- Remove any extension --- */
 
@@ -8106,11 +8187,19 @@ string CConfig::GetFilename(string filename, string ext, int Iter) const {
   if (GetnTimeInstances() > 1)
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
+  /*--- Append the iteration number for unsteady problems ---*/
   if (GetTime_Domain()){
-    filename = GetUnsteady_FileName(filename, Iter, ext);
+    filename = GetUnsteady_FileName(filename, timeIter, ext);
   }
 
   return filename;
+}
+
+string CConfig::GetFilename_Iter(const string& filename_iter, unsigned long curInnerIter, unsigned long curOuterIter) const {
+  const auto iter = GetMultizone_Problem() ? curOuterIter : curInnerIter;
+  std::stringstream iter_ss;
+  iter_ss << filename_iter << "_" << std::setw(6) << std::setfill('0') << iter;
+  return iter_ss.str();
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, string ext) const {
@@ -8244,17 +8333,12 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
         case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
         case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
+        case SURFACE_SPECIES_0:           AdjExt = "_avgspec0"; break;
+        case SURFACE_SPECIES_VARIANCE:    AdjExt = "_specvar";  break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
-        case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
-        case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
         case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
-        case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
-        case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
-        case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
-        case EULERIAN_WORK:               AdjExt = "_ew";       break;
         case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
-        case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
         case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
@@ -8473,7 +8557,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
 
     default:
-      break;  
+      break;
   }
 }
 
@@ -8695,6 +8779,7 @@ bool CConfig::GetVolumetric_Movement() const {
       Kind_SU2 == SU2_COMPONENT::SU2_DOT ||
       DirectDiff)
   { volumetric_movement = true;}
+
   return volumetric_movement;
 }
 
@@ -8755,6 +8840,16 @@ unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
     if (Marker_Fluid_Load[iMarker_Fluid_Load] == val_marker) break;
 
   return iMarker_Fluid_Load;
+}
+
+unsigned short CConfig::GetMarker_SobolevBC(string val_marker) const {
+  unsigned short iMarker_Sobolev;
+
+  /*--- Find the marker for this moving boundary. ---*/
+  for (iMarker_Sobolev = 0; iMarker_Sobolev < nMarker_SobolevBC; iMarker_Sobolev++)
+    if (Marker_SobolevBC[iMarker_Sobolev] == val_marker) break;
+
+  return iMarker_Sobolev;
 }
 
 su2double CConfig::GetExhaust_Temperature_Target(string val_marker) const {
@@ -10039,7 +10134,7 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
 
   bool multiblockDriver = false;
   for (unsigned short iFiles = 0; iFiles < driver_config->GetnVolumeOutputFiles(); iFiles++){
-    if (driver_config->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+    if (driver_config->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
       multiblockDriver = true;
     }
   }
@@ -10048,7 +10143,7 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
   for (unsigned short iZone = 0; iZone < nZone; iZone++){
     multiblockZone = false;
     for (unsigned short iFiles = 0; iFiles < config_container[iZone]->GetnVolumeOutputFiles(); iFiles++){
-      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == PARAVIEW_MULTIBLOCK){
+      if (config_container[iZone]->GetVolumeOutputFiles()[iFiles] == OUTPUT_TYPE::PARAVIEW_MULTIBLOCK){
         multiblockZone = true;
       }
     }

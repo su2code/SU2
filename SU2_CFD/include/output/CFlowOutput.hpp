@@ -2,14 +2,14 @@
  * \file CFlowOutput.hpp
  * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,17 +82,17 @@ protected:
                                          const vector<su2double>& Surface_Area_Total);
 
   /*!
-   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the Residual RMS (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config);
 
   /*!
-   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the max Residual (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config);
 
   /*!
-   * \brief Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) history fields for the BGS Residual (FVMComp, FVMInc, FVMNEMO).
    */
   void AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config);
 
@@ -140,21 +140,38 @@ protected:
    * \brief Add aerodynamic coefficients as output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void AddAerodynamicCoefficients(CConfig *config);
+  void AddAerodynamicCoefficients(const CConfig* config);
 
   /*!
    * \brief  Set the value of the aerodynamic coefficients
    * \param[in] config - Definition of the particular problem.
    * \param[in] flow_solver - The container holding all solution data.
    */
-  void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
+  void SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver);
 
   /*!
-   * \brief  Set the value of the rotating frame coefficients (CT, CQ and CMerit).
+   * \brief Add heat flux coefficients as output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddHeatCoefficients(const CConfig* config);
+
+  /*!
+   * \brief  Set the value of the heat flux coefficients
    * \param[in] config - Definition of the particular problem.
    * \param[in] flow_solver - The container holding all solution data.
    */
-  void SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver);
+  void SetHeatCoefficients(const CConfig* config, const CSolver* flow_solver);
+
+  /*!
+   * \brief Add rotating frame coefficients as output fields.
+   */
+  void AddRotatingFrameCoefficients();
+
+  /*!
+   * \brief Set the value of the rotating frame coefficients (CT, CQ and CMerit).
+   * \param[in] flow_solver - The container holding all solution data.
+   */
+  void SetRotatingFrameCoefficients(const CSolver* flow_solver);
 
   /*!
    * \brief Add CP inverse design output as history fields

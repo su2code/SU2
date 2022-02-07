@@ -1,15 +1,15 @@
 /*!
  * \file CFlowOutput.cpp
- * \brief Main subroutines for compressible flow output
+ * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,8 @@ CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_ou
   lastInnerIter(curInnerIter) {
 }
 
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
+// clang-format off
 void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 
   /// DESCRIPTION: Average mass flow
@@ -65,17 +67,19 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   /// DESCRIPTION: Average total pressure
   AddHistoryOutput("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  if (config->GetnMarker_Analyze() == 2) {
+  if (config->GetnMarker_Analyze() >= 2) {
     AddHistoryOutput("SURFACE_PRESSURE_DROP",    "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   } else if (rank == MASTER_NODE) {
-    cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for 2 surfaces (outlet, inlet)\n" << endl;
+    cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for at least 2 surfaces (outlet, inlet, ...)\n" << endl;
   }
-  /// DESCRIPTION: Average Species
-  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-    AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    /// DESCRIPTION: Average Species
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+    }
+    /// DESCRIPTION: Species Variance
+    AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   }
-  /// DESCRIPTION: Species Variance
-  AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -110,14 +114,17 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("SURFACE_TOTAL_TEMPERATURE","Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
   AddHistoryOutputPerSurface("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average Species
-  for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-    AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    /// DESCRIPTION: Average Species
+    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+    }
+    /// DESCRIPTION: Species Variance
+    AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   }
-  /// DESCRIPTION: Species Variance
-  AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 }
+// clang-format on
 
 void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry *geometry, CConfig *config, bool output){
 
@@ -505,13 +512,15 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     Tot_Surface_TotalPressure += TotalPressure;
     config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
-    for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
-      su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
-      SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
-      Tot_Surface_Species[iVar] += Species;
-      // Set value into config. Necessary to access as an OF.
+    if (species) {
+      for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
+        su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
+        SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
+        Tot_Surface_Species[iVar] += Species;
+        if (iVar == 0)
+          config->SetSurface_Species_0(iMarker_Analyze, Species);
+      }
     }
-
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -521,7 +530,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
    which require the outlet to be listed first. This is a simple first version
    that could be generalized to a different orders/lists/etc. ---*/
 
-  if (nMarker_Analyze == 2) {
+  if (nMarker_Analyze >= 2) {
     su2double PressureDrop = (Surface_Pressure_Total[1] - Surface_Pressure_Total[0]) * config->GetPressure_Ref();
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
       config->SetSurface_PressureDrop(iMarker_Analyze, PressureDrop);
@@ -541,12 +550,13 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   SetHistoryOutputValue("SURFACE_SECOND_OVER_UNIFORM", Tot_SecondOverUniformity);
   SetHistoryOutputValue("SURFACE_TOTAL_TEMPERATURE", Tot_Surface_TotalTemperature);
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
-  for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-    SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
+  if (species) {
+    for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
+      SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE)
     SetAnalyzeSurface_SpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
                                       Surface_Area_Total);
+  }
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 
@@ -759,26 +769,28 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
     su2double SpeciesVariance = Surface_SpeciesVariance_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_VARIANCE", SpeciesVariance, iMarker_Analyze);
     Tot_Surface_SpeciesVariance += SpeciesVariance;
-    // Set value into config. Necessary to access as an OF.
+    config->SetSurface_Species_Variance(iMarker_Analyze, Tot_Surface_SpeciesVariance);
   }
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
+// The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
+// clang-format off
 void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
       AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
       AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
       AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -789,20 +801,20 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("MAX_NU_TILDE", "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
       AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the dissipation (SST model).
       AddHistoryOutput("MAX_DISSIPATION", "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::NONE:
+    case TURB_FAMILY::NONE:
       break;
   }
 
@@ -814,20 +826,22 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
 }
 
 void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
-  switch(config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  if (!multiZone) return;
+
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("BGS_NU_TILDE", "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
       AddHistoryOutput("BGS_TKE", "bgs[k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the dissipation (SST model).
       AddHistoryOutput("BGS_DISSIPATION", "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
@@ -848,10 +862,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarLinsol(const CConfig* config) {
     AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
   }
 }
+// clang-format on
 
 void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* const* solver) {
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
       if (multiZone) {
@@ -859,7 +874,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       }
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       SetHistoryOutputValue("RMS_TKE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("RMS_DISSIPATION",log10(solver[TURB_SOL]->GetRes_RMS(1)));
       SetHistoryOutputValue("MAX_TKE", log10(solver[TURB_SOL]->GetRes_Max(0)));
@@ -870,7 +885,7 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
       }
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -893,17 +908,17 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
-  switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
       break;
 
-    case TURB_MODEL::NONE:
+    case TURB_FAMILY::NONE:
       break;
   }
 
@@ -914,17 +929,17 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
-  switch(config->GetKind_Turb_Model()){
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())){
+    case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
       AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
       break;
 
-    case TURB_MODEL::NONE:
+    case TURB_FAMILY::NONE:
       break;
   }
 
@@ -936,24 +951,26 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
 
 void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
-    switch (config->GetKind_Turb_Model()) {
-      case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+      case TURB_FAMILY::SA:
         AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
         break;
 
-      case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+      case TURB_FAMILY::KW:
         AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
         AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
         break;
 
-      case TURB_MODEL::NONE:
+      case TURB_FAMILY::NONE:
         break;
     }
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+    if (config->GetKind_SlopeLimit_Species() != NO_LIMITER) {
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+    }
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
@@ -983,7 +1000,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
 }
 
 void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
-                                      const unsigned long iPoint) {
+                                        const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
@@ -1002,8 +1019,8 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+  switch (TurbModelFamily(config->GetKind_Turb_Model())) {
+    case TURB_FAMILY::SA:
       SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("RES_NU_TILDE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       if (limiter) {
@@ -1011,7 +1028,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       }
       break;
 
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
@@ -1022,7 +1039,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       }
       break;
 
-    case TURB_MODEL::NONE: break;
+    case TURB_FAMILY::NONE: break;
   }
 
   /*--- If we got here a turbulence model is being used, therefore there is eddy viscosity. ---*/
@@ -1045,7 +1062,8 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+      if (config->GetKind_SlopeLimit_Species() != NO_LIMITER)
+        SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
   }
 }
@@ -1065,7 +1083,7 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
   SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
 }
 
-void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
+void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
   /// DESCRIPTION: Drag coefficient
@@ -1123,7 +1141,7 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
-void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
+void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
 
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
@@ -1163,22 +1181,63 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   }
 
   SetHistoryOutputValue("AOA", config->GetAoA());
-
-  SetHistoryOutputValue("COMBO", flow_solver->GetTotal_ComboObj());
 }
 
-void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {
+void CFlowOutput::AddHeatCoefficients(const CConfig* config) {
+
+  if (!config->GetViscous()) return;
+
+  /// BEGIN_GROUP: HEAT, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
+  /// DESCRIPTION: Total heatflux
+  AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Maximal heatflux
+  AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heatflux across all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+
+  vector<string> Marker_Monitoring;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+    Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker));
+  }
+  /// DESCRIPTION:  Total heatflux
+  AddHistoryOutputPerSurface("TOTAL_HEATFLUX_ON_SURFACE", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION:  Total heatflux
+  AddHistoryOutputPerSurface("MAXIMUM_HEATFLUX_ON_SURFACE", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+}
+
+void CFlowOutput::SetHeatCoefficients(const CConfig* config, const CSolver* flow_solver) {
+
+  if (!config->GetViscous()) return;
+
+  SetHistoryOutputValue("TOTAL_HEATFLUX", flow_solver->GetTotal_HeatFlux());
+  SetHistoryOutputValue("MAXIMUM_HEATFLUX", flow_solver->GetTotal_MaxHeatFlux());
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+    SetHistoryOutputPerSurfaceValue("TOTAL_HEATFLUX_ON_SURFACE", flow_solver->GetSurface_HF_Visc(iMarker), iMarker);
+    SetHistoryOutputPerSurfaceValue("MAXIMUM_HEATFLUX_ON_SURFACE", flow_solver->GetSurface_MaxHF_Visc(iMarker), iMarker);
+  }
+}
+
+void CFlowOutput::AddRotatingFrameCoefficients() {
+  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
+  /// DESCRIPTION: Merit
+  AddHistoryOutput("FIGURE_OF_MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Thrust over torque", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CT
+  AddHistoryOutput("THRUST", "CT", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Thrust coefficient", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CQ
+  AddHistoryOutput("TORQUE", "CQ", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Torque coefficient", HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+}
+
+void CFlowOutput::SetRotatingFrameCoefficients(const CSolver* flow_solver) {
 
   SetHistoryOutputValue("THRUST", flow_solver->GetTotal_CT());
   SetHistoryOutputValue("TORQUE", flow_solver->GetTotal_CQ());
   SetHistoryOutputValue("FIGURE_OF_MERIT", flow_solver->GetTotal_CMerit());
 }
 
-
 void CFlowOutput::Add_CpInverseDesignOutput(){
 
   AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
-
 }
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
@@ -1271,8 +1330,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
-  AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
-
+  AddHistoryOutput("EQUIVALENT_AREA", "CEquiv_Area", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
@@ -1722,7 +1780,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){
+  if (config->GetFixed_CL_Mode() ||
+      (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)){
     WriteMetaData(config);
   }
 
@@ -1743,6 +1802,8 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
   /*--- All processors open the file. ---*/
 
   if (rank == MASTER_NODE) {
+    cout << "Writing Flow Meta-Data file: " << filename << endl;
+
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
 
@@ -1768,6 +1829,10 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
       meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
+    }
+
+    if(config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      meta_file << "STREAMWISE_PERIODIC_PRESSURE_DROP=" << GetHistoryFieldValue("STREAMWISE_DP") << endl;
     }
   }
 
@@ -1967,7 +2032,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.2.1 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.3.0 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -1978,7 +2043,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2021, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2022, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";
@@ -2040,7 +2105,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       }
       break;
     default:
-      break;  
+      break;
   }
 
   /*--- Compressible version of console output ---*/

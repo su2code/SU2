@@ -2,14 +2,14 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -187,6 +187,7 @@ CHeatSolver::~CHeatSolver(void) {
 }
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED) {
     SetUndivided_Laplacian(geometry, config);
@@ -280,7 +281,9 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+
     for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       su2double Solution_Coarse[MAXNVAR] = {0.0};
@@ -618,38 +621,21 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                                     unsigned short val_marker) {
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double Area, *Normal;
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  if(config->GetIntegrated_HeatFlux()) {
-
-    string HeatFlux_Tag, Marker_Tag;
-
-    for (auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-
-      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
-      Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-      if (Marker_Tag == HeatFlux_Tag) {
-        Wall_HeatFlux = Wall_HeatFlux / Surface_Areas[iMarker_HeatFlux];
-      }
-    }
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
   }
-  Wall_HeatFlux = Wall_HeatFlux/config->GetHeat_Flux_Ref();
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     if (geometry->nodes->GetDomain(iPoint)) {
-
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
       Res_Visc[0] = 0.0;
 
@@ -659,7 +645,6 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
-
   }
 }
 
