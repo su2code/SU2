@@ -1133,12 +1133,12 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
   for (iDim = 0; iDim < nDim; ++iDim) {
     factor = -TWO3*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim)*pw_positive;
     // if (!pk_limited) {   
-      factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)*pk_positive;
+    factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)*pk_positive;
     // }
     for (jDim = 0; jDim < nDim; ++jDim) {
       factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim)*pw_positive;
       // if (!pk_limited) {
-         factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)*pk_positive;
+      factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)*pk_positive;
       // }
     }
     TmpWeights[iDim+1] += factor;
@@ -1211,7 +1211,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
 
   //--- Zeroth-order terms due to production
   // if (!pk_limited){
-    weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0)*pk_positive;
+  weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0)*pk_positive;
   // }
   // else {
   //   weights[0][0]         += 20.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
