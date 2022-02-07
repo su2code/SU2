@@ -94,6 +94,20 @@ protected:
   void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Add CP inverse design output as history fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Add_DC60(CConfig *config);
+
+  /*!
+   * \brief Set CP inverse design output field values
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
    * \param[in] VelocityGradient - Velocity gradients
    * \return Value of the Q criteration at the node
