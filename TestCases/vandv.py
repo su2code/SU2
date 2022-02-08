@@ -41,12 +41,12 @@ def main():
     ##########################
 
     # 30P30N
-    channel           = TestCase('30P30N')
-    channel.cfg_dir   = "vandv/rans/30p30n"
-    channel.cfg_file  = "config.cfg"
-    channel.test_iter = 20
-    channel.test_vals = [-10.628370, -10.299097, -10.485327, -10.238060, -13.517229, 0.050962, 2.828563, 1.317849, -0.227233]
-    test_list.append(channel)
+    p30n30           = TestCase('30P30N')
+    p30n30.cfg_dir   = "vandv/rans/30p30n"
+    p30n30.cfg_file  = "config.cfg"
+    p30n30.test_iter = 20
+    p30n30.test_vals = [-10.628370, -10.299097, -10.485327, -10.238060, -13.517229, 0.050962, 2.828563, 1.317849, -0.227233]
+    test_list.append(p30n30)
 
     #################
     ### RUN TESTS ###
