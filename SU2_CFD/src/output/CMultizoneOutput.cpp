@@ -103,20 +103,11 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output, co
       const auto& name = item.first;
       nameMultizone = name + zoneIndex;
 
-      /*--- Determine whether nMaker_Analyze/Monitoring has to be looped. ---*/
-      const auto& group = item.second[0].outputGroup;
-      unsigned short nMarker = 0;
-      if (group == "FLOW_COEFF_SURF")
-        nMarker = config[iZone]->GetnMarker_Analyze();
-      else if (group == "AERO_COEFF_SURF")
-        nMarker = config[iZone]->GetnMarker_Monitoring();
-      else
-        SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
-
-      for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-        SetHistoryOutputPerSurfaceValue(nameMultizone, item.second[iMarker].value, iMarker);
-      }// for iMarker
-    }// for HistPerSurfFields
+      unsigned short iMarker = 0;
+      for (const auto& field : item.second) {
+        SetHistoryOutputPerSurfaceValue(nameMultizone, field.value, iMarker++);
+      }
+    }
   }
   SetHistoryOutputValue("COMBO", comboValue);
 }
@@ -181,15 +172,11 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
       group = field[0].outputGroup;
 
       /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
-      vector<string>* Marker;
+      auto* Marker = &Marker_Monitoring;
       if (group == "FLOW_COEFF_SURF")
         Marker = &Marker_Analyze;
-      else if (group == "AERO_COEFF_SURF")
-        Marker = &Marker_Monitoring;
-      else {
-        Marker = &Marker_Analyze;  // dummy to suppress maybe-uninitialized warning
+      else if (group != "AERO_COEFF_SURF" && group != "HEAT_SURF")
         SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
-      }
 
       group += zoneIndex;
 
