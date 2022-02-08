@@ -775,16 +775,6 @@ private:
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
-  Rom_FileName,                  /*!< \brief POD modes input file for reduced order model computation. */
-  HyperNodes_FileName,           /*!< \brief Hyper-reduction nodes input file for reduced order model computation. */
-  Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
-  Init_Coord_FileName,           /*!< \brief Initial reduced coordinates filename for reduced order model computation. */
-  Ref_Snapshot_FileName,         /*!< \brief Reference snapshot filename for reduced order model computation. */
-  libROMbase_FileName,           /*!< \brief Base filename for libROM file saving. */
-  unsigned short POD_Basis_Gen;  /*!< \brief Type of POD basis generation (static or incremental). */
-  unsigned long nHyper_Nodes;    /*!< \brief Number of hyper-reduction nodes desired. */
-  unsigned short nPOD_Modes;     /*!< \brief Number of POD mdoes desired. */
-  bool libROM;                   /*!< \brief Toggle saving to libROM. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
@@ -798,7 +788,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
-
+  
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
@@ -1175,6 +1165,15 @@ private:
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
+  
+  /*--- ROM configure options ---*/
+  string Rom_FileName,           /*!< \brief POD modes input file for reduced order model computation. */
+  HyperNodes_FileName,           /*!< \brief Hyper-reduction nodes input file for reduced order model computation. */
+  Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
+  Init_Coord_FileName,           /*!< \brief Initial reduced coordinates filename for reduced order model computation. */
+  Ref_Snapshot_FileName;         /*!< \brief Reference snapshot filename for reduced order model computation. */
+  unsigned long nHyper_Nodes;    /*!< \brief Number of hyper-reduction nodes desired. */
+  unsigned short nPOD_Modes;     /*!< \brief Number of POD mdoes desired. */
 
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -5387,70 +5386,6 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
-
-  /*!
-   * \brief Get the name of the file with the POD modes for the reduced order model
-   *      problem.
-   * \return Name of the file with the POD modes.
-   */
-  string GetRom_FileName(void) const { return Rom_FileName; }
-  
-  /*!
-   * \brief Get the name of the file with the hyper-reduction nodes previously computed.
-   * \return Name of the file with the hyper-reduction nodes.
-   */
-  string GetHyperNodes_FileName(void) const { return HyperNodes_FileName; }
-  
-  /*!
-   * \brief Get the name of the file with the reference snapshot for the reduced order
-   *      model problem.
-   * \return Name of the file with the reference snapshot.
-   */
-  string GetRef_Snapshot_FileName(void) const { return Ref_Snapshot_FileName; }
-  
-  /*!
-   * \brief Get the name of the file with the initial snapshot for the reduced order
-   *      model problem.
-   * \return Name of the file with the initial snapshot.
-   */
-  string GetInit_Snapshot_FileName(void) const { return Init_Snapshot_FileName; }
-
-  /*!
-   * \brief Get the name of the file with the initial reduced coordinates for the reduced order
-   *      model problem.
-   * \return Name of the file with the initial snapshot.
-  */
-  string GetInit_Coord_FileName(void) const { return Init_Coord_FileName; }
-  
-  /*!
-   * \brief Static or incremental toggle for POD basis generation type.
-   * \return Type of POD generation type
-   */
-  unsigned short GetKind_PODBasis(void) const { return POD_Basis_Gen; }
-  
-  /*!
-   * \brief Get the number of hyper-reduction nodes desired.
-   * \return Number of rdesired hyper-reduction nodes.
-   */
-  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
-  
-  /*!
-   * \brief Get number of POD modes desired.
-   * \return Number of POD modes desired.
-   */
-  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
-  
-  /*!
-   * \brief Get the name of the file for libROM to save.
-   * \return Name of filename for libROM to save to.
-   */
-  string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
-  
-  /*!
-   * \brief Get whether or not to save to libROM.
-   * \return True if specified in config file.
-   */
-  bool GetSave_libROM(void) const {return libROM; }
   
   /*!
    * \brief Get the name of the file with the residual of the problem.
@@ -9657,6 +9592,52 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+  
+  /*!
+   * \brief Get the name of the file with the POD modes for the reduced order model
+   *      problem.
+   * \return Name of the file with the POD modes.
+   */
+  string GetRom_FileName(void) const { return Rom_FileName; }
+  
+  /*!
+   * \brief Get the name of the file with the hyper-reduction nodes previously computed.
+   * \return Name of the file with the hyper-reduction nodes.
+   */
+  string GetHyperNodes_FileName(void) const { return HyperNodes_FileName; }
+  
+  /*!
+   * \brief Get the name of the file with the reference snapshot for the reduced order
+   *      model problem.
+   * \return Name of the file with the reference snapshot.
+   */
+  string GetRef_Snapshot_FileName(void) const { return Ref_Snapshot_FileName; }
+  
+  /*!
+   * \brief Get the name of the file with the initial snapshot for the reduced order
+   *      model problem.
+   * \return Name of the file with the initial snapshot.
+   */
+  string GetInit_Snapshot_FileName(void) const { return Init_Snapshot_FileName; }
+
+  /*!
+   * \brief Get the name of the file with the initial reduced coordinates for the reduced order
+   *      model problem.
+   * \return Name of the file with the initial snapshot.
+  */
+  string GetInit_Coord_FileName(void) const { return Init_Coord_FileName; }
+  
+  /*!
+   * \brief Get the number of hyper-reduction nodes desired.
+   * \return Number of rdesired hyper-reduction nodes.
+   */
+  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
+  
+  /*!
+   * \brief Get number of POD modes desired.
+   * \return Number of POD modes desired.
+   */
+  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
 
   /*!
    * \brief Check if the gradient smoothing is active

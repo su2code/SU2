@@ -214,10 +214,6 @@ public:
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
 
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
-  
-  #ifdef HAVE_LIBROM
-    std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
-  #endif
 
   vector<string> fields;
 

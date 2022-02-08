@@ -2476,24 +2476,33 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   int m = (int)Mask.size() * nVar;
   int n = (int)TrialBasis[0].size();
   
-  SU2_OMP_MASTER
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  SU2_OMP_BARRIER
+  /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
+
+  SetResToZero();
   
   /*--- Find residual ---*/
   
   vector<double> r(m,0.0);
   int index = 0;
   
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  /*--- Add pseudotime term to Jacobian. ---*/
+  // TODO: Does ROM need this?
+  
+  SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
   //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       iPoint = Mask[iPoint_mask];
 
+    /*--- Multigrid contribution to residual. ---*/
+      
     su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
+
+    if (nodes->GetDelta_Time(iPoint) == 0.0) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
+    }
     
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;

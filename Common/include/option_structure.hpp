@@ -1735,18 +1735,6 @@ static const MapType<std::string, TAB_OUTPUT> TabOutput_Map = {
 };
 
 /*!
- * \brief Type of POD basis generation
- */
-enum ENUM_POD_OUTPUT {
-  STATIC_POD = 1,            /*!< \brief Comma-separated values format for the solution output. */
-  INCREMENTAL_POD = 2        /*!< \brief Tecplot format for the solution output. */
-};
-static const MapType<string, ENUM_POD_OUTPUT> POD_Map = {
-  MakePair("STATIC_POD", STATIC_POD)
-  MakePair("INCREMENTAL_POD", INCREMENTAL_POD)
-};
-
-/*!
  * \brief Type of volume sensitivity file formats (inout to SU2_DOT)
  */
 enum ENUM_SENSITIVITY {

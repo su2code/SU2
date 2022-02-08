@@ -288,7 +288,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				40084FAE24B8E8330040AA28 /* libROM.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -925,10 +924,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				40707E002579BE6F00808AF6 /* libmpi.40.dylib in Frameworks */,
-				40707E0125886B0800808AF6 /* Accelerate.framework in Frameworks */,
-				40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */,
-				40084FAD24B8E8330040AA28 /* libROM.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2646,13 +2641,10 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/jessie/Software/libROM,
+					/Users/jessie/Software/libROM/lib,
 					../../externals/CLI11,
+					../../externals/mel,
 					"/usr/local/Cellar/open-mpi/4.0.4_1/include",
-				);
-				"HEADER_SEARCH_PATHS[arch=*]" = (
-					/Users/jessie/Software/libROM,
-					../../externals/CLI11,
 				);
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = (
@@ -2718,8 +2710,9 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/Users/jessie/Software/libROM,
+					/Users/jessie/Software/libROM/lib,
 					../../externals/CLI11,
+					../../externals/mel,
 					"/usr/local/Cellar/open-mpi/4.0.4_1/include",
 				);
 				INSTALL_PATH = /usr/local/bin;
