@@ -24,6 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #if defined (__APPLE__)
 #include <Accelerate/Accelerate.h>
 #endif
@@ -44,19 +45,6 @@
 #include <sstream>
 #include <vector>
 #include <chrono>
-
-
-//extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
-//                       int*, passivedouble*, int*, int*);
-/* Prototypes for Lapack functions, if MKL or LAPACK is used. */
-//#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
-//extern "C" void dgeqrf_(int*, int*, passivedouble*, int*, passivedouble*,
-//                       passivedouble*, int*, int*);
-//
-//extern "C" void dormqr_(char*, char*, const int*, const int*, const int*,
-//                        const passivedouble*, const int*, const passivedouble*, const passivedouble*,
-//                        const int*, const passivedouble*, const int*, const int*);
-//#endif
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -183,7 +171,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-    
+
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE)
@@ -345,16 +333,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains " << counter_global << " points that are not physical." << endl;
   }
-
-  /*---- Initialize ROM specific variables. ----*/
-  //bool rom = config->GetReduced_Model();
-  //if (rom) {
-  //  if (rank == MASTER_NODE)
-  //    cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
-  //  Mask_Selection(geometry, config);
-  //  FindMaskedEdges(geometry, config);
-  //  SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
-  //}
 
   /*--- Initial comms. ---*/
 
@@ -1745,6 +1723,30 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
+  unsigned long i, iEdge, nEdge;
+  
+  //ofstream fs;
+  //std::string fname0 = "check_solution_spaceint.csv";
+  //fs.open(fname0);
+  //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //    fs << nodes->GetSolution(iPoint, iVar) << "\n" ;
+  //  }
+  //}
+  //fs.close();
+  
+  if (rom) nEdge = Edge_masked.size();
+  else     nEdge = geometry->GetnEdge();
+  
+  ///*--- Loop over edge colors. ---*/
+  //for (auto color : EdgeColoring)
+  //{
+  ///*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  //SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+  //for(auto k = 0ul; k < color.size; ++k) {
+//
+  //  auto iEdge = color.indices[k];
+    
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
   bool pausePreacc = false;
@@ -1755,12 +1757,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   if (rom) nEdge = Edge_masked.size();
   else     nEdge = geometry->GetnEdge();
 
-  ///*--- Loop over edge colors. ---*/
-  //for (auto color : EdgeColoring)
-  {
+  /*--- Loop over edge colors. ---*/
+//  for (auto color : EdgeColoring)
+//  {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  //SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-  //for(auto k = 0ul; k < color.size; ++k) {
+//  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+//  for(auto k = 0ul; k < color.size; ++k) {
 
   
   for (i = 0; i < nEdge; i++) {
@@ -1941,7 +1943,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   END_SU2_OMP_FOR
-  } // end color loop
+  //} // end color loop
 
   /*--- Restore preaccumulation and adjoint evaluation state. ---*/
   AD::ResumePreaccumulation(pausePreacc);
@@ -2503,11 +2505,11 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         local_Res_TruncError[iVar] = 0.0;
       }
     }
-    
+      
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      //LinSysSol[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
 
       su2double Res = fabs(LinSysRes[total_index]);
       resRMS[iVar] += Res*Res;
@@ -2535,7 +2537,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   if (false) {
   
-    vector<double> rnorm(nVar,0.0);
+    vector<su2double> rnorm(nVar,0.0);
     
     // warning: weights are written for no hyper-reduction
   
@@ -2578,33 +2580,26 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   fs.close();
   
-  /*--- Reduce residual information over all threads in this rank. ---*/
-  SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  
   /*--- Container for reduced residual ---*/
   
-  vector<double> r_red(n,0.0);
-  double ReducedRes = 0.0;
+  vector<su2double> r_red(n,0.0);
+  su2double ReducedRes = 0.0;
   
   /*--- Compute Test Basis: W = J * Phi ---*/
   
-  vector<double> TestBasis2(m*n, 0.0);
+  vector<su2double> TestBasis2(m*n, 0.0);
   su2double* prod   = new su2double[nVar]();
 
   for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
     iPoint = Mask[iPoint_mask];
   //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    su2double* J_ii = Jacobian.GetBlock(iPoint, iPoint);
+    su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
     
     for (kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
       kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
       
-      su2double* J_ik = Jacobian.GetBlock(iPoint, kPoint);
+      su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
       
       for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
         

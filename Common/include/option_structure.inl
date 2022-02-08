@@ -518,7 +518,7 @@ public:
       restart = false;
       rom = true;
       return "";
-    }
+    }  
     return badValue("math problem", name);
   }
 

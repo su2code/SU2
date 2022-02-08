@@ -368,21 +368,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
-  if ( config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST ) {
-    su2double ** Reynolds_Stress_Tensor = Node_Turb->GetReynoldsStressTensor(iPoint);
-    SetVolumeOutputValue("U\'U\'", iPoint, Reynolds_Stress_Tensor[0][0]);
-    SetVolumeOutputValue("V\'V\'", iPoint, Reynolds_Stress_Tensor[1][1]);
-    if (nDim == 3){
-      SetVolumeOutputValue("W\'W\'", iPoint, Reynolds_Stress_Tensor[2][2]);
-    }
-    SetVolumeOutputValue("U\'V\'", iPoint, Reynolds_Stress_Tensor[0][1]);
-    if (nDim == 3){
-      SetVolumeOutputValue("U\'W\'", iPoint, Reynolds_Stress_Tensor[0][2]);
-      SetVolumeOutputValue("V\'W\'", iPoint, Reynolds_Stress_Tensor[1][2]);
-    }
-    
-  }
-  
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
   }

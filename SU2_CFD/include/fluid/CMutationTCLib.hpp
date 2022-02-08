@@ -116,7 +116,6 @@ public:
    */
   su2double GetViscosity() final;
 
-
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */

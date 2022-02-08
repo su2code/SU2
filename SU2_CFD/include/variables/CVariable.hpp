@@ -1703,8 +1703,6 @@ public:
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
 
-  inline virtual su2double **GetReynoldsStressTensor(unsigned long iPoint) { return nullptr; }
-
   /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.

@@ -91,10 +91,6 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
-  
-  #ifdef HAVE_LIBROM
-    u_basis_generator  = NULL;
-  #endif
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -4252,98 +4248,6 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   }
 }
 
-void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
-
-#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
-  const bool unsteady            = config->GetTime_Domain();
-  const string filename          = config->GetlibROMbase_FileName();
-  const unsigned long TimeIter   = config->GetTimeIter();
-  const unsigned long nTimeIter  = config->GetnTime_Iter();
-  const int maxBasisDim          = config->GetMax_BasisDim();
-  const int save_freq            = config->GetRom_SaveFreq();
-  int dim = int(nPointDomain * nVar);
-  bool incremental = false;
-
-  if (!u_basis_generator) {
-
-    /*--- Define SVD basis generator ---*/
-    auto timesteps = static_cast<int>(nTimeIter - TimeIter);
-    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
-                                                false, true).setMaxBasisDimension(int(maxBasisDim));
-
-    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
-      if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
-
-      if (unsteady) {
-        if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
-      }
-    }
-    else {
-      if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
-
-      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
-                                    1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
-      incremental = true;
-    }
-
-    u_basis_generator.reset(new CAROM::BasisGenerator(
-      svd_options, incremental,
-      filename));
-
-    // Save mesh ordering
-    std::ofstream f;
-    f.open(filename + "_mesh_" + to_string(rank) + ".csv");
-      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
-        auto Coord = geometry->nodes->GetCoord(iPoint);
-
-        for (unsigned long iDim; iDim < nDim; iDim++) {
-          f << Coord[iDim] << ", ";
-        }
-        f << globalPoint << "\n";
-      }
-    f.close();
-  }
-
-  if (unsteady && (TimeIter % save_freq == 0)) {
-    // give solution and time steps to libROM:
-    su2double dt = config->GetDelta_UnstTime();
-    su2double t =  config->GetCurrent_UnstTime();
-    u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
-  }
-
-  /*--- End collection of data and save POD ---*/
-
-  if (converged) {
-
-    if (!unsteady) {
-       // dt is different for each node, so just use a placeholder dt
-       su2double dt = base_nodes->GetDelta_Time(0);
-       su2double t = dt*TimeIter;
-       u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
-    }
-
-    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
-      u_basis_generator->writeSnapshot();
-    }
-
-    if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
-    int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
-
-    if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
-    u_basis_generator->endSamples();
-
-    if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
-  }
-
-#else
-  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
-#endif
-
-}
-
-
-
 
 void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   // Explanation of certain ROM-specific variables:
@@ -4394,8 +4298,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   
   unsigned long nsnaps = TrialBasis[0].size();
   unsigned long iPoint, i, iVar;
-  double *ref_sol = new double[nPointDomain * nVar]();
-  double *init_sol = new double[nPointDomain * nVar]();
+  su2double *ref_sol = new su2double[nPointDomain * nVar]();
+  su2double *init_sol = new su2double[nPointDomain * nVar]();
   
   /*--- Reference Solution (read from file) ---*/
   
@@ -4412,8 +4316,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         ref_sol[s] = stod(field);
         nodes->Set_RefSolution(iPoint, iVar, ref_sol[s]);
         s++;
-        if (s % 4 == 0) iPoint++;
-        if (iVar == 3) iVar = 0; else iVar++;
+        if (s % nVar == 0) iPoint++;
+        if (iVar == nVar-1) iVar = 0; else iVar++;
       }
     }
   }
@@ -4427,6 +4331,7 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   
   ifstream in_init(init_filename);
   ifstream in_init_coord(init_coord_filename);
+  bool restart = config->GetRestart();
   s = 0; iPoint = 0; iVar = 0;
   
   if (in_init) {
@@ -4441,8 +4346,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
         nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
         s++;
-        if (s % 4 == 0) iPoint++;
-        if (iVar == 3) iVar = 0; else iVar++;
+        if (s % nVar == 0) iPoint++;
+        if (iVar == nVar-1) iVar = 0; else iVar++;
       }
     }
     
@@ -4484,6 +4389,20 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
         nodes->SetSolution(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
         nodes->SetSolution_Old(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
       }
+    }
+  }
+  else if (restart) {
+    /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
+    std::cout << "Using restart file for initial condition" << std::endl;
+    for (i = 0; i < nsnaps; i++) {
+      double sum = 0.0;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          sum += TrialBasis[iPoint*nVar + iVar][i] *
+          (nodes->GetSolution(iPoint, iVar) - nodes->Get_RefSolution(iPoint, iVar));
+        }
+      }
+      GenCoordsY.push_back(sum);
     }
   }
   else SU2_MPI::Error("Did not read file for initial solution or coordinates (ROM)", CURRENT_FUNCTION);
@@ -4560,12 +4479,12 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   
   if (gnat) {
     std::cout << "Performing GNAT." << std::endl;
-    CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    //CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
     fname = "masked_nodes_airfoil_GNAT_"+to_string(desired_nodes)+".csv";
   }
   else {
     std::cout << "Performing QDEIM." << std::endl;
-    CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    //CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
     fname = "masked_nodes_airfoil_QDEIM_"+to_string(desired_nodes)+".csv";
   }
   
@@ -4597,9 +4516,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   }
 #endif
   
-  auto t_start = std::chrono::high_resolution_clock::now();
-
-  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  auto t_start = std::chrono::high_resolution_clock::now()  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename         = config->GetRom_FileName(); //TODO: better file names
   string hypernodes_filename  = config->GetHyperNodes_FileName();
@@ -4616,6 +4533,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   ifstream in_hypernodes(hypernodes_filename);
   if (in_hypernodes) read_mask_from_file = true;
   
+  /*--- read Phi from file ---*/ //TODO: make this a function
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4643,6 +4561,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   //unsigned long nsnaps = 10;
   unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
+  /*--- compute PhiNodes, the norm of Phi at each node ---*/
   std::vector<double> PhiNodes;
   for (i = 0; i < nPointDomain; i++) {
   
@@ -4655,7 +4574,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   }
   
   unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps ; // ceil (nodes to add per loop)
-    
+  
+  /*--- Add first max node to mask set ---*/
   for (i = 0; i < nodestoAdd; i++) {
     nodewithMax = std::distance(PhiNodes.begin(),
                                 std::max_element(PhiNodes.begin(), PhiNodes.end()) );
@@ -4663,11 +4583,10 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     PhiNodes[nodewithMax] = -100000.0;
   }
     
+    
+  /*--- Find and add nodes to mask set ---*/
   std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
   std::vector<std::vector<double>> U, masked_U;
-
-  
-  
 
   for (ivec = 1; ivec < nsnaps; ivec++) {
     
@@ -4682,7 +4601,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       masked_U.push_back({});
     }
     
-    // loop through nodes to add masked Phi entries in correct order
+    /*--- loop through nodes to add masked Phi entries in correct order ---*/
+    //TODO: simplify this loop
     for (imask = 0; imask < nPointDomain; imask++) {
       if (MaskedNode(imask)) {
         for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
@@ -4693,8 +4613,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       }
     }
       
-    // compute gappy reconstruction: GappyPhi = A*B*c
-    
+    /*--- compute gappy reconstruction: GappyPhi = A*B*c ---*/
     for (ii = 0; ii < nPointDomain; ii++) {
       double norm_phi = 0.0;
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -4941,4 +4860,94 @@ void CSolver::writeROMfiles(vector<double> &TestBasis, vector<double> &r) {
   
   
   
+}
+
+void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
+
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  const bool unsteady            = config->GetTime_Domain();
+  const string filename          = config->GetlibROMbase_FileName();
+  const unsigned long TimeIter   = config->GetTimeIter();
+  const unsigned long nTimeIter  = config->GetnTime_Iter();
+  const int maxBasisDim          = config->GetMax_BasisDim();
+  const int save_freq            = config->GetRom_SaveFreq();
+  int dim = int(nPointDomain * nVar);
+  bool incremental = false;
+
+  if (!u_basis_generator) {
+
+    /*--- Define SVD basis generator ---*/
+    auto timesteps = static_cast<int>(nTimeIter - TimeIter);
+    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
+                                                false, true).setMaxBasisDimension(int(maxBasisDim));
+
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
+
+      if (unsteady) {
+        if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
+      }
+    }
+    else {
+      if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
+
+      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
+                                    1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
+      incremental = true;
+    }
+
+    u_basis_generator.reset(new CAROM::BasisGenerator(
+      svd_options, incremental,
+      filename));
+
+    // Save mesh ordering
+    std::ofstream f;
+    f.open(filename + "_mesh_" + to_string(rank) + ".csv");
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+        auto Coord = geometry->nodes->GetCoord(iPoint);
+
+        for (unsigned long iDim; iDim < nDim; iDim++) {
+          f << Coord[iDim] << ", ";
+        }
+        f << globalPoint << "\n";
+      }
+    f.close();
+  }
+
+  if (unsteady && (TimeIter % save_freq == 0)) {
+    // give solution and time steps to libROM:
+    su2double dt = config->GetDelta_UnstTime();
+    su2double t =  config->GetCurrent_UnstTime();
+    u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
+  }
+
+  /*--- End collection of data and save POD ---*/
+
+  if (converged) {
+
+    if (!unsteady) {
+       // dt is different for each node, so just use a placeholder dt
+       su2double dt = base_nodes->GetDelta_Time(0);
+       su2double t = dt*TimeIter;
+       u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
+    }
+
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      u_basis_generator->writeSnapshot();
+    }
+
+    if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
+    int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+
+    if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
+    u_basis_generator->endSamples();
+
+    if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
+  }
+
+#else
+  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
+#endif
+
 }

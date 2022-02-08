@@ -259,6 +259,10 @@
 		35D63007259987B8008DF28B /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D63006259987B7008DF28B /* blas_structure.cpp */; };
 		35D6301625998877008DF28B /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301325998877008DF28B /* mpi_structure.cpp */; };
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
+
+		400F2BCA27607A4100B84906 /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 400F2BC927607A4100B84906 /* libROM.dylib */; };
+
+
 		401A905F27ACB42500CCF9B7 /* species_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 401A905D27ACB42500CCF9B7 /* species_sources.cpp */; };
 		401A906027ACB42500CCF9B7 /* CGradSmoothing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 401A905E27ACB42500CCF9B7 /* CGradSmoothing.cpp */; };
 		401A906927ACB49700CCF9B7 /* CSpeciesSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 401A906627ACB49700CCF9B7 /* CSpeciesSolver.cpp */; };
@@ -278,6 +282,8 @@
 		40C6D18D271F81AD009B5531 /* CNewtonIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */; };
 		40C6D193271F822F009B5531 /* CCGNSFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D192271F822E009B5531 /* CCGNSFileWriter.cpp */; };
 		40C6D19D271F840E009B5531 /* scalar_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19A271F840E009B5531 /* scalar_sources.cpp */; };
+
+		40EECF6827604D9D00C77056 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40EECF6727604D9D00C77056 /* Accelerate.framework */; };
 		E9D6EE572316522800618E36 /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
@@ -872,6 +878,7 @@
 		35D6301425998877008DF28B /* vectorization.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = vectorization.hpp; sourceTree = "<group>"; };
 		35D6301525998877008DF28B /* omp_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = omp_structure.hpp; sourceTree = "<group>"; };
 		35D6301725999185008DF28B /* CSquareMatrixCM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSquareMatrixCM.cpp; sourceTree = "<group>"; };
+		400F2BC927607A4100B84906 /* libROM.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libROM.dylib; path = ../../../libROM/build/lib/libROM.dylib; sourceTree = "<group>"; };
 		401A905D27ACB42500CCF9B7 /* species_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = species_sources.cpp; sourceTree = "<group>"; };
 		401A905E27ACB42500CCF9B7 /* CGradSmoothing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CGradSmoothing.cpp; sourceTree = "<group>"; };
 		401A906127ACB46E00CCF9B7 /* CGradSmoothing.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CGradSmoothing.hpp; sourceTree = "<group>"; };
@@ -917,6 +924,8 @@
 		40C6D197271F83CC009B5531 /* scalar_diffusion.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_diffusion.hpp; sourceTree = "<group>"; };
 		40C6D198271F83CC009B5531 /* scalar_convection.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scalar_convection.hpp; sourceTree = "<group>"; };
 		40C6D19A271F840E009B5531 /* scalar_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scalar_sources.cpp; sourceTree = "<group>"; };
+		40EECF6527604D8300C77056 /* libROM.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libROM.dylib; path = ../../../libROM/build/libROM.dylib; sourceTree = "<group>"; };
+		40EECF6727604D9D00C77056 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -924,6 +933,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				400F2BCA27607A4100B84906 /* libROM.dylib in Frameworks */,
+				40EECF6827604D9D00C77056 /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -937,6 +948,7 @@
 				354900E82537E0050095B597 /* Common */,
 				3549021A2537E0280095B597 /* SU2_CFD */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				40EECF6427604D8300C77056 /* Frameworks */,
 			);
 			name = SU2_CFD;
 			sourceTree = "<group>";
@@ -2264,6 +2276,16 @@
 			path = scalar;
 			sourceTree = "<group>";
 		};
+		40EECF6427604D8300C77056 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				400F2BC927607A4100B84906 /* libROM.dylib */,
+				40EECF6727604D9D00C77056 /* Accelerate.framework */,
+				40EECF6527604D8300C77056 /* libROM.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2274,6 +2296,7 @@
 				8DD76F660486A84900D96B5E /* Frameworks */,
 				40084FAF24B8E8330040AA28 /* Embed Libraries */,
 				8DD76F640486A84900D96B5E /* Sources */,
+				8DD76F660486A84900D96B5E /* Frameworks */,
 				8DD76F690486A84900D96B5E /* CopyFiles */,
 			);
 			buildRules = (
@@ -2647,18 +2670,14 @@
 					"/usr/local/Cellar/open-mpi/4.0.4_1/include",
 				);
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"/usr/local/Cellar/open-mpi/4.0.4_1/lib",
-					/usr/local/opt/libevent/lib,
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DHAVE_LAPACK",
 					"-Wno-inconsistent-missing-override",
 					"-DHAVE_LIBROM",
 				);
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -2716,18 +2735,14 @@
 					"/usr/local/Cellar/open-mpi/4.0.4_1/include",
 				);
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"/usr/local/Cellar/open-mpi/4.0.4_1/lib",
-					/usr/local/opt/libevent/lib,
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DHAVE_LAPACK",
 					"-Wno-inconsistent-missing-override",
 					"-DHAVE_LIBROM",
 				);
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -2769,13 +2784,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				HEADER_SEARCH_PATHS = (
 					/Users/jessie/Software/libROM,
 					../../externals/CLI11,
 					../../externals/mel,
 				);
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
-				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -2809,13 +2823,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				HEADER_SEARCH_PATHS = (
 					/Users/jessie/Software/libROM,
 					../../externals/CLI11,
 					../../externals/mel,
 				);
-				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
-				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};

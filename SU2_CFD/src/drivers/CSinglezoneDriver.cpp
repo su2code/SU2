@@ -50,7 +50,6 @@ void CSinglezoneDriver::StartSolver() {
   StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
-  bool libROM = config_container[MESH_0]->GetSave_libROM();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -102,13 +101,11 @@ void CSinglezoneDriver::StartSolver() {
     }
 
     /*--- Save iteration solution for libROM ---*/
-    #ifdef HAVE_LIBROM
-        if (libROM) {
-          solver_container[0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[0][INST_0][MESH_0],
-                   geometry_container[0][INST_0][0], config_container[0], StopCalc);
-        }
-    #endif
-    
+    if (config_container[MESH_0]->GetSave_libROM()) {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                     config_container[ZONE_0], StopCalc);
+    }
+
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
@@ -151,7 +148,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                             config_container[ZONE_0], TimeIter);
   }
   
-  /*---- Initialize ROM specific variables. ----*/
+  /*---- Initialize ROM specific variables. -------------------------------------------------------*/
   if (config_container[ZONE_0]->GetReduced_Model()) {
     if (rank == MASTER_NODE) {
       cout << "Selecting nodes for hyper-reduction (ROM)." << endl;

@@ -338,6 +338,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+  
+  void ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Print verification error to screen.

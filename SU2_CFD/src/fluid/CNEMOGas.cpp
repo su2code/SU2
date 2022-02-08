@@ -204,8 +204,8 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
     val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
                          (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
                          ef + 0.5*sqvel);
-
   }
+
   if (ionization) {
     for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
       //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);

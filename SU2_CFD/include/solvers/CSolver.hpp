@@ -198,10 +198,10 @@ public:
   CSysSolve<su2double>  System;
 #endif
 
-  vector<std::vector<double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
-  vector<double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
-  vector<double> Weights;
-  vector<double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
+  vector<std::vector<su2double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  vector<su2double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
+  vector<su2double> Weights;
+  vector<su2double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
   set<unsigned long> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
   vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
   unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
@@ -1386,7 +1386,6 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
-
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1406,17 +1405,6 @@ public:
   inline virtual void ROM_Iteration(CGeometry *geometry,
                                     CSolver **solver_container,
                                     CConfig *config) { }
-  
-#ifdef HAVE_LIBROM
-  /*!
-   * \brief Save snapshot or POD data using libROM
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] converged - Whether or not solution has converged.
-  */
-  void SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged);
-#endif
   
   /*!
    * \brief Set up ROM-specific variables.

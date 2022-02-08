@@ -9562,7 +9562,19 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
-
+  
+  /*!
+   * \brief Get the number of hyper-reduction nodes desired.
+   * \return Number of rdesired hyper-reduction nodes.
+   */
+  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
+  
+  /*!
+   * \brief Get number of POD modes desired.
+   * \return Number of POD modes desired.
+   */
+  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
+  
   /*!
    * \brief Get whether or not to save solution data to libROM.
    * \return True if specified in config file.

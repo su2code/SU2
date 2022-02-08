@@ -186,7 +186,6 @@ elif get_option('enable-openblas')
 endif
 
 if get_option('enable-librom')
-
    
    assert(get_option('librom_root')!='',
        'Must specify librom folder (-Dlibrom_root=path/to/libROM)')
