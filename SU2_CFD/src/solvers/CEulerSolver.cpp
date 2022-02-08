@@ -1738,14 +1738,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   if (rom) nEdge = Edge_masked.size();
   else     nEdge = geometry->GetnEdge();
   
-  ///*--- Loop over edge colors. ---*/
-  //for (auto color : EdgeColoring)
-  //{
-  ///*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  //SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-  //for(auto k = 0ul; k < color.size; ++k) {
-//
-  //  auto iEdge = color.indices[k];
     
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1753,17 +1745,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
   else AD::StartNoSharedReading();
   
-  unsigned long i, iEdge, nEdge;
   if (rom) nEdge = Edge_masked.size();
   else     nEdge = geometry->GetnEdge();
-
-  /*--- Loop over edge colors. ---*/
-//  for (auto color : EdgeColoring)
-//  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-//  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-//  for(auto k = 0ul; k < color.size; ++k) {
-
   
   for (i = 0; i < nEdge; i++) {
 

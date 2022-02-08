@@ -4516,7 +4516,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   }
 #endif
   
-  auto t_start = std::chrono::high_resolution_clock::now()  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  auto t_start = std::chrono::high_resolution_clock::now();
   
   string phi_filename         = config->GetRom_FileName(); //TODO: better file names
   string hypernodes_filename  = config->GetHyperNodes_FileName();
@@ -4533,7 +4533,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   ifstream in_hypernodes(hypernodes_filename);
   if (in_hypernodes) read_mask_from_file = true;
   
-  /*--- read Phi from file ---*/ //TODO: make this a function
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  //TODO: make this a function
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;

@@ -2018,30 +2018,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
-
-  /*!\par CONFIG_CATEGORY: Reduced Order Modelling specific variables  \ingroup Config */
-  /*--- Options related to reduced order modelling ---*/
-  
-  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
-  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
-  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
-  addStringOption("HYPER_NODES_FILENAME", HyperNodes_FileName, string("NONE"));
-  /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
-  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
-  /*!\brief INITIAL_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/
-  addStringOption("INITIAL_COORD_FILENAME", Init_Coord_FileName, string("NONE"));
-  /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
-  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
-  /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM (Reduced order modelling)  \ingroup Config*/
-  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
-  /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
-  addBoolOption("SAVE_LIBROM", libROM, false);
-  /*!\brief BASIS_GENERSTION \n DESCRIPTION: Flag for saving data with libROM. */
-  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, STATIC_POD);
-  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
-  addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
-  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
-  addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
   
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -2893,18 +2869,34 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
   addBoolOption("SAVE_LIBROM", libROM, false);
-
   /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
   addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
-
   /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
   addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
-
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
-
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+
+  
+  /*!\par CONFIG_CATEGORY: Reduced Order Modelling specific variables  \ingroup Config */
+  /*--- Options related to reduced order modelling ---*/
+  
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("HYPER_NODES_FILENAME", HyperNodes_FileName, string("NONE"));
+  /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
+  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
+  /*!\brief INITIAL_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/
+  addStringOption("INITIAL_COORD_FILENAME", Init_Coord_FileName, string("NONE"));
+  /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
+  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
+  addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
+  addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
+  
 
   /* END_CONFIG_OPTIONS */
 
