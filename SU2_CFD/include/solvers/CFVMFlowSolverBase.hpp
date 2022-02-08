@@ -49,6 +49,7 @@ class CFVMFlowSolverBase : public CSolver {
 
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
+  static constexpr size_t MAXNTUR = 2; /*!< \brief Max number of variables, for static arrays. */
 
   static constexpr size_t OMP_MAX_SIZE = 512; /*!< \brief Max chunk size for light point loops. */
   static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */

@@ -1531,6 +1531,12 @@ public:
                                   CConfig *config) { }
 
   /*!
+   * \brief Compute the primitive variables from the conservative variables.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  virtual void SetPrimitive_Variables(CSolver **solver_container) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

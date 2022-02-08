@@ -1698,6 +1698,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
+  const bool tkeNeeded    = config->GetBool_Turb_Model_SST();
+  const bool musclTurb    = config->GetMUSCL_Turb() && muscl;
+  const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -1710,6 +1717,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
+  // su2double Turbulent_i[MAXNTUR] = {0.0}, Turbulent_j[MAXNTUR] = {0.0};
+
+  su2double Turbulent_i = 0.0, Turbulent_j = 0.0;
+  su2double T_i = 0.0, T_j = 0.0;
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1755,6 +1766,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
+    if (tkeNeeded) {
+      T_i = turbNodes->GetPrimitive(iPoint,0); T_j = turbNodes->GetPrimitive(jPoint,0);
+    }
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
@@ -1762,6 +1776,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
+      numerics->SetTurbKineticEnergy(T_i, T_j);
 
     }
     else {
@@ -1803,6 +1818,39 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       }
 
+      if (tkeNeeded && musclTurb) {
+        auto GradTurb_i = turbNodes->GetGradient_Reconstruction(iPoint);
+        auto GradTurb_j = turbNodes->GetGradient_Reconstruction(jPoint);
+
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*GradTurb_i[0][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*GradTurb_j[0][iDim];
+        }
+
+        su2double lim_i = 1.0;
+        su2double lim_j = 1.0;
+
+        if (van_albada) {
+          su2double T_ij = T_j - T_i;
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, T_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, T_ij, EPS);
+        }
+        else if (limiter) {
+          lim_i = nodes->GetLimiter_Primitive(iPoint, 0);
+          lim_j = nodes->GetLimiter_Primitive(jPoint, 0);
+        }
+
+        Turbulent_i = T_i + lim_i * Project_Grad_i;
+        Turbulent_j = T_j + lim_j * Project_Grad_j;
+
+      }
+      else {
+        Turbulent_i = T_i; Turbulent_j = T_j;
+      }
+
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
       if (!ideal_gas || low_mach_corr) {
@@ -1830,8 +1878,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         sq_vel += pow(RoeVelocity, 2);
       }
       su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+      su2double RoeTke = (R*Turbulent_j+Turbulent_i)/(R+1);
 
-      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
@@ -1847,6 +1896,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
       numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
+      numerics->SetTurbKineticEnergy(bad_i? T_i : Turbulent_i,  bad_j? T_j : Turbulent_j);
 
     }
 
@@ -4292,7 +4342,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  bool tkeNeeded = config->GetBool_Turb_Model_SST();
 
   su2double *Normal = new su2double[nDim];
 
@@ -4502,7 +4552,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+        if (config->GetBool_Turb_Model_SST())
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
 
@@ -4547,7 +4597,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  bool tkeNeeded = (config->GetBool_Turb_Model_SST());
 
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
@@ -4990,7 +5040,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+        if (config->GetBool_Turb_Model_SST())
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -5061,7 +5111,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  bool tkeNeeded = (config->GetBool_Turb_Model_SST());
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5504,7 +5554,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Turbulent kinetic energy ---*/
 
-          if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+          if (config->GetBool_Turb_Model_SST())
             visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 

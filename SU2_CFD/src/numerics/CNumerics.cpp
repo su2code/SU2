@@ -30,6 +30,7 @@
 
 #include "../../include/numerics/CNumerics.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CNumerics::CNumerics(void) {
 
@@ -174,40 +175,42 @@ void CNumerics::GetInviscidIncProjFlux(const su2double *val_density,
 
 }
 
-void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
-                                   const su2double *val_normal, su2double val_scale,
-                                   su2double **val_Proj_Jac_Tensor) const {
+void CNumerics::GetInviscidProjJac(const su2double *v, const su2double *e, const su2double *k,
+                                   const su2double *n, const su2double scale, su2double **J) const {
   const bool wasActive = AD::BeginPassive();
-  unsigned short iDim, jDim;
-  su2double sqvel, proj_vel, phi, a1, a2;
 
-  sqvel = 0.0; proj_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    sqvel    += val_velocity[iDim]*val_velocity[iDim];
-    proj_vel += val_velocity[iDim]*val_normal[iDim];
+  const su2double sq_vel = GeometryToolbox::SquaredNorm(nDim,v);
+  const su2double proj_vel = GeometryToolbox::DotProduct(nDim,v,n);
+
+  const su2double phi = 0.5*Gamma_Minus_One*sq_vel;
+  const su2double a1 = Gamma*(*e)-phi-Gamma_Minus_One*(*k);
+  const su2double a2 = Gamma_Minus_One;
+
+  J[0][0] = 0.0;
+  for (auto iDim = 0u; iDim < nDim; iDim++)
+    J[0][iDim+1] = scale*n[iDim];
+  J[0][nDim+1] = 0.0;
+
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    J[iDim+1][0] = scale*(n[iDim]*phi - v[iDim]*proj_vel);
+    for (auto jDim = 0; jDim < nDim; jDim++)
+      J[iDim+1][jDim+1] = scale*(n[jDim]*v[iDim]-a2*n[iDim]*v[jDim]);
+    J[iDim+1][iDim+1] += scale*proj_vel;
+    J[iDim+1][nDim+1] = scale*a2*n[iDim];
   }
 
-  phi = 0.5*Gamma_Minus_One*sqvel;
-  a1 = Gamma*(*val_energy)-phi;
-  a2 = Gamma-1.0;
+  J[nDim+1][0] = scale*proj_vel*(phi-a1);
+  for (auto iDim = 0u; iDim < nDim; iDim++)
+    J[nDim+1][iDim+1] = scale*(n[iDim]*a1-a2*v[iDim]*proj_vel);
+  J[nDim+1][nDim+1] = scale*Gamma*proj_vel;
 
-  val_Proj_Jac_Tensor[0][0] = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_Proj_Jac_Tensor[0][iDim+1] = val_scale*val_normal[iDim];
-  val_Proj_Jac_Tensor[0][nDim+1] = 0.0;
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    val_Proj_Jac_Tensor[iDim+1][0] = val_scale*(val_normal[iDim]*phi - val_velocity[iDim]*proj_vel);
-    for (jDim = 0; jDim < nDim; jDim++)
-      val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_scale*(val_normal[jDim]*val_velocity[iDim]-a2*val_normal[iDim]*val_velocity[jDim]);
-    val_Proj_Jac_Tensor[iDim+1][iDim+1] += val_scale*proj_vel;
-    val_Proj_Jac_Tensor[iDim+1][nDim+1] = val_scale*a2*val_normal[iDim];
-  }
-
-  val_Proj_Jac_Tensor[nDim+1][0] = val_scale*proj_vel*(phi-a1);
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
-  val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
+  // if (tkeNeeded) {
+  //   J[0][nDim+2] = 0.0;
+  //   for (auto iDim = 0u; iDim < nDim; iDim++)
+  //     J[iDim+1][nDim+2] = -scale*a2*n[iDim];
+  //   J[nDim+1][nDim+2] = -scale*a2*proj_vel;
+  // }
+  
   AD::EndPassive(wasActive);
 }
 

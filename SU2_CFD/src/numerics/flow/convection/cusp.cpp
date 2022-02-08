@@ -151,8 +151,8 @@ CNumerics::ResidualType<> CUpwCUSP_Flow::ComputeResidual(const CConfig* config) 
 
     /*--- Flux average and difference contributions ---*/
 
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5*(1.0+Beta), Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5*(1.0-Beta), Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5*(1.0+Beta), Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5*(1.0-Beta), Jacobian_j);
 
     /*--- Solution difference (scalar dissipation) contribution ---*/
 

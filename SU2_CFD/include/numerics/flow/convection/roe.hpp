@@ -44,7 +44,7 @@ protected:
   su2double *ProjFlux_i = nullptr, *Conservatives_i = nullptr;
   su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
   su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
-  su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+  su2double RoeDensity, RoeEnthalpy, RoeTke, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
 
   su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */

@@ -98,6 +98,12 @@ public:
                       unsigned short iMesh) override;
 
   /*!
+   * \brief Compute the primitive variables from the conservative variables.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void SetPrimitive_Variables(CSolver **solver_container);
+
+  /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.

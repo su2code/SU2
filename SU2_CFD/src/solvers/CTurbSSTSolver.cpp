@@ -211,9 +211,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
+  SetPrimitive_Variables(solver_container);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -245,6 +243,16 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   END_SU2_OMP_FOR
 
   AD::EndNoSharedReading();
+}
+
+void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
+  
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
+
 }
 
 void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,

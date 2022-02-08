@@ -190,6 +190,8 @@ protected:
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
+  bool tkeNeeded = false;
+
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -1018,15 +1020,15 @@ public:
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
-   * \param[in] val_velocity Pointer to the velocity.
-   * \param[in] val_energy Value of the energy.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_scale - Scale of the projection.
-   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   * \param[in] v - Pointer to the velocity.
+   * \param[in] e - Value of the energy.
+   * \param[in] k - Value of the turbulent kinetic energy.
+   * \param[in] n - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] scale - Scale of the projection.
+   * \param[out] J - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
-                          const su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor) const;
+  void GetInviscidProjJac(const su2double *v, const su2double *e, const su2double *k,
+                          const su2double *n, const su2double scale, su2double **J) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).

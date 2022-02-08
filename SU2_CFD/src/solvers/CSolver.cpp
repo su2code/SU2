@@ -4902,7 +4902,7 @@ void CSolver::ViscousMetric(CSolver **solver, const CGeometry*geometry, const CC
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
 
   const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
-  const bool sst  = ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST));
+  const bool sst  = (config->GetBool_Turb_Model_SST());
 
   CVariable *varTur = nullptr, *varAdjTur = nullptr;
   if (turb) {

@@ -36,6 +36,8 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
+  tkeNeeded = config->GetBool_Turb_Model_SST();
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
@@ -108,6 +110,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
+  AD::SetPreaccIn(turb_ke_i);  AD::SetPreaccIn(turb_ke_j);
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
@@ -116,23 +119,46 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  /*--- Primitive variables at point i ---*/
+  /*--- Primitive variables ---*/
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
-  Pressure_i = V_i[nDim+1];
-  Density_i  = V_i[nDim+2];
-  Enthalpy_i = V_i[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
-
-  /*--- Primitive variables at point j ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++)
     Velocity_j[iDim] = V_j[iDim+1];
+  }
+
+  Pressure_i = V_i[nDim+1];
   Pressure_j = V_j[nDim+1];
+
+  Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
-  Enthalpy_j = V_j[nDim+3];
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+
+  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i+0.5*GeometryToolbox::SquaredNorm(nDim,Velocity_i);
+  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j+0.5*GeometryToolbox::SquaredNorm(nDim,Velocity_j);
+
+  Enthalpy_i = Energy_i + Pressure_i/Density_i;
+  Enthalpy_j = Energy_j + Pressure_j/Density_j;
+
+  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
+  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
+
+  // /*--- Primitive variables at point i ---*/
+
+  // for (iDim = 0; iDim < nDim; iDim++)
+  //   Velocity_i[iDim] = V_i[iDim+1];
+  // Pressure_i = V_i[nDim+1];
+  // Density_i  = V_i[nDim+2];
+  // Enthalpy_i = V_i[nDim+3];
+  // Energy_i = Enthalpy_i - Pressure_i/Density_i;
+
+  // /*--- Primitive variables at point j ---*/
+
+  // for (iDim = 0; iDim < nDim; iDim++)
+  //   Velocity_j[iDim] = V_j[iDim+1];
+  // Pressure_j = V_j[nDim+1];
+  // Density_j  = V_j[nDim+2];
+  // Enthalpy_j = V_j[nDim+3];
+  // Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  
 
   /*--- Compute variables that are common to the derived schemes ---*/
 
@@ -146,6 +172,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
+  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
   RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
@@ -222,8 +249,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 
   if (implicit) {
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, Jacobian_j);
   }
 
   /*--- Finalize in children class ---*/
@@ -627,8 +654,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   if (implicit) {
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because Flux ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, Jacobian_j);
   }
 
   for (iVar = 0; iVar < nVar; iVar ++) {

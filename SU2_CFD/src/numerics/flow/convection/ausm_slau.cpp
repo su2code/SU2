@@ -132,8 +132,8 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-  GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
+  GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, val_Jacobian_i);
+  GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, val_Jacobian_j);
 
   /*--- Roe's Flux approximation ---*/
 
@@ -947,8 +947,8 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, Jacobian_j);
 
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
