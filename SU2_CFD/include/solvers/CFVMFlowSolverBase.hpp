@@ -970,6 +970,77 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- For verification cases, compute the global error metrics. ---*/
     ComputeVerificationError(geometry, config);
   }
+  
+  /*!
+   * \brief Generic implementation to complete an ROM iteration, i.e. update the reduced solution.
+   */
+  void ROM_Iteration_impl(CGeometry *geometry, CConfig *config) {
+    
+    /*--- Local residual variables for current thread ---*/
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    unsigned long idxMax[MAXNVAR] = {0};
+    
+    //TODO: Assert not adjoint
+    
+    int m = (int)Mask.size() * nVar;
+    int n = (int)TrialBasis[0].size();
+    vector<su2double> r(m,0.0);
+    int index = 0;
+    
+    /*--- Update and obtain residual ---*/
+    
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+      unsigned long iPoint = Mask[iPoint_mask];
+      
+      const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+      const su2double* Residual = LinSysRes.GetBlock(iPoint);
+      
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        
+        su2double Res = Residual[iVar] + Res_TruncError[iVar];
+        r[index] = Res;
+      
+        /*--- Update residual information for current thread. ---*/
+        ResidualReductions_PerThread(iPoint, iVar, Res, resRMS, resMax, idxMax);
+        index++;
+      }
+    }
+    END_SU2_OMP_FOR
+    /*--- Reduce residual information over all threads in this rank. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+    
+    
+    // DO ROM ITERATION
+    
+    
+    /*--- Update ROM solution ---*/
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    vector<double> allMaskedNodes(Mask);
+    allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
+    //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (unsigned long iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
+      unsigned long iPoint = allMaskedNodes[iPoint_mask];
+      
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        su2double sum = 0.0;
+        
+        for (unsigned long i = 0; i < TrialBasis[0].size(); i++) {
+          sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
+        }
+        
+        nodes->AddROMSolution(iPoint, iVar, sum);
+      }
+    }
+    END_SU2_OMP_FOR
+    
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+    
+  }
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
