@@ -183,8 +183,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     Set_BGSSolution_k_To_Solution(iZone);
     if (iZone == 0) {
-      // the hardcoded [1] is the ADJ_FLOW sol container
-      solver_container[ZONE_0][INST_0][MESH_0][1]->GetNodes()->Solution_adjDP_BGS_k = solver_container[ZONE_0][INST_0][MESH_0][1]->GetAdjoint_DP();
+      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP();
     }
 
     /*--- Prepare Krylov or quasi-Newton methods. ---*/
@@ -370,8 +369,7 @@ void CDiscAdjMultizoneDriver::Run() {
       Set_Solution_To_BGSSolution_k(iZone);
       // Do the same for Adjoint_DP
       if (iZone == 0) {
-        // the hardcoded [1] is the ADJ_FLOW sol container
-        solver_container[ZONE_0][INST_0][MESH_0][1]->SetAdjoint_DP(solver_container[ZONE_0][INST_0][MESH_0][1]->GetNodes()->Solution_adjDP_BGS_k);
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k);
       }
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
@@ -443,8 +441,7 @@ void CDiscAdjMultizoneDriver::Run() {
       // (this is necessary as Solution will be containing the crossterm contribution later)
       // so BGS_k is an intermediate storage container
       if (iZone == 0) {
-        // the hardcoded [1] is the ADJ_FLOW sol container
-        solver_container[ZONE_0][INST_0][MESH_0][1]->GetNodes()->Solution_adjDP_BGS_k = solver_container[ZONE_0][INST_0][MESH_0][1]->GetAdjoint_DP();
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP();
       }
     }
 
@@ -526,8 +523,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
 
     Set_Solution_To_BGSSolution_k(iZone);
     if (iZone == 0) {
-      // the hardcoded [1] is the ADJ_FLOW sol container
-      solver_container[ZONE_0][INST_0][MESH_0][1]->SetAdjoint_DP(solver_container[ZONE_0][INST_0][MESH_0][1]->GetNodes()->Solution_adjDP_BGS_k);
+      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k);
     }
 
     Add_External_To_Solution(iZone);
