@@ -100,6 +100,7 @@ protected:
   su2double spDP_Direct = -1; // stores the streamwise periodic pressure drop in order to reset it later
 
   su2double Solution_adjDP_BGS_k = -1; // TK:: necessary for multizone. "Solution" val will be overwritten by crossterm evaluations
+  su2double External_adjDP = -1; // TK:: contains the OF derivate wrt dp
 
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */

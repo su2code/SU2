@@ -395,6 +395,12 @@ void CDiscAdjMultizoneDriver::Run() {
 
           if (no_restart || (iInnerIter > 0)) {
             Add_External_To_Solution(iZone);
+            // Add External_adjDP to Adjoint_DP
+            if (iZone == 0) {
+              solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(
+                solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP() + 
+                solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->External_adjDP);
+            }
           }
           else {
             /*--- If we restarted, Solution already has all contributions,
@@ -493,6 +499,10 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
     iteration_container[iZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
                                                        config_container, iZone, INST_0, false);
     Add_Solution_To_External(iZone);
+    // Add Adjoint_DP to External_adjDP
+    if (iZone == 0) {
+      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->External_adjDP = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP();
+    }
 
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -527,6 +537,12 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
     }
 
     Add_External_To_Solution(iZone);
+    // Add External_adjDP to Adjoint_DP
+    if (iZone == 0) {
+      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP() + 
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->External_adjDP);
+    }
 
     iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
                                                           config_container, iZone, INST_0);
