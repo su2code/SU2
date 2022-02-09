@@ -58,7 +58,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = '54db8e9998dc4f419555715d7e7e9a83ef26f514'
+  sha_version_amg = 'b509647dec4210e926f83d07c7f4fa0c31604fdc'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
@@ -256,7 +256,7 @@ def install_pyamg(log, err):
       print('Installing pyAMG for Mac.')
       pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
 
-  pyamg_whl = 'externals/amgio/pyamg/Python3/' + pyamg_whl
+  pyamg_whl = 'externals/amgio/pyamg/python3/' + pyamg_whl
   try:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
     log.close()
