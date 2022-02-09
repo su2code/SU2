@@ -69,6 +69,8 @@ protected:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
+  inline su2double GetAdjoint_DP() { return Adjoint_DP; }
+  inline void SetAdjoint_DP(su2double val) { Adjoint_DP = val; }
 
   /*!
    * \brief Constructor of the class.
