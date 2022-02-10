@@ -423,9 +423,27 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         /*--- distance to closest neighbor ---*/
         const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
-                                                             geometry->nodes->GetCoord(iPoint),
-                                                             geometry->nodes->GetCoord(jPoint));
+        // su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
+        //                                                      geometry->nodes->GetCoord(iPoint),
+        //                                                      geometry->nodes->GetCoord(jPoint));
+
+        su2double Vector[MAXNDIM] = {0.0};
+        GeometryToolbox::Distance(nDim,
+                                  geometry->nodes->GetCoord(iPoint),
+                                  geometry->nodes->GetCoord(jPoint),
+                                  Vector);
+
+        const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        su2double UnitNormal[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          UnitNormal[iDim] = -Normal[iDim]/Area;
+
+        su2double distance  = GeometryToolbox::DotProduct(nDim, Vector, UnitNormal);
+        su2double distance2 = pow(distance, 2.0);
+
         /*--- Set wall values ---*/
 
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
