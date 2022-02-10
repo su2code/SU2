@@ -1122,10 +1122,10 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
 
     // Electron t-r mode contributes to mixture vib-el energy
-    rhoEve += (3.0/2.0) * Ru/MolarMass[iSpecies] * (Tve - Ref_Temperature[iSpecies]); //bug? not multiplying by rhos[iSpecies]
+    rhoEve += rhos[iSpecies]*((3.0/2.0) * Ru/MolarMass[iSpecies] * (Tve - Ref_Temperature[iSpecies]));
   }
 
-  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++){
+  for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++){
 
     // Species formation energy
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
@@ -1990,7 +1990,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double rhoE_f   = 0.0;
   su2double rhoE_ref = 0.0;
   su2double rhoCvtr  = 0.0;
-  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
+  for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
