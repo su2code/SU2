@@ -1015,7 +1015,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Reduce residual information over all threads in this rank. ---*/
     ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
     
-    // DO ROM ITERATION
+    // DO ROM ITERATION:
     
     /*-- Compute Test Basis: W = J * Phi, where J and Phi may be hyper-reduced --*/
     
@@ -1104,7 +1104,6 @@ class CFVMFlowSolverBase : public CSolver {
         file <<  "\n" ;
         file.close();
       }
-      
     }
     
     /*--- Set up variables for QR decomposition ---*/

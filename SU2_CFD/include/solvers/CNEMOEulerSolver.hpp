@@ -339,6 +339,12 @@ public:
    */
   void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
   
+  /*!
+   * \brief Update the solution using reduced order modelling methods (LSPG).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
   void ROM_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!

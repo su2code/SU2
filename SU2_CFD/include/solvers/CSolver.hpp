@@ -1491,7 +1491,7 @@ public:
   void CheckROMConvergence(CConfig *config, double ReducedRes);
   
   /*!
-   * \brief Write a set of files for transparancy purposes
+   * \brief Write a set of files for debugging purposes
    */
   void writeROMfiles(vector<su2double> &TestBasis,
                      vector<su2double> &r,
