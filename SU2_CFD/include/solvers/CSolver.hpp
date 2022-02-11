@@ -1493,8 +1493,9 @@ public:
   /*!
    * \brief Write a set of files for transparancy purposes
    */
-  void writeROMfiles(vector<double> &TestBasis,
-                     vector<double> &r);
+  void writeROMfiles(vector<su2double> &TestBasis,
+                     vector<su2double> &r,
+                     vector<su2double> &r_red);
   
   /*!
    * \brief A virtual member.

@@ -4827,7 +4827,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   SetCoord1_Old(GenCoordsY[1]);
 }
 
-void CSolver::writeROMfiles(vector<double> &TestBasis, vector<double> &r) {
+void CSolver::writeROMfiles(vector<su2double> &TestBasis, vector<su2double> &r, vector<su2double> &r_red) {
   int m = (int)Mask.size() * nVar;
   int n = (int)TrialBasis[0].size();
   
@@ -4859,7 +4859,12 @@ void CSolver::writeROMfiles(vector<double> &TestBasis, vector<double> &r) {
   }
   fs.close();
   
-  
+  std::string fname3 = "check_reduced_residual.csv";
+  fs.open(fname3);
+  for(int i=0; i < n; i++){
+    fs << setprecision(10) << r_red[i] << "\n";
+  }
+  fs.close();
   
 }
 
