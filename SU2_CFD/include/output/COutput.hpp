@@ -720,15 +720,14 @@ protected:
 
   /*!
    * \brief Set the history fields common for all solvers.
-   * \param[in] config - Definition of the particular problem.
    */
-  void SetCommonHistoryFields(CConfig *config);
+  void SetCommonHistoryFields();
 
   /*!
    * \brief Load values of the history fields common for all solvers.
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadCommonHistoryData(CConfig *config);
+  void LoadCommonHistoryData(const CConfig *config);
 
   /*!
    * \brief Allocates the data sorters if necessary.
