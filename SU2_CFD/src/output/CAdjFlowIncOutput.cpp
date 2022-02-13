@@ -211,7 +211,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   }
 
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    SetHistoryOutputValue("ADJOINT_DP", adjflow_solver->GetAdjoint_DP());
+    SetHistoryOutputValue("ADJOINT_DP", adjflow_solver->GetNodes()->GetSolutionExtra()[0]);
   }
 
   SetHistoryOutputValue("MAX_ADJ_PRESSURE", log10(adjflow_solver->GetRes_Max(0)));

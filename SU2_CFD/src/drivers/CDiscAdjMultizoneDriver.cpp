@@ -182,9 +182,6 @@ void CDiscAdjMultizoneDriver::StartSolver() {
      * correctly as the first OF gradient will overwrite the solution. ---*/
 
     Set_BGSSolution_k_To_Solution(iZone);
-    if (iZone == 0) {
-      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP();
-    }
 
     /*--- Prepare Krylov or quasi-Newton methods. ---*/
 
@@ -367,10 +364,6 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
 
       Set_Solution_To_BGSSolution_k(iZone);
-      // Do the same for Adjoint_DP
-      if (iZone == 0) {
-        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k);
-      }
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
@@ -395,12 +388,6 @@ void CDiscAdjMultizoneDriver::Run() {
 
           if (no_restart || (iInnerIter > 0)) {
             Add_External_To_Solution(iZone);
-            // Add External_adjDP to Adjoint_DP
-            if (iZone == 0) {
-              solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(
-                solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP() + 
-                solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->External_adjDP);
-            }
           }
           else {
             /*--- If we restarted, Solution already has all contributions,
@@ -443,12 +430,6 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
-      // Set the value of Solution for iZone into the BGS_k container
-      // (this is necessary as Solution will be containing the crossterm contribution later)
-      // so BGS_k is an intermediate storage container
-      if (iZone == 0) {
-        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP();
-      }
     }
 
     /*--- Set the multizone output. ---*/
@@ -499,10 +480,6 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
     iteration_container[iZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
                                                        config_container, iZone, INST_0, false);
     Add_Solution_To_External(iZone);
-    // Add Adjoint_DP to External_adjDP
-    if (iZone == 0) {
-      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->External_adjDP = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP();
-    }
 
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
@@ -532,17 +509,8 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
   for (iZone = 0; iZone < nZone; iZone++) {
 
     Set_Solution_To_BGSSolution_k(iZone);
-    if (iZone == 0) {
-      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->Solution_adjDP_BGS_k);
-    }
 
     Add_External_To_Solution(iZone);
-    // Add External_adjDP to Adjoint_DP
-    if (iZone == 0) {
-      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_DP(
-        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjoint_DP() + 
-        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->External_adjDP);
-    }
 
     iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container,
                                                           config_container, iZone, INST_0);
@@ -907,8 +875,10 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
+    if (solver && solver->GetAdjoint()) {
       solver->Add_Solution_To_External();
+      solver->GetNodes()->Add_SolutionExtra_To_ExternalExtra();
+    }
   }
 }
 
@@ -927,8 +897,10 @@ void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
+    if (solver && solver->GetAdjoint()) {
       solver->Add_External_To_Solution();
+      solver->GetNodes()->Add_ExternalExtra_To_SolutionExtra();
+    }
   }
 }
 
@@ -954,8 +926,10 @@ void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k(unsigned short iZone
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
+    if (solver && solver->GetAdjoint()) {
       solver->GetNodes()->Restore_BGSSolution_k();
+      solver->GetNodes()->Restore_BGSSolutionExtra_k();
+    }
   }
 }
 
@@ -963,8 +937,10 @@ void CDiscAdjMultizoneDriver::Set_BGSSolution_k_To_Solution(unsigned short iZone
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
+    if (solver && solver->GetAdjoint()) {
       solver->GetNodes()->Set_BGSSolution_k();
+      solver->GetNodes()->Set_BGSSolutionExtra_k();
+    }
   }
 }
 
@@ -972,7 +948,9 @@ void CDiscAdjMultizoneDriver::SetResidual_BGS(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint())
+    if (solver && solver->GetAdjoint()) {
       solver->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      solver->GetNodes()->Set_BGSSolutionExtra_k();
+    }
   }
 }

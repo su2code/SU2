@@ -94,13 +94,99 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
- public: // Make public for easy debug access
-  int AD_spDP_InputIndex = -1; // As we have an input delta_pressure (DP) and output DP we store those indices to seed the adjoint and extract it properly. Just like the solution itself.
-  int AD_spDP_OutputIndex = -1; // init with -1 for easy debugging
-  su2double spDP_Direct = -1; // stores the streamwise periodic pressure drop in order to reset it later
+  VectorType SolutionExtra; // Stores the full adjoint solution
+  VectorType ExternalExtra; // External storage for the adjoint value (i.e. for the OF mainly)
 
-  su2double Solution_adjDP_BGS_k = -1; // TK:: necessary for multizone. "Solution" val will be overwritten by crossterm evaluations
-  su2double External_adjDP = -1; // TK:: contains the OF derivate wrt dp
+  VectorType SolutionExtra_BGS_k; // Intermediate storage, enables cross term extraction as that is also pushed to Solution
+
+  su2vector<int> AD_InputIndex_Extra; // Stores input index of the Extra vars
+  su2vector<int> AD_OutputIndex_Extra; // Stores output index of the Extra vars
+
+  VectorType SolutionExtra_Direct; // Stores values of the original direct solution, for later resetting
+  su2vector<su2double*> SolutionExtra_OriginAdresses; // Stores pointers to the original vars, these vars are resetted via this pointer vector
+
+ public: // Make public for easy debug access
+
+  // Add an su2double to the origin addresses for the extra solution variables
+  // only called by direct solver
+  inline void AddSolutionExtra_OriginAdress(su2double* val) {
+    SolutionExtra_OriginAdresses.resize(1); // here a push_back would be premium
+    SolutionExtra_OriginAdresses[0] = val;
+
+    AD_InputIndex_Extra.resize(SolutionExtra_OriginAdresses.size()) = -1;
+    AD_OutputIndex_Extra.resize(SolutionExtra_OriginAdresses.size()) = -1;
+  }
+
+  // Store a hardcopy of the original extra solution vars
+  inline void SetSolutionExtra_Direct(su2vector<su2double*> sol_extra_adresses, bool multizone) {
+    // Allocate arrays based on how many Extra Solution vars were requested
+    SolutionExtra_Direct.resize(sol_extra_adresses.size()) = su2double(0.0);
+    SolutionExtra.resize(sol_extra_adresses.size()) = su2double(1e-16); // Initial value set here
+    if (multizone) {
+      ExternalExtra.resize(sol_extra_adresses.size()) = su2double(0.0);
+      SolutionExtra_BGS_k.resize(sol_extra_adresses.size()) = su2double(1e-16);
+    }
+
+    for (auto iEntry = 0ul; iEntry < sol_extra_adresses.size(); iEntry++)
+      SolutionExtra_Direct[iEntry] = *sol_extra_adresses[iEntry];
+  }
+
+  // Get the Addresses of the Extra primal vars in order to reset their value
+  inline const su2vector<su2double*>& GetSolutionExtra_OriginAdresses() const {
+    return SolutionExtra_OriginAdresses;
+  }
+
+  // Reset the primal extra solution to its original value
+  inline void SetSolutionExtra(VectorType direct_sol) {
+    assert(SolutionExtra_OriginAdresses.size() == direct_sol.size());
+    for (auto iEntry = 0ul; iEntry < direct_sol.size(); iEntry++)
+      *SolutionExtra_OriginAdresses[iEntry] = direct_sol(iEntry);
+  }
+
+  // Get the stored (hardcopied) original primal values of the extra solution
+  inline const VectorType& GetSolutionExtra_Direct() const {
+    return SolutionExtra_Direct;
+  }
+
+  // Multizone only; Set BGSSolution_k to Solution (storage of the OF-grad)
+  void Set_BGSSolutionExtra_k() {
+    assert(SolutionExtra_BGS_k.size() == SolutionExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++) {
+      SolutionExtra_BGS_k[iEntry] = SolutionExtra[iEntry];
+    }
+  }
+
+  void Restore_BGSSolutionExtra_k() {
+    assert(SolutionExtra.size() == SolutionExtra_BGS_k.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++) {
+      SolutionExtra[iEntry] = SolutionExtra_BGS_k[iEntry];
+    }
+  }
+
+  void Add_SolutionExtra_To_ExternalExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      ExternalExtra[iEntry] = SolutionExtra[iEntry];
+  }
+
+  void Add_ExternalExtra_To_SolutionExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      SolutionExtra[iEntry] += ExternalExtra[iEntry];
+  }
+
+  // seed, pass by value ok here
+  inline void SetAdjointSolutionExtra(const VectorType adj_sol) {
+    for (unsigned long iEntry = 0; iEntry < AD_OutputIndex_Extra.size(); iEntry++)
+      AD::SetDerivative(AD_OutputIndex_Extra[iEntry], SU2_TYPE::GetValue(adj_sol[iEntry]));
+  }
+  inline VectorType& GetSolutionExtra() { return SolutionExtra; }
+
+  // pass by value of adj_sol via VectorType not ok, has to be by reference
+  void ExtractAdjoint_SolutionExtra(VectorType & adj_sol) const {
+    for (auto iEntry = 0ul; iEntry < AD_InputIndex_Extra.size(); iEntry++)
+      adj_sol(iEntry) = AD::GetDerivative(AD_InputIndex_Extra[iEntry]);
+  }
 
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
