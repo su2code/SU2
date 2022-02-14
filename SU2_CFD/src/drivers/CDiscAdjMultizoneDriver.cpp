@@ -922,10 +922,8 @@ void CDiscAdjMultizoneDriver::Set_Solution_To_BGSSolution_k(unsigned short iZone
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint()) {
+    if (solver && solver->GetAdjoint())
       solver->GetNodes()->Restore_BGSSolution_k();
-      solver->GetNodes()->Restore_BGSSolutionExtra_k();
-    }
   }
 }
 
@@ -933,10 +931,8 @@ void CDiscAdjMultizoneDriver::Set_BGSSolution_k_To_Solution(unsigned short iZone
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint()) {
+    if (solver && solver->GetAdjoint())
       solver->GetNodes()->Set_BGSSolution_k();
-      solver->GetNodes()->Set_BGSSolutionExtra_k();
-    }
   }
 }
 
