@@ -875,10 +875,8 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint()) {
+    if (solver && solver->GetAdjoint())
       solver->Add_Solution_To_External();
-      solver->GetNodes()->Add_SolutionExtra_To_ExternalExtra();
-    }
   }
 }
 
@@ -897,10 +895,8 @@ void CDiscAdjMultizoneDriver::Add_External_To_Solution(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint()) {
+    if (solver && solver->GetAdjoint())
       solver->Add_External_To_Solution();
-      solver->GetNodes()->Add_ExternalExtra_To_SolutionExtra();
-    }
   }
 }
 

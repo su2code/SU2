@@ -2198,12 +2198,16 @@ void CSolver::Add_External_To_Solution() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
+
+  base_nodes->Add_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Add_Solution_To_External() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
+
+  base_nodes->Add_SolutionExtra_To_ExternalExtra();
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
