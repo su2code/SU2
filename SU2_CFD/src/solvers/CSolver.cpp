@@ -4170,8 +4170,6 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double Res = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
 
-      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
-
       /*--- Update residual information for current thread. ---*/
       resRMS[iVar] += Res*Res;
       if (fabs(Res) > resMax[iVar]) {

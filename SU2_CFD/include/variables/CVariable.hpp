@@ -147,21 +147,6 @@ protected:
     return SolutionExtra_Direct;
   }
 
-  // Multizone only; Set BGSSolution_k to Solution (storage of the OF-grad)
-  void Set_BGSSolutionExtra_k() {
-    assert(SolutionExtra_BGS_k.size() == SolutionExtra.size());
-    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++) {
-      SolutionExtra_BGS_k[iEntry] = SolutionExtra[iEntry];
-    }
-  }
-
-  void Restore_BGSSolutionExtra_k() {
-    assert(SolutionExtra.size() == SolutionExtra_BGS_k.size());
-    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++) {
-      SolutionExtra[iEntry] = SolutionExtra_BGS_k[iEntry];
-    }
-  }
-
   void Add_SolutionExtra_To_ExternalExtra() {
     assert(SolutionExtra.size() == ExternalExtra.size());
     for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)

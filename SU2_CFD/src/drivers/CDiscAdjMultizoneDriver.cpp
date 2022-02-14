@@ -430,6 +430,7 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
+      Set_BGSSolution_k_To_Solution(iZone);
     }
 
     /*--- Set the multizone output. ---*/
@@ -940,9 +941,7 @@ void CDiscAdjMultizoneDriver::SetResidual_BGS(unsigned short iZone) {
 
   for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-    if (solver && solver->GetAdjoint()) {
+    if (solver && solver->GetAdjoint())
       solver->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-      solver->GetNodes()->Set_BGSSolutionExtra_k();
-    }
   }
 }
