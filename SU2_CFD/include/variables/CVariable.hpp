@@ -118,7 +118,7 @@ protected:
   }
 
   // Store a hardcopy of the original extra solution vars
-  inline void SetSolutionExtra_Direct(su2vector<su2double*> sol_extra_addresses, bool multizone) {
+  inline void SetSolutionExtra_Direct(const su2vector<su2double*>& sol_extra_addresses, bool multizone) {
     // Allocate arrays based on how many Extra Solution vars were requested
     SolutionExtra_Direct.resize(sol_extra_addresses.size()) = su2double(0.0);
     SolutionExtra.resize(sol_extra_addresses.size()) = su2double(1e-16); // Initial value set here
