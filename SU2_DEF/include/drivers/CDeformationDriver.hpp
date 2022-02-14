@@ -42,9 +42,6 @@
 
 class CDeformationDriver : public CDriverBase {
 
-protected:
-  CNumerics ***numerics_container;
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -76,10 +73,10 @@ public:
   void CommunicateMeshDisplacements(void);
 
 protected:
-  /*!
-   * \brief Init_Containers
-   */
-  void SetContainers_Null();
+  // /*!
+  //  * \brief Init_Containers
+  //  */
+  // void SetContainer_Null();
 
   /*!
    * \brief Read in the config and mesh files.

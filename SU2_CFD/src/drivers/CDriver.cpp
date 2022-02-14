@@ -343,7 +343,7 @@ void CDriver::SetContainers_Null(){
   interface_container            = new CInterface**[nZone] ();
   interface_types                = new unsigned short*[nZone] ();
   output_container               = new COutput*[nZone] ();
-  nInst                          = new unsigned short[nZone] ();
+  nInst                          = new unsigned short[nZone] ();  // TODO: remove (moved to base class)
   driver_config                  = nullptr;
   driver_output                  = nullptr;
 

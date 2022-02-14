@@ -54,11 +54,6 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
     /*--- Copy the config filename ---*/
     strcpy(config_file_name, confFile);
     
-    /*--- Initialize the configuration of the driver ---*/
-    driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
-    
-    nZone = driver_config->GetnZone();
-    
     /*--- Initialize containers --- */
     
     SetContainers_Null();
@@ -107,35 +102,40 @@ CDeformationDriver::~CDeformationDriver(void) {
     
 }
 
-void CDeformationDriver::SetContainers_Null() {
-    
-    /*--- Create pointers to all of the classes that may be used throughout
-     the SU2_DEF code. In general, the pointers are instantiated down a
-     hierarchy over all zones as described in the comments below. ---*/
-    config_container   = new CConfig*[nZone];
-    output_container   = new COutput*[nZone];
-    geometry_container = new CGeometry***[nZone];
-    surface_movement   = new CSurfaceMovement*[nZone];
-    grid_movement      = new CVolumetricMovement**[nZone];
-    
-    solver_container   = new CSolver****[nZone];
-    numerics_container = new CNumerics**[nZone];
-    
-    for (iZone = 0; iZone < nZone; iZone++) {
-        config_container[iZone]   = nullptr;
-        output_container[iZone]   = nullptr;
-        geometry_container[iZone] = nullptr;
-        surface_movement[iZone]   = nullptr;
-        grid_movement[iZone]      = nullptr;
-        solver_container[iZone]   = nullptr;
-        numerics_container[iZone] = nullptr;
-    }
-}
+// void CDeformationDriver::SetContainers_Null() {
+//     
+//     /*--- Create pointers to all of the classes that may be used throughout
+//      the SU2_DEF code. In general, the pointers are instantiated down a
+//      hierarchy over all zones as described in the comments below. ---*/
+//     config_container   = new CConfig*[nZone];
+//     output_container   = new COutput*[nZone];
+//     geometry_container = new CGeometry***[nZone];
+//     surface_movement   = new CSurfaceMovement*[nZone];
+//     grid_movement      = new CVolumetricMovement**[nZone];
+//     
+//     solver_container   = new CSolver****[nZone];
+//     numerics_container = new CNumerics**[nZone];
+//     
+//     for (iZone = 0; iZone < nZone; iZone++) {
+//         config_container[iZone]   = nullptr;
+//         output_container[iZone]   = nullptr;
+//         geometry_container[iZone] = nullptr;
+//         surface_movement[iZone]   = nullptr;
+//         grid_movement[iZone]      = nullptr;
+//         solver_container[iZone]   = nullptr;
+//         numerics_container[iZone] = nullptr;
+//     }
+// }
 
 void CDeformationDriver::Input_Preprocessing() {
     
     /*--- Initialize a char to store the zone filename ---*/
     char zone_file_name[MAX_STRING_SIZE];
+    
+    /*--- Initialize the configuration of the driver ---*/
+    driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
+    
+    nZone = driver_config->GetnZone();  
     
     /*--- Loop over all zones to initialize the various classes. In most
      cases, nZone is equal to one. This represents the solution of a partial
@@ -186,7 +186,11 @@ void CDeformationDriver::Geometrical_Preprocessing() {
         geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
         
         /*--- Build the grid data structures using the ParMETIS coloring. ---*/
-        
+        unsigned short nInst_Zone = nInst[iZone];
+        unsigned short nMesh = 1;
+
+        geometry_container[iZone] = new CGeometry**[nInst_Zone] ();
+        geometry_container[iZone][INST_0] = new CGeometry*[nMesh] ();
         geometry_container[iZone][INST_0][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
         
         /*--- Deallocate the memory of geometry_aux ---*/
@@ -263,21 +267,36 @@ void CDeformationDriver::Output_Preprocessing() {
 void CDeformationDriver::Solver_Preprocessing() {
     
     for (iZone = 0; iZone < nZone; iZone++) {
+        unsigned short nInst_Zone = nInst[iZone];
+        unsigned short nMesh = 1;
+        unsigned short nSols = MAX_SOLS;
+
+
+        solver_container[iZone] = new CSolver*** [nInst_Zone] ();
+        solver_container[iZone][INST_0] = new CSolver** [nMesh] ();
+        solver_container[iZone][INST_0][MESH_0] = new CSolver* [nSols] ();
         solver_container[iZone][INST_0][MESH_0][MESH_SOL] = new CMeshSolver(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-    }
-    
+    } 
 }
 
 void CDeformationDriver::Numerics_Preprocessing() {
     
     for (iZone = 0; iZone < nZone; iZone++) {
-        numerics_container[iZone] = new CNumerics* [omp_get_num_threads() * MAX_TERMS]();
+        unsigned short nInst_Zone = nInst[iZone];
+        unsigned short nMesh = 1;
+        unsigned short nSols = MAX_SOLS;
+        unsigned int nTerm = omp_get_num_threads() * MAX_TERMS;
+
+        numerics_container[iZone] = new CNumerics**** [nInst_Zone] ();
+        numerics_container[iZone][INST_0] = new CNumerics*** [nMesh] ();
+        numerics_container[iZone][INST_0][MESH_0] = new CNumerics** [nSols] ();
+        numerics_container[iZone][INST_0][MESH_0][MESH_SOL] = new CNumerics* [nTerm] ();
         
         for (int thread = 0; thread < omp_get_max_threads(); ++thread) {
             const int iTerm = FEA_TERM + thread * MAX_TERMS;
             const int nDim = geometry_container[iZone][INST_0][MESH_0]->GetnDim();
             
-            numerics_container[iZone][iTerm] = new CFEAMeshElasticity(nDim, nDim, geometry_container[iZone][INST_0][MESH_0]->GetnElem(), config_container[iZone]);
+            numerics_container[iZone][INST_0][MESH_0][MESH_SOL][iTerm] = new CFEAMeshElasticity(nDim, nDim, geometry_container[iZone][INST_0][MESH_0]->GetnElem(), config_container[iZone]);
         }
         
     }
@@ -322,11 +341,11 @@ void CDeformationDriver::Update() {
         
         /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
         
-        solver_container[iZone][INST_0][MESH_0][MESH_SOL]->SetMesh_Stiffness(numerics_container[iZone], config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][MESH_SOL]->SetMesh_Stiffness(numerics_container[iZone][INST_0][MESH_0][MESH_SOL], config_container[iZone]);
         
         /*--- Deform the volume grid around the new boundary locations ---*/
         
-        solver_container[iZone][INST_0][MESH_0][MESH_SOL]->DeformMesh(geometry_container[iZone][INST_0][MESH_0], numerics_container[iZone], config_container[iZone]);
+        solver_container[iZone][INST_0][MESH_0][MESH_SOL]->DeformMesh(geometry_container[iZone][INST_0][MESH_0], numerics_container[iZone][INST_0][MESH_0][MESH_SOL], config_container[iZone]);
         
     }
 }
@@ -511,7 +530,7 @@ void CDeformationDriver::Output() {
         /*--- Load the data --- */
         
         output_container[iZone]->Load_Data(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
-        
+
         output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
         
         /*--- Set the file names for the visualization files ---*/
@@ -538,7 +557,7 @@ void CDeformationDriver::Output() {
             
             if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
             
-            surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container[INST_0][MESH_0], config_container);
+            surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
             
         }
     }
@@ -555,7 +574,10 @@ void CDeformationDriver::Postprocessing() {
     for (iZone = 0; iZone < nZone; iZone++) {
         if (numerics_container[iZone] != nullptr) {
             for (unsigned int iTerm = 0; iTerm < MAX_TERMS*omp_get_max_threads(); iTerm++) {
-                delete numerics_container[iZone][iTerm];
+                delete numerics_container[iZone][INST_0][MESH_0][MESH_SOL][iTerm];
+                delete [] numerics_container[iZone][INST_0][MESH_0][MESH_SOL];
+                delete [] numerics_container[iZone][INST_0][MESH_0];
+                delete [] numerics_container[iZone][INST_0];
             }
             delete [] numerics_container[iZone];
         }
@@ -565,6 +587,9 @@ void CDeformationDriver::Postprocessing() {
     
     for (iZone = 0; iZone < nZone; iZone++) {
         delete solver_container[iZone][INST_0][MESH_0][MESH_SOL];
+        delete [] solver_container[iZone][INST_0][MESH_0];
+        delete [] solver_container[iZone][INST_0];
+        delete [] solver_container[iZone];
     }
     delete [] solver_container;
     if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
@@ -572,6 +597,8 @@ void CDeformationDriver::Postprocessing() {
     if (geometry_container != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
             delete geometry_container[iZone][INST_0][MESH_0];
+            delete [] geometry_container[iZone][INST_0];
+            delete [] geometry_container[iZone];
         }
         delete [] geometry_container;
     }
