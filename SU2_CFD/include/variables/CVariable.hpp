@@ -103,22 +103,21 @@ protected:
   su2vector<int> AD_OutputIndex_Extra; // Stores output index of the Extra vars
 
   VectorType SolutionExtra_Direct; // Stores values of the original direct solution, for later resetting
-  su2vector<su2double*> SolutionExtra_OriginAdresses; // Stores pointers to the original vars, these vars are resetted via this pointer vector
+  vector<su2double*> SolutionExtra_OriginAdresses; // Stores pointers to the original vars, these vars are resetted via this pointer vector
 
  public: // Make public for easy debug access
 
   // Add an su2double to the origin addresses for the extra solution variables
   // only called by direct solver
   inline void AddSolutionExtra_OriginAdress(su2double* val) {
-    SolutionExtra_OriginAdresses.resize(1); // here a push_back would be premium
-    SolutionExtra_OriginAdresses[0] = val;
+    SolutionExtra_OriginAdresses.push_back(val);
 
     AD_InputIndex_Extra.resize(SolutionExtra_OriginAdresses.size()) = -1;
     AD_OutputIndex_Extra.resize(SolutionExtra_OriginAdresses.size()) = -1;
   }
 
   // Store a hardcopy of the original extra solution vars
-  inline void SetSolutionExtra_Direct(const su2vector<su2double*>& sol_extra_addresses, bool multizone) {
+  inline void SetSolutionExtra_Direct(const vector<su2double*>& sol_extra_addresses, bool multizone) {
     // Allocate arrays based on how many Extra Solution vars were requested
     SolutionExtra_Direct.resize(sol_extra_addresses.size()) = su2double(0.0);
     SolutionExtra.resize(sol_extra_addresses.size()) = su2double(1e-16); // Initial value set here
@@ -132,7 +131,7 @@ protected:
   }
 
   // Get the Addresses of the Extra primal vars in order to reset their value
-  inline const su2vector<su2double*>& GetSolutionExtra_OriginAdresses() const {
+  inline const vector<su2double*>& GetSolutionExtra_OriginAdresses() const {
     return SolutionExtra_OriginAdresses;
   }
 
