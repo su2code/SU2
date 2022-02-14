@@ -113,19 +113,14 @@ void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.d
 void CVariable::RegisterSolution(bool input) {
   RegisterContainer(input, Solution, input? AD_InputIndex : AD_OutputIndex);
 
-  if (input) {
-    assert(SolutionExtra_OriginAdresses.size() == AD_InputIndex_Extra.size());
-    for (auto iEntry = 0ul; iEntry < SolutionExtra_OriginAdresses.size(); iEntry++) {
-      AD::RegisterInput(*SolutionExtra_OriginAdresses[iEntry]);
-      AD::SetIndex(AD_InputIndex_Extra[iEntry], *SolutionExtra_OriginAdresses[iEntry]);
-    }
-  }
-  else {
-    assert(SolutionExtra_OriginAdresses.size() == AD_OutputIndex_Extra.size());
-    for (auto iEntry = 0ul; iEntry < SolutionExtra_OriginAdresses.size(); iEntry++) {
-      AD::RegisterOutput(*SolutionExtra_OriginAdresses[iEntry]);
-      AD::SetIndex(AD_OutputIndex_Extra[iEntry], *SolutionExtra_OriginAdresses[iEntry]);
-    }
+  auto& AD_Index_Extra = input ? AD_InputIndex_Extra : AD_OutputIndex_Extra;
+
+  assert(SolutionExtra_OriginAdresses.size() == AD_Index_Extra.size());
+  for (auto iEntry = 0ul; iEntry < SolutionExtra_OriginAdresses.size(); iEntry++) {
+    if (input) AD::RegisterInput(*SolutionExtra_OriginAdresses[iEntry]);
+    else AD::RegisterOutput(*SolutionExtra_OriginAdresses[iEntry]);
+
+    AD::SetIndex(AD_Index_Extra[iEntry], *SolutionExtra_OriginAdresses[iEntry]);
   }
 }
 

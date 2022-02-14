@@ -149,16 +149,6 @@ protected:
   vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
- public:
-  StreamwisePeriodicValues SPvals;
-  inline virtual su2double GetAdjoint_DP() {
-    SU2_MPI::Error("GetAdjoint_DP() got called in CSolver, thats no bueno", CURRENT_FUNCTION);
-    return 0;
-  }
-  inline virtual void SetAdjoint_DP(su2double val) {
-    SU2_MPI::Error("SetAdjoint_DP() got called in CSolver, thats no bueno", CURRENT_FUNCTION);
-  }
- protected:
 
   /*!
    * \brief Pure virtual function, all derived solvers MUST implement a method returning their "nodes".

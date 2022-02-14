@@ -473,7 +473,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   }
   END_SU2_OMP_FOR
 
-
   direct_solver->GetNodes()->SetAdjointSolutionExtra(nodes->GetSolutionExtra());
 }
 
