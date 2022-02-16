@@ -42,6 +42,9 @@
 
 class CDeformationDriver : public CDriverBase {
 
+protected:
+  bool haveSurfaceDeformation = false;  // flag used to determine whether surface deformation is available for output
+
 public:
   /*!
    * \brief Constructor of the class.

@@ -65,24 +65,23 @@ void CDriverBase::SetContainers_Null() {
     grid_movement         = nullptr;
     FFDBox                = nullptr;
     
-    nInst                 = new unsigned short[nZone] ();
-    
     config_container      = new CConfig*[nZone] ();
     output_container      = new COutput*[nZone] ();
     geometry_container    = new CGeometry***[nZone] ();
     solver_container      = new CSolver****[nZone] ();
     numerics_container    = new CNumerics*****[nZone] ();
-    
     surface_movement      = new CSurfaceMovement*[nZone] ();
     grid_movement         = new CVolumetricMovement**[nZone] ();
     FFDBox                = new CFreeFormDefBox**[nZone] ();
     
-    driver_config         = nullptr;
-    driver_output         = nullptr;
+    nInst                 = new unsigned short[nZone] ();
     
     for (iZone = 0; iZone < nZone; iZone++) {
         nInst[iZone] = 1;
     }
+
+    driver_config         = nullptr;
+    driver_output         = nullptr;
 }
 
 map<string, int> CDriverBase::GetBoundaryMarkerIndices() const {
@@ -302,7 +301,7 @@ vector<bool> CDriverBase::GetDomain() const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     
     const auto nPoint = geometry->GetnPoint();
-    vector<bool> values(nPoint);
+    vector<bool> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         values.push_back(geometry->nodes->GetDomain(iPoint));
@@ -315,7 +314,7 @@ vector<bool> CDriverBase::GetDomainMarker(unsigned short iMarker) const {
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     
     const auto nVertex = geometry->GetnVertex(iMarker);
-    vector<bool> values(nVertex);
+    vector<bool> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();

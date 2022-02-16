@@ -116,14 +116,7 @@ CDeformationDriver::~CDeformationDriver(void) {
 //     solver_container   = new CSolver****[nZone];
 //     numerics_container = new CNumerics**[nZone];
 //     
-//     for (iZone = 0; iZone < nZone; iZone++) {
-//         config_container[iZone]   = nullptr;
-//         output_container[iZone]   = nullptr;
-//         geometry_container[iZone] = nullptr;
-//         surface_movement[iZone]   = nullptr;
-//         grid_movement[iZone]      = nullptr;
-//         solver_container[iZone]   = nullptr;
-//         numerics_container[iZone] = nullptr;
+
 //     }
 // }
 
@@ -243,6 +236,9 @@ void CDeformationDriver::Geometrical_Preprocessing() {
         geometry_container[iZone][INST_0][MESH_0]->PreprocessP2PComms(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         
     }
+        
+    /*--- Get the number of dimensions ---*/
+    nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
 }
 
 void CDeformationDriver::Output_Preprocessing() {
@@ -351,6 +347,8 @@ void CDeformationDriver::Update() {
 }
 
 void CDeformationDriver::Update_Legacy() {
+
+    std::cout << "UPDATE LEGACY CALLED" << std::endl; 
     
     for (iZone = 0; iZone < nZone; iZone++){
         
@@ -393,6 +391,7 @@ void CDeformationDriver::Update_Legacy() {
                 /*--- Definition and initialization of the surface deformation class ---*/
                 
                 surface_movement[iZone] = new CSurfaceMovement();
+                haveSurfaceDeformation = true;
                 
                 /*--- Copy coordinates to the surface structure ---*/
                 
@@ -553,12 +552,15 @@ void CDeformationDriver::Output() {
             (config_container[ZONE_0]->GetDesign_Variable(0) != TRANSLATE_GRID) &&
             (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID)) {
             
-            /*--- Write the the free-form deformation boxes after deformation. ---*/
-            
-            if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
-            
-            surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
-            
+            /*--- Write the the free-form deformation boxes after deformation (if defined). ---*/
+            if (true) {
+                if (rank == MASTER_NODE) cout << "No FFD information available." << endl;
+            }
+            else {
+                if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
+
+                surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+            }  
         }
     }
 }
