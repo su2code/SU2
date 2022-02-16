@@ -138,7 +138,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT) {
       if (config->GetTime_Domain()) {
         // Pre-fill map with CWindowAverages with the specified windowing-function
-        windowedTimeAverages.insert(historyOutput_List[iField], CWindowedAverage{config->GetKindWindow()});
+        windowedTimeAverages.insert({historyOutput_List[iField], CWindowedAverage{config->GetKindWindow()}});
       }
     }
   }
