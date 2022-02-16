@@ -130,6 +130,19 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   cauchyValue = 0.0;
   convergence = false;
 
+  /*--- Prepare windowedAverages ---*/
+  for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++) {
+    const string& fieldIdentifier = historyOutput_List[iField];
+    const HistoryOutputField& currentField = historyOutput_Map.at(fieldIdentifier);
+
+    if (currentField.fieldType == HistoryFieldType::COEFFICIENT) {
+      if (config->GetTime_Domain()) {
+        // Pre-fill map with CWindowAverages with the specified windowing-function
+        windowedTimeAverages.insert(historyOutput_List[iField], CWindowedAverage{config->GetKindWindow()});
+      }
+    }
+  }
+
   /*--- Initialize time convergence monitoring structure ---*/
 
   nWndCauchy_Elems = config->GetWnd_Cauchy_Elems();
