@@ -80,6 +80,11 @@ private:
   */
   inline CWindowedAverage(WINDOW_FUNCTION windowId) : windowingFunctionId(windowId)  {  }
 
+    /*!
+   * \brief Creates a new CWindowedAverage with square windowing function
+   */
+  inline CWindowedAverage() : windowingFunctionId(WINDOW_FUNCTION::SQUARE) {}
+
   /*!
    * \brief Returns the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration
    */
