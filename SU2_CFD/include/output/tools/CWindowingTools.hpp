@@ -113,5 +113,5 @@ private:
   * \brief Caches the weighted sums from a previous time-step for later re-use
   * \param windowWidth - Total width of the window, over which the samples were weighted during the previous timestep
   */
-  void updateCachedSum(unsigned long windowWidth) const;
+  su2double updateCachedSum(unsigned long windowWidth) const;
 };
