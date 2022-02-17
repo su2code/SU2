@@ -1929,7 +1929,7 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if (config->GetTime_Domain()){
         windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
-        SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
+        SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].GetVal());
         if (config->GetDirectDiff() != NO_DERIVATIVE) {
           SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
         }
