@@ -89,7 +89,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
   val = totalSum / static_cast<su2double>(windowWidth);
 }
 
-void CWindowedAverage::updateCachedSum(unsigned long windowWidth) const { 
+su2double CWindowedAverage::updateCachedSum(unsigned long windowWidth) const { 
     su2double weightedSum = 0.;
     // Handle square window
     if (WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
