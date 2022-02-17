@@ -70,9 +70,9 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
   su2double totalSum = 0;
   unsigned long windowWidth = 0;
   if (curTimeIter < startIter) return;  // Averaging not yet started.
+  windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
   if (curTimeIter != lastTimeIter) {           // Handle new timestep
-    if (curTimeIter > startIter) {
-      windowWidth = curTimeIter - startIter;    // Calculate total width of window for this iteration
+      if (curTimeIter > startIter) {
       cachedSum = updateCachedSum(windowWidth-1);  // Save weighted sum from last time step for later use
     } 
     lastTimeIter = curTimeIter;                // New time iteration step, update iteration number.
