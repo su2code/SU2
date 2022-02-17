@@ -92,7 +92,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
 su2double CWindowedAverage::updateCachedSum(unsigned long windowWidth) const { 
     su2double weightedSum = 0.;
     // Handle square window
-    if (WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
+    if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
     // Handle non-trivial windows
     if (values.size() == 0) return 0.;  // Handle first timestep
       for (unsigned long curTimeIter = 0; curTimeIter < values.size(); curTimeIter++) {
