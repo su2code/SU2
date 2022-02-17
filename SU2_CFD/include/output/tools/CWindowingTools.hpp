@@ -78,12 +78,19 @@ private:
   /*!
   * \brief Creates a new CWindowedAverage with the specified windowing function
   */
-  inline CWindowedAverage(WINDOW_FUNCTION windowId) : windowingFunctionId(windowId)  {  }
-
+  inline CWindowedAverage(WINDOW_FUNCTION windowId) : windowingFunctionId(windowId)  {
+    if (windowId==WINDOW_FUNCTION::SQUARE) {
+      values.push_back(0.);
+    }  
+  }
     /*!
    * \brief Creates a new CWindowedAverage with square windowing function
    */
-  inline CWindowedAverage() : windowingFunctionId(WINDOW_FUNCTION::SQUARE) {}
+  inline CWindowedAverage() : windowingFunctionId(WINDOW_FUNCTION::SQUARE) {
+      if (windowingFunctionId==WINDOW_FUNCTION::SQUARE) {
+      values.push_back(0.);
+    }
+  }
 
   /*!
    * \brief Returns the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration
