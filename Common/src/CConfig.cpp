@@ -1572,6 +1572,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
+  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -1588,8 +1590,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("HIGHLITE_AREA", Highlite_Area, 1.0);
   /* DESCRIPTION: Fan poly efficiency */
   addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
-  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
-  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
@@ -4788,8 +4788,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    pressure drop objective function is selected. ---*/
 
   for (unsigned short iObj = 0; iObj < nObj; iObj++) {
-    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze != 2)) {
-      SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
+    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze < 2)) {
+      SU2_MPI::Error("Must list the first two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name, ...).", CURRENT_FUNCTION);
     }
   }
 
@@ -5733,8 +5733,16 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         break;
       }
     }
+    
     if(!found) {
-      SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      if (nZone==1)
+        SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      // In case of multiple zones, the markers might appear only in zonal config and not in the Master.
+      // A loop over all zones would need to be included which is not straight forward as this can only be
+      // checked once all zonal configs are read.
+      else if (rank == MASTER_NODE)
+        cout << "Warning: DV_MARKER contains marker names that do not exist in the lists of BCs of the master config file.\n"
+                "Make sure the marker names exist in the zonal config files" << endl;
     }
   }
 
