@@ -131,7 +131,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   convergence = false;
 
   /*--- Prepare windowedAverages ---*/
-  for (unsigned short iField = 0; iField < historyOutput_List.size(); iField++) {
+  for (size_t iField = 0; iField < historyOutput_List.size(); iField++) {
     const string& fieldIdentifier = historyOutput_List[iField];
     const HistoryOutputField& currentField = historyOutput_Map.at(fieldIdentifier);
 
