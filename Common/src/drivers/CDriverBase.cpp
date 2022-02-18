@@ -38,7 +38,7 @@ CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPIC
     StopTime(0.0),
     UsedTime(0.0),
     TimeIter(0),
-    nZone()
+    nZone(val_nZone)
 {
     
 }
@@ -52,8 +52,6 @@ void CDriverBase::SetContainers_Null() {
     /*--- Create pointers to all of the classes that may be used by drivers. In general, the pointers are instantiated down a
      hierarchy over all zones, multigrid levels, equation sets, and equation
      terms as described in the comments below. ---*/
-    
-    nInst                 = nullptr;
     
     config_container      = nullptr;
     output_container      = nullptr;
@@ -74,7 +72,7 @@ void CDriverBase::SetContainers_Null() {
     grid_movement         = new CVolumetricMovement**[nZone] ();
     FFDBox                = new CFreeFormDefBox**[nZone] ();
     
-    nInst                 = new unsigned short[nZone] ();
+    nInst                 = new unsigned short[nZone];
     
     for (iZone = 0; iZone < nZone; iZone++) {
         nInst[iZone] = 1;

@@ -54,10 +54,7 @@ class CDiscAdjDeformationDriver : public CDriverBase {
 
 protected:
     su2double** Gradient;
-    ofstream Gradient_file;
-    CGeometry ***geometry_container;              /*!< \brief Geometrical definition of the problem. */
-    CSurfaceMovement **surface_movement;
-    CVolumetricMovement **grid_movement;
+    ofstream Gradient_file; 
     
 public:
     /*!
@@ -83,10 +80,6 @@ public:
     void Postprocessing();
     
 protected:
-    /*!
-     * \brief Init_Containers
-     */
-    void SetContainers_Null();
     
     /*!
      * \brief Read in the config and mesh files.
@@ -140,7 +133,7 @@ protected:
      * \param[in] val_nZone - Number of Zones.
      */
     
-    void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+    void SetSensitivity_Files(CGeometry ****geometry, CConfig **config, unsigned short val_nZone);
     
     /*!
      * \brief Treatment of derivatives with the Sobolev smoothing solver.

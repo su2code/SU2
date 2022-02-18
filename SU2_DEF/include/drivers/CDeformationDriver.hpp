@@ -76,11 +76,6 @@ public:
   void CommunicateMeshDisplacements(void);
 
 protected:
-  // /*!
-  //  * \brief Init_Containers
-  //  */
-  // void SetContainer_Null();
-
   /*!
    * \brief Read in the config and mesh files.
    */

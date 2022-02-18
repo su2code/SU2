@@ -80,7 +80,7 @@ public:
     /*!
      * \brief Destructor of the class.
      */
-    ~CDriverBase(void);
+    virtual ~CDriverBase(void);
     
     /*!
      * \brief A virtual member.

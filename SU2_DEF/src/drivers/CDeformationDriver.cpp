@@ -51,9 +51,6 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
     rank = SU2_MPI::GetRank();
     size = SU2_MPI::GetSize();
     
-    /*--- Copy the config filename ---*/
-    strcpy(config_file_name, confFile);
-    
     /*--- Initialize containers --- */
     
     SetContainers_Null();
@@ -102,24 +99,6 @@ CDeformationDriver::~CDeformationDriver(void) {
     
 }
 
-// void CDeformationDriver::SetContainers_Null() {
-//     
-//     /*--- Create pointers to all of the classes that may be used throughout
-//      the SU2_DEF code. In general, the pointers are instantiated down a
-//      hierarchy over all zones as described in the comments below. ---*/
-//     config_container   = new CConfig*[nZone];
-//     output_container   = new COutput*[nZone];
-//     geometry_container = new CGeometry***[nZone];
-//     surface_movement   = new CSurfaceMovement*[nZone];
-//     grid_movement      = new CVolumetricMovement**[nZone];
-//     
-//     solver_container   = new CSolver****[nZone];
-//     numerics_container = new CNumerics**[nZone];
-//     
-
-//     }
-// }
-
 void CDeformationDriver::Input_Preprocessing() {
     
     /*--- Initialize a char to store the zone filename ---*/
@@ -142,6 +121,7 @@ void CDeformationDriver::Input_Preprocessing() {
         
         if (driver_config->GetnConfigFiles() > 0){
             strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+            
             config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_DEF, iZone, nZone, true);
         } else {
             config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_DEF, iZone, nZone, true);
@@ -179,6 +159,7 @@ void CDeformationDriver::Geometrical_Preprocessing() {
         geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
         
         /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+        
         unsigned short nInst_Zone = nInst[iZone];
         unsigned short nMesh = 1;
 
@@ -348,13 +329,13 @@ void CDeformationDriver::Update() {
 
 void CDeformationDriver::Update_Legacy() {
 
-    std::cout << "UPDATE LEGACY CALLED" << std::endl; 
-    
     for (iZone = 0; iZone < nZone; iZone++){
         
         if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+            unsigned short nInst_Zone = nInst[iZone];
             
             /*--- Definition of the Class for grid movement ---*/
+            grid_movement[iZone] = new CVolumetricMovement* [nInst_Zone] ();
             grid_movement[iZone][INST_0] = new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
             
             /*--- Save original coordinates to be reused in convexity checking procedure ---*/
@@ -588,10 +569,12 @@ void CDeformationDriver::Postprocessing() {
     if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
     
     for (iZone = 0; iZone < nZone; iZone++) {
-        delete solver_container[iZone][INST_0][MESH_0][MESH_SOL];
-        delete [] solver_container[iZone][INST_0][MESH_0];
-        delete [] solver_container[iZone][INST_0];
-        delete [] solver_container[iZone];
+        if (solver_container[iZone] != nullptr) {
+            delete solver_container[iZone][INST_0][MESH_0][MESH_SOL];
+            delete [] solver_container[iZone][INST_0][MESH_0];
+            delete [] solver_container[iZone][INST_0];
+            delete [] solver_container[iZone];
+        }
     }
     delete [] solver_container;
     if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
@@ -606,6 +589,12 @@ void CDeformationDriver::Postprocessing() {
     }
     if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
     
+    for (iZone = 0; iZone < nZone; iZone++) {
+        delete [] FFDBox[iZone];
+    }
+    delete [] FFDBox;
+    if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+    
     if (surface_movement != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
             delete surface_movement[iZone];
@@ -617,6 +606,7 @@ void CDeformationDriver::Postprocessing() {
     if (grid_movement != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
             delete grid_movement[iZone][INST_0];
+            delete [] grid_movement[iZone];
         }
         delete [] grid_movement;
     }
@@ -637,6 +627,8 @@ void CDeformationDriver::Postprocessing() {
         delete [] output_container;
     }
     if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
+    
+    if (nInst != nullptr) delete [] nInst;
     
     /*--- Exit the solver cleanly ---*/
     
