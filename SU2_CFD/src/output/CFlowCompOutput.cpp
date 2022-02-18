@@ -263,7 +263,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   SetVolumeOutputFields_ScalarResidual(config);
 
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+  if (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
     AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
     if (nDim == 3) {
@@ -337,7 +337,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
   }
 
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+  if (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
     SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
     if (nDim == 3){

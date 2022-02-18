@@ -2246,7 +2246,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
+  ENUM_LIMITER kindLimiter = config->GetKind_SlopeLimit();
   const auto& solution = base_nodes->GetSolution();
   const auto& gradient = base_nodes->GetGradient_Reconstruction();
   auto& solMin = base_nodes->GetSolution_Min();

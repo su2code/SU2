@@ -1861,7 +1861,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
+  addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, ENUM_LIMITER::VENKATAKRISHNAN);
   jst_coeff[0] = 0.5; jst_coeff[1] = 0.02;
   /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
   addDoubleArrayOption("JST_SENSOR_COEFF", 2, jst_coeff);
@@ -1885,7 +1885,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
+  addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, ENUM_LIMITER::VENKATAKRISHNAN);
   jst_adj_coeff[0] = 0.5; jst_adj_coeff[1] = 0.02;
   /*!\brief ADJ_JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the adjoint JST method. \ingroup Config*/
   addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, jst_adj_coeff);
@@ -1896,7 +1896,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_TURB", MUSCL_Turb, false);
   /*!\brief SLOPE_LIMITER_TURB
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
+  addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, ENUM_LIMITER::VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_TURB
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
@@ -1905,14 +1905,14 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
   /*!\brief SLOPE_LIMITER_ADJTURB
    *  \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
-  addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
+  addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, ENUM_LIMITER::VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 
   /*!\brief MUSCL_SPECIES \n DESCRIPTION: Check if the MUSCL scheme should be used \n DEFAULT false \ingroup Config*/
   addBoolOption("MUSCL_SPECIES", MUSCL_Species, false);
-  /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NO_LIMITER \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, NO_LIMITER);
+  /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, ENUM_LIMITER::NONE);
   /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method for species transport \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_SPECIES", Kind_ConvNumScheme_Species, Kind_Centered_Species, Kind_Upwind_Species);
 
@@ -3451,10 +3451,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set limiter for no MUSCL reconstructions ---*/
 
-  if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
-  if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
-  if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
-  if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
+  if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = ENUM_LIMITER::NONE;
+  if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = ENUM_LIMITER::NONE;
+  if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = ENUM_LIMITER::NONE;
+  if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = ENUM_LIMITER::NONE;
 
   /*--- Set the default for thrust in ActDisk ---*/
 
@@ -6394,24 +6394,27 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
         if (MUSCL_Flow) {
           cout << "Second order integration in space, with slope limiter." << endl;
-            switch (Kind_SlopeLimit_Flow) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_Flow) {
+            case ENUM_LIMITER::NONE:
+              cout << "No slope-limiting method. "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN:
+              cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN_WANG:
+              cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            case ENUM_LIMITER::BARTH_JESPERSEN:
+              cout << "Barth-Jespersen slope-limiting method." << endl;
+              break;
+            case ENUM_LIMITER::VAN_ALBADA_EDGE:
+              cout << "Van Albada slope-limiting method implemented by edges." << endl;
+              break;
+            default:
+              SU2_MPI::Error("Unknown or invalid limiter type.", CURRENT_FUNCTION);
+              break;
+          }
         }
         else {
           cout << "First order integration in space." << endl;
@@ -6426,24 +6429,27 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
         if (MUSCL_Turb) {
           cout << "Second order integration in space with slope limiter." << endl;
-            switch (Kind_SlopeLimit_Turb) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_Turb) {
+            case ENUM_LIMITER::NONE:
+              cout << "No slope-limiting method. "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN:
+              cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN_WANG:
+              cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            case ENUM_LIMITER::BARTH_JESPERSEN:
+              cout << "Barth-Jespersen slope-limiting method." << endl;
+              break;
+            case ENUM_LIMITER::VAN_ALBADA_EDGE:
+              cout << "Van Albada slope-limiting method implemented by edges." << endl;
+              break;
+            default:
+              SU2_MPI::Error("Unknown or invalid limiter type.", CURRENT_FUNCTION);
+              break;
+          }
         }
         else {
           cout << "First order integration in space." << endl;
@@ -6471,34 +6477,37 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         if (MUSCL_AdjFlow) {
           cout << "Second order integration with slope limiter." << endl;
-            switch (Kind_SlopeLimit_AdjFlow) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-              case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_AdjFlow) {
+            case ENUM_LIMITER::NONE:
+              cout << "No slope-limiting method. "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN:
+              cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN_WANG:
+              cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            case ENUM_LIMITER::BARTH_JESPERSEN:
+              cout << "Barth-Jespersen slope-limiting method." << endl;
+              break;
+            case ENUM_LIMITER::VAN_ALBADA_EDGE:
+              cout << "Van Albada slope-limiting method implemented by edges." << endl;
+              break;
+            case ENUM_LIMITER::SHARP_EDGES:
+              cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            case ENUM_LIMITER::WALL_DISTANCE:
+              cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            default:
+              SU2_MPI::Error("Unknown or invalid limiter type.", CURRENT_FUNCTION);
+              break;
+          } 
         }
         else {
           cout << "First order integration." << endl;
@@ -6514,34 +6523,37 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the adjoint turbulence model."<< endl;
         if (MUSCL_AdjTurb) {
           cout << "Second order integration with slope limiter." << endl;
-            switch (Kind_SlopeLimit_AdjTurb) {
-              case NO_LIMITER:
-                cout << "No slope-limiting method. "<< endl;
-                break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case BARTH_JESPERSEN:
-                cout << "Barth-Jespersen slope-limiting method." << endl;
-                break;
-              case VAN_ALBADA_EDGE:
-                cout << "Van Albada slope-limiting method implemented by edges." << endl;
-                break;
-              case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-              case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
-                break;
-            }
+          switch (Kind_SlopeLimit_AdjTurb) {
+            case ENUM_LIMITER::NONE:
+              cout << "No slope-limiting method. "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN:
+              cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              break;
+            case ENUM_LIMITER::VENKATAKRISHNAN_WANG:
+              cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            case ENUM_LIMITER::BARTH_JESPERSEN:
+              cout << "Barth-Jespersen slope-limiting method." << endl;
+              break;
+            case ENUM_LIMITER::VAN_ALBADA_EDGE:
+              cout << "Van Albada slope-limiting method implemented by edges." << endl;
+              break;
+            case ENUM_LIMITER::SHARP_EDGES:
+              cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            case ENUM_LIMITER::WALL_DISTANCE:
+              cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+              cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+              cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+              break;
+            default:
+              SU2_MPI::Error("Unknown or invalid limiter type.", CURRENT_FUNCTION);
+              break;
+          }
         }
         else {
           cout << "First order integration." << endl;
@@ -8358,7 +8370,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
                                     unsigned short val_kind_centered, unsigned short val_kind_upwind,
-                                    unsigned short val_kind_slopelimit, bool val_muscl,
+                                    ENUM_LIMITER val_kind_slopelimit, bool val_muscl,
                                     unsigned short val_kind_fem) {
 
   Kind_ConvNumScheme = val_kind_convnumscheme;
@@ -8403,7 +8415,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Species);
       }
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, ENUM_LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8433,7 +8445,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE, NONE);
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, ENUM_LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8517,7 +8529,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, NONE, NONE, ENUM_LIMITER::NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8527,7 +8539,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       Current_DynTime = static_cast<su2double>(TimeIter)*Delta_DynTime;
 
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, NONE, NONE, ENUM_LIMITER::NONE , NONE, NONE);
         SetKind_TimeIntScheme(NONE);
       }
       break;

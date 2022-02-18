@@ -119,11 +119,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iPoint, Int jPoint, bo
 
   if (muscl) {
     switch (limiterType) {
-    case NO_LIMITER:
+    case ENUM_LIMITER::NONE:
       musclUnlimited(iPoint, vector_ij, 0.5, gradients, V.i.all);
       musclUnlimited(jPoint, vector_ij,-0.5, gradients, V.j.all);
       break;
-    case VAN_ALBADA_EDGE:
+    case ENUM_LIMITER::VAN_ALBADA_EDGE:
       musclEdgeLimited(iPoint, jPoint, vector_ij, gradients, V);
       break;
     default:

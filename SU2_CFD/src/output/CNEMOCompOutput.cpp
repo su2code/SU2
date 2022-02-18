@@ -271,7 +271,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   SetVolumeOutputFields_ScalarResidual(config);
 
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+  if (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::VAN_ALBADA_EDGE) {
     // Limiter values
     AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
     AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
@@ -352,7 +352,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("RES_ENERGY_VE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+3));
   }
 
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+  if (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_DENSITY",    iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
     SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
     SetVolumeOutputValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));

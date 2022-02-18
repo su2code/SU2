@@ -62,7 +62,7 @@ if (geometry.GetnDim() == 2) {\
                                config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
 }
   switch (LimiterKind) {
-    case NO_LIMITER:
+    case ENUM_LIMITER::NONE:
     {
       SU2_OMP_FOR_STAT(512)
       for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
@@ -71,29 +71,29 @@ if (geometry.GetnDim() == 2) {\
       END_SU2_OMP_FOR
       break;
     }
-    case BARTH_JESPERSEN:
+    case ENUM_LIMITER::BARTH_JESPERSEN:
     {
-      INSTANTIATE(BARTH_JESPERSEN);
+      INSTANTIATE(ENUM_LIMITER::BARTH_JESPERSEN);
       break;
     }
-    case VENKATAKRISHNAN:
+    case ENUM_LIMITER::VENKATAKRISHNAN:
     {
-      INSTANTIATE(VENKATAKRISHNAN);
+      INSTANTIATE(ENUM_LIMITER::VENKATAKRISHNAN);
       break;
     }
-    case VENKATAKRISHNAN_WANG:
+    case ENUM_LIMITER::VENKATAKRISHNAN_WANG:
     {
-      INSTANTIATE(VENKATAKRISHNAN_WANG);
+      INSTANTIATE(ENUM_LIMITER::VENKATAKRISHNAN_WANG);
       break;
     }
-    case WALL_DISTANCE:
+    case ENUM_LIMITER::WALL_DISTANCE:
     {
-      INSTANTIATE(WALL_DISTANCE);
+      INSTANTIATE(ENUM_LIMITER::WALL_DISTANCE);
       break;
     }
-    case SHARP_EDGES:
+    case ENUM_LIMITER::SHARP_EDGES:
     {
-      INSTANTIATE(SHARP_EDGES);
+      INSTANTIATE(ENUM_LIMITER::SHARP_EDGES);
       break;
     }
     default:

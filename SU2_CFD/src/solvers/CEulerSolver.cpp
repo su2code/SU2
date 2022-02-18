@@ -1566,8 +1566,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == ENUM_LIMITER::VAN_ALBADA_EDGE);
 
   /*--- Common preprocessing steps. ---*/
 
@@ -1694,8 +1694,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
-  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE);
+  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == ENUM_LIMITER::VAN_ALBADA_EDGE);
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;

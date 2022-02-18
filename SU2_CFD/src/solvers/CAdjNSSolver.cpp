@@ -322,7 +322,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
    adjoint equations (note that the flow problem may use different methods). ---*/
 
   bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != ENUM_LIMITER::NONE);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();

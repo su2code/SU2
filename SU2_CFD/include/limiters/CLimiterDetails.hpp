@@ -92,7 +92,7 @@ struct LimiterHelpers
  * \brief Barth-Jespersen specialization.
  */
 template<>
-struct CLimiterDetails<BARTH_JESPERSEN>
+struct CLimiterDetails<ENUM_LIMITER::BARTH_JESPERSEN>
 {
   su2double eps2;
 
@@ -122,7 +122,7 @@ struct CLimiterDetails<BARTH_JESPERSEN>
  * \brief Venkatakrishnan specialization.
  */
 template<>
-struct CLimiterDetails<VENKATAKRISHNAN>
+struct CLimiterDetails<ENUM_LIMITER::VENKATAKRISHNAN>
 {
   su2double eps2;
 
@@ -159,7 +159,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
  * \brief Venkatakrishnan-Wang specialization.
  */
 template<>
-struct CLimiterDetails<VENKATAKRISHNAN_WANG>
+struct CLimiterDetails<ENUM_LIMITER::VENKATAKRISHNAN_WANG>
 {
   static su2activevector sharedMin, sharedMax;
   su2activevector eps2;
@@ -260,7 +260,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
  * \brief Venkatakrishnan with sharp edge modification.
  */
 template<>
-struct CLimiterDetails<SHARP_EDGES>
+struct CLimiterDetails<ENUM_LIMITER::SHARP_EDGES>
 {
   su2double eps1, eps2, sharpCoeff;
 
@@ -301,7 +301,7 @@ struct CLimiterDetails<SHARP_EDGES>
  * \brief Venkatakrishnan with wall distance modification.
  */
 template<>
-struct CLimiterDetails<WALL_DISTANCE>
+struct CLimiterDetails<ENUM_LIMITER::WALL_DISTANCE>
 {
   su2double eps1, eps2, sharpCoeff;
 

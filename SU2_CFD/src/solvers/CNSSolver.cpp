@@ -74,8 +74,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == ENUM_LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
