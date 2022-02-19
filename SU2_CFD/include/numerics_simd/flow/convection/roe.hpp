@@ -59,7 +59,7 @@ protected:
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
-  const ENUM_LIMITER typeLimiter;
+  const LIMITER typeLimiter;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -72,7 +72,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    typeLimiter(static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow())) {
+    typeLimiter(static_cast<LIMITER>(config.GetKind_SlopeLimit_Flow())) {
   }
 
 public:

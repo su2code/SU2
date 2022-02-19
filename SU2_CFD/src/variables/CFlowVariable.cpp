@@ -70,7 +70,7 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  if (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::VAN_ALBADA_EDGE) {
+  if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     Limiter_Primitive.resize(nPoint, nPrimVarGrad) = su2double(0.0);
     Solution_Max.resize(nPoint, nPrimVarGrad) = su2double(0.0);
     Solution_Min.resize(nPoint, nPrimVarGrad) = su2double(0.0);

@@ -58,8 +58,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != ENUM_LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = config->GetKind_SlopeLimit_Flow() == ENUM_LIMITER::VAN_ALBADA_EDGE;
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE;
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   const bool wall_functions = config->GetWall_Functions();

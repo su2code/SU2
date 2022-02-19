@@ -1567,11 +1567,13 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
+  /*--- Find BC string to the numeric-identifier. ---*/
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
+    }
   }
-
 }
 
 void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {

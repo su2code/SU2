@@ -101,7 +101,7 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
  */
 template<class ReconVarType, class PrimVarType, size_t nDim, class VariableType>
 FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iPoint, Int jPoint, bool muscl,
-                                                      ENUM_LIMITER limiterType,
+                                                      LIMITER limiterType,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution) {
@@ -119,11 +119,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iPoint, Int jPoint, bo
 
   if (muscl) {
     switch (limiterType) {
-    case ENUM_LIMITER::NONE:
+    case LIMITER::NONE:
       musclUnlimited(iPoint, vector_ij, 0.5, gradients, V.i.all);
       musclUnlimited(jPoint, vector_ij,-0.5, gradients, V.j.all);
       break;
-    case ENUM_LIMITER::VAN_ALBADA_EDGE:
+    case LIMITER::VAN_ALBADA_EDGE:
       musclEdgeLimited(iPoint, jPoint, vector_ij, gradients, V);
       break;
     default:

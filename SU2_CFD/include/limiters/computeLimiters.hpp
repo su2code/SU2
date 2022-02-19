@@ -35,7 +35,7 @@
  *        of "CLimiterDetails". See corresponding hpp files for further details.
  */
 template<class FieldType, class GradientType>
-void computeLimiters(ENUM_LIMITER LimiterKind,
+void computeLimiters(LIMITER LimiterKind,
                      CSolver* solver,
                      MPI_QUANTITIES kindMpiComm,
                      PERIODIC_QUANTITIES kindPeriodicComm1,
@@ -62,7 +62,7 @@ if (geometry.GetnDim() == 2) {\
                                config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
 }
   switch (LimiterKind) {
-    case ENUM_LIMITER::NONE:
+    case LIMITER::NONE:
     {
       SU2_OMP_FOR_STAT(512)
       for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
@@ -71,29 +71,29 @@ if (geometry.GetnDim() == 2) {\
       END_SU2_OMP_FOR
       break;
     }
-    case ENUM_LIMITER::BARTH_JESPERSEN:
+    case LIMITER::BARTH_JESPERSEN:
     {
-      INSTANTIATE(ENUM_LIMITER::BARTH_JESPERSEN);
+      INSTANTIATE(LIMITER::BARTH_JESPERSEN);
       break;
     }
-    case ENUM_LIMITER::VENKATAKRISHNAN:
+    case LIMITER::VENKATAKRISHNAN:
     {
-      INSTANTIATE(ENUM_LIMITER::VENKATAKRISHNAN);
+      INSTANTIATE(LIMITER::VENKATAKRISHNAN);
       break;
     }
-    case ENUM_LIMITER::VENKATAKRISHNAN_WANG:
+    case LIMITER::VENKATAKRISHNAN_WANG:
     {
-      INSTANTIATE(ENUM_LIMITER::VENKATAKRISHNAN_WANG);
+      INSTANTIATE(LIMITER::VENKATAKRISHNAN_WANG);
       break;
     }
-    case ENUM_LIMITER::WALL_DISTANCE:
+    case LIMITER::WALL_DISTANCE:
     {
-      INSTANTIATE(ENUM_LIMITER::WALL_DISTANCE);
+      INSTANTIATE(LIMITER::WALL_DISTANCE);
       break;
     }
-    case ENUM_LIMITER::SHARP_EDGES:
+    case LIMITER::SHARP_EDGES:
     {
-      INSTANTIATE(ENUM_LIMITER::SHARP_EDGES);
+      INSTANTIATE(LIMITER::SHARP_EDGES);
       break;
     }
     default:

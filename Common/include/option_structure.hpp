@@ -887,7 +887,7 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 /*!
  * \brief Types of slope limiters
  */
-enum class ENUM_LIMITER {
+enum class LIMITER {
   NONE                 , /*!< \brief No limiter. */
   VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
   VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
@@ -896,14 +896,14 @@ enum class ENUM_LIMITER {
   SHARP_EDGES          , /*!< \brief Slope limiter using sharp edges. */
   WALL_DISTANCE          /*!< \brief Slope limiter using wall distance. */
 };
-static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
-  MakePair("NONE", ENUM_LIMITER::NONE)
-  MakePair("VENKATAKRISHNAN", ENUM_LIMITER::VENKATAKRISHNAN)
-  MakePair("VENKATAKRISHNAN_WANG", ENUM_LIMITER::VENKATAKRISHNAN_WANG)
-  MakePair("BARTH_JESPERSEN", ENUM_LIMITER::BARTH_JESPERSEN)
-  MakePair("VAN_ALBADA_EDGE", ENUM_LIMITER::VAN_ALBADA_EDGE)
-  MakePair("SHARP_EDGES", ENUM_LIMITER::SHARP_EDGES)
-  MakePair("WALL_DISTANCE", ENUM_LIMITER::WALL_DISTANCE)
+static const MapType<std::string, LIMITER> Limiter_Map = {
+  MakePair("NONE", LIMITER::NONE)
+  MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
+  MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
+  MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
+  MakePair("SHARP_EDGES", LIMITER::SHARP_EDGES)
+  MakePair("WALL_DISTANCE", LIMITER::WALL_DISTANCE)
 };
 
 /*!

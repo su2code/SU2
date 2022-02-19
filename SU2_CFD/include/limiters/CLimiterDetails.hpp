@@ -32,7 +32,7 @@
  * \note There is no default implementation (the code will compile but not
  *       link) specialization is mandatory.
  */
-template<ENUM_LIMITER LimiterKind>
+template<LIMITER LimiterKind>
 struct CLimiterDetails
 {
   /*!
@@ -92,7 +92,7 @@ struct LimiterHelpers
  * \brief Barth-Jespersen specialization.
  */
 template<>
-struct CLimiterDetails<ENUM_LIMITER::BARTH_JESPERSEN>
+struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
 {
   su2double eps2;
 
@@ -122,7 +122,7 @@ struct CLimiterDetails<ENUM_LIMITER::BARTH_JESPERSEN>
  * \brief Venkatakrishnan specialization.
  */
 template<>
-struct CLimiterDetails<ENUM_LIMITER::VENKATAKRISHNAN>
+struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
 {
   su2double eps2;
 
@@ -159,7 +159,7 @@ struct CLimiterDetails<ENUM_LIMITER::VENKATAKRISHNAN>
  * \brief Venkatakrishnan-Wang specialization.
  */
 template<>
-struct CLimiterDetails<ENUM_LIMITER::VENKATAKRISHNAN_WANG>
+struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
 {
   static su2activevector sharedMin, sharedMax;
   su2activevector eps2;
@@ -260,7 +260,7 @@ struct CLimiterDetails<ENUM_LIMITER::VENKATAKRISHNAN_WANG>
  * \brief Venkatakrishnan with sharp edge modification.
  */
 template<>
-struct CLimiterDetails<ENUM_LIMITER::SHARP_EDGES>
+struct CLimiterDetails<LIMITER::SHARP_EDGES>
 {
   su2double eps1, eps2, sharpCoeff;
 
@@ -301,7 +301,7 @@ struct CLimiterDetails<ENUM_LIMITER::SHARP_EDGES>
  * \brief Venkatakrishnan with wall distance modification.
  */
 template<>
-struct CLimiterDetails<ENUM_LIMITER::WALL_DISTANCE>
+struct CLimiterDetails<LIMITER::WALL_DISTANCE>
 {
   su2double eps1, eps2, sharpCoeff;
 

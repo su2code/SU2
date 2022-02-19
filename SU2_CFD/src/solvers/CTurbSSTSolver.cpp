@@ -1026,10 +1026,13 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
-    Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+  /*--- Find BC string to the numeric-identifier. ---*/
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
+      Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+    }
   }
 
 }
