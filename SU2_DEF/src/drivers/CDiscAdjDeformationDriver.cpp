@@ -32,7 +32,7 @@
 using namespace std;
 
 CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MPICommunicator):
-    CDriverBase(confFile, 1, MPICommunicator) 
+CDriverBase(confFile, 1, MPICommunicator)
 {
     /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
 #ifdef HAVE_MPI
@@ -83,14 +83,14 @@ CDiscAdjDeformationDriver::~CDiscAdjDeformationDriver(void) {
 }
 
 void CDiscAdjDeformationDriver::Input_Preprocessing() {
-
+    
     /*--- Initialize a char to store the zone filename ---*/
     char zone_file_name[MAX_STRING_SIZE];
     
     /*--- Initialize the configuration of the driver ---*/
     driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
     
-    nZone = driver_config->GetnZone();  
+    nZone = driver_config->GetnZone();
     
     /*--- Loop over all zones to initialize the various classes. In most
      cases, nZone is equal to one. This represents the solution of a partial
@@ -110,11 +110,11 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
         }
         
         config_container[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
-    
+        
         if (!config_container[iZone]->GetDiscrete_Adjoint()) {
             SU2_MPI::Error("The discrete adjoint solver was not specified in the configuration file.", CURRENT_FUNCTION);
         }
-
+        
     }
     
     /*--- Set the multizone part of the problem. ---*/
@@ -265,7 +265,7 @@ void CDiscAdjDeformationDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
         if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
         unsigned short nInst_Zone = nInst[iZone];
-
+        
         grid_movement[iZone] = new CVolumetricMovement* [nInst_Zone] ();
         grid_movement[iZone][INST_0] = new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         
@@ -366,7 +366,7 @@ void CDiscAdjDeformationDriver::Postprocessing() {
     }
     delete [] solver_container;
     if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
-        
+    
     if (geometry_container != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
             if (geometry_container[iZone] != nullptr) {
@@ -425,7 +425,7 @@ void CDiscAdjDeformationDriver::Postprocessing() {
     if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
     
     if (nInst != nullptr) delete [] nInst;
-
+    
     /*--- Exit the solver cleanly ---*/
     
     if (rank == MASTER_NODE)

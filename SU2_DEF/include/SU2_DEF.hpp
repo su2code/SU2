@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"

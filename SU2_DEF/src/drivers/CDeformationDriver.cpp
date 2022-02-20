@@ -36,7 +36,7 @@
 using namespace std;
 
 CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator):
-    CDriverBase(confFile, 1, MPICommunicator) 
+CDriverBase(confFile, 1, MPICommunicator)
 {
     
     /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
@@ -107,7 +107,7 @@ void CDeformationDriver::Input_Preprocessing() {
     /*--- Initialize the configuration of the driver ---*/
     driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
     
-    nZone = driver_config->GetnZone();  
+    nZone = driver_config->GetnZone();
     
     /*--- Loop over all zones to initialize the various classes. In most
      cases, nZone is equal to one. This represents the solution of a partial
@@ -162,7 +162,7 @@ void CDeformationDriver::Geometrical_Preprocessing() {
         
         unsigned short nInst_Zone = nInst[iZone];
         unsigned short nMesh = 1;
-
+        
         geometry_container[iZone] = new CGeometry**[nInst_Zone] ();
         geometry_container[iZone][INST_0] = new CGeometry*[nMesh] ();
         geometry_container[iZone][INST_0][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
@@ -217,7 +217,7 @@ void CDeformationDriver::Geometrical_Preprocessing() {
         geometry_container[iZone][INST_0][MESH_0]->PreprocessP2PComms(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         
     }
-        
+    
     /*--- Get the number of dimensions ---*/
     nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
 }
@@ -247,13 +247,13 @@ void CDeformationDriver::Solver_Preprocessing() {
         unsigned short nInst_Zone = nInst[iZone];
         unsigned short nMesh = 1;
         unsigned short nSols = MAX_SOLS;
-
-
+        
+        
         solver_container[iZone] = new CSolver*** [nInst_Zone] ();
         solver_container[iZone][INST_0] = new CSolver** [nMesh] ();
         solver_container[iZone][INST_0][MESH_0] = new CSolver* [nSols] ();
         solver_container[iZone][INST_0][MESH_0][MESH_SOL] = new CMeshSolver(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-    } 
+    }
 }
 
 void CDeformationDriver::Numerics_Preprocessing() {
@@ -263,7 +263,7 @@ void CDeformationDriver::Numerics_Preprocessing() {
         unsigned short nMesh = 1;
         unsigned short nSols = MAX_SOLS;
         unsigned int nTerm = omp_get_num_threads() * MAX_TERMS;
-
+        
         numerics_container[iZone] = new CNumerics**** [nInst_Zone] ();
         numerics_container[iZone][INST_0] = new CNumerics*** [nMesh] ();
         numerics_container[iZone][INST_0][MESH_0] = new CNumerics** [nSols] ();
@@ -328,7 +328,7 @@ void CDeformationDriver::Update() {
 }
 
 void CDeformationDriver::Update_Legacy() {
-
+    
     for (iZone = 0; iZone < nZone; iZone++){
         
         if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
@@ -510,7 +510,7 @@ void CDeformationDriver::Output() {
         /*--- Load the data --- */
         
         output_container[iZone]->Load_Data(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
-
+        
         output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
         
         /*--- Set the file names for the visualization files ---*/
@@ -539,9 +539,9 @@ void CDeformationDriver::Output() {
             }
             else {
                 if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
-
+                
                 surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
-            }  
+            }
         }
     }
 }

@@ -33,12 +33,12 @@
 using namespace std;
 
 CDriverBase::CDriverBase(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator): 
-    config_file_name(confFile),
-    StartTime(0.0),
-    StopTime(0.0),
-    UsedTime(0.0),
-    TimeIter(0),
-    nZone(val_nZone)
+config_file_name(confFile),
+StartTime(0.0),
+StopTime(0.0),
+UsedTime(0.0),
+TimeIter(0),
+nZone(val_nZone)
 {
     
 }
@@ -77,7 +77,7 @@ void CDriverBase::SetContainers_Null() {
     for (iZone = 0; iZone < nZone; iZone++) {
         nInst[iZone] = 1;
     }
-
+    
     driver_config         = nullptr;
     driver_output         = nullptr;
 }
