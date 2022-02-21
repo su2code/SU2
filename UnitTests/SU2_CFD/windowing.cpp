@@ -56,12 +56,12 @@ struct CWindowingTest {
     su2double weightPrevious = 0.;
     su2double weightCurrent = 0.;
     // Simulate solver time-steps
-    printf("Checking window function %d\n", win);
+    //printf("Checking window function %lu\n", (size_t)win);
     for (size_t outerIteration = 0; outerIteration < MAX_ITERATIONS; outerIteration++) {
       previousSample = currentSample;
       currentSample = GetSampleAtIteration(outerIteration);
-      printf("=== New timestep: %d =======\n", outerIteration);
-      printf("PreviousSample: %f,\tCurrentSample: %f\n", previousSample, currentSample);
+      //printf("=== New timestep: %lu =======\n", outerIteration);
+      //printf("PreviousSample: %f,\tCurrentSample: %f\n", previousSample, currentSample);
       // Simulate inner time-steps
       for (size_t innerIteration = 0; innerIteration < MAX_INNER_ITERATIONS; innerIteration++) {
         weightPrevious = static_cast<su2double>(MAX_INNER_ITERATIONS - innerIteration - 1);
@@ -69,8 +69,8 @@ struct CWindowingTest {
         // Simulate gradual change of sample during inner iterations.
         input = (weightPrevious * previousSample + weightCurrent * currentSample) / (weightCurrent + weightPrevious);
         avg.addValue(input, outerIteration, START_ITERATION);
-        printf("IT: %d\twPrevious: %f\twCurrent: %f\tinput: %f\tavg: %f\n", 
-           innerIteration, weightPrevious, weightCurrent, input, avg.GetVal());
+        // printf("IT: %lu\twPrevious: %f\twCurrent: %f\tinput: %f\tavg: %f\n", 
+        //   innerIteration, weightPrevious, weightCurrent, input, avg.GetVal());
 
       }
     }
