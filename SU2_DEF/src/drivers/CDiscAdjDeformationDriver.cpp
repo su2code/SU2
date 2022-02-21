@@ -312,18 +312,19 @@ void CDiscAdjDeformationDriver::Run() {
             /*--- Copy coordinates to the surface structure ---*/
             
             surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-            
+
             /*--- If AD mode is enabled we can use it to compute the projection,
              *    otherwise we use finite differences. ---*/
             
-            if (config_container[iZone]->GetAD_Mode())
+            if (config_container[iZone]->GetAD_Mode()) {
                 if (config_container[iZone]->GetSmoothGradient()) {
                     DerivativeTreatment_Gradient(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], grid_movement[iZone][INST_0], surface_movement[iZone] , Gradient);
                 } else {
                     SetProjection_AD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone] , Gradient);
                 }
-        } else {
-            SetProjection_FD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone] , Gradient);
+            } else {
+                SetProjection_FD(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], surface_movement[iZone] , Gradient);
+            }
         }
     } // for iZone
     
