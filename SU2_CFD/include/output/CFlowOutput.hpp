@@ -140,21 +140,38 @@ protected:
    * \brief Add aerodynamic coefficients as output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void AddAerodynamicCoefficients(CConfig *config);
+  void AddAerodynamicCoefficients(const CConfig* config);
 
   /*!
    * \brief  Set the value of the aerodynamic coefficients
    * \param[in] config - Definition of the particular problem.
    * \param[in] flow_solver - The container holding all solution data.
    */
-  void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
+  void SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver);
 
   /*!
-   * \brief  Set the value of the rotating frame coefficients (CT, CQ and CMerit).
+   * \brief Add heat flux coefficients as output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddHeatCoefficients(const CConfig* config);
+
+  /*!
+   * \brief  Set the value of the heat flux coefficients
    * \param[in] config - Definition of the particular problem.
    * \param[in] flow_solver - The container holding all solution data.
    */
-  void SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver);
+  void SetHeatCoefficients(const CConfig* config, const CSolver* flow_solver);
+
+  /*!
+   * \brief Add rotating frame coefficients as output fields.
+   */
+  void AddRotatingFrameCoefficients();
+
+  /*!
+   * \brief Set the value of the rotating frame coefficients (CT, CQ and CMerit).
+   * \param[in] flow_solver - The container holding all solution data.
+   */
+  void SetRotatingFrameCoefficients(const CSolver* flow_solver);
 
   /*!
    * \brief Add CP inverse design output as history fields

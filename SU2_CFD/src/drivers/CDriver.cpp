@@ -810,9 +810,13 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
         if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
         geometry[MESH_0]->ComputeSurf_Curvature(config);
     }
-    
+
+    /*--- Compute the global surface areas for all markers. ---*/
+
+    geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);
+
     /*--- Check for periodicity and disable MG if necessary. ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
     geometry[MESH_0]->Check_Periodicity(config);
     
