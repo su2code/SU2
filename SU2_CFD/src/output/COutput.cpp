@@ -131,14 +131,13 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   convergence = false;
 
   /*--- Prepare windowedAverages ---*/
-  for (size_t iField = 0; iField < historyOutput_List.size(); iField++) {
-    const string& fieldIdentifier = historyOutput_List[iField];
-    const HistoryOutputField& currentField = historyOutput_Map.at(fieldIdentifier);
-
-    if (currentField.fieldType == HistoryFieldType::COEFFICIENT) {
-      if (config->GetTime_Domain()) {
+  if (config->GetTime_Domain()) {
+    for (const auto it : historyOutput_Map) {
+      const auto& fieldIdentifier = it->first;
+      const auto& field = it->second;
+      if (field.fieldType == HistoryFieldType::COEFFICIENT) {
         // Pre-fill map with CWindowAverages with the specified windowing-function
-        windowedTimeAverages.insert({historyOutput_List[iField], CWindowedAverage{config->GetKindWindow()}});
+        windowedTimeAverages.insert({fieldIdentifier, CWindowedAverage(config->GetKindWindow())});
       }
     }
   }
