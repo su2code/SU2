@@ -148,7 +148,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   wndCauchyEps     = config->GetWnd_Cauchy_Eps();
 
   wndConvFields.reserve(config->GetnWndConv_Field());
-  for (size_t iField = 0; iField < config->GetnWndConv_Field(); iField++){
+  for (unsigned short iField = 0; iField < config->GetnWndConv_Field(); iField++){
     wndConvFields.emplace_back(config->GetWndConv_Field(iField));
   }
 
