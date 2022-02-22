@@ -2,14 +2,14 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -93,6 +93,12 @@ void CSinglezoneDriver::StartSolver() {
     /*--- Output the solution in files. ---*/
 
     Output(TimeIter);
+
+    /*--- Save iteration solution for libROM ---*/
+    if (config_container[MESH_0]->GetSave_libROM()) {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                     config_container[ZONE_0], StopCalc);
+    }
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
@@ -207,9 +213,9 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
 
     StartTime = SU2_MPI::Wtime();
-
-    config_container[ZONE_0]->Set_StartTime(StartTime);
   }
+
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {

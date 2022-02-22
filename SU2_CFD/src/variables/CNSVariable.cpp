@@ -2,14 +2,14 @@
  * \file CNSVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 #include "../../include/fluid/CFluidModel.hpp"
 
 CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
-                         unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
+                         unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
                          CEulerVariable(density,velocity,energy,npoint,ndim,nvar,config) {
 
   inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
@@ -42,17 +42,18 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
+
 }
 
 void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
                                          su2double val_delta,
                                          su2double val_const_DES){
 
-  static const su2double cnu = pow(0.09, 1.5),
-                         ch1 = 3.0,
-                         ch2 = 1.0,
-                         ch3 = 2.0,
-                         sigma_max = 1.0;
+  const su2double cnu = pow(0.09, 1.5),
+                  ch1 = 3.0,
+                  ch2 = 1.0,
+                  ch3 = 2.0,
+                  sigma_max = 1.0;
 
   unsigned long iDim;
   su2double Omega, Omega_2 = 0.0, Baux, Gaux, Lturb, Kaux, Aaux;
@@ -65,9 +66,9 @@ void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
   /*--- Density ---*/
   AD::SetPreaccIn(Solution(iPoint,0));
   /*--- Laminar viscosity --- */
-  AD::SetPreaccIn(Primitive(iPoint,nDim+5));
+  AD::SetPreaccIn(Primitive(iPoint, indices.LaminarViscosity()));
   /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(Primitive(iPoint,nDim+6));
+  AD::SetPreaccIn(Primitive(iPoint, indices.EddyViscosity()));
 
   /*--- Central/upwind blending based on:
    * Zhixiang Xiao, Jian Liu, Jingbo Huang, and Song Fu.  "Numerical
@@ -110,15 +111,15 @@ void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall
   AD::SetPreaccIn(Gradient_Primitive[iPoint], nVar, nDim);
   AD::SetPreaccIn(val_wall_dist);
   /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(Primitive(iPoint,nDim+5));
+  AD::SetPreaccIn(Primitive(iPoint, indices.EddyViscosity()));
   /*--- Laminar viscosity --- */
-  AD::SetPreaccIn(Primitive(iPoint,nDim+6));
+  AD::SetPreaccIn(Primitive(iPoint, indices.LaminarViscosity()));
 
   su2double uijuij = 0.0;
 
   for(unsigned long iDim = 0; iDim < nDim; ++iDim)
     for(unsigned long jDim = 0; jDim < nDim; ++jDim)
-      uijuij += pow(Gradient_Primitive(iPoint,1+iDim,jDim),2);
+      uijuij += pow(Gradient_Primitive(iPoint, indices.Velocity()+iDim, jDim),2);
 
   uijuij = max(sqrt(uijuij),1e-10);
 
@@ -219,4 +220,3 @@ void CNSVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel)
     SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
 
 }
-

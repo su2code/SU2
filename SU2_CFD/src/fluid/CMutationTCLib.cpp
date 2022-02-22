@@ -2,14 +2,14 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,12 +42,15 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
   /*--- Define transport model ---*/
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     transport_model = "Wilke";
-  else if (Kind_TransCoeffModel == GUPTAYOS)
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     transport_model = "Gupta-Yos";
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
+    transport_model = "Chapmann-Enskog_LDLT";
 
   opt.setStateModel("ChemNonEqTTv");
+  if (frozen) opt.setMechanism("none");
   opt.setViscosityAlgorithm(transport_model);
   opt.setThermalConductivityAlgorithm(transport_model);
 
@@ -56,8 +59,15 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
 
-  if (mix->hasElectrons()) { nHeavy = nSpecies-1; nEl = 1; }
-  else                     { nHeavy = nSpecies;   nEl = 0; }
+  if (mix->hasElectrons()) {
+    if (config->GetViscous()) {
+      SU2_MPI::Error("Ionization is not yet operational for a viscous flow in the NEMO solver.", CURRENT_FUNCTION);
+    } else {
+      nHeavy = nSpecies-1;
+      nEl = 1;
+    }
+  }
+  else { nHeavy = nSpecies;   nEl = 0; }
 
 }
 
@@ -100,7 +110,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
 }
 
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){
+vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
    mix->getCvsMass(Cv_ks.data());
 
@@ -118,7 +128,7 @@ vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){
   return energies;
 }
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   SetTDStateRhosTTv(rhos, T, val_T);
 
@@ -129,7 +139,9 @@ vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){
   return eves;
 }
 
-vector<su2double>& CMutationTCLib::ComputeNetProductionRates(){
+vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, const su2double *V, const su2double* eve,
+                                               const su2double* cvve, const su2double* dTdU, const su2double* dTvedU,
+                                               su2double **val_jacobian){
 
   mix->netProductionRates(ws.data());
 

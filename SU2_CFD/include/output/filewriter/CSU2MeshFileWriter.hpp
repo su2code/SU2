@@ -2,14 +2,14 @@
  * \file CSU2MeshFileWriter.hpp
  * \brief Headers fo the CSV file writer class.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,20 +42,18 @@ public:
 
   /*!
    * \brief Construct a file writer using field names, dimension.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    * \param[in] valiZone - The index of the current zone
    * \param[in] valnZone - The total number of zones
    */
-  CSU2MeshFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+  CSU2MeshFileWriter(CParallelDataSorter* valDataSorter,
                      unsigned short valiZone, unsigned short valnZone);
 
   /*!
    * \brief Write sorted data to file in SU2 mesh file format
-   * \param[in] - The name of the file
-   * \param[in] - The parallel sorted data to write
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };
 

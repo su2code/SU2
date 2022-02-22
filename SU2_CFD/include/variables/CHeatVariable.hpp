@@ -2,14 +2,14 @@
  * \file CHeatVariable.hpp
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
  * \class CHeatVariable
  * \brief Class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
 class CHeatVariable final : public CVariable {
 protected:
@@ -63,7 +63,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.

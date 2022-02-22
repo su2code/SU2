@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,10 +37,7 @@
  */
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double
-  constants[10] = {0.0}; /*!< \brief Constants for the model. */
-
-
+  su2double constants[10] = {0.0}; /*!< \brief Constants for the model. */
 
   /*!
    * \brief Compute nu tilde from the wall functions.
@@ -56,15 +53,9 @@ private:
                      const CConfig *config,
                      unsigned short val_marker);
 
-
 public:
   /*!
-   * \brief Constructor of the class.
-   */
-  CTurbSSTSolver(void);
-
-  /*!
-   * \overload
+   * \brief Constructor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -105,6 +96,18 @@ public:
                       CSolver **solver_container,
                       CConfig *config,
                       unsigned short iMesh) override;
+
+  /*!
+   * \brief Compute the viscous flux for the turbulent equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* numerics, CConfig* config) override;
 
   /*!
    * \brief Source term computation.
@@ -275,6 +278,7 @@ public:
                              string val_marker,
                              const CGeometry *geometry,
                              const CConfig *config) const override;
+
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -298,5 +302,5 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
-  
+
 };

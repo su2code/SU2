@@ -2,14 +2,14 @@
  * \file CFlowCompFEMOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,6 @@
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, true) {
 
   turb_model = config->GetKind_Turb_Model();
-
-  gridMovement = config->GetGrid_Movement();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -149,11 +147,11 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
-  if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
+  if (config->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
   }
 
-  if (config->GetKind_Solver() == FEM_LES && (config->GetKind_SGS_Model() != IMPLICIT_LES)) {
+  if (config->GetKind_Solver() == MAIN_SOLVER::FEM_LES && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 }
@@ -220,10 +218,10 @@ void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry,
   SetVolumeOutputValue("MACH",           index, sqrt(Velocity2)/DGFluidModel->GetSoundSpeed());
   SetVolumeOutputValue("PRESSURE_COEFF", index, DGFluidModel->GetCp());
 
-  if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
+  if (config->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
   }
-  if ((config->GetKind_Solver()  == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+  if ((config->GetKind_Solver()  == MAIN_SOLVER::FEM_LES) && (config->GetKind_SGS_Model() != TURB_SGS_MODEL::IMPLICIT_LES)){
     // todo: Export Eddy instead of Laminar viscosity
     SetVolumeOutputValue("EDDY_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
   }
@@ -264,7 +262,7 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(flow_solver, geometry, config, false);
+  SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 

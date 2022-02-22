@@ -2,14 +2,14 @@
  * \file CTecplotFileWriter.hpp
  * \brief Headers fo the tecplot ASCII writer class.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,12 +42,11 @@ public:
 
   /*!
    * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
    * \param[in] valTimeIter - The current time iteration
    * \param[in] valTimeStep - The current physical time step value
    */
-  CTecplotFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
+  CTecplotFileWriter(CParallelDataSorter* valDataSorter,
                      unsigned long valTimeIter, su2double valTimeStep);
 
   /*!
@@ -57,8 +56,9 @@ public:
 
   /*!
    * \brief Write sorted data to file in tecplot ASCII file format
+   * \param[in] val_filename - The name of the file
    */
-  void Write_Data() override;
+  void Write_Data(string val_filename) override;
 
 };
 

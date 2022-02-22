@@ -2,14 +2,14 @@
  * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,12 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-
-CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config) {
 
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -46,7 +44,8 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
 }
 
-CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint) {
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar,
+                     const CConfig *config, bool adjoint) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;

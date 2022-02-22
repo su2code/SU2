@@ -2,14 +2,14 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -583,7 +583,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Open the grid file again and go to the position where
@@ -813,6 +812,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
         config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
         config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+        config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
         config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
         config->SetMarker_All_SendRecv(iMarker, NONE);
       }
@@ -1146,7 +1146,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
   nPoint     = nodeIDsElemLoc.size();
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   /*--- Store the global ID's of the nodes in such a way that they can
@@ -1283,7 +1282,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Sequential mode. Create the data for the points. The global
         number of points equals the local number of points. ---*/
   nPoint     = Global_nPoint;
-  nPointNode = nPoint;
   nodes = new CPoint(nPoint, nDim);
 
   for(unsigned long i=0; i<nPoint; ++i) {
@@ -1912,6 +1910,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
     config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+    config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
     config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
   }
@@ -3185,9 +3184,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
     elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-    /*--- Initialize the array, which stores whether or not the faces are
-          considered to have a constant Jacobian. ---*/
-    elem[i]->InitializeJacobianConstantFaces(nFaces);
+    /*--- Reset the array, which stores whether or not the faces are
+          considered to have a constant Jacobian, to false. ---*/
+    elem[i]->ResetJacobianConstantFaces();
 
     /*--- Loop over the number of faces of this element. ---*/
     su2double jacFaceMax = 0.0;

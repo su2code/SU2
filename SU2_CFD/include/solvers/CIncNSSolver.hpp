@@ -2,14 +2,14 @@
  * \file CIncNSSolver.hpp
  * \brief Headers of the CIncNSSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@
 class CIncNSSolver final : public CIncEulerSolver {
 
   /*!
-   * \brief Generic implementation of the isothermal and heatflux walls.
+   * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls.
    */
   void BC_Wall_Generic(const CGeometry *geometry,
                        const CConfig *config,
@@ -71,7 +71,7 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_WF(CGeometry *geometry,
+  void SetTau_Wall_WF(CGeometry *geometry,
                      CSolver** solver_container,
                      const CConfig* config);
 
@@ -98,11 +98,6 @@ class CIncNSSolver final : public CIncEulerSolver {
 public:
   /*!
    * \brief Constructor of the class.
-   */
-  CIncNSSolver() : CIncEulerSolver() {}
-
-  /*!
-   * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
@@ -156,6 +151,16 @@ public:
                           CNumerics *visc_numerics,
                           CConfig *config,
                           unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                            const CConfig *config,
+                            const unsigned short val_marker) override;
 
   /*!
    * \brief Impose the (received) conjugate heat variables.

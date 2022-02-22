@@ -2,14 +2,14 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ private:
    */
   void AddDynamicGridResidualContribution(unsigned long iPoint,
                                           unsigned long Point_Normal,
-                                          CGeometry* geometry,
+                                          const CGeometry* geometry,
                                           const su2double* UnitNormal,
                                           su2double Area,
                                           const su2double* GridVel,
@@ -97,6 +97,14 @@ private:
                                   bool cht_mode = false);
 
   /*!
+   * \brief Generic implementation of the heatflux and heat-transfer/convection walls.
+   */
+  void BC_HeatFlux_Wall_Generic(const CGeometry *geometry,
+                                const CConfig *config,
+                                unsigned short val_marker,
+                                unsigned short kind_boundary);
+
+  /*!
    * \brief Compute the viscous contribution for a particular edge.
    * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -113,7 +121,7 @@ private:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+  void SetTau_Wall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
 
 public:
   /*!
@@ -166,8 +174,9 @@ public:
   /*!
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  void Evaluate_ObjFunc(const CConfig *config) override;
+  void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -184,6 +193,16 @@ public:
                         CNumerics *visc_numerics,
                         CConfig *config,
                         unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                            const CConfig *config,
+                            const unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).

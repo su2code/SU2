@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,10 @@
  */
 
 #include "../../../include/numerics/turbulent/turb_sources.hpp"
+
+#include "../../../include/variables/CEulerVariable.hpp"
+#include "../../../include/variables/CIncEulerVariable.hpp"
+#include "../../../include/variables/CNEMOEulerVariable.hpp"
 
 CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
@@ -58,35 +62,32 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
 
 }
 
-CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim,
-                                                 unsigned short val_nVar,
-                                                 const CConfig* config) :
-                         CSourceBase_TurbSA(val_nDim, val_nVar, config) {
+template <class T>
+CSourcePieceWise_TurbSA<T>::CSourcePieceWise_TurbSA(unsigned short val_nDim,
+                                                    unsigned short val_nVar,
+                                                    const CConfig* config) :
+                         CSourceBase_TurbSA(val_nDim, val_nVar, config),
+                         idx(val_nDim, config->GetnSpecies()) {
 
-  transition = (config->GetKind_Trans_Model() == BC);
+  transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
 }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA<T>::ComputeResidual(const CConfig* config) {
 
 //  AD::StartPreacc();
 //  AD::SetPreaccIn(V_i, nDim+6);
 //  AD::SetPreaccIn(Vorticity_i, nDim);
 //  AD::SetPreaccIn(StrainMag_i);
-//  AD::SetPreaccIn(TurbVar_i[0]);
-//  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+//  AD::SetPreaccIn(ScalarVar_i[0]);
+//  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   // Set the boolean here depending on whether the point is closest to a rough wall or not.
   roughwall = (roughness_i > 0.0);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i = V_i[idx.Density()];
+  Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -114,24 +115,24 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
      * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/
     /* --- See https://turbmodels.larc.nasa.gov/spalart.html#sarough for detailed explanation. ---*/
 
-    Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
+    Ji = ScalarVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
 
     /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
-    fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
+    fv2 = 1.0 - ScalarVar_i[0]/(nu+ScalarVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
 
     ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
 
-    Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
+    Shat = S + ScalarVar_i[0]*fv2*inv_k2_d2;
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
 
 //    Original SA model
-//    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+//    Production = cb1*(1.0-ft2)*Shat*ScalarVar_i[0]*Volume;
 
     if (transition) {
 
@@ -142,7 +143,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       /*--- turbulence intensity is u'/U so we multiply by 100 to get percentage ---*/
       su2double tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
 
-      su2double nu_t = (TurbVar_i[0]*fv1); //S-A variable
+      su2double nu_t = (ScalarVar_i[0]*fv1); //S-A variable
 
       su2double re_v = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
       su2double re_theta = re_v/2.193;
@@ -155,30 +156,30 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
       Gamma_BC = 1.0 - exp(-term_exponential);
 
-      Production = Gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      Production = Gamma_BC*cb1*Shat*ScalarVar_i[0]*Volume;
     }
     else {
-      Production = cb1*Shat*TurbVar_i[0]*Volume;
+      Production = cb1*Shat*ScalarVar_i[0]*Volume;
     }
 
     /*--- Destruction term ---*/
 
-    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+    r = min(ScalarVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     g = r + cw2*(pow(r,6.0)-r);
     g_6 =  pow(g,6.0);
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
 
 //    Original SA model
-//    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+//    Destruction = (cw1*fw-cb1*ft2/k2)*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
-    Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+    Destruction = cw1*fw*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
     /*--- Diffusion term ---*/
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+      norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -189,22 +190,22 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
-    else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
+    else dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
 
     if (transition) {
-      Jacobian_i[0] += Gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += Gamma_BC*cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
     }
     else {
-      Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
     }
 
     /*--- Implicit part, destruction term ---*/
 
-    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+    dr = (Shat-ScalarVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] +  2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
 
   }
 
@@ -215,29 +216,27 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
 }
 
-CSourcePieceWise_TurbSA_COMP::CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim,
-                                                           unsigned short val_nVar,
-                                                           const CConfig* config) :
-                              CSourceBase_TurbSA(val_nDim, val_nVar, config), c5(3.5) { }
+template <class T>
+CSourcePieceWise_TurbSA_COMP<T>::CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim,
+                                                              unsigned short val_nVar,
+                                                              const CConfig* config) :
+                              CSourceBase_TurbSA(val_nDim, val_nVar, config),
+                              idx(val_nDim, config->GetnSpecies()),
+                              c5(3.5) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP<T>::ComputeResidual(const CConfig* config) {
 
   //  AD::StartPreacc();
   //  AD::SetPreaccIn(V_i, nDim+6);
   //  AD::SetPreaccIn(Vorticity_i, nDim);
   //  AD::SetPreaccIn(StrainMag_i);
-  //  AD::SetPreaccIn(TurbVar_i[0]);
-  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(ScalarVar_i[0]);
+  //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i = V_i[idx.Density()];
+  Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -259,7 +258,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
 
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
-    Ji = TurbVar_i[0]/nu;
+    Ji = ScalarVar_i[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
@@ -268,42 +267,44 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
 
-    Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
+    Shat = S + ScalarVar_i[0]*fv2*inv_k2_d2;
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
 
     /*--- Production term ---*/;
 
-    Production = cb1*Shat*TurbVar_i[0]*Volume;
+    Production = cb1*Shat*ScalarVar_i[0]*Volume;
 
     /*--- Destruction term ---*/
 
-    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+    r = min(ScalarVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     g = r + cw2*(pow(r,6.0)-r);
     g_6 = pow(g,6.0);
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
 
-    Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+    Destruction = cw1*fw*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
     /*--- Diffusion term ---*/
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+      norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
     Residual = Production - Destruction + CrossProduction;
 
     /*--- Compressibility Correction term ---*/
-    Pressure_i = V_i[nDim+1];
+    Pressure_i = V_i[idx.Pressure()];
     SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
     aux_cc=0;
     for(iDim=0;iDim<nDim;++iDim){
       for(jDim=0;jDim<nDim;++jDim){
-        aux_cc+=PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];}}
-    CompCorrection=c5*(TurbVar_i[0]*TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+        aux_cc += pow(PrimVar_Grad_i[idx.Velocity()+iDim][jDim], 2);
+      }
+    }
+    CompCorrection=c5*(ScalarVar_i[0]*ScalarVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
     Residual -= CompCorrection;
 
@@ -312,19 +313,19 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
-    else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-    Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    else dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
+    Jacobian_i[0] += cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
 
     /*--- Implicit part, destruction term ---*/
 
-    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+    dr = (Shat-ScalarVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] + 2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
 
     /* Compressibility Correction */
-    Jacobian_i[0] -= 2.0*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+    Jacobian_i[0] -= 2.0*c5*(ScalarVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
   }
 
@@ -335,12 +336,15 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
 
 }
 
-CSourcePieceWise_TurbSA_E::CSourcePieceWise_TurbSA_E(unsigned short val_nDim,
-                                                     unsigned short val_nVar,
-                                                     const CConfig* config) :
-                           CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+template <class T>
+CSourcePieceWise_TurbSA_E<T>::CSourcePieceWise_TurbSA_E(unsigned short val_nDim,
+                                                        unsigned short val_nVar,
+                                                        const CConfig* config) :
+                           CSourceBase_TurbSA(val_nDim, val_nVar, config),
+                           idx(val_nDim, config->GetnSpecies()) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E<T>::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim, jDim;
 
@@ -348,18 +352,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
   //  AD::SetPreaccIn(V_i, nDim+6);
   //  AD::SetPreaccIn(Vorticity_i, nDim);
   //  AD::SetPreaccIn(StrainMag_i);
-  //  AD::SetPreaccIn(TurbVar_i[0]);
-  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(ScalarVar_i[0]);
+  //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i = V_i[idx.Density()];
+  Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -379,9 +377,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
   Sbar = 0.0;
   for(iDim=0;iDim<nDim;++iDim){
     for(jDim=0;jDim<nDim;++jDim){
-      Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
+      Sbar+= (PrimVar_Grad_i[idx.Velocity()+iDim][jDim]+
+              PrimVar_Grad_i[idx.Velocity()+jDim][iDim]) * PrimVar_Grad_i[idx.Velocity()+iDim][jDim];
+    }
+  }
   for(iDim=0;iDim<nDim;++iDim){
-    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[idx.Velocity()+iDim][iDim], 2));
+  }
 
   Omega= sqrt(max(Sbar,0.0));
 
@@ -395,7 +397,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
 
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
-    Ji = TurbVar_i[0]/nu;
+    Ji = ScalarVar_i[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
@@ -404,7 +406,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
 
-    //Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
+    //Shat = S + ScalarVar_i[0]*fv2*inv_k2_d2;
     Shat = max(S*((1.0/max(Ji,1.0e-16))+fv1),1.0e-16);
 
     Shat = max(Shat, 1.0e-10);
@@ -412,11 +414,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
 
     /*--- Production term ---*/;
 
-    Production = cb1*Shat*TurbVar_i[0]*Volume;
+    Production = cb1*Shat*ScalarVar_i[0]*Volume;
 
     /*--- Destruction term ---*/
 
-    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+    r = min(ScalarVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     r=tanh(r)/tanh(1.0);
 
     g = r + cw2*(pow(r,6.0)-r);
@@ -424,13 +426,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
 
-    Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+    Destruction = cw1*fw*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
     /*--- Diffusion term ---*/
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -443,15 +445,15 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
 
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
-    Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    Jacobian_i[0] += cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
 
     /*--- Implicit part, destruction term ---*/
 
-    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+    dr = (Shat-ScalarVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
     dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] + 2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
 
   }
 
@@ -462,31 +464,28 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
 
 }
 
-CSourcePieceWise_TurbSA_E_COMP::CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim,
-                                                               unsigned short val_nVar,
-                                                               const CConfig* config) :
-                                CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+template <class T>
+CSourcePieceWise_TurbSA_E_COMP<T>::CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim,
+                                                                  unsigned short val_nVar,
+                                                                  const CConfig* config) :
+                                CSourceBase_TurbSA(val_nDim, val_nVar, config),
+                                idx(val_nDim, config->GetnSpecies()) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP<T>::ComputeResidual(const CConfig* config) {
 
-  unsigned short iDim;
+  unsigned short iDim, jDim;
 
   //  AD::StartPreacc();
   //  AD::SetPreaccIn(V_i, nDim+6);
   //  AD::SetPreaccIn(Vorticity_i, nDim);
   //  AD::SetPreaccIn(StrainMag_i);
-  //  AD::SetPreaccIn(TurbVar_i[0]);
-  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(ScalarVar_i[0]);
+  //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i = V_i[idx.Density()];
+  Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -506,9 +505,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
   Sbar = 0.0;
   for(iDim=0;iDim<nDim;++iDim){
     for(jDim=0;jDim<nDim;++jDim){
-      Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
+      Sbar+= (PrimVar_Grad_i[idx.Velocity()+iDim][jDim]+
+              PrimVar_Grad_i[idx.Velocity()+jDim][iDim]) * PrimVar_Grad_i[idx.Velocity()+iDim][jDim];
+      }
+  }
   for(iDim=0;iDim<nDim;++iDim){
-    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[idx.Velocity()+iDim][iDim], 2));
+  }
 
   Omega= sqrt(max(Sbar,0.0));
 
@@ -522,7 +525,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
 
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
-    Ji = TurbVar_i[0]/nu;
+    Ji = ScalarVar_i[0]/nu;
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
@@ -538,11 +541,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
 
     /*--- Production term ---*/;
 
-    Production = cb1*Shat*TurbVar_i[0]*Volume;
+    Production = cb1*Shat*ScalarVar_i[0]*Volume;
 
     /*--- Destruction term ---*/
 
-    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+    r = min(ScalarVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     r=tanh(r)/tanh(1.0);
 
     g = r + cw2*(pow(r,6.0)-r);
@@ -550,26 +553,28 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
 
-    Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+    Destruction = cw1*fw*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
     /*--- Diffusion term ---*/
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
     Residual = Production - Destruction + CrossProduction;
 
     /*--- Compressibility Correction term ---*/
-    Pressure_i = V_i[nDim+1];
+    Pressure_i = V_i[idx.Pressure()];
     SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
     aux_cc=0;
     for(iDim=0;iDim<nDim;++iDim){
-        for(jDim=0;jDim<nDim;++jDim){
-            aux_cc+=PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];}}
-    CompCorrection=c5*(TurbVar_i[0]*TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+      for(jDim=0;jDim<nDim;++jDim){
+        aux_cc += pow(PrimVar_Grad_i[idx.Velocity()+iDim][jDim], 2);
+      }
+    }
+    CompCorrection=c5*(ScalarVar_i[0]*ScalarVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
     Residual -= CompCorrection;
 
@@ -580,18 +585,18 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
 
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
-    Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    Jacobian_i[0] += cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
 
     /*--- Implicit part, destruction term ---*/
 
-    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+    dr = (Shat-ScalarVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
     dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] + 2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
 
     /* Compressibility Correction */
-    Jacobian_i[0] -= 2.0*c5*(TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
+    Jacobian_i[0] -= 2.0*c5*(ScalarVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
   }
 
@@ -602,12 +607,15 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
 
 }
 
-CSourcePieceWise_TurbSA_Neg::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim,
-                                                         unsigned short val_nVar,
-                                                         const CConfig* config) :
-                             CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+template <class T>
+CSourcePieceWise_TurbSA_Neg<T>::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim,
+                                                            unsigned short val_nVar,
+                                                            const CConfig* config) :
+                             CSourceBase_TurbSA(val_nDim, val_nVar, config),
+                             idx(val_nDim, config->GetnSpecies()) { }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
 
@@ -615,18 +623,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 //  AD::SetPreaccIn(V_i, nDim+6);
 //  AD::SetPreaccIn(Vorticity_i, nDim);
 //  AD::SetPreaccIn(StrainMag_i);
-//  AD::SetPreaccIn(TurbVar_i[0]);
-//  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+//  AD::SetPreaccIn(ScalarVar_i[0]);
+//  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i = V_i[idx.Density()];
+  Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -644,13 +646,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
   if (dist_i > 1e-10) {
 
-    if (TurbVar_i[0] > 0.0) {
+    if (ScalarVar_i[0] > 0.0) {
 
       /*--- Production term ---*/
 
       dist_i_2 = dist_i*dist_i;
       nu = Laminar_Viscosity_i/Density_i;
-      Ji = TurbVar_i[0]/nu;
+      Ji = ScalarVar_i[0]/nu;
       Ji_2 = Ji*Ji;
       Ji_3 = Ji_2*Ji;
       fv1 = Ji_3/(Ji_3+cv1_3);
@@ -659,32 +661,32 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
       S = Omega;
       inv_k2_d2 = 1.0/(k2*dist_i_2);
 
-      Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
+      Shat = S + ScalarVar_i[0]*fv2*inv_k2_d2;
       Shat = max(Shat, 1.0e-10);
       inv_Shat = 1.0/Shat;
 
       /*--- Production term ---*/;
 
       //    Original SA model
-      //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+      //    Production = cb1*(1.0-ft2)*Shat*ScalarVar_i[0]*Volume;
 
-      Production = cb1*Shat*TurbVar_i[0]*Volume;
+      Production = cb1*Shat*ScalarVar_i[0]*Volume;
 
       /*--- Destruction term ---*/
 
-      r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+      r = min(ScalarVar_i[0]*inv_Shat*inv_k2_d2,10.0);
       g = r + cw2*(pow(r,6.0)-r);
       g_6 =  pow(g,6.0);
       glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
       fw = g*glim;
 
-      Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+      Destruction = cw1*fw*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
       /*--- Diffusion term ---*/
 
       norm2_Grad = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -695,16 +697,16 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
       dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
       dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
       if ( Shat <= 1.0e-10 ) dShat = 0.0;
-      else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-      Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      else dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
+      Jacobian_i[0] += cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
 
       /*--- Implicit part, destruction term ---*/
 
-      dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+      dr = (Shat-ScalarVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
       if (r == 10.0) dr = 0.0;
       dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
       dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-      Jacobian_i[0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+      Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] +  2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
 
     }
 
@@ -716,17 +718,17 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
       /*--- Production term ---*/;
 
-      Production = cb1*(1.0-ct3)*Omega*TurbVar_i[0]*Volume;
+      Production = cb1*(1.0-ct3)*Omega*ScalarVar_i[0]*Volume;
 
       /*--- Destruction term ---*/
 
-      Destruction = cw1*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+      Destruction = cw1*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
       /*--- Diffusion term ---*/
 
       norm2_Grad = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -738,7 +740,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
       /*--- Implicit part, destruction term ---*/
 
-      Jacobian_i[0] += 2.0*cw1*TurbVar_i[0]/dist_i_2*Volume;
+      Jacobian_i[0] += 2.0*cw1*ScalarVar_i[0]/dist_i_2*Volume;
 
     }
 
@@ -751,16 +753,18 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
 }
 
-CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
-                                                   unsigned short val_nVar,
-                                                   const su2double *constants,
-                                                   su2double val_kine_Inf,
-                                                   su2double val_omega_Inf,
-                                                   const CConfig* config) :
-                          CNumerics(val_nDim, val_nVar, config) {
+template <class T>
+CSourcePieceWise_TurbSST<T>::CSourcePieceWise_TurbSST(unsigned short val_nDim,
+                                                      unsigned short val_nVar,
+                                                      const su2double *constants,
+                                                      su2double val_kine_Inf,
+                                                      su2double val_omega_Inf,
+                                                      const CConfig* config) :
+                          CNumerics(val_nDim, val_nVar, config),
+                          idx(val_nDim, config->GetnSpecies()) {
 
   incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-  sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
+  sustaining_terms = (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   axisymmetric = config->GetAxisymmetric();
 
   /*--- Closure constants ---*/
@@ -785,15 +789,16 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
 }
 
-CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfig* config) {
+template <class T>
+CNumerics::ResidualType<> CSourcePieceWise_TurbSST<T>::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
-  AD::SetPreaccIn(TurbVar_i, nVar);
-  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(ScalarVar_i, nVar);
+  AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
-  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim+idx.Velocity(), nDim);
   AD::SetPreaccIn(Vorticity_i, 3);
 
   unsigned short iDim;
@@ -803,20 +808,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
                                 Vorticity_i[1]*Vorticity_i[1] +
                                 Vorticity_i[2]*Vorticity_i[2]);
 
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6);
+  AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
 
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+7);
-
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];
-  }
+  Density_i = V_i[idx.Density()];
+  Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+  Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
 
   Residual[0] = 0.0;       Residual[1] = 0.0;
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
@@ -833,26 +829,26 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    diverg = 0.0;
    for (iDim = 0; iDim < nDim; iDim++)
-     diverg += PrimVar_Grad_i[iDim+1][iDim];
+     diverg += PrimVar_Grad_i[iDim+idx.Velocity()][iDim];
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
      ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
-                         PrimVar_Grad_i+1, Density_i, Eddy_Viscosity_i,
-                         TurbVar_i[0], MeanPerturbedRSM);
-     SetPerturbedStrainMag(TurbVar_i[0]);
+                         PrimVar_Grad_i+idx.Velocity(), Density_i, Eddy_Viscosity_i,
+                         ScalarVar_i[0], MeanPerturbedRSM);
+     SetPerturbedStrainMag(ScalarVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-          - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+          - 2.0/3.0*Density_i*ScalarVar_i[0]*diverg;
    }
    else {
-     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*ScalarVar_i[0]*diverg;
    }
 
-   pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+   pk = min(pk,20.0*beta_star*Density_i*ScalarVar_i[1]*ScalarVar_i[0]);
    pk = max(pk,0.0);
 
-   zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
+   zeta = max(ScalarVar_i[1], VorticityMag*F2_i/a1);
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -886,8 +882,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    /*--- Dissipation ---*/
 
-   Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
-   Residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
+   Residual[0] -= beta_star*Density_i*ScalarVar_i[1]*ScalarVar_i[0]*Volume;
+   Residual[1] -= beta_blended*Density_i*ScalarVar_i[1]*ScalarVar_i[1]*Volume;
 
    /*--- Cross diffusion ---*/
 
@@ -899,10 +895,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    /*--- Implicit part ---*/
 
-   Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
-   Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
+   Jacobian_i[0][0] = -beta_star*ScalarVar_i[1]*Volume;
+   Jacobian_i[0][1] = -beta_star*ScalarVar_i[0]*Volume;
    Jacobian_i[1][0] = 0.0;
-   Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+   Jacobian_i[1][1] = -2.0*beta_blended*ScalarVar_i[1]*Volume;
   }
 
   AD::SetPreaccOut(Residual, nVar);
@@ -912,7 +908,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 }
 
-void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
+template <class T>
+void CSourcePieceWise_TurbSST<T>::SetPerturbedStrainMag(su2double turb_ke) {
 
   /*--- Compute norm of perturbed strain rate tensor. ---*/
 
@@ -928,3 +925,28 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
   PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
 
 }
+
+/*--- Explicit instantiations until we don't move this to the hpp. ---*/
+template class CSourcePieceWise_TurbSA<CEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA<CNEMOEulerVariable::CIndices<unsigned short> >;
+
+template class CSourcePieceWise_TurbSA_COMP<CEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_COMP<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_COMP<CNEMOEulerVariable::CIndices<unsigned short> >;
+
+template class CSourcePieceWise_TurbSA_E<CEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_E<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_E<CNEMOEulerVariable::CIndices<unsigned short> >;
+
+template class CSourcePieceWise_TurbSA_E_COMP<CEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_E_COMP<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_E_COMP<CNEMOEulerVariable::CIndices<unsigned short> >;
+
+template class CSourcePieceWise_TurbSA_Neg<CEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_Neg<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSA_Neg<CNEMOEulerVariable::CIndices<unsigned short> >;
+
+template class CSourcePieceWise_TurbSST<CEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSST<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourcePieceWise_TurbSST<CNEMOEulerVariable::CIndices<unsigned short> >;

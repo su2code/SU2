@@ -511,7 +511,7 @@ void CDeformationDriver::Output() {
 
       output_container[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], nullptr);
 
-      output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], MESH, driver_config->GetMesh_Out_FileName());
+      output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
 
       /*--- Set the file names for the visualization files ---*/
 
@@ -520,7 +520,7 @@ void CDeformationDriver::Output() {
 
       for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
         auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();
-        if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+        if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII && FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY)
           output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
       }
     }

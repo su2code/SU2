@@ -2,14 +2,14 @@
  * \file CFEM_DG_NSSolver.cpp
  * \brief Main subroutines for solving finite element Navier-Stokes flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,28 +111,28 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Set the SGS model in case an LES simulation is carried out ---*/
 
-  if(config->GetKind_Solver() == FEM_LES) {
+  if(config->GetKind_Solver() == MAIN_SOLVER::FEM_LES) {
 
     /* Make a distinction between the SGS models used and set SGSModel and
        SGSModelUsed accordingly. */
     switch( config->GetKind_SGS_Model() ) {
 
-      case IMPLICIT_LES:
+      case TURB_SGS_MODEL::IMPLICIT_LES:
         SGSModel     = nullptr;
         SGSModelUsed = false;
         break;
 
-      case SMAGORINSKY:
+      case TURB_SGS_MODEL::SMAGORINSKY:
         SGSModel     = new CSmagorinskyModel;
         SGSModelUsed = true;
         break;
 
-      case WALE:
+      case TURB_SGS_MODEL::WALE:
         SGSModel     = new CWALEModel;
         SGSModelUsed = true;
         break;
 
-      case VREMAN:
+      case TURB_SGS_MODEL::VREMAN:
         SGSModel     = new CVremanModel;
         SGSModelUsed = true;
         break;
@@ -2975,9 +2975,9 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
-    case NONE:
+    case FEM_SHOCK_CAPTURING_DG::NONE:
       break;
-    case PERSSON:
+    case FEM_SHOCK_CAPTURING_DG::PERSSON:
       Shock_Capturing_DG_Persson(elemBeg, elemEnd, workArray);
       break;
   }

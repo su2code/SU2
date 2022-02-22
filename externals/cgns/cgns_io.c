@@ -43,28 +43,42 @@ freely, subject to the following restrictions:
 #include "cgns_io.h"
 #include "cgnslib.h"
 #include "adf/ADF.h"
+#if CG_BUILD_PARALLEL
+#include <mpi.h>
+#endif
 #if CG_BUILD_HDF5
 #include "adfh/ADFH.h"
-char hdf5_access[64] = "NATIVE";
+#if CG_BUILD_PARALLEL
+#include "hdf5.h"
 #endif
+#include "cgio_internal_type.h" /* for cgns_io_ctx_t */
+#endif
+
 #ifdef MEM_DEBUG
 #include "cg_malloc.h"
 #endif
+
+#if CG_BUILD_HDF5
+cgns_io_ctx_t ctx_cgio = { .hdf5_access = "NATIVE",
 #if CG_BUILD_PARALLEL
-#include <mpi.h>
-MPI_Comm pcg_mpi_comm=MPI_COMM_NULL;
-int pcg_mpi_comm_size;
-int pcg_mpi_comm_rank;
-int pcg_mpi_initialized;
-MPI_Info pcg_mpi_info;
+.pcg_mpi_comm = MPI_COMM_NULL, 
+.pcg_mpi_comm_size=1,
+.pcg_mpi_comm_rank=0,
+.pcg_mpi_initialized=0,
+.pcg_mpi_info=MPI_INFO_NULL,
+.default_pio_mode=H5FD_MPIO_COLLECTIVE
+#endif
+};
 #endif
 
 #if CG_HAVE_STAT64_STRUCT
 #ifdef _WIN32
-#define stat _stat64
+#define cgns_stat _stat64
 #else
-#define stat stat64
+#define cgns_stat stat64
 #endif
+#else
+#define cgns_stat stat
 #endif
 
 /* Flag for contiguous or compact HDF5 storage */
@@ -216,7 +230,7 @@ static int rewrite_file (int cginp, const char *filename)
     cgns_io *input, *output;
     char *tmpfile, *linkfile = NULL;
 #ifdef S_IFLNK
-    struct stat st;
+    struct cgns_stat st;
 #endif
 
     input = get_cgnsio(cginp, 0);
@@ -577,11 +591,11 @@ int cgio_check_file (const char *filename, int *file_type)
     char buf[32];
     FILE *fp;
     static char *HDF5sig = "\211HDF\r\n\032\n";
-    struct stat st;
+    struct cgns_stat st;
 
     int mpibuf[2], err = CGIO_ERR_NONE;
 
-    if (ACCESS (filename, 0) || stat (filename, &st) ||
+    if (ACCESS (filename, 0) || cgns_stat (filename, &st) ||
         S_IFREG != (st.st_mode & S_IFREG)) {
         last_err = CGIO_ERR_NOT_FOUND;
         return last_err;
@@ -591,7 +605,7 @@ int cgio_check_file (const char *filename, int *file_type)
 
 #if CG_BUILD_PARALLEL
     /* don't overload the file system by having all the processors doing a read */
-    if(pcg_mpi_comm_rank == 0) {
+    if(ctx_cgio.pcg_mpi_comm_rank == 0) {
 #endif
 
       fp = fopen(filename, "rb");
@@ -625,10 +639,10 @@ int cgio_check_file (const char *filename, int *file_type)
     }
 #if CG_BUILD_PARALLEL
     }
-    if(pcg_mpi_initialized) {
+    if(ctx_cgio.pcg_mpi_initialized) {
       mpibuf[0] = err;
       mpibuf[1] = *file_type;
-      MPI_Bcast(mpibuf, 2, MPI_INT, 0, pcg_mpi_comm);
+      MPI_Bcast(mpibuf, 2, MPI_INT, 0, ctx_cgio.pcg_mpi_comm);
       err = mpibuf[0];
       *file_type = mpibuf[1];
     }
@@ -777,7 +791,7 @@ int cgio_open_file (const char *filename, int file_mode,
 #endif
 #if CG_BUILD_HDF5
     else if (file_type == CGIO_FILE_HDF5) {
-        ADFH_Database_Open(filename, fmode, hdf5_access, &rootid, &ierr);
+        ADFH_Database_Open(filename, fmode, ctx_cgio.hdf5_access, &rootid, &ierr);
         if (ierr > 0) return set_error(ierr);
     }
 #endif
@@ -1246,7 +1260,7 @@ int cgio_copy_node (int cgio_num_inp, double id_inp,
             if (data_size) {
                 data = malloc((size_t)data_size);
                 if (data == NULL) return set_error(CGIO_ERR_MALLOC);
-                ADF_Read_All_Data(id_inp, (char *)data, &ierr);
+                ADF_Read_All_Data(id_inp, data_type, (char *)data, &ierr);
                 if (ierr > 0) {
                     free(data);
                     return set_error(ierr);
@@ -1270,7 +1284,7 @@ int cgio_copy_node (int cgio_num_inp, double id_inp,
             if (data_size) {
                 data = malloc((size_t)data_size);
                 if (data == NULL) return set_error(CGIO_ERR_MALLOC);
-                ADFH_Read_All_Data(id_inp, NULL, (char *)data, &ierr);
+                ADFH_Read_All_Data(id_inp, data_type, (char *)data, &ierr);
                 if (ierr > 0) {
                     free(data);
                     return set_error(ierr);
@@ -1700,33 +1714,6 @@ int cgio_get_dimensions (int cgio_num, double id,
 
 /*---------------------------------------------------------*/
 
-int cgio_read_all_data (int cgio_num, double id, void *data)
-{
-    int ierr;
-    cgns_io *cgio;
-
-    if ((cgio = get_cgnsio(cgio_num, 0)) == NULL)
-        return get_error();
-
-    if (cgio->type == CGIO_FILE_ADF || cgio->type == CGIO_FILE_ADF2) {
-        ADF_Read_All_Data(id, (char *)data, &ierr);
-        if (ierr > 0) return set_error(ierr);
-    }
-#if CG_BUILD_HDF5
-    else if (cgio->type == CGIO_FILE_HDF5) {
-        ADFH_Read_All_Data(id, NULL, (char *)data, &ierr);
-        if (ierr > 0) return set_error(ierr);
-    }
-#endif
-    else {
-        return set_error(CGIO_ERR_FILE_TYPE);
-    }
-
-    return CGIO_ERR_NONE;
-}
-
-/*---------------------------------------------------------*/
-
 int cgio_read_all_data_type (int cgio_num, double id, const char *m_data_type,
     void *data)
 {
@@ -1737,13 +1724,15 @@ int cgio_read_all_data_type (int cgio_num, double id, const char *m_data_type,
         return get_error();
 
     if (cgio->type == CGIO_FILE_ADF || cgio->type == CGIO_FILE_ADF2) {
-         /* Changing type when reading is not supported with adf files.  In
-            practice, we convert first and call cgio_read_all_data */
-        return set_error(CGIO_ERR_NOT_HDF5);
+      /* m_data_type is ignored since changing type when reading is not 
+         supported with adf files.  In practice, we convert first and 
+         call cgio_read_all_data_type */
+        ADF_Read_All_Data(id, m_data_type, (char *)data, &ierr);
+        if (ierr > 0) return set_error(ierr);
     }
 #if CG_BUILD_HDF5
     else if (cgio->type == CGIO_FILE_HDF5) {
-        ADFH_Read_All_Data(id, m_data_type, (char *)data, &ierr);
+        ADFH_Read_All_Data(id, m_data_type, data, &ierr);
         if (ierr > 0) return set_error(ierr);
     }
 #endif
@@ -1756,8 +1745,8 @@ int cgio_read_all_data_type (int cgio_num, double id, const char *m_data_type,
 
 /*---------------------------------------------------------*/
 
-int cgio_read_block_data (int cgio_num, double id,
-    cgsize_t b_start, cgsize_t b_end, void *data)
+int cgio_read_block_data_type (int cgio_num, double id,
+    cgsize_t b_start, cgsize_t b_end, const char *m_data_type, void *data)
 {
     int ierr;
     cgns_io *cgio;
@@ -1771,40 +1760,7 @@ int cgio_read_block_data (int cgio_num, double id,
     }
 #if CG_BUILD_HDF5
     else if (cgio->type == CGIO_FILE_HDF5) {
-        ADFH_Read_Block_Data(id, b_start, b_end, (char *)data, &ierr);
-        if (ierr > 0) return set_error(ierr);
-    }
-#endif
-    else {
-        return set_error(CGIO_ERR_FILE_TYPE);
-    }
-
-    return CGIO_ERR_NONE;
-}
-
-/*---------------------------------------------------------*/
-
-int cgio_read_data (int cgio_num, double id,
-    const cgsize_t *s_start, const cgsize_t *s_end,
-    const cgsize_t *s_stride,int m_num_dims,
-    const cgsize_t *m_dims, const cgsize_t *m_start,
-    const cgsize_t *m_end, const cgsize_t *m_stride, void *data)
-{
-    int ierr;
-    cgns_io *cgio;
-
-    if ((cgio = get_cgnsio(cgio_num, 0)) == NULL)
-        return get_error();
-
-    if (cgio->type == CGIO_FILE_ADF || cgio->type == CGIO_FILE_ADF2) {
-        ADF_Read_Data(id, s_start, s_end, s_stride, m_num_dims,
-            m_dims, m_start, m_end, m_stride, (char *)data, &ierr);
-        if (ierr > 0) return set_error(ierr);
-    }
-#if CG_BUILD_HDF5
-    else if (cgio->type == CGIO_FILE_HDF5) {
-        ADFH_Read_Data(id, s_start, s_end, s_stride, NULL, m_num_dims,
-            m_dims, m_start, m_end, m_stride, (char *)data, &ierr);
+        ADFH_Read_Block_Data(id, b_start, b_end, m_data_type, data, &ierr);
         if (ierr > 0) return set_error(ierr);
     }
 #endif
@@ -1830,14 +1786,14 @@ int cgio_read_data_type (int cgio_num, double id,
         return get_error();
 
     if (cgio->type == CGIO_FILE_ADF || cgio->type == CGIO_FILE_ADF2) {
-         /* Changing type when reading is not supported with adf files.  In
-            practice, we convert first and call cgio_read_data */
-        return set_error(CGIO_ERR_NOT_HDF5);
+        ADF_Read_Data(id, s_start, s_end, s_stride, m_num_dims,
+            m_dims, m_start, m_end, m_stride, m_data_type, (char *)data, &ierr);
+        if (ierr > 0) return set_error(ierr);
     }
 #if CG_BUILD_HDF5
     else if (cgio->type == CGIO_FILE_HDF5) {
-        ADFH_Read_Data(id, s_start, s_end, s_stride, m_data_type, m_num_dims,
-            m_dims, m_start, m_end, m_stride, (char *)data, &ierr);
+        ADFH_Read_Data(id, s_start, s_end, s_stride, m_num_dims,
+            m_dims, m_start, m_end, m_stride, m_data_type, data, &ierr);
         if (ierr > 0) return set_error(ierr);
     }
 #endif

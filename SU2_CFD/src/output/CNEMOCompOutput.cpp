@@ -2,24 +2,14 @@
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,10 +30,9 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CNEMOCompOutput::CNEMOCompOutput(const CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
-  turb_model    = config->GetKind_Turb_Model();
-  gridMovement  = config->GetDynamic_Grid();
+  turb_model = config->GetKind_Turb_Model();
   nSpecies      = config->GetnSpecies();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -99,7 +88,7 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY");
+  if (convFields.empty() ) convFields.emplace_back("RMS_DENSITY_0");
 
   if (config->GetFixed_CL_Mode()) {
     bool found = false;
@@ -119,6 +108,7 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
+  /// DESCRIPTION: Root-mean square residual of the species densities.
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddHistoryOutput("RMS_DENSITY_" + std::to_string(iSpecies), "rms[Rho_" + std::to_string(iSpecies) + "]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the species density " + std::to_string(iSpecies) + ".", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
@@ -131,20 +121,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
   AddHistoryOutput("RMS_ENERGY_VE",  "rms[RhoEve]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the energy.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
-    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case SST: case SST_SUST:
-    /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).
-    AddHistoryOutput("RMS_TKE", "rms[k]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).
-    AddHistoryOutput("RMS_DISSIPATION", "rms[w]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  default: break;
-  }
+  AddHistoryOutputFields_ScalarRMS_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -158,20 +135,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", ScreenOutputFormat::FIXED,"MAX_RES", "Maximum residual of the z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the energy.", HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-    break;
-  case SST: case SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  default: break;
-  }
+  AddHistoryOutputFields_ScalarMAX_RES(config);
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -185,71 +149,27 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.
   AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  HistoryFieldType::RESIDUAL);
-    break;
-  case SST: case SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  default: break;
-  }
+  AddHistoryOutputFields_ScalarBGS_RES(config);
   /// END_GROUP
 
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }
-  /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
-  /// DESCRIPTION: Aeroelastic plunge
-  AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Aeroelastic pitch
-  AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
 
+  if (config->GetAeroelastic_Simulation()) {
+    /// BEGIN_GROUP: AEROELASTIC, DESCRIPTION: Aeroelastic plunge, pitch
+    /// DESCRIPTION: Aeroelastic plunge
+    AddHistoryOutputPerSurface("PLUNGE", "plunge", ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+    /// DESCRIPTION: Aeroelastic pitch
+    AddHistoryOutputPerSurface("PITCH",  "pitch",  ScreenOutputFormat::FIXED, "AEROELASTIC", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+    /// END_GROUP
+  }
 
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-
-  /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
-  /// DESCRIPTION: Aero CD drag
-  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Aero CD drag", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Solid CD drag
-  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Solid CD drag ", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Radial distortion
-  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Radial distortion ", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Circumferential distortion
-  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", ScreenOutputFormat::SCIENTIFIC, "ENGINE_OUTPUT", "Circumferential distortion", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
-  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
-  /// DESCRIPTION: Merit
-  AddHistoryOutput("FIGURE_OF_MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: CT
-  AddHistoryOutput("THRUST",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: CQ
-  AddHistoryOutput("TORQUE",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
-  /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Nearfield obj. function
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
-  ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
-  /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Maximal heatflux
-  AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
+  AddHistoryOutputFields_ScalarLinsol(config);
 
   AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
@@ -274,17 +194,15 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
 
-  /*--- Add analyze surface history fields --- */
-
   AddAnalyzeSurfaceOutput(config);
-
-  /*--- Add aerodynamic coefficients fields --- */
 
   AddAerodynamicCoefficients(config);
 
-  /*--- Add Cp diff fields ---*/
+  AddHeatCoefficients(config);
 
-  Add_CpInverseDesignOutput(config);
+  AddRotatingFrameCoefficients();
+
+  Add_CpInverseDesignOutput();
 
 }
 
@@ -310,23 +228,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
-    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
-    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
-    break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
-    break;
-  case NONE:
-    break;
-  }
-
-  //Auxiliary variables for post-processment
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
+  SetVolumeOutputFields_ScalarSolution(config);
 
   // Grid velocity
   if (gridMovement){
@@ -344,7 +246,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
-  if (config->GetKind_Solver() == NEMO_NAVIER_STOKES){
+  if (config->GetViscous()) {
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
 
     AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
@@ -357,10 +259,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
-  if (config->GetKind_Trans_Model() == BC){
-    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
-  }
-
   //Residuals
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("RES_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
@@ -371,55 +269,19 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ENERGY",    "Residual_Energy",    "RESIDUAL", "Residual of the energy");
   AddVolumeOutput("RES_ENERGY_VE", "Residual_Energy_ve", "RESIDUAL", "Residual of the energy_ve");
 
-  switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
-    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
-    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
-    break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
-    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
-    break;
-  case NONE:
-    break;
+  SetVolumeOutputFields_ScalarResidual(config);
+
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+    // Limiter values
+    AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
+    AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
+    AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER", "Limiter value of the y-momentum");
+    if (nDim == 3)
+      AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
+    AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
   }
 
-  // Limiter values
-  AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
-  AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER", "Limiter value of the x-momentum");
-  AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER", "Limiter value of the y-momentum");
-  if (nDim == 3)
-    AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
-  AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
-
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) {
-    switch(config->GetKind_Turb_Model()){
-    case SST: case SST_SUST:
-      AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
-      AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
-      break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
-      AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
-      break;
-    case NONE:
-      break;
-    }
-  }
-
-  // Roe Low Dissipation
-  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION", "Value of the Roe dissipation");
-  }
-
-  if(config->GetKind_Solver() == NEMO_NAVIER_STOKES){
-    if (nDim == 3){
-      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
-      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
-      AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
-    }
-    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
-  }
+  SetVolumeOutputFields_ScalarLimiter(config);
 
   AddCommonFVMOutputs(config);
 
@@ -430,14 +292,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb = NULL;
-  unsigned short nSpecies = config->GetnSpecies();
-  const auto Node_Geo = geometry->nodes;
-
-  if (config->GetKind_Turb_Model() != NONE){
-    Node_Turb = solver[TURB_SOL]->GetNodes();
-  }
+  const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  auto* Node_Geo = geometry->nodes;
+  const auto nSpecies = config->GetnSpecies();
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
@@ -458,20 +315,6 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("MASSFRAC_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
 
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
-    SetVolumeOutputValue("TKE",         iPoint, Node_Turb->GetSolution(iPoint, 0));
-    SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
-    break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
-    SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
-    break;
-  case NONE:
-    break;
-  }
-
   if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
@@ -491,12 +334,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
 
-  if (config->GetKind_Solver() == NEMO_NAVIER_STOKES){
+  if (config->GetViscous()){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
-  }
-
-  if (config->GetKind_Trans_Model() == BC){
-    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
   }
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -513,72 +352,30 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("RES_ENERGY_VE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nSpecies+3));
   }
 
-  switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
-    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
-    break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
-    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
-    break;
-  case NONE:
-    break;
-  }
-
-  SetVolumeOutputValue("LIMITER_DENSITY",    iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
-  SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
-  SetVolumeOutputValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
-  if (nDim == 3){
-    SetVolumeOutputValue("LIMITER_MOMENTUM-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-    SetVolumeOutputValue("LIMITER_ENERGY",     iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 4));
-  } else {
-    SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-  }
-
-  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) {
-    switch(config->GetKind_Turb_Model()){
-    case SST: case SST_SUST:
-      SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
-      break;
-    case SA: case SA_COMP: case SA_E:
-    case SA_E_COMP: case SA_NEG:
-      SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
-      break;
-    case NONE:
-      break;
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+    SetVolumeOutputValue("LIMITER_DENSITY",    iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
+    SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
+    SetVolumeOutputValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
+    if (nDim == 3){
+      SetVolumeOutputValue("LIMITER_MOMENTUM-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
+      SetVolumeOutputValue("LIMITER_ENERGY",     iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 4));
+    } else {
+      SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
     }
   }
 
-  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
-  }
+  LoadVolumeData_Scalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);
-  }
-}
-
-void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
-
-  if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES)) {
-    SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-    SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
-    if (nDim == 3)
-      SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
-
-    SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
-    SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
   }
 }
 
 void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
   CSolver* NEMO_solver = solver[FLOW_SOL];
-  CSolver* turb_solver = solver[TURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
   unsigned short nSpecies = config->GetnSpecies();
 
@@ -595,18 +392,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("RMS_ENERGY",     log10(NEMO_solver->GetRes_RMS(nSpecies+3)));
     SetHistoryOutputValue("RMS_ENERGY_VE",  log10(NEMO_solver->GetRes_RMS(nSpecies+4)));
   }
-
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
-    break;
-  case SST: case SST_SUST:
-    SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
-    break;
-  default: break;
-  }
-
   SetHistoryOutputValue("MAX_DENSITY", log10(NEMO_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_MOMENTUM-X", log10(NEMO_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_MOMENTUM-Y", log10(NEMO_solver->GetRes_Max(2)));
@@ -616,18 +401,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(NEMO_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(NEMO_solver->GetRes_Max(4)));
   }
-
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
-    break;
-  case SST: case SST_SUST:
-    SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
-    break;
-  default: break;
-  }
-
   if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(NEMO_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_MOMENTUM-X", log10(NEMO_solver->GetRes_BGS(1)));
@@ -638,22 +411,7 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(NEMO_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(NEMO_solver->GetRes_BGS(4)));
     }
-
-
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
-      break;
-    case SST:
-      SetHistoryOutputValue("BGS_TKE", log10(turb_solver->GetRes_BGS(0)));
-      SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
-      break;
-    default: break;
-    }
   }
-
-  SetHistoryOutputValue("TOTAL_HEATFLUX",   NEMO_solver->GetTotal_HeatFlux());
-  SetHistoryOutputValue("MAXIMUM_HEATFLUX", NEMO_solver->GetTotal_MaxHeatFlux());
 
   SetHistoryOutputValue("MIN_CFL", NEMO_solver->GetMin_CFL_Local());
   SetHistoryOutputValue("MAX_CFL", NEMO_solver->GetMax_CFL_Local());
@@ -674,20 +432,29 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("PREV_AOA", NEMO_solver->GetPrevious_AoA());
     SetHistoryOutputValue("CHANGE_IN_AOA", config->GetAoA()-NEMO_solver->GetPrevious_AoA());
     SetHistoryOutputValue("CL_DRIVER_COMMAND", NEMO_solver->GetAoA_inc());
-
   }
+
+  LoadHistoryData_Scalar(config, solver);
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(NEMO_solver, geometry, config, false);
+  SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, NEMO_solver);
 
+  SetHeatCoefficients(config, NEMO_solver);
+
+  SetRotatingFrameCoefficients(NEMO_solver);
+
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(NEMO_solver, geometry, config);
+
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 
 }
 

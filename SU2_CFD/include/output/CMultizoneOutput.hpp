@@ -2,14 +2,14 @@
  * \file CMultizoneOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,26 +61,20 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CMultizoneOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMultizoneOutput(void) override;
+  CMultizoneOutput(const CConfig *driver_config, const CConfig* const* config, unsigned short nDim);
 
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadMultizoneHistoryData(COutput **output, CConfig **config) override;
+  void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) override;
 
   /*!
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
-   * \param[in] config - Definition of the particular problem per zone.
    */
-  void SetMultizoneHistoryOutputFields(COutput **output, CConfig **config) override;
+  void SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) override;
 
   /*!
    * \brief Determines if the history file output.

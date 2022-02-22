@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -400,7 +400,7 @@ public:
    * \brief Set boundary vertex.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetVertex(CConfig *config) override;
+  void SetVertex(const CConfig *config) override;
 
   /*!
    * \brief Set number of span wise level for turbomachinery computation.
@@ -449,20 +449,14 @@ public:
    * \brief Mach the near field boundary condition.
    * \param[in] config - Definition of the particular problem.
    */
-  void MatchNearField(CConfig *config) override;
-
-  /*!
-   * \brief Mach the near field boundary condition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void MatchActuator_Disk(CConfig *config) override;
+  void MatchActuator_Disk(const CConfig *config) override;
 
   /*!
    * \brief Mach the periodic boundary conditions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_periodic - Index of the first periodic face in a pair.
    */
-  void MatchPeriodic(CConfig *config, unsigned short val_periodic) override;
+  void MatchPeriodic(const CConfig *config, unsigned short val_periodic) override;
 
   /*!
    * \brief Set boundary vertex structure of the control volume.
@@ -586,7 +580,7 @@ public:
    * \brief Find and store the closest neighbor to a vertex.
    * \param[in] config - Definition of the particular problem.
    */
-  void FindNormal_Neighbor(CConfig *config) override;
+  void FindNormal_Neighbor(const CConfig *config) override;
 
   /*!
    * \brief Read the sensitivity from an input file.

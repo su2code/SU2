@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,7 +111,7 @@ private:
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
 
-  enum : size_t { MAXNVAR = 8 };    /*!< \brief Maximum number of variables the matrix can handle. The static
+  enum : size_t { MAXNVAR = 20 };   /*!< \brief Maximum number of variables the matrix can handle. The static
                                                 size is needed for fast, per-thread, static memory allocation. */
 
   enum { OMP_MAX_SIZE_L = 8192 };   /*!< \brief Max. chunk size used in light parallel for loops. */
@@ -368,7 +368,7 @@ public:
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry *geometry,
-                  const CConfig *config, bool needTranspPtr = false);
+                  const CConfig *config, bool needTranspPtr = false, bool grad_mode = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -496,6 +496,42 @@ public:
   template<class OtherType>
   inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
     AddBlock(block_i, block_j, val_block, OtherType(-1));
+  }
+
+  /*!
+   * \brief Set the value of a scaled block in the sparse matrix.
+   * \note This is an templated overload for C2Dcontainer specialization su2matrix.
+   *       It assumes that MatrixType supports a member type Scalar and access operator[][].
+   *       If the template param Overwrite is false we add to the block (bij += alpha*b).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
+   */
+  template <class MatrixType, bool Overwrite = true>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
+                       typename MatrixType::Scalar alpha = 1.0) {
+    auto mat_ij = GetBlock(block_i, block_j);
+    if (!mat_ij) return;
+    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+      for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
+        *mat_ij = (Overwrite ? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block(iVar, jVar));
+        ++mat_ij;
+      }
+    }
+  }
+
+  /*!
+   * \brief Adds a scaled block to the sparse matrix (see SetBlock).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to add to A(i, j).
+   * \param[in] alpha - Scale factor.
+   */
+  template <class MatrixType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
+                       typename MatrixType::Scalar alpha = 1.0) {
+    SetBlock<MatrixType, false>(block_i, block_j, val_block, alpha);
   }
 
   /*!

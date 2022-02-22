@@ -2,14 +2,14 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -527,7 +527,7 @@ T createNaturalColoring(Index_t numInnerIndexes)
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
-template<class T, typename Color_t = char, size_t MaxColors = 32, size_t MaxMB = 128>
+template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {

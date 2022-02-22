@@ -2,14 +2,14 @@
  * \file CFluidModel.cpp
  * \brief Source of the fluid model base class containing thermo-physical subroutines.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,9 +59,9 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
     case CONDUCTIVITYMODEL::CONSTANT:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantConductivityRANS>(
-            new CConstantConductivityRANS(config->GetKt_ConstantND(), config->GetPrandtl_Turb()));
+            new CConstantConductivityRANS(config->GetThermal_Conductivity_ConstantND(), config->GetPrandtl_Turb()));
       } else {
-        ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetKt_ConstantND()));
+        ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetThermal_Conductivity_ConstantND()));
       }
       break;
     case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:

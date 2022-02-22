@@ -3,14 +3,14 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -809,7 +809,7 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Grid velocity gradient at the point.
    */
-  inline const su2double* const* GetGridVel_Grad(unsigned long iPoint) const { return GridVel_Grad[iPoint]; }
+  inline CMatrixView<const su2double> GetGridVel_Grad(unsigned long iPoint) const { return GridVel_Grad[iPoint]; }
 
   /*!
    * \brief Set the adjoint values of the (geometric) coordinates.

@@ -2,14 +2,14 @@
  * \file CMMSIncEulerSolution.cpp
  * \brief Implementations of the member functions of CMMSIncEulerSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,11 +65,11 @@ CMMSIncEulerSolution::CMMSIncEulerSolution(unsigned short val_nDim,
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS )
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS )
     SU2_MPI::Error("Incompressible flow equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 
-  if(Kind_Solver != INC_EULER)
+  if(Kind_Solver != MAIN_SOLVER::INC_EULER)
     SU2_MPI::Error("Euler equations must be selected for the MMS incompressible Euler case",
                    CURRENT_FUNCTION);
 

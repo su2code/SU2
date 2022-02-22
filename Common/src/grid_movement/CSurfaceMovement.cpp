@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  */
 
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
+#include "../../include/toolboxes/C1DInterpolation.hpp"
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
@@ -134,18 +135,18 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
       if (rank == MASTER_NODE) {
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           auto FileFormat = config->GetVolumeOutputFiles();
-          if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          if (isParaview(FileFormat[iFile])) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          } else if (isTecplot(FileFormat[iFile])) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
             }
           }
-          else if (FileFormat[iFile] == CGNS)  {
+          else if (FileFormat[iFile] == OUTPUT_TYPE::CGNS)  {
             cout << "Writing a CGNS file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
@@ -219,18 +220,18 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           auto FileFormat = config->GetVolumeOutputFiles();
 
-          if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          if (isParaview(FileFormat[iFile])) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+          } else if (isTecplot(FileFormat[iFile])) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
             }
           }
-          else if (FileFormat[iFile] == CGNS)  {
+          else if (FileFormat[iFile] == OUTPUT_TYPE::CGNS)  {
             cout << "Writing a CGNS file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, true);
@@ -498,18 +499,18 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             auto FileFormat = config->GetVolumeOutputFiles();
 
-            if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+            if (isParaview(FileFormat[iFile])) {
               cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
               }
-            } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
+            } else if (isTecplot(FileFormat[iFile])) {
               cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
               }
             }
-            else if (FileFormat[iFile] == CGNS)  {
+            else if (FileFormat[iFile] == OUTPUT_TYPE::CGNS)  {
               cout << "Writing a CGNS file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetCGNS(geometry, iFFDBox, false);
@@ -2978,7 +2979,7 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 
         /*--- CST computation ---*/
         su2double fact_n = 1;
-  su2double fact_cst = 1;
+        su2double fact_cst = 1;
         su2double fact_cst_n = 1;
 
   for (int i = 1; i <= maxKulfanNum; i++) {
@@ -3784,15 +3785,13 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   yp1 = (Xcoord[1]-Xcoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Xcoord[n_Airfoil-1]-Xcoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Xcoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
+  CCubicSpline splineX(Svalue, Xcoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   n_Airfoil = Svalue.size();
   yp1 = (Ycoord[1]-Ycoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Ycoord[n_Airfoil-1]-Ycoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Ycoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
+  CCubicSpline splineY(Svalue, Ycoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3833,8 +3832,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
           Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i))/TotalArch;
         }
 
-        NewXCoord = boundary->GetSpline(Svalue, Xcoord, Xcoord2, n_Airfoil, Arch);
-        NewYCoord = boundary->GetSpline(Svalue, Ycoord, Ycoord2, n_Airfoil, Arch);
+        NewXCoord = splineX(Arch);
+        NewYCoord = splineY(Arch);
 
         /*--- Store the delta change in the x & y coordinates ---*/
 

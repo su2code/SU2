@@ -2,14 +2,14 @@
  * \file CTecplotBinaryFileWriter.cpp
  * \brief Filewriter class for Tecplot binary format.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,13 +33,16 @@
 
 const string CTecplotBinaryFileWriter::fileExt = ".szplt";
 
-CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter,
+CTecplotBinaryFileWriter::CTecplotBinaryFileWriter(CParallelDataSorter *valDataSorter,
                                                    unsigned long valTimeIter, su2double valTimeStep) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
+  CFileWriter(valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
 CTecplotBinaryFileWriter::~CTecplotBinaryFileWriter(){}
 
-void CTecplotBinaryFileWriter::Write_Data(){
+void CTecplotBinaryFileWriter::Write_Data(string val_filename){
+
+  /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
+  val_filename.append(fileExt);
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -79,9 +82,9 @@ void CTecplotBinaryFileWriter::Write_Data(){
   tecplot_variable_names << fieldNames[fieldNames.size()-1];
 
   void* file_handle = NULL;
-  int32_t err = tecFileWriterOpen(fileName.c_str(), data_set_title.c_str(), tecplot_variable_names.str().c_str(),
+  int32_t err = tecFileWriterOpen(val_filename.c_str(), data_set_title.c_str(), tecplot_variable_names.str().c_str(),
     FILEFORMAT_SZL, FILETYPE_FULL, (int32_t)FieldDataType_Double, NULL, &file_handle);
-  if (err) cout << "Error opening Tecplot file '" << fileName << "'" << endl;
+  if (err) cout << "Error opening Tecplot file '" << val_filename << "'" << endl;
 
 #ifdef HAVE_MPI
   err = tecMPIInitialize(file_handle, SU2_MPI::GetComm(), MASTER_NODE);
@@ -589,7 +592,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(fileName);
+  fileSize = Determine_Filesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

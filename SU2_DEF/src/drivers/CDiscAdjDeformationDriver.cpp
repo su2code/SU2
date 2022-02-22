@@ -916,9 +916,9 @@ void CDiscAdjDeformationDriver::SetSensitivity_Files(CGeometry ***geometry, CCon
 
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
       auto FileFormat = config[iZone]->GetVolumeOutputFiles();
-      if (FileFormat[iFile] != RESTART_ASCII &&
-          FileFormat[iFile] != RESTART_BINARY &&
-          FileFormat[iFile] != CSV)
+      if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII &&
+          FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY &&
+          FileFormat[iFile] != OUTPUT_TYPE::CSV)
         output->WriteToFile(config[iZone], geometry[iZone][INST_0], FileFormat[iFile]);
     }
 

@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -69,12 +69,23 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.189902, 1.635938, 47258.000000, 0.000000]
+    discadj_arina2k.test_vals    = [-3.111181, -3.501516, 6.8705e-02, 0]
     discadj_arina2k.su2_exec     = "parallel_computation.py -f"
-    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.timeout      = 1600
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
     
+    # Equivalent area NACA64-206
+    ea_naca64206              = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file     = "NACA64206.cfg"
+    ea_naca64206.test_iter    = 10
+    ea_naca64206.test_vals    = [3.181093, 2.471539, -5487700.0, 8.3604]
+    ea_naca64206.su2_exec     = "mpirun -n 2 SU2_CFD_AD"
+    ea_naca64206.timeout      = 1600
+    ea_naca64206.tol          = 0.00001
+    test_list.append(ea_naca64206)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -84,7 +95,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.696567, 0.181590, -0.000018]
+    discadj_rans_naca0012_sa.test_vals = [-2.230578, 0.645001, 0.181590, -0.000018, 5.000000, -3.421214, 5.000000, -6.769609]
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -302,7 +313,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-5.318452, -2.4380e-13]
+    discadj_fsi2.test_vals = [-3.47949, 0.122883, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
@@ -328,7 +339,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800529, -4.065499, -4.137153] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.800597, -4.065541, -4.137339]
     da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
@@ -436,6 +447,23 @@ def main():
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())
     test_list.append(dyn_discadj_fsi)
+
+    ####################################################################
+    ###  Sobolev Gradient Smoothing                                  ###
+    ####################################################################
+
+    # Sobolev gradient smoothing solver
+    grad_smooth_oneram6           = TestCase('grad_smooth_sob')
+    grad_smooth_oneram6.cfg_dir   = "grad_smooth/oneram6"
+    grad_smooth_oneram6.cfg_file  = "ONERAM6_gradsmooth.cfg"
+    grad_smooth_oneram6.test_iter = 2
+    grad_smooth_oneram6.su2_exec  = "mpirun -n 2 SU2_DOT_AD"
+    grad_smooth_oneram6.timeout   = 1600
+    grad_smooth_oneram6.reference_file = "of_hess.dat.ref"
+    grad_smooth_oneram6.test_file = "of_hess.dat"
+    pass_list.append(grad_smooth_oneram6.run_filediff())
+    test_list.append(grad_smooth_oneram6)
+
 
     # Tests summary
     print('==================================================================')

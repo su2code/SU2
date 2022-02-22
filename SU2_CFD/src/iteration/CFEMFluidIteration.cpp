@@ -2,14 +2,14 @@
  * \file CFEMFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,17 +47,17 @@ void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Update global parameters ---*/
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_EULER || config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)
-    config[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_EULER || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_EULER)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_EULER, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES ||
-      config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)
-    config[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_NAVIER_STOKES ||
+      config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_NS)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS)
-    config[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM_RANS)
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_RANS, RUNTIME_FLOW_SYS);
 
-  if (config[val_iZone]->GetKind_Solver() == FEM_LES) config[val_iZone]->SetGlobalParam(FEM_LES, RUNTIME_FLOW_SYS);
+  if (config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::FEM_LES) config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_LES, RUNTIME_FLOW_SYS);
 
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
 

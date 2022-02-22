@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ CGeometry::CGeometry(void) :
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iFace, iVertex;
+  unsigned long iElem, iElem_Bound, iVertex;
   unsigned short iMarker;
 
   if (elem != nullptr) {
@@ -56,12 +56,6 @@ CGeometry::~CGeometry(void) {
       delete [] bound[iMarker];
     }
     delete [] bound;
-  }
-
-  if (face != nullptr) {
-    for (iFace = 0; iFace < nFace; iFace ++)
-      delete face[iFace];
-    delete[] face;
   }
 
   delete nodes;
@@ -1492,70 +1486,8 @@ void CGeometry::TestGeometry(void) const {
 
 }
 
-void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
-  unsigned long i, k;
-  su2double p, qn, sig, un, *u;
-
-  u = new su2double [n];
-
-  if (yp1 > 0.99e30)      // The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;       // -ural"
-  else {                  // or else to have a specified first derivative.
-    y2[0] = -0.5;
-    u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
-  }
-
-  for (i=2; i<=n-1; i++) {                  //  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);      //  gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;                      //  porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;                    //  factors.
-
-    su2double a1 = (y[i]-y[i-1])/(x[i]-x[i-1]); if (x[i] == x[i-1]) a1 = 1.0;
-    su2double a2 = (y[i-1]-y[i-2])/(x[i-1]-x[i-2]); if (x[i-1] == x[i-2]) a2 = 1.0;
-    u[i-1]= a1 - a2;
-    u[i-1]=(6.0*u[i-1]/(x[i]-x[i-2])-sig*u[i-2])/p;
-
-  }
-
-  if (ypn > 0.99e30)            // The upper boundary condition is set either to be
-    qn=un=0.0;                  // "natural"
-  else {                        // or else to have a specified first derivative.
-    qn=0.5;
-    un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
-  }
-  y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)  // This is the backsubstitution loop of the tridiagonal algorithm.
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];
-
-  delete[] u;
-
-}
-
-su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<su2double>&y2a, unsigned long n, su2double x) {
-  unsigned long klo, khi, k;
-  su2double h, b, a, y;
-
-  if (x < xa[0]) x = xa[0];       // Clip max and min values
-  if (x > xa[n-1]) x = xa[n-1];
-
-  klo = 1;                     // We will find the right place in the table by means of
-  khi = n;                     // bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {        // routine are at random values of x. If sequential calls
-    k = (khi+klo) >> 1;        // are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi = k;  // to store previous values of klo and khi and test if
-    else klo=k;                // they remain appropriate on the next call.
-  }                            // klo and khi now bracket the input value of x
-  h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl; // The xa?s must be distinct.
-  a = (xa[khi-1]-x)/h;
-  b = (x-xa[klo-1])/h;         // Cubic spline polynomial is now evaluated.
-  y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
-
-  return y;
-}
-
 bool CGeometry::SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                                                           const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
+                                       const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
   su2double epsilon = 1E-6; // An epsilon is added to eliminate, as much as possible, the posibility of a line that intersects a point
   unsigned short iDim;
@@ -2498,12 +2430,14 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
 
-    geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
-    geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh-1], UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
   }
 
+  /*--- Compute the global surface areas for all markers. ---*/
+  geometry_container[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 }
 
 void CGeometry::SetCustomBoundary(CConfig *config) {
@@ -2571,6 +2505,57 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   }
 }
 
+void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
+  const auto nMarker_Global = config->GetnMarker_CfgFile();
+  SurfaceAreaCfgFile.resize(nMarker_Global);
+  vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
+
+  /*--- Loop over all local markers ---*/
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    const auto Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Loop over all global markers, and find the local-global pair via
+          matching unique string tags. ---*/
+    for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+      if (Local_TagBound == Global_TagBound) {
+
+        for(auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++ ) {
+
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          if(!nodes->GetDomain(iPoint)) continue;
+
+          const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
+          const auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
+
+          LocalSurfaceArea[iMarker_Global] += Area;
+        }// for iVertex
+      }//if Local == Global
+    }//for iMarker_Global
+  }//for iMarker
+
+  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+}
+
+su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_marker) const {
+  /*---Find the precomputed marker surface area by local-global string-matching. ---*/
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
+
+    const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+    if (Marker_Tag == Global_TagBound)
+      return SurfaceAreaCfgFile[iMarker_Global];
+
+  }
+
+  SU2_MPI::Error("Unable to match local-marker with cfg-marker for Surface Area.", CURRENT_FUNCTION);
+  return 0.0;
+}
 
 void CGeometry::ComputeSurf_Straightness(CConfig *config,
                                          bool    print_on_screen) {
@@ -2612,8 +2597,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           other GridMovements are rigid. ---*/
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
          config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-        config->GetMarker_Moving_Bool(Local_TagBound) == false &&
-        config->GetKind_GridMovement() != ELASTICITY) {
+         !config->GetMarker_Moving_Bool(Local_TagBound)) {
 
       /*--- Loop over all global markers, and find the local-global pair via
             matching unique string tags. ---*/
@@ -3891,13 +3875,13 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
       /*--- Check if a zone needs the wall distance and store a boolean ---*/
 
-      ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
-      if (kindSolver == RANS ||
-          kindSolver == INC_RANS ||
-          kindSolver == DISC_ADJ_RANS ||
-          kindSolver == DISC_ADJ_INC_RANS ||
-          kindSolver == FEM_LES ||
-          kindSolver == FEM_RANS){
+      MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
+      if (kindSolver == MAIN_SOLVER::RANS ||
+          kindSolver == MAIN_SOLVER::INC_RANS ||
+          kindSolver == MAIN_SOLVER::DISC_ADJ_RANS ||
+          kindSolver == MAIN_SOLVER::DISC_ADJ_INC_RANS ||
+          kindSolver == MAIN_SOLVER::FEM_LES ||
+          kindSolver == MAIN_SOLVER::FEM_RANS){
         wallDistanceNeeded[iZone] = true;
       }
 
