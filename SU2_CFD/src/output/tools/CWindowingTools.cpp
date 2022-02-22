@@ -71,7 +71,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
   if (curTimeIter < startIter) return;  // Averaging not yet started.
   const unsigned long windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
   if (curTimeIter != lastTimeIter) {           // Handle new timestep
-    if (curTimeIter > startIter) {
+    if (curTimeIter > startIter) {  // Only update sum over previous timesteps, if there are any
       cachedSum = updateCachedSum(windowWidth-1);  // Save weighted sum up to last time step for later use
     } 
     lastTimeIter = curTimeIter;                // New time iteration step, update iteration number.
@@ -94,8 +94,10 @@ su2double CWindowedAverage::updateCachedSum(unsigned long windowWidth) const {
     if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
     // Handle non-trivial windows
     if (values.empty()) return 0;  // Handle first timestep
+      // At this point new samples are not yet added. Therefore: values.size()=windowWidth-1
       for (unsigned long curTimeIter = 0; curTimeIter < values.size(); curTimeIter++) {
-        weightedSum += values[curTimeIter] * GetWndWeight(windowingFunctionId, curTimeIter, values.size() - 1);
+	// integrate over all but the last timestep-bin
+        weightedSum += values[curTimeIter] * GetWndWeight(windowingFunctionId, curTimeIter, windowWidth);
       }
     return weightedSum;
 }
