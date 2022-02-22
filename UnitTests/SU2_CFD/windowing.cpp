@@ -34,8 +34,6 @@
  * averaging these over different windows.
  */
 struct CWindowingTest {
-  static constexpr unsigned long MAX_ITERATIONS = 1000;
-  static constexpr unsigned long START_ITERATION = 10;
   static constexpr size_t MAX_INNER_ITERATIONS = 5;
 
   /*!
@@ -48,7 +46,7 @@ struct CWindowingTest {
   /*!
    * \brief Perform averaging over simulated inner and outer solver iterations.
    */
-  static su2double calcAverage(WINDOW_FUNCTION win) {
+  static su2double calcAverage(WINDOW_FUNCTION win, unsigned long nIterations, unsigned long startIteration) {
     CWindowedAverage avg{win}; // Create averaging object with the specified window.
     su2double previousSample = 0.;
     su2double currentSample = 0.;
@@ -56,48 +54,61 @@ struct CWindowingTest {
     su2double weightPrevious = 0.;
     su2double weightCurrent = 0.;
     // Simulate solver time-steps
-    //printf("Checking window function %lu\n", (size_t)win);
-    for (size_t outerIteration = 0; outerIteration < MAX_ITERATIONS; outerIteration++) {
+    for (size_t outerIteration = 0; outerIteration < nIterations; outerIteration++) {
       previousSample = currentSample;
       currentSample = GetSampleAtIteration(outerIteration);
-      //printf("=== New timestep: %lu =======\n", outerIteration);
-      //printf("PreviousSample: %f,\tCurrentSample: %f\n", previousSample, currentSample);
       // Simulate inner time-steps
       for (size_t innerIteration = 0; innerIteration < MAX_INNER_ITERATIONS; innerIteration++) {
         weightPrevious = static_cast<su2double>(MAX_INNER_ITERATIONS - innerIteration - 1);
         weightCurrent = innerIteration;
         // Simulate gradual change of sample during inner iterations.
         input = (weightPrevious * previousSample + weightCurrent * currentSample) / (weightCurrent + weightPrevious);
-        avg.addValue(input, outerIteration, START_ITERATION);
-        // printf("IT: %lu\twPrevious: %f\twCurrent: %f\tinput: %f\tavg: %f\n", 
-        //   innerIteration, weightPrevious, weightCurrent, input, avg.GetVal());
-
+        avg.addValue(input, outerIteration, startIteration);
       }
     }
     return avg.GetVal();
   }
-  /*!
-  * \brief Checks, if the specified result is within the expected limits
-  */
-  static bool checkResult(su2double result) { return (result < 1.1 && result > 0.9); }
 };
 
 TEST_CASE("BUMP", "[Windowing]") { 
-    su2double avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP);
-    REQUIRE(CWindowingTest::checkResult(avg));
+    su2double avg = 0;
+    avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 10, 0);
+    REQUIRE(avg > 1.1850);
+    REQUIRE(avg < 1.1852);
+    avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 100, 10);
+    REQUIRE(avg > 1.1882);
+    REQUIRE(avg < 1.1884);
 }
 
 TEST_CASE("HANN", "[Windowing]") {
-  su2double avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN);
-  REQUIRE(CWindowingTest::checkResult(avg));
+  su2double avg = 0;
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN, 10, 0);
+  REQUIRE(avg > 1.1831);
+  REQUIRE(avg < 1.1833);
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN, 100, 10);
+  REQUIRE(avg > 1.0868);
+  REQUIRE(avg < 1.0870);
+
 }
 
 TEST_CASE("HANN_SQUARE", "[Windowing]") {
-  su2double avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN_SQUARE);
-  REQUIRE(CWindowingTest::checkResult(avg));
+  su2double avg = 0;
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN_SQUARE, 10, 0);
+  REQUIRE(avg > 1.1846);
+  REQUIRE(avg < 1.1848);
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN_SQUARE, 100, 10);
+  REQUIRE(avg > 1.1855);
+  REQUIRE(avg < 1.1857);
+
 }
 
 TEST_CASE("SQUARE", "[Windowing]") {
-  su2double avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::SQUARE);
-  REQUIRE(CWindowingTest::checkResult(avg));
+  su2double avg = 0;
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::SQUARE, 10, 0);
+  REQUIRE(avg > 1.3058);
+  REQUIRE(avg < 1.3060);
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::SQUARE, 100, 10);
+  REQUIRE(avg > 0.9000);
+  REQUIRE(avg < 0.9002);
+
 }
