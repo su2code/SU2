@@ -68,7 +68,7 @@ protected:
 class CWindowedAverage:CWindowingTools{
 private:
   su2double val = 0.0;                 /*!< \brief Value of the windowed-time average (of the instantaneous output) from starting time to the current time iteration. */
-  su2double cachedSum = 0.0;     /*!< \brief Cached sum of windowWeight*value over all previous iterations. */
+  su2double cachedSum = 0.0;           /*!< \brief Cached sum of windowWeight*value over all previous iterations. */
   std::vector<su2double> values;       /*!< \brief Vector of instantatneous output values from starting time to the current time iteration.*/
   unsigned long lastTimeIter = std::numeric_limits<unsigned long>::max();
   const WINDOW_FUNCTION windowingFunctionId; /*!< \brief ID of the windowing function to use.*/
@@ -120,5 +120,5 @@ private:
   * \brief Caches the weighted sums from a previous time-step for later re-use
   * \param windowWidth - Total width of the window, over which the samples were weighted during the previous timestep
   */
-  su2double updateCachedSum(unsigned long windowWidth) const;
+  su2double UpdateCachedSum(unsigned long windowWidth) const;
 };

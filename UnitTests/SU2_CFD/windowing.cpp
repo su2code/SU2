@@ -82,8 +82,6 @@ struct CWindowingTest {
   static bool checkResult(su2double result) { return (result < 1.1 && result > 0.9); }
 };
 
-
-
 TEST_CASE("BUMP", "[Windowing]") { 
     su2double avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP);
     REQUIRE(CWindowingTest::checkResult(avg));
