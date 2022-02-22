@@ -68,9 +68,8 @@ su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long e
 
 void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
   su2double totalSum = 0;
-  unsigned long windowWidth = 0;
   if (curTimeIter < startIter) return;  // Averaging not yet started.
-  windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
+  const unsigned long windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
   if (curTimeIter != lastTimeIter) {           // Handle new timestep
     if (curTimeIter > startIter) {
       cachedSum = updateCachedSum(windowWidth-1);  // Save weighted sum up to last time step for later use
@@ -94,7 +93,7 @@ su2double CWindowedAverage::updateCachedSum(unsigned long windowWidth) const {
     // Handle square window
     if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
     // Handle non-trivial windows
-    if (values.size() == 0) return 0.;  // Handle first timestep
+    if (values.empty()) return 0;  // Handle first timestep
       for (unsigned long curTimeIter = 0; curTimeIter < values.size(); curTimeIter++) {
         weightedSum += values[curTimeIter] * GetWndWeight(windowingFunctionId, curTimeIter, values.size() - 1);
       }
