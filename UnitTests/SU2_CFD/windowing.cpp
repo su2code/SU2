@@ -73,8 +73,7 @@ struct CWindowingTest {
 TEST_CASE("BUMP", "[Windowing]") { 
     su2double avg = 0;
     avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 10, 0);
-    REQUIRE(avg > 1.1850);
-    REQUIRE(avg < 1.1852);
+    CHECK(avg == Approx(1.1851));
     avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 100, 10);
     REQUIRE(avg > 1.1882);
     REQUIRE(avg < 1.1884);
