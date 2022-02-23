@@ -73,41 +73,31 @@ struct CWindowingTest {
 TEST_CASE("BUMP", "[Windowing]") { 
     su2double avg = 0;
     avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 10, 0);
-    CHECK(avg == Approx(1.1851));
+    CHECK(avg == Approx(1.1851).epsilon(0.001));
     avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 100, 10);
-    REQUIRE(avg > 1.1882);
-    REQUIRE(avg < 1.1884);
+    CHECK(avg == Approx(1.1883).epsilon(0.001));
 }
 
 TEST_CASE("HANN", "[Windowing]") {
   su2double avg = 0;
   avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN, 10, 0);
-  REQUIRE(avg > 1.1831);
-  REQUIRE(avg < 1.1833);
+  CHECK(avg == Approx(1.1832).epsilon(0.001));
   avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN, 100, 10);
-  REQUIRE(avg > 1.0868);
-  REQUIRE(avg < 1.0870);
-
+  CHECK(avg == Approx(1.0869).epsilon(0.001));
 }
 
 TEST_CASE("HANN_SQUARE", "[Windowing]") {
   su2double avg = 0;
   avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN_SQUARE, 10, 0);
-  REQUIRE(avg > 1.1846);
-  REQUIRE(avg < 1.1848);
+  CHECK(avg == Approx(1.1847).epsilon(0.001));
   avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::HANN_SQUARE, 100, 10);
-  REQUIRE(avg > 1.1855);
-  REQUIRE(avg < 1.1857);
-
+  CHECK(avg == Approx(1.1856).epsilon(0.001));
 }
 
 TEST_CASE("SQUARE", "[Windowing]") {
   su2double avg = 0;
   avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::SQUARE, 10, 0);
-  REQUIRE(avg > 1.3058);
-  REQUIRE(avg < 1.3060);
+  CHECK(avg == Approx(1.3059).epsilon(0.001));
   avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::SQUARE, 100, 10);
-  REQUIRE(avg > 0.9000);
-  REQUIRE(avg < 0.9002);
-
+  CHECK(avg == Approx(0.9001).epsilon(0.001));
 }
