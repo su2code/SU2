@@ -57,7 +57,7 @@ struct CWindowingTest {
     for (size_t outerIteration = 0; outerIteration < nIterations; outerIteration++) {
       previousSample = currentSample;
       currentSample = GetSampleAtIteration(outerIteration);
-      // Simulate inner time-steps
+      // Simulate inner iterations
       for (size_t innerIteration = 0; innerIteration < MAX_INNER_ITERATIONS; innerIteration++) {
         weightPrevious = static_cast<su2double>(MAX_INNER_ITERATIONS - innerIteration - 1);
         weightCurrent = innerIteration;
