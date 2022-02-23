@@ -95,7 +95,7 @@ su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const {
     // Handle non-trivial windows
       // At this point new samples are not yet added. Therefore: values.size()=windowWidth-1
       for (unsigned long curTimeIter = 0; curTimeIter < values.size(); curTimeIter++) {
-	// integrate over all but the last timestep-bin
+        // integrate over all but the last timestep-bin
         weightedSum += values[curTimeIter] * GetWndWeight(windowingFunctionId, curTimeIter, windowWidth);
       }
     return weightedSum;
