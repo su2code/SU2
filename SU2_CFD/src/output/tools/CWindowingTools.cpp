@@ -93,7 +93,6 @@ su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const {
     // Handle square window
     if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
     // Handle non-trivial windows
-    if (values.empty()) return 0;  // Handle first timestep
       // At this point new samples are not yet added. Therefore: values.size()=windowWidth-1
       for (unsigned long curTimeIter = 0; curTimeIter < values.size(); curTimeIter++) {
 	// integrate over all but the last timestep-bin
