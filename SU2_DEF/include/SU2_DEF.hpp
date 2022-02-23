@@ -26,11 +26,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
+
+#define ENABLE_MAPS
+#include "../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
 
 #include "drivers/CDeformationDriver.hpp"
 

@@ -35,6 +35,7 @@
 #include "../interfaces/CInterface.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/drivers/CDriverBase.hpp"
 
 using namespace std;
 
@@ -48,52 +49,33 @@ class COutput;
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
  */
-class CDriver {
+
+class CDriver : public CDriverBase {
+    
 protected:
-    int rank,   /*!< \brief MPI Rank. */
-    size;         /*!< \brief MPI Size. */
-    char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
+    
     char runtime_file_name[MAX_STRING_SIZE];
-    su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
-    StopTime,                           /*!< \brief Stop point of the timer for performance benchmarking.*/
-    UsedTimePreproc,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking preprocessing phase.*/
-    UsedTimeCompute,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
-    UsedTimeOutput,                     /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
-    UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
+    su2double UsedTimeOutput;                     /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
+    
     su2double BandwidthSum = 0.0;                 /*!< \brief Aggregate value of the bandwidth for writing restarts (to be average later).*/
-    unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
+    unsigned long IterCount,                       /*!< \brief Iteration count stored for performance benchmarking.*/
     OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
-    unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
+    unsigned long DOFsPerPoint;                    /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
     su2double Mpoints;                            /*!< \brief Total number of grid points in millions in the calculation (including ghost points).*/
     su2double MpointsDomain;                      /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
     su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
     su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-    unsigned long TimeIter;                       /*!< \brief External iteration.*/
+    
     ofstream **ConvHist_file;                     /*!< \brief Convergence history file.*/
     ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
-    unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
-    iZone,                          /*!< \brief Iterator on zones.*/
-    nZone,                          /*!< \brief Total number of zones in the problem. */
-    nDim,                           /*!< \brief Number of dimensions.*/
-    iInst,                          /*!< \brief Iterator on instance levels.*/
-    *nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
-    **interface_types;              /*!< \brief Type of coupling between the distinct (physical) zones.*/
+    
     bool StopCalc,                                /*!< \brief Stop computation flag.*/
-    mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
-    fsi,                                     /*!< \brief FSI simulation flag.*/
-    fem_solver;                              /*!< \brief FEM fluid solver simulation flag. */
+    mixingplane,                                  /*!< \brief mixing-plane simulation flag.*/
+    fsi,                                          /*!< \brief FSI simulation flag.*/
+    fem_solver;                                   /*!< \brief FEM fluid solver simulation flag. */
+    
     CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
-    COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
     CIntegration ****integration_container;       /*!< \brief Container vector with all the integration methods. */
-    CGeometry ****geometry_container;             /*!< \brief Geometrical definition of the problem. */
-    CSolver *****solver_container;                /*!< \brief Container vector with all the solutions. */
-    CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
-    CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
-    CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
-    COutput *driver_output;                       /*!< \brief Definition of the driver output. */
-    CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-    CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
-    CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
     vector<vector<unique_ptr<CInterpolator> > >
     interpolator_container;                       /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
     CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
@@ -568,172 +550,6 @@ public:
     void SetAoS(passivedouble value);
     
     /*!
-     * \brief Get the number of mesh dimensions.
-     * \return Number of dimensions.
-     */
-    unsigned long GetNumberDimensions() const;
-    
-    /*!
-     * \brief Get the number of mesh elements.
-     * \return Number of elements.
-     */
-    unsigned long GetNumberElements() const;
-    
-    /*!
-     * \brief Get the number of mesh elements from a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Number of elements.
-     */
-    unsigned long GetNumberElementsMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the number of mesh vertices.
-     * \return Number of vertices.
-     */
-    unsigned long GetNumberVertices() const;
-    
-    /*!
-     * \brief Get the number of mesh vertices from a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Number of vertices.
-     */
-    unsigned long GetNumberVerticesMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the number of halo mesh vertices.
-     * \return Number of vertices.
-     */
-    unsigned long GetNumberHaloVertices() const;
-    
-    /*!
-     * \brief Get the number of halo mesh vertices from a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Number of vertices.
-     */
-    unsigned long GetNumberHaloVerticesMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get global IDs of mesh vertices.
-     * \return Global vertex IDs.
-     */
-    vector<unsigned long> GetVertexIDs() const;
-    
-    /*!
-     * \brief Get global IDs of mesh vertices.
-     * \param[in] iMarker - Marker identifier.
-     * \return Global vertex IDs.
-     */
-    vector<unsigned long> GetVertexIDsMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get global IDs of mesh elements.
-     * \return Global element IDs.
-     */
-    vector<unsigned long> GetElementIDs() const;
-    
-    /*!
-     * \brief Get global IDs of mesh elements.
-     * \param[in] iMarker - Marker identifier.
-     * \return Global element IDs.
-     */
-    vector<unsigned long> GetElementIDsMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the connected point IDs of mesh elements.
-     * \return Element connectivities (nElem, nNode)
-     */
-    vector<vector<unsigned long>> GetConnectivity() const;
-    
-    /*!
-     * \brief Get the connected point IDs of mesh elements on a specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Element connectivities (nBound, nNode).
-     */
-    vector<vector<unsigned long>> GetConnectivityMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get halo node stauts of mesh vertices.
-     * \return Point domain status.
-     */
-    vector<bool> GetDomain() const;
-    
-    /*!
-     * \brief Get halo node stauts of mesh marker vertices.
-     * \param[in] iMarker - Marker identifier.
-     * \return Point domain status.
-     */
-    vector<bool> GetDomainMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the coordinates of the mesh points.
-     * \return Point coordinates (nPoint*nDim).
-     */
-    vector<passivedouble> GetCoordinates() const;
-    
-    /*!
-     * \brief Get the coordinates of the mesh points on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Point coordinates (nVertex*nDim).
-     */
-    vector<passivedouble> GetCoordinatesMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Set the coordinates of the mesh points.
-     * \param[in] values - Point coordinates (nPoint*nDim).
-     */
-    void SetCoordinates(vector<passivedouble> values);
-    
-    /*!
-     * \brief Set the coordinates of the mesh points on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] values - Point coordinates (nVertex*nDim).
-     */
-    void SetCoordinatesMarker(unsigned short iMarker, vector<passivedouble> values);
-    
-    /*!
-     * \brief Get the vertex displacements on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Vertex displacements (nVertex*nDim).
-     */
-    vector<passivedouble> GetDisplacementsMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Set the vertex displacements on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] values - Vertex displacements (nVertex*nDim).
-     */
-    void SetDisplacementsMarker(unsigned short iMarker, vector<passivedouble> values);
-    
-    /*!
-     * \brief Get the vertex velocities on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Vertex velocities (nVertex*nDim).
-     */
-    vector<passivedouble> GetVelocitiesMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Set the vertex velocities on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] values - Vertex velocities (nVertex*nDim).
-     */
-    void SetVelocitiesMarker(unsigned short iMarker, vector<passivedouble> values);
-    
-    /*!
-     * \brief Get undeformed coordinates from mesh solver on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \return Initial point coordinates (nVertex*nDim).
-     */
-    vector<passivedouble> GetInitialCoordinatesMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the vertex normal vectors on the specified marker.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] UnitNormal - Boolean to indicate if unit normal vector should be returned.
-     * \return Normal vector at the vertex (nVertex*nDim).
-     */
-    vector<passivedouble> GetVertexNormalsMarker(unsigned short iMarker, bool UnitNormal = false) const;
-    
-    /*!
      * \brief Get the number of conservative state variables.
      * \return Number of conservative state variables.
      */
@@ -953,19 +769,7 @@ public:
      * \return Sensitivity of the flow tractions w.r.t. the mesh displacements or coordinates (nVertex*nDim).
      */
     vector<passivedouble> ApplydTractionsdDisplacementsMarker(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get all the boundary markers tags.
-     * \return List of boundary markers tags.
-     */
-    vector<string> GetBoundaryMarkerTags() const;
-    
-    /*!
-     * \brief Get all the deformable boundary marker tags.
-     * \return List of deformable boundary markers tags.
-     */
-    vector<string> GetDeformableMarkerTags() const;
-    
+        
     /*!
      * \brief Get all the flow load boundary marker tags.
      * \return List of flow load boundary markers tags.
@@ -983,24 +787,7 @@ public:
      * \return List of inlet boundary markers tags.
      */
     vector<string> GetInletMarkerTags() const;
-    
-    /*!
-     * \brief Get all the boundary markers tags with their associated indices.
-     * \return List of boundary markers tags with their indices.
-     */
-    map<string, int> GetBoundaryMarkerIndices() const;
-    
-    /*!
-     * \brief Get all the boundary markers tags with their associated types.
-     * \return List of boundary markers tags with their types.
-     */
-    map<string, string> GetBoundaryMarkerTypes() const;
-    
-    /*!
-     * \brief Communicate the boundary mesh displacements in a python call
-     */
-    void CommunicateMeshDisplacements(void);
-    
+        
     /*!
      * \brief Get sensitivities of the mesh boundary displacements.
      * \param[in] iMarker - Marker identifier.

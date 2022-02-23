@@ -25,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../include/SU2_DEF.hpp"
 
 using namespace std;
@@ -74,3 +73,4 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
     
 }
+

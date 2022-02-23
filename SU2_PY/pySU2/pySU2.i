@@ -38,6 +38,7 @@ threads="1"
 ) pysu2
 %{
 
+#include "../../Common/include/drivers/CDriverBase.hpp"
 #include "../../SU2_CFD/include/drivers/CDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 #include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
@@ -50,6 +51,7 @@ threads="1"
 %import "../../Common/include/code_config.hpp"
 %import "../../Common/include/basic_types/datatype_structure.hpp"
 %import "../../Common/include/parallelization/mpi_structure.hpp"
+
 %include "std_string.i"
 %include "std_vector.i"
 %include "std_map.i"
@@ -90,7 +92,7 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-// CDriver class
+%include "../../Common/include/drivers/CDriverBase.hpp"
 %include "../../SU2_CFD/include/drivers/CDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
