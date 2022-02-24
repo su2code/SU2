@@ -436,6 +436,7 @@ public:
    * \return Reference to extra adjoint solution.
    */
   inline VectorType& GetSolutionExtra() { return SolutionExtra; }
+  inline const VectorType& GetSolutionExtra() const { return SolutionExtra; }
 
   /*!
    * \brief Update the variables using a conservative format.
