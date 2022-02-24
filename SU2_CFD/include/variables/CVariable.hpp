@@ -99,12 +99,6 @@ protected:
 
   VectorType SolutionExtra_BGS_k; // Intermediate storage, enables cross term extraction as that is also pushed to Solution
 
-  su2vector<int> AD_InputIndex_Extra; // Stores input index of the Extra vars
-  su2vector<int> AD_OutputIndex_Extra; // Stores output index of the Extra vars
-
-  VectorType SolutionExtra_Direct; // Stores values of the original direct solution, for later resetting
-  vector<su2double*> SolutionExtra_OriginAdresses; // Stores pointers to the original vars, these vars are resetted via this pointer vector
-
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
