@@ -1630,17 +1630,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Store updated pressure difference ---*/
       const su2double damping_factor = config->GetInc_Outlet_Damping();
-      //SPvals.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
-      SPvalsUpdated.Streamwise_Periodic_PressureDrop = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
-      if (!config->GetDiscrete_Adjoint())
-        SPvals.Streamwise_Periodic_PressureDrop = SPvalsUpdated.Streamwise_Periodic_PressureDrop;
-    }
+      SPvalsUpdated = SPvals;
+      SPvalsUpdated.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
 
-    /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
-    if (!config->GetDiscrete_Adjoint())
-      numerics->SetStreamwisePeriodicValues(SPvals);
-    else
+      /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
       numerics->SetStreamwisePeriodicValues(SPvalsUpdated);
+    }
+    else {
+      numerics->SetStreamwisePeriodicValues(SPvals);
+    }
 
     AD::StartNoSharedReading();
 

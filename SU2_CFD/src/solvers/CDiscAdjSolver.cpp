@@ -341,7 +341,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   }
   END_SU2_OMP_FOR
 
-  ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
+  direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
   if (CrossTerm) return;
@@ -377,10 +377,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     END_SU2_OMP_FOR
   }
 
-}
-
-void CDiscAdjSolver::ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) {
-  direct_solver->ExtractAdjoint_SolutionExtra(adj_sol, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
@@ -479,11 +475,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   }
   END_SU2_OMP_FOR
 
-  SetAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
-}
-
-void CDiscAdjSolver::SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) {
-  direct_solver->SetAdjoint_SolutionExtra(adj_sol, config);
+  direct_solver->SetAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {

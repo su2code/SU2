@@ -123,10 +123,6 @@ public:
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
-  void SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config);
-
-  void ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config);
-
   /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
