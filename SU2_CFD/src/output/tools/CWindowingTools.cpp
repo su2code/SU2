@@ -67,7 +67,6 @@ su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long e
 }
 
 void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
-  su2double totalSum = 0;
   if (curTimeIter < startIter) return;  // Averaging not yet started.
   const unsigned long windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
   if (curTimeIter != lastTimeIter) {           // Handle new timestep
@@ -84,7 +83,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
     values.back() = valIn;
   }
   // Update the windowed-average from the weighted sum of previous samples and the latest sample
-  totalSum = cachedSum + valIn*GetWndWeight(windowingFunctionId, windowWidth-1, windowWidth-1);
+  const su2double totalSum = cachedSum + valIn*GetWndWeight(windowingFunctionId, windowWidth-1, windowWidth-1);
   val = totalSum / static_cast<su2double>(windowWidth);
 }
 
