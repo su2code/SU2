@@ -314,8 +314,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       for (auto iPoint = 0ul; iPoint < geometries[iMesh]->GetnPoint(); iPoint++)
         solvers[ADJFLOW_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers[FLOW_SOL]->GetNodes()->GetSolution(iPoint));
       END_SU2_OMP_FOR
-      solvers[ADJFLOW_SOL]->GetNodes()->SetSolutionExtra_Direct(solvers[FLOW_SOL]->GetNodes()->GetSolutionExtra_OriginAdresses(),
-                                                                config[iZone]->GetMultizone_Problem());
     }
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       SU2_OMP_FOR_STAT(1024)

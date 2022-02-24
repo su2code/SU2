@@ -76,6 +76,14 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    SolutionExtra.resize(1) = su2double(1e-16);
+    if (config->GetMultizone_Problem()) {
+      SolutionExtra_BGS_k.resize(1) = su2double(1e-16);
+      ExternalExtra.resize(1) = su2double(0.0);
+    }
+  }
 }
 
 void CVariable::Set_OldSolution() {
@@ -118,16 +126,6 @@ void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.d
 
 void CVariable::RegisterSolution(bool input) {
   RegisterContainer(input, Solution, input? AD_InputIndex : AD_OutputIndex);
-
-  auto& AD_Index_Extra = input ? AD_InputIndex_Extra : AD_OutputIndex_Extra;
-
-  assert(SolutionExtra_OriginAdresses.size() == AD_Index_Extra.size());
-  for (auto iEntry = 0ul; iEntry < SolutionExtra_OriginAdresses.size(); iEntry++) {
-    if (input) AD::RegisterInput(*SolutionExtra_OriginAdresses[iEntry]);
-    else AD::RegisterOutput(*SolutionExtra_OriginAdresses[iEntry]);
-
-    AD::SetIndex(AD_Index_Extra[iEntry], *SolutionExtra_OriginAdresses[iEntry]);
-  }
 }
 
 void CVariable::RegisterSolution_time_n() {

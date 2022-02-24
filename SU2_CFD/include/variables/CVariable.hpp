@@ -107,46 +107,6 @@ protected:
 
  public: // Make public for easy debug access
 
-  // Add an su2double to the origin addresses for the extra solution variables
-  // only called by direct solver
-  inline void AddSolutionExtra_OriginAdress(su2double* val) {
-    SolutionExtra_OriginAdresses.push_back(val);
-
-    AD_InputIndex_Extra.resize(SolutionExtra_OriginAdresses.size()) = -1;
-    AD_OutputIndex_Extra.resize(SolutionExtra_OriginAdresses.size()) = -1;
-  }
-
-  // Store a hardcopy of the original extra solution vars
-  inline void SetSolutionExtra_Direct(const vector<su2double*>& sol_extra_addresses, bool multizone) {
-    // Allocate arrays based on how many Extra Solution vars were requested
-    SolutionExtra_Direct.resize(sol_extra_addresses.size()) = su2double(0.0);
-    SolutionExtra.resize(sol_extra_addresses.size()) = su2double(1e-16); // Initial value set here
-    if (multizone) {
-      ExternalExtra.resize(sol_extra_addresses.size()) = su2double(0.0);
-      SolutionExtra_BGS_k.resize(sol_extra_addresses.size()) = su2double(1e-16);
-    }
-
-    for (auto iEntry = 0ul; iEntry < sol_extra_addresses.size(); iEntry++)
-      SolutionExtra_Direct[iEntry] = *sol_extra_addresses[iEntry];
-  }
-
-  // Get the Addresses of the Extra primal vars in order to reset their value
-  inline const vector<su2double*>& GetSolutionExtra_OriginAdresses() const {
-    return SolutionExtra_OriginAdresses;
-  }
-
-  // Reset the primal extra solution to its original value
-  inline void SetSolutionExtra(const VectorType& direct_sol) {
-    assert(SolutionExtra_OriginAdresses.size() == direct_sol.size());
-    for (auto iEntry = 0ul; iEntry < direct_sol.size(); iEntry++)
-      *SolutionExtra_OriginAdresses[iEntry] = direct_sol(iEntry);
-  }
-
-  // Get the stored (hardcopied) original primal values of the extra solution
-  inline const VectorType& GetSolutionExtra_Direct() const {
-    return SolutionExtra_Direct;
-  }
-
   void Add_SolutionExtra_To_ExternalExtra() {
     assert(SolutionExtra.size() == ExternalExtra.size());
     for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
@@ -159,20 +119,7 @@ protected:
       SolutionExtra[iEntry] += ExternalExtra[iEntry];
   }
 
-  // seed
-  inline void SetAdjointSolutionExtra(const VectorType& adj_sol) {
-    assert(adj_sol.size() == AD_OutputIndex_Extra.size());
-    for (unsigned long iEntry = 0; iEntry < AD_OutputIndex_Extra.size(); iEntry++)
-      AD::SetDerivative(AD_OutputIndex_Extra[iEntry], SU2_TYPE::GetValue(adj_sol[iEntry]));
-  }
   inline VectorType& GetSolutionExtra() { return SolutionExtra; }
-
-  // Extract adjoint solution from input
-  void ExtractAdjoint_SolutionExtra(VectorType& adj_sol) const {
-    assert(adj_sol.size() == AD_InputIndex_Extra.size());
-    for (auto iEntry = 0ul; iEntry < AD_InputIndex_Extra.size(); iEntry++)
-      adj_sol(iEntry) = AD::GetDerivative(AD_InputIndex_Extra[iEntry]);
-  }
 
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */

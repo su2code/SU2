@@ -64,6 +64,8 @@ using namespace std;
 
 class CSolver {
 protected:
+  using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+
   enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
 
   int rank,       /*!< \brief MPI Rank. */
@@ -3543,6 +3545,12 @@ public:
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
+  virtual void RegisterSolutionExtra(bool input, const CConfig* config) {}
+
+  virtual void SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) {}
+
+  virtual void ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) {}
+
   /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4284,7 +4292,8 @@ public:
    * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
    * \return Struct holding 4 su2doubles.
    */
-  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() { return StreamwisePeriodicValues(); }
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValuesUpdated() { return StreamwisePeriodicValues(); }
 
   /*!
    * \brief Save snapshot or POD data using libROM

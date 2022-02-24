@@ -39,7 +39,7 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
-  StreamwisePeriodicValues SPvals;
+  StreamwisePeriodicValues SPvals, SPvalsUpdated;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -398,5 +398,11 @@ public:
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat.
    * \return Struct holding 4 su2doubles.
    */
-  StreamwisePeriodicValues GetStreamwisePeriodicValues() const final { return SPvals; }
+  StreamwisePeriodicValues GetStreamwisePeriodicValues() final { return SPvals; }
+  StreamwisePeriodicValues GetStreamwisePeriodicValuesUpdated() final { return SPvalsUpdated; }
+
+  void RegisterSolutionExtra(bool input, const CConfig* config);
+
+  void SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config);
+  void ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config);
 };

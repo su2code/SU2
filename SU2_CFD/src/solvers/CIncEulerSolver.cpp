@@ -1630,11 +1630,17 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Store updated pressure difference ---*/
       const su2double damping_factor = config->GetInc_Outlet_Damping();
-      SPvals.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
+      //SPvals.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
+      SPvalsUpdated.Streamwise_Periodic_PressureDrop = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
+      if (!config->GetDiscrete_Adjoint())
+        SPvals.Streamwise_Periodic_PressureDrop = SPvalsUpdated.Streamwise_Periodic_PressureDrop;
     }
 
     /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
-    numerics->SetStreamwisePeriodicValues(SPvals);
+    if (!config->GetDiscrete_Adjoint())
+      numerics->SetStreamwisePeriodicValues(SPvals);
+    else
+      numerics->SetStreamwisePeriodicValues(SPvalsUpdated);
 
     AD::StartNoSharedReading();
 
@@ -3088,18 +3094,33 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 }
 
 void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
-
-  unsigned long iPoint;
-  unsigned short iDim;
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     nodes->SetSolution(iPoint,0, Pressure_Inf);
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
       nodes->SetSolution(iPoint,iDim+1, Velocity_Inf[iDim]);
     }
     nodes->SetSolution(iPoint,nDim+1, Temperature_Inf);
   }
   END_SU2_OMP_FOR
 
+}
+
+void CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    if (input) AD::RegisterInput(SPvals.Streamwise_Periodic_PressureDrop);
+    else AD::RegisterOutput(SPvalsUpdated.Streamwise_Periodic_PressureDrop);
+  }
+}
+
+void CIncEulerSolver::SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]));
+  }
+}
+
+void CIncEulerSolver::ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
+  }
 }
