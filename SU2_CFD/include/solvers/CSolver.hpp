@@ -64,8 +64,6 @@ using namespace std;
 
 class CSolver {
 protected:
-  using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-
   enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
 
   int rank,       /*!< \brief MPI Rank. */
@@ -3557,7 +3555,7 @@ public:
    * \param[in] adj_sol - Vector containing the adjoint solution to seed.
    * \param[in] config - The particular config.
    */
-  virtual void SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) {}
+  virtual void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {}
 
   /*!
    * \brief Extract the adjoint of the extra solution at the input.
