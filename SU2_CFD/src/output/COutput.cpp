@@ -130,18 +130,6 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   cauchyValue = 0.0;
   convergence = false;
 
-  /*--- Prepare windowedAverages ---*/
-  if (config->GetTime_Domain()) {
-    for (const auto& it : historyOutput_Map) {
-      const auto& fieldIdentifier = it.first;
-      const auto& field = it.second;
-      if (field.fieldType == HistoryFieldType::COEFFICIENT) {
-        // Pre-fill map with CWindowAverages with the specified windowing-function
-        windowedTimeAverages.insert({fieldIdentifier, CWindowedAverage(config->GetKindWindow())});
-      }
-    }
-  }
-
   /*--- Initialize time convergence monitoring structure ---*/
 
   nWndCauchy_Elems = config->GetWnd_Cauchy_Elems();
@@ -1927,7 +1915,11 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if (config->GetTime_Domain()){
-        auto& timeAverage = windowedTimeAverages.at(historyOutput_List[iField]);
+        auto it = windowedTimeAverages.find(fieldIdentifier);
+        if (it == windowedTimeAverages.end()) {
+          it = windowedTimeAverages.insert({fieldIdentifier, CWindowedAverage(config->GetKindWindow())}).first;
+        }
+        auto& timeAverage = it->second;
         timeAverage.addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
         SetHistoryOutputValue("TAVG_" + fieldIdentifier, timeAverage.GetVal());
         if (config->GetDirectDiff() != NO_DERIVATIVE) {

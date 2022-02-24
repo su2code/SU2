@@ -78,7 +78,7 @@ private:
   /*!
    * \brief Creates a new CWindowedAverage with the specified windowing function
    */
-  inline explicit CWindowedAverage(WINDOW_FUNCTION windowId = WINDOW_FUNCTION::SQUARE) : windowingFunctionId(windowId)  {
+  inline explicit CWindowedAverage(WINDOW_FUNCTION windowId) : windowingFunctionId(windowId)  {
     if (windowId==WINDOW_FUNCTION::SQUARE) {
       values.push_back(0.);
     }  
