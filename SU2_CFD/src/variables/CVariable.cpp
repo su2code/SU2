@@ -72,18 +72,18 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
       AD_InputIndex.resize(nPoint,nVar) = -1;
       AD_OutputIndex.resize(nPoint,nVar) = -1;
     }
+
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      SolutionExtra.resize(1) = su2double(1e-16);
+      if (config->GetMultizone_Problem()) {
+        SolutionExtra_BGS_k.resize(1) = su2double(1e-16);
+        ExternalExtra.resize(1) = su2double(0.0);
+      }
+    }
   }
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
-
-  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    SolutionExtra.resize(1) = su2double(1e-16);
-    if (config->GetMultizone_Problem()) {
-      SolutionExtra_BGS_k.resize(1) = su2double(1e-16);
-      ExternalExtra.resize(1) = su2double(0.0);
-    }
-  }
 }
 
 void CVariable::Set_OldSolution() {

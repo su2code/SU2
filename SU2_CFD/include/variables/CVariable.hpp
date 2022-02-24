@@ -105,22 +105,6 @@ protected:
   VectorType SolutionExtra_Direct; // Stores values of the original direct solution, for later resetting
   vector<su2double*> SolutionExtra_OriginAdresses; // Stores pointers to the original vars, these vars are resetted via this pointer vector
 
- public: // Make public for easy debug access
-
-  void Add_SolutionExtra_To_ExternalExtra() {
-    assert(SolutionExtra.size() == ExternalExtra.size());
-    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
-      ExternalExtra[iEntry] = SolutionExtra[iEntry];
-  }
-
-  void Add_ExternalExtra_To_SolutionExtra() {
-    assert(SolutionExtra.size() == ExternalExtra.size());
-    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
-      SolutionExtra[iEntry] += ExternalExtra[iEntry];
-  }
-
-  inline VectorType& GetSolutionExtra() { return SolutionExtra; }
-
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
@@ -433,6 +417,30 @@ public:
   inline void Add_External(unsigned long iPoint, const su2double* val_sol) {
     for(unsigned long iVar = 0; iVar < nVar; iVar++) External(iPoint,iVar) += val_sol[iVar];
   }
+
+  /*!
+   * \brief Store the adjoint solution of the extra adjoint into the external container.
+   */
+  void Add_SolutionExtra_To_ExternalExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      ExternalExtra[iEntry] = SolutionExtra[iEntry];
+  }
+
+  /*!
+   * \brief Add the external contribution to the solution for the extra adjoint solutions.
+   */
+  void Add_ExternalExtra_To_SolutionExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      SolutionExtra[iEntry] += ExternalExtra[iEntry];
+  }
+
+  /*!
+   * \brief Return the extra adjoint solution.
+   * \return Reference to extra adjoint solution.
+   */
+  inline VectorType& GetSolutionExtra() { return SolutionExtra; }
 
   /*!
    * \brief Update the variables using a conservative format.
