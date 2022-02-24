@@ -94,10 +94,11 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
-  VectorType SolutionExtra; // Stores the full adjoint solution
-  VectorType ExternalExtra; // External storage for the adjoint value (i.e. for the OF mainly)
+  VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
+                                        Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
+  VectorType ExternalExtra; /*!< \brief External storage for the adjoint value (i.e. for the OF mainly */
 
-  VectorType SolutionExtra_BGS_k; // Intermediate storage, enables cross term extraction as that is also pushed to Solution
+  VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */

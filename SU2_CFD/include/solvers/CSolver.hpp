@@ -3545,10 +3545,25 @@ public:
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
+  /*!
+   * \brief Register In- or Output.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   */
   virtual void RegisterSolutionExtra(bool input, const CConfig* config) {}
 
+  /*!
+   * \brief Seed the adjoint of the extra solution at the output.
+   * \param[in] adj_sol - Vector containing the adjoint solution to seed.
+   * \param[in] config - The particular config.
+   */
   virtual void SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) {}
 
+  /*!
+   * \brief Extract the adjoint of the extra solution at the input.
+   * \param[out] adj_sol - Vector to store the adjoint into.
+   * \param[in] config - The particular config.
+   */
   virtual void ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) {}
 
   /*!
