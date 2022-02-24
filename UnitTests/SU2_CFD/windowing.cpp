@@ -71,11 +71,11 @@ struct CWindowingTest {
 };
 
 TEST_CASE("BUMP", "[Windowing]") { 
-    su2double avg = 0;
-    avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 10, 0);
-    CHECK(avg == Approx(1.1851).epsilon(0.001));
-    avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 100, 10);
-    CHECK(avg == Approx(1.1883).epsilon(0.001));
+  su2double avg = 0;
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 10, 0);
+  CHECK(avg == Approx(1.1851).epsilon(0.001));
+  avg = CWindowingTest::calcAverage(WINDOW_FUNCTION::BUMP, 100, 10);
+  CHECK(avg == Approx(1.1883).epsilon(0.001));
 }
 
 TEST_CASE("HANN", "[Windowing]") {
