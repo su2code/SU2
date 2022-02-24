@@ -82,7 +82,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     SU2_MPI::Error("Oops! The CDiscAdjSolver static array sizes are not large enough.",CURRENT_FUNCTION);
   }
 
-  vector<su2double> Solution(nVar,1e-16); //TK::Why 1e-16 and not 1 or 0?
+  vector<su2double> Solution(nVar,1e-16);
   nodes = new CDiscAdjVariable(Solution.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 

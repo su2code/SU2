@@ -4304,8 +4304,8 @@ public:
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   /*!
-   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
-   * \return Struct holding 4 su2doubles.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
+   * \return Struct holding streamwise periodic values.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() { return StreamwisePeriodicValues(); }
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValuesUpdated() { return StreamwisePeriodicValues(); }

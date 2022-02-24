@@ -114,7 +114,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    AddHistoryOutput("ADJOINT_DP", "Adjoint_DP", ScreenOutputFormat::FIXED, "ADJOINT_DP", "Adjoint value of pressure drop.", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("ADJOINT_SolExtra", "Adjoint_SolExtra", ScreenOutputFormat::FIXED, "ADJOINT_SOLEXTRA", "Adjoint value of the first extra Solution.", HistoryFieldType::COEFFICIENT);
   }
 
   AddHistoryOutputFields_AdjScalarRMS_RES(config);
@@ -210,8 +210,8 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("RMS_ADJ_RAD_ENERGY", log10(adjrad_solver->GetRes_RMS(0)));
   }
 
-  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    SetHistoryOutputValue("ADJOINT_DP", adjflow_solver->GetNodes()->GetSolutionExtra()[0]);
+  if (adjflow_solver->GetNodes()->GetSolutionExtra().size() > 0) {
+    SetHistoryOutputValue("ADJOINT_SOLEXTRA", adjflow_solver->GetNodes()->GetSolutionExtra()[0]);
   }
 
   SetHistoryOutputValue("MAX_ADJ_PRESSURE", log10(adjflow_solver->GetRes_Max(0)));
