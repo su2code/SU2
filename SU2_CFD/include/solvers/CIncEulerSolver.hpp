@@ -398,8 +398,7 @@ public:
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
    * \return Struct holding streamwise periodic values.
    */
-  StreamwisePeriodicValues GetStreamwisePeriodicValues() final { return SPvals; }
-  StreamwisePeriodicValues GetStreamwisePeriodicValuesUpdated() final { return SPvalsUpdated; }
+  StreamwisePeriodicValues GetStreamwisePeriodicValues() const final { return SPvals; }
 
   /*!
    * \brief Register In- or Output.

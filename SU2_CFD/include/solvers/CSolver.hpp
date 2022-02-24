@@ -4307,8 +4307,7 @@ public:
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
    * \return Struct holding streamwise periodic values.
    */
-  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() { return StreamwisePeriodicValues(); }
-  virtual StreamwisePeriodicValues GetStreamwisePeriodicValuesUpdated() { return StreamwisePeriodicValues(); }
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
   /*!
    * \brief Save snapshot or POD data using libROM
