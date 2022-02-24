@@ -3113,13 +3113,13 @@ void CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
   }
 }
 
-void CIncEulerSolver::SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) {
+void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]));
   }
 }
 
-void CIncEulerSolver::ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) {
+void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
   }

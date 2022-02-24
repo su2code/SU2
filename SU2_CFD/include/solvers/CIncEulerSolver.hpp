@@ -412,12 +412,12 @@ public:
    * \param[in] adj_sol - Vector containing the adjoint solution to seed.
    * \param[in] config - The particular config.
    */
-  void SetAdjoint_SolutionExtra(const VectorType& adj_sol, const CConfig* config) final;
+  void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) final;
 
   /*!
    * \brief Extract the adjoint of the extra solution at the input.
    * \param[out] adj_sol - Vector to store the adjoint into.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) final;
+  void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
 };

@@ -3562,7 +3562,7 @@ public:
    * \param[out] adj_sol - Vector to store the adjoint into.
    * \param[in] config - The particular config.
    */
-  virtual void ExtractAdjoint_SolutionExtra(VectorType& adj_sol, const CConfig* config) {}
+  virtual void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {}
 
   /*!
    * \brief  A virtual member.
