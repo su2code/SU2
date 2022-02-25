@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -808,6 +808,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
   Marker_CfgFile_Deform_Mesh_Sym_Plane   = nullptr;  Marker_All_Deform_Mesh_Sym_Plane   = nullptr;
   Marker_CfgFile_Fluid_Load    = nullptr;  Marker_All_Fluid_Load    = nullptr;
+  Marker_CfgFile_SobolevBC     = nullptr;  Marker_All_SobolevBC     = nullptr;
 
   Marker_CfgFile_Turbomachinery       = nullptr; Marker_All_Turbomachinery       = nullptr;
   Marker_CfgFile_TurbomachineryFlag   = nullptr; Marker_All_TurbomachineryFlag   = nullptr;
@@ -818,7 +819,7 @@ void CConfig::SetPointersNull(void) {
   Marker_DV                   = nullptr;   Marker_Moving            = nullptr;    Marker_Monitoring = nullptr;
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
-  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_SobolevBC  = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -1571,6 +1572,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
+  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -1587,8 +1590,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("HIGHLITE_AREA", Highlite_Area, 1.0);
   /* DESCRIPTION: Fan poly efficiency */
   addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
-  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
-  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
@@ -1968,7 +1969,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
-  /* DESCRIPTION: Sensitivity smoothing  */
+  /* DESCRIPTION: Sensitivity smoothing */
   addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
   /* DESCRIPTION: Continuous Adjoint frozen viscosity */
   addBoolOption("FROZEN_VISC_CONT", Frozen_Visc_Cont, true);
@@ -1986,6 +1987,36 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
+
+  /*!\par CONFIG_CATEGORY: Sobolev Gradient Solver Parameters \ingroup Config */
+  /*--- Options related to the Sobolev smoothing solver ---*/
+
+  /* DESCRIPTION: Switch to activate gradient smoothing */
+  addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
+  /* DESCRIPTION: Epsilon of the identity term in the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_EPSILON1",SmoothingEps1, 1.0);
+  /* DESCRIPTION: Epsilon of the Laplace term in the Laplace Beltrami Operator */
+  addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
+  /* DESCRIPTION: Switch to calculate for each dimension separately */
+  addBoolOption("SEPARATE_DIMENSIONS", SmoothSepDim, false);
+  /* DESCRIPTION: Switch to activate working on the design surfaces only */
+  addBoolOption("SMOOTH_ON_SURFACE",SmoothOnSurface, false);
+  /* DESCRIPTION: Switch to activate zero Dirichlet boundary for surface mode */
+  addBoolOption("DIRICHLET_SURFACE_BOUNDARY", SmoothDirichletSurfaceBound, false);
+  /* DESCRIPTION: Switch to activate the debbuging modus */
+  addEnumOption("SOBOLEV_MODE", SmoothNumMode, Sobolev_Modus_Map, ENUM_SOBOLEV_MODUS::NONE);
+  /*!\brief HESS_OBJFUNC_FILENAME
+   *  \n DESCRIPTION: Output filename for the Sobolev Hessian approximation.  \ingroup Config*/
+  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
+
+  /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: ILU \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -2076,6 +2107,8 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("SURFACE_MOVEMENT",nKind_SurfaceMovement, Kind_SurfaceMovement, SurfaceMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  /* DESCRIPTION: Marker(s) of gradient problem boundaries. */
+  addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_SobolevBC);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -3162,7 +3195,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.2.1 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.3.0 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3179,7 +3212,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2021, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2022, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -4755,8 +4788,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    pressure drop objective function is selected. ---*/
 
   for (unsigned short iObj = 0; iObj < nObj; iObj++) {
-    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze != 2)) {
-      SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
+    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze < 2)) {
+      SU2_MPI::Error("Must list the first two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name, ...).", CURRENT_FUNCTION);
     }
   }
 
@@ -5241,7 +5274,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_DV, iMarker_Moving, iMarker_SobolevBC, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
@@ -5291,6 +5324,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
+  Marker_All_SobolevBC      = new unsigned short[nMarker_All] (); // Store wether the boundary should apply to the gradient smoothing.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
@@ -5316,6 +5350,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = "SEND_RECEIVE";
@@ -5698,8 +5733,16 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         break;
       }
     }
+    
     if(!found) {
-      SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      if (nZone==1)
+        SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+      // In case of multiple zones, the markers might appear only in zonal config and not in the Master.
+      // A loop over all zones would need to be included which is not straight forward as this can only be
+      // checked once all zonal configs are read.
+      else if (rank == MASTER_NODE)
+        cout << "Warning: DV_MARKER contains marker names that do not exist in the lists of BCs of the master config file.\n"
+                "Make sure the marker names exist in the zonal config files" << endl;
     }
   }
 
@@ -5738,6 +5781,13 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_SobolevBC[iMarker_CfgFile] = NO;
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_SobolevBC[iMarker_SobolevBC])
+        Marker_CfgFile_SobolevBC[iMarker_CfgFile] = YES;
+  }
+
 }
 
 void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
@@ -5754,7 +5804,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_Emissivity,
-  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
+  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
+  iMarker_SobolevBC;
 
   bool fea = ((Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM));
 
@@ -5813,14 +5864,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == SU2_NONEQ){
+        if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == SU2_NONEQ){
+        if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
@@ -7260,6 +7311,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_SobolevBC != 0) {
+    BoundaryTable << "Sobolev boundary";
+    for (iMarker_SobolevBC = 0; iMarker_SobolevBC < nMarker_SobolevBC; iMarker_SobolevBC++) {
+      BoundaryTable << Marker_SobolevBC[iMarker_SobolevBC];
+      if (iMarker_SobolevBC < nMarker_SobolevBC-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_ActDiskOutlet != 0) {
     if (GetKind_ActDisk() == VARIABLE_LOAD) {
       cout << endl << "Actuator disk with variable load." << endl;
@@ -7571,6 +7631,13 @@ unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_SobolevBC(string val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
+}
+
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
@@ -7736,6 +7803,9 @@ CConfig::~CConfig(void) {
   delete [] Marker_CfgFile_MixingPlaneInterface;
   delete [] Marker_All_MixingPlaneInterface;
 
+  delete [] Marker_CfgFile_SobolevBC;
+  delete [] Marker_All_SobolevBC;
+
   delete[] Marker_DV;
   delete[] Marker_Moving;
   delete[] Marker_Monitoring;
@@ -7748,6 +7818,7 @@ CConfig::~CConfig(void) {
   delete[] Marker_CHTInterface;
   delete [] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
+  delete[] Marker_SobolevBC;
 
   delete[] Kind_Inc_Inlet;
   delete[] Kind_Inc_Outlet;
@@ -8684,6 +8755,7 @@ bool CConfig::GetVolumetric_Movement() const {
       Kind_SU2 == SU2_COMPONENT::SU2_DOT ||
       DirectDiff)
   { volumetric_movement = true;}
+
   return volumetric_movement;
 }
 
@@ -8744,6 +8816,16 @@ unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
     if (Marker_Fluid_Load[iMarker_Fluid_Load] == val_marker) break;
 
   return iMarker_Fluid_Load;
+}
+
+unsigned short CConfig::GetMarker_SobolevBC(string val_marker) const {
+  unsigned short iMarker_Sobolev;
+
+  /*--- Find the marker for this moving boundary. ---*/
+  for (iMarker_Sobolev = 0; iMarker_Sobolev < nMarker_SobolevBC; iMarker_Sobolev++)
+    if (Marker_SobolevBC[iMarker_Sobolev] == val_marker) break;
+
+  return iMarker_Sobolev;
 }
 
 su2double CConfig::GetExhaust_Temperature_Target(string val_marker) const {

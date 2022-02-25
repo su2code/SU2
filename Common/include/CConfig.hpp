@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -434,6 +434,20 @@ private:
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
+  /* Gradient smoothing options */
+  su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
+  su2double SmoothingEps2;          /*!< \brief Parameter for the Laplace part in gradient smoothing. */
+  bool SmoothGradient;              /*!< \brief Flag for enabling gradient smoothing. */
+  bool SmoothSepDim;                /*!< \brief Flag for enabling separated calculation for every dimension. */
+  bool SmoothOnSurface;             /*!< \brief Flag for assembling the system only on the surface. */
+  bool SmoothDirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
+  ENUM_SOBOLEV_MODUS SmoothNumMode; /*!< \brief The mode in which the Sobolev smoothing solver is applied. */
+
+  unsigned short  Kind_Grad_Linear_Solver,  /*!< Numerical method to smooth the gradient */
+  Kind_Grad_Linear_Solver_Prec;             /*!< \brief Preconditioner of the linear solver. */
+  su2double Grad_Linear_Solver_Error;       /*!< \brief Min error of the linear solver for the gradient smoothing. */
+  unsigned long Grad_Linear_Solver_Iter; /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
+
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
@@ -676,7 +690,8 @@ private:
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
-  nMarker_WallFunctions;              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
   string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
   *Marker_Designing,                  /*!< \brief Markers to design. */
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
@@ -686,7 +701,8 @@ private:
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
-  *Marker_WallFunctions;              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
@@ -708,6 +724,7 @@ private:
   *Marker_All_Fluid_Load,            /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,              /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,             /*!< \brief Global index for moving using the grid information. */
+  *Marker_All_SobolevBC,             /*!< \brief Global index for boundary condition applied to gradient smoothing. */
   *Marker_CfgFile_Monitoring,            /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,             /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,               /*!< \brief Global index for monitoring using the config information. */
@@ -723,7 +740,8 @@ private:
   *Marker_CfgFile_Fluid_Load,         /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,           /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,                 /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_CfgFile_PerBound;           /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PerBound,           /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_SobolevBC;          /*!< \brief Global index for boundary condition applied to gradient smoothing using the config information. */
   string *PlaneTag;                   /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
@@ -767,7 +785,8 @@ private:
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -2788,6 +2807,18 @@ public:
   unsigned short GetnDV_Value(unsigned short iDV) const { return nDV_Value[iDV]; }
 
   /*!
+   * \brief Get the total number of design variables.
+   */
+  unsigned short GetnDV_Total(void) const {
+    if (!nDV_Value) return 0;
+    unsigned short sum = 0;
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      sum += nDV_Value[iDV];
+    }
+    return sum;
+  }
+
+  /*!
    * \brief Get the number of FFD boxes.
    * \return Number of FFD boxes.
    */
@@ -2966,6 +2997,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Moving(void) const { return nMarker_Moving; }
+
+  /*!
+   * \brief Get the total number of markers for gradient treatment.
+   * \return Total number of markers for gradient treatment.
+   */
+  unsigned short GetnMarker_SobolevBC(void) const { return nMarker_SobolevBC; }
 
   /*!
    * \brief Get the total number of Python customizable markers.
@@ -3330,6 +3367,13 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
   /*!
+   * \brief Set if a marker how <i>val_marker</i> is going to be applied in gradient treatment.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_sobolev - 0 or 1 depending if the marker is selected.
+   */
+  void SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev) { Marker_All_SobolevBC[val_marker] = val_sobolev; }
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
@@ -3472,6 +3516,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker) const { return Marker_All_Moving[val_marker]; }
+
+  /*!
+   * \brief Get the information if gradient treatment uses a marker <i>val_marker</i>.
+   * \param[in] val_marker
+   * \return 0 or 1 depending if the marker is going to be selected.
+   */
+  unsigned short GetMarker_All_SobolevBC(unsigned short val_marker) const { return Marker_All_SobolevBC[val_marker]; }
 
   /*!
    * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH marker
@@ -4006,18 +4057,6 @@ public:
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
 
   /*!
    * \brief Get min error of the linear solver for the implicit formulation.
@@ -5951,6 +5990,11 @@ public:
   su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
 
   /*!
+   * \brief Set the value of the pressure delta from which body force vector is computed. Necessary for Restart metadata.
+   */
+  void SetStreamwise_Periodic_PressureDrop(su2double Streamwise_Periodic_PressureDrop_) { Streamwise_Periodic_PressureDrop = Streamwise_Periodic_PressureDrop_; }
+
+  /*!
    * \brief Get the value of the massflow from which body force vector is computed.
    * \return Massflow for body force computation.
    */
@@ -6130,6 +6174,12 @@ public:
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
+
+  /*!
+   * \brief Get the gradient boundary information from the config definition for the marker <i>val_marker</i>.
+   * \return Gradient boundary information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_SobolevBC(string val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
@@ -6469,6 +6519,12 @@ public:
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Fluid_Load(string val_marker) const;
+
+  /*!
+   * \brief Get the internal index for a gradient boundary condition <i>val_marker</i>.
+   * \return Internal index for a gradient boundary  condition <i>val_marker</i>.
+   */
+  unsigned short GetMarker_SobolevBC(string val_marker) const;
 
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -9048,7 +9104,7 @@ public:
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
-  bool GetIntegrated_HeatFlux(void) const { return Integrated_HeatFlux; }
+  bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
    * \brief Get Compute Average.
@@ -9513,4 +9569,77 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+
+  /*!
+   * \brief Check if the gradient smoothing is active
+   * \return true means that smoothing is applied to the sensitivities
+   */
+  bool GetSmoothGradient(void) const {return SmoothGradient; }
+
+  /*!
+   * \brief Gets the factor epsilon in front of the Laplace term
+   * \return epsilon
+   */
+  su2double GetSmoothingEps1(void) const { return SmoothingEps1; }
+
+  /*!
+   * \brief Gets the factor zeta in front of the identity term
+   * \return zeta
+   */
+  su2double GetSmoothingEps2(void) const { return SmoothingEps2; }
+
+  /*!
+   * \brief Check if we split in the dimensions
+   * \return true means that smoothing is for each dimension separate
+   */
+  bool GetSmoothSepDim(void) const { return SmoothSepDim; }
+
+  /*!
+   * \brief Check if we assemble the operator on the surface
+   * \return true means that smoothing is done on the surface level
+   */
+  bool GetSmoothOnSurface(void) const { return SmoothOnSurface; }
+
+  /*!
+   * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
+   * \return true means that we use zero Dirichlet boundary
+   */
+  bool GetDirichletSurfaceBound(void) const { return SmoothDirichletSurfaceBound; }
+
+  /*!
+   * \brief The modus of operation for the Sobolev solver
+   * \return returns on what level we operate
+   */
+  ENUM_SOBOLEV_MODUS GetSobMode(void) const { return SmoothNumMode; }
+
+  /*!
+   * \brief Get the name of the file with the hessian of the objective function.
+   * \return Name of the file with the hessian of the objective function.
+   */
+  string GetObjFunc_Hess_FileName(void) const { return ObjFunc_Hess_FileName; }
+
+  /*!
+   * \brief Get min error of the linear solver for the gradient smoothing.
+   * \return Min error of the linear solver for the gradient smoothing.
+   */
+  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
+
+  /*!
+   * \brief Get the kind of solver for the gradient smoothing.
+   * \return Numerical solver for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
+
+  /*!
+   * \brief Get the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
+
+    /*!
+   * \brief Get max number of iterations of the for the gradient smoothing.
+   * \return Max number of iterations of the linear solver for the gradient smoothing.
+   */
+  unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
 };

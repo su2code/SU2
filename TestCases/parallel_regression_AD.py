@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -447,6 +447,23 @@ def main():
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())
     test_list.append(dyn_discadj_fsi)
+
+    ####################################################################
+    ###  Sobolev Gradient Smoothing                                  ###
+    ####################################################################
+
+    # Sobolev gradient smoothing solver
+    grad_smooth_oneram6           = TestCase('grad_smooth_sob')
+    grad_smooth_oneram6.cfg_dir   = "grad_smooth/oneram6"
+    grad_smooth_oneram6.cfg_file  = "ONERAM6_gradsmooth.cfg"
+    grad_smooth_oneram6.test_iter = 2
+    grad_smooth_oneram6.su2_exec  = "mpirun -n 2 SU2_DOT_AD"
+    grad_smooth_oneram6.timeout   = 1600
+    grad_smooth_oneram6.reference_file = "of_hess.dat.ref"
+    grad_smooth_oneram6.test_file = "of_hess.dat"
+    pass_list.append(grad_smooth_oneram6.run_filediff())
+    test_list.append(grad_smooth_oneram6)
+
 
     # Tests summary
     print('==================================================================')

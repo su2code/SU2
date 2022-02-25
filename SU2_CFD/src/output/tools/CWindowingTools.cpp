@@ -2,14 +2,14 @@
  * \file signal_processing_toolbox.cpp
  * \brief Signal processing tools
  * \author S. Schotthöfer
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,59 +67,37 @@ su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long e
 }
 
 void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
-  if (curTimeIter < startIter) return;
-  if (curTimeIter != lastTimeIter) {
-    lastTimeIter = curTimeIter;
-    values.push_back(valIn);
-  }
-  else values.back() = valIn;
-}
-
-su2double CWindowedAverage::WindowedUpdate(WINDOW_FUNCTION windowId){
-  if(values.size()>0){
-    switch (windowId){
-      case WINDOW_FUNCTION::HANN:        val= HannWindowing();         return val;
-      case WINDOW_FUNCTION::HANN_SQUARE: val= HannSquaredWindowing();  return val;
-      case WINDOW_FUNCTION::BUMP:        val= BumpWindowing();         return val;
-      case WINDOW_FUNCTION::SQUARE:      val= NoWindowing();           return val;
+  if (curTimeIter < startIter) return;  // Averaging not yet started.
+  const unsigned long windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
+  if (curTimeIter != lastTimeIter) {           // Handle new timestep
+    if (curTimeIter > startIter) {  // Only update sum over previous timesteps, if there are any
+      cachedSum = UpdateCachedSum(windowWidth-1);  // Save weighted sum up to last time step for later use
+    } 
+    lastTimeIter = curTimeIter;                // New time iteration step, update iteration number.
+    // Add new sample
+    if (windowingFunctionId != WINDOW_FUNCTION::SQUARE) {
+      values.push_back(valIn);  // Add new sample to list for non-trivial windows
     }
   }
-  return 0.0;
+  else {  // We are within the same timestep. Update the last sample
+    values.back() = valIn;
+  }
+  // Update the windowed-average from the weighted sum of previous samples and the latest sample
+  const su2double totalSum = cachedSum + valIn*GetWndWeight(windowingFunctionId, windowWidth-1, windowWidth-1);
+  val = totalSum / static_cast<su2double>(windowWidth);
 }
 
-/* Definitions below are according to the window definitions in the paper of
- * Krakos et al. : "Sensitivity analysis of limit cycle oscillations"
- *                  by Krakos, J. A. and Wang, Q. and Hall, S. R. and Darmfoal, D. L..
- */
-su2double CWindowedAverage::NoWindowing() const {
-  su2double wnd_timeAvg = 0.0;
-  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
-    wnd_timeAvg+=values[curTimeIter];
+su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const { 
+  // Handle square window
+  if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
+  // Handle non-trivial windows
+  // At this point new samples are not yet added. Therefore: values.size()=windowWidth-1
+  su2double weightedSum = 0.0;
+  for (unsigned long curTimeIter = 0; curTimeIter < values.size(); curTimeIter++) {
+    // integrate over all but the last timestep-bin
+    weightedSum += values[curTimeIter] * GetWndWeight(windowingFunctionId, curTimeIter, windowWidth);
   }
-  return wnd_timeAvg/static_cast<su2double>(values.size());
+  return weightedSum;
 }
 
-su2double CWindowedAverage::HannWindowing() const {
-  su2double wnd_timeAvg = 0.0;
-  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
-    wnd_timeAvg+=values[curTimeIter]*HannWindow(curTimeIter,values.size()-1);
-  }
-  return wnd_timeAvg/static_cast<su2double>(values.size());
-}
-
-su2double CWindowedAverage::HannSquaredWindowing() const {
-  su2double wnd_timeAvg = 0.0;
-  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
-    wnd_timeAvg+=values[curTimeIter]*HannSquaredWindow(curTimeIter,values.size()-1);
-  }
-  return wnd_timeAvg/static_cast<su2double>(values.size());
-}
-
-su2double CWindowedAverage::BumpWindowing() const {
-  su2double wnd_timeAvg = 0.0;
-  for(unsigned long curTimeIter=0; curTimeIter<values.size(); curTimeIter++){
-    wnd_timeAvg+=values[curTimeIter]*BumpWindow(curTimeIter,values.size()-1);
-  }
-  return wnd_timeAvg/static_cast<su2double>(values.size());
-}
 

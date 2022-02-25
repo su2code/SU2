@@ -2,14 +2,14 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -176,7 +176,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     } // loop periodic boundaries
   } // loop MarkerAll
 
-  // MPI Communication: Sum Area, Sum rho*A & T*A and divide by AreaGlobbal, sum massflow
+  // MPI Communication: Sum Area, Sum rho*A & T*A and divide by AreaGlobal, sum massflow
   su2double Area_Global(0), Average_Density_Global(0), MassFlow_Global(0), Temperature_Global(0);
   SU2_MPI::Allreduce(&Area_Local,            &Area_Global,            1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Average_Density_Local, &Average_Density_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -216,10 +216,10 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
           (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts
           it gets called 2x before the restart files are read such that the current massflow is
           Area*inital-velocity which can be way off!
-          With this there is still a slight inconsitency wrt to a non-restarted simulation: The restarted "zero-th"
+          With this there is still a slight inconsistency wrt to a non-restarted simulation: The restarted "zero-th"
           iteration does not get a pressure-update but the continuing simulation would have an update here. This can be
           fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at
-          best ---*/
+          best. ---*/
     if((nZone==1 && InnerIter>0) ||
        (nZone>1  && OuterIter>0)) {
       SPvals.Streamwise_Periodic_PressureDrop = Pressure_Drop_new;
@@ -232,7 +232,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     /*---------------------------------------------------------------------------------------------*/
     /*--- 3. Compute the integrated Heatflow [W] for the energy equation source term, heatflux  ---*/
     /*---    boundary term and recovered Temperature. The computation is not completely clear.  ---*/
-    /*---    Here the Heatflux from all Bounary markers in the config-file is used.             ---*/
+    /*---    Here the Heatflux from all Boundary markers in the config-file is used.            ---*/
     /*---------------------------------------------------------------------------------------------*/
 
     su2double HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;
@@ -384,16 +384,20 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   su2double Wall_HeatFlux = 0.0, Twall = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
 
-  switch(kind_boundary) {
+  switch (kind_boundary) {
     case HEAT_FLUX:
-      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+      if (config->GetIntegrated_HeatFlux()) {
+        Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+      }
       break;
     case ISOTHERMAL:
-      Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+      Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
       break;
     case HEAT_TRANSFER:
-      Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-      Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+      Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
+                             config->GetHeat_Flux_Ref();
+      Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
       break;
     default:
       SU2_MPI::Error("Unknown type of boundary condition.", CURRENT_FUNCTION);

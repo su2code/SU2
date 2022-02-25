@@ -2,14 +2,14 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
-#include "../../include/option_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CSysMatrix.hpp"
@@ -49,9 +48,9 @@ namespace {
 }
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) :
+CSysSolve<ScalarType>::CSysSolve(LINEAR_SOLVER_MODE linear_solver_mode) :
   eps(linSolEpsilon<ScalarType>()),
-  mesh_deform(mesh_deform_mode),
+  lin_sol_mode(linear_solver_mode),
   cg_ready(false),
   bcg_ready(false),
   smooth_ready(false),
@@ -253,7 +252,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
-      if (master && !mesh_deform) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+      if (master && (lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM)) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
 
@@ -830,30 +829,40 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   ScalarType SolverTol;
   bool ScreenOutput;
 
-  /*--- Normal mode ---*/
+  switch (lin_sol_mode) {
+    /*--- Mesh Deformation mode ---*/
+    case LINEAR_SOLVER_MODE::MESH_DEFORM: {
+      KindSolver   = config->GetKind_Deform_Linear_Solver();
+      KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
+      MaxIter      = config->GetDeform_Linear_Solver_Iter();
+      SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
+      ScreenOutput = config->GetDeform_Output();
+      break;
+    }
 
-  if(!mesh_deform) {
+    /*--- Gradient Smoothing mode ---*/
+    case LINEAR_SOLVER_MODE::GRADIENT_MODE: {
+      KindSolver   = config->GetKind_Grad_Linear_Solver();
+      KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+      MaxIter      = config->GetGrad_Linear_Solver_Iter();
+      SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
+      ScreenOutput = true;
+      break;
+    }
 
-    KindSolver   = config->GetKind_Linear_Solver();
-    KindPrecond  = config->GetKind_Linear_Solver_Prec();
-    MaxIter      = config->GetLinear_Solver_Iter();
-    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-    ScreenOutput = false;
-  }
-
-  /*--- Mesh Deformation mode ---*/
-
-  else {
-
-    KindSolver   = config->GetKind_Deform_Linear_Solver();
-    KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
-    MaxIter      = config->GetDeform_Linear_Solver_Iter();
-    SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
-    ScreenOutput = config->GetDeform_Output();
+    /*--- Normal mode
+     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning. ---*/
+    default: {
+      KindSolver   = config->GetKind_Linear_Solver();
+      KindPrecond  = config->GetKind_Linear_Solver_Prec();
+      MaxIter      = config->GetLinear_Solver_Iter();
+      SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+      ScreenOutput = false;
+      break;
+    }
   }
 
   /*--- Stop the recording for the linear solver ---*/
-
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()) {
@@ -931,10 +940,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if(TapeActive) {
 
     /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
-    const bool RequiresTranspose = !mesh_deform || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT);
+    const bool RequiresTranspose = ((lin_sol_mode!=LINEAR_SOLVER_MODE::MESH_DEFORM) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT));
 
-    if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
-    else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+    if      (lin_sol_mode==LINEAR_SOLVER_MODE::MESH_DEFORM)   KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+    else if (lin_sol_mode==LINEAR_SOLVER_MODE::GRADIENT_MODE) KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+    else    KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
 
     /*--- Build preconditioner for the transposed Jacobian ---*/
 
@@ -998,26 +1008,37 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   ScalarType SolverTol;
   bool ScreenOutput;
 
-  /*--- Normal mode ---*/
+  switch (lin_sol_mode) {
+    /*--- Mesh Deformation mode ---*/
+    case LINEAR_SOLVER_MODE::MESH_DEFORM: {
+      KindSolver   = config->GetKind_Deform_Linear_Solver();
+      KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
+      MaxIter      = config->GetDeform_Linear_Solver_Iter();
+      SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
+      ScreenOutput = config->GetDeform_Output();
+      break;
+    }
 
-  if(!mesh_deform) {
+    /*--- Gradient Smoothing mode ---*/
+    case LINEAR_SOLVER_MODE::GRADIENT_MODE: {
+      KindSolver   = config->GetKind_Grad_Linear_Solver();
+      KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
+      MaxIter      = config->GetGrad_Linear_Solver_Iter();
+      SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
+      ScreenOutput = true;
+      break;
+    }
 
-    KindSolver   = config->GetKind_DiscAdj_Linear_Solver();
-    KindPrecond  = config->GetKind_DiscAdj_Linear_Prec();
-    MaxIter      = config->GetLinear_Solver_Iter();
-    SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-    ScreenOutput = false;
-  }
-
-  /*--- Mesh Deformation mode ---*/
-
-  else {
-
-    KindSolver   = config->GetKind_Deform_Linear_Solver();
-    KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
-    MaxIter      = config->GetDeform_Linear_Solver_Iter();
-    SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
-    ScreenOutput = config->GetDeform_Output();
+    /*--- Normal mode
+     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning. ---*/
+    default: {
+      KindSolver   = config->GetKind_Linear_Solver();
+      KindPrecond  = config->GetKind_Linear_Solver_Prec();
+      MaxIter      = config->GetLinear_Solver_Iter();
+      SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+      ScreenOutput = false;
+      break;
+    }
   }
 
   /*--- Set up preconditioner and matrix-vector product ---*/

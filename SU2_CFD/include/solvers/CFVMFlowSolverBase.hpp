@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2014,7 +2014,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Provide the total heat load.
    * \return Value of the heat load (viscous contribution).
    */
-  inline su2double GetTotal_HeatFlux(void) const final { return Total_Heat; }
+  inline su2double GetTotal_HeatFlux() const final { return Total_Heat; }
 
   /*!
    * \brief Provide the total heat load.

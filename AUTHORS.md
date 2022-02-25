@@ -61,6 +61,7 @@ Brian Munguía
 Carsten Othmer
 Catarina Garbacz
 Charanya Venkatesan-Crome
+Christian Bauer
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
