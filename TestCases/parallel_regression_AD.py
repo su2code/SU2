@@ -348,7 +348,7 @@ def main():
 
     # 2D DA cht streamwise periodic case, 2 zones, PressureDrop objective, additional pressure drop adjoint equation
     da_sp_pinArray_cht_2d_mf           = TestCase('da_sp_pinArray_cht_2d_mf')
-    da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d_new"
+    da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
     da_sp_pinArray_cht_2d_mf.test_vals = [-4.609357, -1.273838, -1.502734, -18.503852, -0.834358, -5.813324, -19.074376, -48.287655]
