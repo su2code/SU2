@@ -3106,11 +3106,13 @@ void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
 
 }
 
-void CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     if (input) AD::RegisterInput(SPvals.Streamwise_Periodic_PressureDrop);
     else AD::RegisterOutput(SPvalsUpdated.Streamwise_Periodic_PressureDrop);
+    return 1;
   }
+  return 0;
 }
 
 void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {

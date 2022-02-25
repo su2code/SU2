@@ -29,19 +29,18 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_sol,
                                unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+
+  /*-- Store some information about direct solver ---*/
+
+  KindDirect_Solver = Kind_Solver;
+  direct_solver = direct_sol;
 
   adjoint = true;
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
-
-  /*--- Initialize arrays to NULL ---*/
-
-  /*-- Store some information about direct solver ---*/
-  this->KindDirect_Solver = Kind_Solver;
-  this->direct_solver = direct_solver;
 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
@@ -85,6 +84,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   vector<su2double> Solution(nVar,1e-16);
   nodes = new CDiscAdjVariable(Solution.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
+
+  /*--- Allocate extra solution variables, if any are in use. ---*/
+
+  const auto nVarExtra = direct_solver->RegisterSolutionExtra(true, config);
+  nodes->AllocateAdjointSolutionExtra(nVarExtra);
 
   switch(KindDirect_Solver){
   case RUNTIME_FLOW_SYS:

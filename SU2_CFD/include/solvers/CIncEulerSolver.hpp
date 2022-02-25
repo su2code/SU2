@@ -404,8 +404,9 @@ public:
    * \brief Register In- or Output.
    * \param[in] input - Boolean whether In- or Output should be registered.
    * \param[in] config - The particular config.
+   * \returns The number of extra variables.
    */
-  void RegisterSolutionExtra(bool input, const CConfig* config) final;
+  unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
 
   /*!
    * \brief Seed the adjoint of the extra solution at the output.
