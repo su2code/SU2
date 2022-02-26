@@ -76,7 +76,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.600340, 1.470386, -0.778623, 266.569743] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals = [-4.626384, 1.444465, -0.750978, 241.757337] #last 4 lines
     sp_pinArray_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_2d_mf_hf.timeout   = 1600
     sp_pinArray_2d_mf_hf.tol       = 0.00001
