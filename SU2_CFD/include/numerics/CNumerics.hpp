@@ -1431,42 +1431,6 @@ public:
   inline virtual void SetIntermittency(su2double intermittency_in) { }
 
   /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline virtual void SetProduction(su2double val_production) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline virtual void SetDestruction(su2double val_destruction) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline virtual void SetCrossProduction(su2double val_crossproduction) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline virtual su2double GetProduction(void) const { return 0; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline virtual su2double GetDestruction(void) const { return 0; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline virtual su2double GetCrossProduction(void) const { return 0; }
-
-  /*!
    * \brief A virtual member.
    */
   inline virtual su2double GetGammaBC(void) const { return 0.0; }
