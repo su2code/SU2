@@ -2207,7 +2207,7 @@ void CSolver::Add_Solution_To_External() {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
 
-  base_nodes->Add_SolutionExtra_To_ExternalExtra();
+  base_nodes->Set_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {

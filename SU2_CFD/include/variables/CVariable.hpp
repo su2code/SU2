@@ -416,7 +416,7 @@ public:
   /*!
    * \brief Store the adjoint solution of the extra adjoint into the external container.
    */
-  void Add_SolutionExtra_To_ExternalExtra() {
+  void Set_ExternalExtra_To_SolutionExtra() {
     assert(SolutionExtra.size() == ExternalExtra.size());
     for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
       ExternalExtra[iEntry] = SolutionExtra[iEntry];
