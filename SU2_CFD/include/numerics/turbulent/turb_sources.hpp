@@ -61,7 +61,6 @@ private:
 
 protected:
   const bool rotating_frame = false;
-  bool roughwall = false;
 
 public:
   /*!
@@ -137,7 +136,6 @@ private:
   su2double dr, dg, dfw;
   unsigned short iDim;
   bool transition;
-  bool axisymmetric;
 
 public:
   /*!

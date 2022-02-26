@@ -82,9 +82,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA<T>::ComputeResidual(const CCon
 //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  // Set the boolean here depending on whether the point is closest to a rough wall or not.
-  roughwall = (roughness_i > 0.0);
-
   Density_i = V_i[idx.Density()];
   Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
 
