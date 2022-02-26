@@ -27,8 +27,8 @@
 
 #pragma once
 
-#include "../scalar/scalar_sources.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../scalar/scalar_sources.hpp"
 
 /*!
  * \class CommonSAVariables
@@ -77,7 +77,11 @@ class CSourceBase_TurbSA_ : public CNumerics {
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
         rotating_frame(config->GetRotating_Frame()),
-        transition(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {}
+        transition(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+    /*--- Setup the Jacobian pointer, we need to return su2double** but we know
+     * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
+    Jacobian_i = &Jacobian_Buffer;
+  }
 
   /*!
    * \brief Residual for source term integration.
@@ -124,7 +128,7 @@ class CSourceBase_TurbSA_ : public CNumerics {
       /*--- Vorticity ---*/
       model_var.S = model_var.Omega;
 
-      model_var.dist_i_2 = dist_i * dist_i;
+      model_var.dist_i_2 = pow(dist_i, 2);
       const su2double nu = Laminar_Viscosity_i / Density_i;
       model_var.inv_k2_d2 = 1.0 / (model_var.k2 * model_var.dist_i_2);
 
@@ -142,13 +146,12 @@ class CSourceBase_TurbSA_ : public CNumerics {
       const su2double Ji_3 = Ji_2 * model_var.Ji;
 
       model_var.fv1 = Ji_3 / (Ji_3 + model_var.cv1_3);
-      model_var.d_fv1 = 3.0 * Ji_2 * model_var.cv1_3 / (nu * pow(Ji_3 + model_var.cv1_3, 2));
+      model_var.d_fv1 = 3 * Ji_2 * model_var.cv1_3 / (nu * pow(Ji_3 + model_var.cv1_3, 2));
 
       /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
-      model_var.fv2 =
-          1.0 -
-          ScalarVar_i[0] / (nu + ScalarVar_i[0] * model_var.fv1);  // From NASA turb modeling resource and 2003 paper
-      model_var.d_fv2 = -(1.0 / nu - Ji_2 * model_var.d_fv1) / pow(1.0 + model_var.Ji * model_var.fv1, 2);
+      // From NASA turb modeling resource and 2003 paper
+      model_var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * model_var.fv1);
+      model_var.d_fv2 = -(1 / nu - Ji_2 * model_var.d_fv1) / pow(1 + model_var.Ji * model_var.fv1, 2);
 
       /*--- Compute ft2 term ---*/
       ft2Type::get(model_var);
@@ -161,13 +164,13 @@ class CSourceBase_TurbSA_ : public CNumerics {
       /*--- Compute auxiliary function r ---*/
       rType::get(ScalarVar_i[0], model_var);
 
-      model_var.g = model_var.r + model_var.cw2 * (pow(model_var.r, 6.0) - model_var.r);
-      model_var.g_6 = pow(model_var.g, 6.0);
-      model_var.glim = pow((1.0 + model_var.cw3_6) / (model_var.g_6 + model_var.cw3_6), 1.0 / 6.0);
+      model_var.g = model_var.r + model_var.cw2 * (pow(model_var.r, 6) - model_var.r);
+      model_var.g_6 = pow(model_var.g, 6);
+      model_var.glim = pow((1 + model_var.cw3_6) / (model_var.g_6 + model_var.cw3_6), 1.0 / 6.0);
       model_var.fw = model_var.g * model_var.glim;
 
-      model_var.d_g = model_var.d_r * (1. + model_var.cw2 * (6.0 * pow(model_var.r, 5.0) - 1.0));
-      model_var.d_fw = model_var.d_g * model_var.glim * (1. - model_var.g_6 / (model_var.g_6 + model_var.cw3_6));
+      model_var.d_g = model_var.d_r * (1 + model_var.cw2 * (6 * pow(model_var.r, 5) - 1));
+      model_var.d_fw = model_var.d_g * model_var.glim * (1 - model_var.g_6 / (model_var.g_6 + model_var.cw3_6));
 
       model_var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
@@ -177,8 +180,7 @@ class CSourceBase_TurbSA_ : public CNumerics {
       /*--- Compute any necessary additional source term and jacobian contribution ---*/
 
       /*--- Residual ---*/
-      Residual = Production - Destruction + CrossProduction;
-      Residual *= Volume;
+      Residual = (Production - Destruction + CrossProduction) * Volume;
 
       /*--- Jacobian ---*/
       Jacobian_i[0] *= Volume;
@@ -318,7 +320,7 @@ struct Bsl {
   static void get(const su2double& nue, CommonSAVariables& model_var) {
     model_var.r = min(nue * model_var.inv_Shat * model_var.inv_k2_d2, 10.0);
     model_var.d_r = (model_var.Shat - nue * model_var.d_Shat) * pow(model_var.inv_Shat, 2) * model_var.inv_k2_d2;
-    if (model_var.r == 10.0) model_var.d_r = 0.0;
+    if (model_var.r >= 10.0) model_var.d_r = 0.0;
   }
 };
 
@@ -365,12 +367,11 @@ struct Bsl {
 
   static void ComputeDestruction(const su2double& nue, const CommonSAVariables& model_var, su2double& destruction,
                                  su2double& jacobian) {
-    destruction =
-        (model_var.cw1 * model_var.fw - model_var.cb1 * model_var.ft2 / model_var.k2) * nue * nue / model_var.dist_i_2;
-    jacobian -=
-        (model_var.cw1 * model_var.d_fw - model_var.cb1 / model_var.k2 * model_var.d_ft2) * nue * nue /
-            model_var.dist_i_2 +
-        (model_var.cw1 * model_var.fw - model_var.cb1 * model_var.ft2 / model_var.k2) * 2.0 * nue / model_var.dist_i_2;
+    const su2double cb1_k2 = model_var.cb1 / model_var.k2;
+    const su2double factor = model_var.cw1 * model_var.fw - cb1_k2 * model_var.ft2;
+    destruction = factor * pow(nue, 2) / model_var.dist_i_2;
+    jacobian -= ((model_var.cw1 * model_var.d_fw - cb1_k2 * model_var.d_ft2) * pow(nue, 2) + factor * 2 * nue) /
+                model_var.dist_i_2;
   }
 
   static void ComputeCrossProduction(const su2double& nue, const CommonSAVariables& model_var,

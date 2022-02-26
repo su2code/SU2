@@ -202,7 +202,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA<T>::ComputeResidual(const CCon
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] +  2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
+    Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] + 2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
 
   }
 
