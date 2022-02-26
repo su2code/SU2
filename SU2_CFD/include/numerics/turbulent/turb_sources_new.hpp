@@ -44,7 +44,7 @@ struct CommonSAVariables {
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
 
   /*--- List of helpers ---*/
-  su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
+  su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad, gamma_bc;
 };
 
 /*!
@@ -173,6 +173,31 @@ class CSourceBase_TurbSA_ : public CNumerics {
       model_var.d_fw = model_var.d_g * model_var.glim * (1 - model_var.g_6 / (model_var.g_6 + model_var.cw3_6));
 
       model_var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
+
+      /// TODO: Make this one of the template parameters?
+      if (transition) {
+        /*--- BC model constants (2020 revision). ---*/
+        const su2double chi_1 = 0.002;
+        const su2double chi_2 = 50.0;
+
+        /*--- turbulence intensity is u'/U so we multiply by 100 to get percentage ---*/
+        const su2double tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
+        const su2double nu_t = ScalarVar_i[0]*model_var.fv1;
+
+        const su2double re_v = Density_i*model_var.dist_i_2/Laminar_Viscosity_i*model_var.Omega;
+        const su2double re_theta = re_v/2.193;
+        const su2double re_theta_t = 803.73 * pow(tu + 0.6067,-1.027); //MENTER correlation
+        //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
+
+        su2double term1 = sqrt(max(re_theta-re_theta_t,0.0)/(chi_1*re_theta_t));
+        su2double term2 = sqrt(max((nu_t*chi_2)/nu,0.0));
+        su2double term_exponential = (term1 + term2);
+
+        Gamma_BC = 1.0 - exp(-term_exponential);
+        model_var.gamma_bc = Gamma_BC;
+      } else {
+        model_var.gamma_bc = 1.0;
+      }
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
       SourceTermsType::get(ScalarVar_i[0], model_var, Production, Destruction, CrossProduction, Jacobian_i[0]);
@@ -360,8 +385,9 @@ struct Bsl {
 
   static void ComputeProduction(const su2double& nue, const CommonSAVariables& model_var, su2double& production,
                                 su2double& jacobian) {
-    production = model_var.cb1 * (1.0 - model_var.ft2) * model_var.Shat * nue;
-    jacobian += model_var.cb1 * (-model_var.Shat * nue * model_var.d_ft2 +
+    const su2double factor = model_var.gamma_bc * model_var.cb1;
+    production = factor * (1.0 - model_var.ft2) * model_var.Shat * nue;
+    jacobian += factor * (-model_var.Shat * nue * model_var.d_ft2 +
                                  (1.0 - model_var.ft2) * (nue * model_var.d_Shat + model_var.Shat));
   }
 
@@ -398,7 +424,7 @@ struct Neg {
 
   static void ComputeProduction(const su2double& nue, const CommonSAVariables& model_var, su2double& production,
                                 su2double& jacobian) {
-    const su2double dP_dnu = model_var.cb1 * (1.0 - model_var.ct3) * model_var.S;
+    const su2double dP_dnu = model_var.gamma_bc * model_var.cb1 * (1.0 - model_var.ct3) * model_var.S;
     production = dP_dnu * nue;
     jacobian += dP_dnu;
   }
@@ -424,11 +450,11 @@ struct Neg {
  * ============================================================================*/
 
 /*!
- * \class CompressiblityCorrection
+ * \class CompressibilityCorrection
  * \brief Mixing Layer Compressibility Correction (SA-comp).
  */
 template <class ParentClass>
-class CompressiblityCorrection final : public ParentClass {
+class CompressibilityCorrection final : public ParentClass {
  private:
   using ParentClass::Gamma;
   using ParentClass::idx;
@@ -448,7 +474,7 @@ class CompressiblityCorrection final : public ParentClass {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CompressiblityCorrection(unsigned short nDim, unsigned short, const CConfig* config) : ParentClass(nDim, 0, config) {}
+  CompressibilityCorrection(unsigned short nDim, unsigned short, const CConfig* config) : ParentClass(nDim, 0, config) {}
 
   ResidualType ComputeResidual(const CConfig* config) override {
     /*--- Residual from standard SA ---*/

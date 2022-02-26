@@ -85,7 +85,10 @@ public:
   inline su2double GetGammaBC(void) const final { return Gamma_BC; }
 };
 
-
+/*!
+ * \class CSourcePieceWise_TurbSA
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ */
 template <class FlowIndices>
 using CSourcePieceWise_TurbSA = CSourceBase_TurbSA_<
   FlowIndices,
@@ -95,82 +98,13 @@ using CSourcePieceWise_TurbSA = CSourceBase_TurbSA_<
   detail::r::Bsl,
   detail::SourceTerms::Bsl>;
 
-#if 0
-/*!
- * \class CSourcePieceWise_TurbSA
- * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
- * \ingroup SourceDiscr
- * \author A. Bueno.
- */
-template <class FlowIndices>
-class CSourcePieceWise_TurbSA final : public CSourceBase_TurbSA {
-private:
-  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
-
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  unsigned short iDim;
-  bool transition;
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-
-};
-#endif
-
 /*!
  * \class CSourcePieceWise_TurbSA_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
- * \ingroup SourceDiscr
- * \author E.Molina, A. Bueno.
- * \version 7.3.0 "Blackbird"
+ * \brief Class for integrating the source terms of the Spalart-Allmaras model with compressibility correction.
  */
 template <class FlowIndices>
-class CSourcePieceWise_TurbSA_COMP final : public CSourceBase_TurbSA {
-private:
-  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+using CSourcePieceWise_TurbSA_COMP = CompressibilityCorrection<CSourcePieceWise_TurbSA<FlowIndices>>;
 
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-  su2double r, g, g_6, glim, fw;
-  su2double norm2_Grad;
-  su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
-  su2double aux_cc, CompCorrection, c5;
-  unsigned short iDim, jDim;
-
-public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-
-};
 
 /*!
  * \class CSourcePieceWise_TurbSA_E
