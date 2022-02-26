@@ -78,43 +78,10 @@ public:
   inline void SetIntermittency(su2double intermittency_in) final { intermittency = intermittency_in; }
 
   /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline void SetProduction(su2double val_production) final { Production = val_production; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline void SetDestruction(su2double val_destruction) final { Destruction = val_destruction; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline void SetCrossProduction(su2double val_crossproduction) final { CrossProduction = val_crossproduction; }
-
-  /*!
-   * \brief ______________.
-   */
-  inline su2double GetProduction(void) const final { return Production; }
-
-  /*!
    * \brief  Get the intermittency for the BC trans. model.
    * \return Value of the intermittency.
    */
   inline su2double GetGammaBC(void) const final { return Gamma_BC; }
-
-  /*!
-   * \brief  ______________.
-   */
-  inline su2double GetDestruction(void) const final { return Destruction; }
-
-  /*!
-   * \brief  ______________.
-   */
-  inline su2double GetCrossProduction(void) const final { return CrossProduction; }
 };
 
 
