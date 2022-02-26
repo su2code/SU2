@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../scalar/scalar_sources.hpp"
+#include "turb_sources_new.hpp"
 
 /*!
  * \class CSourcePieceWise_TurbSA
@@ -85,6 +86,16 @@ public:
 };
 
 
+template <class FlowIndices>
+using CSourcePieceWise_TurbSA = CSourceBase_TurbSA_<
+  FlowIndices,
+  detail::Omega::Bsl,
+  detail::ft2::Bsl,
+  detail::ModVort::Bsl,
+  detail::r::Bsl,
+  detail::SourceTerms::Bsl>;
+
+#if 0
 /*!
  * \class CSourcePieceWise_TurbSA
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
@@ -121,6 +132,7 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+#endif
 
 /*!
  * \class CSourcePieceWise_TurbSA_COMP

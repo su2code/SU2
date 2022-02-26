@@ -61,6 +61,7 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
 
 }
 
+#if 0
 template <class T>
 CSourcePieceWise_TurbSA<T>::CSourcePieceWise_TurbSA(unsigned short val_nDim,
                                                     unsigned short val_nVar,
@@ -211,6 +212,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA<T>::ComputeResidual(const CCon
   return ResidualType<>(&Residual, &Jacobian_i, nullptr);
 
 }
+#endif
 
 template <class T>
 CSourcePieceWise_TurbSA_COMP<T>::CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim,
@@ -922,9 +924,11 @@ void CSourcePieceWise_TurbSST<T>::SetPerturbedStrainMag(su2double turb_ke) {
 }
 
 /*--- Explicit instantiations until we don't move this to the hpp. ---*/
+#if 0
 template class CSourcePieceWise_TurbSA<CEulerVariable::CIndices<unsigned short> >;
 template class CSourcePieceWise_TurbSA<CIncEulerVariable::CIndices<unsigned short> >;
 template class CSourcePieceWise_TurbSA<CNEMOEulerVariable::CIndices<unsigned short> >;
+#endif
 
 template class CSourcePieceWise_TurbSA_COMP<CEulerVariable::CIndices<unsigned short> >;
 template class CSourcePieceWise_TurbSA_COMP<CIncEulerVariable::CIndices<unsigned short> >;

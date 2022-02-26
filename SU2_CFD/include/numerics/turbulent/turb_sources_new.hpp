@@ -1,7 +1,6 @@
 ﻿/*!
  * \file turb_sources.hpp
- * \brief Delarations of numerics classes for integration of source
- *        terms in turbulence problems.
+ * \brief Numerics classes for integration of source terms in turbulence problems.
  * \author F. Palacios, T. Economon
  * \version 7.3.0 "Blackbird"
  *
@@ -29,6 +28,7 @@
 #pragma once
 
 #include "../scalar/scalar_sources.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CommonSAVariables
@@ -54,7 +54,7 @@ struct CommonSAVariables {
  * \note Additional source terms (e.g. compressibility) are implemented as decorators.
  */
 template <class FlowIndices, class OmegaType, class ft2Type, class ModVortType, class rType, class SourceTermsType>
-class CSourceBase_TurbSA : public CNumerics {
+class CSourceBase_TurbSA_ : public CNumerics {
  protected:
   su2double Gamma_BC = 0.0;
   su2double intermittency = 0.0;
@@ -73,7 +73,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
+  CSourceBase_TurbSA_(unsigned short nDim, unsigned short, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
         rotating_frame(config->GetRotating_Frame()),
@@ -83,13 +83,13 @@ class CSourceBase_TurbSA : public CNumerics {
    * \brief Residual for source term integration.
    * \param[in] intermittency_in - Value of the intermittency.
    */
-  inline void SetIntermittency(su2double intermittency_in) final { intermittency = intermittency_in; }
+  void SetIntermittency(su2double intermittency_in) final { intermittency = intermittency_in; }
 
   /*!
    * \brief  Get the intermittency for the BC trans. model.
    * \return Value of the intermittency.
    */
-  inline su2double GetGammaBC(void) const final { return Gamma_BC; }
+  su2double GetGammaBC() const final { return Gamma_BC; }
 
   /*!
    * \brief Residual for source term integration.
@@ -109,9 +109,9 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Evaluate Omega ---*/
     if (nDim == 2) {
-      OmegaType::get<2>(Vorticity_i, PrimVar_Grad_i[idx.Velocity()], model_var);
+      OmegaType::template get<2>(Vorticity_i, PrimVar_Grad_i[idx.Velocity()], model_var);
     } else {
-      OmegaType::get<3>(Vorticity_i, PrimVar_Grad_i[idx.Velocity()], model_var);
+      OmegaType::template get<3>(Vorticity_i, PrimVar_Grad_i[idx.Velocity()], model_var);
     }
 
     /*--- Rotational correction term ---*/
@@ -172,12 +172,12 @@ class CSourceBase_TurbSA : public CNumerics {
       model_var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
-      SourceTermsType::get(model_var, Production, Destruction, CrossProduction, Jacobian_i[0]);
+      SourceTermsType::get(ScalarVar_i[0], model_var, Production, Destruction, CrossProduction, Jacobian_i[0]);
 
       /*--- Compute any necessary additional source term and jacobian contribution ---*/
 
       /*--- Residual ---*/
-      Residual = Production - Destruction + CrossProduction + AddSourceTerm;
+      Residual = Production - Destruction + CrossProduction;
       Residual *= Volume;
 
       /*--- Jacobian ---*/
@@ -433,6 +433,8 @@ class CompressiblityCorrection final : public ParentClass {
   using ParentClass::V_i;
   using ParentClass::Volume;
 
+  using ResidualType = typename ParentClass::template ResidualType<>;
+
   const su2double c5 = 3.5;
 
  public:
@@ -441,9 +443,9 @@ class CompressiblityCorrection final : public ParentClass {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CompressiblityCorrection(unsigned short nDim, const CConfig* config) : ParentClass(nDim, config) {}
+  CompressiblityCorrection(unsigned short nDim, unsigned short, const CConfig* config) : ParentClass(nDim, 0, config) {}
 
-  ResidualType<> ComputeResidual(const CConfig* config) override {
+  ResidualType ComputeResidual(const CConfig* config) override {
     /*--- Residual from standard SA ---*/
     ParentClass::ComputeResidual(config);
 
@@ -463,6 +465,6 @@ class CompressiblityCorrection final : public ParentClass {
     this->Residual -= CompCorrection;
     this->Jacobian_i[0] -= d_CompCorrection;
 
-    return ResidualType<>(&this->Residual, &this->Jacobian_i, nullptr);
+    return ResidualType(&this->Residual, &this->Jacobian_i, nullptr);
   }
 };
