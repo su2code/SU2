@@ -270,9 +270,11 @@ struct Bsl {
     const su2double Sbar = nue * model_var.fv2 * model_var.inv_k2_d2;
     model_var.Shat = model_var.S + Sbar;
     model_var.Shat = max(model_var.Shat, 1.0e-10);
-
-    const su2double d_Sbar = (model_var.fv2 + nue * model_var.d_fv2) * model_var.inv_k2_d2;
-    model_var.d_Shat = (model_var.Shat <= 1.0e-10) ? 0.0 : d_Sbar;
+    if (model_var.Shat <= 1.0e-10) {
+      model_var.d_Shat = 0.0;
+    } else {
+      model_var.d_Shat = (model_var.fv2 + nue * model_var.d_fv2) * model_var.inv_k2_d2;
+    }
   }
 };
 
@@ -281,9 +283,11 @@ struct Edw {
   static void get(const su2double& nue, const su2double& nu, CommonSAVariables& model_var) {
     model_var.Shat = max(model_var.S * ((1.0 / max(model_var.Ji, 1.0e-16)) + model_var.fv1), 1.0e-16);
     model_var.Shat = max(model_var.Shat, 1.0e-10);
-
-    model_var.d_Shat =
-        (model_var.Shat <= 1.0e-10) ? 0.0 : -model_var.S * pow(model_var.Ji, -2) / nu + model_var.S * model_var.d_fv1;
+    if (model_var.Shat <= 1.0e-10) {
+      model_var.d_Shat = 0.0;
+    } else {
+      model_var.d_Shat = -model_var.S * pow(model_var.Ji, -2) / nu + model_var.S * model_var.d_fv1;
+    }
   }
 };
 
