@@ -49,3 +49,11 @@ void CDiscAdjVariable::Set_External_To_DualTimeDer() {
   assert(External.size() == DualTime_Derivative.size());
   parallelCopy(External.size(), DualTime_Derivative.data(), External.data());
 }
+
+void CDiscAdjVariable::AllocateAdjointSolutionExtra(unsigned long nVarExtra) {
+  if (nVarExtra == 0) return;
+  SolutionExtra.resize(nVarExtra) = su2double(1e-16);
+  /*--- These are only for multizone, but since nVarExtra is small we allocate by default. ---*/
+  SolutionExtra_BGS_k.resize(nVarExtra) = su2double(1e-16);
+  ExternalExtra.resize(nVarExtra) = su2double(0.0);
+}

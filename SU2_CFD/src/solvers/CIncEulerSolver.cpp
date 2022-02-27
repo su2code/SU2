@@ -100,6 +100,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
+    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
   }
 
   /*--- Set the gamma value ---*/
@@ -1614,8 +1615,32 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     } // if turbulent
 
-    /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
-    numerics->SetStreamwisePeriodicValues(SPvals);
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      /*---------------------------------------------------------------------------------------------*/
+      /*--- Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/
+      /*--- The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
+      /*---------------------------------------------------------------------------------------------*/
+
+      /*--- Compute update to Delta p based on massflow-difference ---*/
+      const su2double Average_Density_Global = SPvals.Streamwise_Periodic_AvgDensity;
+      const su2double Area_Global = SPvals.Streamwise_Periodic_BoundaryArea;
+      const su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+      const su2double MassFlow_Global = SPvals.Streamwise_Periodic_MassFlow;
+      const su2double ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
+
+      /*--- Store updated pressure difference ---*/
+      const su2double damping_factor = config->GetInc_Outlet_Damping();
+      SPvalsUpdated = SPvals;
+      SPvalsUpdated.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
+      if (!config->GetDiscrete_Adjoint())
+        SPvals = SPvalsUpdated;
+
+      /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
+      numerics->SetStreamwisePeriodicValues(SPvalsUpdated);
+    }
+    else {
+      numerics->SetStreamwisePeriodicValues(SPvals);
+    }
 
     AD::StartNoSharedReading();
 
@@ -3069,18 +3094,35 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 }
 
 void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
-
-  unsigned long iPoint;
-  unsigned short iDim;
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     nodes->SetSolution(iPoint,0, Pressure_Inf);
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
       nodes->SetSolution(iPoint,iDim+1, Velocity_Inf[iDim]);
     }
     nodes->SetSolution(iPoint,nDim+1, Temperature_Inf);
   }
   END_SU2_OMP_FOR
 
+}
+
+unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    if (input) AD::RegisterInput(SPvals.Streamwise_Periodic_PressureDrop);
+    else AD::RegisterOutput(SPvalsUpdated.Streamwise_Periodic_PressureDrop);
+    return 1;
+  }
+  return 0;
+}
+
+void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]));
+  }
+}
+
+void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
+  }
 }

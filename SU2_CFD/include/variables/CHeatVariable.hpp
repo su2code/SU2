@@ -37,8 +37,6 @@
  */
 class CHeatVariable final : public CVariable {
 protected:
-  MatrixType Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
 

@@ -101,11 +101,17 @@ void CVariable::Set_Solution_time_n1() {
 void CVariable::Set_BGSSolution_k() {
   assert(Solution_BGS_k.size() == Solution.size());
   parallelCopy(Solution.size(), Solution.data(), Solution_BGS_k.data());
+
+  assert(SolutionExtra_BGS_k.size() == SolutionExtra.size());
+  parallelCopy(SolutionExtra.size(), SolutionExtra.data(), SolutionExtra_BGS_k.data());
 }
 
 void CVariable::Restore_BGSSolution_k() {
   assert(Solution.size() == Solution_BGS_k.size());
   parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
+
+  assert(SolutionExtra.size() == SolutionExtra_BGS_k.size());
+  parallelCopy(SolutionExtra_BGS_k.size(), SolutionExtra_BGS_k.data(), SolutionExtra.data());
 }
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }

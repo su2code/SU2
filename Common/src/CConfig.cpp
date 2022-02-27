@@ -4803,8 +4803,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("A MARKER_PERIODIC pair has to be set with KIND_STREAMWISE_PERIODIC != NONE.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
       SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
-    if (DiscreteAdjoint && Kind_Streamwise_Periodic == ENUM_STREAMWISE_PERIODIC::MASSFLOW)
-      SU2_MPI::Error("Discrete Adjoint currently not validated for prescribed MASSFLOW.", CURRENT_FUNCTION);
     if (Ref_Inc_NonDim != DIMENSIONAL)
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
     if (Axisymmetric)
