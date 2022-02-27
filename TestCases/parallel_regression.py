@@ -710,7 +710,7 @@ def main():
     turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
     turbmod_sa_comp_edw_rae2822.test_iter = 20
-    turbmod_sa_comp_edw_rae2822.test_vals = [-2.004687, 0.742306, 0.497310, -5.290769, 0.809485, 0.062036]
+    turbmod_sa_comp_edw_rae2822.test_vals = [-2.004685, 0.742307, 0.497311, -5.290750, 0.809487, 0.062045]
     turbmod_sa_comp_edw_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_comp_edw_rae2822.timeout   = 1600
     turbmod_sa_comp_edw_rae2822.new_output = True
