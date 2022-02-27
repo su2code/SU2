@@ -418,7 +418,8 @@ struct Neg {
 
   static void ComputeDestruction(const su2double& nue, const CSAVariables& var, su2double& destruction,
                                  su2double& jacobian) {
-    const su2double dD_dnu = var.cw1 * nue / var.dist_i_2;
+    /*--- The destruction when nue < 0 is added instead of the usual subtraction, hence the negative sign. ---*/
+    const su2double dD_dnu = -var.cw1 * nue / var.dist_i_2;
     destruction = dD_dnu * nue;
     jacobian -= 2 * dD_dnu;
   }
