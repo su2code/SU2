@@ -1426,11 +1426,6 @@ public:
   }
 
   /*!
-   * \brief Set intermittency for numerics (used in SA with LM transition model)
-   */
-  inline virtual void SetIntermittency(su2double intermittency_in) { }
-
-  /*!
    * \brief A virtual member.
    */
   inline virtual su2double GetGammaBC(void) const { return 0.0; }

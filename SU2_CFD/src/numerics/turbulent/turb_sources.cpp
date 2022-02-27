@@ -32,6 +32,7 @@
 #include "../../../include/variables/CIncEulerVariable.hpp"
 #include "../../../include/variables/CNEMOEulerVariable.hpp"
 
+#if 0
 CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        const CConfig* config) :
@@ -90,13 +91,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E<T>::ComputeResidual(const CC
   CrossProduction = 0.0;
   Jacobian_i[0]   = 0.0;
 
-  /*
-   From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
-   This form was developed primarily to improve the near-wall numerical behavior of the model (i.e., the goal was to improve the convergence behavior). The reference is:
-   Edwards, J. R. and Chandra, S. "Comparison of Eddy Viscosity-Transport Turbulence Models for Three-Dimensional, Shock-Separated Flowfields," AIAA Journal, Vol. 34, No. 4, 1996, pp. 756-763.
-   In this modificaton Omega is replaced by Strain Rate
-   */
-
   /*--- Evaluate Omega, here Omega is the Strain Rate ---*/
 
   Sbar = 0.0;
@@ -137,7 +131,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E<T>::ComputeResidual(const CC
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
 
-    /*--- Production term ---*/;
+    /*--- Production term ---*/
 
     Production = cb1*Shat*ScalarVar_i[0]*Volume;
 
@@ -477,6 +471,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
   return ResidualType<>(&Residual, &Jacobian_i, nullptr);
 
 }
+#endif
 
 template <class T>
 CSourcePieceWise_TurbSST<T>::CSourcePieceWise_TurbSST(unsigned short val_nDim,
@@ -651,18 +646,6 @@ void CSourcePieceWise_TurbSST<T>::SetPerturbedStrainMag(su2double turb_ke) {
 }
 
 /*--- Explicit instantiations until we don't move this to the hpp. ---*/
-
-template class CSourcePieceWise_TurbSA_E<CEulerVariable::CIndices<unsigned short> >;
-template class CSourcePieceWise_TurbSA_E<CIncEulerVariable::CIndices<unsigned short> >;
-template class CSourcePieceWise_TurbSA_E<CNEMOEulerVariable::CIndices<unsigned short> >;
-
-template class CSourcePieceWise_TurbSA_E_COMP<CEulerVariable::CIndices<unsigned short> >;
-template class CSourcePieceWise_TurbSA_E_COMP<CIncEulerVariable::CIndices<unsigned short> >;
-template class CSourcePieceWise_TurbSA_E_COMP<CNEMOEulerVariable::CIndices<unsigned short> >;
-
-template class CSourcePieceWise_TurbSA_Neg<CEulerVariable::CIndices<unsigned short> >;
-template class CSourcePieceWise_TurbSA_Neg<CIncEulerVariable::CIndices<unsigned short> >;
-template class CSourcePieceWise_TurbSA_Neg<CNEMOEulerVariable::CIndices<unsigned short> >;
 
 template class CSourcePieceWise_TurbSST<CEulerVariable::CIndices<unsigned short> >;
 template class CSourcePieceWise_TurbSST<CIncEulerVariable::CIndices<unsigned short> >;
