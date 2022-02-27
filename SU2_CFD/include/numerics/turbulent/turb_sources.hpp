@@ -93,21 +93,17 @@ class CSourceBase_TurbSA : public CNumerics {
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override {
-    /// TODO: Fix AD preaccumulation.
-    //    AD::StartPreacc();
-    //    AD::SetPreaccIn(V_i, nDim+6);
-    //    AD::SetPreaccIn(Vorticity_i, nDim);
-    //    AD::SetPreaccIn(StrainMag_i);
-    //    AD::SetPreaccIn(ScalarVar_i[0]);
-    //    AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
-    //    AD::SetPreaccIn(Volume);
-    //    AD::SetPreaccIn(dist_i);
+    const auto& density = V_i[idx.Density()];
+    const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(density, laminar_viscosity, StrainMag_i, ScalarVar_i[0], Volume, dist_i, roughness_i);
+    AD::SetPreaccIn(Vorticity_i, 3);
+    AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
-
-    const auto& density = V_i[idx.Density()];
-    const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
 
     Residual = 0.0;
     Jacobian_i[0] = 0.0;
@@ -201,8 +197,8 @@ class CSourceBase_TurbSA : public CNumerics {
       Jacobian_i[0] *= Volume;
     }
 
-    //    AD::SetPreaccOut(Residual);
-    //    AD::EndPreacc();
+    AD::SetPreaccOut(Residual);
+    AD::EndPreacc();
 
     return ResidualType<>(&Residual, &Jacobian_i, nullptr);
   }
