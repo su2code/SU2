@@ -98,7 +98,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(const CConfig* co
 void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   unsigned short iDim, iVar, jVar, kVar;
-  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
+  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j, RoeTke;
 
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
@@ -119,7 +119,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
 
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
-  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+  GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
   /*--- Flow eigenvalues and Entropy correctors ---*/
 
@@ -129,7 +129,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
   /*--- Compute inverse P ---*/
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, val_Jacobian_i);
@@ -928,7 +928,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
 
     /*--- Compute P and Lambda (do it with the Normal) ---*/
-    GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+    GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
     ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -944,7 +944,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
     /*--- Compute inverse P ---*/
-    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
     GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, Jacobian_i);
