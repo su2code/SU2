@@ -430,7 +430,7 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
       SetResidual_BGS(iZone);
-
+      Set_BGSSolution_k_To_Solution(iZone);
     }
 
     /*--- Set the multizone output. ---*/
