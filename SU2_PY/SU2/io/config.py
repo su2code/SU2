@@ -829,7 +829,7 @@ def read_config(filename):
 def write_config(filename,param_dict):
     """ updates an existing config file """
     
-    temp_filename = "temp.cfg"
+    temp_filename = filename+"_tmp"
     shutil.copy(filename,temp_filename)
     output_file = open(filename,"w")
 
