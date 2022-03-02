@@ -692,83 +692,83 @@ public:
      * \brief Get sens of volume coordinates wrt initial coordinates.
      * \return Sensitivity of the deformed mesh coordinates w.r.t. the initial coordinates (nPoint*nDim).
      */
-    vector<passivedouble> ApplydCoordinatesdCoordinates() const;
+    vector<passivedouble> GetCoordinatesCoordinatesSensitivity() const;
     
     /*!
      * \brief Get sens of volume coordinates wrt boundary disps.
      * \param[in] iMarker - Marker identifier.
      * \return Sensitivity of the deformed mesh coordinates w.r.t. the boundary displacements (nPoint*nDim).
      */
-    vector<passivedouble> ApplydCoordinatesdDisplacementsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetCoordinatesDisplacementsSensitivityMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the far-field flow variables.
      * \return Sensitivity of the objective function w.r.t. the far-field flow variables (nTrim).
      */
-    vector<passivedouble> GetdObjectivedVariables() const;
+    vector<passivedouble> GetObjectiveVariablesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the far-field flow variables.
      * \return Sensitivity of the flow residuals w.r.t. the far-field flow variables (nTrim).
      */
-    vector<passivedouble> ApplydResidualsdVariables() const;
+    vector<passivedouble> GetResidualsVariablesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the (conservative) flow states.
      * \return Sensitivity of the objective function w.r.t. the flow states (nPoint*nVar).
      */
-    vector<passivedouble> GetdObjectivedStates() const;
+    vector<passivedouble> GetObjectiveStatesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the (conservative) flow states.
      * \return Sensitivity of the flow residuals w.r.t. the flow states (nPoint*nVar)
      */
-    vector<passivedouble> ApplydResidualsdStates() const;
+    vector<passivedouble> GetResidualsStatesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow tractions w.r.t. the (conservative) flow states.
      * \return Sensitivity of the flow tractions w.r.t. the flow states (nPoint*nVar).
      */
-    vector<passivedouble> ApplydTractionsdStates() const;
+    vector<passivedouble> GetTractionsStatesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the un-deformed coordinates.
      * \return Sensitivity of the objective function w.r.t. the flow states (nPoint*nDim).
      */
-    vector<passivedouble> GetdObjectivedCoordinates() const;
+    vector<passivedouble> GetObjectiveCoordinatesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the un-deformed mesh coordinates.
      * \return Sensitivity of the flow residuals w.r.t. the flow states (nPoint*nDim)
      */
-    vector<passivedouble> ApplydResidualsdCoordinates() const;
+    vector<passivedouble> GetResidualsCoordinatesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow tractions w.r.t. the un-deformed coordinates.
      * \return Sensitivity of the flow tractions w.r.t. the flow states (nPoint*nDim).
      */
-    vector<passivedouble> ApplydTractionsdCoordinates() const;
+    vector<passivedouble> GetTractionsCoordinatesSensitivity() const;
     
     /*!
      * \brief Get the (partial) sensitivity of the objective function w.r.t. the mesh displacements or coordinates.
      * \param[in] iMarker - Marker identifier.
      * \return Sensitivity of the objective function w.r.t. the mesh displacements or coordinates (nVertex*nDim).
      */
-    vector<passivedouble> GetdObjectivedDisplacementsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetObjectiveDisplacementsSensitivityMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the mesh displacements or coordinates.
      * \param[in] iMarker - Marker identifier.
      * \return Sensitivity of the flow residuals w.r.t. the mesh displacements or coordinates (nVertex*nDim).
      */
-    vector<passivedouble> ApplydResidualsdDisplacementsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetResidualsDisplacementsSensitivityMarker(unsigned short iMarker) const;
     
     /*!
      * \brief Get the (partial) sensitivity of the flow tractions w.r.t. the mesh displacements or coordinates.
      * \param[in] iMarker - Marker identifier.
      * \return Sensitivity of the flow tractions w.r.t. the mesh displacements or coordinates (nVertex*nDim).
      */
-    vector<passivedouble> ApplydTractionsdDisplacementsMarker(unsigned short iMarker) const;
+    vector<passivedouble> GetTractionsDisplacementsSensitivityMarker(unsigned short iMarker) const;
         
     /*!
      * \brief Get all the flow load boundary marker tags.

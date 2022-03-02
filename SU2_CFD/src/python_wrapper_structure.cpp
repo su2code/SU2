@@ -202,7 +202,7 @@ void CDriver::SetAoA(passivedouble value) {
     
     config->SetAoA(value);
     
-    // Apply the angle of attack to the free-stream velocity vector
+    // Get the angle of attack to the free-stream velocity vector
     su2double velocity_inf_vec[nDim];
     
     for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -762,7 +762,7 @@ void CDriver::SetAdjTractionsMarker(unsigned short iMarker, vector<passivedouble
     }
 }
 
-vector<passivedouble> CDriver::ApplydCoordinatesdCoordinates() const {
+vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -788,7 +788,7 @@ vector<passivedouble> CDriver::ApplydCoordinatesdCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydCoordinatesdDisplacementsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetCoordinatesDisplacementsSensitivityMarker(unsigned short iMarker) const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -814,7 +814,7 @@ vector<passivedouble> CDriver::ApplydCoordinatesdDisplacementsMarker(unsigned sh
     return values;
 }
 
-vector<passivedouble> CDriver::GetdObjectivedVariables() const {
+vector<passivedouble> CDriver::GetObjectiveVariablesSensitivity() const {
     CConfig* config = config_container[ZONE_0];
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     
@@ -838,7 +838,7 @@ vector<passivedouble> CDriver::GetdObjectivedVariables() const {
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydResidualsdVariables() const {
+vector<passivedouble> CDriver::GetResidualsVariablesSensitivity() const {
     CConfig* config = config_container[ZONE_0];
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
     
@@ -862,7 +862,7 @@ vector<passivedouble> CDriver::ApplydResidualsdVariables() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetdObjectivedStates() const {
+vector<passivedouble> CDriver::GetObjectiveStatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -889,7 +889,7 @@ vector<passivedouble> CDriver::GetdObjectivedStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydResidualsdStates() const {
+vector<passivedouble> CDriver::GetResidualsStatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -916,7 +916,7 @@ vector<passivedouble> CDriver::ApplydResidualsdStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydTractionsdStates() const {
+vector<passivedouble> CDriver::GetTractionsStatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -943,7 +943,7 @@ vector<passivedouble> CDriver::ApplydTractionsdStates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetdObjectivedCoordinates() const {
+vector<passivedouble> CDriver::GetObjectiveCoordinatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -969,7 +969,7 @@ vector<passivedouble> CDriver::GetdObjectivedCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydResidualsdCoordinates() const {
+vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -995,7 +995,7 @@ vector<passivedouble> CDriver::ApplydResidualsdCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydTractionsdCoordinates() const {
+vector<passivedouble> CDriver::GetTractionsCoordinatesSensitivity() const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -1021,7 +1021,7 @@ vector<passivedouble> CDriver::ApplydTractionsdCoordinates() const {
     return values;
 }
 
-vector<passivedouble> CDriver::GetdObjectivedDisplacementsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetObjectiveDisplacementsSensitivityMarker(unsigned short iMarker) const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -1047,7 +1047,7 @@ vector<passivedouble> CDriver::GetdObjectivedDisplacementsMarker(unsigned short 
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydResidualsdDisplacementsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetResidualsDisplacementsSensitivityMarker(unsigned short iMarker) const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
@@ -1073,7 +1073,7 @@ vector<passivedouble> CDriver::ApplydResidualsdDisplacementsMarker(unsigned shor
     return values;
 }
 
-vector<passivedouble> CDriver::ApplydTractionsdDisplacementsMarker(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetTractionsDisplacementsSensitivityMarker(unsigned short iMarker) const {
     CConfig* config     = config_container[ZONE_0];
     CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     CSolver* solver     = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];

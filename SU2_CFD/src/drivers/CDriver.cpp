@@ -343,6 +343,7 @@ void CDriver::SetContainers_Null(){
     interface_container            = new CInterface**[nZone] ();
     interface_types                = new unsigned short*[nZone] ();
     output_container               = new COutput*[nZone] ();
+    nInst                          = new unsigned short[nZone] ();
     driver_config                  = nullptr;
     driver_output                  = nullptr;
     
@@ -553,9 +554,14 @@ void CDriver::Postprocessing() {
     
     /*--- Exit the solver cleanly ---*/
     
-    if (rank == MASTER_NODE)
-        cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
-    
+    if (rank == MASTER_NODE) {
+        if (config_container[ZONE_0]->GetDiscrete_Adjoint()) {
+            cout << endl <<"------------------------- Exit Success (SU2_CFD_AD) ------------------------" << endl << endl;
+        }
+        else {
+            cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
+        }
+    }
 }
 
 

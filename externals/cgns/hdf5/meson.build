@@ -25,7 +25,7 @@ hdf5_conf_data.set('version', '1.12.1')
 ext_deps = []
 
 
-opt_zlib = dependency('zlib', required: false, static: true)
+opt_zlib = dependency('zlib', required: false, static: false)
 opt_szip = dependency('szip', required: false, static: true)
 
 if opt_zlib.found() and cc.has_header('zlib.h')

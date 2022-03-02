@@ -1,15 +1,15 @@
 /*!
- * \file CDiscAdjSolver.hpp
- * \brief Headers of the CDiscAdjSolver class
+ * \file CDiscAdjResidualSolver.hpp
+ * \brief Headers of the CDiscAdjResidualSolver class
  * \author T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,13 +31,12 @@
 #include "../variables/CDiscAdjVariable.hpp"
 
 /*!
- * \class CDiscAdjSolver
+ * \class CDiscAdjResidualSolver
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
  */
-class CDiscAdjSolver final : public CSolver {
-
+class CDiscAdjResidualSolver final : public CSolver {
 private:
     static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
     static constexpr size_t MAXNVAR = 32; /*!< \brief Max number of variables, for static arrays. */
@@ -48,6 +47,22 @@ private:
     
     unsigned short KindDirect_Solver;
     CSolver *direct_solver;
+    
+    const unsigned short nTrim = 2;
+    su2matrix<su2double>         Partial_Prod_dCoordinates_dCoordinates;    /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+    vector<su2matrix<su2double>> Partial_Prod_dCoordinates_dDisplacements;  /*!< \brief Partial sensitivity of the volume coordinates w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+    su2vector<su2double>         Partial_Sens_dObjective_dVariables;        /*!< \brief Partial sensitivity of the objective w.r.t. the input variables. */
+    su2vector<su2double>         Partial_Prod_dResiduals_dVariables;        /*!< \brief Partial sensitivity of the residuals w.r.t. the input variables (matrix-vector product with adjoint vector). */
+    su2matrix<su2double>         Partial_Sens_dObjective_dStates;           /*!< \brief Partial sensitivity of the objective w.r.t. the solution. */
+    su2matrix<su2double>         Partial_Prod_dResiduals_dStates;           /*!< \brief Partial sensitivity of the residuals w.r.t. the solution (matrix-vector product with adjoint vector). */
+    su2matrix<su2double>         Partial_Prod_dTractions_dStates;           /*!< \brief Partial sensitivity of the surface tractions w.r.t. the solution (matrix-vector product with adjoint vector). */
+    su2matrix<su2double>         Partial_Sens_dObjective_dCoordinates;      /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
+    su2matrix<su2double>         Partial_Prod_dResiduals_dCoordinates;      /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+    su2matrix<su2double>         Partial_Prod_dTractions_dCoordinates;      /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
+    vector<su2matrix<su2double>> Partial_Sens_dObjective_dDisplacements;    /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
+    vector<su2matrix<su2double>> Partial_Prod_dResiduals_dDisplacements;    /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
+    vector<su2matrix<su2double>> Partial_Prod_dTractions_dDisplacements;    /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
+    su2matrix<int> AD_ResidualIndex;    /*!< \brief Indices of Residual variables in the adjoint vector. */
     
     vector<vector<su2double> > CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
     vector<su2double> Sens_Geo;    /*!< \brief Total shape sensitivity for each monitored boundary. */
@@ -74,7 +89,7 @@ public:
     /*!
      * \brief Constructor of the class.
      */
-    CDiscAdjSolver() = default;
+    CDiscAdjResidualSolver() = default;
     
     /*!
      * \overload
@@ -84,12 +99,12 @@ public:
      * \param[in] Kind_Solver - The kind of direct solver.
      * \param[in] iMesh - Index of the mesh in multigrid computations.
      */
-    CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+    CDiscAdjResidualSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
     
     /*!
      * \brief Destructor of the class.
      */
-    ~CDiscAdjSolver() override;
+    ~CDiscAdjResidualSolver() override;
     
     /*!
      * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -117,13 +132,12 @@ public:
     void SetAdjoint_Output(CGeometry *geometry, CConfig *config) override;
     
     /*!
-     * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
-     *        after tape has been evaluated.
-     * \param[in] geometry - The geometrical definition of the problem.
-     * \param[in] config - The particular config.
-     * \param[in] CrossTerm - Boolean for CrossTerm.
+     * \brief A virtual member.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] output - Kind of output variables.
      */
-    void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
+    void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable);
     
     /*!
      * \brief Set the surface sensitivity.
@@ -206,6 +220,99 @@ public:
     }
     
     /*!
+     * \brief Get matrix-vector product dxvdxv^T x psi.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iDim   - Dimension index.
+     */
+    su2double GetProd_dCoordinates_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dxvdua^T x psi.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+     * \param[in] iDim    - Dimension index.
+     */
+    su2double GetProd_dCoordinates_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get partial derivative dIdxt.
+     * \param[in] iTrim - Trim variable index.
+     */
+    su2double GetSens_dObjective_dVariables(unsigned short iTrim) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dAdxt^T x psi.
+     * \param[in] iTrim - Trim variable index.
+     */
+    su2double GetProd_dResiduals_dVariables(unsigned short iTrim) const override;
+    
+    /*!
+     * \brief Get partial derivative dIdq.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iVar   - Variable index.
+     */
+    su2double GetSens_dObjective_dStates(unsigned long iPoint, unsigned short iVar) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dAdq^T x psi.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iVar   - Variable index.
+     */
+    su2double GetProd_dResiduals_dStates(unsigned long iPoint, unsigned short iVar) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dfadq^T x psi.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iVar   - Variable index.
+     */
+    su2double GetProd_dTractions_dStates(unsigned long iPoint, unsigned short iVar) const override;
+    
+    /*!
+     * \brief Get partial derivative dIdx.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iDim   - Dimension index.
+     */
+    su2double GetSens_dObjective_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dAdx^T x psi.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iDim   - Dimension index.
+     */
+    su2double GetProd_dResiduals_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dfadx^T x psi.
+     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+     * \param[in] iDim   - Dimension index.
+     */
+    su2double GetProd_dTractions_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get partial derivative dIdua.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+     * \param[in] iDim    - Dimension index.
+     */
+    su2double GetSens_dObjective_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dAdua^T x psi.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+     * \param[in] iDim    - Dimension index.
+     */
+    su2double GetProd_dResiduals_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
+    
+    /*!
+     * \brief Get matrix-vector product dfadua^T x psi.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
+     * \param[in] iDim    - Dimension index.
+     */
+    su2double GetProd_dTractions_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const override;
+    
+    /*!
      * \brief Prepare the solver for a new recording.
      * \param[in] kind_recording - Kind of AD recording.
      */
@@ -225,8 +332,17 @@ public:
      * \brief A virtual member.
      * \param[in] geometry - Geometrical definition of the problem.
      * \param[in] config - Definition of the particular problem.
+     * \param[in] output - Kind of output variables.
      */
-    void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) override;
+    void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable);
+    
+    /*!
+     * \brief A virtual member.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] output - Kind of output variables.
+     */
+    void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable);
     
     /*!
      * \brief Update the dual-time derivatives.
