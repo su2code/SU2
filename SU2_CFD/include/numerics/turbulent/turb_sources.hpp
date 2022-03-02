@@ -549,12 +549,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
 
-  su2double F1_i, F1_j, F2_i, F2_j;
+  su2double F1_i, F2_i, CDkw_i;
 
   su2double alfa_1, alfa_2, beta_1, beta_2, sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_star, a1;
-
-  su2double CDkw_i, CDkw_j;
-
   su2double kAmb, omegaAmb;
 
   su2double Residual[2];
@@ -565,22 +562,22 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const bool axisymmetric = false;
 
   /*!
-   * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
-   * \param[in] turb_ke: turbulent kinetic energy of the node
+   * \brief Get strain magnitude based on perturbed reynolds stress matrix.
+   * \param[in] turb_ke: turbulent kinetic energy of the node.
    */
-  inline void SetPerturbedStrainMag(su2double turb_ke) {
+  inline su2double PerturbedStrainMag(su2double turb_ke) const {
     /*--- Compute norm of perturbed strain rate tensor. ---*/
 
-    PerturbedStrainMag = 0;
+    su2double perturbedStrainMag = 0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       for (unsigned short jDim = 0; jDim < nDim; jDim++) {
         su2double StrainRate_ij = MeanPerturbedRSM[iDim][jDim] - TWO3 * turb_ke * delta[iDim][jDim];
         StrainRate_ij = -StrainRate_ij * Density_i / (2 * Eddy_Viscosity_i);
 
-        PerturbedStrainMag += pow(StrainRate_ij, 2.0);
+        perturbedStrainMag += pow(StrainRate_ij, 2.0);
       }
     }
-    PerturbedStrainMag = sqrt(2.0 * PerturbedStrainMag);
+    return sqrt(2.0 * perturbedStrainMag);
   }
 
   /*!
@@ -589,29 +586,25 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta) {
     if (Coord_i[1] < EPS) return;
 
-    su2double yinv, rhov, k, w;
-    su2double sigma_k_i, sigma_w_i;
-    su2double pk_axi, pw_axi, cdk_axi, cdw_axi;
-
     AD::SetPreaccIn(Coord_i[1]);
 
-    yinv = 1.0 / Coord_i[1];
-    rhov = Density_i * V_i[2];
-    k = ScalarVar_i[0];
-    w = ScalarVar_i[1];
+    const su2double yinv = 1.0 / Coord_i[1];
+    const su2double rhov = Density_i * V_i[2];
+    const su2double& k = ScalarVar_i[0];
+    const su2double& w = ScalarVar_i[1];
 
     /*--- Compute blended constants ---*/
-    sigma_k_i = F1_i * sigma_k_1 + (1.0 - F1_i) * sigma_k_2;
-    sigma_w_i = F1_i * sigma_w_1 + (1.0 - F1_i) * sigma_w_2;
+    const su2double sigma_k_i = F1_i * sigma_k_1 + (1.0 - F1_i) * sigma_k_2;
+    const su2double sigma_w_i = F1_i * sigma_w_1 + (1.0 - F1_i) * sigma_w_2;
 
     /*--- Production ---*/
-    pk_axi = max(
+    const su2double pk_axi = max(
         0.0, 2.0 / 3.0 * rhov * k * ((2.0 * yinv * V_i[2] - PrimVar_Grad_i[2][1] - PrimVar_Grad_i[1][0]) / zeta - 1.0));
-    pw_axi = alfa_blended * zeta / k * pk_axi;
+    const su2double pw_axi = alfa_blended * zeta / k * pk_axi;
 
     /*--- Convection-Diffusion ---*/
-    cdk_axi = rhov * k - (Laminar_Viscosity_i + sigma_k_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[0][1];
-    cdw_axi = rhov * w - (Laminar_Viscosity_i + sigma_w_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[1][1];
+    const su2double cdk_axi = rhov * k - (Laminar_Viscosity_i + sigma_k_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[0][1];
+    const su2double cdw_axi = rhov * w - (Laminar_Viscosity_i + sigma_w_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
     Residual[0] += yinv * Volume * (pk_axi - cdk_axi);
@@ -657,31 +650,26 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first blending function at point i.
-   * \param[in] val_F1_j - Value of the first blending function at point j.
+   * \param[in] Not used.
    */
-  inline void SetF1blending(su2double val_F1_i, su2double val_F1_j) override {
+  inline void SetF1blending(su2double val_F1_i, su2double) override {
     F1_i = val_F1_i;
-    F1_j = val_F1_j;
   }
 
   /*!
    * \brief Set the value of the second blending function.
    * \param[in] val_F2_i - Value of the second blending function at point i.
-   * \param[in] val_F2_j - Value of the second blending function at point j.
    */
-  inline void SetF2blending(su2double val_F2_i, su2double val_F2_j) override {
+  inline void SetF2blending(su2double val_F2_i) override {
     F2_i = val_F2_i;
-    F2_j = val_F2_j;
   }
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
-   * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
-  inline void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) override {
+  inline void SetCrossDiff(su2double val_CDkw_i) override {
     CDkw_i = val_CDkw_i;
-    CDkw_j = val_CDkw_j;
   }
 
   /*!
@@ -701,12 +689,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(CDkw_i);
     AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
     AD::SetPreaccIn(Vorticity_i, 3);
-
-    unsigned short iDim;
-    su2double alfa_blended, beta_blended;
-    su2double diverg, pk, pw, zeta;
-    const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
 
     Density_i = V_i[idx.Density()];
@@ -720,42 +702,34 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = 0.0;
 
-    /*--- Computation of blended constants for the source terms---*/
+    /*--- Computation of blended constants for the source terms ---*/
 
-    alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
-    beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
+    const su2double alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
+    const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
     if (dist_i > 1e-10) {
       /*--- Production ---*/
 
-      diverg = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
+      su2double diverg = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
 
-      /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
+      /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
+
+      su2double StrainMag = StrainMag_i;
 
       if (using_uq) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
-        SetPerturbedStrainMag(ScalarVar_i[0]);
-        pk = Eddy_Viscosity_i * PerturbedStrainMag * PerturbedStrainMag -
-             2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      } else {
-        pk = Eddy_Viscosity_i * StrainMag_i * StrainMag_i - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+        StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
       }
 
-      pk = min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
-      pk = max(pk, 0.0);
+      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
-      zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-
-      /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
-
-      if (using_uq) {
-        pw = PerturbedStrainMag * PerturbedStrainMag - 2.0 / 3.0 * zeta * diverg;
-      } else {
-        pw = StrainMag_i * StrainMag_i - 2.0 / 3.0 * zeta * diverg;
-      }
-      pw = alfa_blended * Density_i * max(pw, 0.0);
+      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
+      const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
+      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -767,7 +741,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (sustaining_terms) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
-
         pk = max(pk, sust_k);
         pw = max(pw, sust_w);
       }
