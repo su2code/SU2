@@ -185,7 +185,6 @@ class CSourceBase_TurbSA : public CNumerics {
         const su2double re_v = density * var.dist_i_2 / laminar_viscosity * var.Omega;
         const su2double re_theta = re_v / 2.193;
         const su2double re_theta_t = 803.73 * pow(tu + 0.6067, -1.027);  // MENTER correlation
-        // re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
 
         const su2double term1 = sqrt(max(re_theta - re_theta_t, 0.0) / (chi_1 * re_theta_t));
         const su2double term2 = sqrt(max((nu_t * chi_2) / nu, 0.0));
