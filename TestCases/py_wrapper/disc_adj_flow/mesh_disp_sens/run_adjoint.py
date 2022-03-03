@@ -70,7 +70,7 @@ def main():
   MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetBoundaryMarkerIndices()
 
   #Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
@@ -80,7 +80,7 @@ def main():
   nVertex_Marker = 0         #total number of vertices (physical + halo)
 
   if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberVertices(MarkerID)
+    nVertex_Marker = SU2Driver.GetNumberVerticesMarker(MarkerID)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:

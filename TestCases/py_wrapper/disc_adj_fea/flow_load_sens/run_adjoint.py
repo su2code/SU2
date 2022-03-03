@@ -71,7 +71,7 @@ def main():
   MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetAllBoundaryMarkers()
+  allMarkerIDs = SU2Driver.GetBoundaryMarkerIndices()
 
   #Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
