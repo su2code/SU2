@@ -94,6 +94,9 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
         else if (polar) cout << endl <<"----------------- FFD technique (polar -> parametric) ---------------" << endl;
       }
 
+
+cout << "nijso" << endl;
+
       /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
 
       CFreeFormDefBox FFDBox_unitary(Degree_Unitary, BSpline_Unitary, BEZIER);
@@ -115,7 +118,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
         /*--- Compute the parametric coordinates, it also find the points in
          the FFDBox using the parametrics coordinates ---*/
-
+cout << "nijso: setparametriccoord" << endl;
         SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
 
@@ -741,13 +744,13 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
-
+cout << "nijso: set parametric coord" << endl;
   /*--- Change order and control points reduce the
    complexity of the point inversion (this only works with boxes,
  in case of Bezier curves, and we maintain an internal copy)---*/
 
   if (BoxFFD && (config->GetFFD_Blending() == BEZIER)) {
-
+cout << "nijso: blending is bezier" << endl;
     for (iOrder = 0; iOrder < 2; iOrder++) {
       for (jOrder = 0; jOrder < 2; jOrder++) {
         for (kOrder = 0; kOrder < 2; kOrder++) {
@@ -784,10 +787,12 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
         TotalVertex++;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
+cout <<"nijso, marker = " << iMarker<< " , "<< config->GetMarker_All_DV(iMarker) << endl;
     if (config->GetMarker_All_DV(iMarker) == YES) {
+cout <<"nijso, considering marker = " << iMarker << endl;
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+cout <<"nijso, considering vertex  = " << iVertex << endl;
 
         /*--- Get the cartesian coordinates ---*/
 

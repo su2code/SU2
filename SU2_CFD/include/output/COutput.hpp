@@ -89,8 +89,10 @@ protected:
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
   string historyFilename;   /*!< \brief The history filename*/
-  char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
-  ofstream histFile;        /*! \brief Output file stream for the history */
+  ofstream histFile;        /*!< \brief Output file stream for the history */
+  
+  string monitorPointsFilename; /*!< \brief base filename for the 1D monitoring points */
+  ofstream monitorPointsFile;       /*!< \brief file stream for the 1D monitoring points  */
 
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
 
@@ -159,6 +161,7 @@ protected:
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
   PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
+  PrintingToolbox::CTablePrinter* monitorPointsFileTable; //!< Table structure for writing to monitor point
   PrintingToolbox::CTablePrinter* fileWritingTable;     //!< File writing header
   std::string multiZoneHeaderString;                    //!< Multizone header string
   bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
@@ -524,10 +527,22 @@ protected:
   void SetHistoryFile_Header(const CConfig *config);
 
   /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMonitorPointsFile_Header(const CConfig *config);
+
+  /*!
    * \brief Write the history file output
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryFile_Output(const CConfig *config);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMonitorPointsFile_Output(const CConfig *config);
 
   /*!
    * \brief Write the screen header.
@@ -763,8 +778,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    * \param[in] force_writing - boolean that forces writing of volume output
+   * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing);
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
 
   /*!
    * \brief Set the values of the volume output fields for a point.

@@ -3226,26 +3226,37 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format on
 }
 
-bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
+bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+  
+  bool writeRestart = false;
+  const unsigned short *VolumeFrequencies = config->GetVolumeOutputFrequencies();
+  auto FileFormat = config->GetVolumeOutputFiles();
 
   if (config->GetTime_Domain()){
     if (((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) &&
-        ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
+        ((Iter == 0) || (Iter % VolumeFrequencies[iFile] == 0))){
       return true;
     }
 
+  /* check if we want to write a restart file*/ 
+  if (FileFormat[iFile] == OUTPUT_TYPE::RESTART_ASCII || 
+      FileFormat[iFile] == OUTPUT_TYPE::RESTART_BINARY || 
+      FileFormat[iFile] == OUTPUT_TYPE::CSV)
+    writeRestart = true;  
+
+    // nijso: we should only do this for restarts
     if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
         ((Iter == 0) ||
-         (Iter % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
-         ((Iter+2) == config->GetnTime_Iter()))){ // The last timestep is written anyways but again one needs the step before for restarts.
+         (Iter % VolumeFrequencies[iFile] == 0) ||
+         (((Iter+1) % VolumeFrequencies[iFile] == 0) && writeRestart==true) || // Restarts need 2 old solutions.
+         (((Iter+2) == config->GetnTime_Iter()) && writeRestart==true))){      // The last timestep is written anyway but one needs the step before for restarts.
       return true;
     }
   } else {
     if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode()) return false;
-    return ((Iter > 0) && Iter % config->GetVolume_Wrt_Freq() == 0) || force_writing;
+    return ((Iter > 0) && Iter % VolumeFrequencies[iFile] == 0) || force_writing;
   }
-
+ 
   return false || force_writing;
 }
 

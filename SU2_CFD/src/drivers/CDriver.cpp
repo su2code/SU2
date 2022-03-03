@@ -176,6 +176,13 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     }
   }
 
+  /*--- at this point we can compute the monitoring points---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        Monitorpoint_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
+    }
+  }
+
   /*--- Before we proceed with the zone loop we have to compute the wall distances.
      * This computation depends on all zones at once. ---*/
   if (rank == MASTER_NODE)
@@ -226,6 +233,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
       DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
+
       /*--- Static mesh processing.  ---*/
 
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
@@ -306,6 +314,15 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   StartTime = SU2_MPI::Wtime();
 
 }
+
+/*--- make this part of coutput ???---*/
+void CDriver::Monitorpoint_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]){
+ 
+ // where to store the cell indices?
+
+
+}
+
 
 void CDriver::SetContainers_Null(){
 

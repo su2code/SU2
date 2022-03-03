@@ -1190,11 +1190,11 @@ public:
   void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) const;
 
   /*!
-   * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
+   * \brief Computation of the flow Residual Jacobian Matrix for Non Reflecting BC.
    * \param[in] val_soundspeed - value of the sound speed.
    * \param[in] val_density - value of the density.
    * \param[out] R_c - Residual Jacoboan Matrix
-   * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
+   * \param[out] R_c_inv- inverse of the Residual Jacobian Matrix .
    */
   void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, const su2double *turboVel,
                                su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);

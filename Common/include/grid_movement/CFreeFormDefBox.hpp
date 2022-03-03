@@ -619,13 +619,14 @@ public:
    */
   bool GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) const;
 
-  /*!
-   * \brief Set the zone of the computational domain that is going to be deformed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iFFDBox - Index of the FFDBox.
-   */
-  void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const;
+  ///*!
+  // * \brief Set the zone of the computational domain that is going to be deformed.
+  // * \param[in] geometry - Geometrical definition of the problem.
+  // * \param[in] config - Definition of the particular problem.
+  // * \param[in] iFFDBox - Index of the FFDBox.
+  // */
+  // nijso says: this routine is not used. We should consider deleting it.
+  //void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const;
 
   /*!
    * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).

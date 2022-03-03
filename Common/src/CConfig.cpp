@@ -818,7 +818,7 @@ void CConfig::SetPointersNull(void) {
   Marker_DV                   = nullptr;   Marker_Moving            = nullptr;    Marker_Monitoring = nullptr;
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
-  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_1D_Monitor = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -1018,6 +1018,7 @@ void CConfig::SetPointersNull(void) {
   HistoryOutput = nullptr;
   VolumeOutput = nullptr;
   VolumeOutputFiles = nullptr;
+  VolumeOutputFrequencies = nullptr;
   ConvField = nullptr;
 
   /*--- Variable initialization ---*/
@@ -1186,7 +1187,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
@@ -1418,6 +1418,10 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+
+  /*!\brief MARKER_1D_MONITOR\n DESCRIPTION: list of name,x,y,z coordinates of the 1D monitoring points \ingroup Config*/
+  addDoubleListOption("MARKER_1D_MONITOR", nMarker_1D_MonitorPoints, Marker_1D_MonitorP);
+  
   /*!\brief MARKER_CONTROL_VOLUME\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_ANALYZE", nMarker_Analyze, Marker_Analyze);
   /*!\brief MARKER_DESIGNING\n DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
@@ -2428,7 +2432,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
   /*--- Options related to multizone problems ---*/
 
-  /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
+  /* DESCRIPTION List of config files for each zone in a multizone setup with SOLVER=MULTIPHYSICS
+   * Order here has to match the order in the meshfile if just one is used. */
   addStringListOption("CONFIG_LIST", nConfig_Files, Config_Filenames);
 
   /* DESCRIPTION: Determines if the multizone problem is solved for time-domain. */
@@ -2800,6 +2805,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
   /* DESCRIPTION: Volume solution writing frequency */
   addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
+  
+  /* DESCRIPTION: list of writing frequencies for each file type (length same as nVolumeOutputFiles) */
+  addUShortListOption("VOLUME_OUTPUT_FREQUENCIES", nVolumeOutputFrequencies, VolumeOutputFrequencies);
+
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
 
@@ -3285,6 +3294,44 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     VolumeOutputFiles[1] = OUTPUT_TYPE::PARAVIEW_XML;
     VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
+
+  if (!OptionIsSet("OUTPUT_WRT_FREQ")){
+    cout << "*** OUTPUT_WRT_FREQ option not set! *** " << endl;
+    if (OptionIsSet("VOLUME_OUTPUT_FREQUENCIES"))
+      cout << "*** VOLUME_OUTPUT_FREQUENCIES is used *** " << endl;
+    
+  }
+
+  if (OptionIsSet("VOLUME_OUTPUT_FREQUENCIES")){
+    if (OptionIsSet("OUTPUT_WRT_FREQ"))
+      cout << "*** VOLUME_OUTPUT_FREQUENCIES found! keyword OUTPUT_WRT_FREQ will be ignored  *** " << endl;
+      
+    cout <<"*** frequency nr = " << nVolumeOutputFrequencies << endl;
+    if (nVolumeOutputFrequencies != nVolumeOutputFiles)
+      SU2_MPI::Error(string("Number of frequencies in VOLUME_OUTPUT_FREQUENCIES should match number of outputs in OUTPUT_FILES"), CURRENT_FUNCTION);
+  }
+
+  /*--- Set the default output feequencies ---*/
+  if (!OptionIsSet("VOLUME_OUTPUT_FREQUENCIES")){
+
+    cout << "*** VOLUME_OUTPUT_FREQUENCIES option not set! *** " << endl;
+    nVolumeOutputFrequencies = nVolumeOutputFiles;
+    VolumeOutputFrequencies = new unsigned short [nVolumeOutputFrequencies];
+
+    if (OptionIsSet("OUTPUT_WRT_FREQ")){
+      cout << "*** Using OUTPUT_WRT_FREQ = "<<VolumeWrtFreq<<" for all files. ***"<< endl;
+      for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+        VolumeOutputFrequencies[iVolumeFreq] = VolumeWrtFreq; 
+      }
+    }
+    else {
+      cout << "*** Using default OUTPUT_WRT_FREQ = 250 for all files. ***"<<endl;
+      for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+        VolumeOutputFrequencies[iVolumeFreq] = 250; 
+      }
+    }
+  }
+
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
@@ -4760,6 +4807,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  if (nMarker_1D_MonitorPoints % 3 != 0) {
+      SU2_MPI::Error("number of coordinates in 1D monitor point list should be a multiple of 3 ", CURRENT_FUNCTION);
+  }
+
+
+
   /*--- Check feassbility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
     if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE)
@@ -5541,6 +5594,9 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   }
 
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
+
+cout << endl << endl << "nijso : marker tag for heatflux wall : " << iMarker_CfgFile << endl << endl;
+
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFlux[iMarker_HeatFlux];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX;
     iMarker_CfgFile++;
@@ -6035,6 +6091,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         else cout <<".";
       }
       cout<< endl;
+    }
+
+    if (nMarker_1D_MonitorPoints != 0) {
+      cout << " ********************************************************* " << endl;
+      cout << "1D monitor points: " << endl;
+      cout << " ********************************************************* " << endl;
+      unsigned short n1DPoints = nMarker_1D_MonitorPoints/3;
+      for (auto i1DPoints = 0; i1DPoints < n1DPoints; i1DPoints++) {
+        cout << "Point " << i1DPoints << " : ("; 
+        cout << Marker_1D_Monitor[n1DPoints*i1DPoints+0] << ", " 
+             << Marker_1D_Monitor[n1DPoints*i1DPoints+1] << ", "
+             << Marker_1D_Monitor[n1DPoints*i1DPoints+2] << ")"<< endl;
+      }
+      cout<< endl;
+      cout << " ********************************************************* " << endl;
     }
 
   }
@@ -7433,10 +7504,12 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) const {
 
   unsigned short iMarker_CfgFile;
 
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+  } 
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
       return iMarker_CfgFile;
-
+  }
   SU2_MPI::Error(string("The configuration file doesn't have any definition for marker ") + val_marker, CURRENT_FUNCTION);
   return 0;
 }
@@ -7739,6 +7812,7 @@ CConfig::~CConfig(void) {
   delete[] Marker_DV;
   delete[] Marker_Moving;
   delete[] Marker_Monitoring;
+  delete[] Marker_1D_Monitor;
   delete[] Marker_Designing;
   delete[] Marker_GeoEval;
   delete[] Marker_Plotting;
@@ -8064,6 +8138,7 @@ CConfig::~CConfig(void) {
   delete [] VolumeOutput;
   delete [] Mesh_Box_Size;
   delete [] VolumeOutputFiles;
+  delete [] VolumeOutputFrequencies; 
 
   delete [] ConvField;
 

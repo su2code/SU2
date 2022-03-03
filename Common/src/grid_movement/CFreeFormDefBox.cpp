@@ -973,17 +973,34 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   unsigned short iVar, jVar, iDim;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
-  bool Inside = false;
+  bool Inside = true;
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
 
-  unsigned short Index[5][7] = {
-    {0, 1, 2, 5, 0, 1, 2},
-    {0, 2, 7, 5, 0, 2, 7},
-    {0, 2, 3, 7, 0, 2, 3},
-    {0, 5, 7, 4, 0, 5, 7},
-    {2, 7, 5, 6, 2, 7, 5}};
+
+  // nijso: subdivide the box into separate tetrahedrons
+  //unsigned short Index[5][7] = {
+  //  {0, 1, 2, 5, 0, 1, 2},
+  //  {0, 2, 7, 5, 0, 2, 7},
+  //  {0, 2, 3, 7, 0, 2, 3},
+  //  {0, 5, 7, 4, 0, 5, 7},
+  //  {2, 7, 5, 6, 2, 7, 5}};
+
+  // indices of the FFD box. Note that the front face is labelled 0,1,2,3 and the back face is 4,5,6,7
+  unsigned short Index[6][5] = {
+  {0,1,2,3,0},  // front side
+  {1,5,6,2,1},  // right side
+  {2,6,7,3,2},  // top side
+  {3,7,4,0,3},  // left side
+  {4,5,1,0,4},  // bottom side
+  {4,7,6,5,4}}; // back side
+
+// nijso: better to subdivide each of the 6 faces into 4 triangles by defining a supporting middle point
+// note that the definition of the FFD box is as follows: we first define one face counterclockwise when looking from outside of the ffd box
+// then we define the second face counterclockwise when looking from the inside of the ffd box
+
+
   unsigned short nDim = geometry->GetnDim();
 
   for (iDim = 0; iDim < nDim; iDim++)
@@ -1013,12 +1030,45 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
   }
 
+  // loop over the faces of the FFD box  
+  for (iVar = 0; iVar < 6; iVar++) {
+    su2double P[3] = {0.0, 0.0, 0.0};
+    // every face needs an interpolated middle point for the triangles
+    for (int p = 0; p < 4; p++){
+      P[0] += 0.25*Coord_Corner_Points[Index[iVar][p]][0];
+      P[1] += 0.25*Coord_Corner_Points[Index[iVar][p]][1];
+      P[2] += 0.25*Coord_Corner_Points[Index[iVar][p]][2];
+    }
+    // loop over the 4 triangles making up the FFD box. The sign is equal for all distances
+    for (jVar = 0; jVar < 4; jVar++) {
+      su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
+                                                                Coord_Corner_Points[Index[iVar][jVar]],
+                                                                Coord_Corner_Points[Index[iVar][jVar+1]],
+                                                                P);
+      if (Distance_Point < 0) {
+        Inside = false;
+        cout << "outside of the FFD box" << endl;
+        return Inside;
+      }
+    // cout <<"__new: "<< Coord[0] << ", "<< Coord[1] << ", "<< Coord[2] << ", " << endl;
+    // cout <<"__new: "<< Coord_Corner_Points[Index[iVar][jVar]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][2] << ", " << endl;
+    // cout <<"__new: "<< Coord_Corner_Points[Index[iVar][jVar+1]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][2] << ", " << endl;
+    // cout <<"__new: "<< P[0] << ", "<< P[1] << ", "<< P[2] << ", " << endl;
+    //     cout << "__ dp = " << Distance_Point << endl;
+    }
+  }
+
+
+
+
   /*--- 1st tetrahedron {V0, V1, V2, V5}
    2nd tetrahedron {V0, V2, V7, V5}
    3th tetrahedron {V0, V2, V3, V7}
    4th tetrahedron {V0, V5, V7, V4}
    5th tetrahedron {V2, V7, V5, V6} ---*/
 
+  // loop over the tetrahedrons
+  /*
   for (iVar = 0; iVar < 5; iVar++) {
     Inside = true;
     for (jVar = 0; jVar < 4; jVar++) {
@@ -1032,59 +1082,71 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
                                                                  Coord_Corner_Points[Index[iVar][jVar+2]],
                                                                  Coord_Corner_Points[Index[iVar][jVar+3]]);
       if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
+
+    cout <<"__ "<<iVar << " , " << jVar << " , " 
+         << Coord[0] << ", "<< Coord[1] << ", "<< Coord[2] << ", " << endl;
+    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][2] << ", " << endl;
+    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar+1]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][2] << ", " << endl;
+    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar+2]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+2]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+2]][2] << ", " << endl;
+    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar+3]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+3]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+3]][2] << ", " << endl;
+         cout << "__ dp = " << Distance_Point << " , " << Distance_Vertex << ", inside="<<Inside << endl;
+
     }
     if (Inside) break;
   }
+*/
 
+  cout << "inside = " << Inside << endl;
   return Inside;
 
 }
 
-void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
-  su2double *Coord;
-  unsigned short iMarker, iVar, jVar;
-  unsigned long iVertex, iPoint;
-  bool Inside = false;
-
-  unsigned short Index[5][7] = {
-    {0, 1, 2, 5, 0, 1, 2},
-    {0, 2, 7, 5, 0, 2, 7},
-    {0, 2, 3, 7, 0, 2, 3},
-    {0, 5, 7, 4, 0, 5, 7},
-    {2, 7, 5, 6, 2, 7, 5}};
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        /*--- 1st tetrahedron {V0, V1, V2, V5}
-         2nd tetrahedron {V0, V2, V7, V5}
-         3th tetrahedron {V0, V2, V3, V7}
-         4th tetrahedron {V0, V5, V7, V4}
-         5th tetrahedron {V2, V7, V5, V6} ---*/
-
-        for (iVar = 0; iVar < 5; iVar++) {
-          Inside = true;
-          for (jVar = 0; jVar < 4; jVar++) {
-            su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
-                                                                   Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                   Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                   Coord_Corner_Points[Index[iVar][jVar+3]]);
-            su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
-                                                                    Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                    Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                    Coord_Corner_Points[Index[iVar][jVar+3]]);
-            if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
-          }
-          if (Inside) break;
-        }
-      }
-    }
-  }
-}
+// 2022-01-28: this routine is not used. We should consider deleting it
+//void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
+//  su2double *Coord;
+//  unsigned short iMarker, iVar, jVar;
+//  unsigned long iVertex, iPoint;
+//  bool Inside = false;
+//
+//  unsigned short Index[5][7] = {
+//    {0, 1, 2, 5, 0, 1, 2},
+//    {0, 2, 7, 5, 0, 2, 7},
+//    {0, 2, 3, 7, 0, 2, 3},
+//    {0, 5, 7, 4, 0, 5, 7},
+//    {2, 7, 5, 6, 2, 7, 5}};
+//
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (config->GetMarker_All_DV(iMarker) == YES) {
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//
+//        Coord = geometry->nodes->GetCoord(iPoint);
+//
+//       /*--- 1st tetrahedron {V0, V1, V2, V5}
+//         2nd tetrahedron {V0, V2, V7, V5}
+//         3th tetrahedron {V0, V2, V3, V7}
+//         4th tetrahedron {V0, V5, V7, V4}
+//         5th tetrahedron {V2, V7, V5, V6} ---*/
+//
+//        for (iVar = 0; iVar < 5; iVar++) {
+//          Inside = true;
+//          for (jVar = 0; jVar < 4; jVar++) {
+//            su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
+//                                                                   Coord_Corner_Points[Index[iVar][jVar+1]],
+//                                                                   Coord_Corner_Points[Index[iVar][jVar+2]],
+//                                                                   Coord_Corner_Points[Index[iVar][jVar+3]]);
+//            su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
+//                                                                    Coord_Corner_Points[Index[iVar][jVar+1]],
+//                                                                    Coord_Corner_Points[Index[iVar][jVar+2]],
+//                                                                    Coord_Corner_Points[Index[iVar][jVar+3]]);
+//            if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
+//          }
+//          if (Inside) break;
+//        }
+//      }
+//    }
+//  }
+//}
 
 su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const {
 

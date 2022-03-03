@@ -668,6 +668,7 @@ private:
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
   Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
+  nMarker_1D_MonitorPoints,           /*!< \brief Number of 1D interpolated monitor points */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,                    /*!< \brief Number of markers for the objective function. */
   nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
@@ -904,7 +905,8 @@ private:
   *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude of marker. */
   *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */
   *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */
-  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
+  *MarkerPlunging_Ampl,           /*!< \brief Plunging amplitude of marker. */
+  *Marker_1D_Monitor;             /*!< \brief list of coordinates for 1D monitor points */
 
   unsigned short
   nMarkerMotion_Origin,           /*!< \brief Number of values provided for mesh motion origin of marker. */
@@ -1108,6 +1110,8 @@ private:
   unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
   unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
+  unsigned short *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
@@ -2954,6 +2958,12 @@ public:
    * \return Total number of monitoring markers.
    */
   unsigned short GetnMarker_Monitoring(void) const { return nMarker_Monitoring; }
+
+  /*!
+   * \brief Get the total number of 1D monitor points.
+   * \return Total number of coordinates of the monitor points.
+   */
+  unsigned short GetnMarker_1D_MonitorPoints(void) const { return nMarker_1D_MonitorPoints; }
 
   /*!
    * \brief Get the total number of DV markers.
@@ -9419,6 +9429,16 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetVolumeOutputFrequencies
+   */
+  const unsigned short* GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
+
+  /*!
+   * \brief GetnVolumeOutputFrequencies
+   */
+  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
 
   /*!
    * \brief Get the desired factorization frequency for PaStiX

@@ -62,12 +62,16 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
   fileWritingTable = new PrintingToolbox::CTablePrinter(&std::cout);
   historyFileTable = new PrintingToolbox::CTablePrinter(&histFile, "");
+  monitorPointsFileTable = new PrintingToolbox::CTablePrinter(&monitorPointsFile, "");
 
   /*--- Set default filenames ---*/
 
   surfaceFilename = "surface";
   volumeFilename  = "volume";
   restartFilename = "restart";
+
+  /*--- monitoring point filename ---*/
+  monitorPointsFilename = "monitorpoint.csv";
 
   /*--- Retrieve the history filename ---*/
 
@@ -173,6 +177,15 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 }
 
 COutput::~COutput(void) {
+
+  if (histFile.is_open()){
+    histFile.close();
+  }
+
+  if (monitorPointsFile.is_open()){
+    monitorPointsFile.close();
+  }
+
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
@@ -253,6 +266,9 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
   if (rank == MASTER_NODE && !noWriting) {
 
     if (WriteHistoryFile_Output(config)) SetHistoryFile_Output(config);
+
+    /* nijso monitorpoints*/
+    if (WriteHistoryFile_Output(config)) SetMonitorPointsFile_Output(config);
 
     if (WriteScreen_Header(config)) SetScreen_Header(config);
 
@@ -354,7 +370,6 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 }
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
-
   CFileWriter *fileWriter = nullptr;
 
   /*--- if it is still present, strip the extension (suffix) from the filename ---*/
@@ -924,28 +939,27 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing){
+  
+  bool isFileWrite=false;
+  unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
+  auto VolumeFiles = config->GetVolumeOutputFiles();
 
-  bool writeFiles = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged);
+  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
 
-  /*--- Check if the data sorters are allocated, if not, allocate them. --- */
+    /*--- Check if the data sorters are allocated, if not, allocate them. --- */
+    AllocateDataSorters(config, geometry);
 
-  AllocateDataSorters(config, geometry);
+    /*--- Collect the volume data from the solvers.
+     *  If time-domain is enabled, we also load the data although we don't output it,
+     *  since we might want to do time-averaging. ---*/
+    if (WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile) || config->GetTime_Domain()) 
+      LoadDataIntoSorter(config, geometry, solver_container);
 
-  /*--- Collect the volume data from the solvers.
-   *  If time-domain is enabled, we also load the data although we don't output it,
-   *  since we might want to do time-averaging. ---*/
-
-  if (writeFiles || config->GetTime_Domain())
-    LoadDataIntoSorter(config, geometry, solver_container);
-
-  if (writeFiles){
+    if (!(WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile))) continue;
 
     /*--- Partition and sort the data --- */
 
     volumeDataSorter->SortOutputData();
-
-    unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    auto VolumeFiles = config->GetVolumeOutputFiles();
 
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -955,12 +969,8 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     /*--- Loop through all requested output files and write
      * the partitioned and sorted data stored in the data sorters. ---*/
-
-    for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
-
-      WriteToFile(config, geometry, VolumeFiles[iFile]);
-
-    }
+     
+    WriteToFile(config, geometry, VolumeFiles[iFile]);
 
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->PrintFooter();
@@ -971,10 +981,13 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     WriteAdditionalFiles(config, geometry, solver_container);
 
-    return true;
+    isFileWrite = true;
   }
 
-  return false;
+  if (isFileWrite)
+    return true;
+  else 
+   return false;
 }
 
 void COutput::PrintConvergenceSummary(){
@@ -1216,6 +1229,63 @@ void COutput::SetHistoryFile_Header(const CConfig *config) {
   historyFileTable->PrintHeader();
   histFile.flush();
 }
+void COutput::SetMonitorPointsFile_Header(const CConfig *config) {
+
+  unsigned short iField_Output = 0,
+      iReqField = 0,
+      iMarker = 0;
+  stringstream out;
+  int width = 20;
+
+  /*
+  for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
+    const string &fieldIdentifier = historyOutput_List[iField_Output];
+    const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
+    for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      const string & requestedField = requestedHistoryFields[iReqField];
+      if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
+        if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);
+        else{ width = std::max((int)field.fieldName.size()+2, 18);}
+        //historyFileTable->AddColumn("\"" + field.fieldName + "\"", width);
+        monitorPointsFileTable->AddColumn("\"" + field.fieldName + "\"", width);
+      }
+    }
+  }
+  */
+
+  string fieldname = "ITER";
+  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
+  fieldname = "X";
+  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
+  fieldname = "Y";
+  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
+  fieldname = "Z";
+  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
+
+
+  /*
+  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
+    const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
+    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
+      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
+      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        const string &requestedField = requestedHistoryFields[iReqField];
+        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
+          if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);
+          else{ width = std::max((int)field.fieldName.size()+2, 18);}
+          monitorPointsFileTable->AddColumn("\"" + field.fieldName + "\"", width);
+        }
+      }
+    }
+  }
+  */
+
+  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
+    monitorPointsFile << "VARIABLES = \\" << endl;
+  }
+  monitorPointsFileTable->PrintHeader();
+  monitorPointsFile.flush();
+}
 
 
 void COutput::SetHistoryFile_Output(const CConfig *config) {
@@ -1228,8 +1298,8 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
     const string &fieldIdentifier = historyOutput_List[iField_Output];
     const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
     for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      const string &RequestedField = requestedHistoryFields[iReqField];
-      if (RequestedField == field.outputGroup){
+      const string &requestedField = requestedHistoryFields[iReqField];
+      if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
         (*historyFileTable) << field.value;
       }
     }
@@ -1240,8 +1310,8 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
     for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
       const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
       for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        const string &RequestedField = requestedHistoryFields[iReqField];
-        if (RequestedField == field.outputGroup){
+        const string &requestedField = requestedHistoryFields[iReqField];
+        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
           (*historyFileTable) << field.value;
         }
       }
@@ -1251,6 +1321,49 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
   /*--- Print the string to file and remove the last two characters (a separator and a space) ---*/
 
   histFile.flush();
+}
+void COutput::SetMonitorPointsFile_Output(const CConfig *config) {
+
+  unsigned short iField_Output = 0,
+      iReqField = 0,
+      iMarker = 0;
+
+  for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
+    const string &fieldIdentifier = historyOutput_List[iField_Output];
+    const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
+    for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      const string &requestedField = requestedHistoryFields[iReqField];
+      if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
+        (*monitorPointsFileTable) << field.value;
+      }
+    }
+  }
+  
+  /* add the coordinates */
+  /* find the interpolated value */ 
+
+
+  /*
+  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
+    const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
+    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
+      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
+      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        const string &requestedField = requestedHistoryFields[iReqField];
+        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
+          (*monitorPointsFileTable) << field.value;
+        }
+      }
+    }
+  }
+  */
+
+  /*--- get the coordinate ---*/
+
+
+  /*--- Print the string to file and remove the last two characters (a separator and a space) ---*/
+
+  monitorPointsFile.flush();
 }
 
 void COutput::SetScreen_Header(const CConfig *config) {
@@ -1420,6 +1533,20 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
   SetHistoryFile_Header(config);
 
+ /*--- open the monitoring point file ---*/
+  monitorPointsFile.open(monitorPointsFilename, ios::out);
+
+  /*--- Create and format the history file table ---*/
+  monitorPointsFileTable->SetInnerSeparator(historySep);
+  monitorPointsFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+  monitorPointsFileTable->SetPrintHeaderTopLine(false);
+  monitorPointsFileTable->SetPrintHeaderBottomLine(false);
+  monitorPointsFileTable->SetPrecision(config->GetOutput_Precision());
+
+  /*--- Add the header to the history file. ---*/
+
+  SetMonitorPointsFile_Header(config);
+
 }
 
 void COutput::CheckHistoryOutput() {
@@ -1431,6 +1558,7 @@ void COutput::CheckHistoryOutput() {
 
   for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++) {
     const auto& requestedField = requestedScreenFields[iReqField];
+
     const auto it1 = historyOutput_Map.find(requestedField);
     if (it1 != historyOutput_Map.end()) {
       convergenceTable->AddColumn(it1->second.fieldName, fieldWidth);
@@ -1480,14 +1608,16 @@ void COutput::CheckHistoryOutput() {
 
   FieldsToRemove.clear();
   FoundField = vector<bool>(nRequestedHistoryFields, false);
-
   for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     const string &fieldReference = historyOutput_List[iField_Output];
     if (historyOutput_Map.count(fieldReference) > 0){
       const HistoryOutputField &field = historyOutput_Map.at(fieldReference);
       for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         const auto& requestedField = requestedHistoryFields[iReqField];
-        if (requestedField == field.outputGroup){
+        string fieldname_uppercase = field.fieldName;
+        transform(fieldname_uppercase.begin(), fieldname_uppercase.end(), fieldname_uppercase.begin(), ::toupper);
+
+        if ((requestedField == field.outputGroup) || (fieldReference==fieldname_uppercase)){
           FoundField[iReqField] = true;
         }
       }
@@ -2148,12 +2278,15 @@ bool COutput::WriteHistoryFile_Output(const CConfig *config) {
 
 }
 
-bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
+bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+  const unsigned short *VolumeFrequencies = config->GetVolumeOutputFrequencies();
+
   if (config->GetTime_Domain()){
-    return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+
+    return ((Iter % VolumeFrequencies[iFile] == 0)) || force_writing;
   }
   else {
-    return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+    return ((Iter > 0) && (Iter % VolumeFrequencies[iFile] == 0)) || force_writing;
   }
 }
 

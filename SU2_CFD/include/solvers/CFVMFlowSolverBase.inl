@@ -701,6 +701,7 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
    * small number (1e-10 or smaller) to a number close to 1.0, floating
    * point roundoff errors can occur. ---*/
 
+/*
   if (abs(norm - 1.0) > 1e-6) {
     ostringstream error_msg;
     error_msg << "ERROR: Found these values in columns ";
@@ -715,6 +716,7 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
     error_msg << "  but their magnitude is: " << norm << endl;
     SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
   }
+*/
 
   /*--- Store the values in our inlet data structures. ---*/
 

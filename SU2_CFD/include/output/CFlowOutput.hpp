@@ -240,8 +240,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    * \param[in] force_writing - boolean that forces writing of volume output
+   * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing) override;
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
 
   /*!
    * \brief Write the forces breakdown file
