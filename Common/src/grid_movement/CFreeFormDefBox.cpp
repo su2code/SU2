@@ -978,9 +978,9 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
 
-
-  // nijso: subdivide the box into separate tetrahedrons
-  //unsigned short Index[5][7] = {
+  
+  // subdivide the box into separate tetrahedrons
+  // unsigned short Index[5][7] = {
   //  {0, 1, 2, 5, 0, 1, 2},
   //  {0, 2, 7, 5, 0, 2, 7},
   //  {0, 2, 3, 7, 0, 2, 3},
@@ -996,9 +996,12 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   {4,5,1,0,4},  // bottom side
   {4,7,6,5,4}}; // back side
 
-// nijso: better to subdivide each of the 6 faces into 4 triangles by defining a supporting middle point
-// note that the definition of the FFD box is as follows: we first define one face counterclockwise when looking from outside of the ffd box
-// then we define the second face counterclockwise when looking from the inside of the ffd box
+/*--- The current approach is to subdivide each of the 6 faces of the hexahedral FFD box into 4 triangles 
+      by defining a supporting middle point. This allows nonplanar FFD boxes.
+      Note that the definition of the FFD box is as follows: the FFD box is a 6-sided die and we are looking at the side "1".
+      The opposite side is side "6". 
+      If we are looking at side "1", we define the nodes counterclockwise. 
+      If we are looking at side "6", we define the face clockwise  ---*/
 
 
   unsigned short nDim = geometry->GetnDim();
@@ -1047,56 +1050,11 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
                                                                 P);
       if (Distance_Point < 0) {
         Inside = false;
-        cout << "outside of the FFD box" << endl;
         return Inside;
       }
-    // cout <<"__new: "<< Coord[0] << ", "<< Coord[1] << ", "<< Coord[2] << ", " << endl;
-    // cout <<"__new: "<< Coord_Corner_Points[Index[iVar][jVar]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][2] << ", " << endl;
-    // cout <<"__new: "<< Coord_Corner_Points[Index[iVar][jVar+1]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][2] << ", " << endl;
-    // cout <<"__new: "<< P[0] << ", "<< P[1] << ", "<< P[2] << ", " << endl;
-    //     cout << "__ dp = " << Distance_Point << endl;
     }
   }
 
-
-
-
-  /*--- 1st tetrahedron {V0, V1, V2, V5}
-   2nd tetrahedron {V0, V2, V7, V5}
-   3th tetrahedron {V0, V2, V3, V7}
-   4th tetrahedron {V0, V5, V7, V4}
-   5th tetrahedron {V2, V7, V5, V6} ---*/
-
-  // loop over the tetrahedrons
-  /*
-  for (iVar = 0; iVar < 5; iVar++) {
-    Inside = true;
-    for (jVar = 0; jVar < 4; jVar++) {
-      su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
-                                                                Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                Coord_Corner_Points[Index[iVar][jVar+3]]);
-
-      su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
-                                                                 Coord_Corner_Points[Index[iVar][jVar+1]],
-                                                                 Coord_Corner_Points[Index[iVar][jVar+2]],
-                                                                 Coord_Corner_Points[Index[iVar][jVar+3]]);
-      if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
-
-    cout <<"__ "<<iVar << " , " << jVar << " , " 
-         << Coord[0] << ", "<< Coord[1] << ", "<< Coord[2] << ", " << endl;
-    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar]][2] << ", " << endl;
-    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar+1]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+1]][2] << ", " << endl;
-    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar+2]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+2]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+2]][2] << ", " << endl;
-    cout <<"__ "<< Coord_Corner_Points[Index[iVar][jVar+3]][0] << ", "<< Coord_Corner_Points[Index[iVar][jVar+3]][1] << ", "<< Coord_Corner_Points[Index[iVar][jVar+3]][2] << ", " << endl;
-         cout << "__ dp = " << Distance_Point << " , " << Distance_Vertex << ", inside="<<Inside << endl;
-
-    }
-    if (Inside) break;
-  }
-*/
-
-  cout << "inside = " << Inside << endl;
   return Inside;
 
 }

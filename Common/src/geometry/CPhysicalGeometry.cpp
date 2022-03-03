@@ -3965,6 +3965,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
       nElem_Bound[iMarker] = surfElems;
 
       /*--- Report the number and name of the marker to the console. ---*/
+      
       cout << nElem_Bound[iMarker]  << " boundary elements in index ";
       cout << iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
 

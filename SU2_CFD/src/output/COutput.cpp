@@ -359,6 +359,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 }
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
+
   CFileWriter *fileWriter = nullptr;
 
   /*--- if it is still present, strip the extension (suffix) from the filename ---*/

@@ -923,8 +923,7 @@ private:
   *MarkerPitching_Ampl,           /*!< \brief Pitching amplitude of marker. */
   *MarkerPitching_Phase,          /*!< \brief Pitching phase offset of marker. */
   *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */
-  *MarkerPlunging_Ampl,           /*!< \brief Plunging amplitude of marker. */
-  *Marker_1D_Monitor;             /*!< \brief list of coordinates for 1D monitor points */
+  *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
 
   unsigned short
   nMarkerMotion_Origin,           /*!< \brief Number of values provided for mesh motion origin of marker. */

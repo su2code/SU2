@@ -5618,9 +5618,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   }
 
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
-
-cout << endl << endl << "nijso : marker tag for heatflux wall : " << iMarker_CfgFile << endl << endl;
-
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFlux[iMarker_HeatFlux];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX;
     iMarker_CfgFile++;
@@ -7856,7 +7853,6 @@ CConfig::~CConfig(void) {
   delete[] Marker_DV;
   delete[] Marker_Moving;
   delete[] Marker_Monitoring;
-  delete[] Marker_1D_Monitor;
   delete[] Marker_Designing;
   delete[] Marker_GeoEval;
   delete[] Marker_Plotting;
