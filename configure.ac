@@ -3,14 +3,14 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 7.2.1 "Blackbird"
+# \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -338,27 +338,17 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 7.2.1 'Blackbird'                         |
+|   / __| | | |_  )   Release 7.3.0 'Blackbird'                         |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| The current SU2 release has been coordinated by the                   |
-| SU2 International Developers Society <www.su2devsociety.org>          |
-| with selected contributions from the open-source community.           |
+| SU2 Project Website: https://su2code.github.io                        |
+|                                                                       |
+| The SU2 Project is maintained by the SU2 Foundation                   |
+| (http://su2foundation.org)                                            |
 -------------------------------------------------------------------------
-| The main research teams contributing to the current release are:      |
-| - Prof. Juan J. Alonso's group at Stanford University.                |
-| - Prof. Piero Colonna's group at Delft University of Technology.      |
-| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |
-| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
-| - Prof. Rafael Palacios' group at Imperial College London.            |
-| - Prof. Vincent Terrapon's group at the University of Liege.          |
-| - Prof. Edwin van der Weide's group at the University of Twente.      |
-| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |
--------------------------------------------------------------------------
-| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       |
-|                      Tim Albring, and the SU2 contributors.           |
+| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |

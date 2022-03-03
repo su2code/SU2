@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,9 +77,9 @@ const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of peri
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4;    /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -514,6 +514,7 @@ const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+const int GRAD_TERM = 6;           /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
 
 const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */
@@ -523,16 +524,20 @@ const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 /*!
- * \brief Types of finite elements (in 2D or 3D)
+ * \brief Types of finite elements (in 1D or 2D or 3D)
  */
+const int EL_LINE = 6;    /*!< \brief Elements of two nodes, with second order gauss quadrature (1D). */
+
 const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;   /*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;   /*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;   /*!< \brief Elements of eight nodes (3D). */
 const int EL_PYRAM = 2;   /*!< \brief Elements of five nodes (3D). */
 const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
-
+const int EL_TETRA2 = 4;  /*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;  /*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
 
 /*!
  * \brief Types of spatial discretizations
@@ -2249,6 +2254,8 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
+  su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
 };
 
 /*!
@@ -2261,6 +2268,31 @@ enum class POD_KIND {
 static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("STATIC_POD",      POD_KIND::STATIC)
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
+};
+
+/*!
+ * \brief Type of operation for the linear system solver, changes the source of solver options.
+ */
+enum class LINEAR_SOLVER_MODE {
+  STANDARD,        /*!< \brief Operate in standard mode. */
+  MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
+  GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+};
+
+/*!
+ * \brief mode of operation for the sobolev smoothing solver.
+ */
+enum class ENUM_SOBOLEV_MODUS {
+  NONE,                 /*!< \brief Default option if none is choosen. */
+  PARAM_LEVEL_COMPLETE, /*!< \brief Operate on parameter level. */
+  MESH_LEVEL,           /*!< \brief Operate on mesh level. */
+  ONLY_GRAD,            /*!< \brief Flag to only compute the original gradient. */
+};
+static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
+  MakePair("NONE",                 ENUM_SOBOLEV_MODUS::NONE)
+  MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
+  MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
+  MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
 };
 
 #undef MakePair

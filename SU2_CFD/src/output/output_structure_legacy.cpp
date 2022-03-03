@@ -2,14 +2,14 @@
  * \file output_structure_legacy.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2775,27 +2775,17 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 7.0.8  \"Blackbird\"                        |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 7.3.0  \"Blackbird\"                        |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The current SU2 release has been coordinated by the                   |" << "\n";
-    Breakdown_file << "| SU2 International Developers Society <www.su2devsociety.org>          |" << "\n";
-    Breakdown_file << "| with selected contributions from the open-source community            |" << "\n";
+    Breakdown_file << "| SU2 Project Website: https://su2code.github.io                        |" << "\n";
+    Breakdown_file << "|                                                                       |" << "\n";
+    Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
+    Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The main research teams contributing to the current release are:      |" << "\n";
-    Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << "\n";
-    Breakdown_file << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << "\n";
-    Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << "\n";
-    Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << "\n";
-    Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << "\n";
-    Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
-    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
-    Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
-    Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
+    Breakdown_file << "| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";

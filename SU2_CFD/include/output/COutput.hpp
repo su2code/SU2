@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,9 +91,6 @@ protected:
   string historyFilename;   /*!< \brief The history filename*/
   ofstream histFile;        /*!< \brief Output file stream for the history */
   
-  string monitorPointsFilename; /*!< \brief base filename for the 1D monitoring points */
-  ofstream monitorPointsFile;       /*!< \brief file stream for the 1D monitoring points  */
-
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
 
   /** \brief Enum to identify the screen output format. */
@@ -161,7 +158,6 @@ protected:
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
   PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
-  PrintingToolbox::CTablePrinter* monitorPointsFileTable; //!< Table structure for writing to monitor point
   PrintingToolbox::CTablePrinter* fileWritingTable;     //!< File writing header
   std::string multiZoneHeaderString;                    //!< Multizone header string
   bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
@@ -436,11 +432,27 @@ public:
   }
 
   /*!
+   * \brief Get the list of all per-surface fields
+   * \return Vector container all output per-surface fields
+   */
+  const vector<string>& GetHistoryOutputPerSurface_List() const {
+    return historyOutputPerSurface_List;
+  }
+
+  /*!
    * \brief Get the map containing all output fields
    * \return Map containing all output fields
    */
   const map<string, HistoryOutputField>& GetHistoryFields() const {
     return historyOutput_Map;
+  }
+
+  /*!
+   * \brief Get the map containing all output per-surface fields
+   * \return Map containing all output per-surface fields
+   */
+  const map<string, vector<HistoryOutputField>>& GetHistoryPerSurfaceFields() const {
+    return historyOutputPerSurface_Map;
   }
 
   /*!
@@ -527,22 +539,10 @@ protected:
   void SetHistoryFile_Header(const CConfig *config);
 
   /*!
-   * \brief Set the history file header
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMonitorPointsFile_Header(const CConfig *config);
-
-  /*!
    * \brief Write the history file output
    * \param[in] config - Definition of the particular problem.
    */
   void SetHistoryFile_Output(const CConfig *config);
-
-  /*!
-   * \brief Write the history file output
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMonitorPointsFile_Output(const CConfig *config);
 
   /*!
    * \brief Write the screen header.
@@ -620,7 +620,7 @@ protected:
     if (it != historyOutputPerSurface_Map.end()) {
       it->second[iMarker].value = value;
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   }
 
@@ -719,15 +719,14 @@ protected:
 
   /*!
    * \brief Set the history fields common for all solvers.
-   * \param[in] config - Definition of the particular problem.
    */
-  void SetCommonHistoryFields(CConfig *config);
+  void SetCommonHistoryFields();
 
   /*!
    * \brief Load values of the history fields common for all solvers.
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadCommonHistoryData(CConfig *config);
+  void LoadCommonHistoryData(const CConfig *config);
 
   /*!
    * \brief Allocates the data sorters if necessary.
@@ -840,8 +839,9 @@ protected:
   /*!
    * \brief Load the multizone history output field values
    * \param[in] output - Container holding the output instances per zone.
+   * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void LoadMultizoneHistoryData(const COutput* const* output) {}
+  inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
    * \brief Set the available history output fields
@@ -853,7 +853,7 @@ protected:
    * \brief Set the available multizone history output fields
    * \param[in] output - Container holding the output instances per zone.
    */
-  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output) {}
+  inline virtual void SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) {}
 
   /*!
    * \brief Write any additional files defined for the current solver.

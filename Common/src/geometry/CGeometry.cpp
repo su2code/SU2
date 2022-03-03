@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2436,6 +2436,8 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   }
 
+  /*--- Compute the global surface areas for all markers. ---*/
+  geometry_container[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 }
 
 void CGeometry::SetCustomBoundary(CConfig *config) {
@@ -2503,6 +2505,57 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   }
 }
 
+void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
+  const auto nMarker_Global = config->GetnMarker_CfgFile();
+  SurfaceAreaCfgFile.resize(nMarker_Global);
+  vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
+
+  /*--- Loop over all local markers ---*/
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    const auto Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Loop over all global markers, and find the local-global pair via
+          matching unique string tags. ---*/
+    for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+      if (Local_TagBound == Global_TagBound) {
+
+        for(auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++ ) {
+
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          if(!nodes->GetDomain(iPoint)) continue;
+
+          const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
+          const auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
+
+          LocalSurfaceArea[iMarker_Global] += Area;
+        }// for iVertex
+      }//if Local == Global
+    }//for iMarker_Global
+  }//for iMarker
+
+  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+}
+
+su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_marker) const {
+  /*---Find the precomputed marker surface area by local-global string-matching. ---*/
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
+
+    const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+    if (Marker_Tag == Global_TagBound)
+      return SurfaceAreaCfgFile[iMarker_Global];
+
+  }
+
+  SU2_MPI::Error("Unable to match local-marker with cfg-marker for Surface Area.", CURRENT_FUNCTION);
+  return 0.0;
+}
 
 void CGeometry::ComputeSurf_Straightness(CConfig *config,
                                          bool    print_on_screen) {

@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -211,7 +211,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSolver(bool mesh_deform_mode = false);
+  CSolver(LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Destructor of the class.
@@ -1253,7 +1253,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *visc_numerics,
                                               CConfig *config,
@@ -3544,6 +3544,28 @@ public:
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
   /*!
+   * \brief Register In- or Output.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  virtual unsigned long RegisterSolutionExtra(bool input, const CConfig* config) { return 0; }
+
+  /*!
+   * \brief Seed the adjoint of the extra solution at the output.
+   * \param[in] adj_sol - Vector containing the adjoint solution to seed.
+   * \param[in] config - The particular config.
+   */
+  virtual void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {}
+
+  /*!
+   * \brief Extract the adjoint of the extra solution at the input.
+   * \param[out] adj_sol - Vector to store the adjoint into.
+   * \param[in] config - The particular config.
+   */
+  virtual void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {}
+
+  /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4133,6 +4155,59 @@ public:
                                         CConfig *config) { }
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
+   * \param[in] numerics - the numerics for this problem.
+   * \param[in] config - Definition of the particular problem.
+   *
+   */
+  virtual void ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {}
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
+   */
+  virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
+                                        CNumerics *numerics,
+                                        CSurfaceMovement *surface_movement,
+                                        CVolumetricMovement *grid_movement,
+                                        CConfig *config,
+                                        su2double** Gradient) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
+                                                     CSurfaceMovement *surface_movement,
+                                                     CVolumetricMovement *grid_movement,
+                                                     CConfig *config,
+                                                     su2double** Gradient) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void ReadSensFromGeometry(const CGeometry* geometry) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WriteSensToGeometry(CGeometry* geometry) const {}
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */
@@ -4228,8 +4303,8 @@ public:
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   /*!
-   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
-   * \return Struct holding 4 su2doubles.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
+   * \return Struct holding streamwise periodic values.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 

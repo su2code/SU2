@@ -2,14 +2,14 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,16 +62,12 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
   fileWritingTable = new PrintingToolbox::CTablePrinter(&std::cout);
   historyFileTable = new PrintingToolbox::CTablePrinter(&histFile, "");
-  monitorPointsFileTable = new PrintingToolbox::CTablePrinter(&monitorPointsFile, "");
 
   /*--- Set default filenames ---*/
 
   surfaceFilename = "surface";
   volumeFilename  = "volume";
   restartFilename = "restart";
-
-  /*--- monitoring point filename ---*/
-  monitorPointsFilename = "monitorpoint.csv";
 
   /*--- Retrieve the history filename ---*/
 
@@ -182,10 +178,6 @@ COutput::~COutput(void) {
     histFile.close();
   }
 
-  if (monitorPointsFile.is_open()){
-    monitorPointsFile.close();
-  }
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
@@ -249,7 +241,7 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   LoadCommonHistoryData(driver_config);
 
-  LoadMultizoneHistoryData(output);
+  LoadMultizoneHistoryData(output, config);
 
   Convergence_Monitoring(driver_config, curOuterIter);
 
@@ -266,9 +258,6 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
   if (rank == MASTER_NODE && !noWriting) {
 
     if (WriteHistoryFile_Output(config)) SetHistoryFile_Output(config);
-
-    /* nijso monitorpoints*/
-    if (WriteHistoryFile_Output(config)) SetMonitorPointsFile_Output(config);
 
     if (WriteScreen_Header(config)) SetScreen_Header(config);
 
@@ -391,7 +380,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-      
+
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
@@ -415,13 +404,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-        
+
 
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 ASCII restart" << fileName + extension;
 
         if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;  
+          (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;
       }
 
       fileWriter = new CSU2FileWriter(volumeDataSorter);
@@ -437,8 +426,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-        
-      
+
+
       if (rank == MASTER_NODE) {
         (*fileWritingTable) << "SU2 binary restart" << fileName + extension;
 
@@ -448,8 +437,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       }
 
       fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
-      
-  
+
+
       break;
 
     case OUTPUT_TYPE::MESH:
@@ -590,7 +579,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       {
 
         extension = CParaviewVTMFileWriter::fileExt;
-       
+
         /*--- The file name of the multiblock file is the case name (i.e. the config file name w/o ext.) ---*/
 
         fileName = config->GetUnsteady_FileName(config->GetCaseName(), curTimeIter, "");
@@ -617,7 +606,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
 
         CParaviewVTMFileWriter* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
-        
+
         /*--- then we write the data into the folder---*/
         vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
 
@@ -895,12 +884,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
     fileWriter->Write_Data(fileName);
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
-  
+
     /*--- Write data with iteration number to file ---*/
 
     if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
-      fileWriter->Write_Data(filename_iter); 
-    
+      fileWriter->Write_Data(filename_iter);
+
       /*--- overwrite bandwidth ---*/
       BandWidth = fileWriter->Get_Bandwidth();
 
@@ -1229,63 +1218,6 @@ void COutput::SetHistoryFile_Header(const CConfig *config) {
   historyFileTable->PrintHeader();
   histFile.flush();
 }
-void COutput::SetMonitorPointsFile_Header(const CConfig *config) {
-
-  unsigned short iField_Output = 0,
-      iReqField = 0,
-      iMarker = 0;
-  stringstream out;
-  int width = 20;
-
-  /*
-  for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
-    const string &fieldIdentifier = historyOutput_List[iField_Output];
-    const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
-    for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      const string & requestedField = requestedHistoryFields[iReqField];
-      if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-        if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);
-        else{ width = std::max((int)field.fieldName.size()+2, 18);}
-        //historyFileTable->AddColumn("\"" + field.fieldName + "\"", width);
-        monitorPointsFileTable->AddColumn("\"" + field.fieldName + "\"", width);
-      }
-    }
-  }
-  */
-
-  string fieldname = "ITER";
-  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
-  fieldname = "X";
-  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
-  fieldname = "Y";
-  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
-  fieldname = "Z";
-  monitorPointsFileTable->AddColumn("\"" + fieldname + "\"", width);
-
-
-  /*
-  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
-    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
-      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
-      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        const string &requestedField = requestedHistoryFields[iReqField];
-        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-          if (field.screenFormat == ScreenOutputFormat::INTEGER) width = std::max((int)field.fieldName.size()+2, 10);
-          else{ width = std::max((int)field.fieldName.size()+2, 18);}
-          monitorPointsFileTable->AddColumn("\"" + field.fieldName + "\"", width);
-        }
-      }
-    }
-  }
-  */
-
-  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) {
-    monitorPointsFile << "VARIABLES = \\" << endl;
-  }
-  monitorPointsFileTable->PrintHeader();
-  monitorPointsFile.flush();
-}
 
 
 void COutput::SetHistoryFile_Output(const CConfig *config) {
@@ -1322,49 +1254,7 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
 
   histFile.flush();
 }
-void COutput::SetMonitorPointsFile_Output(const CConfig *config) {
 
-  unsigned short iField_Output = 0,
-      iReqField = 0,
-      iMarker = 0;
-
-  for (iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
-    const string &fieldIdentifier = historyOutput_List[iField_Output];
-    const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
-    for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      const string &requestedField = requestedHistoryFields[iReqField];
-      if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-        (*monitorPointsFileTable) << field.value;
-      }
-    }
-  }
-  
-  /* add the coordinates */
-  /* find the interpolated value */ 
-
-
-  /*
-  for (iField_Output = 0; iField_Output < historyOutputPerSurface_List.size(); iField_Output++){
-    const string &fieldIdentifier = historyOutputPerSurface_List[iField_Output];
-    for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
-      const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
-      for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        const string &requestedField = requestedHistoryFields[iReqField];
-        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
-          (*monitorPointsFileTable) << field.value;
-        }
-      }
-    }
-  }
-  */
-
-  /*--- get the coordinate ---*/
-
-
-  /*--- Print the string to file and remove the last two characters (a separator and a space) ---*/
-
-  monitorPointsFile.flush();
-}
 
 void COutput::SetScreen_Header(const CConfig *config) {
   if (config->GetMultizone_Problem())
@@ -1427,7 +1317,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Set the common output fields ---*/
 
-  SetCommonHistoryFields(config);
+  SetCommonHistoryFields();
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
@@ -1474,11 +1364,11 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Set the common history fields for all solvers ---*/
 
-  SetCommonHistoryFields(driver_config);
+  SetCommonHistoryFields();
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
-  SetMultizoneHistoryOutputFields(output);
+  SetMultizoneHistoryOutputFields(output, config);
 
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
@@ -1532,20 +1422,6 @@ void COutput::PrepareHistoryFile(CConfig *config){
   /*--- Add the header to the history file. ---*/
 
   SetHistoryFile_Header(config);
-
- /*--- open the monitoring point file ---*/
-  monitorPointsFile.open(monitorPointsFilename, ios::out);
-
-  /*--- Create and format the history file table ---*/
-  monitorPointsFileTable->SetInnerSeparator(historySep);
-  monitorPointsFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
-  monitorPointsFileTable->SetPrintHeaderTopLine(false);
-  monitorPointsFileTable->SetPrintHeaderBottomLine(false);
-  monitorPointsFileTable->SetPrecision(config->GetOutput_Precision());
-
-  /*--- Add the header to the history file. ---*/
-
-  SetMonitorPointsFile_Header(config);
 
 }
 
@@ -2045,10 +1921,15 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if (config->GetTime_Domain()){
-        windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
-        SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
+        auto it = windowedTimeAverages.find(fieldIdentifier);
+        if (it == windowedTimeAverages.end()) {
+          it = windowedTimeAverages.insert({fieldIdentifier, CWindowedAverage(config->GetKindWindow())}).first;
+        }
+        auto& timeAverage = it->second;
+        timeAverage.addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
+        SetHistoryOutputValue("TAVG_" + fieldIdentifier, timeAverage.GetVal());
         if (config->GetDirectDiff() != NO_DERIVATIVE) {
-          SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
+          SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(timeAverage.GetVal()));
         }
       }
       if (config->GetDirectDiff() != NO_DERIVATIVE){
@@ -2290,15 +2171,15 @@ bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force
   }
 }
 
-void COutput::SetCommonHistoryFields(CConfig *config){
+void COutput::SetCommonHistoryFields() {
 
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Time iteration index");
+  AddHistoryOutput("TIME_ITER", "Time_Iter", ScreenOutputFormat::INTEGER, "ITER", "Time iteration index");
   /// DESCRIPTION: The outer iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
+  AddHistoryOutput("OUTER_ITER", "Outer_Iter", ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
   /// DESCRIPTION: The inner iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
+  AddHistoryOutput("INNER_ITER", "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
   /// END_GROUP
 
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
@@ -2308,13 +2189,13 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
 
   /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time");
+  AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
 }
 
-void COutput::LoadCommonHistoryData(CConfig *config){
+void COutput::LoadCommonHistoryData(const CConfig *config) {
 
   SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
 

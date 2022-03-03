@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
+
 #if !defined(_WIN32) || defined(__NUTC__)
 #include <unistd.h>
 #endif
@@ -30,6 +31,7 @@ freely, subject to the following restrictions:
 #include "cgnslib.h"
 #include "cgns_header.h"
 #include "cgns_io.h"
+#include "cg_hashmap.h"
 #ifdef MEM_DEBUG
 #include "cg_malloc.h"
 #endif
@@ -38,10 +40,25 @@ freely, subject to the following restrictions:
 #include "hdf5.h"
 #endif
 
+#if CG_BUILD_COMPLEX_C99_EXT
+#include <complex.h>
+#undef I
+#if defined(_MSC_VER)
+#define cg_complex_float _Fcomplex
+#define cg_complex_double _Dcomplex
+#define __real__(c)  c._Val[0]
+#define __imag__(c)  c._Val[1]
+#else
+#define cg_complex_float float _Complex
+#define cg_complex_double double _Complex
+#endif
+#endif
+
 #define CGNS_NAN(x)  (!((x) < HUGE_VAL && (x) > -HUGE_VAL))
 
 /* Flag for contiguous (0) or compact storage (1) */
 extern int HDF5storage_type;
+
 
 /***********************************************************************
  * global variable definitions
@@ -66,7 +83,7 @@ void *cgi_malloc(size_t cnt, size_t size)
 {
     void *buf = calloc(cnt, size);
     if (buf == NULL) {
-        cgi_error("calloc failed for %d values of size %d", cnt, size);
+        cgi_error("calloc failed for %zu values of size %zu", cnt, size);
         exit (1);
     }
     return buf;
@@ -76,7 +93,7 @@ void *cgi_realloc(void *oldbuf, size_t bytes)
 {
     void *buf = realloc(oldbuf, bytes);
     if (buf == NULL) {
-        cgi_error("realloc failed for %d bytes", bytes);
+        cgi_error("realloc failed for %zu bytes", bytes);
         exit (1);
     }
     return buf;
@@ -105,14 +122,190 @@ int cgi_read()
     return CG_OK;
 }
 
+/* helpers to parse CGNSBase_t node */
+typedef enum {
+    LabelNull_t,
+    LabelFamily_t,
+    LabelReferenceState_t,
+    LabelGravity_t,
+    LabelAxisymmetry_t,
+    LabelRotatingCoordinates_t,
+    LabelConvergenceHistory_t,
+    LabelDescriptor_t,
+    LabelDataClass_t,
+    LabelDimensionalUnits_t,
+    LabelFlowEquationSet_t,
+    LabelIntegralData_t,
+    LabelSimulationType_t,
+    LabelBaseIterativeData_t,
+    LabelUserDefinedData_t,
+    LabelZone_t
+} BaseLabel_t;
+
+#define NofBaseLabel 16
+
+static int get_base_label_type_as_enum(const char* nodelabel) {
+    if (0 == strcmp(nodelabel, "Zone_t")) {
+        return LabelZone_t;
+    }
+    else if (0 == strcmp(nodelabel, "Family_t")) {
+        return LabelFamily_t;
+    }
+    else if (0 == strcmp(nodelabel, "ReferenceState_t")) {
+        return LabelReferenceState_t;
+    }
+    else if (0 == strcmp(nodelabel, "Gravity_t")) {
+        return LabelGravity_t;
+    }
+    else if (0 == strcmp(nodelabel, "Axisymmetry_t")) {
+        return LabelAxisymmetry_t;
+    }
+    else if (0 == strcmp(nodelabel, "RotatingCoordinates_t")) {
+        return LabelRotatingCoordinates_t;
+    }
+    else if (0 == strcmp(nodelabel, "ConvergenceHistory_t")) {
+        return LabelConvergenceHistory_t;
+    }
+    else if (0 == strcmp(nodelabel, "Descriptor_t")) {
+        return LabelDescriptor_t;
+    }
+    else if (0 == strcmp(nodelabel, "DataClass_t")) {
+        return LabelDataClass_t;
+    }
+    else if (0 == strcmp(nodelabel, "DimensionalUnits_t")) {
+        return LabelDimensionalUnits_t;
+    }
+    else if (0 == strcmp(nodelabel, "FlowEquationSet_t")) {
+        return LabelFlowEquationSet_t;
+    }
+    else if (0 == strcmp(nodelabel, "IntegralData_t")) {
+        return LabelIntegralData_t;
+    }
+    else if (0 == strcmp(nodelabel, "SimulationType_t")) {
+        return LabelSimulationType_t;
+    }
+    else if (0 == strcmp(nodelabel, "BaseIterativeData_t")) {
+        return LabelBaseIterativeData_t;
+    }
+    else if (0 == strcmp(nodelabel, "UserDefinedData_t")) {
+        return LabelUserDefinedData_t;
+    }
+    else {
+        return LabelNull_t;
+    }
+}
+
+typedef struct _childnode {
+    double id;
+    int type;
+    char_33 name;
+} _childnode_t;
+
+static int sort_zone_names(const void* v1, const void* v2)
+{
+    _childnode_t* p1 = (_childnode_t*)v1;
+    _childnode_t* p2 = (_childnode_t*)v2;
+
+    return (strcmp(p1->name, p2->name));
+}
+
+int cgi_read_all_base_children(double base_id, int* nnodes, _childnode_t** childnodes) {
+    int nid, n, nchildren, len;
+    char nodelabel[CGIO_MAX_NAME_LENGTH + 1];
+    double* idlist;
+    _childnode_t* childlist;
+    *nnodes = 0;
+
+    if (cgio_number_children(cg->cgio, base_id, &nchildren)) {
+        cg_io_error("cgio_number_children");
+        return CG_ERROR;
+    }
+    if (nchildren < 1) return CG_OK;
+    idlist = CGNS_NEW(double, nchildren);
+    if (cgio_children_ids(cg->cgio, base_id, 1, nchildren,
+        &len, idlist)) {
+        cg_io_error("cgio_children_ids");
+        return CG_ERROR;
+    }
+    if (len != nchildren) {
+        CGNS_FREE(idlist);
+        cgi_error("mismatch in number of base children and child IDs read");
+        return CG_ERROR;
+    }
+    childlist = CGNS_NEW(_childnode_t, nchildren);
+    nid = 0;
+    for (nid = 0, n = 0; n < nchildren; n++) {
+        /* Get the node label */
+        if (cgio_get_label(cg->cgio, idlist[n], nodelabel)) {
+            cg_io_error("cgio_get_label");
+            return CG_ERROR;
+        }
+        childlist[n].type = get_base_label_type_as_enum(nodelabel);
+
+        if (childlist[n].type != LabelNull_t) {
+            childlist[nid].id = idlist[n];
+            if (nid < n) {
+                childlist[nid].type = childlist[n].type;
+            }
+            /* Get also the node name */
+            if (cgio_get_name(cg->cgio, idlist[n], childlist[nid].name)) {
+                cg_io_error("cgio_get_name");
+                return CG_ERROR;
+            }
+            nid++;
+        }
+        else {
+            cgio_release_id(cg->cgio, idlist[n]);
+        }
+    }
+    CGNS_FREE(idlist);
+    if (nid > 0) {
+        *childnodes = childlist;
+        *nnodes = nid;
+    }
+    else {
+        CGNS_FREE(childlist);
+    }
+    return CG_OK;
+}
+
+int cgi_read_equations_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_equations** equations);
+int cgi_read_state_from_list(int in_link, const _childnode_t* nodelist, int nnodes, cgns_state** state);
+int cgi_read_gravity_from_list(int in_link, const _childnode_t* nodelist, const int nnodes, cgns_gravity** gravity);
+int cgi_read_axisym_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_axisym** axisym);
+int cgi_read_rotating_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_rotating** rotating);
+int cgi_read_converg_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_converg** converg);
+int cgi_read_integral_from_list(int in_link, _childnode_t* nodelist, int nnodes, int* nintegrals, cgns_integral** integral);
+int cgi_read_DDD_from_list(int in_link, _childnode_t* nodebylabel[NofBaseLabel], int ndescr, int ndata_class, int ndimensional_units, cgns_descr** descr, CGNS_ENUMV(DataClass_t)* data_class, cgns_units** units);
+int cgi_read_simulation_from_list(_childnode_t* nodelist, int nnodes, CGNS_ENUMT(SimulationType_t)* type, double* type_id);
+int cgi_read_biter_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_biter** biter);
+int cgi_read_user_data_from_list(int in_link, _childnode_t* nodelist, int nnodes, int* nuser_data, cgns_user_data** user_data);
+/* end of helpers */
+#define call_base_func(error) \
+    if (error) { \
+        for (m = 0; m < NofBaseLabel; m++) { \
+            if (childbylabel[m] == NULL) continue; \
+            CGNS_FREE(childbylabel[m]) \
+        } \
+        return CG_ERROR; \
+    }
+
 int cgi_read_base(cgns_base *base)
 {
     char_33 data_type;
     int ndim, *index;
-    double *id;
-    int n;
+    int n, m;
     void *vdata;
     cgsize_t dim_vals[12];
+    int nchildren;
+    _childnode_t* childlist = NULL;
+    int nchildbylabel[NofBaseLabel];
+    _childnode_t* childbylabel[NofBaseLabel];
+
+    for (n = 0; n < NofBaseLabel; n++) {
+        childbylabel[n] = NULL;
+        nchildbylabel[n] = 0;
+    }
 
      /* Read CGNSBase_t Node */
     if (cgi_read_node(base->id, base->name, data_type, &ndim, dim_vals,
@@ -171,73 +364,107 @@ int cgi_read_base(cgns_base *base)
         }
     }
 
-     /* Family_t */
-    if (cgi_get_nodes(base->id, "Family_t", &base->nfamilies, &id)) return CG_ERROR;
-    if (base->nfamilies>0) {
-         /* read & save families */
+    if (cgi_read_all_base_children(base->id, &nchildren, &childlist)) return CG_ERROR;
+    /* we now have all ids with label and name */
+    /* store them by label */
+    for (n = 0; n < nchildren; n++) {
+        nchildbylabel[childlist[n].type]++;
+    }
+    for (n = 0; n < NofBaseLabel; n++) {
+        if (nchildbylabel[n] == 0) continue;
+        childbylabel[n] = CGNS_NEW(_childnode_t, nchildbylabel[n]);
+        nchildbylabel[n] = 0;
+    }
+    for (n = 0; n < nchildren; n++) {
+        memcpy((void *)&(childbylabel[childlist[n].type][nchildbylabel[childlist[n].type]]),
+            ((void *)&childlist[n]), sizeof(_childnode_t));
+        nchildbylabel[childlist[n].type] ++;
+    }
+    CGNS_FREE(childlist);
+    /* now consume the childbylabel array for each label */
+
+    /* Family_t */ /* -- FAMILY TREE -- */
+    base->nfamilies = nchildbylabel[LabelFamily_t];
+    if (base->nfamilies > 0) {
+        /* read & save families */
         base->family = CGNS_NEW(cgns_family, base->nfamilies);
         for (n=0; n<base->nfamilies; n++) {
-            base->family[n].id = id[n];
-            base->family[n].link = cgi_read_link(id[n]);
+            base->family[n].id = childbylabel[LabelFamily_t][n].id;
+            base->family[n].link = cgi_read_link(childbylabel[LabelFamily_t][n].id);
             base->family[n].in_link = 0;
-            if (cgi_read_family(&base->family[n])) return CG_ERROR;
+            call_base_func(cgi_read_family(&base->family[n]))
         }
-        CGNS_FREE(id);
     }
 
-     /* ReferenceState_t */
-    if (cgi_read_state(0, base->id, &base->state)) return CG_ERROR;
+    /* ReferenceState_t */
+    call_base_func(cgi_read_state_from_list(0, childbylabel[LabelReferenceState_t],
+        nchildbylabel[LabelReferenceState_t], &base->state))
 
      /* Gravity_t */
-    if (cgi_read_gravity(0, base->id, &base->gravity)) return CG_ERROR;
+    call_base_func(cgi_read_gravity_from_list(0, childbylabel[LabelGravity_t],
+        nchildbylabel[LabelGravity_t], &base->gravity))
 
      /* Axisymmetry_t */
-    if (cgi_read_axisym(0, base->id, &base->axisym)) return CG_ERROR;
+    call_base_func(cgi_read_axisym_from_list(0, childbylabel[LabelAxisymmetry_t],
+        nchildbylabel[LabelAxisymmetry_t], &base->axisym))
 
      /* RotatingCoordinates_t */
-    if (cgi_read_rotating(0, base->id, &base->rotating)) return CG_ERROR;
+    call_base_func(cgi_read_rotating_from_list(0, childbylabel[LabelRotatingCoordinates_t], 
+        nchildbylabel[LabelRotatingCoordinates_t], &base->rotating))
 
      /* ConvergenceHistory_t */
-    if (cgi_read_converg(0, base->id, &base->converg)) return CG_ERROR;
+    call_base_func(cgi_read_converg_from_list(0, childbylabel[LabelConvergenceHistory_t],
+        nchildbylabel[LabelConvergenceHistory_t], &base->converg))
 
      /* Descriptor_t, DataClass_t, DimensionalUnits_t */
-    if (cgi_read_DDD(0, base->id, &base->ndescr, &base->descr,
-        &base->data_class, &base->units)) return CG_ERROR;
+    base->ndescr = nchildbylabel[LabelDescriptor_t];
+    call_base_func(cgi_read_DDD_from_list(0, childbylabel, nchildbylabel[LabelDescriptor_t],
+        nchildbylabel[LabelDataClass_t], nchildbylabel[LabelDimensionalUnits_t],  &base->descr,
+        &base->data_class, &base->units))
 
      /* FlowEquationSet_t */
-    if (cgi_read_equations(0, base->id, &base->equations)) return CG_ERROR;
+    call_base_func(cgi_read_equations_from_list(0, childbylabel[LabelFlowEquationSet_t],
+        nchildbylabel[LabelFlowEquationSet_t], &base->equations))
 
      /* IntegralData_t */
-    if (cgi_read_integral(0, base->id, &base->nintegrals,
-        &base->integral)) return CG_ERROR;
+    call_base_func(cgi_read_integral_from_list(0, childbylabel[LabelIntegralData_t],
+        nchildbylabel[LabelIntegralData_t], &base->nintegrals, &base->integral))
 
      /* SimulationType_t */
-    if (cgi_read_simulation(base->id, &base->type, &base->type_id)) return CG_ERROR;
+    call_base_func(cgi_read_simulation_from_list(childbylabel[LabelSimulationType_t],
+        nchildbylabel[LabelSimulationType_t], &base->type, &base->type_id))
 
      /* BaseIterativeData_t */
-    if (cgi_read_biter(0, base->id, &base->biter)) return CG_ERROR;
+    call_base_func(cgi_read_biter_from_list(0, childbylabel[LabelBaseIterativeData_t],
+        nchildbylabel[LabelBaseIterativeData_t], &base->biter))
 
      /* UserDefinedData_t */
-    if (cgi_read_user_data(0, base->id, &base->nuser_data,
-        &base->user_data)) return CG_ERROR;
+    call_base_func(cgi_read_user_data_from_list(0, childbylabel[LabelUserDefinedData_t],
+        nchildbylabel[LabelUserDefinedData_t], &base->nuser_data,
+        &base->user_data))
 
      /* Zone_t (depends on NumberOfSteps) */
-    if (cgi_get_nodes(base->id, "Zone_t", &base->nzones, &id)) return CG_ERROR;
+    childlist = childbylabel[LabelZone_t];
+    base->nzones = nchildbylabel[LabelZone_t];
     if (base->nzones>0) {
          /* Order zones alpha-numerically */
-        if (cgi_sort_names(base->nzones, id)) {
-            cgi_error("Error sorting zone names...");
-            return CG_ERROR;
-        }
-         /* read & save zones in sorted order */
+        qsort(childlist, base->nzones, sizeof(_childnode_t), sort_zone_names);
+         /* populate zones in sorted order */
         base->zone = CGNS_NEW(cgns_zone, base->nzones);
         for (n=0; n<base->nzones; n++) {
-            base->zone[n].id = id[n];
-            base->zone[n].link = cgi_read_link(id[n]);
+            base->zone[n].id = childlist[n].id;
+            base->zone[n].link = cgi_read_link(childlist[n].id);
             base->zone[n].in_link = 0;
-            if (cgi_read_zone(&base->zone[n])) return CG_ERROR;
+            strcpy(base->zone[n].name, childlist[n].name);
         }
-        CGNS_FREE(id);
+    }
+    for (m = 0; m < NofBaseLabel; m++) {
+        if (childbylabel[m] == NULL) continue;
+        CGNS_FREE(childbylabel[m])
+    }
+    /* read zones */
+    for (n = 0; n < base->nzones; n++) {
+        if (cgi_read_zone(&base->zone[n])) return CG_ERROR;
     }
     return CG_OK;
 }
@@ -251,9 +478,8 @@ int cgi_read_zone(cgns_zone *zone)
     double *id;
     cgsize_t dim_vals[12];
 
-     /* Zone_t */
-    if (cgi_read_node(zone->id, zone->name, data_type, &ndim, dim_vals,
-            &vdata, READ_DATA)) {
+     /* Zone_t, assume zone->name is already read */
+    if (cgi_read_node_data(zone->id, data_type, &ndim, dim_vals, &vdata)) {
         cgi_error("Error reading node Zone_t");
         return CG_ERROR;
     }
@@ -373,11 +599,11 @@ int cgi_read_zone(cgns_zone *zone)
         return CG_ERROR;
     }
 
-     /* FamilyName_t */
+     /* FamilyName_t */ /* -- FAMILY TREE -- */
     if (cgi_read_family_name(in_link, zone->id, zone->name, zone->family_name))
         return CG_ERROR;
 
-    /* CPEX 0034 */
+    /* CPEX 0034 */ /* -- FAMILY TREE -- */
     if (cgi_get_nodes(zone->id, "AdditionalFamilyName_t", &zone->nfamname, &id))
         return CG_ERROR;
     if (zone->nfamname > 0) {
@@ -386,7 +612,7 @@ int cgi_read_zone(cgns_zone *zone)
         for (n = 0; n < zone->nfamname; n++) {
             zone->famname[n].id = id[n];
             if (cgi_read_string(id[n], zone->famname[n].name, &fam)) return CG_ERROR;
-            strncpy(zone->famname[n].family, fam, 32);
+            strncpy(zone->famname[n].family, fam, (CG_MAX_GOTO_DEPTH*(CGIO_MAX_NAME_LENGTH+1)));
             CGNS_FREE(fam);
         }
         CGNS_FREE(id);
@@ -454,7 +680,7 @@ int cgi_read_zone(cgns_zone *zone)
     return CG_OK;
 }
 
-int cgi_read_family(cgns_family *family)
+int cgi_read_family(cgns_family *family) /* ** FAMILY TREE ** */
 {
     int n, linked, in_link = family->link ? 1 : family->in_link;
     double *id;
@@ -475,7 +701,7 @@ int cgi_read_family(cgns_family *family)
         for (n = 0; n < family->nfamname; n++) {
             family->famname[n].id = id[n];
             if (cgi_read_string(id[n], family->famname[n].name, &fam)) return CG_ERROR;
-            strncpy(family->famname[n].family, fam, 32);
+            strncpy(family->famname[n].family, fam,(CG_MAX_GOTO_DEPTH*(CGIO_MAX_NAME_LENGTH+1)));
             CGNS_FREE(fam);
         }
         CGNS_FREE(id);
@@ -612,7 +838,21 @@ int cgi_read_family(cgns_family *family)
         CGNS_FREE(id);
     }
 
-     /* Ordinal_t */
+    /* Family_t */ /* ** FAMILY TREE ** */
+    if (cgi_get_nodes(family->id, "Family_t", &family->nfamilies, &id)) return CG_ERROR;
+    if (family->nfamilies>0) {
+         /* read & save families */
+        family->family = CGNS_NEW(cgns_family, family->nfamilies);
+        for (n=0; n<family->nfamilies; n++) {
+            family->family[n].id = id[n];
+            family->family[n].link = cgi_read_link(id[n]);
+            family->family[n].in_link = 0;
+            if (cgi_read_family(&family->family[n])) return CG_ERROR;
+        }
+        CGNS_FREE(id);
+    }
+
+    /* Ordinal_t */
     if (cgi_read_ordinal(family->id, &family->ordinal)) return CG_ERROR;
 
      /* UserDefinedData_t */
@@ -725,8 +965,9 @@ int cgi_read_family_dataset(int in_link, double parent_id, int *ndataset,
     return CG_OK;
 }
 
+/* ** FAMILY TREE ** */
 int cgi_read_family_name(int in_link, double parent_id, char_33 parent_name,
-                         char_33 family_name)
+                         char_md family_name)
 {
     int fam_flag;
     double *id;
@@ -741,7 +982,9 @@ int cgi_read_family_name(int in_link, double parent_id, char_33 parent_name,
 
          /* FamilyName in data field of the ADF node */
             if (cgi_read_string(id[0], NodeName, &FamilyName)) return CG_ERROR;
-            if (strlen(FamilyName) > 32) FamilyName[32]='\0';
+            if (strlen(FamilyName) > (CG_MAX_GOTO_DEPTH*(CGIO_MAX_NAME_LENGTH+1))) {
+                FamilyName[(CG_MAX_GOTO_DEPTH*(CGIO_MAX_NAME_LENGTH+1))]='\0'; /* ** FAMILY TREE ** */
+            }
             strcpy(family_name, FamilyName);
             if (FamilyName) CGNS_FREE(FamilyName);
 
@@ -825,7 +1068,7 @@ int cgi_read_zcoor(int in_link, double parent_id, int *nzcoor, cgns_zcoor **zcoo
                 }
                 if (strcmp(zcoor[0][g].coord[z].data_type,"R4") &&
                     strcmp(zcoor[0][g].coord[z].data_type,"R8")) {
-                    cgi_error("Datatype %d not supported for coordinates",zcoor[0][g].coord[z].data_type);
+                    cgi_error("Datatype %s not supported for coordinates",zcoor[0][g].coord[z].data_type);
                     return CG_ERROR;
                 }
             }
@@ -1154,7 +1397,7 @@ int cgi_read_section(int in_link, double parent_id, int *nsections,
                         section[0][n].connect->data = (void *)elem_data;
                     }
                 }
-                if (cg->version < 4000) {
+                if (cg->version < 4000 && cg->version != 3400) {
                     cgsize_t size, *elem_data = 0;
                     if (section[0][n].el_type == CGNS_ENUMV(NGON_n) ||
                         section[0][n].el_type == CGNS_ENUMV(NFACE_n) ) {
@@ -1413,8 +1656,8 @@ int cgi_read_section(int in_link, double parent_id, int *nsections,
 		cgi_error("malloc failed for ParentData conversion array");
 		return CG_ERROR;
 	    }
-	    if (cgio_read_all_data(cg->cgio, section[0][n].parelem->id, pardata)) {
-                cg_io_error("cgio_read_all_data");
+	    if (cgio_read_all_data_type(cg->cgio, section[0][n].parelem->id, data_type, pardata)) {
+                cg_io_error("cgio_read_all_data_type");
 		return CG_ERROR;
 	    }
 	    if (cgi_delete_node(section[0][n].id, section[0][n].parelem->id))
@@ -1536,8 +1779,10 @@ int cgi_read_sol(int in_link, double parent_id, int *nsols, cgns_sol **sol)
                 if (strcmp(sol[0][s].field[z].data_type,"I4") &&
                     strcmp(sol[0][s].field[z].data_type,"I8") &&
                     strcmp(sol[0][s].field[z].data_type,"R4") &&
-                    strcmp(sol[0][s].field[z].data_type,"R8")) {
-                    cgi_error("Datatype %d not supported for flow solutions",sol[0][s].field[z].data_type);
+                    strcmp(sol[0][s].field[z].data_type,"R8") &&
+                    strcmp(sol[0][s].field[z].data_type,"X4") &&
+                    strcmp(sol[0][s].field[z].data_type,"X8")) {
+                    cgi_error("Datatype %s not supported for flow solutions",sol[0][s].field[z].data_type);
                     return CG_ERROR;
                 }
             }
@@ -2453,7 +2698,7 @@ int cgi_read_boco(cgns_boco *boco)
     }
 #endif
 
-     /* FamilyName_t */
+     /* FamilyName_t */ /* -- FAMILY TREE -- */
     if (cgi_read_family_name(linked, boco->id, boco->name, boco->family_name))
         return CG_ERROR;
 
@@ -2466,7 +2711,7 @@ int cgi_read_boco(cgns_boco *boco)
         for (n = 0; n < boco->nfamname; n++) {
             boco->famname[n].id = id[n];
             if (cgi_read_string(id[n], boco->famname[n].name, &fam)) return CG_ERROR;
-            strncpy(boco->famname[n].family, fam, 32);
+            strncpy(boco->famname[n].family, fam, (CG_MAX_GOTO_DEPTH*(CGIO_MAX_NAME_LENGTH+1)));
             CGNS_FREE(fam);
         }
         CGNS_FREE(id);
@@ -3111,7 +3356,7 @@ int cgi_read_ptset(double parent_id, cgns_ptset *ptset)
 
      /* verify dimension vector */
     if (!(ndim==2 && dim_vals[0]>0 && dim_vals[1]>0)) {
-        cgi_error("Invalid definition of point set:  ptset->type='%s', ndim=%d, dim_vals[0]=%d",
+        cgi_error("Invalid definition of point set:  ptset->type='%s', ndim=%d, dim_vals[0]=%ld",
             PointSetTypeName[ptset->type], ndim, dim_vals[0]);
         return CG_ERROR;
     }
@@ -3138,8 +3383,8 @@ int cgi_read_ptset(double parent_id, cgns_ptset *ptset)
         if (0 == strcmp(ptset->data_type,"I8")) {
             cglong_t total = 1;
             cglong_t *pnts = CGNS_NEW(cglong_t, size);
-            if (cgio_read_all_data(cg->cgio, ptset->id, pnts)) {
-                cg_io_error("cgio_read_all_data");
+            if (cgio_read_all_data_type(cg->cgio, ptset->id, ptset->data_type, pnts)) {
+                cg_io_error("cgio_read_all_data_type");
                 return CG_ERROR;
             }
 #if CG_SIZEOF_SIZE == 32
@@ -3160,8 +3405,8 @@ int cgi_read_ptset(double parent_id, cgns_ptset *ptset)
         }
         else if (0 == strcmp(ptset->data_type,"I4")) {
             int *pnts = CGNS_NEW(int, size);
-            if (cgio_read_all_data(cg->cgio, ptset->id, pnts)) {
-                cg_io_error("cgio_read_all_data");
+            if (cgio_read_all_data_type(cg->cgio, ptset->id, ptset->data_type, pnts)) {
+                cg_io_error("cgio_read_all_data_type");
                 return CG_ERROR;
             }
             ptset->size_of_patch = 1;
@@ -3176,35 +3421,21 @@ int cgi_read_ptset(double parent_id, cgns_ptset *ptset)
     return CG_OK;
 }
 
-int cgi_read_equations(int in_link, double parent_id,
-                       cgns_equations **equations)
+int cgi_read_equations_node(int linked, cgns_equations** equations)
 {
-    double *id;
-    int n, nnod, ndim, linked;
-    char *string_data;
+    double* id;
+    int n, nnod, ndim;
+    char* string_data;
     char_33 name, data_type;
     cgsize_t dim_vals[12];
-    void *vdata;
+    void* vdata;
 
-    if (cgi_get_nodes(parent_id, "FlowEquationSet_t", &nnod, &id)) return CG_ERROR;
-    if (nnod<=0) {
-        equations[0]=0;
-        return CG_OK;
-    }
-    equations[0] = CGNS_NEW(cgns_equations, 1);
-    equations[0]->id = id[0];
-    equations[0]->link = cgi_read_link(id[0]);
-    equations[0]->in_link = in_link;
-    linked = equations[0]->link ? 1 : in_link;
-    CGNS_FREE(id);
-    strcpy(equations[0]->name, "FlowEquationSet");
-
-     /* GoverningEquations_t */
+    /* GoverningEquations_t */
     equations[0]->governing = 0;
     if (cgi_get_nodes(equations[0]->id, "GoverningEquations_t", &nnod, &id))
         return CG_ERROR;
-    if (nnod>0) {
-        equations[0]->governing = CGNS_NEW(cgns_governing,1);
+    if (nnod > 0) {
+        equations[0]->governing = CGNS_NEW(cgns_governing, 1);
         equations[0]->governing->id = id[0];
         equations[0]->governing->link = cgi_read_link(id[0]);
         equations[0]->governing->in_link = linked;
@@ -3214,34 +3445,34 @@ int cgi_read_equations(int in_link, double parent_id,
         CGNS_FREE(string_data);
         CGNS_FREE(id);
 
-     /* initialize dependants */
-        equations[0]->governing->diffusion_model=0;
+        /* initialize dependants */
+        equations[0]->governing->diffusion_model = 0;
 
-     /* DiffusionModel */
+        /* DiffusionModel */
         if (cgi_get_nodes(equations[0]->governing->id,
             "\"int[1+...+IndexDimension]\"", &nnod, &id)) return CG_ERROR;
-        if (nnod>0) {
+        if (nnod > 0) {
             if (cgi_read_node(id[0], name, data_type, &ndim,
-                    dim_vals, &vdata, READ_DATA)) {
+                dim_vals, &vdata, READ_DATA)) {
                 cgi_error("Error reading diffusion model");
                 return CG_ERROR;
             }
-            if (ndim!=1 || dim_vals[0]<=0 ||
-                strcmp(data_type,"I4")) {
-                cgi_error("Diffusion Model '%s' defined incorrectly",name);
+            if (ndim != 1 || dim_vals[0] <= 0 ||
+                strcmp(data_type, "I4")) {
+                cgi_error("Diffusion Model '%s' defined incorrectly", name);
                 return CG_ERROR;
             }
             equations[0]->governing->dim_vals = (int)dim_vals[0],
-            equations[0]->governing->diffusion_model = (int *)vdata;
+                equations[0]->governing->diffusion_model = (int*)vdata;
             CGNS_FREE(id);
         }
 
-     /* Descriptor_t */
+        /* Descriptor_t */
         if (cgi_get_nodes(equations[0]->governing->id, "Descriptor_t",
             &equations[0]->governing->ndescr, &id)) return CG_ERROR;
-        if (equations[0]->governing->ndescr>0) {
+        if (equations[0]->governing->ndescr > 0) {
             equations[0]->governing->descr = CGNS_NEW(cgns_descr, equations[0]->governing->ndescr);
-            for (n=0; n<equations[0]->governing->ndescr; n++) {
+            for (n = 0; n < equations[0]->governing->ndescr; n++) {
                 equations[0]->governing->descr[n].id = id[n];
                 equations[0]->governing->descr[n].link = cgi_read_link(id[n]);
                 equations[0]->governing->descr[n].in_link = linked;
@@ -3251,90 +3482,90 @@ int cgi_read_equations(int in_link, double parent_id,
             CGNS_FREE(id);
         }
 
-     /* UserDefinedData_t */
+        /* UserDefinedData_t */
         if (cgi_read_user_data(linked, equations[0]->governing->id,
             &equations[0]->governing->nuser_data,
             &equations[0]->governing->user_data)) return CG_ERROR;
     }
 
-     /* GasModel_t */
+    /* GasModel_t */
     if (cgi_read_model(linked, equations[0]->id, "GasModel_t",
         &equations[0]->gas)) return CG_ERROR;
 
-     /* ViscosityModel_t */
+    /* ViscosityModel_t */
     if (cgi_read_model(linked, equations[0]->id, "ViscosityModel_t",
         &equations[0]->visc)) return CG_ERROR;
 
-     /* ThermalConductivityModel_t */
+    /* ThermalConductivityModel_t */
     if (cgi_read_model(linked, equations[0]->id, "ThermalConductivityModel_t",
         &equations[0]->conduct)) return CG_ERROR;
 
-     /* TurbulenceClosure_t */
+    /* TurbulenceClosure_t */
     if (cgi_read_model(linked, equations[0]->id, "TurbulenceClosure_t",
         &equations[0]->closure)) return CG_ERROR;
 
-     /* TurbulenceModel_t */
+    /* TurbulenceModel_t */
     if (cgi_read_model(linked, equations[0]->id, "TurbulenceModel_t",
         &equations[0]->turbulence)) return CG_ERROR;
 
-     /* initialize dependants */
+    /* initialize dependants */
     if (equations[0]->turbulence) {
-        equations[0]->turbulence->diffusion_model=0;
+        equations[0]->turbulence->diffusion_model = 0;
 
-     /* DiffusionModel */
+        /* DiffusionModel */
         if (cgi_get_nodes(equations[0]->turbulence->id,
             "\"int[1+...+IndexDimension]\"", &nnod, &id)) return CG_ERROR;
-        if (nnod>0) {
+        if (nnod > 0) {
             if (cgi_read_node(id[0], name, data_type, &ndim,
-                    dim_vals, &vdata, READ_DATA)) {
+                dim_vals, &vdata, READ_DATA)) {
                 cgi_error("Error reading Turbulence Diffusion Model");
                 return CG_ERROR;
             }
-            if (ndim!=1 || dim_vals[0]<=0 ||
-                strcmp(data_type,"I4")) {
-                cgi_error("Diffusion Model '%s' defined incorrectly",name);
+            if (ndim != 1 || dim_vals[0] <= 0 ||
+                strcmp(data_type, "I4")) {
+                cgi_error("Diffusion Model '%s' defined incorrectly", name);
                 return CG_ERROR;
             }
             equations[0]->turbulence->dim_vals = (int)dim_vals[0],
-            equations[0]->turbulence->diffusion_model = (int *)vdata;
+                equations[0]->turbulence->diffusion_model = (int*)vdata;
             CGNS_FREE(id);
         }
     }
 
-     /* ThermalRelaxationModel_t */
+    /* ThermalRelaxationModel_t */
     if (cgi_read_model(linked, equations[0]->id, "ThermalRelaxationModel_t",
         &equations[0]->relaxation)) return CG_ERROR;
 
-     /* ChemicalKineticsModel_t */
+    /* ChemicalKineticsModel_t */
     if (cgi_read_model(linked, equations[0]->id, "ChemicalKineticsModel_t",
         &equations[0]->chemkin)) return CG_ERROR;
 
-     /* EquationDimension */
+    /* EquationDimension */
     equations[0]->equation_dim = 0;
     if (cgi_get_nodes(equations[0]->id, "\"int\"", &nnod, &id)) return CG_ERROR;
-    if (nnod>0) {
+    if (nnod > 0) {
         if (cgi_read_node(id[0], name, data_type, &ndim, dim_vals,
-                &vdata, READ_DATA)) {
+            &vdata, READ_DATA)) {
             cgi_error("Error reading base");
             return CG_ERROR;
         }
-     /* verify data */
-        if (strcmp(name,"EquationDimension") || strcmp(data_type, "I4") ||
-            ndim!=1 || dim_vals[0]!=1) {
+        /* verify data */
+        if (strcmp(name, "EquationDimension") || strcmp(data_type, "I4") ||
+            ndim != 1 || dim_vals[0] != 1) {
             cgi_error("Error reading equation dimension for Flow Equation Set");
             return CG_ERROR;
         }
-        equations[0]->equation_dim = *((int *)vdata);
+        equations[0]->equation_dim = *((int*)vdata);
         CGNS_FREE(vdata);
         CGNS_FREE(id);
     }
 
-     /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+    /* Descriptor_t, DataClass_t, DimensionalUnits_t */
     if (cgi_read_DDD(linked, equations[0]->id, &equations[0]->ndescr,
         &equations[0]->descr, &equations[0]->data_class, &equations[0]->units))
         return CG_ERROR;
 
-     /* UserDefinedData_t */
+    /* UserDefinedData_t */
     if (cgi_read_user_data(linked, equations[0]->id, &equations[0]->nuser_data,
         &equations[0]->user_data)) return CG_ERROR;
 
@@ -3349,6 +3580,53 @@ int cgi_read_equations(int in_link, double parent_id,
     /* EMConductivityModel_t */
     if (cgi_read_model(linked, equations[0]->id, "EMConductivityModel_t",
         &equations[0]->emconduct)) return CG_ERROR;
+
+    return CG_OK;
+
+}
+
+int cgi_read_equations_from_list(int in_link, _childnode_t* nodelist, int nnodes,
+    cgns_equations** equations)
+{
+    int nnod, start, linked;
+
+    nnod = nnodes;
+    start = 0;
+    if (nnod <= 0) {
+        equations[0] = 0;
+        return CG_OK;
+    }
+    equations[0] = CGNS_NEW(cgns_equations, 1);
+    equations[0]->id = nodelist[start].id;
+    equations[0]->link = cgi_read_link(nodelist[start].id);
+    equations[0]->in_link = in_link;
+    linked = equations[0]->link ? 1 : in_link;
+    strcpy(equations[0]->name, "FlowEquationSet");
+
+    if (cgi_read_equations_node(linked, equations)) return CG_ERROR;
+    return  CG_OK;
+}
+
+int cgi_read_equations(int in_link, double parent_id,
+                       cgns_equations **equations)
+{
+    double *id;
+    int nnod, linked;
+
+    if (cgi_get_nodes(parent_id, "FlowEquationSet_t", &nnod, &id)) return CG_ERROR;
+    if (nnod<=0) {
+        equations[0]=0;
+        return CG_OK;
+    }
+    equations[0] = CGNS_NEW(cgns_equations, 1);
+    equations[0]->id = id[0];
+    equations[0]->link = cgi_read_link(id[0]);
+    equations[0]->in_link = in_link;
+    linked = equations[0]->link ? 1 : in_link;
+    CGNS_FREE(id);
+    strcpy(equations[0]->name, "FlowEquationSet");
+
+    if (cgi_read_equations_node(linked, equations)) return CG_ERROR;
 
     return CG_OK;
 }
@@ -3411,6 +3689,114 @@ int cgi_read_model(int in_link, double parent_id, char *label,
 
     return CG_OK;
 }
+
+int cgi_read_state_from_list(int in_link, const _childnode_t *nodelist, int nnodes, cgns_state** state)
+{
+    char_33 name;
+    int n, nnod, defined = 0, linked;
+    int start = 0;
+    char* string_data;
+    double* id;
+    
+    nnod = nnodes;    
+    if (nnod <= 0) {
+        state[0] = 0;
+        return CG_OK;
+    }
+    state[0] = CGNS_NEW(cgns_state, 1);
+    state[0]->id = nodelist[start].id;
+    state[0]->link = cgi_read_link(nodelist[start].id);
+    state[0]->in_link = in_link;
+    linked = state[0]->link ? 1 : in_link;
+
+    /* Name */
+    strcpy(state[0]->name, nodelist[start].name);
+
+    /* initialize dependents */
+    state[0]->data_class = CGNS_ENUMV(DataClassNull);
+    state[0]->StateDescription = 0;
+    state[0]->ndescr = 0;
+
+    /* Descriptor_t and ReferenceStateDescription */
+    if (cgi_get_nodes(state[0]->id, "Descriptor_t", &nnod, &id)) return CG_ERROR;
+
+    if (nnod > 0) {
+
+        for (n = 0; n < nnod; n++) {
+            if (cgio_get_name(cg->cgio, id[n], name)) {
+                cg_io_error("cgio_get_name");
+                return CG_ERROR;
+            }
+            if (strcmp(name, "ReferenceStateDescription")) {
+                if (state[0]->ndescr == 0) state[0]->descr = CGNS_NEW(cgns_descr, 1);
+                else state[0]->descr = CGNS_RENEW(cgns_descr, state[0]->ndescr + 1, state[0]->descr);
+
+                state[0]->descr[state[0]->ndescr].id = id[n];
+                state[0]->descr[state[0]->ndescr].link = cgi_read_link(id[n]);
+                state[0]->descr[state[0]->ndescr].in_link = linked;
+                if (cgi_read_string(id[n], state[0]->descr[state[0]->ndescr].name,
+                    &state[0]->descr[state[0]->ndescr].text)) return CG_ERROR;
+                state[0]->ndescr++;
+            }
+            else {
+                if (defined) {
+                    cgi_error("Reference State node may only hold one ReferenceStateDescription");
+                    return CG_ERROR;
+                }
+                state[0]->StateDescription = CGNS_NEW(cgns_descr, 1);
+                state[0]->StateDescription->id = id[n];
+                state[0]->StateDescription->link = cgi_read_link(id[n]);
+                state[0]->StateDescription->in_link = linked;
+                if (cgi_read_string(id[n], state[0]->StateDescription->name,
+                    &state[0]->StateDescription->text)) return CG_ERROR;
+                defined++;
+            }
+        }
+        CGNS_FREE(id);
+    }
+
+    /* DataClass_t */
+    if (cgi_get_nodes(state[0]->id, "DataClass_t", &nnod, &id)) return CG_ERROR;
+    if (nnod > 0) {
+        if (cgi_read_string(id[0], name, &string_data)) return CG_ERROR;
+        cgi_DataClass(string_data, &state[0]->data_class);
+        CGNS_FREE(string_data);
+        CGNS_FREE(id);
+    }
+
+    /* DimensionalUnits_t */
+    if (cgi_read_units(linked, state[0]->id, &state[0]->units)) return CG_ERROR;
+
+
+    /* DataArray_t */
+    if (cgi_get_nodes(state[0]->id, "DataArray_t", &state[0]->narrays, &id))
+        return CG_ERROR;
+    if (state[0]->narrays > 0) {
+        state[0]->array = CGNS_NEW(cgns_array, state[0]->narrays);
+        for (n = 0; n < state[0]->narrays; n++) {
+            state[0]->array[n].id = id[n];
+            state[0]->array[n].link = cgi_read_link(id[n]);
+            state[0]->array[n].in_link = linked;
+            if (cgi_read_array(&state[0]->array[n], "ReferenceState_t",
+                state[0]->id)) return CG_ERROR;
+
+            /* verify data */
+            if (state[0]->array[n].data_dim != 1 ||
+                state[0]->array[n].dim_vals[0] != 1) {
+                cgi_error("Wrong data dimension in Reference State definition");
+                return CG_ERROR;
+            }
+        }
+        CGNS_FREE(id);
+    }
+
+    /* UserDefinedData_t */
+    if (cgi_read_user_data(linked, state[0]->id, &state[0]->nuser_data,
+        &state[0]->user_data)) return CG_ERROR;
+
+    return CG_OK;
+}
+
 
 int cgi_read_state(int in_link, double parent_id, cgns_state **state)
 {
@@ -3521,6 +3907,81 @@ int cgi_read_state(int in_link, double parent_id, cgns_state **state)
     return CG_OK;
 }
 
+int cgi_read_gravity_from_list(int in_link, const _childnode_t *nodelist, const int nnodes, cgns_gravity** gravity)
+{
+    int i, nnod, linked;
+    double* id;
+    char_33 temp_name;
+    
+    //Assume nodelist is full of LabelGravity_t
+    nnod = nnodes;
+    if (nnod <= 0) {
+        gravity[0] = 0;
+        return CG_OK;
+    }
+    gravity[0] = CGNS_NEW(cgns_gravity, 1);
+    gravity[0]->id = nodelist[0].id;
+    gravity[0]->link = cgi_read_link(nodelist[0].id);
+    gravity[0]->in_link = in_link;
+    linked = gravity[0]->link ? 1 : in_link;
+
+    /* Name */
+    strcpy(gravity[0]->name, nodelist[0].name);
+
+    /* initialize dependents */
+    gravity[0]->vector = 0;
+    gravity[0]->narrays = 0;
+
+    /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+    if (cgi_read_DDD(linked, gravity[0]->id, &gravity[0]->ndescr,
+        &gravity[0]->descr, &gravity[0]->data_class, &gravity[0]->units))
+        return CG_ERROR;
+
+    /* DataArray_t:  GravityVector */
+    if (cgi_get_nodes(gravity[0]->id, "DataArray_t", &nnod, &id)) return CG_ERROR;
+    for (i = 0; i < nnod; i++) {
+        if (cgio_get_name(cg->cgio, id[i], temp_name)) {
+            cg_io_error("cgio_get_name");
+            return CG_ERROR;
+        }
+
+        /* GravityVector */
+        if (strcmp(temp_name, "GravityVector") == 0) {
+            gravity[0]->vector = CGNS_NEW(cgns_array, 1);
+            gravity[0]->vector->id = id[i];
+            gravity[0]->vector->link = cgi_read_link(id[i]);
+            gravity[0]->vector->in_link = linked;
+            if (cgi_read_array(gravity[0]->vector, "Gravity_t",
+                gravity[0]->id)) return CG_ERROR;
+            gravity[0]->narrays = 1;
+
+            /* check data */
+            if (strcmp(gravity[0]->vector->data_type, "R4")) {
+                cgi_error("Datatype %s not supported for gravity vector", gravity[0]->vector->data_type);
+                return CG_ERROR;
+            }
+            if (gravity[0]->vector->data_dim != 1 || gravity[0]->vector->dim_vals[0] != Pdim) {
+                cgi_error("Error exit:  Gravity vector incorrectly dimensioned");
+                return CG_ERROR;
+            }
+        }
+    }   /* loop through DataArray_t */
+    if (nnod) CGNS_FREE(id);
+
+    /* check data */
+    if (gravity[0]->vector == 0) {
+        cgi_error("Error exit: Gravity vector undefined in Gravity_t node");
+        return CG_ERROR;
+    }
+
+    /* UserDefinedData_t */
+    if (cgi_read_user_data(linked, gravity[0]->id, &gravity[0]->nuser_data,
+        &gravity[0]->user_data)) return CG_ERROR;
+
+    return CG_OK;
+}
+
+
 int cgi_read_gravity(int in_link, double parent_id, cgns_gravity **gravity)
 {
     int i, nnod, linked;
@@ -3594,6 +4055,135 @@ int cgi_read_gravity(int in_link, double parent_id, cgns_gravity **gravity)
      /* UserDefinedData_t */
     if (cgi_read_user_data(linked, gravity[0]->id, &gravity[0]->nuser_data,
         &gravity[0]->user_data)) return CG_ERROR;
+
+    return CG_OK;
+}
+
+int cgi_read_axisym_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_axisym** axisym)
+{
+    int i, nnod, linked, ref_point_flag = 0, axis_flag = 0;
+    double* id;
+    char_33 temp_name;
+
+    nnod = nnodes;
+    if (nnod <= 0) {
+        axisym[0] = 0;
+        return CG_OK;
+    }
+    if (Pdim != 2) {
+        cgi_error("Error: Axisymmetry_t can only be defined for 2D data model");
+        return CG_ERROR;
+    }
+    axisym[0] = CGNS_NEW(cgns_axisym, 1);
+    axisym[0]->id = nodelist[0].id;
+    axisym[0]->link = cgi_read_link(nodelist[0].id);
+    axisym[0]->in_link = in_link;
+    linked = axisym[0]->link ? 1 : in_link;
+
+    /* Name */
+    strcpy(axisym[0]->name, nodelist[0].name);
+    
+    /* initialize dependents */
+    axisym[0]->narrays = 0;
+
+    /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+    if (cgi_read_DDD(linked, axisym[0]->id, &axisym[0]->ndescr,
+        &axisym[0]->descr, &axisym[0]->data_class, &axisym[0]->units))
+        return CG_ERROR;
+
+    /* DataArray_t:
+    Required: AxisymmetryReferencePoint, AxisymmetryAxisVector
+    Optional: AxisymmetryAngle, CoordinateNames
+     */
+    if (cgi_get_nodes(axisym[0]->id, "DataArray_t", &nnod, &id)) return CG_ERROR;
+    if (nnod > 0) axisym[0]->array = CGNS_NEW(cgns_array, nnod);
+
+    for (i = 0; i < nnod; i++) {
+        if (cgio_get_name(cg->cgio, id[i], temp_name)) {
+            cg_io_error("cgio_get_name");
+            return CG_ERROR;
+        }
+        /* AxisymmetryReferencePoint & AxisymmetryAxisVector */
+        if (strcmp(temp_name, "AxisymmetryReferencePoint") == 0 ||
+            strcmp(temp_name, "AxisymmetryAxisVector") == 0) {
+
+            if (strcmp(temp_name, "AxisymmetryReferencePoint") == 0) ref_point_flag = 1;
+            else if (strcmp(temp_name, "AxisymmetryAxisVector") == 0) axis_flag = 1;
+
+            axisym[0]->array[axisym[0]->narrays].id = id[i];
+            axisym[0]->array[axisym[0]->narrays].link = cgi_read_link(id[i]);
+            axisym[0]->array[axisym[0]->narrays].in_link = linked;
+            if (cgi_read_array(&axisym[0]->array[axisym[0]->narrays],
+                "Axisymmetry_t", axisym[0]->id)) return CG_ERROR;
+
+            /* check data */
+            if (strcmp(axisym[0]->array[axisym[0]->narrays].data_type, "R4")) {
+                cgi_error("Error: Datatype %s not supported for %s",
+                    axisym[0]->array[axisym[0]->narrays].data_type, temp_name);
+                return CG_ERROR;
+            }
+            if (axisym[0]->array[axisym[0]->narrays].data_dim != 1 ||
+                axisym[0]->array[axisym[0]->narrays].dim_vals[0] != Pdim) {
+                cgi_error("Error: %s incorrectly dimensioned", temp_name);
+                return CG_ERROR;
+            }
+            axisym[0]->narrays++;
+        }
+        /* AxisymmetryAngle */
+        else if (strcmp(temp_name, "AxisymmetryAngle") == 0) {
+            axisym[0]->array[axisym[0]->narrays].id = id[i];
+            axisym[0]->array[axisym[0]->narrays].link = cgi_read_link(id[i]);
+            axisym[0]->array[axisym[0]->narrays].in_link = linked;
+            if (cgi_read_array(&axisym[0]->array[axisym[0]->narrays],
+                "Axisymmetry_t", axisym[0]->id)) return CG_ERROR;
+
+            /* check data */
+            if (strcmp(axisym[0]->array[axisym[0]->narrays].data_type, "R4")) {
+                cgi_error("Error: Datatype %s not supported for %s",
+                    axisym[0]->array[axisym[0]->narrays].data_type, temp_name);
+                return CG_ERROR;
+            }
+            if (axisym[0]->array[axisym[0]->narrays].data_dim != 1 ||
+                axisym[0]->array[axisym[0]->narrays].dim_vals[0] != 1) {
+                cgi_error("Error: %s incorrectly dimensioned", temp_name);
+                return CG_ERROR;
+            }
+            axisym[0]->narrays++;
+        }
+        /* CoordinateNames */
+        else if (strcmp(temp_name, "CoordinateNames") == 0) {
+            axisym[0]->array[axisym[0]->narrays].id = id[i];
+            axisym[0]->array[axisym[0]->narrays].link = cgi_read_link(id[i]);
+            axisym[0]->array[axisym[0]->narrays].in_link = linked;
+            if (cgi_read_array(&axisym[0]->array[axisym[0]->narrays],
+                "Axisymmetry_t", axisym[0]->id)) return CG_ERROR;
+
+            /* check data */
+            if (strcmp(axisym[0]->array[axisym[0]->narrays].data_type, "C1")) {
+                cgi_error("Error: Datatype %s not supported for %s",
+                    axisym[0]->array[axisym[0]->narrays].data_type, temp_name);
+                return CG_ERROR;
+            }
+            if (axisym[0]->array[axisym[0]->narrays].data_dim != 2 ||
+                axisym[0]->array[axisym[0]->narrays].dim_vals[0] != 32 ||
+                axisym[0]->array[axisym[0]->narrays].dim_vals[1] != 2) {
+                cgi_error("Error: %s incorrectly dimensioned", temp_name);
+                return CG_ERROR;
+            }
+            axisym[0]->narrays++;
+        }
+    }   /* loop through DataArray_t */
+    if (nnod) CGNS_FREE(id);
+
+    /* check data */
+    if (!ref_point_flag || !axis_flag) {
+        cgi_error("Error: AxisymmetryReferencePoint & AxisymmetryAxisVector are required");
+        return CG_ERROR;
+    }
+
+    /* UserDefinedData_t */
+    if (cgi_read_user_data(linked, axisym[0]->id, &axisym[0]->nuser_data,
+        &axisym[0]->user_data)) return CG_ERROR;
 
     return CG_OK;
 }
@@ -3731,6 +4321,88 @@ int cgi_read_axisym(int in_link, double parent_id, cgns_axisym **axisym)
     return CG_OK;
 }
 
+int cgi_read_rotating_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_rotating** rotating)
+{
+    int i, nnod, linked, rot_rate_flag = 0, rot_center_flag = 0;
+    double* id;
+    char_33 temp_name;
+
+    nnod = nnodes;
+    if (nnod <= 0) {
+        rotating[0] = 0;
+        return CG_OK;
+    }
+    rotating[0] = CGNS_NEW(cgns_rotating, 1);
+    rotating[0]->id = nodelist[0].id;
+    rotating[0]->link = cgi_read_link(nodelist[0].id);
+    rotating[0]->in_link = in_link;
+    linked = rotating[0]->link ? 1 : in_link;
+
+    /* Name */
+    strcpy(rotating[0]->name, nodelist[0].name);
+    
+    /* initialize dependents */
+    rotating[0]->narrays = 0;
+
+    /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+    if (cgi_read_DDD(linked, rotating[0]->id, &rotating[0]->ndescr,
+        &rotating[0]->descr, &rotating[0]->data_class, &rotating[0]->units))
+        return CG_ERROR;
+
+    /* DataArray_t:
+    Required: RotationCenter, RotationRateVector
+    Optional: none
+     */
+    if (cgi_get_nodes(rotating[0]->id, "DataArray_t", &nnod, &id)) return CG_ERROR;
+    if (nnod > 0) rotating[0]->array = CGNS_NEW(cgns_array, nnod);
+
+    for (i = 0; i < nnod; i++) {
+        if (cgio_get_name(cg->cgio, id[i], temp_name)) {
+            cg_io_error("cgio_get_name");
+            return CG_ERROR;
+        }
+        /* RotationCenter, RotationRateVector */
+        if (strcmp(temp_name, "RotationCenter") == 0 ||
+            strcmp(temp_name, "RotationRateVector") == 0) {
+
+            if (strcmp(temp_name, "RotationCenter") == 0) rot_center_flag = 1;
+            else if (strcmp(temp_name, "RotationRateVector") == 0) rot_rate_flag = 1;
+
+            rotating[0]->array[rotating[0]->narrays].id = id[i];
+            rotating[0]->array[rotating[0]->narrays].link = cgi_read_link(id[i]);
+            rotating[0]->array[rotating[0]->narrays].in_link = linked;
+            if (cgi_read_array(&rotating[0]->array[rotating[0]->narrays],
+                "RotatingCoordinates_t", rotating[0]->id)) return CG_ERROR;
+
+            /* check data */
+            if (strcmp(rotating[0]->array[rotating[0]->narrays].data_type, "R4")) {
+                cgi_error("Error: Datatype %s not supported for %s",
+                    rotating[0]->array[rotating[0]->narrays].data_type, temp_name);
+                return CG_ERROR;
+            }
+            if (rotating[0]->array[rotating[0]->narrays].data_dim != 1 ||
+                rotating[0]->array[rotating[0]->narrays].dim_vals[0] != Pdim) {
+                cgi_error("Error: %s incorrectly dimensioned", temp_name);
+                return CG_ERROR;
+            }
+            rotating[0]->narrays++;
+        }
+    }   /* loop through DataArray_t */
+    if (nnod) CGNS_FREE(id);
+
+    /* check data */
+    if (!rot_rate_flag || !rot_center_flag) {
+        cgi_error("Error: RotationCenter & RotationRateVector are required");
+        return CG_ERROR;
+    }
+
+    /* UserDefinedData_t */
+    if (cgi_read_user_data(linked, rotating[0]->id, &rotating[0]->nuser_data,
+        &rotating[0]->user_data)) return CG_ERROR;
+
+    return CG_OK;
+}
+
 int cgi_read_rotating(int in_link, double parent_id, cgns_rotating **rotating)
 {
     int i, nnod, linked, rot_rate_flag=0, rot_center_flag=0;
@@ -3813,6 +4485,122 @@ int cgi_read_rotating(int in_link, double parent_id, cgns_rotating **rotating)
      /* UserDefinedData_t */
     if (cgi_read_user_data(linked, rotating[0]->id, &rotating[0]->nuser_data,
         &rotating[0]->user_data)) return CG_ERROR;
+
+    return CG_OK;
+}
+
+int cgi_read_converg_from_list(int in_link, _childnode_t *nodelist, int nnodes, cgns_converg** converg)
+{
+    char_33 data_type, name;
+    int ndim, n, nnod;
+    double* id;
+    char* string_data;
+    void* iterations;
+    int nnorm = 0, linked;
+    cgsize_t dim_vals[12];
+
+    nnod = nnodes;
+    if (nnod <= 0) {
+        converg[0] = 0;
+        return CG_OK;
+    }
+    converg[0] = CGNS_NEW(cgns_converg, 1);
+    converg[0]->id = nodelist[0].id;
+    converg[0]->link = cgi_read_link(nodelist[0].id);
+    converg[0]->in_link = in_link;
+    linked = converg[0]->link ? 1 : in_link;
+
+    if (cgi_read_node(converg[0]->id, converg[0]->name, data_type, &ndim,
+        dim_vals, &iterations, READ_DATA)) {
+        cgi_error("Error reading Convergence History node");
+        return CG_ERROR;
+    }
+     /* The check was modified because Bob was storing other type of data
+    at the level.  This is a temporary changed */
+    if (strcmp(data_type, "I4") == 0 && dim_vals[0] >= 1) {
+        converg[0]->iterations = *((int*)iterations);
+        CGNS_FREE(iterations);
+    }
+    else converg[0]->iterations = 0;
+
+    /* initialize dependents */
+    converg[0]->data_class = CGNS_ENUMV(DataClassNull);
+    converg[0]->NormDefinitions = 0;
+    converg[0]->ndescr = 0;
+
+    /* Descriptor_t and NormDefinitions */
+    if (cgi_get_nodes(converg[0]->id, "Descriptor_t", &nnod, &id)) return CG_ERROR;
+
+    if (nnod > 0) {
+        for (n = 0; n < nnod; n++) {
+            if (cgio_get_name(cg->cgio, id[n], name)) {
+                cg_io_error("cgio_get_name");
+                return CG_ERROR;
+            }
+            if (strcmp(name, "NormDefinitions")) {
+                if (converg[0]->ndescr == 0) converg[0]->descr = CGNS_NEW(cgns_descr, 1);
+                else converg[0]->descr = CGNS_RENEW(cgns_descr, converg[0]->ndescr + 1, converg[0]->descr);
+                converg[0]->descr[converg[0]->ndescr].id = id[n];
+                converg[0]->descr[converg[0]->ndescr].link = cgi_read_link(id[n]);
+                converg[0]->descr[converg[0]->ndescr].in_link = linked;
+                if (cgi_read_string(id[n], converg[0]->descr[converg[0]->ndescr].name,
+                    &converg[0]->descr[converg[0]->ndescr].text)) return CG_ERROR;
+                converg[0]->ndescr++;
+            }
+            else {
+                if (nnorm) {
+                    cgi_error("Convergence History may only hold one NormDefinitions Node");
+                    return CG_ERROR;
+                }
+                converg[0]->NormDefinitions = CGNS_NEW(cgns_descr, 1);
+                converg[0]->NormDefinitions->id = id[n];
+                converg[0]->NormDefinitions->link = cgi_read_link(id[n]);
+                converg[0]->NormDefinitions->in_link = linked;
+                if (cgi_read_string(id[n], converg[0]->NormDefinitions->name,
+                    &converg[0]->NormDefinitions->text)) return CG_ERROR;
+                nnorm++;
+            }
+        }
+        CGNS_FREE(id);
+    }
+
+    /* DataClass_t */
+    if (cgi_get_nodes(converg[0]->id, "DataClass_t", &nnod, &id)) return CG_ERROR;
+    if (nnod > 0) {
+        if (cgi_read_string(id[0], name, &string_data)) return CG_ERROR;
+        cgi_DataClass(string_data, &converg[0]->data_class);
+        CGNS_FREE(string_data);
+        CGNS_FREE(id);
+    }
+
+    /* DimensionalUnits_t */
+    if (cgi_read_units(linked, converg[0]->id, &converg[0]->units)) return CG_ERROR;
+
+    /* DataArray_t */
+    if (cgi_get_nodes(converg[0]->id, "DataArray_t", &converg[0]->narrays, &id))
+        return CG_ERROR;
+    if (converg[0]->narrays > 0) {
+        converg[0]->array = CGNS_NEW(cgns_array, converg[0]->narrays);
+        for (n = 0; n < converg[0]->narrays; n++) {
+            converg[0]->array[n].id = id[n];
+            converg[0]->array[n].link = cgi_read_link(id[n]);
+            converg[0]->array[n].in_link = linked;
+            if (cgi_read_array(&converg[0]->array[n], "ConvergenceHistory_t",
+                converg[0]->id)) return CG_ERROR;
+
+            /* verify data :  Temporiraly commented for Bob Bush
+           if (converg[0]->array[n].data_dim!=1) {
+               cgi_error("Wrong nr of dimension in Conversion History definition");
+               return CG_ERROR;
+           }
+             */
+        }
+        CGNS_FREE(id);
+    }
+
+    /* UserDefinedData_t */
+    if (cgi_read_user_data(linked, converg[0]->id, &converg[0]->nuser_data,
+        &converg[0]->user_data)) return CG_ERROR;
 
     return CG_OK;
 }
@@ -4031,7 +4819,7 @@ int cgi_read_discrete(int in_link, double parent_id, int *ndiscrete,
                     strcmp(discrete[0][n].array[i].data_type,"I8") &&
                     strcmp(discrete[0][n].array[i].data_type,"R4") &&
                     strcmp(discrete[0][n].array[i].data_type,"R8")) {
-                    cgi_error("Datatype %d not supported for Discrete Data",discrete[0][n].array[i].data_type);
+                    cgi_error("Datatype %s not supported for Discrete Data",discrete[0][n].array[i].data_type);
                     return CG_ERROR;
                 }
             }
@@ -4046,6 +4834,60 @@ int cgi_read_discrete(int in_link, double parent_id, int *ndiscrete,
 
     return CG_OK;
 }
+
+int cgi_read_integral_from_list(int in_link, _childnode_t* nodelist, int nnodes, int* nintegrals,
+    cgns_integral** integral)
+{
+    double * idi;
+    int n, i, linked;
+
+    *nintegrals = nnodes;
+    if (*nintegrals <= 0) {
+        integral[0] = 0;
+        return CG_OK;
+    }
+
+    integral[0] = CGNS_NEW(cgns_integral, (*nintegrals));
+    for (n = 0; n < (*nintegrals); n++) {
+        integral[0][n].id = nodelist[n].id;
+        integral[0][n].link = cgi_read_link(nodelist[n].id);
+        integral[0][n].in_link = in_link;
+        linked = integral[0][n].link ? 1 : in_link;
+
+        /* IntegralData_t Name */
+        if (cgio_get_name(cg->cgio, integral[0][n].id, integral[0][n].name)) {
+            cg_io_error("cgio_get_name");
+            return CG_ERROR;
+        }
+
+        /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+        if (cgi_read_DDD(linked, integral[0][n].id, &integral[0][n].ndescr,
+            &integral[0][n].descr, &integral[0][n].data_class,
+            &integral[0][n].units)) return CG_ERROR;
+
+        /* DataArray_t */
+        if (cgi_get_nodes(integral[0][n].id, "DataArray_t", &integral[0][n].narrays, &idi))
+            return CG_ERROR;
+        if (integral[0][n].narrays > 0) {
+            integral[0][n].array = CGNS_NEW(cgns_array, integral[0][n].narrays);
+            for (i = 0; i < integral[0][n].narrays; i++) {
+                integral[0][n].array[i].id = idi[i];
+                integral[0][n].array[i].link = cgi_read_link(idi[i]);
+                integral[0][n].array[i].in_link = linked;
+                if (cgi_read_array(&integral[0][n].array[i],
+                    "IntegralData_t", integral[0][n].id)) return CG_ERROR;
+            }
+            CGNS_FREE(idi);
+        }
+
+        /* UserDefinedData_t */
+        if (cgi_read_user_data(linked, integral[0][n].id,
+            &integral[0][n].nuser_data, &integral[0][n].user_data)) return CG_ERROR;
+    }
+
+    return CG_OK;
+}
+
 
 int cgi_read_integral(int in_link, double parent_id, int *nintegrals,
                       cgns_integral **integral)
@@ -4276,7 +5118,7 @@ int cgi_read_amotion(int in_link, double parent_id, int *namotions,
                 }
                 if (strcmp(amotion[0][n].array[i].data_type,"R4") &&
                     strcmp(amotion[0][n].array[i].data_type,"R8") ) {
-                    cgi_error("Datatype %d not supported for ArbitraryGridMotion array",amotion[0][n].array[i].data_type);
+                    cgi_error("Datatype %s not supported for ArbitraryGridMotion array",amotion[0][n].array[i].data_type);
                     return CG_ERROR;
                 }
             }
@@ -4456,7 +5298,7 @@ int cgi_read_exponents(int in_link, double parent_id, cgns_exponent **exponents)
                              &data, READ_DATA);
         CGNS_FREE(id);
         if (ierr) {
-            cgi_error("Error reading AdditionalExponents for 's'",
+            cgi_error("Error reading AdditionalExponents for '%s'",
                 exponents[0]->name);
             return CG_ERROR;
         }
@@ -4495,26 +5337,15 @@ int cgi_read_exponents(int in_link, double parent_id, cgns_exponent **exponents)
     return CG_OK;
 }
 
-int cgi_read_units(int in_link, double parent_id, cgns_units **units)
+int cgi_read_units_node(int in_link, cgns_units** units)
 {
     char_33 unit_name;
-    char *string_data;
-    double *id;
+    char* string_data;
+    double* id;
     int nnod;
 
-    if (cgi_get_nodes(parent_id, "DimensionalUnits_t", &nnod, &id)) return CG_ERROR;
-    if (nnod<=0) {
-        units[0]=0;
-        return CG_OK;
-    }
-    units[0] = CGNS_NEW(cgns_units, 1);
-    units[0]->id = id[0];
-    units[0]->link = cgi_read_link(id[0]);
-    units[0]->in_link = in_link;
-    CGNS_FREE(id);
-
     if (cgi_read_string(units[0]->id, units[0]->name, &string_data)) return CG_ERROR;
-    if (strlen(string_data) != 32*5) {
+    if (strlen(string_data) != 32 * 5) {
         CGNS_FREE(string_data);
         cgi_error("Dimensional Units defined incorrectly.");
         return CG_ERROR;
@@ -4532,31 +5363,31 @@ int cgi_read_units(int in_link, double parent_id, cgns_units **units)
         }
     }
 
-    strncpy (unit_name, string_data, 32);
+    strncpy(unit_name, string_data, 32);
     unit_name[32] = 0;
     cgi_MassUnits(unit_name, &units[0]->mass);
 
-    strncpy (unit_name, &string_data[32], 32);
+    strncpy(unit_name, &string_data[32], 32);
     unit_name[32] = 0;
     cgi_LengthUnits(unit_name, &units[0]->length);
 
-    strncpy (unit_name, &string_data[64], 32);
+    strncpy(unit_name, &string_data[64], 32);
     unit_name[32] = 0;
     cgi_TimeUnits(unit_name, &units[0]->time);
 
-    strncpy (unit_name, &string_data[96], 32);
+    strncpy(unit_name, &string_data[96], 32);
     unit_name[32] = 0;
     cgi_TemperatureUnits(unit_name, &units[0]->temperature);
 
-    strncpy (unit_name, &string_data[128], 32);
+    strncpy(unit_name, &string_data[128], 32);
     unit_name[32] = 0;
     cgi_AngleUnits(unit_name, &units[0]->angle);
 
     CGNS_FREE(string_data);
 
-    units[0]->current = CGNS_ENUMV( ElectricCurrentUnitsNull );
-    units[0]->amount = CGNS_ENUMV( SubstanceAmountUnitsNull );
-    units[0]->intensity = CGNS_ENUMV( LuminousIntensityUnitsNull );
+    units[0]->current = CGNS_ENUMV(ElectricCurrentUnitsNull);
+    units[0]->amount = CGNS_ENUMV(SubstanceAmountUnitsNull);
+    units[0]->intensity = CGNS_ENUMV(LuminousIntensityUnitsNull);
 
     if (cgi_get_nodes(units[0]->id, "AdditionalUnits_t", &nnod, &id))
         return CG_ERROR;
@@ -4564,7 +5395,7 @@ int cgi_read_units(int in_link, double parent_id, cgns_units **units)
         int ierr = cgi_read_string(id[0], unit_name, &string_data);
         CGNS_FREE(id);
         if (ierr) return CG_ERROR;
-        if (strlen(string_data) != 32*3) {
+        if (strlen(string_data) != 32 * 3) {
             CGNS_FREE(string_data);
             cgi_error("AdditionalUnits for '%s' defined incorrectly.",
                 units[0]->name);
@@ -4572,20 +5403,41 @@ int cgi_read_units(int in_link, double parent_id, cgns_units **units)
         }
         units[0]->nunits = 8;
 
-        strncpy (unit_name, string_data, 32);
+        strncpy(unit_name, string_data, 32);
         unit_name[32] = 0;
         cgi_ElectricCurrentUnits(unit_name, &units[0]->current);
 
-        strncpy (unit_name, &string_data[32], 32);
+        strncpy(unit_name, &string_data[32], 32);
         unit_name[32] = 0;
         cgi_SubstanceAmountUnits(unit_name, &units[0]->amount);
 
-        strncpy (unit_name, &string_data[64], 32);
+        strncpy(unit_name, &string_data[64], 32);
         unit_name[32] = 0;
         cgi_LuminousIntensityUnits(unit_name, &units[0]->intensity);
 
         CGNS_FREE(string_data);
     }
+
+    return CG_OK;
+}
+
+int cgi_read_units(int in_link, double parent_id, cgns_units **units)
+{
+    double *id;
+    int nnod;
+
+    if (cgi_get_nodes(parent_id, "DimensionalUnits_t", &nnod, &id)) return CG_ERROR;
+    if (nnod<=0) {
+        units[0]=0;
+        return CG_OK;
+    }
+    units[0] = CGNS_NEW(cgns_units, 1);
+    units[0]->id = id[0];
+    units[0]->link = cgi_read_link(id[0]);
+    units[0]->in_link = in_link;
+    CGNS_FREE(id);
+
+    if (cgi_read_units_node(in_link, units)) return CG_ERROR;
 
     return CG_OK;
 }
@@ -4609,6 +5461,57 @@ int cgi_read_string(double id, char_33 name, char **string_data)
     for (n=0; n<ndim; n++) len *= length[n];
     string_data[0][len]='\0';
 
+    return CG_OK;
+}
+
+int cgi_read_DDD_from_list(int in_link, _childnode_t* nodebylabel[NofBaseLabel],
+    int ndescr, int ndata_class, int ndimensional_units,
+    cgns_descr** descr, CGNS_ENUMV(DataClass_t)* data_class,
+    cgns_units** units)
+{
+    int n;
+    char_33 name;
+    char* string_data;
+    _childnode_t *nodelist=NULL;
+
+    /* Descriptor_t */
+    descr[0] = 0;
+    nodelist = nodebylabel[LabelDescriptor_t];
+    if (ndescr > 0) {
+        descr[0] = CGNS_NEW(cgns_descr, ndescr);
+        for (n = 0; n < (ndescr); n++) {
+            descr[0][n].id = nodelist[n].id;
+            descr[0][n].link = cgi_read_link(nodelist[n].id);
+            descr[0][n].in_link = in_link;
+            if (cgi_read_string(nodelist[n].id, descr[0][n].name,
+                &descr[0][n].text)) return CG_ERROR;
+        }
+    }
+
+    /* DataClass_t */
+    *data_class = CGNS_ENUMV(DataClassNull);
+    nodelist = nodebylabel[LabelDataClass_t];
+    if (ndata_class > 0) {
+        if (cgi_read_string(nodelist[0].id, name, &string_data)) return CG_ERROR;
+        cgi_DataClass(string_data, data_class);
+        CGNS_FREE(string_data);
+    }
+
+
+    /* DimensionalUnits_t */
+    nodelist = nodebylabel[LabelDimensionalUnits_t];
+    if (ndimensional_units > 0) {
+        units[0] = CGNS_NEW(cgns_units, 1);
+        units[0]->id = nodelist[0].id;
+        units[0]->link = cgi_read_link(nodelist[0].id);
+        units[0]->in_link = in_link;
+        if (cgi_read_units_node(in_link, units)) return CG_ERROR;
+    }
+    else
+    {
+        units[0] = 0;
+    }
+    
     return CG_OK;
 }
 
@@ -4771,6 +5674,32 @@ int cgi_read_zonetype(double parent_id, char_33 parent_name,
     return CG_OK;
 }
 
+int cgi_read_simulation_from_list(_childnode_t* nodelist, int nnodes,
+    CGNS_ENUMT(SimulationType_t)* type, double* type_id)
+{
+    int nchild;
+    char* type_name;    /* allocated in cgi_read_node */
+    char_33 name;
+
+    /* initialize */
+    *type = CGNS_ENUMV(SimulationTypeNull);
+    *type_id = 0;
+
+    /* get number of SimulationType_t nodes and their ID */
+    nchild = nnodes;
+    if (nchild == 0) return CG_OK;
+    if (nchild > 1) {
+        cgi_error("File incorrect: multiple definition of SimulationType");
+        return CG_ERROR;
+    }
+    *type_id = nodelist[0].id;
+    if (cgi_read_string(nodelist[0].id, name, &type_name)) return CG_ERROR;
+
+    if (cgi_SimulationType(type_name, type)) return CG_ERROR;
+    CGNS_FREE(type_name);
+    return CG_OK;
+}
+
 int cgi_read_simulation(double parent_id, CGNS_ENUMT(SimulationType_t) *type,
                         double *type_id)
 {
@@ -4796,6 +5725,159 @@ int cgi_read_simulation(double parent_id, CGNS_ENUMT(SimulationType_t) *type,
 
     if (cgi_SimulationType(type_name, type)) return CG_ERROR;
     CGNS_FREE(type_name);
+    return CG_OK;
+}
+
+int cgi_read_biter_from_list(int in_link, _childnode_t* nodelist, int nnodes, cgns_biter** biter)
+{
+    double* id;
+    char_33 datatype;
+    cgns_array* array;
+    int ndim, * data, nnod;
+    int i, linked;
+    int nzones_max = 0, nfamilies_max = 0;
+    void* vdata;
+    cgsize_t dim_vals[12];
+
+    /* get number of BaseIterativeData_t node */
+    nnod = nnodes;
+    if (nnod <= 0) {
+        biter[0] = 0;
+        return CG_OK;
+    }
+    else if (nnod > 1) {
+        cgi_error("Error: Multiple BaseIterativeData_t found...");
+        return CG_ERROR;
+    }
+
+    biter[0] = CGNS_NEW(cgns_biter, 1);
+
+    biter[0]->id = nodelist[0].id;
+    biter[0]->link = cgi_read_link(nodelist[0].id);
+    biter[0]->in_link = in_link;
+    linked = biter[0]->link ? 1 : in_link;
+
+    /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+    if (cgi_read_DDD(linked, biter[0]->id, &biter[0]->ndescr, &biter[0]->descr,
+        &biter[0]->data_class, &biter[0]->units)) return CG_ERROR;
+
+    /* Name and NumberOfSteps */
+    NumberOfSteps = biter[0]->nsteps = 0;
+    if (cgi_read_node(biter[0]->id, biter[0]->name, datatype, &ndim,
+        dim_vals, &vdata, READ_DATA)) {
+        cgi_error("Error reading BaseIterativeData_t");
+        return CG_ERROR;
+    }
+    if (ndim != 1 || dim_vals[0] != 1 || strcmp(datatype, "I4")) {
+        cgi_error("Error in data dimension or type for NumberOfSteps");
+        return CG_ERROR;
+    }
+    data = (int*)vdata;
+    if (data[0] < 0) {
+        cgi_error("Error in data:  NumberOfSteps<0!");
+        return CG_ERROR;
+    }
+    NumberOfSteps = biter[0]->nsteps = data[0];
+    if (biter[0]->nsteps == 0) return CG_OK;
+    CGNS_FREE(vdata);
+
+    /* UserDefinedData_t */
+    if (cgi_read_user_data(linked, biter[0]->id, &biter[0]->nuser_data,
+        &biter[0]->user_data)) return CG_ERROR;
+
+    /* DataArray_t */
+    if (cgi_get_nodes(biter[0]->id, "DataArray_t", &biter[0]->narrays, &id))
+        return CG_ERROR;
+    if (biter[0]->narrays == 0) return CG_OK; /* If no arrays we're done. */
+    biter[0]->array = CGNS_NEW(cgns_array, biter[0]->narrays);
+
+    for (i = 0; i < (biter[0]->narrays); i++) {
+        biter[0]->array[i].id = id[i];
+        biter[0]->array[i].link = cgi_read_link(id[i]);
+        biter[0]->array[i].in_link = linked;
+        if (cgi_read_array(&biter[0]->array[i], "BaseIterativeData_t",
+            biter[0]->id)) return CG_ERROR;
+        array = &biter[0]->array[i];
+
+        /* check data */
+        if (strcmp("TimeValues", array->name) == 0 ||
+            strcmp("IterationValues", array->name) == 0 ||
+            strcmp("NumberOfZones", array->name) == 0 ||
+            strcmp("NumberOfFamilies", array->name) == 0) {
+            if (array->data_dim != 1 || array->dim_vals[0] != biter[0]->nsteps) {
+                cgi_error("Error: Array '%s' incorrectly sized", array->name);
+                return CG_ERROR;
+            }
+            if ((strcmp("TimeValues", array->name) == 0 && strcmp(array->data_type, "R4") &&
+                strcmp(array->data_type, "R8")) ||
+                (strcmp("IterationValues", array->name) == 0 && strcmp(array->data_type, "I4"))) {
+                cgi_error("Incorrect data type for %s under %s", array->name, biter[0]->name);
+                return CG_ERROR;
+            }
+        }
+    }       /* loop through arrays */
+
+    CGNS_FREE(id);
+
+    /* check data: verify that at least one of {TimeValues or IterationValues} is defined */
+    for (i = 0; i < (biter[0]->narrays); i++) {
+        array = &biter[0]->array[i];
+        if (strcmp("TimeValues", array->name) == 0 || strcmp("IterationValues", array->name) == 0) break;
+        if (i == ((biter[0]->narrays) - 1)) {
+            cgi_error("Error:  TimeValues or IterationValues must be defined for '%s'", biter[0]->name);
+            return CG_ERROR;
+        }
+    }
+
+    /* check data: Compute nzones_max and nfamilies_max */
+    for (i = 0; i < (biter[0]->narrays); i++) {
+        int step;
+        array = &biter[0]->array[i];
+        if (strcmp("NumberOfZones", array->name) == 0) {
+            for (step = 0; step < biter[0]->nsteps; step++) {
+                int nzones = *((int*)(array->data) + step);
+                nzones_max = MAX(nzones_max, nzones);
+            }
+        }
+        else if (strcmp("NumberOfFamilies", array->name) == 0) {
+            for (step = 0; step < biter[0]->nsteps; step++) {
+                int nfamilies = *((int*)(array->data) + step);
+                nfamilies_max = MAX(nfamilies_max, nfamilies);
+            }
+        }
+    }
+
+    /* check data:  ZonePointers can't be defined without NumberOfZones and
+            FamilyPointers can't be defined without NumberOfFamilies */
+    for (i = 0; i < (biter[0]->narrays); i++) {
+        array = &biter[0]->array[i];
+        if (strcmp("ZonePointers", array->name) == 0) {
+            if (nzones_max == 0) {
+                cgi_error("NumberofZones (DataArray_t) missing under %s", biter[0]->name);
+                return CG_ERROR;
+            }
+            else {        /* check dimensions and data type */
+                if (array->data_dim != 3 || array->dim_vals[0] != 32 || array->dim_vals[1] != nzones_max ||
+                    array->dim_vals[2] != biter[0]->nsteps || strcmp(array->data_type, "C1")) {
+                    cgi_error("Incorrect definition of ZonePointers under %s", biter[0]->name);
+                    return CG_ERROR;
+                }
+            }
+        }
+        else if (strcmp("FamilyPointers", array->name) == 0) {
+            if (nfamilies_max == 0) {
+                cgi_error("NumberOfFamilies (DataArray_t) missing under %s", biter[0]->name);
+                return CG_ERROR;
+            }
+            else {           /* check dimensions and data type */
+                if (array->data_dim != 3 || array->dim_vals[0] != 32 || array->dim_vals[1] != nfamilies_max ||
+                    array->dim_vals[2] != biter[0]->nsteps || strcmp(array->data_type, "C1")) {
+                    cgi_error("Incorrect definition of FamilyPointers under %s", biter[0]->name);
+                    return CG_ERROR;
+                }
+            }
+        }
+    }
     return CG_OK;
 }
 
@@ -5033,6 +6115,158 @@ int cgi_read_ziter(int in_link, double parent_id, cgns_ziter **ziter)
 
 }
 
+int cgi_read_user_data_from_list(int in_link, _childnode_t* nodelist, int nnodes, int* nuser_data,
+    cgns_user_data** user_data) {
+    double* idi;
+    int n, i, linked;
+    double* IA_id, * IR_id;
+    int nIA_t, nIR_t, nn;
+    char_33 name;
+
+    *nuser_data = nnodes;
+    if (*nuser_data <= 0) {
+        user_data[0] = 0;
+        return CG_OK;
+    }
+
+    user_data[0] = CGNS_NEW(cgns_user_data, (*nuser_data));
+    for (n = 0; n < (*nuser_data); n++) {
+        user_data[0][n].id = nodelist[n].id;
+        user_data[0][n].link = cgi_read_link(nodelist[n].id);
+        user_data[0][n].in_link = in_link;
+        linked = user_data[0][n].link ? 1 : in_link;
+
+        /* UserDefinedData_t Name */
+        if (cgio_get_name(cg->cgio, user_data[0][n].id, user_data[0][n].name)) {
+            cg_io_error("cgio_get_name");
+            return CG_ERROR;
+        }
+
+        /* Descriptor_t, DataClass_t, DimensionalUnits_t */
+        if (cgi_read_DDD(linked, user_data[0][n].id, &user_data[0][n].ndescr,
+            &user_data[0][n].descr, &user_data[0][n].data_class,
+            &user_data[0][n].units)) return CG_ERROR;
+
+        /* DataArray_t */
+        if (cgi_get_nodes(user_data[0][n].id, "DataArray_t", &user_data[0][n].narrays,
+            &idi)) return CG_ERROR;
+        if (user_data[0][n].narrays > 0) {
+            user_data[0][n].array = CGNS_NEW(cgns_array, user_data[0][n].narrays);
+            for (i = 0; i < user_data[0][n].narrays; i++) {
+                user_data[0][n].array[i].id = idi[i];
+                user_data[0][n].array[i].link = cgi_read_link(idi[i]);
+                user_data[0][n].array[i].in_link = linked;
+                if (cgi_read_array(&user_data[0][n].array[i],
+                    "UserDefinedData_t", user_data[0][n].id)) return CG_ERROR;
+            }
+            CGNS_FREE(idi);
+        }
+
+        /* GridLocation_t */
+        if (cgi_read_location(user_data[0][n].id, user_data[0][n].name,
+            &user_data[0][n].location)) return CG_ERROR;
+
+        /* FamilyName_t */ /* -- FAMILY TREE -- */
+        if (cgi_read_family_name(linked, user_data[0][n].id,
+            user_data[0][n].name,
+            user_data[0][n].family_name))
+            return CG_ERROR;
+
+        /* CPEX 0034 - AdditionalFamilyNames */
+        if (cgi_get_nodes(user_data[0][n].id, "AdditionalFamilyName_t",
+            &user_data[0][n].nfamname, &idi)) return CG_ERROR;
+        if (user_data[0][n].nfamname > 0) {
+            char* fam;
+            user_data[0][n].famname = CGNS_NEW(cgns_famname,
+                user_data[0][n].nfamname);
+            for (i = 0; i < user_data[0][n].nfamname; i++) {
+                user_data[0][n].famname[i].id = idi[i];
+                if (cgi_read_string(idi[i], user_data[0][n].famname[i].name,
+                    &fam)) return CG_ERROR;
+                strncpy(user_data[0][n].famname[i].family, fam, (CG_MAX_GOTO_DEPTH * 33));
+                CGNS_FREE(fam);
+            }
+            CGNS_FREE(idi);
+        }
+
+        /* Ordinal_t */
+        if (cgi_read_ordinal(user_data[0][n].id, &user_data[0][n].ordinal))
+            return CG_ERROR;
+
+        /* PointSet */
+        /* get number of IndexArray_t and IndexRange_t nodes and their
+         * ID
+         */
+        if (cgi_get_nodes(user_data[0][n].id, "IndexArray_t", &nIA_t,
+            &IA_id)) return CG_ERROR;
+        if (cgi_get_nodes(user_data[0][n].id, "IndexRange_t", &nIR_t,
+            &IR_id)) return CG_ERROR;
+
+        /* initialized */
+        user_data[0][n].ptset = 0;
+
+        for (nn = 0; nn < nIR_t; nn++)
+        {
+            if (cgio_get_name(cg->cgio, IR_id[nn], name)) {
+                cg_io_error("cgio_get_name");
+                return CG_ERROR;
+            }
+            if (strcmp(name, "PointRange") && strcmp(name, "ElementRange")) {
+                cgi_error("Invalid name for IndexRange_t");
+                return CG_ERROR;
+            }
+            if (user_data[0][n].ptset != 0) {
+                cgi_error("Multiple definition of boundary patch found");
+                return CG_ERROR;
+            }
+            user_data[0][n].ptset = CGNS_NEW(cgns_ptset, 1);
+            if (strcmp(name, "ElementRange") == 0)
+                user_data[0][n].ptset->type = CGNS_ENUMV(ElementRange);
+            else
+                user_data[0][n].ptset->type = CGNS_ENUMV(PointRange);
+            user_data[0][n].ptset->id = IR_id[nn];
+            user_data[0][n].ptset->link = cgi_read_link(IR_id[nn]);
+            user_data[0][n].ptset->in_link = linked;
+            if (cgi_read_ptset(user_data[0][n].id, user_data[0][n].ptset))
+                return CG_ERROR;
+        }
+        if (nIR_t) CGNS_FREE(IR_id);
+
+        for (nn = 0; nn < nIA_t; nn++)
+        {
+            if (cgio_get_name(cg->cgio, IA_id[nn], name)) {
+                cg_io_error("cgio_get_name");
+                return CG_ERROR;
+            }
+            if (strcmp(name, "PointList") && strcmp(name, "ElementList"))
+                continue;
+
+            if (user_data[0][n].ptset != 0) {
+                cgi_error("Multiple definition of boundary patch found");
+                return CG_ERROR;
+            }
+            user_data[0][n].ptset = CGNS_NEW(cgns_ptset, 1);
+            if (strcmp(name, "ElementList") == 0)
+                user_data[0][n].ptset->type = CGNS_ENUMV(ElementList);
+            else
+                user_data[0][n].ptset->type = CGNS_ENUMV(PointList);
+            user_data[0][n].ptset->id = IA_id[nn];
+            user_data[0][n].ptset->link = cgi_read_link(IA_id[nn]);
+            user_data[0][n].ptset->in_link = linked;
+            if (cgi_read_ptset(user_data[0][n].id, user_data[0][n].ptset))
+                return CG_ERROR;
+        }
+
+        if (nIA_t) CGNS_FREE(IA_id);
+
+        /* UserDefinedData_t */
+        if (cgi_read_user_data(linked, user_data[0][n].id,
+            &user_data[0][n].nuser_data, &user_data[0][n].user_data)) return CG_ERROR;
+    }
+
+    return CG_OK;
+}
+
 int cgi_read_user_data(int in_link, double parent_id, int *nuser_data,
                        cgns_user_data **user_data)
 {
@@ -5086,7 +6320,7 @@ int cgi_read_user_data(int in_link, double parent_id, int *nuser_data,
         if (cgi_read_location(user_data[0][n].id, user_data[0][n].name,
             &user_data[0][n].location)) return CG_ERROR;
 
-     /* FamilyName_t */
+     /* FamilyName_t */ /* -- FAMILY TREE -- */
         if (cgi_read_family_name(linked, user_data[0][n].id,
                                  user_data[0][n].name,
                                  user_data[0][n].family_name))
@@ -5103,7 +6337,7 @@ int cgi_read_user_data(int in_link, double parent_id, int *nuser_data,
                 user_data[0][n].famname[i].id = idi[i];
                 if (cgi_read_string(idi[i], user_data[0][n].famname[i].name,
                         &fam)) return CG_ERROR;
-                strncpy(user_data[0][n].famname[i].family, fam, 32);
+                strncpy(user_data[0][n].famname[i].family, fam, (CG_MAX_GOTO_DEPTH*33));
                 CGNS_FREE(fam);
             }
             CGNS_FREE(idi);
@@ -5311,7 +6545,7 @@ int cgi_read_subregion(int in_link, double parent_id, int *nsubreg,
         if (cgi_read_location(reg[n].id, reg[n].name,
             &reg[n].location)) return CG_ERROR;
 
-        /* FamilyName_t */
+        /* FamilyName_t */ /* -- FAMILY TREE -- */
         if (cgi_read_family_name(linked, reg[n].id,
                 reg[n].name, reg[n].family_name))
             return CG_ERROR;
@@ -5325,7 +6559,7 @@ int cgi_read_subregion(int in_link, double parent_id, int *nsubreg,
             for (i = 0; i < reg[n].nfamname; i++) {
                 reg[n].famname[i].id = idi[i];
                 if (cgi_read_string(idi[i], reg[n].famname[i].name, &fam)) return CG_ERROR;
-                strncpy(reg[n].famname[i].family, fam, 32);
+                strncpy(reg[n].famname[i].family, fam, (20*33)-1);
                 CGNS_FREE(fam);
             }
             CGNS_FREE(idi);
@@ -5399,6 +6633,49 @@ int cgi_read_subregion(int in_link, double parent_id, int *nsubreg,
     return CG_OK;
 }
 
+int cgi_read_node_data(double node_id, char_33 data_type,
+    int* ndim, cgsize_t* dim_vals, void** data)
+{
+    int n;
+    cgsize_t size = 1;
+
+    /* read node data type */
+    if (cgio_get_data_type(cg->cgio, node_id, data_type)) {
+        cg_io_error("cgio_get_data_type");
+        return CG_ERROR;
+    }
+
+    if (strcmp(data_type, "MT") == 0) {
+        *ndim = 0;
+        return CG_OK;
+    }
+
+    if (cgio_get_dimensions(cg->cgio, node_id, ndim, dim_vals)) {
+        cg_io_error("cgio_get_dimensions");
+        return CG_ERROR;
+    }
+
+    /* allocate data */
+    for (n = 0; n < (*ndim); n++) size *= dim_vals[n];
+    if (size <= 0) {
+        cgi_error("Error reading node data");
+        return CG_ERROR;
+    }
+    if (strcmp(data_type, "I4") == 0) data[0] = CGNS_NEW(int, size);
+    else if (strcmp(data_type, "I8") == 0) data[0] = CGNS_NEW(cglong_t, size);
+    else if (strcmp(data_type, "R4") == 0) data[0] = CGNS_NEW(float, size);
+    else if (strcmp(data_type, "R8") == 0) data[0] = CGNS_NEW(double, size);
+    else if (strcmp(data_type, "C1") == 0) data[0] = CGNS_NEW(char, size + 1);
+
+    /* read data */
+    if (cgio_read_all_data_type(cg->cgio, node_id, data_type, data[0])) {
+        cg_io_error("cgio_read_all_data_type");
+        return CG_ERROR;
+    }
+    return CG_OK;
+}
+
+
 int cgi_read_node(double node_id, char_33 name, char_33 data_type,
                   int *ndim, cgsize_t *dim_vals, void **data, int data_flag)
 {
@@ -5443,8 +6720,8 @@ int cgi_read_node(double node_id, char_33 name, char_33 data_type,
     else if (strcmp(data_type,"C1")==0) data[0]=CGNS_NEW(char, size+1);
 
      /* read data */
-    if (cgio_read_all_data(cg->cgio, node_id, data[0])) {
-        cg_io_error("cgio_read_all_data");
+    if (cgio_read_all_data_type(cg->cgio, node_id, data_type, data[0])) {
+        cg_io_error("cgio_read_all_data_type");
         return CG_ERROR;
     }
     return CG_OK;
@@ -5482,27 +6759,27 @@ cgns_link *cgi_read_link (double node_id)
     return CG_OK;
 }
 
-int cgi_datasize(int Idim, cgsize_t *CurrentDim,
+int cgi_datasize(int ndim, cgsize_t *dims,
                  CGNS_ENUMV(GridLocation_t) location,
                  int *rind_planes, cgsize_t *DataSize)
 {
     int j;
 
     if (location==CGNS_ENUMV( Vertex )) {
-        for (j=0; j<Idim; j++)
-            DataSize[j] = CurrentDim[j] + rind_planes[2*j] + rind_planes[2*j+1];
+        for (j=0; j<ndim; j++)
+            DataSize[j] = dims[j] + rind_planes[2*j] + rind_planes[2*j+1];
 
     } else if (location==CGNS_ENUMV(CellCenter) ||
               (location==CGNS_ENUMV(FaceCenter) && Cdim==2) ||
               (location==CGNS_ENUMV(EdgeCenter) && Cdim==1)) {
-        for (j=0; j<Idim; j++)
-            DataSize[j] = CurrentDim[j+Idim] + rind_planes[2*j] + rind_planes[2*j+1];
+        for (j=0; j<ndim; j++)
+            DataSize[j] = dims[j+ndim] + rind_planes[2*j] + rind_planes[2*j+1];
 
     } else if (location == CGNS_ENUMV( IFaceCenter ) ||
                location == CGNS_ENUMV( JFaceCenter ) ||
                location == CGNS_ENUMV( KFaceCenter )) {
-        for (j=0; j<Idim; j++) {
-            DataSize[j] = CurrentDim[j] + rind_planes[2*j] + rind_planes[2*j+1];
+        for (j=0; j<ndim; j++) {
+            DataSize[j] = dims[j] + rind_planes[2*j] + rind_planes[2*j+1];
             if ((location == CGNS_ENUMV( IFaceCenter ) && j!=0) ||
                 (location == CGNS_ENUMV( JFaceCenter ) && j!=1) ||
                 (location == CGNS_ENUMV( KFaceCenter ) && j!=2)) DataSize[j]--;
@@ -5567,8 +6844,8 @@ int cgi_read_int_data(double id, char_33 data_type, cgsize_t cnt, cgsize_t *data
             cgi_error("Error allocating I4->I8 data array...");
             return CG_ERROR;
         }
-        if (cgio_read_all_data(cg->cgio, id, (void *)pnts)) {
-            cg_io_error("cgio_read_all_data");
+        if (cgio_read_all_data_type(cg->cgio, id, data_type,(void *)pnts)) {
+            cg_io_error("cgio_read_all_data_type");
             CGNS_FREE(pnts);
             return CG_ERROR;
         }
@@ -5583,8 +6860,8 @@ int cgi_read_int_data(double id, char_33 data_type, cgsize_t cnt, cgsize_t *data
             cgi_error("Error allocating I8->I4 data array...");
             return CG_ERROR;
         }
-        if (cgio_read_all_data(cg->cgio, id, (void *)pnts)) {
-            cg_io_error("cgio_read_all_data");
+        if (cgio_read_all_data_type(cg->cgio, id, data_type, (void *)pnts)) {
+            cg_io_error("cgio_read_all_data_type");
             CGNS_FREE(pnts);
             return CG_ERROR;
         }
@@ -5594,9 +6871,74 @@ int cgi_read_int_data(double id, char_33 data_type, cgsize_t cnt, cgsize_t *data
     }
 #endif
     else {
-        if (cgio_read_all_data(cg->cgio, id, (void *)data)) {
-            cg_io_error("cgio_read_all_data");
+        if (cgio_read_all_data_type(cg->cgio, id, data_type, (void *)data)) {
+            cg_io_error("cgio_read_all_data_type");
             return CG_ERROR;
+        }
+    }
+    return CG_OK;
+}
+
+int cgi_read_offset_data_type(double id, char const *data_type, cgsize_t start, cgsize_t end, char const *m_type, void* data)
+{
+    cgsize_t cnt = end - start + 1;
+    cgsize_t s_start[1], s_end[1], s_stride[1];
+    cgsize_t m_start[1], m_end[1], m_stride[1], m_dim[1];
+    int ier = CG_OK;
+    s_start[0] = start;
+    s_end[0] = end;
+    s_stride[0] = 1;
+    m_start[0] = 1;
+    m_end[0] = cnt;
+    m_stride[0] = 1;
+    m_dim[0] = cnt;
+
+    if (0 == strcmp(data_type, "I4") && 0 == strcmp(m_type, "I4")) {
+        if (cgio_read_data_type(cg->cgio, id,
+            s_start, s_end, s_stride, "I4", 1, m_dim,
+            m_start, m_end, m_stride, data)) {
+            cg_io_error("cgio_read_data");
+            return CG_ERROR;
+        }
+    }
+    else if (0 == strcmp(data_type, "I8") && 0 == strcmp(m_type, "I8")) {
+        if (cgio_read_data_type(cg->cgio, id,
+            s_start, s_end, s_stride, "I8", 1, m_dim,
+            m_start, m_end, m_stride, data)) {
+            cg_io_error("cgio_read_data");
+            return CG_ERROR;
+        }
+    }
+    else {
+        if (cg->filetype == CGIO_FILE_ADF || cg->filetype == CGIO_FILE_ADF2) {
+            void* conv_data = NULL;
+            conv_data = malloc((size_t)(cnt * size_of(data_type)));
+            if (conv_data == NULL) {
+                cgi_error("Error allocating conv_data");
+                return CG_ERROR;
+            }
+            if (cgio_read_data_type(cg->cgio, id,
+                s_start, s_end, s_stride,
+                data_type,
+                1, m_dim, m_start, m_end, m_stride, conv_data)) {
+                free(conv_data);
+                cg_io_error("cgio_read_data_type");
+                return CG_ERROR;
+            }
+
+            ier = cgi_convert_data(cnt, cgi_datatype(data_type),
+                conv_data, cgi_datatype(m_type), data);
+            free(conv_data);
+            if (ier) return CG_ERROR;
+        }
+        else {
+            /* in situ conversion */
+            if (cgio_read_data_type(cg->cgio, id,
+                s_start, s_end, s_stride, m_type, 1, m_dim,
+                m_start, m_end, m_stride, data)) {
+                cg_io_error("cgio_read_data_type");
+                return CG_ERROR;
+            }
         }
     }
     return CG_OK;
@@ -5793,7 +7135,48 @@ int cgi_convert_data(cgsize_t cnt,
             ierr = 1;
         }
     }
-
+#if CG_BUILD_COMPLEX_C99_EXT
+    else if (from_type == CGNS_ENUMV(ComplexSingle)) {
+      const cg_complex_float *src = (const cg_complex_float *)from_data;
+      /* X4 -> X4 */
+      if (to_type == CGNS_ENUMV(ComplexSingle)) {
+        cg_complex_float *dest = (cg_complex_float *)to_data;
+        for (n = 0; n < cnt; n++)
+          dest[n] = src[n];
+      }
+      /* X4 -> X8 */
+      else if (to_type == CGNS_ENUMV(ComplexDouble)) {
+        cg_complex_double *dest = (cg_complex_double *)to_data;
+        for (n = 0; n < cnt; n++) {
+          __real__(dest[n]) = (double)crealf(src[n]);
+          __imag__(dest[n]) = (double)cimagf(src[n]);
+        }
+      }
+      else {
+        ierr = 1;
+      }
+    }
+    else if (from_type == CGNS_ENUMV(ComplexDouble)) {
+      const cg_complex_double *src = (const cg_complex_double *)from_data;
+      /* X8 -> X8 */
+      if (to_type == CGNS_ENUMV(ComplexDouble)) {
+        cg_complex_double *dest = (cg_complex_double *)to_data;
+        for (n = 0; n < cnt; n++)
+          dest[n] = src[n];
+      }
+      /* X8 -> X4 */
+      else if (to_type == CGNS_ENUMV(ComplexSingle)) {
+        cg_complex_float *dest = (cg_complex_float *)to_data;
+        for (n = 0; n < cnt; n++) {
+          __real__(dest[n]) = (float)creal(src[n]);
+          __imag__(dest[n]) = (float)cimag(src[n]);
+        }
+      }
+      else {
+        ierr = 1;
+      }
+    }
+#endif
     else {
         ierr = 1;
     }
@@ -6036,7 +7419,7 @@ int cgi_write_zone(double parent_id, cgns_zone *zone)
     return CG_OK;
 }
 
-int cgi_write_family(double parent_id, cgns_family *family)
+int cgi_write_family(double parent_id, cgns_family *family) /* ** FAMILY TREE ** */
 {
     int n;
     cgsize_t dim_vals;
@@ -6133,6 +7516,11 @@ int cgi_write_family(double parent_id, cgns_family *family)
      /* RotatingCoordinates_t */
     if (family->rotating && cgi_write_rotating(family->id, family->rotating))
         return CG_ERROR;
+
+    /* ** FAMILY TREE ** */
+    for( n = 0; n < family->nfamilies; n++ ) {
+        if (cgi_write_family(family->id, &family->family[n])) return CG_ERROR;
+    }
 
     return CG_OK;
 }
@@ -6895,10 +8283,10 @@ int cgi_write_bcdata(double bcdata_id, cgns_bcdata *bcdata)
 }
 
 int cgi_write_ptset(double parent_id, char_33 name, cgns_ptset *ptset,
-                    int Idim, void *ptset_ptr)
+                    int ndim, void *ptset_ptr)
 {
     cgsize_t dim_vals[12];
-    int ndim;
+    int num_dim;
     char_33 label;
 
     if (ptset->link) {
@@ -6913,13 +8301,13 @@ int cgi_write_ptset(double parent_id, char_33 name, cgns_ptset *ptset,
     else strcpy(label,"IndexArray_t");
 
      /* Dimension vector */
-    dim_vals[0]=Idim;
+    dim_vals[0]=ndim;
     dim_vals[1]=ptset->npts;
-    ndim = 2;
+    num_dim = 2;
 
      /* Create the node */
     if (cgi_new_node(parent_id, name, label, &ptset->id,
-        ptset->data_type, ndim, dim_vals, ptset_ptr)) return CG_ERROR;
+        ptset->data_type, num_dim, dim_vals, ptset_ptr)) return CG_ERROR;
 
     return CG_OK;
 }
@@ -8078,8 +9466,8 @@ int cgi_array_general_verify_range(
      /* both the file hyperslab and memory hyperslab must have same number of
       * points */
     if (s_numpt != m_numpt) {
-        cgi_error("Number of locations in range of memory array (%d) do not "
-                  "match number of locations requested in range of file (%d)",
+        cgi_error("Number of locations in range of memory array (%ld) do not "
+                  "match number of locations requested in range of file (%ld)",
                   m_numpt, s_numpt);
         return CG_ERROR;
     }
@@ -8154,20 +9542,19 @@ int cgi_array_general_read(
     if (ier != CG_OK) return ier;
     const int access_full_range =
         (s_access_full_range == 1) && (m_access_full_range == 1);
-
     if (s_type == m_type) {
          /* quick transfer of data if same data types */
         if (access_full_range) {
-            if (cgio_read_all_data(cg->cgio, array->id, data)) {
-                cg_io_error("cgio_read_all_data");
+            if (cgio_read_all_data_type(cg->cgio, array->id, cgi_adf_datatype(m_type), data)) {
+                cg_io_error("cgio_read_all_data_type");
                 return CG_ERROR;
             }
         }
         else {
-            if (cgio_read_data(cg->cgio, array->id,
-                               s_rmin, s_rmax, stride, m_numdim, m_dimvals,
+            if (cgio_read_data_type(cg->cgio, array->id,
+                               s_rmin, s_rmax, stride, cgi_adf_datatype(m_type), m_numdim, m_dimvals,
                                m_rmin, m_rmax, stride, data)) {
-                cg_io_error("cgio_read_data");
+                cg_io_error("cgio_read_data_type");
                 return CG_ERROR;
             }
         }
@@ -8187,18 +9574,18 @@ int cgi_array_general_read(
             return CG_ERROR;
         }
         if (access_full_range) {
-            if (cgio_read_all_data(cg->cgio, array->id, conv_data)) {
+            if (cgio_read_all_data_type(cg->cgio, array->id, array->data_type, conv_data)) {
                 free(conv_data);
-                cg_io_error("cgio_read_all_data");
+                cg_io_error("cgio_read_all_data_type");
                 return CG_ERROR;
             }
         }
         else {
-            if (cgio_read_data(cg->cgio, array->id, s_rmin, s_rmax, stride,
-                               m_numdim, m_dimvals, m_rmin, m_rmax, stride,
-                               conv_data)) {
+            if (cgio_read_data_type(cg->cgio, array->id, s_rmin, s_rmax, stride,
+                                    array->data_type,
+                                    m_numdim, m_dimvals, m_rmin, m_rmax, stride, conv_data)) {
                 free(conv_data);
-                cg_io_error("cgio_read_data");
+                cg_io_error("cgio_read_data_type");
                return CG_ERROR;
             }
         }
@@ -8424,13 +9811,13 @@ int cgi_array_general_write(
 }
 
 /***********************************************************************\
- *            Alphanumerical sorting routine               *
+ *            Alphanumerical sorting routine                           *
+ * Warning: This is an insert sort that leads to performance issues    *
 \***********************************************************************/
 
 int cgi_sort_names(int nnam, double *ids)
 {
-    int i,j,k;
-    int leni, lenj;
+    int i,j;
     char_33 temp;
     double temp_id;
     char_33 *names;
@@ -8444,38 +9831,20 @@ int cgi_sort_names(int nnam, double *ids)
         }
     }
 
-    for (i=0; i<nnam; i++) {
-        leni=(int)strlen(names[i]);
+    for (i=1; i<nnam; i++) {
+        memcpy(temp, names[i], 33);
+        temp_id = ids[i];
+        j = i - 1;
 
-        for (j=i+1; j<nnam; j++) {
-            lenj=(int)strlen(names[j]);
-
-            for (k=0; k<leni && k<lenj; k++) {
-
-                if ((int)names[j][k] < (int)names[i][k]) {
-                    strcpy(temp, names[i]);
-                    strcpy(names[i], names[j]);
-                    strcpy(names[j], temp);
-                    leni=(int)strlen(names[i]);
-                    temp_id = ids[i];
-                    ids[i]=ids[j];
-                    ids[j]=temp_id;
-
-                    break;
-                } else if ((int)names[j][k]>(int)names[i][k]) {
-                    break;
-                }
-                if (k==(int)(strlen(names[j])-1)) {
-                    strcpy(temp, names[i]);
-                    strcpy(names[i], names[j]);
-                    strcpy(names[j], temp);
-                    leni=(int)strlen(names[i]);
-                    temp_id = ids[i];
-                    ids[i]=ids[j];
-                    ids[j]=temp_id;
-                }
-            }
+        while (j >= 0 && strcmp(names[j], temp) > 0)
+        {
+            memcpy(names[j+1], names[j], 33);
+            ids[j+1] = ids[j];
+            j = j - 1;
         }
+        if (j + 1 == i) continue;
+        memcpy(names[j + 1], temp, 33);
+        ids[j + 1] = temp_id;
     }
 
     CGNS_FREE(names);
@@ -8556,6 +9925,8 @@ int size_of(const char_33 data_type)
     if (strcmp(data_type, "R4") == 0) return sizeof(float);
     if (strcmp(data_type, "R8") == 0) return sizeof(double);
     if (strcmp(data_type, "C1") == 0) return sizeof(char);
+    if (strcmp(data_type, "X4") == 0) return 2*sizeof(float);
+    if (strcmp(data_type, "X8") == 0) return 2*sizeof(double);
 
     cgi_error("data_type '%s' not supported by function 'size_of'",data_type);
     return CG_OK;
@@ -8569,6 +9940,8 @@ const char *cgi_adf_datatype(CGNS_ENUMV(DataType_t) type)
     if (type == CGNS_ENUMV(RealSingle)) return "R4";
     if (type == CGNS_ENUMV(RealDouble)) return "R8";
     if (type == CGNS_ENUMV(Character))  return "C1";
+    if (type == CGNS_ENUMV(ComplexSingle)) return "X4";
+    if (type == CGNS_ENUMV(ComplexDouble)) return "X8";
     return "NULL";
 }
 
@@ -8579,6 +9952,8 @@ CGNS_ENUMT(DataType_t) cgi_datatype(cchar_33 adf_type)
     if (strcmp(adf_type, "R4") == 0) return CGNS_ENUMV(RealSingle);
     if (strcmp(adf_type, "R8") == 0) return CGNS_ENUMV(RealDouble);
     if (strcmp(adf_type, "C1") == 0) return CGNS_ENUMV(Character);
+    if (strcmp(adf_type, "X4") == 0) return CGNS_ENUMV(ComplexSingle);
+    if (strcmp(adf_type, "X8") == 0) return CGNS_ENUMV(ComplexDouble);
     return CGNS_ENUMV(DataTypeNull);
 }
 
@@ -8679,11 +10054,10 @@ int cgi_add_czone(char_33 zonename, cgsize6_t range, cgsize6_t donor_range,
 
      /* check if this interface was already found */
     for (k=0; k<(*ndouble); k++) {
-        differ=0;
         if (strcmp(Dzonename[0][k],zonename)) {
-            differ=1;
             continue;
         }
+        differ=0;
         for (j=0; j<index_dim; j++) {
             if (Drange[0][k][j]==Drange[0][k][j+index_dim]) continue;
             if (Drange[0][k][j]!=MIN(donor_range[j],donor_range[j+index_dim]) ||
@@ -9062,59 +10436,59 @@ cgns_zconn *cgi_get_zconn(cgns_file *cg, int B, int Z)
     return zone->zconn;
 }
 
-cgns_cprop *cgi_get_cprop(cgns_file *cg, int B, int Z, int I)
+cgns_cprop *cgi_get_cprop(cgns_file *cg, int B, int Z, int J)
 {
     cgns_conn *conn;
 
-    conn = cgi_get_conn(cg, B, Z, I);
+    conn = cgi_get_conn(cg, B, Z, J);
     if (conn==0) return CG_OK;
 
     if (conn->cprop == 0)
-        cgi_error("GridConnectivityProperty_t node doesn't exist under GridConnectivity_t %d",I);
+        cgi_error("GridConnectivityProperty_t node doesn't exist under GridConnectivity_t %d",J);
 
     return conn->cprop;
 }
 
-cgns_hole *cgi_get_hole(cgns_file *cg, int B, int Z, int I)
+cgns_hole *cgi_get_hole(cgns_file *cg, int B, int Z, int J)
 {
     cgns_zconn *zconn;
 
     zconn = cgi_get_zconn(cg, B, Z);
     if (zconn==0) return CG_OK;
 
-    if (I>zconn->nholes || I<=0) {
-        cgi_error("OversetHoles node number %d invalid",I);
+    if (J>zconn->nholes || J<=0) {
+        cgi_error("OversetHoles node number %d invalid",J);
         return CG_OK;
     }
-    return &(zconn->hole[I-1]);
+    return &(zconn->hole[J-1]);
 }
 
-cgns_conn *cgi_get_conn(cgns_file *cg, int B, int Z, int I)
+cgns_conn *cgi_get_conn(cgns_file *cg, int B, int Z, int J)
 {
     cgns_zconn *zconn;
 
     zconn = cgi_get_zconn(cg, B, Z);
     if (zconn==0) return CG_OK;
 
-    if (I>zconn->nconns || I<=0) {
-        cgi_error("GridConnectivity_t node number %d invalid",I);
+    if (J>zconn->nconns || J<=0) {
+        cgi_error("GridConnectivity_t node number %d invalid",J);
         return CG_OK;
     }
-    return &(zconn->conn[I-1]);
+    return &(zconn->conn[J-1]);
 }
 
-cgns_1to1 *cgi_get_1to1(cgns_file *cg, int B, int Z, int I)
+cgns_1to1 *cgi_get_1to1(cgns_file *cg, int B, int Z, int J)
 {
     cgns_zconn *zconn;
 
     zconn = cgi_get_zconn(cg, B, Z);
     if (zconn==0) return CG_OK;
 
-    if (I>zconn->n1to1 || I<=0) {
-        cgi_error("GridConnectivity1to1_t node number %d invalid",I);
+    if (J>zconn->n1to1 || J<=0) {
+        cgi_error("GridConnectivity1to1_t node number %d invalid",J);
         return CG_OK;
     }
-    return &(zconn->one21[I-1]);
+    return &(zconn->one21[J-1]);
 }
 
 cgns_zboco *cgi_get_zboco(cgns_file *cg, int B, int Z)
@@ -10523,6 +11897,22 @@ static int cgi_next_posit(char *label, int index, char *name)
                            label, index + 1, f->user_data[index].id);
             }
         }
+        /* ** FAMILY TREE ** */
+        else if (0 == strcmp (label, "Family_t")) {
+            if (--index < 0) {
+                for (n = 0; n < f->nfamilies; n++) {
+                    if (0 == strcmp (f->family[n].name, name)) {
+                        index = n;
+                        break;
+                    }
+                }
+            }
+
+            if (index >= 0 && index < f->nfamilies) {
+                return cgi_add_posit((void *)&f->family[index],
+                           label, index + 1, f->family[index].id);
+            }
+        }
         else
             return CG_INCORRECT_PATH;
     }
@@ -11303,7 +12693,7 @@ cgns_descr *cgi_descr_address(int local_mode, int given_no,
         ADDRESS4MULTIPLE(cgns_state, ndescr, descr, cgns_descr)
     else if (strcmp(posit->label,"DataArray_t")==0)
         ADDRESS4MULTIPLE(cgns_array, ndescr, descr, cgns_descr)
-    else if (strcmp(posit->label,"Family_t")==0)
+    else if (strcmp(posit->label,"Family_t")==0)/* -- FAMILY TREE -- */
         ADDRESS4MULTIPLE(cgns_family, ndescr, descr, cgns_descr)
     else if (strcmp(posit->label,"GeometryReference_t")==0)
         ADDRESS4MULTIPLE(cgns_geo, ndescr, descr, cgns_descr)
@@ -11404,7 +12794,7 @@ char *cgi_famname_address(int local_mode, int *ier)
         return CG_OK;
     }
     if (cg->mode == CG_MODE_MODIFY && local_mode == CG_MODE_WRITE) {
-        if (cgi_get_nodes(parent_id, "FamilyName_t", &nnod, &id)) {
+        if (cgi_get_nodes(parent_id, "FamilyName_t", &nnod, &id)) {/* -- FAMILY TREE -- */
             *ier = CG_ERROR;
             return CG_OK;
         }
@@ -11439,6 +12829,8 @@ cgns_famname *cgi_multfam_address(int local_mode, int given_no,
         ADDRESS4MULTIPLE(cgns_subreg, nfamname, famname, cgns_famname)
     else if (0 == strcmp(posit->label, "UserDefinedData_t"))
         ADDRESS4MULTIPLE(cgns_user_data, nfamname, famname, cgns_famname)
+    else if (0 == strcmp(posit->label, "Family_t")) /* ** FAMILY TREE ** */
+        ADDRESS4MULTIPLE(cgns_family, nfamname, famname, cgns_famname)
     else {
         cgi_error("AdditionalFamilyName_t node not supported under '%s' type node",posit->label);
         (*ier) = CG_INCORRECT_PATH;
@@ -12267,7 +13659,8 @@ cgns_array *cgi_array_address(int local_mode, int allow_dup, int given_no,
     } else if (strcmp(posit->label,"Elements_t")==0) {
         cgns_section *section= (cgns_section *)posit->posit;
         if (local_mode==CG_MODE_WRITE) {
-            if (strcmp(given_name,"ElementConnectivity") &&
+            if (strcmp(given_name,"ElementStartOffset") &&
+                strcmp(given_name,"ElementConnectivity") &&
 		strcmp(given_name,"ParentElements") &&
 		strcmp(given_name,"ParentElementsPosition") &&
 		strcmp(given_name,"ParentData")) {
@@ -12704,6 +14097,56 @@ cgns_user_data *cgi_user_data_address(int local_mode, int given_no,
     return user_data;
 }
 
+/* ** FAMILY TREE ** */
+cgns_family *cgi_family_address(int local_mode, int given_no,
+                                char const *given_name, int *ier)
+{
+    cgns_family *family=0;
+    int n, allow_dup=0, error1=0, error2=0;
+    double parent_id=0;
+
+    /* check for valid posit */
+    if (posit == 0) {
+        cgi_error("No current position set by cg_goto\n");
+        (*ier) = CG_ERROR;
+        return CG_OK;
+    }
+
+/* Possible parents of Family_t node:
+ *  Family_t, CGNSBase_t
+ */
+
+    if (strcmp(posit->label,"Family_t")==0)
+        ADDRESS4MULTIPLE(cgns_family, nfamilies, family, cgns_family)
+    else if (strcmp(posit->label,"CGNSBase_t")==0)
+        ADDRESS4MULTIPLE(cgns_base, nfamilies, family, cgns_family)
+    else {
+        cgi_error("Family_t node not supported under '%s' type node",posit->label);
+        (*ier) = CG_INCORRECT_PATH;
+        return CG_OK;
+    }
+    if (error1) {
+        cgi_error("Duplicate child name found (%s) found under %s",
+            given_name, posit->label);
+        (*ier) = CG_ERROR;
+        return CG_OK;
+    }
+    if (error2) {
+        cgi_error("UserDefinedData index number %d doesn't exist under %s",
+            given_no, posit->label);
+        (*ier) = CG_NODE_NOT_FOUND;
+        return CG_OK;
+    }
+    if (parent_id) {     /* parent_id!=0 only when overwriting */
+        if (cgi_delete_node (parent_id, family->id)) {
+            (*ier) = CG_ERROR;
+            return CG_OK;
+        }
+        cgi_free_family(family);
+    }
+    return family;
+}
+
 cgns_rotating *cgi_rotating_address(int local_mode, int *ier)
 {
     cgns_rotating *rotating=0;
@@ -12895,6 +14338,10 @@ void cgi_free_base(cgns_base *base)
             cgi_free_zone(&base->zone[n]);
         CGNS_FREE(base->zone);
     }
+    if (base->zonemap) {
+        cgi_hashmap_clear(base->zonemap);
+        CGNS_FREE(base->zonemap);
+    }
     if (base->ndescr) {
         for (n=0; n<base->ndescr; n++)
             cgi_free_descr(&base->descr[n]);
@@ -13078,7 +14525,7 @@ void cgi_free_section(cgns_section *section)
     }
 }
 
-void cgi_free_family(cgns_family *family)
+void cgi_free_family(cgns_family *family) /* ** FAMILY TREE ** */
 {
     int n;
     if (family->link) CGNS_FREE(family->link);
@@ -13097,6 +14544,14 @@ void cgi_free_family(cgns_family *family)
             cgi_free_geo(&family->geo[n]);
         CGNS_FREE(family->geo);
     }
+
+    /* FAMILY TREE : Free Family_t nodes */
+    if ( family->nfamilies ) {
+        for( n = 0; n < family->nfamilies; n++ )
+            cgi_free_family( &family->family[n] );
+        CGNS_FREE( family->family );
+    }
+
     if (family->nuser_data) {
         for (n=0; n<family->nuser_data; n++)
             cgi_free_user_data(&family->user_data[n]);
@@ -14083,8 +15538,14 @@ void cgi_free_subreg(cgns_subreg *subreg)
         cgi_free_ptset(subreg->ptset);
         CGNS_FREE(subreg->ptset);
     }
-    if (subreg->bcname) cgi_free_descr(subreg->bcname);
-    if (subreg->gcname) cgi_free_descr(subreg->gcname);
+    if (subreg->bcname){
+      cgi_free_descr(subreg->bcname);
+      CGNS_FREE(subreg->bcname);
+    }
+    if (subreg->gcname){
+      cgi_free_descr(subreg->gcname);
+      CGNS_FREE(subreg->gcname);
+    }
     if (subreg->units) {
         cgi_free_units(subreg->units);
         CGNS_FREE(subreg->units);

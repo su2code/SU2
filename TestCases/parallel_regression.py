@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -204,9 +204,9 @@ def main():
     flatplate           = TestCase('flatplate')
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
-    flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360, 9.0144e-04, 2.3622e+00, -2.3613e+00]
-    flatplate.su2_exec  = "parallel_computation.py -f"
+    flatplate.test_iter = 100
+    flatplate.test_vals = [-9.336395, -3.849426, 0.001112, 0.036276, 2.361500, -2.325300, -2.279700, -2.279700]
+    flatplate.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
     test_list.append(flatplate)
@@ -1411,12 +1411,12 @@ def main():
     cht_compressible.tol       = 0.00001
     test_list.append(cht_compressible)
 
-    # 2D CHT case streamwise periodicity
+    # 2D CHT case streamwise periodicity. Also test Multizone PerSurface screen output.
     sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000, -8.9660e-10, -7.5332e-01, 7.5332e-01]
     sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
@@ -1428,7 +1428,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451962, -0.008477, 214.707868, 365.670000] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-13.380025, -7.476945, -7.025285, -0.009675, 99.879812, 4.1920e+02]
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001

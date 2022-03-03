@@ -1,8 +1,9 @@
 project('SU2', 'c', 'cpp',
-        version: '7.2.1 "Blackbird"',
+        version: '7.3.0 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
+                          'c_std=c99',
                           'cpp_std=c++11'])
 
 
@@ -249,7 +250,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.2.1 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.3.0 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
