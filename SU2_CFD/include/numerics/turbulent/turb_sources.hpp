@@ -35,19 +35,18 @@
  */
 struct CSAVariables {
   /*--- List of constants ---*/
-  const su2double
-   cv1_3 = pow(7.1, 3.0),
-   k2    = pow(0.41, 2.0),
-   cb1   = 0.1355,
-   cw2   = 0.3,
-   ct3   = 1.2,
-   ct4   = 0.5,
-   cw3_6 = pow(2.0, 6.0),
-   sigma = 2./3.,
-   cb2   = 0.622,
-   cb2_sigma = cb2/sigma,
-   cw1 = cb1/k2+(1.0+cb2)/sigma,
-   cr1 = 0.5;
+  const su2double cv1_3 = pow(7.1, 3);
+  const su2double k2 = pow(0.41, 2);
+  const su2double cb1 = 0.1355;
+  const su2double cw2 = 0.3;
+  const su2double ct3 = 1.2;
+  const su2double ct4 = 0.5;
+  const su2double cw3_6 = pow(2, 6);
+  const su2double sigma = 2.0 / 3.0;
+  const su2double cb2 = 0.622;
+  const su2double cb2_sigma = cb2 / sigma;
+  const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
+  const su2double cr1 = 0.5;
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
@@ -86,8 +85,6 @@ class CSourceBase_TurbSA : public CNumerics {
         idx(nDim, config->GetnSpecies()),
         rotating_frame(config->GetRotating_Frame()),
         transition(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
-     /// TODO: make transition bool more general to consider other transition models
-
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
