@@ -121,7 +121,8 @@ class CSourceBase_TurbSA : public CNumerics {
 
     Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
 
-    /// TODO: Make this one of the template parameters?
+    /*--- Dacles-Mariani et. al. rotation correction ("-R"), this is applied by
+     * default for rotating frame, but should be controled in the config. ---*/
     if (rotating_frame) {
       var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
     }
@@ -172,19 +173,20 @@ class CSourceBase_TurbSA : public CNumerics {
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
-      /// TODO: Make this one of the template parameters?
       if (transition) {
-        /*--- BC model constants (2020 revision). ---*/
+        /*--- BC transition model (2020 revision). This should only be used with SA-noft2.
+         * TODO: Consider making this part of the "SourceTerms" template. ---*/
         const su2double chi_1 = 0.002;
         const su2double chi_2 = 50.0;
 
-        /*--- turbulence intensity is u'/U so we multiply by 100 to get percentage ---*/
+        /*--- Turbulence intensity is u'/U so we multiply by 100 to get percentage. ---*/
         const su2double tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
         const su2double nu_t = ScalarVar_i[0] * var.fv1;
 
         const su2double re_v = density * var.dist_i_2 / laminar_viscosity * var.Omega;
         const su2double re_theta = re_v / 2.193;
-        const su2double re_theta_t = 803.73 * pow(tu + 0.6067, -1.027);  // MENTER correlation
+        /*--- Menter correlation. ---*/
+        const su2double re_theta_t = 803.73 * pow(tu + 0.6067, -1.027);
 
         const su2double term1 = sqrt(max(re_theta - re_theta_t, 0.0) / (chi_1 * re_theta_t));
         const su2double term2 = sqrt(max((nu_t * chi_2) / nu, 0.0));
@@ -503,6 +505,7 @@ class CCompressibilityCorrection final : public ParentClass {
  * ============================================================================*/
 
 /// TODO: Factory method to create combinations of the different variations based on the config.
+/// See PR #1413, the combinations exposed should follow https://turbmodels.larc.nasa.gov/spalart.html
 
 /*!
  * \class CSourcePieceWise_TurbSA
@@ -556,18 +559,19 @@ template <class FlowIndices>
 class CSourcePieceWise_TurbSST final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
+  const bool sustaining_terms = false;
+  const bool axisymmetric = false;
+
+  /*--- Closure constants ---*/
+  const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
+
+  /*--- Ambient values for SST-SUST. ---*/
+  const su2double kAmb, omegaAmb;
 
   su2double F1_i, F2_i, CDkw_i;
-
-  su2double alfa_1, alfa_2, beta_1, beta_2, sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_star, a1;
-  su2double kAmb, omegaAmb;
-
   su2double Residual[2];
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4];  /// Static storage for the Jacobian (which needs to be pointer for return type).
-
-  const bool sustaining_terms = false;
-  const bool axisymmetric = false;
 
   /*!
    * \brief Get strain magnitude based on perturbed reynolds stress matrix.
@@ -633,23 +637,19 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
         sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
-        axisymmetric(config->GetAxisymmetric()) {
-    /*--- Closure constants ---*/
-    sigma_k_1 = constants[0];
-    sigma_k_2 = constants[1];
-    sigma_w_1 = constants[2];
-    sigma_w_2 = constants[3];
-    beta_1 = constants[4];
-    beta_2 = constants[5];
-    beta_star = constants[6];
-    a1 = constants[7];
-    alfa_1 = constants[8];
-    alfa_2 = constants[9];
-
-    /*--- Set the ambient values of k and omega to the free stream values. ---*/
-    kAmb = val_kine_Inf;
-    omegaAmb = val_omega_Inf;
-
+        axisymmetric(config->GetAxisymmetric()),
+        sigma_k_1(constants[0]),
+        sigma_k_2(constants[1]),
+        sigma_w_1(constants[2]),
+        sigma_w_2(constants[3]),
+        beta_1(constants[4]),
+        beta_2(constants[5]),
+        beta_star(constants[6]),
+        a1(constants[7]),
+        alfa_1(constants[8]),
+        alfa_2(constants[9]),
+        kAmb(val_kine_Inf),
+        omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
