@@ -796,8 +796,6 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
   } else {
     /*--- For now, non-inlets just get set to zero. In the future, we
      can do more customization for other boundary types here. ---*/
-    /*--- note: this makes starting from inlet markers different from starting using an inlet profile 
-          We should consider creating a separate implementation for this ---*/ 
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = 0.0;
       Inlet_Ptotal[iMarker][iVertex] = 0.0;
