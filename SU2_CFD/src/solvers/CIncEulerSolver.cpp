@@ -100,6 +100,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
+    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
   }
 
   /*--- Set the gamma value ---*/
@@ -1226,11 +1227,11 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
       if (config->GetEnergy_Equation()) {
-        bool neg_temperature_i = (Primitive_i[nDim+1] < 0.0);
-        bool neg_temperature_j = (Primitive_j[nDim+1] < 0.0);
+        bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
+        bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
-        bool neg_density_i  = (Primitive_i[nDim+2] < 0.0);
-        bool neg_density_j  = (Primitive_j[nDim+2] < 0.0);
+        bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
+        bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
         nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
         nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
@@ -1614,8 +1615,32 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     } // if turbulent
 
-    /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
-    numerics->SetStreamwisePeriodicValues(SPvals);
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      /*---------------------------------------------------------------------------------------------*/
+      /*--- Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/
+      /*--- The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
+      /*---------------------------------------------------------------------------------------------*/
+
+      /*--- Compute update to Delta p based on massflow-difference ---*/
+      const su2double Average_Density_Global = SPvals.Streamwise_Periodic_AvgDensity;
+      const su2double Area_Global = SPvals.Streamwise_Periodic_BoundaryArea;
+      const su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+      const su2double MassFlow_Global = SPvals.Streamwise_Periodic_MassFlow;
+      const su2double ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
+
+      /*--- Store updated pressure difference ---*/
+      const su2double damping_factor = config->GetInc_Outlet_Damping();
+      SPvalsUpdated = SPvals;
+      SPvalsUpdated.Streamwise_Periodic_PressureDrop += damping_factor*ddP;
+      if (!config->GetDiscrete_Adjoint())
+        SPvals = SPvalsUpdated;
+
+      /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
+      numerics->SetStreamwisePeriodicValues(SPvalsUpdated);
+    }
+    else {
+      numerics->SetStreamwisePeriodicValues(SPvals);
+    }
 
     AD::StartNoSharedReading();
 
@@ -2035,27 +2060,27 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
     /*--- Recompute and store the velocity in the primitive variable vector. ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
-      V_infty[iDim+1] = GetVelocity_Inf(iDim);
+      V_infty[iDim+prim_idx.Velocity()] = GetVelocity_Inf(iDim);
 
     /*--- Far-field pressure set to static pressure (0.0). ---*/
 
-    V_infty[0] = GetPressure_Inf();
+    V_infty[prim_idx.Pressure()] = GetPressure_Inf();
 
     /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
 
-    V_infty[nDim+1] = GetTemperature_Inf();
+    V_infty[prim_idx.Temperature()] = GetTemperature_Inf();
 
     /*--- Store the density.  ---*/
 
-    V_infty[nDim+2] = GetDensity_Inf();
+    V_infty[prim_idx.Density()] = GetDensity_Inf();
 
     /*--- Beta coefficient stored at the node ---*/
 
-    V_infty[nDim+3] = nodes->GetBetaInc2(iPoint);
+    V_infty[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
     /*--- Cp is needed for Temperature equation. ---*/
 
-    V_infty[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
+    V_infty[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
     /*--- Set various quantities in the numerics class ---*/
 
@@ -2084,9 +2109,9 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Set transport properties at infinity. ---*/
 
-    V_infty[nDim+4] = nodes->GetLaminarViscosity(iPoint);
-    V_infty[nDim+5] = nodes->GetEddyViscosity(iPoint);
-    V_infty[nDim+6] = nodes->GetThermalConductivity(iPoint);
+    V_infty[prim_idx.LaminarViscosity()] = nodes->GetLaminarViscosity(iPoint);
+    V_infty[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
+    V_infty[prim_idx.ThermalConductivity()] = nodes->GetThermalConductivity(iPoint);
 
     /*--- Set the normal vector and the coordinates ---*/
 
@@ -2185,7 +2210,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Neumann condition for dynamic pressure ---*/
 
-    V_inlet[0] = nodes->GetPressure(iPoint);
+    V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
 
     /*--- The velocity is either prescribed or computed from total pressure. ---*/
 
@@ -2202,11 +2227,11 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Store the velocity in the primitive variable vector. ---*/
 
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
+          V_inlet[iDim+prim_idx.Velocity()] = Vel_Mag*UnitFlowDir[iDim];
 
         /*--- Dirichlet condition for temperature (if energy is active) ---*/
 
-        V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+        V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
         break;
 
@@ -2224,10 +2249,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Check for back flow through the inlet. ---*/
 
-        Vn = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vn += V_domain[iDim+1]*(-1.0*Normal[iDim]/Area);
-        }
+        Vn = -GeometryToolbox::DotProduct(nDim, &V_domain[prim_idx.Velocity()], Normal) / Area;
 
         /*--- If the local static pressure is larger than the specified
          total pressure or the velocity is directed upstream, we have a
@@ -2239,16 +2261,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Back flow: use the prescribed P_total as static pressure. ---*/
 
-          V_inlet[0] = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+          V_inlet[prim_idx.Pressure()] = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
 
           /*--- Neumann condition for velocity. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = V_domain[iDim+1];
+            V_inlet[iDim+prim_idx.Velocity()] = V_domain[iDim+prim_idx.Velocity()];
 
           /*--- Neumann condition for the temperature. ---*/
 
-          V_inlet[nDim+1] = nodes->GetTemperature(iPoint);
+          V_inlet[prim_idx.Temperature()] = nodes->GetTemperature(iPoint);
 
         } else {
 
@@ -2267,17 +2289,17 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Compute the delta change in velocity in each direction. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
+            dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+prim_idx.Velocity()];
 
           /*--- Update the velocity in the primitive variable vector.
            Note we use damping here to improve stability/convergence. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
+            V_inlet[iDim+prim_idx.Velocity()] = V_domain[iDim+prim_idx.Velocity()] + Damping*dV[iDim];
 
           /*--- Dirichlet condition for temperature (if energy is active) ---*/
 
-          V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+          V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
         }
 
@@ -2292,15 +2314,15 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       construction, or will be set fixed implicitly by the temperature
       and equation of state. ---*/
 
-    V_inlet[nDim+2] = nodes->GetDensity(iPoint);
+    V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
 
     /*--- Beta coefficient from the config file ---*/
 
-    V_inlet[nDim+3] = nodes->GetBetaInc2(iPoint);
+    V_inlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
     /*--- Cp is needed for Temperature equation. ---*/
 
-    V_inlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
+    V_inlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
     /*--- Set various quantities in the solver class ---*/
 
@@ -2329,9 +2351,9 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Set transport properties at the inlet ---*/
 
-    V_inlet[nDim+4] = nodes->GetLaminarViscosity(iPoint);
-    V_inlet[nDim+5] = nodes->GetEddyViscosity(iPoint);
-    V_inlet[nDim+6] = nodes->GetThermalConductivity(iPoint);
+    V_inlet[prim_idx.LaminarViscosity()] = nodes->GetLaminarViscosity(iPoint);
+    V_inlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
+    V_inlet[prim_idx.ThermalConductivity()] = nodes->GetThermalConductivity(iPoint);
 
     /*--- Set the normal vector and the coordinates ---*/
 
@@ -2430,12 +2452,12 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- The pressure is prescribed at the outlet. ---*/
 
-        V_outlet[0] = P_Outlet;
+        V_outlet[prim_idx.Pressure()] = P_Outlet;
 
         /*--- Neumann condition for the velocity. ---*/
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          V_outlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
+          V_outlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
         }
 
         break;
@@ -2469,12 +2491,12 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- The pressure is prescribed at the outlet. ---*/
 
-        V_outlet[0] = P_Outlet;
+        V_outlet[prim_idx.Pressure()] = P_Outlet;
 
         /*--- Neumann condition for the velocity ---*/
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          V_outlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
+          V_outlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
         }
 
         break;
@@ -2483,21 +2505,21 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Neumann condition for the temperature. ---*/
 
-    V_outlet[nDim+1] = nodes->GetTemperature(iPoint);
+    V_outlet[prim_idx.Temperature()] = nodes->GetTemperature(iPoint);
 
     /*--- Access density at the interior node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
       and equation of state. ---*/
 
-    V_outlet[nDim+2] = nodes->GetDensity(iPoint);
+    V_outlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
 
     /*--- Beta coefficient from the config file ---*/
 
-    V_outlet[nDim+3] = nodes->GetBetaInc2(iPoint);
+    V_outlet[prim_idx.Beta()] = nodes->GetBetaInc2(iPoint);
 
     /*--- Cp is needed for Temperature equation. ---*/
 
-    V_outlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
+    V_outlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
     /*--- Set various quantities in the solver class ---*/
 
@@ -2527,9 +2549,9 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Set transport properties at the outlet. ---*/
 
-    V_outlet[nDim+4] = nodes->GetLaminarViscosity(iPoint);
-    V_outlet[nDim+5] = nodes->GetEddyViscosity(iPoint);
-    V_outlet[nDim+6] = nodes->GetThermalConductivity(iPoint);
+    V_outlet[prim_idx.LaminarViscosity()] = nodes->GetLaminarViscosity(iPoint);
+    V_outlet[prim_idx.EddyViscosity()] = nodes->GetEddyViscosity(iPoint);
+    V_outlet[prim_idx.ThermalConductivity()] = nodes->GetThermalConductivity(iPoint);
 
     /*--- Set the normal vector and the coordinates ---*/
 
@@ -2878,7 +2900,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
               AxiFactor = 1.0;
             }
 
-            Density      = V_outlet[nDim+2];
+            Density      = V_outlet[prim_idx.Density()];
 
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
 
@@ -3072,18 +3094,35 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 }
 
 void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
-
-  unsigned long iPoint;
-  unsigned short iDim;
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     nodes->SetSolution(iPoint,0, Pressure_Inf);
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
       nodes->SetSolution(iPoint,iDim+1, Velocity_Inf[iDim]);
     }
     nodes->SetSolution(iPoint,nDim+1, Temperature_Inf);
   }
   END_SU2_OMP_FOR
 
+}
+
+unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    if (input) AD::RegisterInput(SPvals.Streamwise_Periodic_PressureDrop);
+    else AD::RegisterOutput(SPvalsUpdated.Streamwise_Periodic_PressureDrop);
+    return 1;
+  }
+  return 0;
+}
+
+void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]));
+  }
+}
+
+void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+    adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
+  }
 }

@@ -60,8 +60,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
+        testscript: ['vandv.py', 'tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
         include:
+          - testscript: 'vandv.py'
+            tag: MPI
           - testscript: 'tutorials.py'
             tag: MPI
           - testscript: 'parallel_regression.py'

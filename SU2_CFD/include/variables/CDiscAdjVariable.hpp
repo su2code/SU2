@@ -54,9 +54,10 @@ public:
   CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
-   * \brief Destructor of the class.
+   * \brief Allocate extra adjoint variables.
+   * \param[in] nVarExtra - Number of extra variables.
    */
-  ~CDiscAdjVariable() override = default;
+  void AllocateAdjointSolutionExtra(unsigned long nVarExtra);
 
   /*!
    * \brief Set the sensitivity at the node

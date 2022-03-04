@@ -297,9 +297,9 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
       Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
           - V[RHOS_INDEX+iSpecies]*Vector[iDim];
     }
-    //if (ionization) {
-    //  SU2_MPI::Error("NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!",CURRENT_FUNCTION);
-    //}
+    if (ionization) {
+      SU2_MPI::Error("NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!",CURRENT_FUNCTION);
+    }
 
     /*--- Shear stress related terms ---*/
     Flux_Tensor[nSpecies+nDim][iDim] = 0.0;

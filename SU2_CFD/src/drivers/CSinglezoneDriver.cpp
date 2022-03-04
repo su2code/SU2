@@ -213,9 +213,9 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
 
     StartTime = SU2_MPI::Wtime();
-
-    config_container[ZONE_0]->Set_StartTime(StartTime);
   }
+
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
