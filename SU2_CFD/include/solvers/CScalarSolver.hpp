@@ -212,9 +212,9 @@ class CScalarSolver : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override{
-      /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
-  };
+                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override {
+    /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
+  }
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -226,9 +226,25 @@ class CScalarSolver : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Euler_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override{
-      /*--- Convective fluxes across euler wall are equal to zero. ---*/
-  };
+                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final {
+    /*--- Convective fluxes across euler wall are equal to zero. ---*/
+  }
+
+  /*!
+   * \brief Impose the supersonic inlet boundary condition (same as inlet, see BC_Inlet).
+   */
+  void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final {
+    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  }
+
+  /*!
+   * \brief Impose the supersonic outlet boundary condition (same as outlet, see BC_Outlet).
+   */
+  void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final {
+    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  }
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
