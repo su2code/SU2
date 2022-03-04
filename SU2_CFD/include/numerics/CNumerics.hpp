@@ -182,7 +182,6 @@ protected:
 
   su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq;                  /*!< \brief Flag for UQ methodology  */
-  su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
@@ -689,17 +688,15 @@ public:
 
   /*!
    * \brief Set the value of the second blending function.
-   * \param[in] val_F1_i - Value of the second Menter blending function at point i.
-   * \param[in] val_F1_j - Value of the second Menter blending function at point j.
+   * \param[in] val_F2_i - Value of the second Menter blending function at point i.
    */
-  virtual void SetF2blending(su2double val_F1_i, su2double val_F1_j) {/* empty */};
+  virtual void SetF2blending(su2double val_F2_i) {/* empty */};
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
-   * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
-  virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
+  virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1424,47 +1421,6 @@ public:
     }
     return ERR;
   }
-
-  /*!
-   * \brief Set intermittency for numerics (used in SA with LM transition model)
-   */
-  inline virtual void SetIntermittency(su2double intermittency_in) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline virtual void SetProduction(su2double val_production) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline virtual void SetDestruction(su2double val_destruction) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline virtual void SetCrossProduction(su2double val_crossproduction) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline virtual su2double GetProduction(void) const { return 0; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline virtual su2double GetDestruction(void) const { return 0; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline virtual su2double GetCrossProduction(void) const { return 0; }
 
   /*!
    * \brief A virtual member.
