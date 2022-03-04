@@ -108,13 +108,17 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
         delete [] Coord_Control_Points[iOrder][jOrder][kOrder];
         delete [] ParCoord_Control_Points[iOrder][jOrder][kOrder];
         delete [] Coord_Control_Points_Copy[iOrder][jOrder][kOrder];
+        delete [] Coord_SupportCP[iOrder][jOrder][kOrder];
       }
   delete [] Coord_Control_Points;
   delete [] ParCoord_Control_Points;
   delete [] Coord_Control_Points_Copy;
+  delete [] Coord_SupportCP;
 
   delete [] ParamCoord;
+  delete [] ParamCoord_;
   delete [] cart_coord;
+  delete [] cart_coord_;
   delete [] Gradient;
 
   for (iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++)
