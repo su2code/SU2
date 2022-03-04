@@ -194,11 +194,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
 
-  /*--- Add analyze surface history fields --- */
-
   AddAnalyzeSurfaceOutput(config);
-
-  /*--- Add aerodynamic coefficients fields --- */
 
   AddAerodynamicCoefficients(config);
 
