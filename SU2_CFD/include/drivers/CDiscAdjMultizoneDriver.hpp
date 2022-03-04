@@ -98,7 +98,7 @@ protected:
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
   vector<unsigned short> direct_nInst;  /*!< \brief Total number of instances in the direct problem. */
   vector<unsigned long> nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
-  unsigned long wrt_sol_freq = std::numeric_limits<unsigned long>::max(); /*!< \brief File output frequency. */
+  unsigned short wrt_sol_freq = std::numeric_limits<unsigned short>::max(); /*!< \brief File output frequency. */
 
   su2vector<bool> Has_Deformation;  /*!< \brief True if iZone has mesh deformation (used for
                                                 lazy evaluation of TRANSFER tape section). */

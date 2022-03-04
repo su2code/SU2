@@ -94,7 +94,6 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
         else if (polar) cout << endl <<"----------------- FFD technique (polar -> parametric) ---------------" << endl;
       }
 
-
       /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
 
       CFreeFormDefBox FFDBox_unitary(Degree_Unitary, BSpline_Unitary, BEZIER);
@@ -116,6 +115,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
         /*--- Compute the parametric coordinates, it also find the points in
          the FFDBox using the parametrics coordinates ---*/
+        
         SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
 
@@ -741,11 +741,13 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
   bool polar = (config->GetFFD_CoordSystem() == POLAR);
+
   /*--- Change order and control points reduce the
    complexity of the point inversion (this only works with boxes,
  in case of Bezier curves, and we maintain an internal copy)---*/
 
   if (BoxFFD && (config->GetFFD_Blending() == BEZIER)) {
+    
     for (iOrder = 0; iOrder < 2; iOrder++) {
       for (jOrder = 0; jOrder < 2; jOrder++) {
         for (kOrder = 0; kOrder < 2; kOrder++) {

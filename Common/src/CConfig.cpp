@@ -2833,11 +2833,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1);
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
-  /* DESCRIPTION: Volume solution writing frequency */
-  addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
-  
   /* DESCRIPTION: list of writing frequencies for each file type (length same as nVolumeOutputFiles) */
-  addUShortListOption("VOLUME_OUTPUT_FREQUENCIES", nVolumeOutputFrequencies, VolumeOutputFrequencies);
+  addUShortListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
 
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
@@ -3325,43 +3322,28 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
 
+  /*--- Set the default output frequencies ---*/
   if (!OptionIsSet("OUTPUT_WRT_FREQ")){
-    cout << "*** OUTPUT_WRT_FREQ option not set! *** " << endl;
-    if (OptionIsSet("VOLUME_OUTPUT_FREQUENCIES"))
-      cout << "*** VOLUME_OUTPUT_FREQUENCIES is used *** " << endl;
-    
-  }
-
-  if (OptionIsSet("VOLUME_OUTPUT_FREQUENCIES")){
-    if (OptionIsSet("OUTPUT_WRT_FREQ"))
-      cout << "*** VOLUME_OUTPUT_FREQUENCIES found! keyword OUTPUT_WRT_FREQ will be ignored  *** " << endl;
-      
-    cout <<"*** frequency nr = " << nVolumeOutputFrequencies << endl;
-    if (nVolumeOutputFrequencies != nVolumeOutputFiles)
-      SU2_MPI::Error(string("Number of frequencies in VOLUME_OUTPUT_FREQUENCIES should match number of outputs in OUTPUT_FILES"), CURRENT_FUNCTION);
-  }
-
-  /*--- Set the default output feequencies ---*/
-  if (!OptionIsSet("VOLUME_OUTPUT_FREQUENCIES")){
-
-    cout << "*** VOLUME_OUTPUT_FREQUENCIES option not set! *** " << endl;
     nVolumeOutputFrequencies = nVolumeOutputFiles;
     VolumeOutputFrequencies = new unsigned short [nVolumeOutputFrequencies];
 
-    if (OptionIsSet("OUTPUT_WRT_FREQ")){
-      cout << "*** Using OUTPUT_WRT_FREQ = "<<VolumeWrtFreq<<" for all files. ***"<< endl;
-      for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-        VolumeOutputFrequencies[iVolumeFreq] = VolumeWrtFreq; 
-      }
-    }
-    else {
-      cout << "*** Using default OUTPUT_WRT_FREQ = 250 for all files. ***"<<endl;
-      for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+    /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
+    for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+      if (Time_Domain) 
+        VolumeOutputFrequencies[iVolumeFreq] = 1; 
+      else
         VolumeOutputFrequencies[iVolumeFreq] = 250; 
+    }
+  } else {
+    /*--- check how many frequencies. If 1 then use it for all output ---*/
+    if (nVolumeOutputFrequencies == 1) {
+      for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+        VolumeOutputFrequencies[iVolumeFreq] = VolumeOutputFrequencies[0]; 
       }
+    } else if (nVolumeOutputFrequencies != nVolumeOutputFiles) {
+      SU2_MPI::Error(string("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.\n"), CURRENT_FUNCTION);
     }
   }
-
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
@@ -3631,9 +3613,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Delta_DynTime  = Time_Step;
 
     if (TimeMarching == TIME_MARCHING::TIME_STEPPING){ InnerIter = 1; }
-
-    /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
-    if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
 
     /*--- Set History write freq for inner and outer iteration to zero by default, so only time iterations write. ---*/
     if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
@@ -6940,7 +6919,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    cout << "Writing solution files every " << VolumeWrtFreq <<" iterations."<< endl;
+    cout << "File writing frequency: " << endl;
+
+
     cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
     if (Multizone_Problem){
       cout << "Writing the convergence history file every " << HistoryWrtFreq[1] <<" outer iterations."<< endl;

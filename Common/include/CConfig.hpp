@@ -1124,7 +1124,6 @@ private:
 
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
-  unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
   unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
   unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
@@ -9464,11 +9463,6 @@ public:
   void SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter; }
 
   /*!
-   * \brief GetScreen_Wrt_Freq_Inner
-   */
-  unsigned long GetVolume_Wrt_Freq() const { return VolumeWrtFreq; }
-
-  /*!
    * \brief GetVolumeOutputFiles
    */
   const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
@@ -9481,7 +9475,7 @@ public:
   /*!
    * \brief GetVolumeOutputFrequencies
    */
-  const unsigned short* GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
+  unsigned short *GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
 
   /*!
    * \brief GetnVolumeOutputFrequencies
