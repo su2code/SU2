@@ -832,12 +832,12 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Reactions(10,0,0)=2;   Reactions(10,0,1)=5;  Reactions(10,0,2)=nSpecies;   Reactions(10,1,0)=5;  Reactions(10,1,1)=5;  Reactions(10,1,2) =5;
     Reactions(11,0,0)=2;   Reactions(11,0,1)=6;  Reactions(11,0,2)=nSpecies;   Reactions(11,1,0)=5;  Reactions(11,1,1)=5;  Reactions(11,1,2) =6;
     // NO dissociation
-    Reactions(12,0,0)=3;   Reactions(12,0,1)=1;  Reactions(12,0,2)=nSpecies;   Reactions(12,1,0)=6;  Reactions(12,1,1)=6;  Reactions(12,1,2) =1;
-    Reactions(13,0,0)=3;   Reactions(13,0,1)=2;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=6;  Reactions(13,1,1)=6;  Reactions(13,1,2) =2;
-    Reactions(14,0,0)=3;   Reactions(14,0,1)=3;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=6;  Reactions(14,1,1)=6;  Reactions(14,1,2) =3;
-    Reactions(15,0,0)=3;   Reactions(15,0,1)=4;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=6;  Reactions(15,1,1)=6;  Reactions(15,1,2) =4;
-    Reactions(16,0,0)=3;   Reactions(16,0,1)=5;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=6;  Reactions(16,1,1)=6;  Reactions(16,1,2) =5;    
-    Reactions(17,0,0)=3;   Reactions(17,0,1)=6;  Reactions(17,0,2)=nSpecies;   Reactions(17,1,0)=6;  Reactions(17,1,1)=6;  Reactions(17,1,2) =6;
+    Reactions(12,0,0)=3;   Reactions(12,0,1)=1;  Reactions(12,0,2)=nSpecies;   Reactions(12,1,0)=4;  Reactions(12,1,1)=5;  Reactions(12,1,2) =1;
+    Reactions(13,0,0)=3;   Reactions(13,0,1)=2;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=4;  Reactions(13,1,1)=5;  Reactions(13,1,2) =2;
+    Reactions(14,0,0)=3;   Reactions(14,0,1)=3;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=4;  Reactions(14,1,1)=5;  Reactions(14,1,2) =3;
+    Reactions(15,0,0)=3;   Reactions(15,0,1)=4;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=4;  Reactions(15,1,1)=5;  Reactions(15,1,2) =4;
+    Reactions(16,0,0)=3;   Reactions(16,0,1)=5;  Reactions(16,0,2)=nSpecies;   Reactions(16,1,0)=4;  Reactions(16,1,1)=5;  Reactions(16,1,2) =5;    
+    Reactions(17,0,0)=3;   Reactions(17,0,1)=6;  Reactions(17,0,2)=nSpecies;   Reactions(17,1,0)=4;  Reactions(17,1,1)=5;  Reactions(17,1,2) =6;
     // N2 + O -> NO + N
     Reactions(18,0,0)=1;   Reactions(18,0,1)=5;  Reactions(18,0,2)=nSpecies;   Reactions(18,1,0)=3;  Reactions(18,1,1)=4;  Reactions(18,1,2)= nSpecies;
     // NO + O -> O2 + N
@@ -845,7 +845,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     //N + O -> NO+ + e
     Reactions(20,0,0)=4;   Reactions(20,0,1)=5;  Reactions(20,0,2)=nSpecies;   Reactions(20,1,0)=6;  Reactions(20,1,1)=0;  Reactions(20,1,2)= nSpecies;
     //N2 + e -> N + N + e
-    Reactions(21,0,0)=1;   Reactions(21,0,1)=0;  Reactions(21,0,2)=nSpecies;   Reactions(21,1,0)=4;  Reactions(21,1,1)=4;  Reactions(21,1,2)= 6;
+    Reactions(21,0,0)=1;   Reactions(21,0,1)=0;  Reactions(21,0,2)=nSpecies;   Reactions(21,1,0)=4;  Reactions(21,1,1)=4;  Reactions(21,1,2)= 0;
 
     /*--- Set Arrhenius coefficients for reactions ---*/
     // Pre-exponential factor
@@ -924,37 +924,42 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     //  -----------  Tc = Ttr^a * Tve^b  -----------
     //
     // Forward Reactions
-    //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
-    //   Exchange:          a = 1,   b = 0
-    //   Impact ionization: a = 0,   b = 1
+    //   Dissociation:         a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+    //   Exchange:             a = 1,   b = 0
+    //   Associative ion...    a = 1,   b = 0  ???
+    //   E Impact dissociation a = 0,   b = 1  
+    //   E Impact ionization:  a = 0,   b = 1
     //
     // Backward Reactions
-    //   Recomb ionization:      a = 0, b = 1
-    //   Impact ionization:      a = 0, b = 1
-    //   N2 impact dissociation: a = 0, b = 1
-    //   Others:                 a = 1, b = 0
-    Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
-    Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
-    Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
-    Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
-    Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
-    Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
-    Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
-    Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
-    Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
-    Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
-    Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
-    Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
-    Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
-    Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
-    Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
-    Tcf_a[15] = 0.5; Tcf_b[15] = 0.5; Tcb_a[15] = 1;  Tcb_b[15] = 0;
-    Tcf_a[16] = 0.5; Tcf_b[16] = 0.5; Tcb_a[16] = 1;  Tcb_b[16] = 0;
-    Tcf_a[17] = 0.5; Tcf_b[17] = 0.5; Tcb_a[17] = 1;  Tcb_b[17] = 0;
-    Tcf_a[18] = 1.0; Tcf_b[18] = 0.0; Tcb_a[18] = 1;  Tcb_b[18] = 0;
-    Tcf_a[19] = 1.0; Tcf_b[19] = 0.0; Tcb_a[19] = 1;  Tcb_b[19] = 0;
-    Tcf_a[20] = 0.5; Tcf_b[20] = 0.5; Tcb_a[20] = 0.5;  Tcb_b[20] = 0.5;
-    Tcf_a[21] = 0.0; Tcf_b[21] = 1.0; Tcb_a[21] = 0;  Tcb_b[21] = 1;    
+    //   Dissociation:           a = 1,   b = 0
+    //   Exchange:               a = 1,   b = 0
+    //   Associative  ion...     a = 0.5, b = 0.5
+    //   E Impact ionization:    a = 0,   b = 1
+    //   E Impact dissocitation: a = 0.5, b = 0.5 ???
+    //   N2 impact dissociation: a = 0,   b = 1
+    //   Others:                 a = 1,   b = 0
+    Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;   Tcb_b[0] = 0;
+    Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;   Tcb_b[1] = 0;
+    Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;   Tcb_b[2] = 0;
+    Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;   Tcb_b[3] = 0;
+    Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;   Tcb_b[4] = 0;
+    Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;   Tcb_b[5] = 0;
+    Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;   Tcb_b[6] = 0;
+    Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;   Tcb_b[7] = 0;
+    Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;   Tcb_b[8] = 0;
+    Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;   Tcb_b[9] = 0;
+    Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;   Tcb_b[10] = 0;
+    Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;   Tcb_b[11] = 0;
+    Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;   Tcb_b[12] = 0;
+    Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;   Tcb_b[13] = 0;
+    Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;   Tcb_b[14] = 0;
+    Tcf_a[15] = 0.5; Tcf_b[15] = 0.5; Tcb_a[15] = 1;   Tcb_b[15] = 0;
+    Tcf_a[16] = 0.5; Tcf_b[16] = 0.5; Tcb_a[16] = 1;   Tcb_b[16] = 0;
+    Tcf_a[17] = 0.5; Tcf_b[17] = 0.5; Tcb_a[17] = 1;   Tcb_b[17] = 0;
+    Tcf_a[18] = 1.0; Tcf_b[18] = 0.0; Tcb_a[18] = 1;   Tcb_b[18] = 0;
+    Tcf_a[19] = 1.0; Tcf_b[19] = 0.0; Tcb_a[19] = 1;   Tcb_b[19] = 0;
+    Tcf_a[20] = 1.0; Tcf_b[20] = 0.0; Tcb_a[20] = 0.5; Tcb_b[20] = 0.5;
+    Tcf_a[21] = 0.0; Tcf_b[21] = 1.0; Tcb_a[21] = 0;   Tcb_b[21] = 1;    
 
     //TODO: Implement Collision Integral Data for AIR-7 (JN)
     /*--- Collision integral data ---*/
@@ -2182,13 +2187,13 @@ void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
     
     } else if (iReaction == 21) {
 
-      //N2 + 2 -> N + N + e
-      RxnConstantTable(0,0) = -1.9094;   RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978; RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;
-      RxnConstantTable(1,0) = -1.2002;   RxnConstantTable(1,1) = 1.3897;  RxnConstantTable(1,2) = 2.0617; RxnConstantTable(1,3) = -11.828; RxnConstantTable(1,4) = 0.015105;
-      RxnConstantTable(2,0) = -0.96709;  RxnConstantTable(2,1) = 1.5732; RxnConstantTable(2,2) = 1.3923;  RxnConstantTable(2,3) = -11.533; RxnConstantTable(2,4) = -0.004543;
-      RxnConstantTable(3,0) = -0.93184;  RxnConstantTable(3,1) = 1.6061; RxnConstantTable(3,2) = 1.2993;  RxnConstantTable(3,3) = -11.494; RxnConstantTable(3,4) = -0.00698;
-      RxnConstantTable(4,0) = -0.9026;   RxnConstantTable(4,1) = 1.6291; RxnConstantTable(4,2) = 1.2153;  RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.009444;
-      RxnConstantTable(5,0) = -0.9026;   RxnConstantTable(5,1) = 1.6291; RxnConstantTable(5,2) = 1.2153;  RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.009444;
+      //N2 + e -> N + N + e
+      RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978; RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;
+      RxnConstantTable(1,0) = 2.0723;  RxnConstantTable(1,1) = 1.3897;  RxnConstantTable(1,2) = 2.0617; RxnConstantTable(1,3) = -11.828; RxnConstantTable(1,4) = 0.015105;
+      RxnConstantTable(2,0) = 1.6060;  RxnConstantTable(2,1) = 1.5732;  RxnConstantTable(2,2) = 1.3923; RxnConstantTable(2,3) = -11.533; RxnConstantTable(2,4) = -0.004543;
+      RxnConstantTable(3,0) = 1.5351;  RxnConstantTable(3,1) = 1.6061;  RxnConstantTable(3,2) = 1.2993; RxnConstantTable(3,3) = -11.494; RxnConstantTable(3,4) = -0.00698;
+      RxnConstantTable(4,0) = 1.4766;  RxnConstantTable(4,1) = 1.6291;  RxnConstantTable(4,2) = 1.2153; RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.009444;
+      RxnConstantTable(5,0) = 1.4766;  RxnConstantTable(5,1) = 1.6291;  RxnConstantTable(5,2) = 1.2153; RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.009444;
     }
   }
 }

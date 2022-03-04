@@ -102,7 +102,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
                                                          dTdU_i, dTvedU_i, jacobian);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-    residual[iSpecies] = ws[iSpecies] * Volume;}
+    residual[iSpecies] = ws[iSpecies] * Volume;
+  }
 
   if (implicit) {
     for (iVar = 0; iVar<nVar; iVar++) {
