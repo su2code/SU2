@@ -300,7 +300,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Menter's second blending function ---*/
 
-    numerics->SetF2blending(nodes->GetF2blending(iPoint),0.0);
+    numerics->SetF2blending(nodes->GetF2blending(iPoint));
 
     /*--- Set vorticity and strain rate magnitude ---*/
 
@@ -310,7 +310,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Cross diffusion ---*/
 
-    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     if (axisymmetric){
       /*--- Set y coordinate ---*/
