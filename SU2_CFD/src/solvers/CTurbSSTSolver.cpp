@@ -103,8 +103,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  /*--- SST2003 constants ---*/
+  //constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+  //constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  /*--- SST2003m constants---*/
+  constants[8] = 5.0 / 9.0; 
+  constants[9] = 0.44; 
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
@@ -205,7 +209,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::StartNoSharedReading();
-
+  // nijso asks: why do we do this?
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -216,10 +220,15 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double rho = flowNodes->GetDensity(iPoint);
     su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
 
+    // nijso asks: difference between geometry->nodes->GetWall_Distance and nodes->GetWall_Distance ???
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
+    // nijso asks: difference between nodes and flownodes ???
+
+    //su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+    //VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
+
+    su2double StrainMag = nodes->GetStrainMag(iPoint);
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -229,8 +238,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     su2double kine  = nodes->GetSolution(iPoint,0);
     su2double omega = nodes->GetSolution(iPoint,1);
-    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    su2double muT   = max(rho*kine*zeta,0.0);
+    //su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    su2double zeta  = max(omega, (StrainMag*F2/a1));
+    /*--- compute eddy viscosity according to SST2003m ---*/
+    su2double muT   = max(rho*kine/zeta,0.0);
 
     nodes->SetmuT(iPoint,muT);
 

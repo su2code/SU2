@@ -574,7 +574,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   su2double Jacobian_Buffer[4];  /// Static storage for the Jacobian (which needs to be pointer for return type).
 
   /*!
-   * \brief Get strain magnitude based on perturbed reynolds stress matrix.
+   * \brief Get strain magnitude based on perturbed Reynolds stress matrix.
    * \param[in] turb_ke: turbulent kinetic energy of the node.
    */
   inline su2double PerturbedStrainMag(su2double turb_ke) const {
@@ -732,12 +732,23 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      /*--- Definition of production P according to SSTm approximation P = mu_t S^2 ---*/
 
-      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-      const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      /*--- original SST2003 model as reference (including divergence terms) ---*/
+      // su2double pk = Eddy_Viscosity_i * (pow(StrainMag, 2) - 2.0 / 3.0 * diverg * diverg) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      /*--- SST2003m model, neglecting divergence terms ---*/
+      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2);
+      su2double pw = (alfa_blended * Density_i) * pk;  
+
+      /*--- Production limiter for k (and not for w) according to SST2003m ---*/
+      pk = min(pk, 10.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
+
+      // const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
+
+      /*--- denominator of turbulent eddy viscosity computation according to SST2003m: mu_t = rho*k/(max(w,SF_2/a1)) ---*/
+      const su2double zeta = max(ScalarVar_i[1], StrainMag * F2_i / a1);
+      //su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      //su2double pw = (alfa_blended * Density_i) * pk;  
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -763,7 +774,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] -= beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Volume;
       Residual[1] -= beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * Volume;
 
-      /*--- Cross diffusion ---*/
+      /*--- Cross diffusion for w ---*/
 
       Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
 
@@ -771,9 +782,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       if (axisymmetric) ResidualAxisymmetric(alfa_blended, zeta);
 
-      /*--- Implicit part ---*/
+      /*--- Implicit part (includes contributions from P ---*/
 
-      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
+      Jacobian_i[0][0] = ((1.0/zeta) - beta_star * ScalarVar_i[1]) * Volume;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
