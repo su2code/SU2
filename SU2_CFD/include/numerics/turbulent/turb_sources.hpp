@@ -738,10 +738,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       // su2double pk = Eddy_Viscosity_i * (pow(StrainMag, 2) - 2.0 / 3.0 * diverg * diverg) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       /*--- SST2003m model, neglecting divergence terms ---*/
       su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2);
-      su2double pw = (alfa_blended * Density_i) * pk;  
 
-      /*--- Production limiter for k (and not for w) according to SST2003m ---*/
+      /*--- Production limiter for k and w according to SST2003m (corrected equations from http://dx.doi.org/10.1080/10618560902773387) ---*/
       pk = min(pk, 10.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
+
+      su2double pw = (alfa_blended * Density_i) * pk;  
 
       // const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
 

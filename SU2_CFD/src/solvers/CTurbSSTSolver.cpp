@@ -209,7 +209,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::StartNoSharedReading();
-  // nijso asks: why do we do this?
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -220,10 +219,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double rho = flowNodes->GetDensity(iPoint);
     su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
 
-    // nijso asks: difference between geometry->nodes->GetWall_Distance and nodes->GetWall_Distance ???
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
-
-    // nijso asks: difference between nodes and flownodes ???
 
     //su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
     //VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
