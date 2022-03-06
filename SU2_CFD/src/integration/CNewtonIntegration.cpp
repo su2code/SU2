@@ -341,9 +341,13 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
   else {
     /*--- Approximate diagonal preconditioner. ---*/
 
+    const bool dt1st = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+    const bool dt2nd = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+    const su2double dt = config->GetDelta_UnstTimeND() * (dt1st + 1.5 * dt2nd);
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
-      su2double delta = solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) /
+      su2double delta = (solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) + dt) /
                         (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
       SU2_OMP_SIMD
       for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)
