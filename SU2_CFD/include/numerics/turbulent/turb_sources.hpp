@@ -782,7 +782,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       if (axisymmetric) ResidualAxisymmetric(alfa_blended, zeta);
 
-      /*--- Implicit part (includes contributions from P ---*/
+      /*--- Implicit part (includes contributions from P) ---*/
 
       Jacobian_i[0][0] = ((1.0/zeta) - beta_star * ScalarVar_i[1]) * Volume;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
