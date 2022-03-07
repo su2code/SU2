@@ -4681,14 +4681,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
 
               //--- Store new Hessian
               CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
-              for(auto iDim = 0; iDim < nDim; iDim++) {
-                for(auto jDim = 0; jDim < nDim; jDim++) {
-                  if (iDim >= jDim) {
-                    unsigned short iMet = jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
-                    base_nodes->SetHessian(iPoint, iVar, iMet, A[iDim][jDim]/suminvdist);
-                  }
-                }// jDim
-              }// iDim
+              base_nodes->SetHessianMat(iPoint, iVar, 1/suminvdist, A);
             }// iVar
           }// if counter
         }// if domain
@@ -4735,7 +4728,7 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
     }
 
     //--- Store upper half of Hessian matrix
-    base_nodes->SetHessianMat(iPoint, iVar, A);
+    base_nodes->SetHessianMat(iPoint, iVar, 1.0, A);
   }
 }
 

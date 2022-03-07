@@ -2351,22 +2351,22 @@ public:
    * \param[in] hess - Matrix to store the hessian.
    */
   template <class Mat>
-  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, Mat& hess) {
+  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, su2double scale, Mat& hess) {
     switch( nDim ) {
       case 2: {
-        Hessian(iPoint,iVar,0) = hess[0][0];
-        Hessian(iPoint,iVar,1) = hess[0][1];
-        Hessian(iPoint,iVar,2) = hess[1][1];
+        Hessian(iPoint,iVar,0) = hess[0][0]*scale;
+        Hessian(iPoint,iVar,1) = hess[0][1]*scale;
+        Hessian(iPoint,iVar,2) = hess[1][1]*scale;
         break;
       }
       case 3: {
-        Hessian(iPoint,iVar,0) = hess[0][0];
-        Hessian(iPoint,iVar,1) = hess[0][1];
-        Hessian(iPoint,iVar,2) = hess[0][2];
-        Hessian(iPoint,iVar,3) = hess[1][1];
-        Hessian(iPoint,iVar,4) = hess[1][2];
-        Hessian(iPoint,iVar,2) = hess[2][0];
-        Hessian(iPoint,iVar,5) = hess[2][2];
+        Hessian(iPoint,iVar,0) = hess[0][0]*scale;
+        Hessian(iPoint,iVar,1) = hess[0][1]*scale;
+        Hessian(iPoint,iVar,2) = hess[0][2]*scale;
+        Hessian(iPoint,iVar,3) = hess[1][1]*scale;
+        Hessian(iPoint,iVar,4) = hess[1][2]*scale;
+        Hessian(iPoint,iVar,2) = hess[2][0]*scale;
+        Hessian(iPoint,iVar,5) = hess[2][2]*scale;
         break;
       }
     }
