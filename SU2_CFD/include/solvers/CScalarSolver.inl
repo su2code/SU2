@@ -273,8 +273,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
             flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
           }
-
-          numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
         }
 
         if (muscl) {
@@ -301,9 +299,27 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
             solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
           }
-
-          numerics->SetScalarVar(solution_i, solution_j);
         }
+
+        /*--- Check for non-physical solutions after reconstruction. If found, use the
+        cell-average value of the solution. This is a locally 1st order approximation,
+        which is typically only active during the start-up of a calculation. ---*/
+
+        bool bad_i = false, bad_j = false;
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          bad_i = (solution_i[iVar] < 0.0);
+          bad_j = (solution_j[iVar] < 0.0);
+        }
+
+        nodes->SetNon_Physical(iPoint, bad_i);
+        nodes->SetNon_Physical(jPoint, bad_j);
+
+        /*--- Get updated state, in case the point recovered after the set. ---*/
+        bad_i = nodes->GetNon_Physical(iPoint) || flowNodes->GetNon_Physical(iPoint);
+        bad_j = nodes->GetNon_Physical(jPoint) || flowNodes->GetNon_Physical(jPoint);
+
+        numerics->SetPrimitive(bad_i? V_i : flowPrimVar_i, bad_j? V_j : flowPrimVar_j);
+        numerics->SetScalarVar(bad_i? Scalar_i : solution_i, bad_j? Scalar_j : solution_j);
       }
 
       /*--- Update convective residual value ---*/

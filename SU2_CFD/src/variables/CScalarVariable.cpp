@@ -64,6 +64,10 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
 
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
+
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     HB_Source.resize(nPoint, nVar) = su2double(0.0);

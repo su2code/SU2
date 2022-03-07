@@ -1892,6 +1892,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       bad_i = nodes->GetNon_Physical(iPoint);
       bad_j = nodes->GetNon_Physical(jPoint);
 
+      if (tkeNeeded) {
+        bad_i = bad_i || turbNodes->GetNon_Physical(iPoint);
+        bad_j = bad_j || turbNodes->GetNon_Physical(jPoint);
+      }
+
       counter_local += bad_i+bad_j;
 
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
