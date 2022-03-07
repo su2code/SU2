@@ -4571,7 +4571,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
   delete [] GradDotn;
 }
 
-void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+void CSolver::CorrectBoundHessian(const CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
   constexpr size_t MAXNMET = 30;
   const unsigned short nMet = 3*(nDim-1);
 
@@ -4590,7 +4590,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
         if (nodes->GetDomain(iPoint)) {
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
-          su2double hessVol[MAXNMET] = {0.0}, suminvdist = 0.0;
+          su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
             if(!nodes->GetSolidBoundary(jPoint)) {
@@ -4599,7 +4599,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
               for(auto iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;
                 for(auto iMet = 0; iMet < nMet; iMet++) {
-                  hessVol[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
+                  hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
                 }// iMet
               }// iVar
               counter++;
@@ -4654,14 +4654,14 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
               //--- Get upper triangle
               switch ( nDim ) {
                 case 2: {
-                  A[0][0] = hessVol[i+0]; A[0][1] = hessVol[i+1];
-                  A[1][0] = hessVol[i+1]; A[1][1] = hessVol[i+2];
+                  A[0][0] = hess[i+0]; A[0][1] = hess[i+1];
+                  A[1][0] = hess[i+1]; A[1][1] = hess[i+2];
                   break;
                 }
                 case 3: {
-                  A[0][0] = hessVol[i+0]; A[0][1] = hessVol[i+1]; A[0][2] = hessVol[i+2];
-                  A[1][0] = hessVol[i+1]; A[1][1] = hessVol[i+3]; A[1][2] = hessVol[i+4];
-                  A[2][0] = hessVol[i+2]; A[2][1] = hessVol[i+4]; A[2][2] = hessVol[i+5];
+                  A[0][0] = hess[i+0]; A[0][1] = hess[i+1]; A[0][2] = hess[i+2];
+                  A[1][0] = hess[i+1]; A[1][1] = hess[i+3]; A[1][2] = hess[i+4];
+                  A[2][0] = hess[i+2]; A[2][1] = hess[i+4]; A[2][2] = hess[i+5];
                   break;
                 }
               }
@@ -4683,6 +4683,120 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
               CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
               base_nodes->SetHessianMat(iPoint, iVar, 1/suminvdist, A);
             }// iVar
+          }// if counter
+        }// if domain
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+}
+
+void CSolver::CorrectBoundMetric(const CGeometry *geometry, const CConfig *config) {
+  constexpr size_t MAXNMET = 6;
+  const unsigned short nMet = 3*(nDim-1);
+
+  su2double Basis[MAXNDIM][MAXNDIM] = {0.0};
+  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+  for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetSolid_Wall(iMarker)) {
+
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        auto nodes = geometry->nodes;
+
+        if (nodes->GetDomain(iPoint)) {
+          //--- Correct if any of the neighbors belong to the volume
+          unsigned short counter = 0;
+          su2double met[MAXNMET] = {0.0}, suminvdist = 0.0;
+          for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+            const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+            if(!nodes->GetSolidBoundary(jPoint)) {
+              const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
+              suminvdist += 1./dist;
+              for(auto iMet = 0; iMet < nMet; iMet++) {
+                met[iMet] += base_nodes->GetMetric(jPoint, iMet)/dist;
+              }// iMet
+              counter++;
+            }// if boundary
+          }// iNeigh
+          
+          if(counter > 0) {
+            //--- Compute unit normal.
+            const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+            su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+            for (auto iDim = 0u; iDim < nDim; iDim++)
+              Basis[iDim][0] = -Normal[iDim]/Area;
+            
+            //--- Compute unit tangent.
+            switch( nDim ) {
+              case 2: {
+                Basis[0][1] = -Basis[1][0];
+                Basis[1][1] =  Basis[0][0];
+                Basis[2][2] = 1.0;
+                break;
+              }
+              case 3: {
+                /*--- n = ai + bj + ck, if |b| > |c| ---*/
+                if( abs(Basis[0][1]) > abs(Basis[0][2])) {
+                  /*--- t = bi + (c-a)j - bk  ---*/
+                  Basis[0][1] =  Basis[1][0];
+                  Basis[1][1] =  Basis[2][0] - Basis[0][0];
+                  Basis[2][1] = -Basis[1][0];
+                } else {
+                  /*--- t = ci - cj + (b-a)k  ---*/
+                  Basis[0][1] =  Basis[2][0];
+                  Basis[1][1] = -Basis[2][0];
+                  Basis[2][1] =  Basis[1][0] - Basis[0][0];
+                }
+                /*--- Make it a unit vector. ---*/
+                const su2double TangentialNorm = sqrt(pow(Basis[0][1],2) + pow(Basis[1][1],2) + pow(Basis[2][1],2));
+                Basis[0][1] = Basis[0][1] / TangentialNorm;
+                Basis[1][1] = Basis[1][1] / TangentialNorm;
+                Basis[2][1] = Basis[2][1] / TangentialNorm;
+
+                /*--- Compute the other tangent vector ---*/
+                Basis[0][2] = Basis[1][0]*Basis[2][1] - Basis[2][0]*Basis[1][1];
+                Basis[1][2] = Basis[2][0]*Basis[0][1] - Basis[0][0]*Basis[2][1];
+                Basis[2][2] = Basis[0][0]*Basis[1][1] - Basis[1][0]*Basis[0][1];
+                break;
+              }
+            }// switch
+
+            //--- Get upper triangle
+            switch ( nDim ) {
+              case 2: {
+                A[0][0] = met[0]; A[0][1] = met[1];
+                A[1][0] = met[1]; A[1][1] = met[2];
+                break;
+              }
+              case 3: {
+                A[0][0] = met[0]; A[0][1] = met[1]; A[0][2] = met[2];
+                A[1][0] = met[1]; A[1][1] = met[3]; A[1][2] = met[4];
+                A[2][0] = met[2]; A[2][1] = met[4]; A[2][2] = met[5];
+                break;
+              }
+            }
+
+            //--- Compute eigenvalues and eigenvectors
+            CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+            //--- Store max eigenvalue in normal direction
+            unsigned short ind = 0;
+            if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
+            if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
+            if (ind != 0) {
+              const su2double tmp = EigVal[ind];
+              EigVal[ind] = EigVal[0];
+              EigVal[0] = tmp;
+            }
+
+            //--- Store new Hessian
+            CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
+            base_nodes->SetMetricMat(iPoint, 1/suminvdist, A);
           }// if counter
         }// if domain
       }// iVertex
@@ -4765,7 +4879,7 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
   }
   
   //--- Apply correction to wall boundary
-  // CorrectBoundMetric(geometry, config);
+  CorrectBoundMetric(geometry, config);
 
   //--- Compute Lp-normalizatio of the metric tensor field
   NormalizeMetric(geometry, config);
@@ -5218,7 +5332,7 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
 
     CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    base_nodes->SetMetricMat(iPoint, A);
+    base_nodes->SetMetricMat(iPoint, 1., A);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->nodes->GetVolume(iPoint);

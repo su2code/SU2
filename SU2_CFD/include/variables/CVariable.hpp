@@ -2423,21 +2423,21 @@ public:
    * \param[in] met - Matrix to store the metric.
    */
   template <class Mat>
-  inline void SetMetricMat(unsigned long iPoint, Mat& met) {
+  inline void SetMetricMat(unsigned long iPoint, su2double scale, Mat& met) {
     switch( nDim ) {
       case 2: {
-        Metric(iPoint,0) = met[0][0];
-        Metric(iPoint,1) = met[0][1];
-        Metric(iPoint,2) = met[1][1];
+        Metric(iPoint,0) = met[0][0]*scale;
+        Metric(iPoint,1) = met[0][1]*scale;
+        Metric(iPoint,2) = met[1][1]*scale;
         break;
       }
       case 3: {
-        Metric(iPoint,0) = met[0][0];
-        Metric(iPoint,1) = met[0][1];
-        Metric(iPoint,2) = met[0][2];
-        Metric(iPoint,3) = met[1][1];
-        Metric(iPoint,4) = met[1][2];
-        Metric(iPoint,5) = met[2][2];
+        Metric(iPoint,0) = met[0][0]*scale;
+        Metric(iPoint,1) = met[0][1]*scale;
+        Metric(iPoint,2) = met[0][2]*scale;
+        Metric(iPoint,3) = met[1][1]*scale;
+        Metric(iPoint,4) = met[1][2]*scale;
+        Metric(iPoint,5) = met[2][2]*scale;
         break;
       }
     }
