@@ -143,7 +143,7 @@ def amg ( config , stderr = False ):
     else:
         config_amg['adap_back'] = config['MESH_FILENAME']
     
-    back_name, back_extension = os.path.splitext(config_amg['adap_back'])
+    _, back_extension = os.path.splitext(config_amg['adap_back'])
     
     if not os.path.exists(config_amg['adap_back']):
         raise Exception("\n\n##ERROR : Can't find back mesh: %s.\n\n" % config_amg['adap_back'])

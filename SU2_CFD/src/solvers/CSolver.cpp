@@ -4575,6 +4575,9 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
   constexpr size_t MAXNMET = 30;
   const unsigned short nMet = 3*(nDim-1);
 
+  su2double Basis[MAXNDIM][MAXNDIM] = {0.0};
+  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetSolid_Wall(iMarker)) {
@@ -4585,30 +4588,107 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
         auto nodes = geometry->nodes;
 
         if (nodes->GetDomain(iPoint)) {
-
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
-          su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
+          su2double hessVol[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
             if(!nodes->GetSolidBoundary(jPoint)) {
               const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
               suminvdist += 1./dist;
-              for(unsigned short iVar = 0; iVar < nVar; iVar++){
+              for(auto iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;
-                for(unsigned short iMet = 0; iMet < nMet; iMet++) {
-                  hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
+                for(auto iMet = 0; iMet < nMet; iMet++) {
+                  hessVol[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
                 }// iMet
               }// iVar
-              counter ++;
+              counter++;
             }// if boundary
           }// iNeigh
+          
           if(counter > 0) {
-            for(unsigned short iVar = 0; iVar < nVar; iVar++){
-              const unsigned short i = iVar*nMet;
-              for(unsigned short iMet = 0; iMet < nMet; iMet++) {
-                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/suminvdist);
-              }// iMet
+            //--- Compute unit normal.
+            const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+            su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+            for (auto iDim = 0u; iDim < nDim; iDim++)
+              Basis[iDim][0] = -Normal[iDim]/Area;
+            
+            //--- Compute unit tangent.
+            switch( nDim ) {
+              case 2: {
+                Basis[0][1] = -Basis[1][0];
+                Basis[1][1] =  Basis[0][0];
+                Basis[2][2] = 1.0;
+                break;
+              }
+              case 3: {
+                /*--- n = ai + bj + ck, if |b| > |c| ---*/
+                if( abs(Basis[0][1]) > abs(Basis[0][2])) {
+                  /*--- t = bi + (c-a)j - bk  ---*/
+                  Basis[0][1] =  Basis[1][0];
+                  Basis[1][1] =  Basis[2][0] - Basis[0][0];
+                  Basis[2][1] = -Basis[1][0];
+                } else {
+                  /*--- t = ci - cj + (b-a)k  ---*/
+                  Basis[0][1] =  Basis[2][0];
+                  Basis[1][1] = -Basis[2][0];
+                  Basis[2][1] =  Basis[1][0] - Basis[0][0];
+                }
+                /*--- Make it a unit vector. ---*/
+                const su2double TangentialNorm = sqrt(pow(Basis[0][1],2) + pow(Basis[1][1],2) + pow(Basis[2][1],2));
+                Basis[0][1] = Basis[0][1] / TangentialNorm;
+                Basis[1][1] = Basis[1][1] / TangentialNorm;
+                Basis[2][1] = Basis[2][1] / TangentialNorm;
+
+                /*--- Compute the other tangent vector ---*/
+                Basis[0][2] = Basis[1][0]*Basis[2][1] - Basis[2][0]*Basis[1][1];
+                Basis[1][2] = Basis[2][0]*Basis[0][1] - Basis[0][0]*Basis[2][1];
+                Basis[2][2] = Basis[0][0]*Basis[1][1] - Basis[1][0]*Basis[0][1];
+                break;
+              }
+            }// switch
+            for(auto iVar = 0; iVar < nVar; iVar++){
+              const auto i = iVar*nMet;
+              //--- Get upper triangle
+              switch ( nDim ) {
+                case 2: {
+                  A[0][0] = hessVol[i+0]; A[0][1] = hessVol[i+1];
+                  A[1][0] = hessVol[i+1]; A[1][1] = hessVol[i+2];
+                  break;
+                }
+                case 3: {
+                  A[0][0] = hessVol[i+0]; A[0][1] = hessVol[i+1]; A[0][2] = hessVol[i+2];
+                  A[1][0] = hessVol[i+1]; A[1][1] = hessVol[i+3]; A[1][2] = hessVol[i+4];
+                  A[2][0] = hessVol[i+2]; A[2][1] = hessVol[i+4]; A[2][2] = hessVol[i+5];
+                  break;
+                }
+              }
+
+              //--- Compute eigenvalues and eigenvectors
+              CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+              //--- Store max eigenvalue in normal direction
+              unsigned short ind = 0;
+              if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
+              if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
+              if (ind != 0) {
+                const su2double tmp = EigVal[ind];
+                EigVal[ind] = EigVal[0];
+                EigVal[0] = tmp;
+              }
+
+              //--- Store new Hessian
+              CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
+              for(auto iDim = 0; iDim < nDim; iDim++) {
+                for(auto jDim = 0; jDim < nDim; jDim++) {
+                  if (iDim >= jDim) {
+                    unsigned short iMet = jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                    base_nodes->SetHessian(iPoint, iVar, iMet, A[iDim][jDim]/suminvdist);
+                  }
+                }// jDim
+              }// iDim
             }// iVar
           }// if counter
         }// if domain
@@ -4619,100 +4699,43 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
 
 void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint) {
   
-  su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
+  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
   for(auto iVar = 0; iVar < nVar; iVar++){
-    if (nDim == 2) {
-      //--- Get upper triangle
-      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
-      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
-      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-      
-      A[0][0] = a; A[0][1] = b;
-      A[1][0] = b; A[1][1] = c;
+    //--- Get full Hessian matrix
+    base_nodes->GetHessianMat(iPoint, iVar, A);
 
-      //--- Compute eigenvalues and eigenvectors
-      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-      
-      //--- If NaN detected, set values to zero.
-      //--- Otherwise, store recombined matrix.
-      bool check_hess = true;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        if (EigVal[iDim] != EigVal[iDim]) {
+    //--- Compute eigenvalues and eigenvectors
+    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+    
+    //--- If NaN detected, set values to zero.
+    //--- Otherwise, store recombined matrix.
+    bool check_hess = true;
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      if (EigVal[iDim] != EigVal[iDim]) {
+        check_hess = false;
+      }
+      for (auto jDim = 0; jDim < nDim; jDim++) {
+        if (EigVec[iDim][jDim] != EigVec[iDim][jDim]) {
           check_hess = false;
+          break;
         }
-        for (auto jDim = 0; jDim < nDim; jDim++) {
-          if (EigVec[iDim][jDim] != EigVec[iDim][jDim]) {
-            check_hess = false;
-            break;
-          }
-        }
-        if (!check_hess) break;
       }
+      if (!check_hess) break;
+    }
 
-      if (check_hess){
-        for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
-        CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-      }
-      else {
-        for(auto iDim = 0; iDim < nDim; ++iDim)
-          for (auto jDim = 0; jDim < nDim; ++jDim)
-            A[iDim][jDim] = 0.;
-      }
-
-      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-      base_nodes->SetHessian(iPoint, iVar, 2, A[1][1]);
+    if (check_hess){
+      for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
+      CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
     }
     else {
-      //--- Get upper triangle
-      const su2double a = base_nodes->GetHessian(iPoint, iVar, 0);
-      const su2double b = base_nodes->GetHessian(iPoint, iVar, 1);
-      const su2double c = base_nodes->GetHessian(iPoint, iVar, 2);
-      const su2double d = base_nodes->GetHessian(iPoint, iVar, 3);
-      const su2double e = base_nodes->GetHessian(iPoint, iVar, 4);
-      const su2double f = base_nodes->GetHessian(iPoint, iVar, 5);
-
-      A[0][0] = a; A[0][1] = b; A[0][2] = c;
-      A[1][0] = b; A[1][1] = d; A[1][2] = e;
-      A[2][0] = c; A[2][1] = e; A[2][2] = f;
-
-      //--- Compute eigenvalues and eigenvectors
-      CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-      
-      //--- If NaN detected, set values to zero.
-      //--- Otherwise, store recombined matrix.
-      bool check_hess = true;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        if (EigVal[iDim] != EigVal[iDim]) {
-          check_hess = false;
-        }
-        for (auto jDim = 0; jDim < nDim; jDim++) {
-          if (EigVec[iDim][jDim] != EigVec[iDim][jDim]) {
-            check_hess = false;
-            break;
-          }
-        }
-        if (!check_hess) break;
-      }
-
-      if (check_hess){
-        for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
-        CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-      }
-      else {
-        for(auto iDim = 0; iDim < nDim; ++iDim)
-          for (auto jDim = 0; jDim < nDim; ++jDim)
-            A[iDim][jDim] = 0.;
-      }
-
-      base_nodes->SetHessian(iPoint, iVar, 0, A[0][0]);
-      base_nodes->SetHessian(iPoint, iVar, 1, A[0][1]);
-      base_nodes->SetHessian(iPoint, iVar, 2, A[0][2]);
-      base_nodes->SetHessian(iPoint, iVar, 3, A[1][1]);
-      base_nodes->SetHessian(iPoint, iVar, 4, A[1][2]);
-      base_nodes->SetHessian(iPoint, iVar, 5, A[2][2]);
+      for(auto iDim = 0; iDim < nDim; ++iDim)
+        for (auto jDim = 0; jDim < nDim; ++jDim)
+          A[iDim][jDim] = 0.;
     }
+
+    //--- Store upper half of Hessian matrix
+    base_nodes->SetHessianMat(iPoint, iVar, A);
   }
 }
 
@@ -4751,8 +4774,8 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
   //--- Apply correction to wall boundary
   // CorrectBoundMetric(geometry, config);
 
-  if(nDim == 2) NormalizeMetric2(geometry, config);
-  else          NormalizeMetric3(geometry, config);
+  //--- Compute Lp-normalizatio of the metric tensor field
+  NormalizeMetric(geometry, config);
 
 }
 
@@ -5147,138 +5170,31 @@ void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, co
   }
 }
 
-void CSolver::NormalizeMetric2(const CGeometry *geometry, const CConfig *config) {
+void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) {
   
   const unsigned long nPointDomain = geometry->GetnPointDomain();
 
-  su2double localScale = 0.0,
-            globalScale = 0.0;
+  su2double localScale = 0.,
+            globalScale = 0.;
 
   su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
   su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
   
   const su2double p = config->GetAdap_Norm(),
-                  eigmax = 1./(pow(config->GetAdap_Hmin(),2.0)),
-                  eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
-                  armax2 = pow(config->GetAdap_ARmax(), 2.0),
+                  eigmax = 1./(pow(config->GetAdap_Hmin(),2.)),
+                  eigmin = 1./(pow(config->GetAdap_Hmax(),2.)),
+                  armax2 = pow(config->GetAdap_ARmax(), 2.),
                   outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
+  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
   //--- set tolerance and obtain global scaling
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = base_nodes->GetMetric(iPoint, 0);
-    const su2double b = base_nodes->GetMetric(iPoint, 1);
-    const su2double c = base_nodes->GetMetric(iPoint, 2);
-    
-    A[0][0] = a; A[0][1] = b;
-    A[1][0] = b; A[1][1] = c;
+    base_nodes->GetMetricMat(iPoint, A);
 
     CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-
-    const su2double Vol = geometry->nodes->GetVolume(iPoint);
-
-    localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
-  }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-  globalScale = localScale;
-#endif
-
-  //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-
-    const su2double a = base_nodes->GetMetric(iPoint, 0);
-    const su2double b = base_nodes->GetMetric(iPoint, 1);
-    const su2double c = base_nodes->GetMetric(iPoint, 2);
-    
-    A[0][0] = a; A[0][1] = b;
-    A[1][0] = b; A[1][1] = c;
-
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
-
-    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
-    
-    unsigned short iMax = 0;
-    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
-    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
-
-    CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
-
-    base_nodes->SetMetric(iPoint, 0, A[0][0]);
-    base_nodes->SetMetric(iPoint, 1, A[0][1]);
-    base_nodes->SetMetric(iPoint, 2, A[1][1]);
-
-    //--- compute min, max, total complexity
-    const su2double Vol = geometry->nodes->GetVolume(iPoint);
-    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]));
-    const su2double hmin    = 1./sqrt(max(EigVal[0], EigVal[1]));
-    const su2double hmax    = 1./sqrt(min(EigVal[0], EigVal[1]));
-
-    localMinDensity = min(localMinDensity, density);
-    localMaxDensity = max(localMaxDensity, density);
-    localMaxAspectR = max(hmax/hmin, localMaxAspectR);
-    localTotComplex += density*Vol;
-  }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-  globalMinDensity = localMinDensity;
-  globalMaxDensity = localMaxDensity;
-  globalMaxAspectR = localMaxAspectR;
-  globalTotComplex = localTotComplex;
-#endif
-
-  if(rank == MASTER_NODE) {
-    cout << "Minimum density: " << globalMinDensity << "." << endl;
-    cout << "Maximum density: " << globalMaxDensity << "." << endl;
-    cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
-    cout << "Mesh complexity: " << globalTotComplex << "." << endl;
-  }
-}
-
-void CSolver::NormalizeMetric3(const CGeometry *geometry, const CConfig *config) {
-
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
-
-  su2double localScale = 0.0,
-            globalScale = 0.0;
-
-  su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
-  
-  const su2double p = config->GetAdap_Norm(),
-                  eigmax = 1./(pow(config->GetAdap_Hmin(),2.0)),
-                  eigmin = 1./(pow(config->GetAdap_Hmax(),2.0)),
-                  armax2 = pow(config->GetAdap_ARmax(), 2.0),
-                  outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
-
-  su2double A[3][3], EigVec[3][3], EigVal[3], work[3];
-
-  //--- set tolerance and obtain global scaling
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-
-    const su2double a = base_nodes->GetMetric(iPoint, 0);
-    const su2double b = base_nodes->GetMetric(iPoint, 1);
-    const su2double c = base_nodes->GetMetric(iPoint, 2);
-    const su2double d = base_nodes->GetMetric(iPoint, 3);
-    const su2double e = base_nodes->GetMetric(iPoint, 4);
-    const su2double f = base_nodes->GetMetric(iPoint, 5);
-
-    A[0][0] = a; A[0][1] = b; A[0][2] = c;
-    A[1][0] = b; A[1][1] = d; A[1][2] = e;
-    A[2][0] = c; A[2][1] = e; A[2][2] = f;
-
-    CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+    if (nDim == 2) EigVal[2] = 1.;
 
     const su2double Vol = geometry->nodes->GetVolume(iPoint);
 
@@ -5294,18 +5210,10 @@ void CSolver::NormalizeMetric3(const CGeometry *geometry, const CConfig *config)
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
-    const su2double a = base_nodes->GetMetric(iPoint, 0);
-    const su2double b = base_nodes->GetMetric(iPoint, 1);
-    const su2double c = base_nodes->GetMetric(iPoint, 2);
-    const su2double d = base_nodes->GetMetric(iPoint, 3);
-    const su2double e = base_nodes->GetMetric(iPoint, 4);
-    const su2double f = base_nodes->GetMetric(iPoint, 5);
-
-    A[0][0] = a; A[0][1] = b; A[0][2] = c;
-    A[1][0] = b; A[1][1] = d; A[1][2] = e;
-    A[2][0] = c; A[2][1] = e; A[2][2] = f;
+    base_nodes->GetMetricMat(iPoint, A);
 
     CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+    if (nDim == 2) EigVal[2] = 1.;
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
@@ -5317,19 +5225,20 @@ void CSolver::NormalizeMetric3(const CGeometry *geometry, const CConfig *config)
 
     CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    //--- store lower triangle to be consistent with AMG
-    base_nodes->SetMetric(iPoint, 0, A[0][0]);
-    base_nodes->SetMetric(iPoint, 1, A[1][0]);
-    base_nodes->SetMetric(iPoint, 2, A[1][1]);
-    base_nodes->SetMetric(iPoint, 3, A[2][0]);
-    base_nodes->SetMetric(iPoint, 4, A[2][1]);
-    base_nodes->SetMetric(iPoint, 5, A[2][2]);
+    base_nodes->SetMetricMat(iPoint, A);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->nodes->GetVolume(iPoint);
     const su2double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
-    const su2double hmin    = 1./sqrt(max(max(EigVal[0], EigVal[1]), EigVal[2]));
-    const su2double hmax    = 1./sqrt(min(min(EigVal[0], EigVal[1]), EigVal[2]));
+    su2double hmin= max(EigVal[0], EigVal[1]);
+    su2double hmax= min(EigVal[0], EigVal[1]);
+
+    if (nDim == 3) {
+      hmin = max(hmin, EigVal[2]);
+      hmax = min(hmax, EigVal[2]);
+    }
+    hmin = 1./sqrt(hmin);
+    hmax = 1./sqrt(hmax);
 
     localMinDensity = min(localMinDensity, density);
     localMaxDensity = max(localMaxDensity, density);

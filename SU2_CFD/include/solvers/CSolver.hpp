@@ -4390,18 +4390,11 @@ public:
                            unsigned long iPoint, vector<vector<su2double> > &weights);
 
   /*!
-   * \brief Perform an Lp-norm normalization of the metric (2D).
+   * \brief Perform an Lp-norm normalization of the metric.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void NormalizeMetric2(const CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Perform an Lp-norm normalization of the metric (3D).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void NormalizeMetric3(const CGeometry *geometry, const CConfig *config);
+  void NormalizeMetric(const CGeometry *geometry, const CConfig *config);
 
 protected:
   /*!

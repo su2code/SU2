@@ -55,8 +55,8 @@ def call_pyamg(mesh, config):
      'mesh_in': 'current.meshb', 'mesh_out': 'current.new.meshb'}
     ''' 
     
-    if 'xy' in mesh:    mesh['xy']  = mesh['xy'].tolist()
-    if 'xyz' in mesh:   mesh['xyz'] = mesh['xyz'].tolist()
+    if 'xy' in mesh:  mesh['xy']  = mesh['xy'].tolist()
+    if 'xyz' in mesh: mesh['xyz'] = mesh['xyz'].tolist()
     
     if 'Corners' in mesh:    mesh['Corners']    = mesh['Corners'].tolist() 
     if 'Edges' in mesh:      mesh['Edges']      = mesh['Edges'].tolist() 
@@ -64,8 +64,7 @@ def call_pyamg(mesh, config):
     if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
 
     if 'metric' in mesh: mesh['metric'] = mesh['metric'].tolist()
-    if 'sensor' in mesh:
-        mesh['sensor']           = mesh['sensor'].tolist()
+    if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].tolist()
 
     #--- Give pyamg these parameters in case metric intersection violates hmax, hmin, or target
     remesh_options['Lp']     = config['Lp']

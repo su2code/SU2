@@ -2342,7 +2342,35 @@ public:
    * \param[in] iHess - Hessian index.
    * \param[in] hessian - Hessian of the solution.
    */
-  inline void SetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess, su2double hessian) { Hessian(iPoint,iVar,iHess) = hessian; }
+  inline void SetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess, su2double hess) { Hessian(iPoint,iVar,iHess) = hess; }
+
+  /*!
+   * \brief Store the upper half matrix of the hessian.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] hess - Matrix to store the hessian.
+   */
+  template <class Mat>
+  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, Mat& hess) {
+    switch( nDim ) {
+      case 2: {
+        Hessian(iPoint,iVar,0) = hess[0][0];
+        Hessian(iPoint,iVar,1) = hess[0][1];
+        Hessian(iPoint,iVar,2) = hess[1][1];
+        break;
+      }
+      case 3: {
+        Hessian(iPoint,iVar,0) = hess[0][0];
+        Hessian(iPoint,iVar,1) = hess[0][1];
+        Hessian(iPoint,iVar,2) = hess[0][2];
+        Hessian(iPoint,iVar,3) = hess[1][1];
+        Hessian(iPoint,iVar,4) = hess[1][2];
+        Hessian(iPoint,iVar,2) = hess[2][0];
+        Hessian(iPoint,iVar,5) = hess[2][2];
+        break;
+      }
+    }
+  }
 
   /*!
    * \brief Get the hesian of the entire solution.
@@ -2359,12 +2387,61 @@ public:
    */
   inline su2double GetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess) const { return Hessian(iPoint,iVar,iHess); }
 
+  /*!
+   * \brief Get the full matrix of the hessian.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] hess - Matrix to store the hessian.
+   */
+  template <class Mat>
+  inline void GetHessianMat(unsigned long iPoint, unsigned long iVar, Mat& hess) {
+    switch( nDim ) {
+      case 2: {
+        hess[0][0] = Hessian(iPoint,iVar,0); hess[0][1] = Hessian(iPoint,iVar,1);
+        hess[1][0] = Hessian(iPoint,iVar,1); hess[1][1] = Hessian(iPoint,iVar,2);
+        break;
+      }
+      case 3: {
+        hess[0][0] = Hessian(iPoint,iVar,0); hess[0][1] = Hessian(iPoint,iVar,1); hess[0][2] = Hessian(iPoint,iVar,2);
+        hess[1][0] = Hessian(iPoint,iVar,1); hess[1][1] = Hessian(iPoint,iVar,3); hess[1][2] = Hessian(iPoint,iVar,4);
+        hess[2][0] = Hessian(iPoint,iVar,2); hess[2][1] = Hessian(iPoint,iVar,4); hess[2][2] = Hessian(iPoint,iVar,5);
+        break;
+      }
+    }
+  }
+
   /*!  
    * \brief Set the value of the metric.  
    * \param[in] iMetr - Index value.
    * \param[in] metric - Metric value. 
    */ 
   inline void SetMetric(unsigned long iPoint, unsigned short iMetr, su2double metric) { Metric(iPoint,iMetr) = metric; }
+
+  /*!
+   * \brief Store the upper half matrix of the metric.
+   * \param[in] iPoint - Point index.
+   * \param[in] met - Matrix to store the metric.
+   */
+  template <class Mat>
+  inline void SetMetricMat(unsigned long iPoint, Mat& met) {
+    switch( nDim ) {
+      case 2: {
+        Metric(iPoint,0) = met[0][0];
+        Metric(iPoint,1) = met[0][1];
+        Metric(iPoint,2) = met[1][1];
+        break;
+      }
+      case 3: {
+        Metric(iPoint,0) = met[0][0];
+        Metric(iPoint,1) = met[0][1];
+        Metric(iPoint,2) = met[0][2];
+        Metric(iPoint,3) = met[1][1];
+        Metric(iPoint,4) = met[1][2];
+        Metric(iPoint,5) = met[2][2];
+        break;
+      }
+    }
+  }
 
   /*!  
    * \brief Add the value of the metric.  
@@ -2378,5 +2455,27 @@ public:
    * \param[in] iMetr  - Index value.
    */ 
   inline su2double GetMetric(unsigned long iPoint, unsigned short iMetr) const { return Metric(iPoint,iMetr); }
+
+  /*!
+   * \brief Get the full matrix of the metric.
+   * \param[in] iPoint - Point index.
+   * \param[in] met - Matrix to store the metric.
+   */
+  template <class Mat>
+  inline void GetMetricMat(unsigned long iPoint, Mat& met) {
+    switch( nDim ) {
+      case 2: {
+        met[0][0] = Metric(iPoint,0); met[0][1] = Metric(iPoint,1);
+        met[1][0] = Metric(iPoint,1); met[1][1] = Metric(iPoint,2);
+        break;
+      }
+      case 3: {
+        met[0][0] = Metric(iPoint,0); met[0][1] = Metric(iPoint,1); met[0][2] = Metric(iPoint,2);
+        met[1][0] = Metric(iPoint,1); met[1][1] = Metric(iPoint,3); met[1][2] = Metric(iPoint,4);
+        met[2][0] = Metric(iPoint,2); met[2][1] = Metric(iPoint,4); met[2][2] = Metric(iPoint,5);
+        break;
+      }
+    }
+  }
 
 };

@@ -170,6 +170,29 @@ inline void RotationMatrix(Scalar theta, Scalar phi, Scalar psi, Matrix& mat) {
   mat[2][2] = cosTheta*cosPhi;
 }
 
+/*!
+ * \brief Compute a rotation matrix to align 2 vectors in 3D.
+ */
+template<class T, class Matrix>
+inline void RotationMatrix(T* v1, T* v2, Matrix& mat) {
+
+  T axis[3];
+  CrossProduct( v1, v2, axis );
+
+  const T cosTheta = DotProduct( 3, v1, v2 );
+  const T k = 1.0 / (1.0 + cosTheta);
+
+  mat[0][0] = (axis[0] * axis[0] * k) + cosTheta;
+  mat[0][2] = (axis[1] * axis[0] * k) - axis[2];
+  mat[0][3] = (axis[2] * axis[0] * k) + axis[1];
+  mat[1][0] = (axis[0] * axis[1] * k) + axis[2]; 
+  mat[1][1] = (axis[1] * axis[1] * k) + cosTheta;      
+  mat[1][2] = (axis[2] * axis[1] * k) - axis[0];
+  mat[2][0] = (axis[0] * axis[2] * k) - axis[1];  
+  mat[2][1] = (axis[1] * axis[2] * k) + axis[0];  
+  mat[2][2] = (axis[2] * axis[2] * k) + cosTheta;
+}
+
 /*! \brief Compute a 2D rotation matrix. */
 template<class Scalar, class Matrix>
 inline void RotationMatrix(Scalar psi, Matrix& mat) {
