@@ -140,6 +140,9 @@ void CDeformationDriver::Input_Preprocessing() {
             config_container[iZone]->SetMultizone(driver_config, config_container);
         }
     }
+
+    /*--- Keep a reference to the main (ZONE 0) config ---*/
+    main_config = config_container[ZONE_0];
 }
 
 void CDeformationDriver::Geometrical_Preprocessing() {
@@ -220,6 +223,10 @@ void CDeformationDriver::Geometrical_Preprocessing() {
     
     /*--- Get the number of dimensions ---*/
     nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+
+    /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
+    main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
 }
 
 void CDeformationDriver::Output_Preprocessing() {

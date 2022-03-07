@@ -589,6 +589,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
         /*--- Set the MPI communicator ---*/
         
         config[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
+        
     }
     
     
@@ -599,7 +600,10 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
             config_container[iZone]->SetMultizone(driver_config, config_container);
         }
     }
-    
+
+    /*--- Keep a reference to the main (ZONE 0) config ---*/
+    main_config = config_container[ZONE_0];
+
     /*--- Determine whether or not the FEM solver is used, which decides the type of
      *    geometry classes that are instantiated. Only adapted for single-zone problems ---*/
     
@@ -703,7 +707,9 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
             geometry_container[iZone][iInst][iMesh]->ComputeSurf_Straightness(config_container[iZone], (iMesh==MESH_0) );
         
     }
-    
+
+    /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
+    main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 }
 
 void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry) {

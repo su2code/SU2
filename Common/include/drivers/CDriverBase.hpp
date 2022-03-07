@@ -56,16 +56,20 @@ protected:
     *nInst,                                         /*!< \brief Total number of instances in the problem (per zone). */
     **interface_types;                              /*!< \brief Type of coupling between the distinct (physical) zones.*/
     
-    CConfig **config_container;                     /*!< \brief Definition of the particular problem. */
     CConfig *driver_config;                         /*!< \brief Definition of the driver configuration. */
-    COutput **output_container;                     /*!< \brief Pointer to the COutput class. */
     COutput *driver_output;                         /*!< \brief Definition of the driver output. */
+
+    CConfig **config_container;                     /*!< \brief Definition of the particular problem. */
+    COutput **output_container;                     /*!< \brief Pointer to the COutput class. */
     CGeometry ****geometry_container;               /*!< \brief Geometrical definition of the problem. */
     CSolver *****solver_container;                  /*!< \brief Container vector with all the solutions. */
     CNumerics ******numerics_container;             /*!< \brief Description of the numerical method (the way in which the equations are solved). */
     CSurfaceMovement **surface_movement;            /*!< \brief Surface movement classes of the problem. */
     CVolumetricMovement ***grid_movement;           /*!< \brief Volume grid movement classes of the problem. */
     CFreeFormDefBox*** FFDBox;                      /*!< \brief FFD FFDBoxes of the problem. */
+    
+    CConfig *main_config;                           /*!< \brief Reference to the base (i.e. ZONE 0) configuration (used in the driver API). */
+    CGeometry *main_geometry;                       /*!< \brief Reference to the base (i.E. ZONE, INST, MESH 0) geometry (used in the driver API). */
     
 public:
     
