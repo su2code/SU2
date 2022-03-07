@@ -534,7 +534,7 @@ void CDeformationDriver::Output() {
             (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID)) {
             
             /*--- Write the the free-form deformation boxes after deformation (if defined). ---*/
-            if (true) {
+            if (!haveSurfaceDeformation) {
                 if (rank == MASTER_NODE) cout << "No FFD information available." << endl;
             }
             else {
