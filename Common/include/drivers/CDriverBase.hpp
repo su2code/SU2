@@ -121,7 +121,7 @@ public:
      * \brief Get all the boundary markers tags with their associated indices.
      * \return List of boundary markers tags with their indices.
      */
-    map<string, int> GetMarkerIndices() const;
+    map<string, unsigned short> GetMarkerIndices() const;
     
     /*!
      * \brief Get all the boundary markers tags with their associated types.
@@ -371,9 +371,9 @@ public:
     
     /*!
      * \brief Get the initial (un-deformed) coordinates of the mesh vertices.
-     * \return Initial vertex coordinates (nPoint*nDim).
+     * \return Initial vertex coordinates (nPoint, nDim).
      */
-    vector<passivedouble> GetInitialCoordinates() const;
+    vector<vector<passivedouble>> GetInitialCoordinates() const;
 
     /*!
      * \brief Get the initial (un-deformed) coordinates of a mesh vertex.
@@ -385,9 +385,9 @@ public:
     /*!
      * \brief Get the initial (un-deformed) coordinates of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \return Initial vertex coordinates (nVertex*nDim).
+     * \return Initial vertex coordinates (nVertex, nDim).
      */
-    vector<passivedouble> GetMarkerInitialCoordinates(unsigned short iMarker) const;
+    vector<vector<passivedouble>> GetMarkerInitialCoordinates(unsigned short iMarker) const;
     
     /*!
      * \brief Get the initial (un-deformed) coordinates of a marker vertex.
@@ -399,9 +399,9 @@ public:
     
     /*!
      * \brief Get the coordinates of the mesh vertices.
-     * \return Vertex coordinates (nPoint*nDim).
+     * \return Vertex coordinates (nPoint, nDim).
      */
-    vector<passivedouble> GetCoordinates() const;
+    vector<vector<passivedouble>> GetCoordinates() const;
 
     /*!
      * \brief Get the coordinates of a mesh vertex.
@@ -413,9 +413,9 @@ public:
     /*!
      * \brief Get the coordinates of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \return Vertex coordinates (nVertex*nDim).
+     * \return Vertex coordinates (nVertex, nDim).
      */
-    vector<passivedouble> GetMarkerCoordinates(unsigned short iMarker) const;
+    vector<vector<passivedouble>> GetMarkerCoordinates(unsigned short iMarker) const;
     
     /*!
      * \brief Get the coordinates of a marker vertex.
@@ -427,9 +427,9 @@ public:
     
     /*!
      * \brief Set the coordinates of the mesh vertices.
-     * \param[in] values - Vertex coordinates (nPoint*nDim).
+     * \param[in] values - Vertex coordinates (nPoint, nDim).
      */
-    void SetCoordinates(vector<passivedouble> values);
+    void SetCoordinates(vector<vector<passivedouble>> values);
     
     /*!
      * \brief Set the coordinates of a mesh vertex.
@@ -441,9 +441,9 @@ public:
     /*!
      * \brief Set the coordinates of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \param[in] values - Vertex coordinates (nVertex*nDim).
+     * \param[in] values - Vertex coordinates (nVertex, nDim).
      */
-    void SetMarkerCoordinates(unsigned short iMarker, vector<passivedouble> values);
+    void SetMarkerCoordinates(unsigned short iMarker, vector<vector<passivedouble>> values);
     
     /*!
      * \brief Set the coordinates of a marker vertex.
@@ -456,9 +456,9 @@ public:
     /*!
      * \brief Get the displacements of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \return Vertex displacements (nVertex*nDim).
+     * \return Vertex displacements (nVertex, nDim).
      */
-    vector<passivedouble> GetMarkerDisplacements(unsigned short iMarker) const;
+    vector<vector<passivedouble>> GetMarkerDisplacements(unsigned short iMarker) const;
     
     /*!
      * \brief Get the displacements of a marker vertex.
@@ -471,9 +471,9 @@ public:
     /*!
      * \brief Set the displacements of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \param[in] values - Vertex displacements (nVertex*nDim).
+     * \param[in] values - Vertex displacements (nVertex, nDim).
      */
-    void SetMarkerDisplacements(unsigned short iMarker, vector<passivedouble> values);
+    void SetMarkerDisplacements(unsigned short iMarker, vector<vector<passivedouble>> values);
     
     /*!
      * \brief Set the displacements of a marker vertex.
@@ -486,24 +486,24 @@ public:
     /*!
      * \brief Get the velocities of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \return Vertex velocities (nVertex*nDim).
+     * \return Vertex velocities (nVertex, nDim).
      */
-    vector<passivedouble> GetMarkerVelocities(unsigned short iMarker) const;
+    vector<vector<passivedouble>> GetMarkerVelocities(unsigned short iMarker) const;
 
     /*!
      * \brief Get the velocities of a marker vertex.
      * \param[in] iMarker - Marker index.
      * \param[in] iVertex - Marker vertex index.
-     * \return Vertex velocities (nVertex*nDim).
+     * \return Vertex velocities (nDim).
      */
     vector<passivedouble> GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Set the velocities of the marker vertices.
      * \param[in] iMarker - Marker index.
-     * \param[in] values - Vertex velocities (nVertex*nDim).
+     * \param[in] values - Vertex velocities (nVertex, nDim).
      */
-    void SetMarkerVelocities(unsigned short iMarker, vector<passivedouble> values);
+    void SetMarkerVelocities(unsigned short iMarker, vector<vector<passivedouble>> values);
     
     /*!
      * \brief Set the velocities of a marker vertex.
@@ -517,9 +517,9 @@ public:
      * \brief Get the normal vectors at the marker vertices.
      * \param[in] iMarker - Marker index.
      * \param[in] normalize - If true, the unit (i.e. normalized) normal vector is returned.
-     * \return Normal vector at the vertex (nVertex*nDim).
+     * \return Normal vector at the vertex (nVertex, nDim).
      */
-    vector<passivedouble> GetMarkerVertexNormals(unsigned short iMarker, bool normalize = false) const;
+    vector<vector<passivedouble>> GetMarkerVertexNormals(unsigned short iMarker, bool normalize = false) const;
     
     /*!
      * \brief Get the normal vectors at a marker vertex.

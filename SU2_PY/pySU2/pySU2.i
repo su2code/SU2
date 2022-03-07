@@ -66,10 +66,10 @@ namespace std {
    %template() vector<bool>;
    %template() vector<unsigned long>;
    %template() vector<vector<unsigned long>>;
-   %template() vector<int>;
    %template() vector<double>;
+   %template() vector<vector<double>>;
    %template() vector<string>;
-   %template() map<string, int>;
+   %template() map<string, unsigned short>;
    %template() map<string, string>;
 }
 
