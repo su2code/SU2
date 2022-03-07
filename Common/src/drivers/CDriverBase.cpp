@@ -329,30 +329,30 @@ unsigned long CDriverBase::GetNumberMarkerVertices(unsigned short iMarker) const
 
 unsigned long CDriverBase::GetNumberHaloVertices() const {
     const auto nPoint = GetNumberVertices();
-    unsigned long nHaloVertices = 0;
+    unsigned long nHalo = 0;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         if (!(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint))) {
-            nHaloVertices += 1;
+            nHalo += 1;
         }
     }
     
-    return nHaloVertices;
+    return nHalo;
 }
 
 unsigned long CDriverBase::GetNumberMarkerHaloVertices(unsigned short iMarker) const {
-    const auto nVertex = GetNumberMarkerVertices(iMarker);  // error-checking included
-    unsigned long nHaloVertices = 0;
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
+    unsigned long nHalo = 0;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
         
         if (!(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint))) {
-            nHaloVertices += 1;
+            nHalo += 1;
         }
     }
     
-    return nHaloVertices;
+    return nHalo;
 }
 
 vector<unsigned long> CDriverBase::GetMarkerVertexIndex(unsigned short iMarker) const {
@@ -408,7 +408,7 @@ vector<unsigned long> CDriverBase::GetMarkerVertexIDs(unsigned short iMarker) co
 }
 
 unsigned long CDriverBase::GetMarkerVertexIDs(unsigned short iMarker, unsigned long iVertex) const {
-    auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);  // includes error-checking
+    auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
 
     return geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetGlobalIndex(iPoint);
 }
@@ -446,7 +446,7 @@ vector<unsigned long> CDriverBase::GetMarkerVertexColors(unsigned short iMarker)
 }
 
 unsigned long CDriverBase::GetMarkerVertexColors(unsigned short iMarker, unsigned long iVertex) const {
-    auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);  // includes error-checking
+    auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
     
     return geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetColor(iPoint);
 }
@@ -506,17 +506,16 @@ vector<passivedouble> CDriverBase::GetInitialCoordinates(unsigned long iPoint) c
         SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
     }
 
-    vector<passivedouble> values;
+    vector<passivedouble> values (nDim, 0.0);
+    
+    if (!config_container[ZONE_0]->GetDeform_Mesh()) {
+        return values;
+    }
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {
         const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint, iDim);
-
-        if (!config_container[ZONE_0]->GetDeform_Mesh()) {
-            values.push_back(0.0);  // mesh solver is not defined !
-        }
-        else {
-            values.push_back(SU2_TYPE::GetValue(value));
-        }
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
@@ -528,11 +527,7 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerInitialCoordinates(unsigned 
     vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        const auto value = GetMarkerInitialCoordinates(iVertex);
-        
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            values.push_back(value[iDim]);
-        }
+        values.push_back(GetMarkerInitialCoordinates(iMarker, iVertex));
     }
     
     return values;
@@ -541,17 +536,16 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerInitialCoordinates(unsigned 
 vector<passivedouble> CDriverBase::GetMarkerInitialCoordinates(unsigned short iMarker, unsigned long iVertex) const {
     auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
 
-    vector<passivedouble> values;
+    vector<passivedouble> values(nDim, 0.0);
+
+    if (!config_container[ZONE_0]->GetDeform_Mesh()) {
+        return values;
+    }
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {
         const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint, iDim);
 
-        if (!config_container[ZONE_0]->GetDeform_Mesh()) {
-            values.push_back(0.0);  // mesh solver is not defined !
-        }
-        else {
-            values.push_back(SU2_TYPE::GetValue(value));
-        }
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
@@ -676,15 +670,16 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerDisplacements(unsigned short
 vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const {
     auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
 
-    vector<passivedouble> values;
+    vector<passivedouble> values (nDim, 0.0);
+    
+    if (!config_container[ZONE_0]->GetDeform_Mesh()) {
+        return values;
+    }
     
     for (auto iDim = 0u; iDim < nDim; iDim++) {
-        if (config_container[ZONE_0]->GetDeform_Mesh()) {
-            values.push_back(SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Disp(iPoint, iDim)));
-        }
-        else {
-            values.push_back(0.0);
-        }
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Disp(iPoint, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
@@ -737,15 +732,16 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerVelocities(unsigned short iM
 vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const {
     auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
 
-    vector<passivedouble> values;
+    vector<passivedouble> values (nDim, 0.0);
+    
+    if (!config_container[ZONE_0]->GetDeform_Mesh()) {
+        return values;
+    }
     
     for (auto iDim = 0u; iDim < nDim; iDim++) {
-        if (config_container[ZONE_0]->GetDeform_Mesh()) {
-            values.push_back(SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Vel(iPoint, iDim)));
-        }
-        else {
-            values.push_back(0.0);
-        }
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetBound_Vel(iPoint, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
