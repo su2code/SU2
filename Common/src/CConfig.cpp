@@ -1810,11 +1810,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_WINDOW_FIELD
    * \n DESCRIPTION: Output fields  for the Cauchy criterium for the TIME iteration. The criterium is applied to the windowed time average of the chosen funcion. */
   addStringListOption("CONV_WINDOW_FIELD",nWndConvField, WndConvField);
-  /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
-  /*--- Options related to Multi-grid ---*/
 
-  /*!\brief START_UP_ITER \n DESCRIPTION: Start up iterations using the fine grid only. DEFAULT: 0 \ingroup Config*/
-  addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
+  /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*!\brief MGLEVEL\n DESCRIPTION: Multi-grid Levels. DEFAULT: 0 \ingroup Config*/
   addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
   /*!\brief MGCYCLE\n DESCRIPTION: Multi-grid cycle. OPTIONS: See \link MG_Cycle_Map \endlink. Defualt V_CYCLE \ingroup Config*/
@@ -5731,7 +5728,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         break;
       }
     }
-    
+
     if(!found) {
       if (nZone==1)
         SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
@@ -6818,7 +6815,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (nMGLevels !=0) {
 
-      if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
       if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
       if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
       if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
