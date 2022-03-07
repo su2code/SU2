@@ -54,6 +54,18 @@ def main():
     thermalbath.tol       = 0.00001
     test_list.append(thermalbath)
 
+    # Adiabatic thermal bath
+    ionized           = TestCase('ionized')
+    ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
+    ionized.cfg_file  = "weakly_ionized.cfg"
+    ionized.test_iter = 10
+    ionized.test_vals = [0.945997, 0.945997, -12.039262, -12.171767, -32.000000, 10.013239, 0.0, 0.0]
+    ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
+    ionized.timeout   = 1600
+    ionized.new_output = True
+    ionized.tol       = 0.00001
+    test_list.append(ionized)
+
     # Adiabatic frozen thermal bath
     thermalbath_frozen           = TestCase('thermalbath_frozen')
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
