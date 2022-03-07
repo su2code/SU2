@@ -67,12 +67,12 @@ def main():
   MarkerName = 'wallF'       # Specified by the user
 
   # Get all the boundary tags
-  MarkerList = SU2Driver.GetAllBoundaryMarkersTag()
+  MarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
-  allMarkerIDs = SU2Driver.GetBoundaryMarkerIndices()
+  allMarkerIDs = SU2Driver.GetMarkerIndices()
 
-  #Check if the specified marker exists and if it belongs to this rank.
+  # Check if the specified marker exists and if it belongs to this rank.
   if MarkerName in MarkerList and MarkerName in allMarkerIDs.keys():
     MarkerID = allMarkerIDs[MarkerName]
 
@@ -80,7 +80,7 @@ def main():
   nVertex_Marker = 0         #total number of vertices (physical + halo)
 
   if MarkerID != None:
-    nVertex_Marker = SU2Driver.GetNumberVerticesMarker(MarkerID)
+    nVertex_Marker = SU2Driver.GetNumberMarkerVertices(MarkerID)
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:

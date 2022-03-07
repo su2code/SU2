@@ -490,22 +490,16 @@ public:
     void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) const;
     
     /*!
-     * \brief Get all the boundary markers tags.
-     * \return List of boundary markers tags.
+     * \brief Get all the CHT boundary marker tags.
+     * \return List of CHT boundary markers tags.
      */
-    vector<string> GetAllBoundaryMarkersTag() const;
+    vector<string> GetCHTMarkerTags() const;
     
     /*!
-     * \brief Get all the heat transfer boundary markers tags.
-     * \return List of heat transfer boundary markers tags.
-     */
-    vector<string> GetAllCHTMarkersTag() const;
-    
-    /*!
-     * \brief Get all the (subsonic) inlet boundary markers tags.
+     * \brief Get all the inlet boundary marker tags.
      * \return List of inlet boundary markers tags.
      */
-    vector<string> GetAllInletMarkersTag() const;
+    vector<string> GetInletMarkerTags() const;
     
     /*!
      * \brief Return the sensitivities of the mesh boundary vertices.

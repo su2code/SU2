@@ -320,60 +320,36 @@ passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned l
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-vector<string> CDriver::GetAllBoundaryMarkersTag() const {
-    
-    vector<string> boundariesTagList;
-    unsigned short iMarker,nBoundariesMarkers;
-    string Marker_Tag;
-    
-    nBoundariesMarkers = config_container[ZONE_0]->GetnMarker_All();
-    boundariesTagList.resize(nBoundariesMarkers);
-    
-    for(iMarker=0; iMarker < nBoundariesMarkers; iMarker++){
-        Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-        boundariesTagList[iMarker] = Marker_Tag;
-    }
-    
-    return boundariesTagList;
-}
-
-vector<string> CDriver::GetAllCHTMarkersTag() const {
-    
-    vector<string> CHTBoundariesTagList;
-    unsigned short iMarker, nBoundariesMarker;
-    string Marker_Tag;
-    
-    nBoundariesMarker = config_container[ZONE_0]->GetnMarker_All();
+vector<string> CDriver::GetCHTMarkerTags() const {
+    vector<string> tags;
+    const auto nMarker = config_container[ZONE_0]->GetnMarker_All();
     
     //The CHT markers can be identified as the markers that are customizable with a BC type HEAT_FLUX or ISOTHERMAL.
-    for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
-        if((config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX || config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) && config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker)){
-            Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-            CHTBoundariesTagList.push_back(Marker_Tag);
+    for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+        if ((config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX || 
+             config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) && config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker)){
+            
+            tags.push_back(config_container[ZONE_0]->GetMarker_All_TagBound(iMarker));
         }
     }
     
-    return CHTBoundariesTagList;
+    return tags;
 }
 
-vector<string> CDriver::GetAllInletMarkersTag() const {
+vector<string> CDriver::GetInletMarkerTags() const {
+    vector<string> tags;
+    const auto nMarker = config_container[ZONE_0]->GetnMarker_All();
     
-    vector<string> BoundariesTagList;
-    unsigned short iMarker, nBoundariesMarker;
-    string Marker_Tag;
-    
-    nBoundariesMarker = config_container[ZONE_0]->GetnMarker_All();
-    
-    for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
+    for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
         bool isCustomizable = config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker);
         bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-        if(isCustomizable && isInlet) {
-            Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-            BoundariesTagList.push_back(Marker_Tag);
+        
+        if (isCustomizable && isInlet) {
+            tags.push_back(config_container[ZONE_0]->GetMarker_All_TagBound(iMarker));
         }
     }
     
-    return BoundariesTagList;
+    return tags;
 }
 
 void CDriver::SetHeatSource_Position(passivedouble alpha, passivedouble pos_x, passivedouble pos_y, passivedouble pos_z){
