@@ -438,8 +438,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   /*--- Turbulent kinetic energy. ---*/
 
   if (tkeNeeded)
-    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
-                                   turbNodes->GetSolution(jPoint,0));
+    numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                   turbNodes->GetPrimitive(jPoint,0));
 
   /*--- Wall shear stress values (wall functions) ---*/
 
