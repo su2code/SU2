@@ -114,7 +114,7 @@ class CScalarSolver : public CSolver {
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVar(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
     /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
