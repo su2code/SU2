@@ -59,7 +59,7 @@ def main():
     ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     ionized.cfg_file  = "weakly_ionized.cfg"
     ionized.test_iter = 10
-    ionized.test_vals = [-23.044120, -10.371085, -11.287859, -13.590488, -13.413410, -13.931095, -18.298530, -3.059273, -4.603019, 0.000000, 0.000000]
+    ionized.test_vals = [-29.322805, -10.246260, -11.382786, -16.183264, -17.165896, -13.928855, -24.658131, -32.000000, -4.541637, 0.000000, 0.000000]
     ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
     ionized.timeout   = 1600
     ionized.new_output = True
