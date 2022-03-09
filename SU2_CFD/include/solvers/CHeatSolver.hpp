@@ -2,14 +2,14 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  */
 class CHeatSolver final : public CSolver {
 protected:
@@ -306,6 +306,29 @@ public:
    * \return Value of the integral-averaged temperature.
    */
   inline su2double GetTotal_AvgTemperature() const override { return Total_AverageT; }
+
+  /*!
+   * \brief Compute objective output
+   * \param[in] config - Definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   */
+  void Evaluate_ObjFunc(const CConfig *config, CSolver**) override {
+    const auto weight = config->GetWeight_ObjFunc(0);
+
+    switch (config->GetKind_ObjFunc()) {
+      case TOTAL_HEATFLUX:
+        Total_ComboObj = weight * Total_HeatFlux;
+        break;
+      case AVG_TEMPERATURE:
+        Total_ComboObj = weight * Total_AverageT;
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj = weight * Total_Custom_ObjFunc;
+        break;
+      default:
+        Total_ComboObj = 0.0;
+    }
+  }
 
   /*!
    * \brief Update the solution using an implicit solver.

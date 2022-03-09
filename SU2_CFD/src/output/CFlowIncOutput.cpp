@@ -2,14 +2,14 @@
  * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -153,25 +153,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (config->AddRadiation()) AddHistoryOutput("BGS_RAD_ENERGY", "bgs[E_Rad]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the radiative energy.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
 
-  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
-  /// DESCRIPTION: Merit
-  AddHistoryOutput("FIGURE_OF_MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: CT
-  AddHistoryOutput("THRUST",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: CQ
-  AddHistoryOutput("TORQUE",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
-  /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
-  /// DESCRIPTION: Total heatflux
-  AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Maximal heatflux
-  AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Temperature
-  if (heat || weakly_coupled_heat)
-    AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP
-
   /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::SCIENTIFIC,"AOA", "Angle of attack");
   /// DESCRIPTION: Linear solver iterations
@@ -199,13 +180,16 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("STREAMWISE_HEAT",     "SWHeat",     ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Integrated heat for streamwise periodic flow");
   }
 
-  /*--- Add analyze surface history fields --- */
-
   AddAnalyzeSurfaceOutput(config);
 
-  /*--- Add aerodynamic coefficients fields --- */
-
   AddAerodynamicCoefficients(config);
+
+  if (heat || weakly_coupled_heat) {
+    AddHeatCoefficients(config);
+    AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  }
+
+  AddRotatingFrameCoefficients();
 
 }
 
@@ -239,25 +223,19 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (weakly_coupled_heat){
-    SetHistoryOutputValue("TOTAL_HEATFLUX",   heat_solver->GetTotal_HeatFlux());
-    SetHistoryOutputValue("MAXIMUM_HEATFLUX", heat_solver->GetTotal_MaxHeatFlux());
-    SetHistoryOutputValue("AVG_TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
-    SetHistoryOutputValue("RMS_TEMPERATURE",  log10(heat_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("MAX_TEMPERATURE",  log10(heat_solver->GetRes_Max(0)));
+    SetHeatCoefficients(config, heat_solver);
+    SetHistoryOutputValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
+    SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
     if (multiZone) SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
   }
-  if (heat){
-    SetHistoryOutputValue("TOTAL_HEATFLUX",   flow_solver->GetTotal_HeatFlux());
-    SetHistoryOutputValue("MAXIMUM_HEATFLUX", flow_solver->GetTotal_MaxHeatFlux());
-    SetHistoryOutputValue("AVG_TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
-    if (nDim == 3) SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(4)));
-    else           SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(3)));
-
-    if (nDim == 3) SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(4)));
-    else           SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(3)));
-    if (multiZone){
-      if (nDim == 3) SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(4)));
-      else           SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(3)));
+  if (heat) {
+    SetHeatCoefficients(config, flow_solver);
+    SetHistoryOutputValue("AVG_TEMPERATURE", flow_solver->GetTotal_AvgTemperature());
+    SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(nDim + 1)));
+    SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(nDim + 1)));
+    if (multiZone) {
+      SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(nDim + 1)));
     }
   }
 
@@ -296,7 +274,11 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   /*--- Set rotating frame coefficients --- */
 
-  SetRotatingFrameCoefficients(config, flow_solver);
+  SetRotatingFrameCoefficients(flow_solver);
+
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+
+  SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 
 }
 

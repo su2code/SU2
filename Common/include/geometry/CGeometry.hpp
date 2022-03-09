@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -199,6 +199,7 @@ public:
   unsigned long *nElem_Bound{nullptr};   /*!< \brief Number of elements of the boundary. */
   string *Tag_to_Marker{nullptr};        /*!< \brief Names of boundary markers. */
   vector<bool> bound_is_straight;        /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<su2double> SurfaceAreaCfgFile;  /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
 
@@ -909,6 +910,20 @@ public:
    * \param[in] fine_grid - Geometry of the fine mesh.
    */
   inline virtual void SetRestricted_GridVelocity(const CGeometry *fine_grid) {}
+
+  /*!
+   * \brief Compute the surface area of all global markers.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeSurfaceAreaCfgFile(const CConfig *config);
+
+  /*!
+  * \brief Get global Surface Area to a local marker.
+  * \param[in] config - Definition of the particular problem.
+  * \param[in] val_marker - Local surface marker.
+  * \return Global Surface Area to the local marker
+  */
+  su2double GetSurfaceArea(const CConfig *config, unsigned short val_marker) const;
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
