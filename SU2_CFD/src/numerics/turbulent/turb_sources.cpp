@@ -791,89 +791,85 @@ CSourcePieceWise_TurbSST<T>::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
 template <class T>
 CNumerics::ResidualType<> CSourcePieceWise_TurbSST<T>::ComputeResidual(const CConfig* config) {
-
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
-  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
-  AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
-  AD::SetPreaccIn(PrimVar_Grad_i, nDim+idx.Velocity(), nDim);
+  AD::SetPreaccIn(Volume);
+  AD::SetPreaccIn(dist_i);
+  AD::SetPreaccIn(F1_i);
+  AD::SetPreaccIn(F2_i);
+  AD::SetPreaccIn(CDkw_i);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
   AD::SetPreaccIn(Vorticity_i, 3);
-
-  unsigned short iDim;
-  su2double alfa_blended, beta_blended;
-  su2double diverg, pk, pw, zeta;
-  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
-                                Vorticity_i[1]*Vorticity_i[1] +
-                                Vorticity_i[2]*Vorticity_i[2]);
-
   AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
 
   Density_i = V_i[idx.Density()];
   Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
   Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
 
-  Residual[0] = 0.0;       Residual[1] = 0.0;
-  Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
+  Residual[0] = 0.0;
+  Residual[1] = 0.0;
+  Jacobian_i[0][0] = 0.0;
+  Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0;
+  Jacobian_i[1][1] = 0.0;
 
-  /*--- Computation of blended constants for the source terms---*/
+  /*--- Computation of blended constants for the source terms ---*/
 
-  alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
-  beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
+  const su2double alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
+  const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
   if (dist_i > 1e-10) {
+    /*--- Production ---*/
 
-   /*--- Production ---*/
+    su2double diverg = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
 
-   diverg = 0.0;
-   for (iDim = 0; iDim < nDim; iDim++)
-     diverg += PrimVar_Grad_i[iDim+idx.Velocity()][iDim];
+    /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
-   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
+    su2double StrainMag = StrainMag_i;
 
-   if (using_uq){
-     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
-                         PrimVar_Grad_i+idx.Velocity(), Density_i, Eddy_Viscosity_i,
-                         ScalarVar_i[0], MeanPerturbedRSM);
-     SetPerturbedStrainMag(ScalarVar_i[0]);
-     pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-          - 2.0/3.0*Density_i*ScalarVar_i[0]*diverg;
-   }
-   else {
-     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*ScalarVar_i[0]*diverg;
-   }
+    if (using_uq) {
+      ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
+                          Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
+      SetPerturbedStrainMag(ScalarVar_i[0]);
+      StrainMag = PerturbedStrainMag;
+    }
 
-   pk = min(pk,20.0*beta_star*Density_i*ScalarVar_i[1]*ScalarVar_i[0]);
-   pk = max(pk,0.0);
+    /*--- Definition of production P according to SSTm approximation P = mu_t S^2 ---*/
 
-   zeta = max(ScalarVar_i[1], VorticityMag*F2_i/a1);
+    /*--- original SST2003 model as reference (including divergence terms) ---*/
+    // su2double pk = Eddy_Viscosity_i * (pow(StrainMag, 2) - 2.0 / 3.0 * diverg * diverg) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+    /*--- SST2003m model, neglecting divergence terms ---*/
+    su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2);
 
-   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
+    /*--- Production limiter for k and w according to SST2003m (corrected equations from http://dx.doi.org/10.1080/10618560902773387) ---*/
+    pk = min(pk, 10.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
 
-   if (using_uq){
-     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
-   }
-   else {
-     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-   }
-   pw = alfa_blended*Density_i*max(pw,0.0);
+    su2double pw = (alfa_blended * Density_i) * pk;  
 
-   /*--- Sustaining terms, if desired. Note that if the production terms are
-         larger equal than the sustaining terms, the original formulation is
-         obtained again. This is in contrast to the version in literature
-         where the sustaining terms are simply added. This latter approach could
-         lead to problems for very big values of the free-stream turbulence
-         intensity. ---*/
+    // const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
 
-   if ( sustaining_terms ) {
-     const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
-     const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
+    /*--- denominator of turbulent eddy viscosity computation according to SST2003m: mu_t = rho*k/(max(w,SF_2/a1)) ---*/
+    const su2double zeta = max(ScalarVar_i[1], StrainMag * F2_i / a1);
+    //su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+    //su2double pw = (alfa_blended * Density_i) * pk;  
 
-     pk = max(pk, sust_k);
-     pw = max(pw, sust_w);
-   }
+    /*--- Sustaining terms, if desired. Note that if the production terms are
+          larger equal than the sustaining terms, the original formulation is
+          obtained again. This is in contrast to the version in literature
+          where the sustaining terms are simply added. This latter approach could
+          lead to problems for very big values of the free-stream turbulence
+          intensity. ---*/
+
+    if (sustaining_terms) {
+      const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
+      const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
+      pk = max(pk, sust_k);
+      pw = max(pw, sust_w);
+    }
 
    /*--- Add the production terms to the residuals. ---*/
 

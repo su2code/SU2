@@ -139,7 +139,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   } else {
     // compute both parts in one step
     const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, val_turb_ke); // TODO why ignore turb_ke?
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0)); // TODO why ignore turb_ke?
   }
 }
 
@@ -185,7 +185,6 @@ void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
        tau_jacobian_i[iDim][0] -= tau_jacobian_i[iDim][jDim+1]*val_Mean_PrimVar[jDim+1];
     }
-    tau_jacobian_i[iDim][0] -= ONE3*Mean_turb_ke*val_normal[iDim];
     // Jacobian w.r.t. energy
     tau_jacobian_i[iDim][nDim+1] = 0;
   }

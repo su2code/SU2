@@ -5102,7 +5102,8 @@ void CSolver::ViscousMetric(CSolver **solver, const CGeometry*geometry, const CC
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       tau[iDim][jDim]  = wf*((mu+mut)*( gradu[jDim][iDim] + gradu[iDim][jDim] )
-                       - TWO3*((mu+mut)*divu+r*k)*delta[iDim][jDim]);
+                       - TWO3*((mu+mut)*divu)*delta[iDim][jDim]);
+                      //  - TWO3*((mu+mut)*divu+r*k)*delta[iDim][jDim]);
     }
   }
 
@@ -5110,7 +5111,8 @@ void CSolver::ViscousMetric(CSolver **solver, const CGeometry*geometry, const CC
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       auto iVar = iDim+1;
-      factor += (tau[iDim][jDim]+wf*TWO3*r*k*delta[iDim][jDim])/(mu+mut)
+      // factor += (tau[iDim][jDim]+wf*TWO3*r*k*delta[iDim][jDim])/(mu+mut)
+      factor += (tau[iDim][jDim])/(mu+mut)
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
@@ -5140,10 +5142,10 @@ void CSolver::ViscousMetric(CSolver **solver, const CGeometry*geometry, const CC
   //--- k weight
   if (sst) {
     weights[1][nVarFlo] += -factor;
-    for (auto iDim = 0; iDim < nDim; ++iDim) {
-      weights[1][nVarFlo] += -TWO3*wf*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
-                                        + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
-    }
+  //   for (auto iDim = 0; iDim < nDim; ++iDim) {
+  //     weights[1][nVarFlo] += -TWO3*wf*(varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, iDim)
+  //                                       + u[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+  //   }
   }
 
   //--- Density weight

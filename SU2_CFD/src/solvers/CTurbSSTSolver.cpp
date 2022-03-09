@@ -103,8 +103,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  /*--- SST2003 constants ---*/
+  //constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+  //constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  /*--- SST2003m constants---*/
+  constants[8] = 5.0 / 9.0; 
+  constants[9] = 0.44;
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
@@ -223,8 +227,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
+    //su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+    //VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
+
+    su2double StrainMag = nodes->GetStrainMag(iPoint);
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -234,8 +240,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     su2double kine  = nodes->GetPrimitive(iPoint,0);
     su2double omega = nodes->GetPrimitive(iPoint,1);
-    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    su2double muT   = max(rho*kine*zeta,0.0);
+    //su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
+    su2double zeta  = max(omega, (StrainMag*F2/a1));
+    /*--- compute eddy viscosity according to SST2003m ---*/
+    su2double muT   = max(rho*kine/zeta,0.0);
 
     nodes->SetmuT(iPoint,muT);
 
@@ -335,6 +343,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    // if (geometry->nodes->GetGlobalIndex(iPoint) == 9831) {
+    //   cout << "Scalar_i=(" << nodes->GetSolution(iPoint,0) << "," << nodes->GetSolution(iPoint,1) << ")" << endl;
+    //   cout << "source=(" << -residual[0] << "," << -residual[1] << ")" << endl;
+    // }
 
     /*--- Subtract residual and the Jacobian ---*/
 
@@ -1115,10 +1128,13 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
   const su2double a1       = constants[7];
   const su2double CDkw     = varTur->GetCrossDiff(iPoint);
 
-  const su2double VorticityMag = max(GeometryToolbox::Norm(3, varFlo->GetVorticity(iPoint)), 1.0e-12);
+  // const su2double VorticityMag = max(GeometryToolbox::Norm(3, varFlo->GetVorticity(iPoint)), 1.0e-12);
+  const su2double StrainMag = nodes->GetStrainMag(iPoint);
 
-  const bool stress_limited = (omega < VorticityMag*F2/a1);
-  const su2double zeta = max(omega,VorticityMag*F2/a1);
+  // const bool stress_limited = (omega < VorticityMag*F2/a1);
+  // const su2double zeta = max(omega,VorticityMag*F2/a1);
+  const bool stress_limited = (omega < StrainMag*F2/a1);
+  const su2double zeta = max(omega,StrainMag*F2/a1);
 
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
@@ -1138,17 +1154,17 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       taut[iDim][jDim] = wf*(mut*( gradu[jDim][iDim] + gradu[iDim][jDim] )
-                       - TWO3*mut*divu*delta[iDim][jDim]
-                       - TWO3*r*k*delta[iDim][jDim]);
+                       - TWO3*mut*divu*delta[iDim][jDim]);
+                      //  - TWO3*r*k*delta[iDim][jDim]);
       tautomut[iDim][jDim] = wf*( gradu[jDim][iDim] + gradu[iDim][jDim] 
-                           - TWO3*divu*delta[iDim][jDim]
-                           - TWO3*zeta*delta[iDim][jDim]);
+                           - TWO3*divu*delta[iDim][jDim]);
+                          //  - TWO3*zeta*delta[iDim][jDim]);
       pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
       pw += 1./wf*tautomut[iDim][jDim]*gradu[iDim][jDim];
     }
   }
 
-  const bool pk_limited    = (pk > 20.*betastar*r*omega*k);
+  const bool pk_limited    = (pk > 10.*betastar*r*omega*k);
   const bool pk_positive   = (pk >= 0);
   const bool pw_positive   = (pw >= 0);
   const bool cdkw_positive = (!varTur->GetCrossDiffLimited(iPoint));
@@ -1175,7 +1191,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim])
+      // factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim])
+      factor += (tautomut[iDim][jDim])
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }

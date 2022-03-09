@@ -34,7 +34,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   nPrimVar = nVar;
 
-  Primitive.resize(nPoint, nPrimVar) = su2double(0.0);
+  Primitive_Aux.resize(nPoint, nPrimVar) = su2double(0.0);
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Primitive(iPoint,0) = kine;
@@ -72,8 +72,8 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
-  CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
-  CDkwLimited(iPoint) = (CDkw(iPoint) < pow(10.0, -20.0));
+  CDkw(iPoint) = max(CDkw(iPoint), 1e-10);
+  CDkwLimited(iPoint) = (CDkw(iPoint) < 1e-10);
 
   /*--- F1 ---*/
 
