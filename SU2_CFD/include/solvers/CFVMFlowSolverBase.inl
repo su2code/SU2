@@ -390,7 +390,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
-  auto kindLimiter = static_cast<LIMITER>(config->GetKind_SlopeLimit_Flow());
+  LIMITER kindLimiter = config->GetKind_SlopeLimit_Flow();
   const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();
@@ -1145,7 +1145,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       /*--- Preprocessing:                                                                         ---*/
       /*--- Compute the unit normal and (in case of viscous flow) a corresponding unit tangential  ---*/
       /*--- to that normal. On a straight(2D)/plane(3D) boundary these two vectors are constant.   ---*/
-      /*--- This circumstance is checked in gemoetry->ComputeSurf_Straightness(...) and stored     ---*/
+      /*--- This circumstance is checked in geometry->ComputeSurf_Straightness(...) and stored     ---*/
       /*--- such that the recomputation does not occur for each node. On true symmetry planes, the ---*/
       /*--- normal is constant but this routines is used for Symmetry, Euler-Wall in inviscid flow ---*/
       /*--- and Euler Wall in viscous flow as well. In the latter curvy boundaries are likely to   ---*/

@@ -72,7 +72,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    typeLimiter(static_cast<LIMITER>(config.GetKind_SlopeLimit_Flow())) {
+    typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
 public:

@@ -538,7 +538,8 @@ namespace AD{
       }
     }
   }
-
+  
+  // Nijso says: This delete_handler needs to be called but I do not know where
   FORCEINLINE void delete_handler(void *handler) {
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();

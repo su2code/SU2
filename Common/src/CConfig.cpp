@@ -5038,7 +5038,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     }
 
-    /*--- Note that this is deliberatly done at the end of this routine! ---*/
+    /*--- Note that this is deliberately done at the end of this routine! ---*/
     switch(Kind_Solver) {
       case MAIN_SOLVER::EULER:
         Kind_Solver = MAIN_SOLVER::DISC_ADJ_EULER;
@@ -5189,7 +5189,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS)
-      SU2_MPI::Error("Species transport currently only avaialble for compressible and incompressible flow.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
 
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
     for (unsigned short iObj = 0; iObj < nObj; iObj++) {
@@ -8372,7 +8372,6 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
                                     unsigned short val_kind_centered, unsigned short val_kind_upwind,
                                     LIMITER val_kind_slopelimit, bool val_muscl,
                                     unsigned short val_kind_fem) {
-
   Kind_ConvNumScheme = val_kind_convnumscheme;
   Kind_Centered = val_kind_centered;
   Kind_Upwind = val_kind_upwind;
@@ -8391,7 +8390,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   Current_UnstTimeND = static_cast<su2double>(TimeIter)*Delta_UnstTimeND;
 
   /*--- Set the solver methods ---*/
-
+  
   switch (val_solver) {
     case MAIN_SOLVER::EULER: case MAIN_SOLVER::INC_EULER: case MAIN_SOLVER::NEMO_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
@@ -8419,7 +8418,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS: case MAIN_SOLVER::DISC_ADJ_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
