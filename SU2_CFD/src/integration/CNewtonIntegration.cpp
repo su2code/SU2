@@ -120,7 +120,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
   /*--- Save the default integration scheme, and force to explicit if required. ---*/
   auto TimeIntScheme = config->GetKind_TimeIntScheme();
-  if (type == EXPLICIT) {
+  if (type == ResEvalType::EXPLICIT) {
     SU2_OMP_MASTER
     config->SetKind_TimeIntScheme(EULER_EXPLICIT);
     END_SU2_OMP_MASTER
@@ -129,10 +129,14 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
   solvers[FLOW_SOL]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
+  if (type == ResEvalType::DEFAULT) {
+    solvers[FLOW_SOL]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
+  }
+
   Space_Integration(geometry, solvers, numerics[FLOW_SOL], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS);
 
   /*--- Restore default. ---*/
-  if (type == EXPLICIT) {
+  if (type == ResEvalType::EXPLICIT) {
     SU2_OMP_MASTER
     config->SetKind_TimeIntScheme(TimeIntScheme);
     END_SU2_OMP_MASTER
@@ -187,11 +191,9 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   /*--- Current residual. ---*/
 
-  ComputeResiduals(DEFAULT);
+  ComputeResiduals(ResEvalType::DEFAULT);
 
   /*--- Compute the approximate Jacobian for preconditioning. ---*/
-
-  solvers[FLOW_SOL]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
 
   solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
 
@@ -304,7 +306,7 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
 
   PerturbSolution(u, factor);
 
-  ComputeResiduals(EXPLICIT);
+  ComputeResiduals(ResEvalType::EXPLICIT);
 
   /*--- Finalize product. ---*/
   factor = 1.0 / factor;
@@ -339,9 +341,13 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
   else {
     /*--- Approximate diagonal preconditioner. ---*/
 
+    const bool dt1st = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+    const bool dt2nd = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+    const su2double dt = config->GetDelta_UnstTimeND() * (dt1st + 1.5 * dt2nd);
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
-      su2double delta = solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) /
+      su2double delta = (solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) + dt) /
                         (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
       SU2_OMP_SIMD
       for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)

@@ -148,7 +148,6 @@ private:
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
-  unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;              /*!< \brief Previous value of the design variable. */
   su2double Venkat_LimiterCoeff;     /*!< \brief Limiter coefficient */
@@ -1976,12 +1975,6 @@ public:
    * \return Reynolds length.
    */
   su2double GetLength_Reynolds(void) const { return Length_Reynolds; }
-
-  /*!
-   * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
-   * \return Start up iterations using the fine grid.
-   */
-  unsigned short GetnStartUpIter(void) const { return nStartUpIter; }
 
   /*!
    * \brief Get the reference area for non dimensional coefficient computation. If the value from the

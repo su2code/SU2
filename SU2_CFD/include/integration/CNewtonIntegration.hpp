@@ -62,7 +62,7 @@ public:
 
 private:
   /*--- Residual evaluation modes, explicit for products, default to allow preconditioners to be built. ---*/
-  enum ResEvalType {EXPLICIT, DEFAULT};
+  enum class ResEvalType {EXPLICIT, DEFAULT};
 
   bool setup = false;
   Scalar finDiffStepND = 0.0;
