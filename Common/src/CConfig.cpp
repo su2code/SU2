@@ -5860,8 +5860,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
-          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, AIR-7, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
