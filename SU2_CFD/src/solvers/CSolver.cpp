@@ -2198,12 +2198,16 @@ void CSolver::Add_External_To_Solution() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
+
+  base_nodes->Add_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Add_Solution_To_External() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
+
+  base_nodes->Set_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
@@ -4165,8 +4169,6 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     const su2double domain = (iPoint < nPointDomain);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double Res = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
-
-      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
 
       /*--- Update residual information for current thread. ---*/
       resRMS[iVar] += Res*Res;

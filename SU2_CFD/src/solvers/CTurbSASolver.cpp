@@ -275,7 +275,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool transition    = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -303,12 +302,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
-
-    /*--- Set intermittency ---*/
-
-    if (transition) {
-      numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
-    }
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -1567,9 +1560,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-  /*--- Find BC string to the numeric-identifier. ---*/
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
     }

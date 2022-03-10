@@ -1314,7 +1314,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Set the common output fields ---*/
 
-  SetCommonHistoryFields(config);
+  SetCommonHistoryFields();
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
@@ -1361,7 +1361,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Set the common history fields for all solvers ---*/
 
-  SetCommonHistoryFields(driver_config);
+  SetCommonHistoryFields();
 
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
@@ -1915,10 +1915,15 @@ void COutput::Postprocess_HistoryData(CConfig *config){
 
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
       if (config->GetTime_Domain()){
-        windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
-        SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
+        auto it = windowedTimeAverages.find(fieldIdentifier);
+        if (it == windowedTimeAverages.end()) {
+          it = windowedTimeAverages.insert({fieldIdentifier, CWindowedAverage(config->GetKindWindow())}).first;
+        }
+        auto& timeAverage = it->second;
+        timeAverage.addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
+        SetHistoryOutputValue("TAVG_" + fieldIdentifier, timeAverage.GetVal());
         if (config->GetDirectDiff() != NO_DERIVATIVE) {
-          SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
+          SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(timeAverage.GetVal()));
         }
       }
       if (config->GetDirectDiff() != NO_DERIVATIVE){
@@ -2157,15 +2162,15 @@ bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force
   }
 }
 
-void COutput::SetCommonHistoryFields(CConfig *config){
+void COutput::SetCommonHistoryFields() {
 
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
-  AddHistoryOutput("TIME_ITER",     "Time_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Time iteration index");
+  AddHistoryOutput("TIME_ITER", "Time_Iter", ScreenOutputFormat::INTEGER, "ITER", "Time iteration index");
   /// DESCRIPTION: The outer iteration index.
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
+  AddHistoryOutput("OUTER_ITER", "Outer_Iter", ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
   /// DESCRIPTION: The inner iteration index.
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
+  AddHistoryOutput("INNER_ITER", "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
   /// END_GROUP
 
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
@@ -2175,13 +2180,13 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
 
   /// DESCRIPTION: Currently used wall-clock time.
-  AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time");
+  AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
 }
 
-void COutput::LoadCommonHistoryData(CConfig *config){
+void COutput::LoadCommonHistoryData(const CConfig *config) {
 
   SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
 

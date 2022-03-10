@@ -403,8 +403,10 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     auto solvers = solver_container[iZone][INST_0][MESH_0];
 
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solvers[iSol] != nullptr)
+      if (solvers[iSol] != nullptr) {
         solvers[iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        solvers[iSol]->GetNodes()->Set_BGSSolution_k();
+      }
     }
 
     /*--- Make sure that everything is loaded into the output container. ---*/
