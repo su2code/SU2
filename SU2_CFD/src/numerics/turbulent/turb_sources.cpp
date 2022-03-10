@@ -841,20 +841,20 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST<T>::ComputeResidual(const CCo
     /*--- Definition of production P according to SSTm approximation P = mu_t S^2 ---*/
 
     /*--- original SST2003 model as reference (including divergence terms) ---*/
-    // su2double pk = Eddy_Viscosity_i * (pow(StrainMag, 2) - 2.0 / 3.0 * diverg * diverg) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+    su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
     /*--- SST2003m model, neglecting divergence terms ---*/
-    su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2);
+    // su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2);
 
     /*--- Production limiter for k and w according to SST2003m (corrected equations from http://dx.doi.org/10.1080/10618560902773387) ---*/
-    pk = min(pk, 10.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
+    pk = max(0.0, min(pk, 10.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
-    su2double pw = (alfa_blended * Density_i) * pk;  
+    // su2double pw = (alfa_blended * Density_i) * pk;  
 
     // const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
 
     /*--- denominator of turbulent eddy viscosity computation according to SST2003m: mu_t = rho*k/(max(w,SF_2/a1)) ---*/
     const su2double zeta = max(ScalarVar_i[1], StrainMag * F2_i / a1);
-    //su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+    su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
     //su2double pw = (alfa_blended * Density_i) * pk;  
 
     /*--- Sustaining terms, if desired. Note that if the production terms are

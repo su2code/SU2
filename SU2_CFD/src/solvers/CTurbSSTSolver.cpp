@@ -344,11 +344,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     auto residual = numerics->ComputeResidual(config);
 
-    // if (geometry->nodes->GetGlobalIndex(iPoint) == 9831) {
-    //   cout << "Scalar_i=(" << nodes->GetSolution(iPoint,0) << "," << nodes->GetSolution(iPoint,1) << ")" << endl;
-    //   cout << "source=(" << -residual[0] << "," << -residual[1] << ")" << endl;
-    // }
-
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -1154,11 +1149,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       taut[iDim][jDim] = wf*(mut*( gradu[jDim][iDim] + gradu[iDim][jDim] )
-                       - TWO3*mut*divu*delta[iDim][jDim]);
-                      //  - TWO3*r*k*delta[iDim][jDim]);
+                       - TWO3*r*k*delta[iDim][jDim]); // SST2003
+                      //  - TWO3*mut*divu*delta[iDim][jDim]); // SST2003m
       tautomut[iDim][jDim] = wf*( gradu[jDim][iDim] + gradu[iDim][jDim] 
-                           - TWO3*divu*delta[iDim][jDim]);
-                          //  - TWO3*zeta*delta[iDim][jDim]);
+                           - TWO3*zeta*delta[iDim][jDim]); // SST2003
+                          //  - TWO3*divu*delta[iDim][jDim]); // SST2003m
       pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
       pw += 1./wf*tautomut[iDim][jDim]*gradu[iDim][jDim];
     }
@@ -1191,8 +1186,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      // factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim])
-      factor += (tautomut[iDim][jDim])
+      factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim]) // SST2003
+      // factor += (tautomut[iDim][jDim]) // SST2003m
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
