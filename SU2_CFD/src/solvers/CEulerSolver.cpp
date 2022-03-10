@@ -1871,31 +1871,49 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
       bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-      su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+      const su2double Gamma_Minus_One = Gamma - 1.0;
+      const su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+
+      const su2double Pressure_i = Primitive_i[nDim+1];
+      const su2double Pressure_j = Primitive_j[nDim+1];
+      const su2double Density_i  = Primitive_i[nDim+2];
+      const su2double Density_j  = Primitive_j[nDim+2];
+      const su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+Turbulent_i+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_i+1);
+      const su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+Turbulent_j+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_j+1);
+
+      const su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
+      const su2double Enthalpy_j = Energy_j + Pressure_j/Density_j;
+
       su2double sq_vel = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
         sq_vel += pow(RoeVelocity, 2);
       }
-      su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+      su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
       su2double RoeTke = (R*Turbulent_j+Turbulent_i)/(R+1);
 
-      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+      bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
+      if (tkeNeeded) {
+        bad_i = bad_i || (Turbulent_i < 0.0);
+        bad_j = bad_j || (Turbulent_j < 0.0);
+      }
+      // bool bad_i = false;
+      // bool bad_j = false;
 
       nodes->SetNon_Physical(iPoint, bad_i);
       nodes->SetNon_Physical(jPoint, bad_j);
 
       /*--- Get updated state, in case the point recovered after the set. ---*/
-      bad_i = nodes->GetNon_Physical(iPoint);
-      bad_j = nodes->GetNon_Physical(jPoint);
+      // bad_i = nodes->GetNon_Physical(iPoint);
+      // bad_j = nodes->GetNon_Physical(jPoint);
 
-      if (tkeNeeded) {
-        bad_i = bad_i || turbNodes->GetNon_Physical(iPoint);
-        bad_j = bad_j || turbNodes->GetNon_Physical(jPoint);
-      }
+      // if (tkeNeeded) {
+      //   bad_i = bad_i || turbNodes->GetNon_Physical(iPoint);
+      //   bad_j = bad_j || turbNodes->GetNon_Physical(jPoint);
+      // }
 
       counter_local += bad_i+bad_j;
 

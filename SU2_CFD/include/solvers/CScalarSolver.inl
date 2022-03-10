@@ -274,6 +274,12 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
           }
         }
+        else {
+          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+            flowPrimVar_i[iVar] = V_i[iVar];
+            flowPrimVar_j[iVar] = V_j[iVar];
+          }
+        }
 
         if (muscl) {
           /*--- Reconstruct scalar variables. ---*/
@@ -300,23 +306,57 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
           }
         }
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            solution_i[iVar] = Scalar_i[iVar];
+            solution_j[iVar] = Scalar_j[iVar];
+          }
+        }
 
         /*--- Check for non-physical solutions after reconstruction. If found, use the
         cell-average value of the solution. This is a locally 1st order approximation,
         which is typically only active during the start-up of a calculation. ---*/
 
-        bool bad_i = false, bad_j = false;
+        bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
+        bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
+
+        const su2double Gamma = config->GetGamma();
+        const su2double Gamma_Minus_One = Gamma - 1.0;
+        const su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
+
+        const su2double Pressure_i = flowPrimVar_i[nDim+1];
+        const su2double Pressure_j = flowPrimVar_j[nDim+1];
+        const su2double Density_i  = flowPrimVar_i[nDim+2];
+        const su2double Density_j  = flowPrimVar_j[nDim+2];
+        const su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+solution_i[0]+0.5*GeometryToolbox::SquaredNorm(nDim,flowPrimVar_i+1);
+        const su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+solution_j[0]+0.5*GeometryToolbox::SquaredNorm(nDim,flowPrimVar_j+1);
+
+        const su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
+        const su2double Enthalpy_j = Energy_j + Pressure_j/Density_j;
+
+        su2double sq_vel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/(R+1);
+          sq_vel += pow(RoeVelocity, 2);
+        }
+        su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
+        su2double RoeTke = (R*solution_j[0]+solution_i[0])/(R+1);
+
+        bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+
+        bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
+        bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
         for (auto iVar = 0; iVar < nVar; iVar++) {
-          bad_i = (solution_i[iVar] < 0.0);
-          bad_j = (solution_j[iVar] < 0.0);
+          bad_i = bad_i || (solution_i[iVar] < 0.0);
+          bad_j = bad_j || (solution_j[iVar] < 0.0);
         }
 
-        nodes->SetNon_Physical(iPoint, bad_i);
-        nodes->SetNon_Physical(jPoint, bad_j);
+        // nodes->SetNon_Physical(iPoint, bad_i);
+        // nodes->SetNon_Physical(jPoint, bad_j);
 
-        /*--- Get updated state, in case the point recovered after the set. ---*/
-        bad_i = nodes->GetNon_Physical(iPoint) || flowNodes->GetNon_Physical(iPoint);
-        bad_j = nodes->GetNon_Physical(jPoint) || flowNodes->GetNon_Physical(jPoint);
+        // /*--- Get updated state, in case the point recovered after the set. ---*/
+        // bad_i = nodes->GetNon_Physical(iPoint) || flowNodes->GetNon_Physical(iPoint);
+        // bad_j = nodes->GetNon_Physical(jPoint) || flowNodes->GetNon_Physical(jPoint);
 
         numerics->SetPrimitive(bad_i? V_i : flowPrimVar_i, bad_j? V_j : flowPrimVar_j);
         numerics->SetScalarVar(bad_i? Scalar_i : solution_i, bad_j? Scalar_j : solution_j);

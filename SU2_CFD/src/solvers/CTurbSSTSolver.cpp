@@ -103,18 +103,23 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  /*--- SST2003 constants ---*/
-  //constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  //constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  /*--- SST constants ---*/
+  // constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+  // constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
   /*--- SST2003m constants---*/
   constants[8] = 5.0 / 9.0; 
   constants[9] = 0.44;
 
   /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0e10;
+  // lowerlimit[0] = 1.0e-10;
+  // upperlimit[0] = 1.0e10;
 
-  lowerlimit[1] = 1.0e-4;
+  // lowerlimit[1] = 1.0e-4;
+  // upperlimit[1] = 1.0e15;
+  lowerlimit[0] = 1.0e-10;
+  upperlimit[0] = 1.0e15;
+
+  lowerlimit[1] = 1.0e-10;
   upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
@@ -1072,6 +1077,43 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
     Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
   }
+
+}
+
+void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  su2double localUnderRelaxation =  1.00;
+  const su2double allowableRatio =  0.99;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    localUnderRelaxation = 1.0;
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      const unsigned long index = iPoint * nVar + iVar;
+      su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+      /* We impose a limit on the maximum percentage that the
+        turbulence variables can change over a nonlinear iteration. */
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      }
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
+  }
+  END_SU2_OMP_FOR
 
 }
 
