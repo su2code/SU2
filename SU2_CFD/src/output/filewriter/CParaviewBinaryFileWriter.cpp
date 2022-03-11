@@ -2,14 +2,14 @@
  * \file CParaviewBinaryFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,8 +29,8 @@
 
 const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
-CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
-  CFileWriter(std::move(valFileName), valDataSorter, fileExt){
+CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(CParallelDataSorter *valDataSorter) :
+  CFileWriter(valDataSorter, fileExt){
 
   /* Check for big endian. We have to swap bytes otherwise.
    * Since size of character is 1 byte when the character pointer
@@ -48,7 +48,7 @@ CParaviewBinaryFileWriter::~CParaviewBinaryFileWriter(){
 
 }
 
-void CParaviewBinaryFileWriter::Write_Data(){
+void CParaviewBinaryFileWriter::Write_Data(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -65,7 +65,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
 
   const int NCOORDS = 3;
 
-  OpenMPIFile();
+  OpenMPIFile(val_filename);
 
   string header = "# vtk DataFile Version 3.0\n"
                   "vtk output\n"

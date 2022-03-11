@@ -2,14 +2,14 @@
  * \file CTETRA1.cpp
  * \brief Definition of 4-node tetra element with 1 Gauss point.
  * \author R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/geometry/elements/CElement.hpp"
-
+#include "../../../include/toolboxes/geometry_toolbox.hpp"
 
 CTETRA1::CTETRA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
@@ -47,7 +47,7 @@ CTETRA1::CTETRA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
     val_Ni = Xi;              GaussPoint[iGauss].SetNi(val_Ni,0);
     val_Ni = Eta;             GaussPoint[iGauss].SetNi(val_Ni,1);
-    val_Ni = 1.0-Xi-Eta-Zeta;	GaussPoint[iGauss].SetNi(val_Ni,2);
+    val_Ni = 1.0-Xi-Eta-Zeta; GaussPoint[iGauss].SetNi(val_Ni,2);
     val_Ni = Zeta;            GaussPoint[iGauss].SetNi(val_Ni,3);
 
     /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
@@ -85,11 +85,8 @@ su2double CTETRA1::ComputeVolume(const FrameType mode) const {
     r3[iDim] = Coord[3][iDim] - Coord[0][iDim];
   }
 
-  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-
-  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  GeometryToolbox::CrossProduct(r1, r2, CrossProduct);
+  Volume = fabs(GeometryToolbox::DotProduct(3, CrossProduct, r3))/6.0;
 
   return Volume;
 

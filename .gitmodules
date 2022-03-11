@@ -18,3 +18,6 @@
 [submodule "externals/opdi"]
 	path = externals/opdi
 	url = https://github.com/SciCompKL/OpDiLib
+[submodule "externals/mel"]
+	path = externals/mel
+	url = https://github.com/pcarruscag/MEL.git

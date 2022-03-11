@@ -2,14 +2,14 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <limits>
 #include "CFlowVariable.hpp"
 
 /*!
@@ -41,7 +42,28 @@ class CIncEulerVariable : public CFlowVariable {
 public:
   static constexpr size_t MAXNVAR = 12;
 
+  template <class IndexType>
+  struct CIndices {
+    const IndexType nDim;
+    CIndices(IndexType ndim, IndexType) : nDim(ndim) {}
+    inline IndexType Pressure() const { return 0; }
+    inline IndexType Velocity() const { return 1; }
+    inline IndexType Temperature() const { return nDim+1; }
+    inline IndexType Density() const { return nDim+2; }
+    inline IndexType Beta() const { return nDim+3; }
+    inline IndexType LaminarViscosity() const { return nDim+4; }
+    inline IndexType EddyViscosity() const { return nDim+5; }
+    inline IndexType ThermalConductivity() const { return nDim+6; }
+    inline IndexType CpTotal() const { return nDim+7; }
+    inline IndexType CvTotal() const { return nDim+8; }
+
+    /*--- For compatible interface with NEMO. ---*/
+    inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
+  };
+
  protected:
+  const CIndices<unsigned long> indices;
+
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
  public:
@@ -62,16 +84,15 @@ public:
    * \brief Set the value of the pressure.
    * \param[in] iPoint - Point index.
    */
-  inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint,0) = Solution(iPoint,0); }
+  inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint, indices.Pressure()) = Solution(iPoint,0); }
 
   /*!
    * \brief Set the value of the density for the incompressible flows.
    * \param[in] iPoint - Point index.
    */
   inline bool SetDensity(unsigned long iPoint, su2double val_density) final {
-    Primitive(iPoint,nDim+2) = val_density;
-    if (Primitive(iPoint,nDim+2) > 0.0) return false;
-    else return true;
+    Primitive(iPoint, indices.Density()) = val_density;
+    return val_density <= 0.0;
   }
 
   /*!
@@ -81,8 +102,8 @@ public:
   inline void SetVelocity(unsigned long iPoint) final {
     Velocity2(iPoint) = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      Primitive(iPoint,iDim+1) = Solution(iPoint,iDim+1);
-      Velocity2(iPoint) += pow(Primitive(iPoint,iDim+1),2);
+      Primitive(iPoint, iDim+indices.Velocity()) = Solution(iPoint,iDim+1);
+      Velocity2(iPoint) += pow(Primitive(iPoint, iDim+indices.Velocity()), 2);
     }
   }
 
@@ -91,47 +112,58 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline bool SetTemperature(unsigned long iPoint, su2double val_temperature) final {
-    Primitive(iPoint,nDim+1) = val_temperature;
-    if (Primitive(iPoint,nDim+1) > 0.0) return false;
-    else return true;
+    Primitive(iPoint, indices.Temperature()) = val_temperature;
+    return val_temperature <= 0.0;
   }
 
   /*!
    * \brief Set the value of the beta coeffient for incompressible flows.
    * \param[in] iPoint - Point index.
    */
-  inline void SetBetaInc2(unsigned long iPoint, su2double val_betainc2) final { Primitive(iPoint,nDim+3) = val_betainc2; }
+  inline void SetBetaInc2(unsigned long iPoint, su2double betainc2) final {
+    Primitive(iPoint, indices.Beta()) = betainc2;
+  }
 
   /*!
    * \brief Get the flow pressure.
    * \return Value of the flow pressure.
    */
-  inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint,0); }
+  inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint, indices.Pressure()); }
 
   /*!
    * \brief Get the value of beta squared for the incompressible flow
    * \return Value of beta squared.
    */
-  inline su2double GetBetaInc2(unsigned long iPoint) const final { return Primitive(iPoint,nDim+3); }
+  inline su2double GetBetaInc2(unsigned long iPoint) const final { return Primitive(iPoint, indices.Beta()); }
 
   /*!
    * \brief Get the density of the flow.
    * \return Value of the density of the flow.
    */
-  inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint,nDim+2); }
+  inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint, indices.Density()); }
 
   /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
-  inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint,nDim+1); }
+  inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint, indices.Temperature()); }
 
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] iDim - Index of the dimension.
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
-  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final { return Primitive(iPoint,iDim+1); }
+  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
+    return Primitive(iPoint, iDim+indices.Velocity());
+  }
+
+  /*!
+   * \brief Get the velocity gradient.
+   * \return Value of the velocity gradient.
+   */
+  inline CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const final {
+    return Gradient_Primitive(iPoint, indices.Velocity());
+  }
 
   /*!
    * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -141,7 +173,7 @@ public:
   inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const final {
     su2double ProjVel = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      ProjVel += Primitive(iPoint,iDim+1)*val_vector[iDim];
+      ProjVel += Primitive(iPoint, iDim+indices.Velocity())*val_vector[iDim];
     return ProjVel;
   }
 
@@ -170,24 +202,28 @@ public:
   /*!
    * \brief Set the specific heat Cp.
    */
-  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) final { Primitive(iPoint, nDim+7) = val_Cp; }
+  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) final {
+    Primitive(iPoint, indices.CpTotal()) = val_Cp;
+  }
 
   /*!
    * \brief Set the specific heat Cv.
    */
-  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) final { Primitive(iPoint, nDim+8) = val_Cv; }
+  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) final {
+    Primitive(iPoint, indices.CvTotal()) = val_Cv;
+  }
 
   /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P of the flow.
    */
-  inline su2double GetSpecificHeatCp(unsigned long iPoint) const final { return Primitive(iPoint, nDim+7); }
+  inline su2double GetSpecificHeatCp(unsigned long iPoint) const final { return Primitive(iPoint, indices.CpTotal()); }
 
   /*!
    * \brief Get the specific heat at constant V of the flow.
    * \return Value of the specific heat at constant V of the flow.
    */
-  inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, nDim+8); }
+  inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, indices.CvTotal()); }
 
   /*!
    * \brief Set the recovered pressure for streamwise periodic flow.

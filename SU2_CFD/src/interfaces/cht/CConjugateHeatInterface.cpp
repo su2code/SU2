@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,7 +104,6 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
       switch (donor_config->GetKind_ConductivityModel()) {
 
         case CONDUCTIVITYMODEL::CONSTANT:
-        case CONDUCTIVITYMODEL::FLAMELET:
           thermal_conductivity = thermal_conductivityND*donor_config->GetThermal_Conductivity_Ref();
           break;
 

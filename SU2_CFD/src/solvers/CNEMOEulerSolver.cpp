@@ -2,14 +2,14 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
-  CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {
+  CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNEMONSSolver. ---*/
@@ -56,7 +56,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
-  unsigned short iMarker, nLineLets;
+  unsigned long iMarker;
+  unsigned short nLineLets;
   su2double *Mvec_Inf, Alpha, Beta;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -291,7 +292,6 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
-
   const unsigned long InnerIter = config->GetInnerIter();
   const bool muscl       = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
@@ -483,13 +483,14 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   /*--- Static arrays for MUSCL reconstructed variables ---*/
-  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
-  su2double Conserved_i[MAXNVAR] = {0.0}, Conserved_j[MAXNVAR] = {0.0};
-  su2double      dPdU_i[MAXNVAR] = {0.0},      dPdU_j[MAXNVAR] = {0.0};
-  su2double      dTdU_i[MAXNVAR] = {0.0},      dTdU_j[MAXNVAR] = {0.0};
-  su2double    dTvedU_i[MAXNVAR] = {0.0},    dTvedU_j[MAXNVAR] = {0.0};
-  su2double       Eve_i[MAXNVAR] = {0.0},       Eve_j[MAXNVAR] = {0.0};
-  su2double      Cvve_i[MAXNVAR] = {0.0},      Cvve_j[MAXNVAR] = {0.0};
+  su2double     Primitive_i[MAXNVAR] = {0.0},    Primitive_j[MAXNVAR] = {0.0};
+  su2double     Conserved_i[MAXNVAR] = {0.0},    Conserved_j[MAXNVAR] = {0.0};
+  su2double          dPdU_i[MAXNVAR] = {0.0},         dPdU_j[MAXNVAR] = {0.0};
+  su2double          dTdU_i[MAXNVAR] = {0.0},         dTdU_j[MAXNVAR] = {0.0};
+  su2double        dTvedU_i[MAXNVAR] = {0.0},       dTvedU_j[MAXNVAR] = {0.0};
+  su2double           Eve_i[MAXNVAR] = {0.0},          Eve_j[MAXNVAR] = {0.0};
+  su2double          Cvve_i[MAXNVAR] = {0.0},         Cvve_j[MAXNVAR] = {0.0};
+  su2double  Project_Grad_i[MAXNVAR] = {0.0}, Project_Grad_j[MAXNVAR] = {0.0};
   su2double Gamma_i = 0.0, Gamma_j = 0.0;
 
   /*--- Loop over edges and calculate convective fluxes ---*/
@@ -534,32 +535,45 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      /*--- Set and extract limiters ---*/
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+      if (limiter && !van_albada){
+        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      }
+
+      su2double lim_i = 2.0;
+      su2double lim_j = 2.0;
+
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        Project_Grad_i[iVar] = 0.0; Project_Grad_j[iVar] = 0.0;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i[iVar] += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j[iVar] -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
-        su2double lim_i = 1.0;
-        su2double lim_j = 1.0;
-
-        if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
-          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+        if (limiter) {
+          if (van_albada) {
+            su2double V_ij = V_j[iVar] - V_i[iVar];
+            su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
+            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
+            lim_i = min(lim_i, va_lim_i);
+            lim_j = min(lim_j, va_lim_j);
+          } else {
+            lim_i = min(lim_i, Limiter_i[iVar]);
+            lim_j = min(lim_j, Limiter_j[iVar]);
+          }
+        } else {
+          lim_i = lim_j = 1.0;
         }
-        else if (limiter) {
-          lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
-          lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
-        }
-        su2double lim_ij = min(lim_i, lim_j);
+      }
+      su2double lim_ij = min(lim_i, lim_j);
 
-        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
@@ -1012,7 +1026,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
-  bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = false;
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
@@ -1414,26 +1427,10 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, jDim, iSpecies, iVar, jVar;
   unsigned long iPoint, iVertex;
 
-  su2double *Normal = nullptr, Area, UnitNormal[3], *NormalArea,
-  **Jacobian_b, **DubDu,
-  rho, cs, P, rhoE, rhoEve, conc, *u, *dPdU;
+  /*--- Allocate the necessary vector structures ---*/
+  su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  /*--- Allocate arrays ---*/
-  Normal     = new su2double[nDim];
-  NormalArea = new su2double[nDim];
-  Jacobian_b = new su2double*[nVar];
-  DubDu      = new su2double*[nVar];
-  u          = new su2double[nDim];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_b[iVar] = new su2double[nVar];
-    DubDu[iVar] = new su2double[nVar];
-  }
-
-  /*--- Get species molar mass ---*/
-  auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1446,15 +1443,14 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
       /*--- Calculate parameters from the geometry ---*/
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++){
-        NormalArea[iDim] = -Normal[iDim];
         UnitNormal[iDim] = -Normal[iDim]/Area;
       }
 
       /*--- Retrieve the pressure on the vertex ---*/
-      P   = nodes->GetPressure(iPoint);
+      su2double P = nodes->GetPressure(iPoint);
 
       /*--- Apply the flow-tangency b.c. to the convective flux ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1471,25 +1467,30 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
       if (implicit) {
 
+        /*--- Allocate arrays needed for implicit solver ---*/
+        su2double Velocity[MAXNDIM] = {0.0};
+
+        /*--- Get species molar mass ---*/
+        auto& Ms = FluidModel->GetSpeciesMolarMass();
+
         /*--- Initialize Jacobian ---*/
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
 
         /*--- Calculate state i ---*/
-        rho     = nodes->GetDensity(iPoint);
-        rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
-        rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
-        dPdU    = nodes->GetdPdU(iPoint);
+        su2double rho     = nodes->GetDensity(iPoint);
+        su2double rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
+        su2double rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
+        auto dPdU    = nodes->GetdPdU(iPoint);
         for (iDim = 0; iDim < nDim; iDim++)
-          u[iDim] = nodes->GetVelocity(iPoint,iDim);
+          Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
 
-        conc = 0.0;
+        su2double conc = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          cs    = nodes->GetMassFraction(iPoint,iSpecies);
+          su2double cs = nodes->GetMassFraction(iPoint,iSpecies);
           conc += cs * rho/Ms[iSpecies];
 
-          /////// NEW //////
           for (iDim = 0; iDim < nDim; iDim++) {
             Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
             Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
@@ -1498,7 +1499,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
+            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = Velocity[iDim]*UnitNormal[jDim]
                 + dPdU[nSpecies+jDim]*UnitNormal[iDim];
           }
           Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
@@ -1519,17 +1520,6 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       }
     }
   }
-  delete [] Normal;
-  delete [] NormalArea;
-  delete [] u;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] Jacobian_b[iVar];
-    delete [] DubDu[iVar];
-  }
-
-  delete [] Jacobian_b;
-  delete [] DubDu;
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
@@ -1539,7 +1529,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
 
-  su2double *V_infty, *V_domain, *U_domain,*U_infty;
+  su2double *V_infty, *V_domain, *U_infty, *U_domain;
 
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1551,6 +1541,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Allocate the value at the infinity ---*/
+    V_infty = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
@@ -1726,7 +1719,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Store primitives and set some variables for clarity. ---*/
         Density = V_domain[RHO_INDEX];
-        for (iDim = 0; iDim < nDim; iDim++) 
+        for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
 
         Velocity2   = GeometryToolbox::SquaredNorm(nDim, Velocity);
@@ -1940,8 +1933,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   bool gravity      = config->GetGravityForce();
   bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
-  su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+  su2double *U_domain;
+  su2double *U_outlet = new su2double[nVar];
+  su2double *V_domain, *V_outlet;
   su2double *Normal   = new su2double[nDim];
   su2double *Ys       = new su2double[nSpecies];
 
@@ -1959,6 +1953,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    /*--- Allocate the value at the outlet ---*/
+    V_outlet = GetCharacPrimVar(val_marker, iVertex);
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
@@ -1973,8 +1970,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint, iVar);
+      U_domain = nodes->GetSolution(iPoint);
+      V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Initialize solution at outlet ---*/
       for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = 0.0;
@@ -2164,10 +2161,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   }
 
   /*--- Free locally allocated memory ---*/
-  delete [] U_domain;
   delete [] U_outlet;
-  delete [] V_domain;
-  delete [] V_outlet;
   delete [] Normal;
   delete [] Ys;
 
@@ -2392,7 +2386,6 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
   su2double *U_outlet, *U_domain;
 
   bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool dynamic_grid = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
@@ -2413,6 +2406,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
       U_domain = nodes->GetSolution(iPoint);
 
       /*--- Allocate the value at the outlet ---*/
+      V_outlet = GetCharacPrimVar(val_marker, iVertex);
       V_outlet = V_domain;
       U_outlet = U_domain;
 

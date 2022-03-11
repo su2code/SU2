@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,8 +39,12 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+<<<<<<< HEAD
   StreamwisePeriodicValues SPvals;
   su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+=======
+  StreamwisePeriodicValues SPvals, SPvalsUpdated;
+>>>>>>> develop
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -126,13 +130,10 @@ protected:
   void SetReferenceValues(const CConfig& config) final;
 
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CIncEulerSolver() : CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>() {}
+  CIncEulerSolver() = delete;
 
   /*!
-   * \overload
+   * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Grid level.
@@ -244,8 +245,20 @@ public:
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
+<<<<<<< HEAD
   void Evaluate_ObjFunc(const CConfig *config) override;
+=======
+  void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) final {
+    Total_ComboObj = EvaluateCommonObjFunc(*config);
+
+    if (config->GetWeakly_Coupled_Heat()) {
+      solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
+      Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();
+    }
+  }
+>>>>>>> develop
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -391,8 +404,30 @@ public:
   inline bool GetHasHybridParallel() const final { return true; }
 
   /*!
-   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat.
-   * \return Struct holding 4 su2doubles.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
+   * \return Struct holding streamwise periodic values.
    */
   StreamwisePeriodicValues GetStreamwisePeriodicValues() const final { return SPvals; }
+
+  /*!
+   * \brief Register In- or Output.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
+
+  /*!
+   * \brief Seed the adjoint of the extra solution at the output.
+   * \param[in] adj_sol - Vector containing the adjoint solution to seed.
+   * \param[in] config - The particular config.
+   */
+  void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) final;
+
+  /*!
+   * \brief Extract the adjoint of the extra solution at the input.
+   * \param[out] adj_sol - Vector to store the adjoint into.
+   * \param[in] config - The particular config.
+   */
+  void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
 };

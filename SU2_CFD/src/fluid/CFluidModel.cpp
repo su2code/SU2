@@ -2,14 +2,14 @@
  * \file CFluidModel.cpp
  * \brief Source of the fluid model base class containing thermo-physical subroutines.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,9 +56,6 @@ void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
       LaminarViscosity = unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
       break;
-    case VISCOSITYMODEL::FLAMELET:
-      /* do nothing. Viscosity is obtained from the table and set in setTDState_T */
-      break;
     default:
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
@@ -92,9 +89,6 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
             new CPolynomialConductivity<N_POLY_COEFFS>(config->GetKt_PolyCoeffND()));
       }
       break;
-    case CONDUCTIVITYMODEL::FLAMELET:
-      /* do nothing. Conductivity is obtained from the table and set in setTDState_T */
-      break;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       break;
@@ -112,9 +106,6 @@ void CFluidModel::SetMassDiffusivityModel (const CConfig* config) {
       } else {
         MassDiffusivity = unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Lam()));
       }
-      break;
-    case DIFFUSIVITYMODEL::FLAMELET:
-      /* do nothing. Diffusivity is obtained from the table and set in setTDState_T */
       break;
     case DIFFUSIVITYMODEL::UNITY_LEWIS:
       MassDiffusivity = unique_ptr<CUnityLewisDiffusivity>(new CUnityLewisDiffusivity());

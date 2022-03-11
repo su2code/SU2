@@ -2,14 +2,14 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,13 +30,13 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 
 /*---  This is the implementation of the Langtry-Menter transition model.
-       The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 
+       The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009
        DOI: https://doi.org/10.2514/1.42362 ---*/
-       
-// Note: TransLM seems to use rho*gamma, rho*Re_sigma as Solution variables, thus Conservative=true
-CTransLMSolver::CTransLMSolver(void) : CTurbSolver(true) {}
 
-CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver(true) {
+// Note: TransLM seems to use rho*gamma, rho*Re_sigma as Solution variables, thus Conservative=true
+
+CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+    : CTurbSolver(geometry, config, true) {
   unsigned short iVar, nLineLets;
   unsigned long iPoint, index;
   su2double tu_Inf, dull_val, rey;

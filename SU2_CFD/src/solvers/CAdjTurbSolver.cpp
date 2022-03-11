@@ -2,14 +2,14 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,16 +41,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Dimension of the problem  ---*/
-  switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::NONE:                 break;
-    case TURB_MODEL::SA :        nVar = 1; break;
-    case TURB_MODEL::SA_NEG :    nVar = 1; break;
-    case TURB_MODEL::SA_E :      nVar = 1; break;
-    case TURB_MODEL::SA_COMP :   nVar = 1; break;
-    case TURB_MODEL::SA_E_COMP : nVar = 1; break;
-    case TURB_MODEL::SST :       nVar = 2; break;
-    case TURB_MODEL::SST_SUST :  nVar = 2; break;
-  }
+  nVar = config->GetnTurbVar();
 
   /*--- Initialize nVarGrad for deallocation ---*/
 

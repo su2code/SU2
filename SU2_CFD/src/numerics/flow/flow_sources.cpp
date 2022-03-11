@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -245,7 +245,6 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
   viscous  = config->GetViscous();
-  flame    = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
 }
 
@@ -313,8 +312,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       Eddy_Viscosity_i       = V_i[nDim+5];
       Thermal_Conductivity_i = V_i[nDim+6];
 
-      // nijso: FIXME: the viscous terms have serious convergence issues...
-
+      su2double total_viscosity;
 
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
       // su2double total_conductivity = Thermal_Conductivity_i + Cp_i*Eddy_Viscosity_i/Prandtl_Turb;
@@ -325,20 +323,13 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       /*--- Viscous terms. ---*/
 
       residual[0] -= 0.0;
-      //residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0][0]);
-      //residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
-      //                       yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
-      //                       TWO3*AuxVar_Grad_i[0][1]);
-      //residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
-      su2double tau_tt = 2.0*total_viscosity * yinv*Velocity_i[1];
-      su2double tau_rr = 2.0*total_viscosity * PrimVar_Grad_i[2][1];
-      su2double tau_rz = tau[0][1]; 
- 
-      residual[1] -= Volume*(yinv*tau_rz);
-      residual[2] -= Volume*(yinv*tau_rr - yinv*tau_tt);
+      residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0][0]);
+      residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
+                             yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
+                             TWO3*AuxVar_Grad_i[0][1]);
       residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
       // residual[3] -= 0.0; 
-      if (implicit) jacobian[2][2] = Volume*yinv*2.0*total_viscosity*yinv;
+      //if (implicit) jacobian[2][2] = Volume*yinv*2.0*total_viscosity*yinv;
     }
 
   } else {
@@ -355,7 +346,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
   }
 
-  if (!energy || flame) {
+  if (!energy) {
     residual[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -392,7 +383,7 @@ CNumerics::ResidualType<> CSourceBodyForce::ComputeResidual(const CConfig* confi
   for (iDim = 0; iDim < nDim; iDim++)
     residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
 
-  /*--- Body Force contribution ---*/
+  /*--- Energy contribution ---*/
 
   residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)

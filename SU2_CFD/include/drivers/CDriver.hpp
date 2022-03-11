@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -212,6 +212,20 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const;
+
+  /*!
+   * \brief Helper to instantiate turbulence numerics specialized for different flow solvers.
+   */
+  template <class FlowIndices>
+  void InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig *config,
+                                    const CSolver* turb_solver, CNumerics ****&numerics) const;
+
+  /*!
+   * \brief Helper to instantiate species transport numerics specialized for different flow solvers.
+   */
+  template <class FlowIndices>
+  void InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
+                                  const CSolver* species_solver, CNumerics ****&numerics) const;
 
   /*!
    * \brief Definition and allocation of all solver classes.

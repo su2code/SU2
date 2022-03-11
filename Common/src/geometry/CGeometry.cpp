@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2436,6 +2436,8 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   }
 
+  /*--- Compute the global surface areas for all markers. ---*/
+  geometry_container[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 }
 
 void CGeometry::SetCustomBoundary(CConfig *config) {
@@ -2503,6 +2505,57 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   }
 }
 
+void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
+  const auto nMarker_Global = config->GetnMarker_CfgFile();
+  SurfaceAreaCfgFile.resize(nMarker_Global);
+  vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
+
+  /*--- Loop over all local markers ---*/
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    const auto Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Loop over all global markers, and find the local-global pair via
+          matching unique string tags. ---*/
+    for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+
+      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+      if (Local_TagBound == Global_TagBound) {
+
+        for(auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++ ) {
+
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          if(!nodes->GetDomain(iPoint)) continue;
+
+          const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
+          const auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
+
+          LocalSurfaceArea[iMarker_Global] += Area;
+        }// for iVertex
+      }//if Local == Global
+    }//for iMarker_Global
+  }//for iMarker
+
+  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+}
+
+su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_marker) const {
+  /*---Find the precomputed marker surface area by local-global string-matching. ---*/
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  for (unsigned short iMarker_Global = 0; iMarker_Global < config->GetnMarker_CfgFile(); iMarker_Global++) {
+
+    const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+    if (Marker_Tag == Global_TagBound)
+      return SurfaceAreaCfgFile[iMarker_Global];
+
+  }
+
+  SU2_MPI::Error("Unable to match local-marker with cfg-marker for Surface Area.", CURRENT_FUNCTION);
+  return 0.0;
+}
 
 void CGeometry::ComputeSurf_Straightness(CConfig *config,
                                          bool    print_on_screen) {
@@ -2544,8 +2597,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
           other GridMovements are rigid. ---*/
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
          config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-        config->GetMarker_Moving_Bool(Local_TagBound) == false &&
-        config->GetKind_GridMovement() != ELASTICITY) {
+         !config->GetMarker_Moving_Bool(Local_TagBound)) {
 
       /*--- Loop over all global markers, and find the local-global pair via
             matching unique string tags. ---*/
@@ -3823,13 +3875,13 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
       /*--- Check if a zone needs the wall distance and store a boolean ---*/
 
-      ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
-      if (kindSolver == RANS ||
-          kindSolver == INC_RANS ||
-          kindSolver == DISC_ADJ_RANS ||
-          kindSolver == DISC_ADJ_INC_RANS ||
-          kindSolver == FEM_LES ||
-          kindSolver == FEM_RANS){
+      MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
+      if (kindSolver == MAIN_SOLVER::RANS ||
+          kindSolver == MAIN_SOLVER::INC_RANS ||
+          kindSolver == MAIN_SOLVER::DISC_ADJ_RANS ||
+          kindSolver == MAIN_SOLVER::DISC_ADJ_INC_RANS ||
+          kindSolver == MAIN_SOLVER::FEM_LES ||
+          kindSolver == MAIN_SOLVER::FEM_RANS){
         wallDistanceNeeded[iZone] = true;
       }
 

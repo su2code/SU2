@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -537,7 +537,7 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
 
   energy   = config->GetEnergy_Equation();
-  flame    = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+
 }
 
 CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* config) {
@@ -654,9 +654,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   }
 
-  /*--- in case of combustion we currently overwrite the temperature */
-
-  if (!energy || flame) {
+  if (!energy) {
     Proj_Flux_Tensor[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

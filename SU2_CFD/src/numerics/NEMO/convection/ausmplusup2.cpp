@@ -2,14 +2,14 @@
  * \file ausmplusup2.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz
- * \version 7.2.0 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -221,7 +221,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
 
     if (mF >= 0.0) FcLR = FcL;
     else           FcLR = FcR;
-    
+
     /*--- Sound speed derivatives: Species density ---*/
     const auto& Cvtrs = fluidmodel -> GetSpeciesCvTraRot();
     const auto& Ms    = fluidmodel -> GetSpeciesMolarMass();
