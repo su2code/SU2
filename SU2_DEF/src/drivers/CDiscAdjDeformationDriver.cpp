@@ -124,6 +124,9 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
             config_container[iZone]->SetMultizone(driver_config, config_container);
         }
     }
+    
+    /*--- Keep a reference to the main (ZONE 0) config ---*/
+    main_config = config_container[ZONE_0];
 }
 
 void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
@@ -254,6 +257,10 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
         geometry_container[iZone][INST_0][MESH_0]->PreprocessP2PComms(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         
     }
+    
+    /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
+    main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    
 }
 
 void CDiscAdjDeformationDriver::Output_Preprocessing() {
@@ -312,7 +319,7 @@ void CDiscAdjDeformationDriver::Run() {
             /*--- Copy coordinates to the surface structure ---*/
             
             surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-
+            
             /*--- If AD mode is enabled we can use it to compute the projection,
              *    otherwise we use finite differences. ---*/
             
@@ -998,7 +1005,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_MeshSensitivity(CGeometry *g
             /*--- After appling the solver write the results back ---*/
             solver->WriteSensToGeometry(geometry);
             
-        /*--- Work with the volume derivatives. ---*/
+            /*--- Work with the volume derivatives. ---*/
         } else {
             
             /*--- Get the sensitivities from the geometry class to work with. ---*/
@@ -1041,7 +1048,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry *geometry
     if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE) {
         solver->ApplyGradientSmoothingDV(geometry, numerics.get(), surface_movement, grid_movement, config, Gradient);
         
-    /*--- If smoothing already took place on the mesh level, or none is requested, just do standard projection. ---*/
+        /*--- If smoothing already took place on the mesh level, or none is requested, just do standard projection. ---*/
     } else if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD ||
                config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
         solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);

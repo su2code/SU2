@@ -605,6 +605,9 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
         }
     }
     
+    /*--- Keep a reference to the main (ZONE 0) config ---*/
+    main_config = config_container[ZONE_0];
+    
     /*--- Determine whether or not the FEM solver is used, which decides the type of
      *    geometry classes that are instantiated. Only adapted for single-zone problems ---*/
     
@@ -709,6 +712,8 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
         
     }
     
+    /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
+    main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 }
 
 void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geometry) {
@@ -815,13 +820,13 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
         if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
         geometry[MESH_0]->ComputeSurf_Curvature(config);
     }
-
+    
     /*--- Compute the global surface areas for all markers. ---*/
-
+    
     geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);
-
+    
     /*--- Check for periodicity and disable MG if necessary. ---*/
-
+    
     if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
     geometry[MESH_0]->Check_Periodicity(config);
     

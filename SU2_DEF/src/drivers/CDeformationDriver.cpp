@@ -139,6 +139,9 @@ void CDeformationDriver::Input_Preprocessing() {
             config_container[iZone]->SetMultizone(driver_config, config_container);
         }
     }
+    
+    /*--- Keep a reference to the main (ZONE 0) config ---*/
+    main_config = config_container[ZONE_0];
 }
 
 void CDeformationDriver::Geometrical_Preprocessing() {
@@ -219,6 +222,10 @@ void CDeformationDriver::Geometrical_Preprocessing() {
     
     /*--- Get the number of dimensions ---*/
     nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+    
+    /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
+    main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+    
 }
 
 void CDeformationDriver::Output_Preprocessing() {
@@ -533,11 +540,11 @@ void CDeformationDriver::Output() {
             (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID)) {
             
             /*--- Write the the free-form deformation boxes after deformation (if defined). ---*/
-            if (true) {
+            if (!haveSurfaceDeformation) {
                 if (rank == MASTER_NODE) cout << "No FFD information available." << endl;
             } else {
                 if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
-            
+                
                 surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
             }
         }
