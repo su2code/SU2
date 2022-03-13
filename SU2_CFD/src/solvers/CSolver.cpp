@@ -468,7 +468,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
 
         if (nDim==2) {
-          GeometryToolbox::RotationMatrix(Theta, rotMatrix2D);
+          GeometryToolbox::RotationMatrix(Psi, rotMatrix2D);
         } else {
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
@@ -736,6 +736,22 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
+            }
+
+            /*--- Rotate the vector components of the solution. ---*/
+
+            if (rotate_periodic) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                su2double d_diDim[3] = {0.0};
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  d_diDim[iVar-1] = rotBlock(iVar, iDim);
+                }
+                su2double rotated[3] = {0.0};
+                Rotate(zeros, d_diDim, rotated);
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  rotBlock(iVar, iDim) = rotated[iVar-1];
+                }
+              }
             }
 
             /*--- Store the partial gradient in the buffer. ---*/
