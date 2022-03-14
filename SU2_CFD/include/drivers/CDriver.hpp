@@ -409,6 +409,18 @@ public:
     passivedouble GetObjective() const;
     
     /*!
+     * \brief Get the number of design variables.
+     * \return Number of design variables.
+     */
+    passivedouble GetNumberDesignVariables() const;
+    
+    /*!
+     * \brief Get the number of FFD boxes.
+     * \return Number of FFD boxes.
+     */
+    passivedouble GetNumberFFDBoxes() const;
+    
+    /*!
      * \brief Get the number of external iterations.
      * \return Number of external iterations.
      */
@@ -453,6 +465,12 @@ public:
     void SetMarkerTemperatures(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
+     * \brief Get heat fluxes.
+     * \return Vertex heat fluxes (nPoint).
+     */
+    vector<passivedouble> GetHeatFlux() const;
+    
+    /*!
      * \brief Get heat fluxes on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \param[in] NormalVector - Boolean to indicate if normal component of the heat flux should be returned.
@@ -468,11 +486,43 @@ public:
     void SetMarkerNormalHeatFlux(unsigned short iMarker, vector<passivedouble> values);
     
     /*!
+     * \brief Get thermal conductivity.
+     * \return Vertex thermal conductivities (nPoint).
+     */
+    vector<passivedouble> GetThermalConductivity() const;
+    
+    /*!
      * \brief Get thermal conductivity on the specified marker.
      * \param[in] iMarker - Marker identifier.
      * \return Vertex thermal conductivities (nVertex).
      */
     vector<passivedouble> GetMarkerThermalConductivity(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get laminar viscosity.
+     * \return Vertex laminar viscosity (nPoint).
+     */
+    vector<passivedouble> GetLaminarViscosity() const;
+    
+    /*!
+     * \brief Get laminar viscosity on the specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \return Vertex laminar viscosity (nVertex).
+     */
+    vector<passivedouble> GetMarkerLaminarViscosity(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get eddy viscosity.
+     * \return Vertex eddy viscosity (nPoint).
+     */
+    vector<passivedouble> GetEddyViscosity() const;
+    
+    /*!
+     * \brief Get eddy viscosity on the specified marker.
+     * \param[in] iMarker - Marker identifier.
+     * \return Vertex eddy viscosity (nVertex).
+     */
+    vector<passivedouble> GetMarkerEddyViscosity(unsigned short iMarker) const;
     
     /*!
      * \brief Preprocess the inlets via file input for all solvers.
