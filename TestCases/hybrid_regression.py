@@ -134,7 +134,7 @@ def main():
     poiseuille_profile.test_vals = [-12.494752, -7.712204, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
-    # 2D Periodic
+    # 2D Rotational Periodic
     periodic2d           = TestCase('periodic2d')
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
