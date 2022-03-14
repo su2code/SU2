@@ -139,7 +139,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.818512, -8.363387, -8.287483, -5.334815, -1.087922, -2945.2]
+    periodic2d.test_vals = [-10.818511, -8.363385, -8.287482, -5.334813, -1.087926, -2945.2]
     test_list.append(periodic2d)
 
     ##########################
