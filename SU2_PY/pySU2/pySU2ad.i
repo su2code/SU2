@@ -64,12 +64,12 @@ threads="1"
 
 namespace std {
    %template() vector<bool>;
-   %template() vector<int>;
    %template() vector<unsigned long>;
    %template() vector<vector<unsigned long>>;
    %template() vector<double>;
+   %template() vector<vector<double>>;
    %template() vector<string>;
-   %template() map<string, int>;
+   %template() map<string, unsigned short>;
    %template() map<string, string>;
 }
 
