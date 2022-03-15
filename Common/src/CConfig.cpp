@@ -1093,8 +1093,12 @@ void CConfig::SetConfig_Options() {
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
+
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options_Map, SST_BASE::V1994, SST_MODIFIED::YES, SST_PROUDCTIONS::NONE, SST_SUST::NONE, SST_CURVE::NONE );
+
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
 

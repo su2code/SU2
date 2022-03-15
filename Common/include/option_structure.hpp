@@ -912,12 +912,11 @@ static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
 enum class TURB_MODEL {
   NONE,      /*!< \brief No turbulence model. */
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG,    /*!< \brief Kind of Turbulent model (Negative Spalart-Allmaras). */
   SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
   SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
   SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
@@ -927,7 +926,6 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("SA_COMP", TURB_MODEL::SA_COMP)
   MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -957,6 +955,20 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
   }
   return TURB_FAMILY::NONE;
 }
+
+/*!
+ * \brief SST Base Model
+ */
+enum class SST_BASE {
+  NONE,   /*!< \brief No SST Turb model. */
+  V1994,  /*!< \brief 1994 Menter k-w SST model. */
+  V2003,  /*!< \brief 2003 Menter k-w SST model. */
+};
+static const MapType<std::string, SST_BASE> SST_Base_Map = {
+  MakePair("NONE", SST_BASE::NONE)
+  MakePair("v1994", SST_BASE::V1994)
+  MakePair("v2003", SST_BASE::V2003)
+};
 
 /*!
  * \brief Types of transition models
