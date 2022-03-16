@@ -1,5 +1,5 @@
 /*!
- * \file driver_structure.cpp
+ * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
  * \version 7.3.0 "Blackbird"

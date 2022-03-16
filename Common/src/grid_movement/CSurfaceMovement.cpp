@@ -115,7 +115,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
         /*--- Compute the parametric coordinates, it also find the points in
          the FFDBox using the parametrics coordinates ---*/
-        
+
         SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
 
@@ -747,7 +747,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
  in case of Bezier curves, and we maintain an internal copy)---*/
 
   if (BoxFFD && (config->GetFFD_Blending() == BEZIER)) {
-    
+
     for (iOrder = 0; iOrder < 2; iOrder++) {
       for (jOrder = 0; jOrder < 2; jOrder++) {
         for (kOrder = 0; kOrder < 2; kOrder++) {
