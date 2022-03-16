@@ -134,6 +134,14 @@ def main():
     poiseuille_profile.test_vals = [-12.494752, -7.712204, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
+    # 2D Rotational Periodic
+    periodic2d           = TestCase('periodic2d')
+    periodic2d.cfg_dir   = "navierstokes/periodic2D"
+    periodic2d.cfg_file  = "config.cfg"
+    periodic2d.test_iter = 1400
+    periodic2d.test_vals = [-10.818511, -8.363385, -8.287482, -5.334813, -1.087926, -2945.2]
+    test_list.append(periodic2d)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
