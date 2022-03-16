@@ -722,7 +722,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
 
-      su2double StrainMag = StrainMag_i;
+      su2double P_Base = StrainMag_i;  //Base production term 
+
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
 
@@ -730,17 +731,16 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (using_uq) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
-        StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
+        P_Base = PerturbedStrainMag(ScalarVar_i[0]);
 
       } (vorticity_source) {
-        StrainMag = VorticityMag; 
+        P_Base = VorticityMag; 
 
       } (kato_launder) {
-        su2double source = StrainMag * VorticityMag; 
-        StrainMag = sqrt(source);
+        P_Base = sqrt(StrainMag*VorticityMag);
       }  
 
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag,2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      su2double pk = Eddy_Viscosity_i * pow(P_Base,2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       su2double pw = (alfa_blended * Density_i) * pk;

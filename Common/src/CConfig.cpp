@@ -828,6 +828,11 @@ void CConfig::SetPointersNull(void) {
 
   Config_Filenames = nullptr;
 
+  /*--- Turbulence option pointers ---*/
+
+  SST_Options = nullptr;
+  SA_Options = nullptr;
+
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = nullptr;    Marker_FarField             = nullptr;    Marker_Custom              = nullptr;
@@ -1097,7 +1102,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
-  addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options_Map, SST_BASE::V1994, SST_MODIFIED::YES, SST_PROUDCTIONS::NONE, SST_SUST::NONE, SST_CURVE::NONE );
+  addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options, SST_Options_Map);
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
@@ -5178,6 +5183,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       nTurbVar = 2; break;
   }
 
+  /*--- Postprocess SST_OPTIONS into structure. ---*/
+
+  for (unsigned short iSST = 0; iSST < nSST_Options; iSST++){
+    //CHECK THE LIST HERE?
+  }
+
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
@@ -7826,6 +7837,9 @@ CConfig::~CConfig(void) {
   delete[] Kind_Wall;
 
   delete[] Config_Filenames;
+
+  delete[] SST_Options;
+  delete[] SA_Options;
 
   if (IntInfo_WallFunctions != nullptr) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {

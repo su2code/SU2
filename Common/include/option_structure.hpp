@@ -950,24 +950,33 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
-    case TURB_MODEL::SST_SUST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
 }
 
 /*!
- * \brief SST Base Model
+ * \brief SST Options
  */
-enum class SST_BASE {
-  NONE,   /*!< \brief No SST Turb model. */
-  V1994,  /*!< \brief 1994 Menter k-w SST model. */
-  V2003,  /*!< \brief 2003 Menter k-w SST model. */
+enum class SST_OPTION {
+  NONE,      /*!< \brief No SST Turb model. */
+  V1994,     /*!< \brief 1994 Menter k-w SST model. */
+  V2003,     /*!< \brief 2003 Menter k-w SST model. */
+  MODIFIED,  /*!< \brief Modified k-w SST model. */
+  SUST,      /*!< \brief Menter k-w SST model with sustaining terms. */
+  VORTICITY, /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,        /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  RC,        /*!< \brief Menter k-w SST model with rotation/curvature corrections. */
 };
-static const MapType<std::string, SST_BASE> SST_Base_Map = {
-  MakePair("NONE", SST_BASE::NONE)
-  MakePair("v1994", SST_BASE::V1994)
-  MakePair("v2003", SST_BASE::V2003)
+static const MapType<std::string, SST_OPTION> SST_Option_Map = {
+  MakePair("NONE", SST_OPTION::NONE)
+  MakePair("v1994", SST_OPTION::V1994)
+  MakePair("v2003", SST_OPTION::V2003)
+  MakePair("modified", SST_OPTION::MODIFIED)
+  MakePair("sust", SST_OPTION::SUST)
+  MakePair("vorticity", SST_OPTION::VORTICITY)
+  MakePair("kato-launder", SST_OPTION::KL)
+  MakePair("curvature", SST_OPTION::RC)
 };
 
 /*!
@@ -976,7 +985,7 @@ static const MapType<std::string, SST_BASE> SST_Base_Map = {
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  BC     /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
@@ -1013,7 +1022,6 @@ static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
   MakePair("WALE",         TURB_SGS_MODEL::WALE)
   MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
-
 
 /*!
  * \brief Types of window (weight) functions for cost functional
