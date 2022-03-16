@@ -273,7 +273,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
    surface comma-separated value, and convergence history files (both in serial
    and in parallel). ---*/
 
-  output = COutputFactory::CreateOutput(NEMO_NAVIER_STOKES, input_config_container[ZONE_0],nDim);
+  output = COutputFactory::CreateOutput(NEMO_RANS, input_config_container[ZONE_0],nDim);
 
   input_grid            = NULL;
   output_grid           = NULL;
@@ -643,7 +643,7 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
-  nemo_euler, nemo_ns;
+  nemo_euler, nemo_ns, nemo_rans;
   
   /*--- Count the number of DOFs per solution point. ---*/
   
@@ -665,7 +665,7 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
   fem_dg_flow           = false; fem_dg_shock_persson  = false;
   e_spalart_allmaras    = false; comp_spalart_allmaras = false;   e_comp_spalart_allmaras = false;
   
-  nemo_euler            = false; nemo_ns = false;                 
+  nemo_euler            = false; nemo_ns = false; nemo_rans = false;                 
   
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -680,6 +680,7 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case NEMO_NAVIER_STOKES: nemo_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_RANS : nemo_ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
@@ -884,7 +885,7 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
   adj_euler, adj_ns, adj_turb,
   heat_fvm, fem, fem_euler, fem_ns, fem_dg_flow,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat,
-  nemo_euler, nemo_ns;
+  nemo_euler, nemo_ns, nemo_rans;
   int val_iter = 0;
 
   /*--- Initialize some useful booleans ---*/
@@ -897,7 +898,7 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
   disc_adj_turb    = false; 
   heat_fvm         = false;  disc_adj_heat = false;
   template_solver  = false; 
-  nemo_euler       = false;  nemo_ns       = false;
+  nemo_euler       = false;  nemo_ns       = false;  nemo_rans   = false;
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
@@ -934,6 +935,7 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case NEMO_NAVIER_STOKES: nemo_ns = true; break;
     case RANS : ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_RANS : nemo_ns = true; turbulent = true; break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; break;
@@ -1076,7 +1078,7 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
-  nemo_euler, nemo_ns;
+  nemo_euler, nemo_ns, nemo_rans;
   
   /*--- Count the number of DOFs per solution point. ---*/
   
@@ -1096,7 +1098,7 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
   template_solver  = false;
   fem_dg_flow      = false;  fem_dg_shock_persson = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-  nemo_euler           = false;  nemo_ns               = false;
+  nemo_euler       = false;  nemo_ns          = false;  nemo_rans    = false;
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1110,6 +1112,7 @@ void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case NEMO_NAVIER_STOKES: nemo_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_RANS : nemo_ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
@@ -1229,7 +1232,7 @@ void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_fem, disc_adj_heat,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
-  nemo_euler, nemo_ns;
+  nemo_euler, nemo_ns, nemo_rans;
 
   /*--- Initialize some useful booleans ---*/
   
@@ -1243,7 +1246,7 @@ void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
   transition           = false;      
   template_solver      = false;
   e_spalart_allmaras   = false;  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-  nemo_euler           = false;  nemo_ns               = false;
+  nemo_euler           = false;  nemo_ns               = false;  nemo_rans     = false;
 
   /*--- Assign booleans ---*/
 
@@ -1255,6 +1258,7 @@ void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case NEMO_NAVIER_STOKES: nemo_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_RANS : nemo_ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case FEM_EULER : euler = true; break;
     case FEM_NAVIER_STOKES:
     case FEM_LES: ns = true; break;
@@ -1362,7 +1366,6 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   unsigned short iZone, iVar;
   unsigned short nVar_Template = 0,
                  nVar_Flow     = 0,
-                 nVar_NEMO     = 0,
                  nVar_Trans    = 0,
                  nVar_Turb     = 0,
                  nVar_Adj_Flow = 0,
@@ -1379,7 +1382,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
-  nemo_euler, nemo_ns;
+  nemo_euler, nemo_ns, nemo_rans;
   
   euler                = false;  ns                    = false;  turbulent     = false;
   fem_euler            = false;  fem_ns                = false;  fem_turbulent = false;
@@ -1393,7 +1396,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   template_solver      = false;
   fem_dg_flow          = false;  fem_dg_shock_persson  = false;
   e_spalart_allmaras   = false;  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-  nemo_euler           = false;  nemo_ns               = false;
+  nemo_euler           = false;  nemo_ns               = false;  nemo_rans     = false;
   
   // Allocate memory for the solution.
   unsigned long nDOFsTot = 0;
@@ -1412,6 +1415,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       case NAVIER_STOKES: ns = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
       case NEMO_NAVIER_STOKES: nemo_ns = true; break;
       case RANS : ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case NEMO_RANS : nemo_ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; break;
       case FEM_EULER : fem_euler = true; break;
       case FEM_NAVIER_STOKES: fem_ns = true; break;
       case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
@@ -1451,8 +1455,8 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
     }
 
     if (nemo_euler) {
-       nVar_NEMO = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-       nVar      = nVar_NEMO;
+       nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+       nVar      = nVar_Flow;
     }
     
     if(ns){
@@ -1466,9 +1470,15 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       nVar = nVar_Flow + nVar_Turb + nVar_Trans;
     }
 
-    if (nemo_ns) {
-         nVar_NEMO = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-         nVar      = nVar_NEMO;
+    if(nemo_ns){
+      nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+      if(turbulent){
+        nVar_Turb = solution[iZone][INST_0][MESH_0][TURB_SOL]->GetnVar();
+      }
+      if(transition){
+        nVar_Trans = solution[iZone][INST_0][MESH_0][TRANS_SOL]->GetnVar();
+      }
+      nVar = nVar_Flow + nVar_Turb + nVar_Trans;
     }
 
     if(fem_ns){
@@ -1524,7 +1534,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       }
 
       if(nemo_euler || nemo_ns){
-        for(iVar = 0; iVar < nVar_NEMO; iVar++){
+        for(iVar = 0; iVar < nVar_Flow; iVar++){
           mSolDOFs[iDOF][iVar] = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSolution(jDOF,iVar);
         }
       }
@@ -2240,7 +2250,7 @@ void CFEMInterpolationSol::HighOrderContainmentSearch(
   // Definition of the maximum number of iterations in the Newton solver
   // and the tolerance level. */
   const unsigned short maxIt = 50;
-  const su2double tolNewton  = 1.e-9;
+  const su2double tolNewton  = 1.e-6;
   
   /*--------------------------------------------------------------------------*/
   /* Step 1: Create an initial guess for the parametric coordinates from      */
@@ -2713,7 +2723,6 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
   unsigned short iZone, iVar;
   unsigned short nVar_Template = 0,
   nVar_Flow     = 0,
-  nVar_NEMO     = 0,
   nVar_Trans    = 0,
   nVar_Turb     = 0,
   nVar_Adj_Flow = 0,
@@ -2730,7 +2739,7 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras,
-  nemo_euler, nemo_ns;
+  nemo_euler, nemo_ns, nemo_rans;
   
   euler                = false;  ns                    = false;  turbulent     = false;
   fem_euler            = false;  fem_ns                = false;  fem_turbulent = false;
@@ -2744,7 +2753,7 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
   template_solver      = false; 
   fem_dg_flow          = false;  fem_dg_shock_persson  = false;
   e_spalart_allmaras   = false;  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-  nemo_euler           = false;  nemo_ns               = false;
+  nemo_euler           = false;  nemo_ns               = false;  nemo_rans     = false;
   
   unsigned long offsetDOFs = 0;
   for(iZone = 0; iZone < nZone; iZone++){
@@ -2756,6 +2765,7 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
       case NAVIER_STOKES: ns = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
       case NEMO_NAVIER_STOKES: nemo_ns = true; break;
       case RANS : ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case NEMO_RANS : nemo_ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; break;
       case FEM_EULER : fem_euler = true; break;
       case FEM_NAVIER_STOKES: fem_ns = true; break;
       case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
@@ -2802,8 +2812,18 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
       }
     }
 
-    if (nemo_euler || nemo_ns) {
-       nVar_NEMO = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+    if(nemo_euler){
+      nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+    }
+    
+    if(nemo_ns){
+      nVar_Flow = solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+      if(turbulent){
+        nVar_Turb = solution[iZone][INST_0][MESH_0][TURB_SOL]->GetnVar();
+      }
+      if(transition){
+        nVar_Trans = solution[iZone][INST_0][MESH_0][TRANS_SOL]->GetnVar();
+      }
     }
     
     if(fem_ns){
@@ -2853,7 +2873,7 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
       }
 
       if(nemo_euler || nemo_ns){
-        for(iVar = 0; iVar < nVar_NEMO; iVar++){
+        for(iVar = 0; iVar < nVar_Flow; iVar++){
            solution[iZone][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(jDOF,iVar, mSolDOFs[iDOF][iVar]);
         }
       }
