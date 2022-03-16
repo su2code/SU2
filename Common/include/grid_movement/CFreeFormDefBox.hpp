@@ -625,7 +625,7 @@ public:
   // * \param[in] config - Definition of the particular problem.
   // * \param[in] iFFDBox - Index of the FFDBox.
   // */
-  // nijso says: this routine is not used. We should consider deleting it.
+  // this routine is not used. We should consider deleting it.
   //void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const;
 
   /*!
