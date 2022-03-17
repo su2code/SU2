@@ -3510,6 +3510,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Solver == RANS ||
       Kind_Solver == NEMO_EULER ||
       Kind_Solver == NEMO_NAVIER_STOKES ||
+      Kind_Solver == NEMO_RANS ||
       Kind_Solver == FEM_EULER ||
       Kind_Solver == FEM_NAVIER_STOKES ||
       Kind_Solver == FEM_RANS ||
@@ -4346,6 +4347,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == NEMO_NAVIER_STOKES     ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
+             ( Kind_Solver == NEMO_RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
              ( Kind_Solver == FEM_NAVIER_STOKES      ) ||
              ( Kind_Solver == FEM_RANS               ) ||
@@ -4818,6 +4820,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_Solver != RANS) &&
       (Kind_Solver != ADJ_RANS) &&
+      (Kind_Solver != NEMO_RANS) &&
       (Kind_Solver != DISC_ADJ_RANS) &&
       (Kind_Solver != INC_RANS) &&
       (Kind_Solver != DISC_ADJ_INC_RANS)){
@@ -4984,6 +4987,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    (Kind_Solver == NAVIER_STOKES) ||
                    (Kind_Solver == NEMO_EULER) ||
                    (Kind_Solver == NEMO_NAVIER_STOKES) ||
+                   (Kind_Solver == NEMO_RANS) ||
                    (Kind_Solver == RANS) ||
                    (Kind_Solver == DISC_ADJ_EULER) ||
                    (Kind_Solver == DISC_ADJ_RANS) ||
@@ -8134,7 +8138,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case RANS: case INC_RANS:
+    case RANS: case INC_RANS: case NEMO_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -9843,7 +9847,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:

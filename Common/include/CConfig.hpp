@@ -3619,7 +3619,7 @@ public:
    */
   bool GetNEMOProblem(void) const {
     switch (Kind_Solver) {
-      case NEMO_EULER : case NEMO_NAVIER_STOKES:
+      case NEMO_EULER : case NEMO_NAVIER_STOKES: case NEMO_RANS:
         return true;
       default:
         return false;

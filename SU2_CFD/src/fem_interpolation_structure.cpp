@@ -725,7 +725,7 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   }
-  
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][INSTANCE][MESH_0][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
 
@@ -766,12 +766,14 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
     }
     DOFsPerPoint += solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
   }
+
   if (nemo_ns) {
       if (compressible) {
         solver_container[val_iInst][MESH_0][FLOW_SOL] = new CNEMONSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
       }
       DOFsPerPoint += solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
     }
+    
   if (turbulent) {
     if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
       solver_container[val_iInst][MESH_0][TURB_SOL] = new CTurbSASolver(geometry[val_iInst][MESH_0], config, MESH_0, solver_container[val_iInst][MESH_0][FLOW_SOL]->GetFluidModel() );
@@ -790,6 +792,7 @@ void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container,
       DOFsPerPoint += solver_container[val_iInst][MESH_0][TRANS_SOL]->GetnVar();
     }
   }
+
   if (fem_euler) {
     if( fem_dg_flow ) {
       if( fem_dg_shock_persson ) {
