@@ -39,12 +39,7 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
-<<<<<<< HEAD
-  StreamwisePeriodicValues SPvals;
-  su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-=======
   StreamwisePeriodicValues SPvals, SPvalsUpdated;
->>>>>>> develop
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -247,9 +242,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-<<<<<<< HEAD
-  void Evaluate_ObjFunc(const CConfig *config) override;
-=======
   void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) final {
     Total_ComboObj = EvaluateCommonObjFunc(*config);
 
@@ -258,7 +250,6 @@ public:
       Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();
     }
   }
->>>>>>> develop
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.

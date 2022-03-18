@@ -1064,80 +1064,6 @@ public:
   }
 };
 
-<<<<<<< HEAD
-class COptionInletScalar : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double ** & inletscalarval; 
-
-public:
-  COptionInletScalar(string option_field_name, unsigned short & nMarker_Inlet_Scalar, string* & Marker_Inlet_Scalar, su2double** & option_field) : size(nMarker_Inlet_Scalar), marker(Marker_Inlet_Scalar), inletscalarval(option_field) {
-    this->name = option_field_name;
-  }
-
-  ~COptionInletScalar() {};
-  
-  string SetValue(vector<string> option_value) {
-    COptionBase::SetValue(option_value);
-    unsigned short option_size = option_value.size();
-    if ((option_size == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = NULL;
-      this->inletscalarval = NULL;     
-      return "";
-    }
-
-    // at this point we need to know how many inlets we have. We count the number of strings
-    // in the list. We assume that the name of the inlet does not start with a number
-    unsigned short nVals=0;
-    unsigned short nScalars=0;
-    for (unsigned long i = 0; i < option_size; i++) {
-      // get the next entry in the inlet list
-      if (isalpha(option_value[i][0])) {
-        nVals++;
-      } else {
-        nScalars++;
-      }
-      
-    }  
-
-     
-    nScalars = nScalars/nVals;
-
-
-    // nVals is the number of inlets
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->inletscalarval = new su2double*[nVals];
-    for (unsigned long i = 0; i < nVals; i++) {
-
-      this->inletscalarval[i] = new su2double[nScalars];
-    }    
-
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[(1+nScalars)*i]);
-
-      for (unsigned long j=0;j<nScalars;j++){
-        istringstream ss_nd(option_value[(1+nScalars)*i + 1+j]);
-        if (!(ss_nd >> this->inletscalarval[i][j])) {
-          return badValue(option_value, "inlet", this->name);
-        }
-      }
-
-    }
-
-    return "";
-  }
-
-  void SetDefault() {
-    this->marker = NULL;    
-    this->inletscalarval = NULL;
-    this->size = 0; // There is no default value for list
-  }
-};
-
-=======
 // Base helper for when T is not an array, does dummy allocation and de-allocation.
 template <class T>
 struct CStringValuesListHelper {
@@ -1233,7 +1159,6 @@ public:
 };
 
 
->>>>>>> develop
 template <class Tenum>
 class COptionRiemann : public COptionBase {
 

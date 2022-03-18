@@ -32,10 +32,9 @@
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../include/fluid/CFluidFlamelet.hpp"
-#include "../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
-
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
@@ -312,17 +311,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
-    case FLAMELET_FLUID_MODEL:
-
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
-      n_scalars = auxFluidModel->GetNScalars();
-      dummy_scalar = new su2double[n_scalars]();
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-      break;
-
     case MIXTURE_FLUID_MODEL:
       n_scalars = config->GetNScalarsInit();
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight(n_scalars)/1000.0));
@@ -504,14 +492,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
           fluidModel->SetCpModel(config);
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
-        break;
-
-      case FLAMELET_FLUID_MODEL:
-        fluidModel   = new CFluidFlamelet(config,Pressure_Thermodynamic);
-        n_scalars    = fluidModel->GetNScalars();
-        dummy_scalar = new su2double[n_scalars]();
-        fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
-        delete[] dummy_scalar;
         break;
 
       case MIXTURE_FLUID_MODEL:
@@ -698,9 +678,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-
-      case VISCOSITYMODEL::FLAMELET:
-        break;
       }
 
       switch(config->GetKind_ConductivityModel()){
@@ -731,9 +708,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         }
         Unit.str("");
         NonDimTable.PrintFooter();
-        break;
-
-      case CONDUCTIVITYMODEL::FLAMELET:
         break;
       }
     } else {
@@ -1192,8 +1166,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-  const bool energy     = config->GetEnergy_Equation();
-  const bool flame      = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1979,7 +1951,6 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
-  const bool flame      = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Access the primitive variables at this node. ---*/
 
@@ -2016,7 +1987,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
-    if (energy && !flame) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
+    if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
     else        Preconditioner[nDim+1][0] = 0.0;
 
     for (jDim = 0; jDim < nDim; jDim++) {
@@ -2032,7 +2003,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
 
-    if (energy && !flame) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+    if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
 
     for (iVar = 0; iVar < nVar; iVar ++ )
@@ -2050,7 +2021,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
 
-    if (energy && !flame) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
+    if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
     else        Preconditioner[nDim+1][0] = 0.0;
 
 
@@ -2067,79 +2038,11 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][nDim+1] = 0.0;
 
-    if (energy && !flame) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
+    if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
     else        Preconditioner[nDim+1][nDim+1] = 0.0;
 
   }
 
-}
-
-void CIncEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
-
-  unsigned short iMarker_Monitoring, Kind_ObjFunc;
-  su2double Weight_ObjFunc;
-
-  Total_ComboObj = EvaluateCommonObjFunc(*config);
-
-  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
-
-    switch(Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(SurfaceCoeff.CMy[iMarker_Monitoring]);
-        break;
-      case MOMENT_X_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      default:
-        break;
-    }
-  }
-
-  /*--- The following are not per-surface, and so to avoid that they are
-   double-counted when multiple surfaces are specified, they have been
-   placed outside of the loop above. In addition, multi-objective mode is
-   also disabled for these objective functions (error thrown at start). ---*/
-
-  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
-
-  switch(Kind_ObjFunc) {
-    case EQUIVALENT_AREA:
-      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-      break;
-    case NEARFIELD_PRESSURE:
-      Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
-      break;
-    case SURFACE_MACH:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-      break;
-    case SURFACE_CO:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_CO(0);
-      break;
-    case SURFACE_NOX:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NOx(0);
-      break;
-    case SURFACE_TEMP:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
-      break;
-    case AVG_TEMPERATURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
-      break;
-    default:
-      break;
-  }
 }
 
 
@@ -2731,8 +2634,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
-  const bool flame        = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
-  const short flagEnergy  = (!energy || flame);
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2784,7 +2685,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
 
-      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
+      for (iVar = 0; iVar < nVar-!energy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (second_order)
@@ -2800,7 +2701,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy && !flame) delta *= Cp;
+        if (energy) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
@@ -2846,7 +2747,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
-        for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
+        for (iVar = 0; iVar < nVar-!energy; iVar++)
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
@@ -2885,7 +2786,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Cp = nodes->GetSpecificHeatCp(iPoint);
           V2U(Density, Cp, V_time_n, U_time_n);
 
-          for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
+          for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
         END_SU2_OMP_FOR
@@ -2931,7 +2832,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
 
-      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
+      for (iVar = 0; iVar < nVar-!energy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (second_order)
@@ -2947,7 +2848,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy && !flame) delta *= Cp;
+        if (energy) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }

@@ -100,13 +100,13 @@ void CFluidModel::SetMassDiffusivityModel (const CConfig* config) {
     case DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY:
       MassDiffusivity = unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
       break;
-    case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
-      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
+    /*case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
+      if ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() ==MAIN_SOLVER::DISC_ADJ_RANS)) {
         MassDiffusivity = unique_ptr<CConstantSchmidtRANS>(new CConstantSchmidtRANS(config->GetSchmidt_Lam(),config->GetSchmidt_Turb()));
       } else {
         MassDiffusivity = unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Lam()));
       }
-      break;
+      break;*/
     case DIFFUSIVITYMODEL::UNITY_LEWIS:
       MassDiffusivity = unique_ptr<CUnityLewisDiffusivity>(new CUnityLewisDiffusivity());
       break;

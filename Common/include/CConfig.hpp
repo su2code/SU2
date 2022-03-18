@@ -575,10 +575,7 @@ private:
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  MUSCL_Scalar,   /*!< \brief MUSCL scheme for the scalar transport equations.*/
-  Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
-  MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_AdjTurb;         /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -859,12 +856,8 @@ private:
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double Thermal_Conductivity_Solid;      /*!< \brief Thermal conductivity in solids. */
-  su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
-  su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_Ref;     /*!< \brief Reference mass diffusion for species equations.  */
-  su2double Schmidt_Lam;      /*!< \brief Laminar Schmidt number for mass diffusion.  */
-  su2double Schmidt_Turb,     /*!< \brief Turbulent Schmidt number for mass diffusion.  */
-  Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
+  su2double Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
   Density_Solid,                   /*!< \brief Total density in solids. */
   Energy_FreeStream,               /*!< \brief Free-stream total energy of the fluid.  */
@@ -1182,7 +1175,6 @@ private:
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
   unsigned short n_scalars,       /*!< \brief Number of transported scalars. */
-  n_species,                      /*!< \brief Number of species in multicomponent flow. */
   nMolecular_Weight,              /*!< \brief Number of species molecular weights. */        
   nSpecific_Heat_Cp,              /*!< \brief Number of species specific heat constants at constant pressure. */
   nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
@@ -1191,13 +1183,7 @@ private:
   nMu_S,                          /*!< \brief Number of species reference S for Sutherland model. */
   nThermal_Conductiviy_Constant,  /*!< \brief Number of species constant thermal conductivity. */
   nPrandtl_Lam,                   /*!< \brief Number of species laminar Prandtl number. */
-  nPrandtl_Turb,                  /*!< \brief Number of species turbulent Prandtl number. */
-  n_lookups,                      /*!< \brief Number of transported scalars for combustion. */              
-  n_table_sources;                /*!< \brief Number of transported scalars for combustion. */
-
-  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
-  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
-  string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
+  nPrandtl_Turb;                /*!< \brief Number of species turbulent Prandtl number. */
 
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -3923,18 +3909,6 @@ public:
   su2double GetDiffusivity_ConstantND(void) const { return Diffusivity_ConstantND; }
 
   /*!
-   * \brief Get the value of the constant mass diffusivity for scalar transport.
-   * \return Constant mass diffusivity.
-   */
-  su2double GetDiffusivity_Constant(void) const { return Diffusivity_Constant; }
-
-  /*!
-   * \brief Get the value of the non-dimensional constant mass diffusivity.
-   * \return Non-dimensional constant mass diffusivity.
-   */
-  su2double GetDiffusivity_ConstantND(void) const { return Diffusivity_ConstantND; }
-
-  /*!
    * \brief Get the value of the laminar Schmidt number for scalar transport.
    * \return Laminar Schmidt number for scalar transport.
    */
@@ -4051,16 +4025,6 @@ public:
    * \brief Set the value of the non-dimensional thermal conductivity.
    */
   void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional constant mass diffusivity.
-   */
-  void SetDiffusivity_ConstantND(su2double diffusivity_const) { Diffusivity_ConstantND = diffusivity_const; }
-
-  /*!
-   * \brief Set the value of the reference mass diffusivity.
-   */
-  void SetDiffusivity_Ref(su2double diffusivity_ref);
 
   /*!
    * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
@@ -4414,12 +4378,6 @@ public:
    */
   TURB_SGS_MODEL GetKind_SGS_Model(void) const { return Kind_SGS_Model; }
 
-  /*!
-   * \brief Get the kind of the scalar transport model.
-   * \return Kind of the scalar transport model.
-   */
-  unsigned short GetKind_Scalar_Model(void) const { return Kind_Scalar_Model; };
-
 
   /*!
    * \brief Get the kind of time integration method.
@@ -4507,16 +4465,6 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjFlow(void) const { return MUSCL_AdjFlow; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Scalar(void)  { return MUSCL_Scalar; }
-
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -9587,48 +9535,9 @@ public:
   void SetNScalarsInit(unsigned short nScalar_Init) { this->nScalar_Init = nScalar_Init; }
 
   /*!
-   * \brief Get the number of transported scalars for combustion
-   */
-  unsigned short GetNLookups(void) const { return n_lookups; }
-
-  void SetNTableSources(unsigned short n_table_sources) { this->n_table_sources = n_table_sources; }
-
-  /*!
-   * \brief Get the number of transported scalars source terms for combustion
-   */
-  unsigned short GetNTableSources(void) const { return n_table_sources; }
-
-  /*!
    * \brief Get the history output field iField
    */
   string GetVolumeOutput_Field(unsigned short iField) const { return VolumeOutput[iField]; }
-
-  /*!
-   * \brief Store the names of scalar variables that are being solved
-   * \param[out] stores the names in vector table_scalar_names
-   */
-  inline void SetScalarNames(vector<string> &table_scalar_names) {this->table_scalar_names = table_scalar_names;}
-
-  /*!
-   * \brief Get the scalar name i_scalar
-   */
-  string GetScalarName(unsigned short i_scalar) const { return table_scalar_names.at(i_scalar); }
-
-  /*!
-   * \brief Get the look up variable name i_lookup
-   */
-  string GetLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
-
-  /*!
-   * \brief Store the names of scalar source term variables
-   * \param[out] stores the names in vector table_source_names
-   */
-  inline void SetTableSourceNames(vector<string> &table_source_names) {this->table_source_names = table_source_names;}
-
-  /*!
-   * \brief Get the scalar source term name i_source
-   */
-  string GetTableSourceName(unsigned short i_source) const { return table_source_names.at(i_source); }
 
   /*!
    * \brief Get the maximum bound for scalar transport clipping

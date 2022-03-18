@@ -340,7 +340,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
     //    solvers0[ADJSCALAR_SOL]->GetNodes()->SetSolution_Direct(iPoint, solvers0[SCALAR_SOL]->GetNodes()->GetSolution(iPoint));
     //  END_SU2_OMP_FOR
     //  }
-    }
+    //}
     if (config[iZone]->AddRadiation()) {
       SU2_OMP_FOR_STAT(1024)
       for (auto iPoint = 0ul; iPoint < geometries[MESH_0]->GetnPoint(); iPoint++)
@@ -367,7 +367,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
   //if (scalar) {
   //  solvers0[ADJSCALAR_SOL]->Preprocessing(geometries[MESH_0], solvers0, config[iZone],
   //                                         MESH_0, 0, RUNTIME_ADJSCALAR_SYS, false);
-  }
+  //}
   if (config[iZone]->AddRadiation()) {
     solvers0[ADJRAD_SOL]->Preprocessing(geometries[MESH_0], solvers0, config[iZone],
                                         MESH_0, 0, RUNTIME_ADJRAD_SYS, false);
@@ -453,7 +453,7 @@ void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver*****
   }
   //if (scalar) {
    // solver[iZone][iInst][MESH_0][ADJSCALAR_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
-  }
+  //}
 
   }
   END_SU2_OMP_PARALLEL
@@ -486,7 +486,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
   //if (scalar) {
   //  solver[iZone][iInst][MESH_0][ADJSCALAR_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
+  //}
 
   if (config[iZone]->AddRadiation()) {
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -527,7 +527,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     }
     //if (scalar) {
     //  solver[iZone][iInst][MESH_0][ADJSCALAR_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-    }
+    //}
     if (config[iZone]->AddRadiation()) {
       solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
@@ -639,10 +639,10 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   }
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
-  //}
+  }
   //if (scalar) {
   //  solver[iZone][iInst][MESH_0][ADJSCALAR_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
+  //}
   if (config[iZone]->AddRadiation()) {
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }

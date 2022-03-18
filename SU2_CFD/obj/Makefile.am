@@ -112,17 +112,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
   ../src/numerics/scalar/scalar_sources.cpp \
-<<<<<<< HEAD
-  ../src/numerics/turbulent/turb_convection.cpp \
-  ../src/numerics/turbulent/turb_diffusion.cpp \
-  ../src/numerics/turbulent/turb_sources.cpp \
-  ../src/numerics/flamelet/scalarLegacy_convection.cpp \
-  ../src/numerics/flamelet/scalarLegacy_diffusion.cpp \
-  ../src/numerics/flamelet/scalarLegacy_sources.cpp \
-  ../src/numerics_direct_scalar.cpp \
-=======
   ../src/numerics/species/species_sources.cpp \
->>>>>>> develop
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \

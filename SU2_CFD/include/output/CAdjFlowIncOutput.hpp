@@ -36,20 +36,10 @@
  */
 class CAdjFlowIncOutput final: public CAdjFlowOutput {
 private:
-
   RADIATION_MODEL rad_model; /*!< \brief The kind of radiation model */
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
-<<<<<<< HEAD
-  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  bool frozen_visc;          /*!< \brief Boolean indicating whether frozen viscosity/turbulence is used. */
-  unsigned short scalar_model; /*!< \brief The kind of scalar model*/ 
-=======
->>>>>>> develop
-
 public:
-
-
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.

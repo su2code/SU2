@@ -38,30 +38,22 @@ class CVariable;
  */
 class CFlowIncOutput final: public CFlowOutput {
 private:
-<<<<<<< HEAD
-
-  unsigned short scalar_model; /*!< \brief The kind of scalar transport model*/
-=======
->>>>>>> develop
   TURB_MODEL turb_model;     /*!< \brief The kind of turbulence model*/
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
   unsigned short streamwisePeriodic;   /*!< \brief Boolean indicating whether it is a streamwise periodic simulation. */
   bool streamwisePeriodic_temperature; /*!< \brief Boolean indicating streamwise periodic temperature is used. */
-
 public:
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
   CFlowIncOutput(CConfig *config, unsigned short nDim);
-
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
-
   /*!
    * \brief Set the available volume output fields
    * \param[in] config - Definition of the particular problem.

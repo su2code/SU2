@@ -3560,10 +3560,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const auto species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
   const unsigned short nVar_Species = species ? solver[MESH_0][SPECIES_SOL]->GetnVar() : 0;
 
-  unsigned short nVar_Scalar = 0;
-  if (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL) nVar_Scalar = solver[MESH_0][SCALAR_SOL]->GetnVar();
-
-  /*--- names of the columns in the profile ---*/
+    /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
   vector<string> columnValues;
 
