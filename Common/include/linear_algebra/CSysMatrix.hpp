@@ -80,23 +80,41 @@ struct CSysMatrixComms {
    * \param[in] x        - CSysVector holding the array of data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   template<class T>
-  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
-                       unsigned short commType = SOLUTION_MATRIX);
+  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by
    *        Initiate() and unpacking of the data in the vector.
+   * \param[out] x       - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  template<class T>
+  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Initiate the periodic communication of a vector.
    * \param[in] x        - CSysVector holding the array of data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   * \param[in] vec_idx  - Index of the first vector quantity (if < 0 no rotation is applied).
    */
   template<class T>
-  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
-                       unsigned short commType = SOLUTION_MATRIX);
+  static void InitiatePeriodic(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config, int vec_idx);
+
+  /*!
+   * \brief Complete the periodic communication of a vector.
+   * \param[out] x        - CSysVector holding the array of data.
+   * \param[in] geometry  - Geometrical definition of the problem.
+   * \param[in] config    - Definition of the particular problem.
+   * \param[in] iPeriodic - Index of the periodic pair.
+   * \param[in] add       - If true add the received values to the local ones (instead of setting).
+   */
+  template<class T>
+  static void CompletePeriodic(CSysVector<T>& x, CGeometry *geometry, const CConfig *config, unsigned short iPeriodic,
+                               bool add);
 };
 
 /*!
@@ -126,6 +144,7 @@ private:
   unsigned long nPointDomain;       /*!< \brief Number of points in the grid (excluding halos). */
   unsigned long nVar;               /*!< \brief Number of variables (and rows of the blocks). */
   unsigned long nEqn;               /*!< \brief Number of equations (and columns of the blocks). */
+  int iVecVar = -1;                 /*!< \brief Index first index of a vector variable within nVar. */
 
   ScalarType *matrix;               /*!< \brief Entries of the sparse matrix. */
   unsigned long nnz;                /*!< \brief Number of possible nonzero entries in the matrix. */
@@ -347,12 +366,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CSysMatrix(void);
+  CSysMatrix();
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSysMatrix(void);
+  ~CSysMatrix();
 
   /*!
    * \brief Initializes the sparse matrix.
@@ -371,14 +390,19 @@ public:
                   const CConfig *config, bool needTranspPtr = false, bool grad_mode = false);
 
   /*!
+   * \brief Sets the first index of a vector variable (size nDim dictated by geometry) contained in the solution.
+   */
+  inline void SetFirstIndexOfVectorVariable(int idx) { iVecVar = idx; }
+
+  /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
-  void SetValZero(void);
+  void SetValZero();
 
   /*!
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
-  void SetValDiagonalZero(void);
+  void SetValDiagonalZero();
 
   /*!
    * \brief Get a pointer to the start of block "ij"

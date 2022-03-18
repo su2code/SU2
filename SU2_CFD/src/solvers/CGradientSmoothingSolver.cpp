@@ -287,8 +287,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
     /*--- Matrix vector product with the Laplace-Beltrami stiffness matrix. ---*/
     if (config->GetSmoothOnSurface()) {
 
-      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config);
 
       mat_vec(helperVecIn, helperVecAux);
 
@@ -306,8 +306,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
       CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
 
-      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config);
 
       mat_vec(helperVecIn, helperVecAux);
 

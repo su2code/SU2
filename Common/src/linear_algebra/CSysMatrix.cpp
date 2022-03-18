@@ -29,6 +29,7 @@
 
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 #include <cmath>
 
@@ -228,30 +229,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 }
 
 template<class T>
-void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry *geometry,
-                               const CConfig *config, unsigned short commType) {
+void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config) {
 
   if (geometry->nP2PSend == 0) return;
 
-  /*--- Local variables ---*/
-
   const unsigned short COUNT_PER_POINT = x.GetNVar();
   const unsigned short MPI_TYPE = COMM_TYPE_DOUBLE;
-
-  /*--- Create a boolean for reversing the order of comms. ---*/
-
-  const bool reverse = (commType == SOLUTION_MATRIXTRANS);
-
-  /*--- Set the size of the data packet and type depending on quantity. ---*/
-
-  switch (commType) {
-    case SOLUTION_MATRIX:
-    case SOLUTION_MATRIXTRANS:
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
-      break;
-  }
 
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. This is only for the su2double
@@ -265,104 +248,50 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry *geometry,
 
   /*--- Post all non-blocking recvs first before sends. ---*/
 
-  geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, reverse);
+  geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, false);
 
   for (auto iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
 
-    switch (commType) {
+    su2double* bufDSend = geometry->bufD_P2PSend;
 
-      case SOLUTION_MATRIX: {
+    /*--- Get the offset for the start of this message. ---*/
 
-        su2double* bufDSend = geometry->bufD_P2PSend;
+    const auto msg_offset = geometry->nPoint_P2PSend[iMessage];
 
-        /*--- Get the offset for the start of this message. ---*/
+    /*--- Total count can include multiple pieces of data per point. ---*/
 
-        const auto msg_offset = geometry->nPoint_P2PSend[iMessage];
+    const auto nSend = (geometry->nPoint_P2PSend[iMessage+1] - geometry->nPoint_P2PSend[iMessage]);
 
-        /*--- Total count can include multiple pieces of data per point. ---*/
+    SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+    for (auto iSend = 0; iSend < nSend; iSend++) {
 
-        const auto nSend = (geometry->nPoint_P2PSend[iMessage+1] - geometry->nPoint_P2PSend[iMessage]);
+      /*--- Get the local index for this communicated data. ---*/
 
-        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
-        for (auto iSend = 0; iSend < nSend; iSend++) {
+      const auto iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
 
-          /*--- Get the local index for this communicated data. ---*/
+      /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          const auto iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
+      const auto buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
-          /*--- Compute the offset in the recv buffer for this point. ---*/
+      /*--- Load the buffer with the data to be sent. ---*/
 
-          const auto buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
-
-          /*--- Load the buffer with the data to be sent. ---*/
-
-          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
-            bufDSend[buf_offset+iVar] = x(iPoint,iVar);
-        }
-        END_SU2_OMP_FOR
-        break;
-      }
-
-      case SOLUTION_MATRIXTRANS: {
-
-        /*--- We are going to communicate in reverse, so we use the
-         recv buffer for the send instead. Also, all of the offsets
-         and counts are derived from the recv data structures. ---*/
-
-        su2double* bufDSend = geometry->bufD_P2PRecv;
-
-        /*--- Get the offset for the start of this message. ---*/
-
-        const auto msg_offset = geometry->nPoint_P2PRecv[iMessage];
-
-        /*--- Total count can include multiple pieces of data per point. ---*/
-
-        const auto nSend = (geometry->nPoint_P2PRecv[iMessage+1] - geometry->nPoint_P2PRecv[iMessage]);
-
-        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
-        for (auto iSend = 0; iSend < nSend; iSend++) {
-
-          /*--- Get the local index for this communicated data. Here we
-           again use the recv structure to find the send point, since
-           the usual recv points are now the senders in reverse mode. ---*/
-
-          const auto iPoint = geometry->Local_Point_P2PRecv[msg_offset + iSend];
-
-          /*--- Compute the offset in the recv buffer for this point. ---*/
-
-          const auto buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
-
-          /*--- Load the buffer with the data to be sent. ---*/
-
-          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
-            bufDSend[buf_offset+iVar] = x(iPoint,iVar);
-        }
-        END_SU2_OMP_FOR
-        break;
-      }
-
-      default:
-        SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                       CURRENT_FUNCTION);
-        break;
-
+      for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
+        bufDSend[buf_offset+iVar] = x(iPoint,iVar);
     }
+    END_SU2_OMP_FOR
 
     /*--- Launch the point-to-point MPI send for this message. ---*/
 
-    geometry->PostP2PSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage, reverse);
+    geometry->PostP2PSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage, false);
 
   }
 
 }
 
 template<class T>
-void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
-                               const CConfig *config, unsigned short commType) {
+void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config) {
 
   if (geometry->nP2PRecv == 0) return;
-
-  /*--- Local variables ---*/
 
   const unsigned short COUNT_PER_POINT = x.GetNVar();
 
@@ -387,87 +316,38 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
 
     const auto source = status.MPI_SOURCE;
 
-    switch (commType) {
-      case SOLUTION_MATRIX: {
+    const su2double *bufDRecv = geometry->bufD_P2PRecv;
 
-        const su2double *bufDRecv = geometry->bufD_P2PRecv;
+    /*--- We know the offsets based on the source rank. ---*/
 
-        /*--- We know the offsets based on the source rank. ---*/
+    const auto jRecv = geometry->P2PRecv2Neighbor[source];
 
-        const auto jRecv = geometry->P2PRecv2Neighbor[source];
+    /*--- Get the offset for the start of this message. ---*/
 
-        /*--- Get the offset for the start of this message. ---*/
+    const auto msg_offset = geometry->nPoint_P2PRecv[jRecv];
 
-        const auto msg_offset = geometry->nPoint_P2PRecv[jRecv];
+    /*--- Get the number of packets to be received in this message. ---*/
 
-        /*--- Get the number of packets to be received in this message. ---*/
+    const auto nRecv = (geometry->nPoint_P2PRecv[jRecv+1] - geometry->nPoint_P2PRecv[jRecv]);
 
-        const auto nRecv = (geometry->nPoint_P2PRecv[jRecv+1] - geometry->nPoint_P2PRecv[jRecv]);
+    SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+    for (auto iRecv = 0; iRecv < nRecv; iRecv++) {
 
-        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
-        for (auto iRecv = 0; iRecv < nRecv; iRecv++) {
+      /*--- Get the local index for this communicated data. ---*/
 
-          /*--- Get the local index for this communicated data. ---*/
+      const auto iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
 
-          const auto iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
+      /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          /*--- Compute the offset in the recv buffer for this point. ---*/
+      const auto buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
-          const auto buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
+      /*--- Store the data correctly depending on the quantity. ---*/
 
-          /*--- Store the data correctly depending on the quantity. ---*/
-
-          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
-            x(iPoint,iVar) = CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
-        }
-        END_SU2_OMP_FOR
-        break;
-      }
-
-      case SOLUTION_MATRIXTRANS: {
-
-        /*--- We are going to communicate in reverse, so we use the
-         send buffer for the recv instead. Also, all of the offsets
-         and counts are derived from the send data structures. ---*/
-
-        const su2double* bufDRecv = geometry->bufD_P2PSend;
-
-        /*--- We know the offsets based on the source rank. ---*/
-
-        const auto jRecv = geometry->P2PSend2Neighbor[source];
-
-        /*--- Get the offset for the start of this message. ---*/
-
-        const auto msg_offset = geometry->nPoint_P2PSend[jRecv];
-
-        /*--- Get the number of packets to be received in this message. ---*/
-
-        const auto nRecv = (geometry->nPoint_P2PSend[jRecv+1] - geometry->nPoint_P2PSend[jRecv]);
-
-        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
-        for (auto iRecv = 0; iRecv < nRecv; iRecv++) {
-
-          /*--- Get the local index for this communicated data. ---*/
-
-          const auto iPoint = geometry->Local_Point_P2PSend[msg_offset + iRecv];
-
-          /*--- Compute the offset in the recv buffer for this point. ---*/
-
-          const auto buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
-
-          /*--- Update receiving point. ---*/
-
-          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
-            x(iPoint,iVar) += CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
-        }
-        END_SU2_OMP_FOR
-        break;
-      }
-
-      default:
-        SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
-        break;
+      for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
+        x(iPoint,iVar) = CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
     }
+    END_SU2_OMP_FOR
+
   }
 
   /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -477,6 +357,128 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
 #ifdef HAVE_MPI
   SU2_OMP_MASTER
   SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+  END_SU2_OMP_MASTER
+#endif
+  SU2_OMP_BARRIER
+
+}
+
+template<class T>
+void CSysMatrixComms::InitiatePeriodic(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                                       const int vec_idx) {
+
+  if (geometry->nPeriodicSend == 0) return;
+
+  const auto nDim = geometry->GetnDim();
+
+  su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
+  su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+
+  auto Rotate = [&](const su2double* direction, su2double* rotated) {
+    const su2double zeros[3] = {0.0};
+    if (nDim==2) GeometryToolbox::Rotate(rotMatrix2D, zeros, direction, rotated);
+    else GeometryToolbox::Rotate(rotMatrix3D, zeros, direction, rotated);
+  };
+
+  const unsigned short COUNT_PER_POINT = x.GetNVar();
+  const unsigned short MPI_TYPE = COMM_TYPE_DOUBLE;
+
+  geometry->AllocatePeriodicComms(COUNT_PER_POINT);
+
+  geometry->PostPeriodicRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT);
+
+  su2double* bufDSend = geometry->bufD_PeriodicSend;
+
+  for (auto iMessage = 0; iMessage < geometry->nPeriodicSend; iMessage++) {
+
+    const auto msg_offset = geometry->nPoint_PeriodicSend[iMessage];
+    const auto nSend = geometry->nPoint_PeriodicSend[iMessage+1] - msg_offset;
+
+    SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+    for (auto iSend = 0; iSend < nSend; iSend++) {
+
+      const auto iPoint = geometry->Local_Point_PeriodicSend[msg_offset + iSend];
+      const auto buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
+
+      for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
+        bufDSend[buf_offset+iVar] = x(iPoint,iVar);
+
+      if (vec_idx < 0) continue;
+
+      const auto iPeriodic = geometry->Local_Marker_PeriodicSend[msg_offset + iSend];
+      const auto tag = config->GetMarker_All_TagBound(iPeriodic);
+      const auto* angles = config->GetPeriodicRotAngles(tag);
+
+      if (nDim == 2) {
+        GeometryToolbox::RotationMatrix(angles[2], rotMatrix2D);
+      } else {
+        GeometryToolbox::RotationMatrix(angles[0], angles[1], angles[2], rotMatrix3D);
+      }
+
+      su2double local_buf[3] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        local_buf[iDim] = x(iPoint, vec_idx + iDim);
+
+      Rotate(local_buf, &bufDSend[buf_offset+vec_idx]);
+    }
+    END_SU2_OMP_FOR
+
+    geometry->PostPeriodicSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage);
+  }
+
+}
+
+template<class T>
+void CSysMatrixComms::CompletePeriodic(CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                                       const unsigned short val_periodic_index, const bool add) {
+
+  if (geometry->nPeriodicRecv == 0) return;
+
+  const auto nPeriodic = config->GetnMarker_Periodic();
+  const unsigned short COUNT_PER_POINT = x.GetNVar();
+
+  static SU2_MPI::Status status;
+  int ind;
+
+  const su2double *bufDRecv = geometry->bufD_PeriodicRecv;
+
+  for (auto iMessage = 0; iMessage < geometry->nPeriodicRecv; iMessage++) {
+
+    SU2_OMP_MASTER
+    SU2_MPI::Waitany(geometry->nPeriodicRecv, geometry->req_PeriodicRecv, &ind, &status);
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+
+    const auto source = status.MPI_SOURCE;
+    const auto jRecv = geometry->PeriodicRecv2Neighbor[source];
+    const auto msg_offset = geometry->nPoint_PeriodicRecv[jRecv];
+    const auto nRecv = geometry->nPoint_PeriodicRecv[jRecv+1] - msg_offset;
+
+    SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+    for (auto iRecv = 0; iRecv < nRecv; iRecv++) {
+
+      const auto iPoint = geometry->Local_Point_PeriodicRecv[msg_offset + iRecv];
+      const auto iPeriodic = geometry->Local_Marker_PeriodicRecv[msg_offset + iRecv];
+
+      if ((iPeriodic != val_periodic_index) &&
+          (iPeriodic != val_periodic_index + nPeriodic/2)) {
+        continue;
+      }
+      const auto buf_offset = (msg_offset + iRecv) * COUNT_PER_POINT;
+
+      for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++) {
+        const auto val = CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
+        x(iPoint,iVar) += val;
+        /*--- Take average across pair when not adding. ---*/
+        if (!add) x(iPoint,iVar) *= 0.5;
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+
+#ifdef HAVE_MPI
+  SU2_OMP_MASTER
+  SU2_MPI::Waitall(geometry->nPeriodicSend, geometry->req_PeriodicSend, MPI_STATUS_IGNORE);
   END_SU2_OMP_MASTER
 #endif
   SU2_OMP_BARRIER
@@ -632,6 +634,11 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
   /*--- MPI Parallelization. ---*/
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, true);
+  }
+
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
@@ -660,6 +667,10 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
   END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, false);
+  }
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
@@ -825,7 +836,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
   END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
-
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, false);
+  }
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
@@ -864,7 +878,10 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
-
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, false);
+  }
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
@@ -894,7 +911,10 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
   END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
-
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, false);
+  }
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
@@ -1168,7 +1188,10 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
-
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, false);
+  }
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
@@ -1414,6 +1437,10 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+    CSysMatrixComms::InitiatePeriodic(prod, geometry, config, iVecVar);
+    CSysMatrixComms::CompletePeriodic(prod, geometry, config, iPeriodic, false);
+  }
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 #else
@@ -1424,8 +1451,8 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 /*--- Explicit instantiations ---*/
 
 #define INSTANTIATE_COMMS(TYPE)\
-template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*, unsigned short);\
-template void CSysMatrixComms::Complete<TYPE>(CSysVector<TYPE>&, CGeometry*, const CConfig*, unsigned short);
+template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*);\
+template void CSysMatrixComms::Complete<TYPE>(CSysVector<TYPE>&, CGeometry*, const CConfig*);
 
 #define INSTANTIATE_MATRIX(TYPE)\
 template class CSysMatrix<TYPE>;\

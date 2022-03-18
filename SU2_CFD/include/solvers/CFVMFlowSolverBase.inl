@@ -105,6 +105,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  Jacobian.SetFirstIndexOfVectorVariable(prim_idx.Velocity());
+
   /*--- LinSysSol will always be init to 0. ---*/
   System.SetxIsZero(true);
 
