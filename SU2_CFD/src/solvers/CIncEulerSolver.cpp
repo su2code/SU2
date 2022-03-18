@@ -31,7 +31,6 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
-#include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"

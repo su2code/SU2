@@ -195,7 +195,6 @@ private:
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
   nMarker_Giles,                  /*!< \brief Number of Giles flow markers. */
-  nMarker_Inlet_Scalar,           /*!< \brief Number of inlet scalar markers. */
   nRelaxFactor_Giles,             /*!< \brief Number of relaxation factors for Giles markers. */
   nMarker_Supersonic_Inlet,       /*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,      /*!< \brief Number of supersonic outlet flow markers. */
@@ -246,7 +245,6 @@ private:
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
-  *Marker_Inlet_Scalar,           /*!< \brief Inlet Scalar markers. */
   *Marker_Shroud,                 /*!< \brief Shroud markers. */
   *Marker_Supersonic_Inlet,       /*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,      /*!< \brief Supersonic outlet flow markers. */
@@ -278,7 +276,6 @@ private:
   *RelaxFactorAverage, *RelaxFactorFourier;  /*!< \brief Specified values for Giles BC. */
   su2double **Giles_FlowDir;                 /*!< \brief Specified flow direction vector (unit vector) for Giles BC. */
   su2double *Inlet_Ptotal;                   /*!< \brief Specified total pressures for inlet boundaries. */
-  su2double **Inlet_ScalarVal; /*!< \brief Specified scalar vector for inlet boundaries. */
   su2double **Inlet_FlowDir;                 /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
   su2double *Inlet_Temperature;              /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
@@ -374,10 +371,6 @@ private:
   su2double *Surface_MomentumDistortion;     /*!< \brief Integral measure of the streamwise uniformity (relative to plug flow) at the boundaries (non-dim). */
   su2double *Surface_TotalTemperature;       /*!< \brief Total temperature at the boundaries. */
   su2double *Surface_TotalPressure;          /*!< \brief Total pressure at the boundaries. */
-  su2double *Surface_CO;                     /*!< \brief Mass fraction of CO at the boundaries. */
-  su2double *Surface_NOx;                    /*!< \brief Mass fraction of NO at the boundaries. */
-  su2double *Surface_CH4;                    /*!< \brief Mass fraction of CH4 at the boundaries. */
-  //su2double **Surface_Scalar;
   su2double *Surface_PressureDrop;           /*!< \brief Pressure drop between boundaries. */
   su2double* Surface_Species_0;              /*!< \brief Average Species_0 at the boundaries. */
   su2double* Surface_Species_Variance;       /*!< \brief Species Variance at the boundaries. */
@@ -438,8 +431,7 @@ private:
   CFLRedCoeff_Species,         /*!< \brief CFL reduction coefficient on the species problem. */
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,               /*!< \brief Max delta time. */
-  Unst_CFL,                    /*!< \brief Unsteady CFL number. */
-  CFLRedCoeff_Scalar;    /*!< \brief CFL reduction coefficient for the scalar transport equations. */
+  Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -493,7 +485,6 @@ private:
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
-  DIFFUSIVITYMODEL Kind_DiffusivityModel; /*!< \brief Kind of the mass diffusivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
@@ -521,7 +512,6 @@ private:
   Kind_SlopeLimit_Species,      /*!< \brief Slope limiter for the species equation.*/
   Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,      /*!< \brief Time integration for the flow equations. */
-  Kind_SlopeLimit_Scalar,    /*!< \brief Slope limiter for the scalar transport equations.*/
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
   Kind_ADER_Predictor,          /*!< \brief Predictor step of the ADER-DG time integration scheme. */
   Kind_TimeIntScheme_AdjFlow,   /*!< \brief Time integration for the adjoint flow equations. */
@@ -529,7 +519,6 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeIntScheme_Scalar,  /*!< \brief Time integration for the scalar transport model. */
   Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -544,7 +533,6 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
-  Kind_ConvNumScheme_Scalar,  /*!< \brief Centered or upwind scheme for the scalar transport equations. */
   Kind_Centered,                /*!< \brief Centered scheme. */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
@@ -552,7 +540,6 @@ private:
   Kind_Centered_AdjTurb,        /*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
   Kind_Centered_Template,       /*!< \brief Centered scheme for the template model. */
-  Kind_Centered_Scalar,      /*!< \brief Centered scheme for the scalar transport equations. */
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
@@ -560,7 +547,6 @@ private:
   Kind_Upwind_AdjTurb,          /*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
   Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
-  Kind_Upwind_Scalar,      /*!< \brief Upwind scheme for the scalar transport equations. */
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
@@ -575,7 +561,7 @@ private:
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb;         /*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -619,8 +605,6 @@ private:
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
-  su2double Relaxation_Factor_Scalar;    /*!< \brief Relaxation coefficient of the linear solver for scalar transport equations. */
-  su2double Relaxation_Factor_AdjFlow;  /*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;       /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -783,7 +767,6 @@ private:
   nRefOriginMoment_X,      /*!< \brief Number of X-coordinate moment computation origins. */
   nRefOriginMoment_Y,      /*!< \brief Number of Y-coordinate moment computation origins. */
   nRefOriginMoment_Z;      /*!< \brief Number of Z-coordinate moment computation origins. */
-  string file_name_lut;  /*!< \brief file name of the look up table. */
   unsigned short nMesh_Box_Size;
   short *Mesh_Box_Size;          /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
@@ -1092,18 +1075,6 @@ private:
   su2double *Wall_Emissivity;          /*!< \brief Emissivity of the wall. */
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
-  bool Scalar_Clipping;            /*!< \brief Boolean that activates clipping for scalar transport. */
-  su2double *Scalar_Clipping_Max;   /*!< \brief Maximum value of clipping for scalar transport. */
-  su2double *Scalar_Clipping_Min;             /*!< \brief Minimum value of clipping for scalar transport. */
-  unsigned short nScalar_Clipping_Max,nScalar_Clipping_Min; /* nijso: this should be the same as nScalar (or nVar for the scalar)*/
-  unsigned short nScalar_Init;
-  bool enable_remeshing;
-  bool use_weak_scalar_bc;
-  su2double flame_thickness;
-  su2double burnt_thickness;
-  su2double ffd_bounds[6];
-  su2double flame_offset[3];
-  su2double flame_normal[3];
 
   array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
@@ -1174,8 +1145,7 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
-  unsigned short n_scalars,       /*!< \brief Number of transported scalars. */
-  nMolecular_Weight,              /*!< \brief Number of species molecular weights. */        
+  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */        
   nSpecific_Heat_Cp,              /*!< \brief Number of species specific heat constants at constant pressure. */
   nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
   nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
@@ -1183,7 +1153,7 @@ private:
   nMu_S,                          /*!< \brief Number of species reference S for Sutherland model. */
   nThermal_Conductiviy_Constant,  /*!< \brief Number of species constant thermal conductivity. */
   nPrandtl_Lam,                   /*!< \brief Number of species laminar Prandtl number. */
-  nPrandtl_Turb;                /*!< \brief Number of species turbulent Prandtl number. */
+  nPrandtl_Turb;                  /*!< \brief Number of species turbulent Prandtl number. */
 
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -2219,12 +2189,6 @@ public:
    * \return <code>TRUE</code> if it's necessary to read a reference geometry, <code>FALSE</code> otherwise.
    */
   bool GetPrestretch(void) const { return Prestretch; }
-
-  /*!
-   * \brief Get the file name of the look up table
-   * \return File name of the look up table
-   */
-  string GetFileNameLUT(void){ return file_name_lut; };
 
   /*!
    * \brief Get the name of the file with the element properties for structural problems.
@@ -3870,7 +3834,7 @@ public:
    * \brief Get the value of the mass diffusivity model.
    * \return Mass diffusivity model.
    */
-  DIFFUSIVITYMODEL GetKind_DiffusivityModel(void) const { return Kind_DiffusivityModel; }
+  DIFFUSIVITYMODEL GetKind_DiffusivityModel(void) const { return Kind_Diffusivity_Model; }
 
   /*!
    * \brief Get the value of the constant viscosity.
@@ -4158,12 +4122,6 @@ public:
   su2double GetRelaxation_Factor_Adjoint(void) const { return Relaxation_Factor_Adjoint; }
 
   /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
-   */
-  su2double GetRelaxation_Factor_Scalar(void) { return Relaxation_Factor_Scalar; }
-
-  /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
    * \return relaxation coefficient of the CHT coupling.
    */
@@ -4378,7 +4336,6 @@ public:
    */
   TURB_SGS_MODEL GetKind_SGS_Model(void) const { return Kind_SGS_Model; }
 
-
   /*!
    * \brief Get the kind of time integration method.
    * \note This is the information that the code will use, the method will
@@ -4465,6 +4422,7 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjFlow(void) const { return MUSCL_AdjFlow; }
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -4755,39 +4713,6 @@ public:
    * \return Calibrated constant for the low order center method for the adjoint flow equations.
    */
   su2double GetKappa_1st_AdjFlow(void) const { return Kappa_1st_AdjFlow; }
-
-  /*!
-   * \brief Get the kind of integration scheme (implicit)
-   *        for the scalar transport equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the scalar transport equations.
-   */
-  unsigned short GetKind_TimeIntScheme_Scalar(void) const { return Kind_TimeIntScheme_Scalar; }
-
-  /*!
-   * \brief Get the kind of convective numerical scheme for the scalar transport equations (upwind).
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of convective numerical scheme for the scalar transport equations.
-   */
-  unsigned short GetKind_ConvNumScheme_Scalar(void) const { return Kind_ConvNumScheme_Scalar; }
-
-  /*!
-   * \brief Get the kind of center convective numerical scheme for the scalar transport equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of center convective numerical scheme for the scalar transport equations.
-   */
-  unsigned short GetKind_Centered_Scalar(void) const { return Kind_Centered_Scalar; }
-
-  /*!
-   * \brief Get the kind of upwind convective numerical scheme for the scalar transport equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of upwind convective numerical scheme for the scalar transport equations.
-   */
-  unsigned short GetKind_Upwind_Scalar(void) const {  return Kind_Upwind_Scalar; }
 
   /*!
    * \brief Get the kind of integration scheme (implicit)
@@ -5327,6 +5252,8 @@ public:
    *         dual time stepping method (unsteady).
    */
   TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
+
+  void SetNSpecies(unsigned short n_species) { this->nSpecies = nSpecies; }
 
   /*!
    * \brief Provides the number of species present in the plasma
@@ -6679,14 +6606,6 @@ public:
    */
   su2double GetInlet_Ttotal(string val_index) const;
 
-    /*!
-   * \brief Get the scalar values at an inlet boundary
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet scalar values.
-   */
-  // nijso: TODO we do not need inlet enthalpy, it is computed from temperature!
-  su2double* GetInlet_ScalarVal(string val_index) const;
-
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -7726,34 +7645,6 @@ public:
   void SetSurface_TotalPressure(unsigned short val_marker, su2double val_surface_totalpressure) { Surface_TotalPressure[val_marker] = val_surface_totalpressure; }
 
   /*!
-   * \brief Set the CO mass fraction at the surface.
-   * \param[in] val_imarker - Index corresponding to the outlet boundary.
-   * \param[in] val_surface_co - Value of the CO mass fraction.
-   */
-  void SetSurface_CO(unsigned short val_imarker, su2double val_surface_co){ Surface_CO[val_imarker] = val_surface_co; };
-
-  /*!
-   * \brief Set the NOx mass fraction at the surface.
-   * \param[in] val_imarker - Index corresponding to the outlet boundary.
-   * \param[in] val_surface_no - Value of the NOx mass fraction.
-   */
-  //void SetSurface_Scalar(unsigned short val_imarker, su2double val_surface_scalar, unsigned short val_i_scalar){ Surface_Scalar[val_imarker][val_i_scalar] = val_surface_scalar; };
-
-  /*!
-   * \brief Set the NO mass fraction at the surface.
-   * \param[in] val_imarker - Index corresponding to the outlet boundary.
-   * \param[in] val_surface_no - Value of the NO mass fraction.
-   */
-  void SetSurface_NOx(unsigned short val_imarker, su2double val_surface_nox){ Surface_NOx[val_imarker] = val_surface_nox; };
-
-  /*!
-   * \brief Set the CH4 mass fraction at the surface.
-   * \param[in] val_imarker - Index corresponding to the outlet boundary.
-   * \param[in] val_surface_no - Value of the CH4 mass fraction.
-   */
-  void SetSurface_CH4(unsigned short val_imarker, su2double val_surface_ch4){ Surface_CH4[val_imarker] = val_surface_ch4; };
-
-  /*!
    * \brief Set the pressure drop between two surfaces.
    * \param[in] val_marker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_pressuredrop - Value of the pressure drop.
@@ -8032,34 +7923,6 @@ public:
    * \return The total pressure.
    */
   su2double GetSurface_TotalPressure(unsigned short val_marker) const { return Surface_TotalPressure[val_marker]; }
-
-  /*!
-   * \brief Get the CO mass fraction at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The CO mass fraction.
-   */
-  su2double GetSurface_CO(unsigned short val_imarker) const { return Surface_CO[val_imarker]; }
-
-  /*!
-   * \brief Get the scalar mass fraction at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The scalar mass fraction.
-   */
-  //su2double GetSurface_Scalar(unsigned short val_imarker, unsigned short val_i_scalar) const { return Surface_Scalar[val_imarker][val_i_scalar]; }
-
-  /*!
-   * \brief Get the NOx mass fraction at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The NOx mass fraction.
-   */
-  su2double GetSurface_NOx(unsigned short val_imarker) const { return Surface_NOx[val_imarker]; };
-
-    /*!
-   * \brief Get the CH4 mass fraction at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The CH4 mass fraction.
-   */
-  su2double GetSurface_CH4(unsigned short val_imarker) const { return Surface_CH4[val_imarker]; };
 
   /*!
    * \brief Get the pressure drop between two surfaces.
@@ -9520,53 +9383,10 @@ public:
    */
   unsigned short GetnVolumeOutput(void) const { return nVolumeOutput; }
 
-  void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
-
-  /*!
-   * \brief Get the number of transported scalars for combustion
-   */
-  unsigned short GetNScalars(void) const { return n_scalars; }
-
-  /*!
-   * \brief Get the number of transported scalars required for initialisation
-   */
-  unsigned short GetNScalarsInit(void) const { return nScalar_Init; }
-
-  void SetNScalarsInit(unsigned short nScalar_Init) { this->nScalar_Init = nScalar_Init; }
-
   /*!
    * \brief Get the history output field iField
    */
   string GetVolumeOutput_Field(unsigned short iField) const { return VolumeOutput[iField]; }
-
-  /*!
-   * \brief Get the maximum bound for scalar transport clipping
-   * \return Maximum value for scalar clipping
-   */
-  su2double *GetScalar_Clipping_Max(void) { return Scalar_Clipping_Max; }
-
-  /*!
-   * \brief Get the minimum bound for scalar transport clipping
-   * \return Minimum value for scalar clipping
-   */
-  su2double *GetScalar_Clipping_Min(void) { return Scalar_Clipping_Min; }
-  /*!
-   * \brief Get the maximum bound for scalar transport clipping
-   * \return Maximum value for scalar clipping
-   */
-  su2double GetScalar_Clipping_Max(unsigned short iVal) { return Scalar_Clipping_Max[iVal]; }
-
-  /*!
-   * \brief Get the minimum bound for scalar transport clipping
-   * \return Minimum value for scalar clipping
-   */
-  su2double GetScalar_Clipping_Min(unsigned short iVal) { return Scalar_Clipping_Min[iVal]; }
-
-  /*!
-   * \brief Get the minimum bound for scalar transport clipping
-   * \return Minimum value for scalar clipping
-   */
-  su2double GetScalar_Init(unsigned short ival) { return Scalar_Init[ival]; }
 
   /*!
   * \brief Get the convergence fields for monitoring

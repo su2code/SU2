@@ -35,7 +35,6 @@
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
 #include "CDiffusivityModel.hpp"
-#include "../numerics/CLookUpTable.hpp"
 
 using namespace std;
 
@@ -74,8 +73,6 @@ class CFluidModel {
   unique_ptr<CViscosityModel> LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity;  /*!< \brief Thermal Conductivity Model */
   unique_ptr<CDiffusivityModel> MassDiffusivity;       /*!< \brief Mass Diffusivity Model */
-
-  CLookUpTable* look_up_table;
 
  public:
   virtual ~CFluidModel() {}
@@ -130,13 +127,13 @@ class CFluidModel {
    */
   su2double ComputeMeanSpecificHeatCp(const std::vector<su2double> specific_heat_cp, const su2double * const val_scalars) {
     su2double val_scalars_sum = 0.0;
-    unsigned short n_scalars = specific_heat_cp.size() - 1;
+    unsigned short n_species = specific_heat_cp.size() - 1;
 
-    for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+    for (int i_scalar = 0; i_scalar < n_species; i_scalar++){
       Cp += specific_heat_cp[i_scalar] * val_scalars[i_scalar];
       val_scalars_sum += val_scalars[i_scalar];
     }
-    return Cp += specific_heat_cp[n_scalars]*(1 - val_scalars_sum);
+    return Cp += specific_heat_cp[n_species]*(1 - val_scalars_sum);
   }
 
   /*!
@@ -145,13 +142,13 @@ class CFluidModel {
   static su2double ComputeMeanMolecularWeight(const std::vector<su2double> molar_masses, const su2double * const val_scalars) {
     su2double OneOverMeanMolecularWeight = 0.0;
     su2double val_scalars_sum = 0.0;
-    unsigned short n_scalars = molar_masses.size() - 1;
+    unsigned short n_species = molar_masses.size() - 1;
 
-    for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+    for (int i_scalar = 0; i_scalar < n_species; i_scalar++){
       OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
       val_scalars_sum += val_scalars[i_scalar];
     }
-    OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
+    OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_species]/1000);
     return 1/OneOverMeanMolecularWeight;
   }
 
@@ -176,8 +173,6 @@ class CFluidModel {
    */
   virtual inline su2double GetScalarLookups(int){ return 37; }
 
-
-  virtual CLookUpTable* GetLookUpTable() {return look_up_table; }
 
   virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy, 
                                                su2double  val_prog, 

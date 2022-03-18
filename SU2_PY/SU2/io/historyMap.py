@@ -98,9 +98,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'BGS_RES',
                         'HEADER': 'bgs[A_P1]',
                         'TYPE': 'RESIDUAL'},
-<<<<<<< HEAD
- 'BGS_ADJ_TEMPERATURE': {'DESCRIPTION': 'BGS residual of the adjoint temperature.',
-=======
  'BGS_ADJ_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'BGS residual of '
                                                             'the adjoint '
                                                             'transported '
@@ -112,7 +109,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                              'TYPE': 'RESIDUAL'},
  'BGS_ADJ_TEMPERATURE': {'DESCRIPTION': 'BGS residual of the adjoint '
                                         'temperature.',
->>>>>>> develop
                          'GROUP': 'BGS_RES',
                          'HEADER': 'bgs[A_T]',
                          'TYPE': 'RESIDUAL'},
@@ -180,13 +176,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                   'GROUP': 'BGS_RES',
                   'HEADER': 'bgs[P]',
                   'TYPE': 'RESIDUAL'},
-<<<<<<< HEAD
- 'BGS_PROGRESS_VARIABLE': {'DESCRIPTION': 'BGS residual of the progress variable equation.',
-                           'GROUP': 'BGS_RES',
-                           'HEADER': 'bgs[PV]',
-                           'TYPE': 'RESIDUAL'},
- 'BGS_TEMPERATURE': {'DESCRIPTION': 'Block-Gauss-Seidel residual of the temperature',
-=======
  'BGS_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'BGS residual of '
                                                         'transported species.',
                                          'GROUP': 'BGS_RES',
@@ -195,7 +184,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                          'TYPE': 'RESIDUAL'},
  'BGS_TEMPERATURE': {'DESCRIPTION': 'Block-Gauss-Seidel residual of the '
                                     'temperature',
->>>>>>> develop
                      'GROUP': 'BGS_RES',
                      'HEADER': 'bgs[T]',
                      'TYPE': 'RESIDUAL'},
@@ -541,12 +529,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                  'GROUP': 'LINSOL',
                  'HEADER': 'LinSolIter',
                  'TYPE': 'DEFAULT'},
-<<<<<<< HEAD
- 'LINSOL_ITER_SCALAR': {'DESCRIPTION': 'Number of iterations of the linear scalar solver.',
-                        'GROUP': 'LINSOL',
-                        'HEADER': 'LinSolIter[c]',
-                        'TYPE': 'DEFAULT'},
-=======
  'LINSOL_ITER_SPECIES': {'DESCRIPTION': 'Number of iterations of the linear '
                                         'solver for species solver.',
                          'GROUP': 'LINSOL',
@@ -557,17 +539,10 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                       'GROUP': 'LINSOL',
                       'HEADER': 'LinSolIterTurb',
                       'TYPE': 'DEFAULT'},
->>>>>>> develop
  'LINSOL_RESIDUAL': {'DESCRIPTION': 'Residual of the linear solver.',
                      'GROUP': 'LINSOL',
                      'HEADER': 'LinSolRes',
                      'TYPE': 'DEFAULT'},
-<<<<<<< HEAD
- 'LINSOL_RESIDUAL_SCALAR': {'DESCRIPTION': 'Residual of the linear scalar solver.',
-                            'GROUP': 'LINSOL',
-                            'HEADER': 'LinSolRes[c]',
-                            'TYPE': 'DEFAULT'},
-=======
  'LINSOL_RESIDUAL_SPECIES': {'DESCRIPTION': 'Residual of the linear solver for '
                                             'species solver.',
                              'GROUP': 'LINSOL',
@@ -578,7 +553,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                           'GROUP': 'LINSOL',
                           'HEADER': 'LinSolResTurb',
                           'TYPE': 'DEFAULT'},
->>>>>>> develop
  'LOAD_INCREMENT': {'DESCRIPTION': 'LOAD_INCREMENT',
                     'GROUP': '',
                     'HEADER': 'Load[%]',
@@ -696,19 +670,12 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                   'GROUP': 'MAX_RES',
                   'HEADER': 'max[P]',
                   'TYPE': 'RESIDUAL'},
-<<<<<<< HEAD
- 'MAX_PROGRESS_VARIABLE': {'DESCRIPTION': 'Maximum residual of the progress variable equation.',
-                           'GROUP': 'MAX_RES',
-                           'HEADER': 'max[PV]',
-                           'TYPE': 'RESIDUAL'},
-=======
  'MAX_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'Maximum residual of '
                                                         'transported species.',
                                          'GROUP': 'MAX_RES',
                                          'HEADER': 'max[rho*Y_" + '
                                                    'std::to_string(iVar)+"]',
                                          'TYPE': 'RESIDUAL'},
->>>>>>> develop
  'MAX_TEMPERATURE': {'DESCRIPTION': 'Maximum residual of the temperature',
                      'GROUP': 'MAX_RES',
                      'HEADER': 'max[T]',
@@ -837,9 +804,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                         'GROUP': 'RMS_RES',
                         'HEADER': 'rms[A_P1]',
                         'TYPE': 'RESIDUAL'},
-<<<<<<< HEAD
- 'RMS_ADJ_TEMPERATURE': {'DESCRIPTION': 'Root-mean square residual of the adjoint temperature.',
-=======
  'RMS_ADJ_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'Root-mean square '
                                                             'residual of the '
                                                             'adjoint '
@@ -852,7 +816,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                              'TYPE': 'RESIDUAL'},
  'RMS_ADJ_TEMPERATURE': {'DESCRIPTION': 'Root-mean square residual of the '
                                         'adjoint temperature.',
->>>>>>> develop
                          'GROUP': 'RMS_RES',
                          'HEADER': 'rms[A_T]',
                          'TYPE': 'RESIDUAL'},
@@ -932,9 +895,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
               'GROUP': 'RMS_RES',
               'HEADER': 'rms[R]',
               'TYPE': 'RESIDUAL'},
-<<<<<<< HEAD
- 'RMS_TEMPERATURE': {'DESCRIPTION': 'Root mean square residual of the temperature',
-=======
  'RMS_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'Root-mean square '
                                                         'residual of '
                                                         'transported species.',
@@ -944,7 +904,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                          'TYPE': 'RESIDUAL'},
  'RMS_TEMPERATURE': {'DESCRIPTION': 'Root mean square residual of the '
                                     'temperature',
->>>>>>> develop
                      'GROUP': 'RMS_RES',
                      'HEADER': 'rms[T]',
                      'TYPE': 'RESIDUAL'},
@@ -1056,9 +1015,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                  'GROUP': 'FLOW_COEFF',
                                  'HEADER': 'Secondary_Over_Uniformity',
                                  'TYPE': 'COEFFICIENT'},
-<<<<<<< HEAD
- 'SURFACE_STATIC_PRESSURE': {'DESCRIPTION': 'Total average pressure on all markers set in MARKER_ANALYZE',
-=======
  'SURFACE_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'Total average '
                                                             'species " + '
                                                             'std::to_string(iVar) '
@@ -1075,7 +1031,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                               'TYPE': 'DEFAULT'},
  'SURFACE_STATIC_PRESSURE': {'DESCRIPTION': 'Total average pressure on all '
                                             'markers set in MARKER_ANALYZE',
->>>>>>> develop
                              'GROUP': 'FLOW_COEFF',
                              'HEADER': 'Avg_Press',
                              'TYPE': 'COEFFICIENT'},
@@ -1331,9 +1286,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                         'GROUP': 'TAVG_D_FLOW_COEFF',
                                         'HEADER': 'dtavg[Secondary_Over_Uniformity]',
                                         'TYPE': 'TAVG_D_COEFFICIENT'},
-<<<<<<< HEAD
- 'TAVG_D_SURFACE_STATIC_PRESSURE': {'DESCRIPTION': 'weighted time average derivative value',
-=======
  'TAVG_D_SURFACE_SPECIES_" + std::to_string(iVar': {'DESCRIPTION': 'weighted '
                                                                    'time '
                                                                    'average '
@@ -1346,7 +1298,6 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                                                     'TYPE': 'TAVG_D_COEFFICIENT'},
  'TAVG_D_SURFACE_STATIC_PRESSURE': {'DESCRIPTION': 'weighted time average '
                                                    'derivative value',
->>>>>>> develop
                                     'GROUP': 'TAVG_D_FLOW_COEFF',
                                     'HEADER': 'dtavg[Avg_Press]',
                                     'TYPE': 'TAVG_D_COEFFICIENT'},

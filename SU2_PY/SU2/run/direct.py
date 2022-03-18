@@ -123,8 +123,6 @@ def direct ( config ):
         info.FILES.TARGET_CP = 'TargetCp.dat'
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
-    if 'FLAMELET_FLUID_MODEL' in special_cases:
-        info.FILES.LOOK_UP_TABLE = konfig['FILENAME_LUT']
     info.HISTORY.DIRECT = history
 
     '''If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached, 

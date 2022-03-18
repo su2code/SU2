@@ -729,7 +729,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","Surface_CO","Surface_NOx","Surface_Temperature","HeatFlux_Total","HeatFlux_Maximum","Temperature_Total"])
+    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum","Temperature_Total"])
     write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
@@ -830,10 +830,6 @@ def get_specialCases(config):
     if 'GRID_MOVEMENT_KIND' in config and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
     
-    # Special case for look up table
-    if 'FLUID_MODEL' in config and config['FLUID_MODEL'] == 'FLAMELET_FLUID_MODEL':
-      special_cases.append('FLAMELET_FLUID_MODEL')
-
     return special_cases
 
 #: def get_specialCases()

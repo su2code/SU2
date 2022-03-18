@@ -259,10 +259,6 @@ class State(ordered_bunch):
         targetcp_name = 'TargetCp.dat'
         targetheatflux_name = 'TargetHeatFlux.dat'
 
-        special_cases = get_specialCases(config)
-        if 'FLAMELET_FLUID_MODEL' in special_cases:
-            lookuptable_name = config.FILENAME_LUT
-
         adj_map = get_adjointSuffix()
         restart = config.RESTART_SOL == 'YES'
 
@@ -369,10 +365,6 @@ class State(ordered_bunch):
         if 'INV_DESIGN_HEATFLUX' in special_cases:
             register_file('TARGET_HEATFLUX',targetheatflux_name)
 
-        # look up table
-        if 'FLAMELET_FLUID_MODEL' in special_cases:
-            register_file('LOOK_UP_TABLE',lookuptable_name)
-          
         return
     
     def __setitem__(self,k,v):

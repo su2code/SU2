@@ -1021,10 +1021,6 @@ void CConfig::SetPointersNull(void) {
   VolumeOutputFiles = nullptr;
   ConvField = nullptr;
 
-  Scalar_Init           = nullptr;
-  Scalar_Clipping_Min   = nullptr;
-  Scalar_Clipping_Max   = nullptr;
-
   /*--- Variable initialization ---*/
 
   TimeIter   = 0;
@@ -1257,7 +1253,6 @@ void CConfig::SetConfig_Options() {
 
   /*--- Options related to mass diffusivity ---*/
 
-  addEnumOption("DIFFUSIVITY_MODEL", Kind_DiffusivityModel, DiffusivityModel_Map, DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY);
   /* DESCRIPTION: default value for AIR */
   addDoubleOption("DIFFUSIVITY_CONSTANT", Diffusivity_Constant , 0.001);
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
@@ -1347,8 +1342,6 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
   addEnumOption("DIFFUSIVITY_MODEL", Kind_Diffusivity_Model, DiffusivityModel_Map, DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY);
-  /*!\brief DIFFUSIVITY_CONSTANT\n DESCRIPTION: mass diffusivity if DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY is chosen \n DEFAULT 0.001 (Air) \ingroup Config*/
-  addDoubleOption("DIFFUSIVITY_CONSTANT", Diffusivity_Constant , 0.001);
   /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \n DEFAULT 1.0 (~for Gases) \ingroup Config*/
   addDoubleOption("SCHMIDT_NUMBER_LAMINAR", Schmidt_Number_Laminar, 1.0);
   /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.70 (more or less experimental value) \ingroup Config*/
@@ -1737,8 +1730,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_SCALAR", Kind_TimeIntScheme_Scalar, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
@@ -1776,10 +1767,6 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
-  /* DESCRIPTION: Relaxation of the scalar transport equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_SCALAR", Relaxation_Factor_Scalar, 0.9);
-  /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
   addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
   /* DESCRIPTION: Roe coefficient */
@@ -2068,9 +2055,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
-
-  /*!\brief File name of the look up table.*/
-  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -3323,7 +3307,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY) ||
-                    (Kind_FluidModel == FLAMELET_FLUID_MODEL) ||
                     (Kind_FluidModel == MIXTURE_FLUID_MODEL));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
@@ -3775,7 +3758,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   unsigned short n_species = 1; //TODO TK:: make it static?
 
   if (Kind_FluidModel == MIXTURE_FLUID_MODEL)
-    n_species = nScalar_Init + 1; 
+    n_species = nSpecies_Init + 1; 
 
   /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
     * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
@@ -4839,7 +4822,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLAMELET_FLUID_MODEL && Kind_FluidModel != MIXTURE_FLUID_MODEL) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != MIXTURE_FLUID_MODEL) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -4852,8 +4835,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
     if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
-      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLAMELET_FLUID_MODEL) && (Kind_FluidModel != MIXTURE_FLUID_MODEL)) {
-        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY, or FLAMELET_FLUID_MODEL or MIXTURE_FLUID_MODEL for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
+      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != MIXTURE_FLUID_MODEL)) {
+        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY, or MIXTURE_FLUID_MODEL for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
   }
@@ -6487,9 +6470,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
-        case SURFACE_CO:                 cout << "Y_CO objective function." << endl; break;
-        case SURFACE_NOX:                cout << "Y_NOx objective function." << endl; break;
-        case SURFACE_TEMP:               cout << "Temperature objective function." << endl; break;
       }
     }
     else {
@@ -8116,10 +8096,6 @@ CConfig::~CConfig(void) {
      delete[]  Surface_IDC;
      delete[]  Surface_IDC_Mach;
      delete[]  Surface_IDR;
-     delete[]  Surface_CO;
-     delete[]  Surface_NOx;
-     delete[]  Surface_CH4;
-     //delete[]  Surface_Scalar;
 
   delete[]  Inlet_Ttotal;
   delete[]  Inlet_Ptotal;
@@ -8298,9 +8274,6 @@ CConfig::~CConfig(void) {
   delete [] VolumeOutputFiles;
 
   delete [] ConvField;
-  delete [] Scalar_Clipping_Min;
-  delete [] Scalar_Clipping_Max;
-  delete [] Scalar_Init;
 
   delete [] Molecular_Weight;
   delete [] Mu_Constant;
@@ -8496,9 +8469,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
-        case SURFACE_CO:                  AdjExt = "_yco";      break;
-        case SURFACE_NOX:                 AdjExt = "_ynox";     break;
-        case SURFACE_TEMP:                AdjExt = "_avgtemp";  break;
       }
     }
     else{
@@ -9038,13 +9008,6 @@ su2double CConfig::GetInlet_Ttotal(string val_marker) const {
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ttotal[iMarker_Inlet];
-}
-
-su2double* CConfig::GetInlet_ScalarVal(string val_marker) const {
-  unsigned short iMarker_Inlet_Scalar;
-  for (iMarker_Inlet_Scalar = 0; iMarker_Inlet_Scalar < nMarker_Inlet_Scalar; iMarker_Inlet_Scalar++)
-    if (Marker_Inlet_Scalar[iMarker_Inlet_Scalar] == val_marker) break;
-  return Inlet_ScalarVal[iMarker_Inlet_Scalar];
 }
 
 su2double CConfig::GetInlet_Ptotal(string val_marker) const {

@@ -1,3 +1,31 @@
+/*!
+ * \file CFluidScalar.cpp
+ * \brief Main file for managing the config file
+ * \author Mark Heimgartner, Tobias Kattmann, Nijso Beishuizen, Daniel Mayer, Cristopher Morales
+ * \version 7.3.0 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
 #include <cmath>
 #include <math.h>
 #include <vector>
@@ -17,9 +45,9 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 
 CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_operating) : CFluidModel() {
-  n_scalars = config->GetNScalarsInit();
-  config->SetNScalarsInit(n_scalars);
-  n_species_mixture = n_scalars + 1;
+  n_species = config->GetnSpecies();
+  config->SetNSpecies(n_species);
+  n_species_mixture = n_species + 1;
 
   specificHeat.resize(n_species_mixture);
   molarMasses.resize(n_species_mixture);
@@ -63,9 +91,6 @@ void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
       }
       break;
-    case VISCOSITYMODEL::FLAMELET:
-      /* Do nothing. Viscosity is obtained from the table and set in SetTDState_T */
-      break;
     default:
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
@@ -105,9 +130,6 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
         }
       }
       break;
-    case CONDUCTIVITYMODEL::FLAMELET:
-      /* Do nothing. Conductivity is obtained from the table and set in SetTDState_T */
-      break;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       break;
@@ -118,11 +140,11 @@ std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double * cons
   su2double mixtureMolarMass {0.0};
   su2double val_scalars_sum {0.0};
 
-  for(int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+  for(int i_scalar = 0; i_scalar < n_species; i_scalar++){
     massFractions[i_scalar] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[i_scalar];
   }
-  massFractions[n_scalars] = 1 - val_scalars_sum;
+  massFractions[n_species] = 1 - val_scalars_sum;
 
   for(int iVar = 0; iVar < n_species_mixture; iVar++){
     mixtureMolarMass += massFractions[iVar] / molarMasses[iVar];

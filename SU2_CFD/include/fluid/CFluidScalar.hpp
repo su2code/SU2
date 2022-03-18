@@ -7,7 +7,7 @@
 
 class CFluidScalar final : public CFluidModel {
 private:
-  unsigned short n_scalars = 0;                       /*!< \brief Number of transported scalars. */
+  unsigned short n_species = 0;                       /*!< \brief Number of transported scalars. */
   unsigned short n_species_mixture = 0;               /*!< \brief Number of species in mixture. */
   su2double Gas_Constant = 0.0;                       /*!< \brief Specific gas constant. */
   su2double Gamma = 0.0;                              /*!< \brief Ratio of specific heats of the gas. */

@@ -568,7 +568,6 @@ enum ENUM_FLUIDMODEL {
   INC_IDEAL_GAS_POLY   = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP           = 7, /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ            = 8, /*!< \brief User defined gas model for nonequilibrium flow. */
-  FLAMELET_FLUID_MODEL = 9, /*!, \brief Flamelet model */
   MIXTURE_FLUID_MODEL  = 10,/*!, \brief Mixture model */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
@@ -580,7 +579,6 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("FLAMELET_FLUID_MODEL", FLAMELET_FLUID_MODEL)
   MakePair("MIXTURE_FLUID_MODEL", MIXTURE_FLUID_MODEL)
   MakePair("SU2_NONEQ", SU2_NONEQ)
 };
@@ -666,43 +664,34 @@ static const MapType<std::string, FREESTREAM_OPTION> FreeStreamOption_Map = {
 /*!
  * \brief Types of viscosity model
  */
-
 enum class VISCOSITYMODEL {
   CONSTANT, /*!< \brief Constant viscosity. */
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
-  FLAMELET, /*!< \brief flamelet combustion model */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
-  MakePair("FLAMELET", VISCOSITYMODEL::FLAMELET)
-
 };
 
 /*!
  * \brief Types of thermal conductivity model
  */
-
 enum class CONDUCTIVITYMODEL {
   CONSTANT, /*!< \brief Constant thermal conductivity. */
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
-  FLAMELET, /*!< \brief flamelet combustion model */ 
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
-  MakePair("FLAMELET", CONDUCTIVITYMODEL::FLAMELET)
-
 };
 
 /*!
  * \brief Types of turbulent thermal conductivity model
  */
-
 enum class CONDUCTIVITYMODEL_TURB {
   NONE, /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
   CONSTANT_PRANDTL, /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
@@ -718,23 +707,17 @@ static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_
 enum class DIFFUSIVITYMODEL {
   CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
   CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
-  FLAMELET,             /*!< \brief flamelet model */
-  UNITY_LEWIS,             /*!< \brief Unity Lewis model */
+  UNITY_LEWIS,          /*!< \brief Unity Lewis model */
 };
 
-static const MapType<std::string, DIFFUSIVITYMODEL> DiffusivityModel_Map = {
+static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
   MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
-  MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
 };
 
 /*!
-<<<<<<< HEAD
- * \brief types of unsteady mesh motion
-=======
  * \brief Types of unsteady mesh motion
->>>>>>> develop
  */
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0,          /*!< \brief Simulation on a static mesh. */
@@ -777,7 +760,7 @@ enum ENUM_GUST_TYPE {
   SINE = 2,         /*!< \brief Sine shaped gust */
   ONE_M_COSINE = 3, /*!< \brief 1-cosine shaped gust */
   VORTEX = 4,       /*!< \brief A gust made from vortices */
-  EOG = 5,          /*!< \brief An extreme operating gust */
+  EOG = 5           /*!< \brief An extreme operating gust */
 };
 static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
   MakePair("NONE", NO_GUST)
@@ -1612,11 +1595,7 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
-  SURFACE_CO = 80,
-  SURFACE_NOX = 81,
-  SURFACE_TEMP = 82,
 };
-
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
   MakePair("LIFT", LIFT_COEFFICIENT)
@@ -1661,9 +1640,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
-  MakePair("AVG_CO", SURFACE_CO)
-  MakePair("AVG_NOX", SURFACE_NOX)
-  MakePair("AVG_TEMP", SURFACE_TEMP)
 };
 
 /*!
@@ -2274,20 +2250,6 @@ static const MapType<std::string, VERIFICATION_SOLUTION> Verification_Solution_M
   MakePair("USER_DEFINED_SOLUTION",    VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION)
 };
 
-  /* the order matters: */
-  /* enthalpy and progress variable are the first and second entry in the lookup table */
-  enum FLAMELET_SCALAR_VARIABLES {
-    I_PROG_VAR,
-    I_ENTHALPY,
-    I_CO,
-    I_NOX,
-  };
-
-  enum FLAMELET_SCALAR_SOURCES {
-    I_SRC_TOT_PROG_VAR,
-    I_SRC_TOT_CO,
-    I_SRC_TOT_NOX,
-  };
 /*!
  * \brief Types of streamwise periodicity.
  */
