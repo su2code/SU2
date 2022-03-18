@@ -32,5 +32,5 @@
 
 /*--- Definition of the static members of the Venkatakrishnan-Wang
  * specialization of CLimiterDetails, need to be here due to ODR. ---*/
-su2activevector CLimiterDetails<VENKATAKRISHNAN_WANG>::sharedMin;
-su2activevector CLimiterDetails<VENKATAKRISHNAN_WANG>::sharedMax;
+su2activevector CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>::sharedMin;
+su2activevector CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>::sharedMax;
