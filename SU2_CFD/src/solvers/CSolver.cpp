@@ -205,7 +205,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_UNSIGNED_SHORT;
       break;
     case PERIODIC_RESIDUAL:
-      COUNT_PER_POINT  = nVar + nVar*nVar + 1;
+      COUNT_PER_POINT  = nVar + 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PERIODIC_IMPLICIT:
@@ -351,7 +351,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   bool boundary_i, boundary_j;
   bool weighted = true;
 
-  unsigned short iVar, jVar, iDim;
+  unsigned short iVar, iDim;
   unsigned short nNeighbor       = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
@@ -532,52 +532,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             bufDSend[buf_offset] = base_nodes->GetDelta_Time(iPoint);
             buf_offset++;
-
-            /*--- For implicit calculations, we will communicate the
-             contributions to the Jacobian block diagonal, i.e., the
-             impact of the point upon itself, J_ii. ---*/
-
-            if (implicit_periodic) {
-
-              for (iVar = 0; iVar < nVar; iVar++) {
-                for (jVar = 0; jVar < nVar; jVar++) {
-                  jacBlock[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
-                }
-              }
-
-              /*--- Rotate the momentum columns of the Jacobian. ---*/
-
-              if (rotate_periodic) {
-                for (iVar = 0; iVar < nVar; iVar++) {
-                  if (nDim == 2) {
-                    jacBlock[1][iVar] = (rotMatrix2D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacBlock[2][iVar] = (rotMatrix2D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                  } else {
-
-                    jacBlock[1][iVar] = (rotMatrix3D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[2][iVar] = (rotMatrix3D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[3][iVar] = (rotMatrix3D[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                  }
-                }
-              }
-
-              /*--- Load the Jacobian terms into the buffer for sending. ---*/
-
-              for (iVar = 0; iVar < nVar; iVar++) {
-                for (jVar = 0; jVar < nVar; jVar++) {
-                  bufDSend[buf_offset] = jacBlock[iVar][jVar];
-                  buf_offset++;
-                }
-              }
-            }
 
             break;
 
@@ -1011,9 +965,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   /*--- Local variables ---*/
 
   unsigned short nPeriodic = config->GetnMarker_Periodic();
-  unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
+  unsigned short iDim, jDim, iVar, iPeriodic, nNeighbor;
 
-  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset, total_index;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int source, iMessage, jRecv;
 
@@ -1023,13 +977,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   su2double *Diff = new su2double[nVar];
 
   su2double Time_Step, Volume;
-
-  su2double **Jacobian_i = nullptr;
-  if ((commType == PERIODIC_RESIDUAL) && implicit_periodic) {
-    Jacobian_i = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Jacobian_i[iVar] = new su2double [nVar];
-  }
 
   /*--- Set some local pointers to make access simpler. ---*/
 
@@ -1140,35 +1087,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               if (bufDRecv[buf_offset] < Time_Step)
                 base_nodes->SetDelta_Time(iPoint,bufDRecv[buf_offset]);
               buf_offset++;
-
-              /*--- For implicit integration, we choose the first
-               periodic face of each pair to be the master/owner of
-               the solution for the linear system while fixing the
-               solution at the matching face during the solve. Here,
-               we remove the Jacobian and residual contributions from
-               the passive face such that it does not participate in
-               the linear solve. ---*/
-
-              if (implicit_periodic) {
-
-                for (iVar = 0; iVar < nVar; iVar++) {
-                  for (jVar = 0; jVar < nVar; jVar++) {
-                    Jacobian_i[iVar][jVar] = bufDRecv[buf_offset];
-                    buf_offset++;
-                  }
-                }
-
-                Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-
-                if (iPeriodic == val_periodic_index + nPeriodic/2) {
-                  for (iVar = 0; iVar < nVar; iVar++) {
-                    LinSysRes(iPoint, iVar) = 0.0;
-                    total_index = iPoint*nVar+iVar;
-                    Jacobian.DeleteValsRowi(total_index);
-                  }
-                }
-
-              }
 
               break;
 
@@ -1324,11 +1242,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   }
 
   delete [] Diff;
-
-  if (Jacobian_i)
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete [] Jacobian_i[iVar];
-  delete [] Jacobian_i;
 
 }
 
