@@ -489,6 +489,12 @@ private:
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
+  LIMITER Kind_SlopeLimit,    /*!< \brief Global slope limiter. */
+  Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
+  Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
+  Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
+  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -504,12 +510,6 @@ private:
   Kind_AdjTurb_Linear_Prec,              /*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
-  Kind_SlopeLimit,              /*!< \brief Global slope limiter. */
-  Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
-  Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
-  Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
-  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_Species,      /*!< \brief Slope limiter for the species equation.*/
   Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,      /*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
@@ -2297,7 +2297,7 @@ public:
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind,        unsigned short val_kind_slopelimit,
+                             unsigned short val_kind_upwind,        LIMITER val_kind_slopelimit,
                              bool val_muscl,                        unsigned short val_kind_fem);
 
   /*!
@@ -4566,37 +4566,37 @@ public:
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients.
    */
-  unsigned short GetKind_SlopeLimit(void) const { return Kind_SlopeLimit; }
+  LIMITER GetKind_SlopeLimit(void) const { return Kind_SlopeLimit; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the flow equations.
    */
-  unsigned short GetKind_SlopeLimit_Flow(void) const { return Kind_SlopeLimit_Flow; }
+  LIMITER GetKind_SlopeLimit_Flow(void) const { return Kind_SlopeLimit_Flow; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the turbulent equation.
    */
-  unsigned short GetKind_SlopeLimit_Turb(void) const { return Kind_SlopeLimit_Turb; }
+  LIMITER GetKind_SlopeLimit_Turb(void) const { return Kind_SlopeLimit_Turb; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the species equation.
    */
-  unsigned short GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
+  LIMITER GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint turbulent equation.
    */
-  unsigned short GetKind_SlopeLimit_AdjTurb(void) const { return Kind_SlopeLimit_AdjTurb; }
+  LIMITER GetKind_SlopeLimit_AdjTurb(void) const { return Kind_SlopeLimit_AdjTurb; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint flow equation.
    */
-  unsigned short GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
+  LIMITER GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
 
   /*!
    * \brief Value of the calibrated constant for the Lax method (center scheme).

@@ -60,7 +60,7 @@
  * \param FieldType - Generic object with operator (iPoint,iVar).
  * \param GradientType - Generic object with operator (iPoint,iVar,iDim).
  */
-template<size_t nDim, ENUM_LIMITER LimiterKind, class FieldType, class GradientType>
+template<size_t nDim, LIMITER LimiterKind, class FieldType, class GradientType>
 void computeLimiters_impl(CSolver* solver,
                           MPI_QUANTITIES kindMpiComm,
                           PERIODIC_QUANTITIES kindPeriodicComm1,
