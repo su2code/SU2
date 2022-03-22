@@ -146,16 +146,16 @@ passivedouble CDriver::GetYawMoment(bool coefficient) const {
 }
 
 passivedouble CDriver::GetObjective() const {
-    if (main_config->GetFluidProblem()) {
-        CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-        solver->Evaluate_ObjFunc(main_config);
-        
-        return SU2_TYPE::GetValue(solver->GetTotal_ComboObj());
-    } else {
+    if (!main_config->GetFluidProblem()) {
         if (rank == MASTER_NODE) cout << "Objective function value not available... returning 0." << endl;
         
         return 0.0;
     }
+
+    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    solver->Evaluate_ObjFunc(main_config);
+    
+    return SU2_TYPE::GetValue(solver->GetTotal_ComboObj());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -238,253 +238,338 @@ void CDriver::SetReynoldsNumber(passivedouble value) {
 /////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetNumberStateVariables() const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
     return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
 }
 
 unsigned long CDriver::GetNumberPrimitiveVariables() const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
     return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
 }
 
-vector<passivedouble> CDriver::GetResiduals() const {
-    CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
+vector<vector<passivedouble>> CDriver::GetResiduals() const {
     const auto nPoint = GetNumberVertices();
-    const auto nVar   = GetNumberStateVariables();
-    vector<passivedouble> values(nPoint*nVar, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->LinSysRes(iPoint, iVar);
-            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetResiduals(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerResiduals(unsigned short iMarker) const {
-    CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
+vector<passivedouble> CDriver::GetResiduals(unsigned long iPoint) const {
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
+
+    const auto nVar = GetNumberStateVariables();
+    vector<passivedouble> values(nVar, 0.0);
     
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LinSysRes(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
+    } 
+    
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerResiduals(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    const auto nVar    = GetNumberStateVariables();
-    vector<passivedouble> values(nVertex*nVar, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->LinSysRes(iPoint, iVar);
-            values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerResiduals(iMarker, iVertex));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetStates() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+vector<passivedouble> CDriver::GetMarkerResiduals(unsigned short iMarker, unsigned long iVertex) const {
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
     
-    if (!main_config->GetFluidProblem()) {
-        return {};
+    const auto nVar = GetNumberStateVariables();
+    vector<passivedouble> values(nVar, 0.0);
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LinSysRes(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
     }
     
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetStates() const {
     const auto nPoint = GetNumberVertices();
-    const auto nVar   = GetNumberStateVariables();
-    vector<passivedouble> values(nPoint*nVar, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetNodes()->GetSolution(iPoint, iVar);
-            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetStates(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerStates(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+vector<passivedouble> CDriver::GetStates(unsigned long iPoint) const {
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    const auto nVar = GetNumberStateVariables();
+    vector<passivedouble> values(nVar, 0.0);
     
-    if (!main_config->GetFluidProblem()) {
-        return {};
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
     }
     
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerStates(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    const auto nVar    = GetNumberStateVariables();
-    vector<passivedouble> values(nVertex*nVar, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetNodes()->GetSolution(iPoint, iVar);
-            values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerStates(iMarker, iVertex));
     }
     
     return values;
 }
 
-void CDriver::SetStates(vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+vector<passivedouble> CDriver::GetMarkerStates(unsigned short iMarker, unsigned long iVertex) const {
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+
+    const auto nVar = GetNumberStateVariables();
+    vector<passivedouble> values(nVar, 0.0);
     
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
+    }
+
+    return values;
+}
+
+void CDriver::SetStates(vector<vector<passivedouble>> values) {
+    const auto nPoint = GetNumberVertices();
+    
+    if (values.size() != nPoint) {
+        SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        SetStates(iPoint, values[iPoint]);
+    }
+}
+
+void CDriver::SetStates(unsigned long iPoint, vector<passivedouble> values) {
+    const auto nVar   = GetNumberStateVariables();
+
+    if (values.size() != nVar) {
+        SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+    }
+}
+
+void CDriver::SetMarkerStates(unsigned short iMarker, vector<vector<passivedouble>> values) {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
+    
+    if (values.size() != nVertex) {
+        SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
+    }
+
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        SetMarkerStates(iMarker, iVertex, values[iVertex]);
+    }
+}
+
+void CDriver::SetMarkerStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) { 
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    const auto nVar   = GetNumberStateVariables();
+    
+    if (values.size() != nVar) {
+        SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+    }
+}
+
+vector<vector<passivedouble>> CDriver::GetPrimitiveStates() const {
+    const auto nPoint = GetNumberVertices();
+    
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetPrimitiveStates(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetPrimitiveStates(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
     }
-    
-    const auto nPoint = GetNumberVertices();
-    const auto nVar   = GetNumberStateVariables();
-    if (values.size() != nPoint*nVar) {
-        SU2_MPI::Error("Size does not match nPoint * nVar!", CURRENT_FUNCTION);
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    const auto nPrim = nDim + 2;  // TODO: Use nPrimVar ?
+    vector<passivedouble> values(nPrim, 0.0);
+
+    CSolver* solver  = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+
+    if (nDim == 2) {
+        values[0]     = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
+        values[1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 0));
+        values[2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 1));
+        values[3] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
+    }
+    else {
+        values[0]     = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
+        values[1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 0));
+        values[2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 1));
+        values[3] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 2));
+        values[4] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
     }
     
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[iPoint*nVar + iVar]);
-        }
-    }
+    return values;
 }
 
-void CDriver::SetMarkerStates(unsigned short iMarker, vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+vector<vector<passivedouble>> CDriver::GetMarkerPrimitiveStates(unsigned short iMarker) const {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
     
+    vector<vector<passivedouble>> values;
+
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerPrimitiveStates(iMarker, iVertex));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerPrimitiveStates(unsigned short iMarker, unsigned long iVertex) const {
     if (!main_config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
     }
-    
-    const auto nVertex = GetNumberMarkerVertices(iMarker);
-    const auto nVar    = GetNumberStateVariables();
-    if (values.size() != nVertex*nVar) {
-        SU2_MPI::Error("Size does not match nVertex * nVar!", CURRENT_FUNCTION);
-    }
-    
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[iVertex*nVar + iVar]);
-        }
-    }
-}
 
-vector<passivedouble> CDriver::GetPrimitiveStates() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
-    const auto nPoint = GetNumberVertices();
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
     const auto nPrim  = 5;
-    vector<passivedouble> values(nPoint*nPrim, 0.0);
-    
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        values[iPoint*nPrim] = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
-        
-        values[iPoint*nPrim + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 0));
-        values[iPoint*nPrim + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 1));
-        values[iPoint*nPrim + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 2));
-        
-        values[iPoint*nPrim + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
-    }
-    
-    return values;
-}
+    vector<passivedouble> values(nPrim, 0.0);
 
-vector<passivedouble> CDriver::GetMarkerPrimitiveStates(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
+    CSolver* solver  = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+
+    if (nDim == 2) {
+        values[0]     = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
+        values[1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 0));
+        values[2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 1));
+        values[3] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
     }
-    
-    const auto nVertex = GetNumberMarkerVertices(iMarker);
-    const auto nPrim   = 5;
-    vector<passivedouble> values(nVertex*nPrim, 0.0);
-    
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        values[iVertex*nPrim] = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
-        
-        values[iVertex*nPrim + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 0));
-        values[iVertex*nPrim + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 1));
-        values[iVertex*nPrim + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 2));
-        
-        values[iVertex*nPrim + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
+    else {
+        values[0]     = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
+        values[1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 0));
+        values[2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 1));
+        values[3] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint, 2));
+        values[4] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
     }
-    
+
     return values;
 }
 
 vector<passivedouble> CDriver::GetSpeedOfSound() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint, 0.0);
-    su2double value;
+    
+    vector<passivedouble> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        value = solver->GetNodes()->GetSoundSpeed(iPoint);
-        values[iPoint] = SU2_TYPE::GetValue(value);
+        values.push_back(GetSpeedOfSound(iPoint));
     }
     
     return values;
+}
+
+passivedouble CDriver::GetSpeedOfSound(unsigned long iPoint) const {
+    if (main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+        
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint));
 }
 
 vector<passivedouble> CDriver::GetMarkerSpeedOfSound(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex, 0.0);
-    su2double value;
+    
+    vector<passivedouble> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        value = solver->GetNodes()->GetSoundSpeed(iPoint);
-        values[iVertex] = SU2_TYPE::GetValue(value);
+        values.push_back(GetSpeedOfSound(iVertex));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerForces(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
+passivedouble CDriver::GetMarkerSpeedOfSound(unsigned short iMarker, unsigned long iVertex) const {
+    if (main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
     }
     
-    const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
     
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetVertexTractions(iMarker, iVertex, iDim);
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint));
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerForces(unsigned short iMarker) const {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
+
+    vector<vector<passivedouble>> values;
+    
+    for (auto iVertex = 0u; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerForces(iMarker, iVertex));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerForces(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetVertexTractions(iMarker, iVertex, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
@@ -494,87 +579,122 @@ vector<passivedouble> CDriver::GetMarkerForces(unsigned short iMarker) const {
 /* Functions related to the adjoint mesh solver solution.                  */
 /////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetAdjointCoordinates() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-    
-    if (!main_config->GetDeform_Mesh() || !main_config->GetDiscrete_Adjoint()) {
-        return {};
-    }
-    
+vector<vector<passivedouble>> CDriver::GetAdjointCoordinates() const {
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetNodes()->GetSolution(iPoint, iDim);
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetAdjointCoordinates(iPoint));    
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerAdjointCoordinates(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-    
+vector<passivedouble> CDriver::GetAdjointCoordinates(unsigned long iPoint) const {
     if (!main_config->GetDeform_Mesh() || !main_config->GetDiscrete_Adjoint()) {
-        return {};
+        SU2_MPI::Error("Discrete adjoint mesh solver is not defined!", CURRENT_FUNCTION);
+    }   
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
-    
+
+    vector<passivedouble> values(nDim, 0.0);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->GetNodes()->GetSolution(iPoint, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerAdjointCoordinates(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetNodes()->GetSolution(iPoint, iDim);
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerAdjointCoordinates(iMarker, iVertex));    
     }
     
     return values;
 }
 
-void CDriver::SetAdjointCoordinates(vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-    
+vector<passivedouble> CDriver::GetMarkerAdjointCoordinates(unsigned short iMarker, unsigned long iVertex) const {
     if (!main_config->GetDeform_Mesh() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint mesh solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint mesh solver is not defined!", CURRENT_FUNCTION);
     }
-    
+
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    vector<passivedouble> values(nDim, 0.0);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->GetNodes()->GetSolution(iPoint, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+
+    return values;
+}
+
+void CDriver::SetAdjointCoordinates(vector<vector<passivedouble>> values) {
     const auto nPoint = GetNumberVertices();
-    if (values.size() != nPoint*nDim) {
-        SU2_MPI::Error("Size does not match nPoint * nDim!", CURRENT_FUNCTION);
+    
+    if (values.size() != nPoint) {
+        SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
     }
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            solver->GetNodes()->SetSolution(iPoint, iDim, values[iPoint*nDim + iDim]);
-        }
+        SetAdjointCoordinates(iPoint, values[iPoint]);
     }
 }
 
-void CDriver::SetMarkerAdjointCoordinates(unsigned short iMarker, vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
-    
+void CDriver::SetAdjointCoordinates(unsigned long iPoint, vector<passivedouble> values) {
     if (!main_config->GetDeform_Mesh() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint mesh solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint mesh solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    if (values.size() != nDim) {
+        SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
     }
     
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->GetNodes()->SetSolution(iPoint, iDim, values[iDim]);
+    }
+}
+
+void CDriver::SetMarkerAdjointCoordinates(unsigned short iMarker, vector<vector<passivedouble>> values) {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    if (values.size() != nVertex*nDim) {
-        SU2_MPI::Error("Size does not match nVertex * nDim!", CURRENT_FUNCTION);
+    
+    if (values.size() != nVertex) {
+        SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
     }
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            solver->GetNodes()->SetSolution(iPoint, iDim, values[iVertex*nDim + iDim]);
-        }
+        SetAdjointCoordinates(iVertex, values[iVertex]);
+    }
+}
+
+void CDriver::SetMarkerAdjointCoordinates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+    if (!main_config->GetDeform_Mesh() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint mesh solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+
+    if (values.size() != nDim) {
+        SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL]->GetNodes()->SetSolution(iPoint, iDim, values[iDim]);
     }
 }
 
@@ -582,442 +702,616 @@ void CDriver::SetMarkerAdjointCoordinates(unsigned short iMarker, vector<passive
 /* Functions related to the adjoint flow solver solution.                  */
 /////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetAdjointStates() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
-    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        return {};
-    }
-    
+vector<vector<passivedouble>> CDriver::GetAdjointStates() const {
     const auto nPoint = GetNumberVertices();
-    const auto nVar   = GetNumberStateVariables();
-    vector<passivedouble> values(nPoint*nVar, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetNodes()->GetSolution(iPoint, iVar);
-            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetAdjointStates(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerAdjointStates(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+vector<passivedouble> CDriver::GetAdjointStates(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        return {};
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
+    const auto nVar   = GetNumberStateVariables();
+    vector<passivedouble> values(nVar, 0.0);
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
+    }
+    
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerAdjointStates(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    const auto nVar    = GetNumberStateVariables();
-    vector<passivedouble> values(nVertex*nVar, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetNodes()->GetSolution(iPoint, iVar);
-            values[iVertex*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerAdjointStates(iMarker, iVertex));
     }
     
     return values;
+    
 }
 
-void CDriver::SetAdjointStates(vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+vector<passivedouble> CDriver::GetMarkerAdjointStates(unsigned short iMarker, unsigned long iVertex) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
-    
-    const auto nPoint = GetNumberVertices();
+
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
     const auto nVar   = GetNumberStateVariables();
-    if (values.size() != nPoint*nVar) {
-        SU2_MPI::Error("Size does not match nPoint * nVar!", CURRENT_FUNCTION);
+    vector<passivedouble> values(nVar, 0.0);
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->GetSolution(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
+    }
+
+    return values;
+}
+
+void CDriver::SetAdjointStates(vector<vector<passivedouble>> values) {
+    const auto nPoint = GetNumberVertices();
+    
+    if (values.size() != nPoint) {
+        SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
     }
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[iPoint*nVar + iVar]);
-        }
+        SetAdjointStates(iPoint, values[iPoint]);
     }
 }
 
-void CDriver::SetMarkerAdjointStates(unsigned short iMarker, vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+void CDriver::SetAdjointStates(unsigned long iPoint, vector<passivedouble> values) {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     
-    const auto nVertex = GetNumberMarkerVertices(iMarker);
-    const auto nVar    = GetNumberStateVariables();
-    if (values.size() != nVertex*nVar) {
-        SU2_MPI::Error("Size does not match nVertex * nVar!", CURRENT_FUNCTION);
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    const auto nVar = GetNumberStateVariables();
+
+    if (values.size() != nVar) {
+        SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
     }
     
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            solver->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
-        }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
     }
 }
 
-vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+void CDriver::SetMarkerAdjointStates(unsigned short iMarker, vector<vector<passivedouble>> values) {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
     
-    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    if (values.size() != nVertex) {
+        SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
     }
     
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        SetMarkerAdjointStates(iMarker, iVertex, values[iVertex]);
+    }
+}
+
+void CDriver::SetMarkerAdjointStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
+    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex); 
+    const auto nVar   = GetNumberStateVariables();
+    
+    if (values.size() != nVar) {
+        SU2_MPI::Error("Invalid number of variables!", CURRENT_FUNCTION);
+    }
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+    }
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerAdjointForces(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetAdjointVertexTractions(iMarker, iVertex, iDim);
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerAdjointForces(iMarker, iVertex));
     }
     
     return values;
 }
 
-void CDriver::SetMarkerAdjointForces(unsigned short iMarker, vector<passivedouble> values) {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
+vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
     }
     
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjointVertexTractions(iMarker, iVertex, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+    
+    return values;
+}
+
+void CDriver::SetMarkerAdjointForces(unsigned short iMarker, vector<vector<passivedouble>> values) {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    if (values.size() != nVertex*nDim) {
-        SU2_MPI::Error("Size does not match nVertex * nDim!", CURRENT_FUNCTION);
+    
+    if (values.size() != nVertex) {
+        SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
     }
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            solver->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, values[iVertex*nDim + iDim]);
-        }
+        SetMarkerAdjointForces(iMarker, iVertex, values[iVertex]);
     }
 }
 
-vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+void CDriver::SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
+    }
+
+    if (values.size() != nDim) {
+        SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, values[iVertex*nDim + iDim]);
+    }
+}
+
+vector<vector<passivedouble>> CDriver::GetCoordinatesCoordinatesSensitivity() const {
+    const auto nPoint = GetNumberVertices();
+    
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetCoordinatesCoordinatesSensitivity(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivity(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
     }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
     
-    const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
-    
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dCoordinates_dCoordinates(iPoint, iDim);
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dCoordinates_dCoordinates(iPoint, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerCoordinatesDisplacementsSensitivity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
-    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
-    }
-    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-    }
-    
+vector<vector<passivedouble>> CDriver::GetMarkerCoordinatesDisplacementsSensitivity(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dCoordinates_dDisplacements(iMarker, iVertex, iDim);
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerCoordinatesDisplacementsSensitivity(iMarker, iVertex));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerCoordinatesDisplacementsSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+    
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dCoordinates_dDisplacements(iMarker, iVertex, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
 }
 
 vector<passivedouble> CDriver::GetObjectiveFarfieldVariablesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
     }
     
     const int nTrim = 2;
     vector<passivedouble> values(nTrim, 0.0);
-    su2double value;
     
-    value = solver->GetSens_dObjective_dVariables(0);
-    values[0] = SU2_TYPE::GetValue(value);
+    su2double mach = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dVariables(0);
+    values[0] = SU2_TYPE::GetValue(mach);
     
-    value = solver->GetSens_dObjective_dVariables(1);
-    values[1] = SU2_TYPE::GetValue(value);
+    su2double alpha = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dVariables(1);
+    values[1] = SU2_TYPE::GetValue(alpha);
     
     return values;
 }
 
 vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
     }
     
     const int nTrim = 2;
     vector<passivedouble> values(nTrim, 0.0);
-    su2double value;
     
-    value = solver->GetProd_dResiduals_dVariables(0);
-    values[0] = SU2_TYPE::GetValue(value);
+    su2double mach = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dVariables(0);
+    values[0] = SU2_TYPE::GetValue(mach);
     
-    value = solver->GetProd_dResiduals_dVariables(1);
-    values[1] = SU2_TYPE::GetValue(value);
+    su2double alpha = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dVariables(1);
+    values[1] = SU2_TYPE::GetValue(alpha);
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetObjectiveStatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+vector<vector<passivedouble>> CDriver::GetObjectiveStatesSensitivity() const {
+    const auto nPoint = GetNumberVertices();
     
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetObjectiveStatesSensitivity(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetObjectiveStatesSensitivity(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    const auto nVar = GetNumberStateVariables();
+    vector<passivedouble> values(nVar, 0.0);
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dStates(iPoint, iVar);
+
+        values[iVar] = SU2_TYPE::GetValue(value);
     }
     
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetResidualsStatesSensitivity() const {
     const auto nPoint = GetNumberVertices();
+    
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetResidualsStatesSensitivity(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetResidualsStatesSensitivity(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+    
     const auto nVar   = GetNumberStateVariables();
-    vector<passivedouble> values(nPoint*nVar, 0.0);
-    su2double value;
+    vector<passivedouble> values(nVar, 0.0);
     
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetSens_dObjective_dStates(iPoint, iVar);
-            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dStates(iPoint, iVar);
+        
+        values[iVar] = SU2_TYPE::GetValue(value);
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetResidualsStatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
+vector<vector<passivedouble>> CDriver::GetForcesStatesSensitivity() const {
+    const auto nPoint = GetNumberVertices();
     
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetForcesStatesSensitivity(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetForcesStatesSensitivity(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
     }
     
-    const auto nPoint = GetNumberVertices();
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+    
     const auto nVar   = GetNumberStateVariables();
-    vector<passivedouble> values(nPoint*nVar, 0.0);
-    su2double value;
+    vector<passivedouble> values(nVar, 0.0);
     
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
-            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dStates(iPoint, iVar);
+        
+        values[iVar] = SU2_TYPE::GetValue(value);
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetForcesStatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
-    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
-    }
-    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-    }
-    
+vector<vector<passivedouble>> CDriver::GetObjectiveCoordinatesSensitivity() const {
     const auto nPoint = GetNumberVertices();
-    const auto nVar   = GetNumberStateVariables();
-    vector<passivedouble> values(nPoint*nVar, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-            value = solver->GetProd_dTractions_dStates(iPoint, iVar);
-            values[iPoint*nVar + iVar] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetObjectiveCoordinatesSensitivity(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetObjectiveCoordinatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+vector<passivedouble> CDriver::GetObjectiveCoordinatesSensitivity(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
     }
     
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dCoordinates(iPoint, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+    
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetResidualsCoordinatesSensitivity() const {
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetSens_dObjective_dCoordinates(iPoint, iDim);
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetResidualsCoordinatesSensitivity(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivity(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
     }
     
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dCoordinates(iPoint, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+    
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetForcesCoordinatesSensitivity() const {
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dResiduals_dCoordinates(iPoint, iDim);
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetForcesCoordinatesSensitivity(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetForcesCoordinatesSensitivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+vector<passivedouble> CDriver::GetForcesCoordinatesSensitivity(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
-    const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
+    vector<passivedouble> values(nDim, 0.0);
     
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dTractions_dCoordinates(iPoint, iDim);
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dCoordinates(iPoint, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerObjectiveDisplacementsSensitivity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
-    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
-    }
-    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-    }
-    
+vector<vector<passivedouble>> CDriver::GetMarkerObjectiveDisplacementsSensitivity(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetSens_dObjective_dDisplacements(iMarker, iVertex, iDim);
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerObjectiveDisplacementsSensitivity(iMarker, iVertex));    
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerResidualsDisplacementsSensitivity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
+vector<passivedouble> CDriver::GetMarkerObjectiveDisplacementsSensitivity(unsigned short iMarker, unsigned long iVertex) const {
     if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
     }
     
-    const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+    vector<passivedouble> values(nDim, 0.0);
     
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dResiduals_dDisplacements(iMarker, iVertex, iDim);
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dDisplacements(iMarker, iVertex, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerForcesDisplacementsSensitivity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL];
-    
-    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint flow solver is not defined!", CURRENT_FUNCTION);
-    }
-    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
-        SU2_MPI::Error("Adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-    }
-    
+vector<vector<passivedouble>> CDriver::GetMarkerResidualsDisplacementsSensitivity(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    su2double value;
+    
+    vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            value = solver->GetProd_dTractions_dDisplacements(iMarker, iVertex, iDim);
-            values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetMarkerResidualsDisplacementsSensitivity(iMarker, iVertex));    
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerResidualsDisplacementsSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+    
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dDisplacements(iMarker, iVertex, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+    
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerForcesDisplacementsSensitivity(unsigned short iMarker) const {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
+    
+    vector<vector<passivedouble>> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerForcesDisplacementsSensitivity(iMarker, iVertex));    
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerForcesDisplacementsSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+        SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+        SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
+    }
+    
+    vector<passivedouble> values(nDim, 0.0);
+    
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dDisplacements(iMarker, iVertex, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
     }
     
     return values;
@@ -1048,279 +1342,368 @@ string CDriver::GetSurfaceFileName() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 vector<passivedouble> CDriver::GetTemperatures() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint, 0.0);
-    su2double value;
+    
+    vector<passivedouble> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        value = solver->GetNodes()->GetTemperature(iPoint);
-        values[iPoint] = SU2_TYPE::GetValue(value);
+        values.push_back(GetTemperatures(iPoint));    
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerTemperatures(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    bool compressible = (main_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-    if (!compressible) {
-        return {};
+passivedouble CDriver::GetTemperatures(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetTemperature(iPoint));
+}
+
+vector<passivedouble> CDriver::GetMarkerTemperatures(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex, 0.0);
-    su2double value;
+    
+    vector<passivedouble> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        value = solver->GetNodes()->GetTemperature(iPoint);
-        values[iVertex] = SU2_TYPE::GetValue(value);
+        values.push_back(GetMarkerTemperatures(iMarker, iVertex));    
     }
     
     return values;
+}
+
+passivedouble CDriver::GetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    
+    if (main_config->GetKind_Regime() != ENUM_REGIME::COMPRESSIBLE) {
+        return 0.0;
+    }
+    else {
+        return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetTemperature(iPoint));
+    }
 }
 
 void CDriver::SetMarkerTemperatures(unsigned short iMarker, vector<passivedouble> values) {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
+
     if (values.size() != nVertex) {
-        SU2_MPI::Error("Size does not match nVertex!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
     }
-    
+
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        main_geometry->SetCustomBoundaryTemperature(iMarker, iVertex, values[iVertex]);
+        SetMarkerTemperatures(iMarker, iVertex, values[iVertex]);
     }
 }
 
-vector<passivedouble> CDriver::GetHeatFlux() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    bool compressible = (main_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-    if (!compressible) {
-        return {};
+void CDriver::SetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
     }
     
+    main_geometry->SetCustomBoundaryTemperature(iMarker, iVertex, value);
+}
+
+vector<vector<passivedouble>> CDriver::GetHeatFlux() const {
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint*nDim, 0.0);
-    su2double value;
     
-    const auto Prandtl_Lam  = main_config->GetPrandtl_Lam();
-    const auto Gas_Constant = main_config->GetGas_ConstantND();
-    const auto Gamma        = main_config->GetGamma();
-    const auto Cp           = (Gamma/(Gamma - 1.0))*Gas_Constant;
+    vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        auto laminar_viscosity    = solver->GetNodes()->GetLaminarViscosity(iPoint);
-        auto thermal_conductivity = Cp*(laminar_viscosity/Prandtl_Lam);
-        
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-            auto GradT = solver->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
-            
-            value = -thermal_conductivity*GradT;
-            values[iPoint*nDim + iDim] = SU2_TYPE::GetValue(value);
-        }
+        values.push_back(GetHeatFlux(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerHeatFlux(unsigned short iMarker, bool NormalVector) const {
+vector<passivedouble> CDriver::GetHeatFlux(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+
+    if (main_config->GetKind_Regime() != ENUM_REGIME::COMPRESSIBLE) {
+        return values;
+    }
+    
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     
-    bool compressible = (main_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-    if (!compressible) {
-        return {};
+    const auto Prandtl_Lam          = main_config->GetPrandtl_Lam();
+    const auto Gas_Constant         = main_config->GetGas_ConstantND();
+    const auto Gamma                = main_config->GetGamma();
+    const auto Cp                   = (Gamma/(Gamma - 1.0))*Gas_Constant;
+    const auto laminar_viscosity    = solver->GetNodes()->GetLaminarViscosity(iPoint);
+    const auto thermal_conductivity = Cp*(laminar_viscosity/Prandtl_Lam);
+        
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        auto GradT = solver->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(-thermal_conductivity*GradT);
     }
     
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetMarkerHeatFlux(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex*nDim, 0.0);
-    vector<passivedouble> values_normal(nVertex, 0.0);
-    su2double value;
     
-    const auto Prandtl_Lam  = main_config->GetPrandtl_Lam();
-    const auto Gas_Constant = main_config->GetGas_ConstantND();
-    const auto Gamma        = main_config->GetGamma();
-    const auto Cp           = (Gamma/(Gamma - 1.0))*Gas_Constant;
+    vector<vector<passivedouble>> values;
     
-    if (!NormalVector) {
-        for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-            auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-            
-            auto laminar_viscosity    = solver->GetNodes()->GetLaminarViscosity(iPoint);
-            auto thermal_conductivity = Cp*(laminar_viscosity/Prandtl_Lam);
-            
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-                auto GradT = solver->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
-                
-                value = -thermal_conductivity*GradT;
-                values[iVertex*nDim + iDim] = SU2_TYPE::GetValue(value);
-            }
-        }
-        
-        return values;
-        
-    } else {
-        for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-            auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-            
-            auto laminar_viscosity    = solver->GetNodes()->GetLaminarViscosity(iPoint);
-            auto thermal_conductivity = Cp*(laminar_viscosity/Prandtl_Lam);
-            
-            auto Normal = main_geometry->vertex[iMarker][iVertex]->GetNormal();
-            auto Area   = GeometryToolbox::Norm(nDim, Normal);
-            
-            su2double dTdn = 0.0;
-            
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-                auto GradT = solver->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
-                dTdn += GradT*(Normal[iDim]/Area);
-            }
-            
-            value = -thermal_conductivity*dTdn;
-            values_normal[iVertex] = SU2_TYPE::GetValue(value);
-        }
-        
-        return values_normal;
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerHeatFlux(iMarker, iVertex));
     }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerHeatFlux(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+
+    vector<passivedouble> values(nDim, 0.0);
+
+    if (main_config->GetKind_Regime() != ENUM_REGIME::COMPRESSIBLE) {
+        return values;
+    }
+
+    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    
+    const auto Prandtl_Lam          = main_config->GetPrandtl_Lam();
+    const auto Gas_Constant         = main_config->GetGas_ConstantND();
+    const auto Gamma                = main_config->GetGamma();
+    const auto Cp                   = (Gamma/(Gamma - 1.0))*Gas_Constant;
+    const auto laminar_viscosity    = solver->GetNodes()->GetLaminarViscosity(iPoint);
+    const auto thermal_conductivity = Cp*(laminar_viscosity/Prandtl_Lam);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        auto GradT = solver->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
+        
+        values[iDim] = SU2_TYPE::GetValue(-thermal_conductivity*GradT);
+    }
+
+    return values;
+}
+
+vector<passivedouble> CDriver::GetMarkerNormalHeatFlux(unsigned short iMarker) const {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
+    
+    vector<passivedouble> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerNormalHeatFlux(iMarker, iVertex));
+    }
+    
+    return values;
+}
+
+passivedouble CDriver::GetMarkerNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const {
+    vector<passivedouble> values = GetMarkerHeatFlux(iMarker, iVertex);
+    passivedouble projected = 0.0;
+
+    const auto Normal = main_geometry->vertex[iMarker][iVertex]->GetNormal();
+    const auto Area   = GeometryToolbox::Norm(nDim, Normal);
+        
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        projected += values[iDim] * SU2_TYPE::GetValue(Normal[iDim] / Area);
+    }
+
+    return projected;
 }
 
 void CDriver::SetMarkerNormalHeatFlux(unsigned short iMarker, vector<passivedouble> values) {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
+
     if (values.size() != nVertex) {
-        SU2_MPI::Error("Size does not match nVertex!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
     }
-    
+
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, values[iVertex]);
+        SetMarkerNormalHeatFlux(iMarker, iVertex, values[iVertex]);
     }
+}
+
+void CDriver::SetMarkerNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
+    }
+
+    main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, value);
 }
 
 vector<passivedouble> CDriver::GetThermalConductivity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint, 0.0);
-    su2double value;
-    
-    const auto Prandtl_Lam  = main_config->GetPrandtl_Lam();
-    const auto Gas_Constant = main_config->GetGas_ConstantND();
-    const auto Gamma        = main_config->GetGamma();
-    const auto Cp           = (Gamma/(Gamma - 1.0))*Gas_Constant;
+
+    vector<passivedouble> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        auto laminar_viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
-        
-        value = Cp*(laminar_viscosity/Prandtl_Lam);
-        values[iPoint] = SU2_TYPE::GetValue(value);
+        values.push_back(GetThermalConductivity(iPoint));
     }
     
     return values;
+}
+
+passivedouble CDriver::GetThermalConductivity(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    const auto Prandtl_Lam       = main_config->GetPrandtl_Lam();
+    const auto Gas_Constant      = main_config->GetGas_ConstantND();
+    const auto Gamma             = main_config->GetGamma();
+    const auto Cp                = (Gamma/(Gamma - 1.0))*Gas_Constant;
+    
+    const auto laminar_viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    
+    return SU2_TYPE::GetValue(Cp*(laminar_viscosity/Prandtl_Lam));
 }
 
 vector<passivedouble> CDriver::GetMarkerThermalConductivity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex, 0.0);
-    su2double value;
+
+    vector<passivedouble> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerThermalConductivity(iMarker, iVertex));
+    }
+    
+    return values;
+}
+
+passivedouble CDriver::GetMarkerThermalConductivity(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
     
     const auto Prandtl_Lam  = main_config->GetPrandtl_Lam();
     const auto Gas_Constant = main_config->GetGas_ConstantND();
     const auto Gamma        = main_config->GetGamma();
     const auto Cp           = (Gamma/(Gamma - 1.0))*Gas_Constant;
     
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
+    const auto laminar_viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         
-        auto laminar_viscosity = solver->GetNodes()->GetLaminarViscosity(iPoint);
-        value = Cp*(laminar_viscosity/Prandtl_Lam);
-        values[iVertex] = SU2_TYPE::GetValue(value);
-    }
-    
-    return values;
+    return SU2_TYPE::GetValue(Cp*(laminar_viscosity/Prandtl_Lam));
 }
 
 vector<passivedouble> CDriver::GetLaminarViscosity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint, 0.0);
-    su2double value;
+
+    vector<passivedouble> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        value = solver->GetNodes()->GetLaminarViscosity(iPoint);
-        values[iPoint] = SU2_TYPE::GetValue(value);
+        values.push_back(GetLaminarViscosity(iPoint));
     }
     
     return values;
+}
+
+passivedouble CDriver::GetLaminarViscosity(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+    
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint));
 }
 
 vector<passivedouble> CDriver::GetMarkerLaminarViscosity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex, 0.0);
-    su2double value;
+
+    vector<passivedouble> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        value = solver->GetNodes()->GetLaminarViscosity(iPoint);
-        values[iVertex] = SU2_TYPE::GetValue(value);
+        values.push_back(GetMarkerLaminarViscosity(iMarker, iVertex));
     }
     
     return values;
+}
+
+passivedouble CDriver::GetMarkerLaminarViscosity(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint));
 }
 
 vector<passivedouble> CDriver::GetEddyViscosity() const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
-    
-    if (!main_config->GetFluidProblem()) {
-        return {};
-    }
-    
     const auto nPoint = GetNumberVertices();
-    vector<passivedouble> values(nPoint, 0.0);
-    su2double value;
+
+    vector<passivedouble> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        value = solver->GetNodes()->GetEddyViscosity(iPoint);
-        values[iPoint] = SU2_TYPE::GetValue(value);
+        values.push_back(GetEddyViscosity(iPoint));
     }
     
     return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerEddyViscosity(unsigned short iMarker) const {
-    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+passivedouble CDriver::GetEddyViscosity(unsigned long iPoint) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
     
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+    
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint));
+}
+
+vector<passivedouble> CDriver::GetMarkerEddyViscosity(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
-    vector<passivedouble> values(nVertex, 0.0);
-    su2double value;
+
+    vector<passivedouble> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        value = solver->GetNodes()->GetEddyViscosity(iPoint);
-        values[iVertex] = SU2_TYPE::GetValue(value);
+        values.push_back(GetMarkerLaminarViscosity(iMarker, iVertex));
     }
     
     return values;
+}
+
+passivedouble CDriver::GetMarkerEddyViscosity(unsigned short iMarker, unsigned long iVertex) const {
+    if (!main_config->GetFluidProblem()) {
+        SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    
+    return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1571,10 +1954,10 @@ vector<passivedouble> CDriver::GetMarkerDisplacementsSensitivity(unsigned short 
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJMESH_SOL];
     
     if (!main_config->GetDeform_Mesh() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint mesh solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint mesh solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != FIXED_POINT) {
-        SU2_MPI::Error("Adjoint mesh solver does not use fixed-point formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint mesh solver does not use fixed-point formulation!", CURRENT_FUNCTION);
     }
     
     const auto nVertex = GetNumberMarkerVertices(iMarker);
@@ -1597,10 +1980,10 @@ vector<passivedouble> CDriver::GetMarkerForcesSensitivity(unsigned short iMarker
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
     
     if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint structural solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != FIXED_POINT) {
-        SU2_MPI::Error("Adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
     }
     
     const auto nVertex = GetNumberMarkerVertices(iMarker);
@@ -1623,10 +2006,10 @@ void CDriver::SetMarkerAdjointDisplacementSourceTerm(unsigned short iMarker, vec
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
     
     if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint structural solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != FIXED_POINT) {
-        SU2_MPI::Error("Adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
     }
     
     const auto nVertex = GetNumberMarkerVertices(iMarker);
@@ -1647,10 +2030,10 @@ void CDriver::SetMarkerAdjointVelocitySourceTerm(unsigned short iMarker, vector<
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
     
     if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
-        SU2_MPI::Error("Adjoint structural solver is not defined!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
     }
     if (main_config->GetKind_DiscreteAdjoint() != FIXED_POINT) {
-        SU2_MPI::Error("Adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
+        SU2_MPI::Error("Discrete adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
     }
     
     const auto nVertex = GetNumberMarkerVertices(iMarker);

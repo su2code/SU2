@@ -372,7 +372,7 @@ vector<unsigned long> CDriverBase::GetMarkerVertexIndex(unsigned short iMarker) 
 
 unsigned long CDriverBase::GetMarkerVertexIndex(unsigned short iMarker, unsigned long iVertex) const {
     if (iVertex >= GetNumberMarkerVertices(iMarker)) {
-        SU2_MPI::Error("Marker vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
     }
     
     return geometry_container[MESH_0][INST_0][ZONE_0]->vertex[iMarker][iVertex]->GetNode();
@@ -392,7 +392,7 @@ vector<unsigned long> CDriverBase::GetVertexIDs() const {
 
 unsigned long CDriverBase::GetVertexIDs(unsigned long iPoint) const {
     if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
     return main_geometry->nodes->GetGlobalIndex(iPoint);
@@ -430,7 +430,7 @@ vector<unsigned long> CDriverBase::GetVertexColors() const {
 
 unsigned long CDriverBase::GetVertexColors(unsigned long iPoint) const {
     if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
     return main_geometry->nodes->GetColor(iPoint);
@@ -468,7 +468,7 @@ vector<bool> CDriverBase::GetDomain() const {
 
 bool CDriverBase::GetDomain(unsigned long iPoint) const {
     if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
     return main_geometry->nodes->GetDomain(iPoint);
@@ -506,7 +506,7 @@ vector<vector<passivedouble>> CDriverBase::GetInitialCoordinates() const {
 
 vector<passivedouble> CDriverBase::GetInitialCoordinates(unsigned long iPoint) const {
     if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
     vector<passivedouble> values (nDim, 0.0);
@@ -568,7 +568,7 @@ vector<vector<passivedouble>> CDriverBase::GetCoordinates() const {
 
 vector<passivedouble> CDriverBase::GetCoordinates(unsigned long iPoint) const {
     if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
     vector<passivedouble> values;
@@ -622,7 +622,7 @@ void CDriverBase::SetCoordinates(vector<vector<passivedouble>> values) {
 
 void CDriverBase::SetCoordinates(unsigned long iPoint, vector<passivedouble> values) {
     if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
     if (values.size() != nDim) {
@@ -796,7 +796,7 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerVertexNormals(unsigned short
 
 vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker, unsigned long iVertex, bool normalize) const {
     if (iVertex >= GetNumberMarkerVertices(iMarker)) {
-        SU2_MPI::Error("Marker vertex index exceeds size.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
     }
     
     vector<passivedouble> values;
