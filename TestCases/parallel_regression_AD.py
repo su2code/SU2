@@ -168,6 +168,21 @@ def main():
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
+    ####################################################################
+    ###  Disc. Adj. Axisymmetric RANS                                ###
+    ####################################################################
+
+    # Adjoint Axisymmetric RANS
+    discadj_axisymmetric_rans_nozzle           = TestCase('discadj_axisymmetric_rans')
+    discadj_axisymmetric_rans_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    discadj_axisymmetric_rans_nozzle.cfg_file  = "air_nozzle_adj.cfg"
+    discadj_axisymmetric_rans_nozzle.test_iter = 10
+    discadj_axisymmetric_rans_nozzle.test_vals = [10.000000, -10.391857, -15.524696, -7.715907, -17.350541]        
+    discadj_axisymmetric_rans_nozzle.su2_exec  = "parallel_computation.py -f"
+    discadj_axisymmetric_rans_nozzle.timeout   = 1600
+    discadj_axisymmetric_rans_nozzle.tol       = 0.00001
+    test_list.append(discadj_axisymmetric_rans_nozzle)
+
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
