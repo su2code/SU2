@@ -3305,7 +3305,7 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
     if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode()) return false;
     return ((Iter > 0) && Iter % VolumeFrequencies[iFile] == 0) || force_writing;
   }
- 
+
   return false || force_writing;
 }
 

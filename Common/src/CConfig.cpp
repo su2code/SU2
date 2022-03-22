@@ -7454,8 +7454,6 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) const {
   unsigned short iMarker_CfgFile;
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-  } 
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
       return iMarker_CfgFile;
   }
