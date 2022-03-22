@@ -1707,6 +1707,164 @@ passivedouble CDriver::GetMarkerEddyViscosity(unsigned short iMarker, unsigned l
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/* Functions related to nonequilibrium flow solver.                           */
+////////////////////////////////////////////////////////////////////////////////
+
+unsigned long CDriver::GetNumberNonequilibriumSpecies() const {
+    return main_config->GetnSpecies();
+}
+
+unsigned long CDriver::GetNumberNonequilibriumStateVariables() const {
+    return GetNumberNonequilibriumSpecies() + nDim + 2;
+}
+
+unsigned short CDriver::GetNumberNonequilibriumPrimitiveVariables() const {
+    unsigned short nPrim;
+    
+    if (main_config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) {
+        nPrim = GetNumberNonequilibriumSpecies() + nDim + 10;
+    } else {
+        nPrim = GetNumberNonequilibriumSpecies() + nDim + 8;
+    }
+    
+    return nPrim;
+}
+
+vector<vector<passivedouble>> CDriver::GetNonequilibriumMassFractions() const {
+    if (!main_config->GetNEMOProblem()) {
+        return {};
+    }
+    
+    const auto nPoint = GetNumberVertices();
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetNonequilibriumMassFractions(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetNonequilibriumMassFractions(unsigned long iPoint) const {
+    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    
+    if (!main_config->GetNEMOProblem()) {
+        return {};
+    }
+    
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+    }
+    
+    const auto nSpecies = GetNumberNonequilibriumSpecies();
+    vector<passivedouble> values;
+    
+    for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
+        auto rho_s = solver->GetNodes()->GetSolution(iPoint, iSpecies);
+        auto rho_t = solver->GetNodes()->GetDensity(iPoint);
+        su2double value = rho_s/rho_t;
+        
+        values.push_back(SU2_TYPE::GetValue(value));
+    }
+    
+    return values;
+}
+
+vector<vector<passivedouble>> CDriver::GetNonequilibriumStates() const {
+    if (!main_config->GetNEMOProblem()) {
+        return {};
+    }
+    
+    const auto nPoint = GetNumberVertices();
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetNonequilibriumStates(iPoint));
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDriver::GetNonequilibriumStates(unsigned long iPoint) const {
+    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    
+    if (!main_config->GetNEMOProblem()) {
+        return {};
+    }
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+    }
+    
+    const auto nVar = GetNumberNonequilibriumStateVariables();
+    vector<passivedouble> values;
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        su2double value = solver->GetNodes()->GetSolution(iPoint, iVar);
+        
+        values.push_back(SU2_TYPE::GetValue(value));
+    }
+    
+    return values;
+}
+
+void CDriver::SetNonequilibriumStates(vector<vector<passivedouble>> values) {
+    if (!main_config->GetNEMOProblem()) {
+        SU2_MPI::Error("Nonequilibrium low solver is not defined!", CURRENT_FUNCTION);
+    }
+    
+    const auto nPoint = GetNumberVertices();
+    
+    if (values.size() != nPoint) {
+        SU2_MPI::Error("Invalid number of vertices!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        SetNonequilibriumStates(iPoint, values[iPoint]);
+    }
+    
+}
+
+void CDriver::SetNonequilibriumStates(unsigned long iPoint, vector<passivedouble> values) {
+    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    
+    if (!main_config->GetNEMOProblem()) {
+        SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
+    }
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
+    }
+    
+    const auto nVar = GetNumberNonequilibriumStateVariables();
+    
+    if (values.size() != nVar) {
+        SU2_MPI::Error("Invalid number of state variables!", CURRENT_FUNCTION);
+    }
+    
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+        solver->GetNodes()->SetSolution(iPoint, iVar, values[iVar]);
+    }
+}
+
+vector<passivedouble> CDriver::GetVibrationalTemperatures() const {
+    CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+    
+    if (!main_config->GetNEMOProblem()) {
+        return {};
+    }
+    
+    const auto nPoint = GetNumberVertices();
+    vector<passivedouble> values(nPoint, 0.0);
+    su2double value;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        value = solver->GetNodes()->GetTemperature_ve(iPoint);
+        values[iPoint] = SU2_TYPE::GetValue(value);
+    }
+    
+    return values;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /* Functions related to the management of markers.                            */
 ////////////////////////////////////////////////////////////////////////////////
 

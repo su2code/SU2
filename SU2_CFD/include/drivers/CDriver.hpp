@@ -628,6 +628,69 @@ public:
      * \return Vertex eddy viscosity.
      */
     passivedouble GetMarkerEddyViscosity(unsigned short iMarker, unsigned long iVertex) const;
+
+    /*!
+     * \brief Get the number of nonequilibrium chemical species.
+     * \return Number of nonequilibrium chemical species.
+     */
+    unsigned long GetNumberNonequilibriumSpecies() const;
+    
+    /*!
+     * \brief Get the number of nonequilibrium conservative state variables.
+     * \return Number of nonequilibrium conservative state variables.
+     */
+    unsigned long GetNumberNonequilibriumStateVariables() const;
+    
+    /*!
+     * \brief Get the number of nonequilibrium primitive state variables.
+     * \return Number of nonequilibrium primitive state variables.
+     */
+    unsigned short GetNumberNonequilibriumPrimitiveVariables() const;
+    
+    /*!
+     * \brief Get nonequilibrium chemical mass fractions.
+     * \return Nonequilibrium chemical mass fractions (nPoint, nSpecies).
+     */
+    vector<vector<passivedouble>> GetNonequilibriumMassFractions() const;
+    
+    /*!
+     * \brief Get nonequilibrium chemical mass fractions.
+     * \param[in] iPoint - Mesh vertex index.
+     * \return Nonequilibrium chemical mass fractions (nSpecies).
+     */
+    vector<passivedouble> GetNonequilibriumMassFractions(unsigned long iPoint) const;
+    
+    /*!
+     * \brief Get the nonequilibrium conservative flow states for the specified species.
+     * \return Nonequilibrium flow states (nPoint, nVar).
+     */
+    vector<vector<passivedouble>> GetNonequilibriumStates() const;
+    
+    /*!
+     * \brief Get nonequilibrium conservative flow states for the specified species.
+     * \param[in] iPoint - Mesh vertex index.
+     * \return Nonequilibrium flow states (nVar).
+     */
+    vector<passivedouble> GetNonequilibriumStates(unsigned long iPoint) const;
+    
+    /*!
+     * \brief Set the nonequilibrium conservative flow states for the specified species.
+     * \param[in] values - Nonequilibrium flow states (nPoint, nVar).
+     */
+    void SetNonequilibriumStates(vector<vector<passivedouble>> values);
+    
+    /*!
+     * \brief Set the nonequilibrium conservative flow states for the specified species.
+     
+     * \param[in] values - Nonequilibrium flow states (nVar).
+     */
+    void SetNonequilibriumStates(unsigned long iPoint, vector<passivedouble> values);
+    
+    /*!
+     * \brief Get nonequilibrium vibrational electronic temperatures.
+     * \return Nonequilibrium vibrational electronic temperatures (nPoint).
+     */
+    vector<passivedouble> GetVibrationalTemperatures() const;
     
     /*!
      * \brief Preprocess the inlets via file input for all solvers.
