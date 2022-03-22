@@ -599,7 +599,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     if (Coord_i[1] < EPS) return;
 
     AD::SetPreaccIn(Coord_i[1]);
-    AD::SetPreaccIn(V_i[2]);
+    AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
 
     const su2double yinv = 1.0 / Coord_i[1];
     const su2double rhov = Density_i * V_i[2];
