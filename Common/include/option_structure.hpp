@@ -968,7 +968,7 @@ enum class SST_OPTION {
   KL,        /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   RC,        /*!< \brief Menter k-w SST model with rotation/curvature corrections. */
 };
-static const MapType<std::string, SST_OPTION> SST_Option_Map = {
+static const MapType<std::string, SST_OPTION> SST_Options_Map = {
   MakePair("NONE", SST_OPTION::NONE)
   MakePair("v1994", SST_OPTION::V1994)
   MakePair("v2003", SST_OPTION::V2003)

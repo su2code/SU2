@@ -2099,9 +2099,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_MODEL::SST:
           file << "Menter's SST\n";
           break;
-        case TURB_MODEL::SST_SUST:
-          file << "Menter's SST with sustaining terms\n";
-          break;
       }
       break;
     default:

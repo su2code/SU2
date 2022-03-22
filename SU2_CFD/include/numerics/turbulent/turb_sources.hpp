@@ -636,7 +636,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                            su2double val_omega_Inf, const CConfig* config)
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
-        sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
+        sustaining_terms(false),      //TODO this is temporary
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),

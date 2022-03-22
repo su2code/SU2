@@ -1239,7 +1239,6 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     case TURB_MODEL::SA_COMP:   comp_spalart_allmaras = true;   break;
     case TURB_MODEL::SA_E_COMP: e_comp_spalart_allmaras = true; break;
     case TURB_MODEL::SST:       menter_sst = true;              break;
-    case TURB_MODEL::SST_SUST:  menter_sst = true;              break;
   }
 
   /*--- If the Menter SST model is used, store the constants of the model and determine the

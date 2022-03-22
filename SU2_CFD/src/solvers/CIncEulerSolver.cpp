@@ -253,7 +253,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool viscous       = config->GetViscous();
   bool turbulent     = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
                         (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
-  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
+  bool tkeNeeded     = ((turbulent) && (config->GetKind_Turb_Model() == TURB_MODEL::SST));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
@@ -2129,7 +2129,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2371,7 +2371,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2569,7 +2569,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
