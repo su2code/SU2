@@ -970,13 +970,13 @@ enum class SST_OPTION {
 };
 static const MapType<std::string, SST_OPTION> SST_Options_Map = {
   MakePair("NONE", SST_OPTION::NONE)
-  MakePair("v1994", SST_OPTION::V1994)
-  MakePair("v2003", SST_OPTION::V2003)
-  MakePair("modified", SST_OPTION::MODIFIED)
-  MakePair("sust", SST_OPTION::SUST)
-  MakePair("vorticity", SST_OPTION::VORTICITY)
-  MakePair("kato-launder", SST_OPTION::KL)
-  MakePair("curvature", SST_OPTION::RC)
+  MakePair("V1994", SST_OPTION::V1994)
+  MakePair("V2003", SST_OPTION::V2003)
+  MakePair("MODIFIED", SST_OPTION::MODIFIED)
+  MakePair("SUSTAINED", SST_OPTION::SUST)
+  MakePair("VORTICITY", SST_OPTION::VORTICITY)
+  MakePair("KATO-LAUNDER", SST_OPTION::KL)
+  MakePair("CURVATURE", SST_OPTION::RC)
 };
 
 /*!

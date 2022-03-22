@@ -559,8 +559,11 @@ template <class FlowIndices>
 class CSourcePieceWise_TurbSST final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-  const bool sustaining_terms = false;
+  const bool sustaining_terms = false; //TODO
   const bool axisymmetric = false;
+  bool vorticity_source = false; //TODO
+  bool kato_launder = false; //TODO
+  bool rotate_curve_corrections = false; //TODO
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
@@ -733,11 +736,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
         P_Base = PerturbedStrainMag(ScalarVar_i[0]);
 
-      } (vorticity_source) {
+      } else if (vorticity_source) {
         P_Base = VorticityMag; 
 
-      } (kato_launder) {
-        P_Base = sqrt(StrainMag*VorticityMag);
+      } else if (kato_launder) {
+        P_Base = sqrt(StrainMag_i*VorticityMag);
       }  
 
       su2double pk = Eddy_Viscosity_i * pow(P_Base,2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;

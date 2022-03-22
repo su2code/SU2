@@ -831,7 +831,6 @@ void CConfig::SetPointersNull(void) {
   /*--- Turbulence option pointers ---*/
 
   SST_Options = nullptr;
-  SA_Options = nullptr;
 
   /*--- Marker Pointers ---*/
 
@@ -5185,10 +5184,33 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
+  //TODO this wont work.
+  string sst_string = "SST";
+  struct SST_Struct {
 
-  for (unsigned short iSST = 0; iSST < nSST_Options; iSST++){
-    //CHECK THE LIST HERE?
-  }
+    const Version;
+    const Modified;
+    const Production;
+    const Sustaining;
+    const Curvature;
+    //SAMPLE FAILURE LOGIC
+
+    //VERSION INCOMPATIBILITY
+    if (SST_Options_Map.find("V1994")) sst_string += "1994";
+    //TODO....
+
+    if (SST_Options_Map.find("V1994") && SST_Option_Map.find("V2003"))
+      SU2_MPI::Error(string("Two versions (1994 and 2003) selected for SST Options. Please choose only one."), CURRENT_FUNCTION);
+
+    //PRODUCTION INCOMPABILITY
+    unsigned short counter = 0;
+    if (SST_Options.Map_find("VORTICITY")) counter += 1;
+    if (SST_Options.Map_find("KATO-LAUNDER")) counter += 1;
+    if (SST_Options.Map_find("UQ")) counter += 1;
+    if (counter > 1) SU2_MPI::Error(string("Please select only one SST production term modifier (V, KL, UQ)."), CURRENT_FUNCTION);
+
+  };
+  //if (SST_Options_Map.find("VORTICITY")) cout <<"IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"<<endl;
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
@@ -7780,7 +7802,6 @@ CConfig::~CConfig(void) {
   delete[] Config_Filenames;
 
   delete[] SST_Options;
-  delete[] SA_Options;
 
   if (IntInfo_WallFunctions != nullptr) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
