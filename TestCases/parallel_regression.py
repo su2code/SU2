@@ -685,8 +685,8 @@ def main():
     turbmod_sa_neg_rae2822           = TestCase('turbmod_sa_neg_rae2822')
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
-    turbmod_sa_neg_rae2822.test_iter = 20
-    turbmod_sa_neg_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
+    turbmod_sa_neg_rae2822.test_iter = 10
+    turbmod_sa_neg_rae2822.test_vals = [-1.094542, 3.161741, 2.333560, 2.864805, 1.494301, 0.530135]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
