@@ -612,7 +612,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     /*--- Production ---*/
     const su2double pk_axi = max(
-        0.0, 2.0 / 3.0 * rhov * k * ((2.0 * yinv * V_i[idx.Velocity() + 1] - PrimVar_Grad_i[2][1] - PrimVar_Grad_i[1][0]) / zeta - 1.0));
+        0.0, 2.0 / 3.0 * rhov * k * ((2.0 * yinv * V_i[idx.Velocity() + 1] - PrimVar_Grad_i[idx.Velocity()+1][1] - PrimVar_Grad_i[idx.Velocity()][0]) / zeta - 1.0));
     const su2double pw_axi = alfa_blended * zeta / k * pk_axi;
 
     /*--- Convection-Diffusion ---*/
