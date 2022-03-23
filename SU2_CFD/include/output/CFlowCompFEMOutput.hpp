@@ -61,18 +61,6 @@ public:
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
 
   /*!
-   * \brief Set the values of the volume output fields for a surface point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] iMarker - Index of the surface marker.
-   * \param[in] iVertex - Index of the vertex on the marker.
-   */
-  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver,
-                       unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) override;
-
-  /*!
    * \brief Set the available volume output fields
    * \param[in] config - Definition of the particular problem.
    */
