@@ -1126,7 +1126,7 @@ private:
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
   unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
   unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
-  unsigned short *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
+  unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
@@ -1260,6 +1260,10 @@ private:
   void addShortListOption(const string name, unsigned short & size, short * & option_field);
 
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
+
+  void addLongListOption(const string name, unsigned short & size, long * & option_field);
+
+  void addULongListOption(const string name, unsigned short & size, unsigned long * & option_field);
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
@@ -9468,13 +9472,13 @@ public:
   /*!
    * \brief GetVolumeOutputFrequencies
    */
-  unsigned short* GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
+  unsigned long* GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
 
   /*!
    * \brief GetVolumeOutputFrequency
    * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
    */
-  unsigned short GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
+  unsigned long GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
 
   /*!
    * \brief GetnVolumeOutputFrequencies

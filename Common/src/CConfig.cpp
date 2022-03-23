@@ -400,6 +400,20 @@ void CConfig::addUShortListOption(const string name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addLongListOption(const string name, unsigned short & size, long * & option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionLongList(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addULongListOption(const string name, unsigned short & size, unsigned long * & option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionULongList(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -2831,7 +2845,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
   /* DESCRIPTION: list of writing frequencies for each file type (length same as nVolumeOutputFiles) */
-  addUShortListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
+  addULongListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
 
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
@@ -3322,7 +3336,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Set the default output frequencies ---*/
   if (!OptionIsSet("OUTPUT_WRT_FREQ")){
     nVolumeOutputFrequencies = nVolumeOutputFiles;
-    VolumeOutputFrequencies = new unsigned short [nVolumeOutputFrequencies];
+    VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
@@ -3338,7 +3352,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /*--- we recreate the OutputFrequencies ---*/
       nVolumeOutputFrequencies = nVolumeOutputFiles;
       delete [] VolumeOutputFrequencies;
-      VolumeOutputFrequencies = new unsigned short [nVolumeOutputFrequencies];
+      VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
 
       for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
         VolumeOutputFrequencies[iVolumeFreq] = outputWriteFreq; 

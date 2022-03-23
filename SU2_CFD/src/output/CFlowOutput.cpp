@@ -3280,7 +3280,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
   
   bool writeRestart = false;
-  unsigned short *VolumeFrequencies = config->GetVolumeOutputFrequencies();
+  unsigned long *VolumeFrequencies = config->GetVolumeOutputFrequencies();
   auto FileFormat = config->GetVolumeOutputFiles();
 
   if (config->GetTime_Domain()){
