@@ -374,7 +374,7 @@ public:
   }
 };
 
-class COptionLongList final : public COptionScalarList<short> {
+class COptionLongList final : public COptionScalarList<long> {
 public:
   template<class... Ts>
   COptionLongList(Ts&&... args) :
