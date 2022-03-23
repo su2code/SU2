@@ -54,6 +54,7 @@ Andrew Wendorff
 Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
+Arne Voß
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brendan Tracey
