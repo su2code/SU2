@@ -400,6 +400,20 @@ void CConfig::addUShortListOption(const string name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addLongListOption(const string name, unsigned short & size, long * & option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionLongList(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addULongListOption(const string name, unsigned short & size, unsigned long * & option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionULongList(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -2831,7 +2845,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
   /* DESCRIPTION: list of writing frequencies for each file type (length same as nVolumeOutputFiles) */
-  addUShortListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
+  addULongListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
 
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
@@ -3322,7 +3336,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Set the default output frequencies ---*/
   if (!OptionIsSet("OUTPUT_WRT_FREQ")){
     nVolumeOutputFrequencies = nVolumeOutputFiles;
-    VolumeOutputFrequencies = new unsigned short [nVolumeOutputFrequencies];
+    VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
@@ -3334,8 +3348,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   } else {
     /*--- check how many frequencies. If 1 then use it for all output ---*/
     if (nVolumeOutputFrequencies == 1) {
+      unsigned short outputWriteFreq = VolumeOutputFrequencies[0];
+      /*--- we recreate the OutputFrequencies ---*/
+      nVolumeOutputFrequencies = nVolumeOutputFiles;
+      delete [] VolumeOutputFrequencies;
+      VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
+
       for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-        VolumeOutputFrequencies[iVolumeFreq] = VolumeOutputFrequencies[0]; 
+        VolumeOutputFrequencies[iVolumeFreq] = outputWriteFreq; 
       }
     } else if (nVolumeOutputFrequencies != nVolumeOutputFiles) {
       SU2_MPI::Error(string("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.\n"), CURRENT_FUNCTION);
@@ -3399,6 +3419,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
+  }
+
+  /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
+  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST){
+    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST or SST_SUST", CURRENT_FUNCTION);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a

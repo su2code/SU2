@@ -374,6 +374,22 @@ public:
   }
 };
 
+class COptionLongList final : public COptionScalarList<long> {
+public:
+  template<class... Ts>
+  COptionLongList(Ts&&... args) :
+    COptionScalarList<long>("long", args...) {
+  }
+};
+
+class COptionULongList final : public COptionScalarList<unsigned long> {
+public:
+  template<class... Ts>
+  COptionULongList(Ts&&... args) :
+    COptionScalarList<unsigned long>("unsigned long", args...) {
+  }
+};
+
 class COptionStringList final : public COptionScalarList<string> {
 public:
   template<class... Ts>
