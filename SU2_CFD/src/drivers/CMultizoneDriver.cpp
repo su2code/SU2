@@ -2,14 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,7 +86,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
       heat_zone = true;
       break;
     default:
-      break;  
+      break;
     }
   }
 
@@ -105,9 +105,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     switch (config_container[iZone]->GetKind_GridMovement()){
       case RIGID_MOTION:
         prefixed_motion[iZone] = true; break;
-      case STEADY_TRANSLATION: case ROTATING_FRAME:
-      case NO_MOVEMENT: case GUST: default:
-      case ELASTICITY:
+      default:
         prefixed_motion[iZone] = false; break;
     }
     if (config_container[iZone]->GetSurface_Movement(AEROELASTIC) ||
@@ -405,8 +403,10 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     auto solvers = solver_container[iZone][INST_0][MESH_0];
 
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solvers[iSol] != nullptr)
+      if (solvers[iSol] != nullptr) {
         solvers[iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        solvers[iSol]->GetNodes()->Set_BGSSolution_k();
+      }
     }
 
     /*--- Make sure that everything is loaded into the output container. ---*/

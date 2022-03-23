@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,6 +44,9 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
  protected:
+  /*!< \brief Object with indices of primitive variables. */
+  const typename VariableType::template CIndices<unsigned short> prim_idx;
+
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
 
@@ -149,9 +152,6 @@ class CFVMFlowSolverBase : public CSolver {
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
   su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
-  su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
-  su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
-  su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
@@ -226,9 +226,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
   /*!
-   * \brief Default constructor, this class is not directly instantiable.
+   * \brief Protected constructor, this class is not directly instantiable.
    */
-  CFVMFlowSolverBase() : CSolver() {}
+  CFVMFlowSolverBase(const CGeometry& geometry, const CConfig& config)
+    : CSolver(), prim_idx(geometry.GetnDim(), config.GetnSpecies()) {}
 
   /*!
    * \brief Set reference values for pressure, forces, etc., e.g. "AeroCoeffForceRef".
@@ -1992,20 +1993,6 @@ class CFVMFlowSolverBase : public CSolver {
   inline void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) final { Total_CNearFieldOF = val_cnearfieldpress; }
 
   /*!
-   * \author H. Kline
-   * \brief Set the total "combo" objective (weighted sum of other values).
-   * \param[in] ComboObj - Value of the combined objective.
-   */
-  inline void SetTotal_ComboObj(su2double ComboObj) final { Total_ComboObj = ComboObj; }
-
-  /*!
-   * \author H. Kline
-   * \brief Provide the total "combo" objective (weighted sum of other values).
-   * \return Value of the "combo" objective values.
-   */
-  inline su2double GetTotal_ComboObj() const final { return Total_ComboObj; }
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
@@ -2024,28 +2011,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
 
   /*!
-   * \brief Set the value of the custom objective function.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc = val_total_custom_objfunc * val_weight;
-  }
-
-  /*!
-   * \brief Add the value of the custom objective function.
-   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
-   * \param[in] val_weight - Value of the weight for the custom objective function.
-   */
-  inline void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight) final {
-    Total_Custom_ObjFunc += val_total_custom_objfunc * val_weight;
-  }
-
-  /*!
    * \brief Provide the total heat load.
    * \return Value of the heat load (viscous contribution).
    */
-  inline su2double GetTotal_HeatFlux(void) const final { return Total_Heat; }
+  inline su2double GetTotal_HeatFlux() const final { return Total_Heat; }
 
   /*!
    * \brief Provide the total heat load.
@@ -2064,12 +2033,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_Total_Heat - Value of the heat load.
    */
   inline void SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) final { Total_MaxHeat = val_Total_MaxHeat; }
-
-  /*!
-   * \brief Provide the total custom objective function.
-   * \return Value of the custom objective function.
-   */
-  inline su2double GetTotal_Custom_ObjFunc() const final { return Total_Custom_ObjFunc; }
 
   /*!
    * \brief Provide the Pressure coefficient.

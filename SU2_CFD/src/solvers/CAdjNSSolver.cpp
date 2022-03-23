@@ -2,14 +2,14 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
+
+  adjoint = true;
 
   su2double RefArea    = config->GetRefArea();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
@@ -320,7 +322,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
    adjoint equations (note that the flow problem may use different methods). ---*/
 
   bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != LIMITER::NONE);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();

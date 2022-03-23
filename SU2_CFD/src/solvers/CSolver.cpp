@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
-CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
+CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_mode) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -342,6 +342,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   if (commType == PERIODIC_NONE) return;
 
+  if (rotate_periodic && config->GetNEMOProblem()) {
+    SU2_MPI::Error("The NEMO solvers do not support rotational periodicity yet.", CURRENT_FUNCTION);
+  }
+
   /*--- Local variables ---*/
 
   bool boundary_i, boundary_j;
@@ -464,7 +468,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
 
         if (nDim==2) {
-          GeometryToolbox::RotationMatrix(Theta, rotMatrix2D);
+          GeometryToolbox::RotationMatrix(Psi, rotMatrix2D);
         } else {
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
@@ -734,6 +738,22 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 
+            /*--- Rotate the vector components of the solution. ---*/
+
+            if (rotate_periodic) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                su2double d_diDim[3] = {0.0};
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  d_diDim[iVar-1] = rotBlock(iVar, iDim);
+                }
+                su2double rotated[3] = {0.0};
+                Rotate(zeros, d_diDim, rotated);
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  rotBlock(iVar, iDim) = rotated[iVar-1];
+                }
+              }
+            }
+
             /*--- Store the partial gradient in the buffer. ---*/
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
@@ -816,7 +836,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 Rotate(translation, distance, rotCoord_j);
 
-                /*--- Get conservative solution and rotte if necessary. ---*/
+                /*--- Get conservative solution and rotate if necessary. ---*/
 
                 for (iVar = 0; iVar < ICOUNT; iVar++)
                   rotPrim_j[iVar] = field(jPoint,iVar);
@@ -2194,12 +2214,16 @@ void CSolver::Add_External_To_Solution() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
+
+  base_nodes->Add_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Add_Solution_To_External() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
+
+  base_nodes->Set_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
@@ -2242,7 +2266,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
+  const auto kindLimiter = config->GetKind_SlopeLimit();
   const auto& solution = base_nodes->GetSolution();
   const auto& gradient = base_nodes->GetGradient_Reconstruction();
   auto& solMin = base_nodes->GetSolution_Min();
@@ -3328,6 +3352,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   su2double dCMx_dCL_ = config->GetdCMx_dCL();
   su2double dCMy_dCL_ = config->GetdCMy_dCL();
   su2double dCMz_dCL_ = config->GetdCMz_dCL();
+  su2double SPPressureDrop_ = config->GetStreamwise_Periodic_PressureDrop();
   string::size_type position;
   unsigned long InnerIter_ = 0;
   ifstream restart_file;
@@ -3353,6 +3378,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("ITER=",0);
       if (position != string::npos) {
+        // TODO: 'ITER=' has 5 chars, not 9!
         text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
       }
 
@@ -3403,6 +3429,14 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       position = text_line.find ("DCMZ_DCL_VALUE=",0);
       if (position != string::npos) {
         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- Streamwise periodic pressure drop for prescribed massflow cases. ---*/
+
+      position = text_line.find ("STREAMWISE_PERIODIC_PRESSURE_DROP=",0);
+      if (position != string::npos) {
+        // Erase the name from the line, 'STREAMWISE_PERIODIC_PRESSURE_DROP=' has 34 chars.
+        text_line.erase (0,34); SPPressureDrop_ = atof(text_line.c_str());
       }
 
     }
@@ -3494,6 +3528,16 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
 
+  }
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
+    config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
+  }
+  else {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the STREAMWISE_PERIODIC_PRESSURE_DROP in the direct solution file." << endl;
   }
 
   /*--- External iteration ---*/
@@ -4141,8 +4185,6 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     const su2double domain = (iPoint < nPointDomain);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double Res = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
-
-      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
 
       /*--- Update residual information for current thread. ---*/
       resRMS[iVar] += Res*Res;

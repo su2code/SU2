@@ -2,14 +2,14 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,7 +73,7 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++)
     denom += MassFrac[iSpecies] * (Ru/MolarMass[iSpecies]) * T;
   Density = Pressure / denom;
-  
+
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     rhos[iSpecies]     = MassFrac[iSpecies]*Density;
     MassFrac[iSpecies] = rhos[iSpecies]/Density;
@@ -119,7 +119,6 @@ su2double CNEMOGas::ComputeGasConstant(){
 
   su2double Mass = 0.0;
 
-  // TODO - extend for ionization
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
@@ -184,7 +183,7 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
   /*--- Rename for convenience ---*/
   su2double rhoCvtr = V[RHOCVTR_INDEX];
   su2double rhoCvve = V[RHOCVVE_INDEX];
-  T       = V[T_INDEX];
+  T = V[T_INDEX];
 
   /*--- Pre-compute useful quantities ---*/
   su2double CvtrBAR = 0.0;
@@ -204,8 +203,8 @@ void CNEMOGas::ComputedPdU(const su2double *V, const vector<su2double>& val_eves
     val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
                          (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
                          ef + 0.5*sqvel);
-
   }
+
   if (ionization) {
     for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
       //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
@@ -259,10 +258,6 @@ void CNEMOGas::ComputedTdU(const su2double *V, su2double *val_dTdU){
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
     su2double ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
-  }
-
-  if (ionization) {
-    SU2_MPI::Error("NEED TO IMPLEMENT dTdU for IONIZED MIX",CURRENT_FUNCTION);
   }
 
   /*--- Momentum derivatives ---*/

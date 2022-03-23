@@ -2,14 +2,14 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -804,9 +804,9 @@ void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container
 
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
     auto FileFormat = config->GetVolumeOutputFiles();
-    if (FileFormat[iFile] != RESTART_ASCII &&
-        FileFormat[iFile] != RESTART_BINARY &&
-        FileFormat[iFile] != CSV)
+    if (FileFormat[iFile] != OUTPUT_TYPE::RESTART_ASCII &&
+        FileFormat[iFile] != OUTPUT_TYPE::RESTART_BINARY &&
+        FileFormat[iFile] != OUTPUT_TYPE::CSV)
       output->WriteToFile(config, geometry, FileFormat[iFile]);
   }
 

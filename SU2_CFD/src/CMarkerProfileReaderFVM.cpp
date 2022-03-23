@@ -2,14 +2,14 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,13 +75,13 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
   ifstream profile_file;
   profile_file.open(filename.data(), ios::in);
-  bool nmarkFound = false; 
+  bool nmarkFound = false;
   unsigned long skip = 0;
 
   /*--- Identify the markers and data set in the profile file ---*/
 
   string text_line;
-  /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored. 
+  /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored.
         This allows for some information in a header that will be ignored by the profile reader. ---*/
   while (getline (profile_file, text_line)) {
     /*--- read NMARK ---*/
@@ -124,7 +124,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         }
 
         /*--- Skip the data. This is read in the next loop. ---*/
-        
+
         for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip); iRow++) getline (profile_file, text_line);
 
       }
@@ -161,7 +161,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
         getline (profile_file, text_line);
         getline (profile_file, text_line);
-        
+
         /*--- if skip=0 then we can expect column format description ---*/
         if (skip == 0) getline (profile_file, text_line);
 

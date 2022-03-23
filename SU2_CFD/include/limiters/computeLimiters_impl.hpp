@@ -4,14 +4,14 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,7 @@
  * \param FieldType - Generic object with operator (iPoint,iVar).
  * \param GradientType - Generic object with operator (iPoint,iVar,iDim).
  */
-template<size_t nDim, ENUM_LIMITER LimiterKind, class FieldType, class GradientType>
+template<size_t nDim, LIMITER LimiterKind, class FieldType, class GradientType>
 void computeLimiters_impl(CSolver* solver,
                           MPI_QUANTITIES kindMpiComm,
                           PERIODIC_QUANTITIES kindPeriodicComm1,
