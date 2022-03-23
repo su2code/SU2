@@ -41,10 +41,10 @@ public:
   unsigned short nCornerPoints,         /*!< \brief Number of corner points of the FFDBox. */
   nControlPoints, nControlPoints_Copy;  /*!< \brief Number of control points of the FFDBox. */
   su2double **Coord_Corner_Points,    /*!< \brief Coordinates of the corner points. */
-  ****Coord_Control_Points,       /*!< \brief Coordinates of the control points. */
+  ****Coord_Control_Points,           /*!< \brief Coordinates of the control points. */
   ****ParCoord_Control_Points,        /*!< \brief Coordinates of the control points. */
   ****Coord_Control_Points_Copy,      /*!< \brief Coordinates of the control points (copy). */
-  ****Coord_SupportCP;          /*!< \brief Coordinates of the support control points. */
+  ****Coord_SupportCP{nullptr};       /*!< \brief Coordinates of the support control points. */
   unsigned short lOrder, lOrder_Copy, /*!< \brief Order of the FFDBox in the i direction. */
   mOrder, mOrder_Copy,        /*!< \brief Order of the FFDBox in the j direction. */
   nOrder, nOrder_Copy;          /*!< \brief Order of the FFDBox in the k direction. */
