@@ -9468,7 +9468,13 @@ public:
   /*!
    * \brief GetVolumeOutputFrequencies
    */
-  unsigned short *GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
+  unsigned short* GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
+
+  /*!
+   * \brief GetVolumeOutputFrequency
+   * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
+   */
+  unsigned short GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
 
   /*!
    * \brief GetnVolumeOutputFrequencies

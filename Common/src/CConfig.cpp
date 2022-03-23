@@ -3334,8 +3334,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   } else {
     /*--- check how many frequencies. If 1 then use it for all output ---*/
     if (nVolumeOutputFrequencies == 1) {
+      unsigned short outputWriteFreq = VolumeOutputFrequencies[0];
+      /*--- we recreate the OutputFrequencies ---*/
+      nVolumeOutputFrequencies = nVolumeOutputFiles;
+      delete [] VolumeOutputFrequencies;
+      VolumeOutputFrequencies = new unsigned short [nVolumeOutputFrequencies];
+
       for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-        VolumeOutputFrequencies[iVolumeFreq] = VolumeOutputFrequencies[0]; 
+        VolumeOutputFrequencies[iVolumeFreq] = outputWriteFreq; 
       }
     } else if (nVolumeOutputFrequencies != nVolumeOutputFiles) {
       SU2_MPI::Error(string("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.\n"), CURRENT_FUNCTION);
