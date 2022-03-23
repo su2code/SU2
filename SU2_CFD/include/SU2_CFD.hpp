@@ -30,7 +30,6 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
 #include "CLI11.hpp"
-
 #include "drivers/CDriver.hpp"
 #include "drivers/CSinglezoneDriver.hpp"
 #include "drivers/CMultizoneDriver.hpp"

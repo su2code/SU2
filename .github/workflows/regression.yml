@@ -9,7 +9,6 @@ on:
     branches: 
       - 'develop'
       - 'master'
-      - 'feature_flamelet'
 
 jobs:
   build:
@@ -61,19 +60,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-<<<<<<< HEAD
-        testscript: ['tutorials.py', 'parallel_regression.py', 'flamelet_regression.py', 'multicomp_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py']
-=======
-        testscript: ['vandv.py', 'tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
->>>>>>> develop
+        testscript: ['tutorials.py', 'parallel_regression.py', 'multicomp_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py']
         include:
           - testscript: 'vandv.py'
             tag: MPI
           - testscript: 'tutorials.py'
             tag: MPI
           - testscript: 'parallel_regression.py'
-            tag: MPI
-          - testscript: 'flamelet_regression.py'
             tag: MPI
           - testscript: 'multicomp_regression.py'
             tag: MPI

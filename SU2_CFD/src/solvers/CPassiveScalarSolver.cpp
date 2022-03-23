@@ -51,7 +51,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
    have a single equation. Other child classes of CScalarLegacySolver
    can have variable numbers of equations. ---*/
 
-  nVar = config->GetNScalarsInit();
+  nVar = config->GetnSpecies();
   nPrimVar = nVar;
 
   nPoint = geometry->GetnPoint();

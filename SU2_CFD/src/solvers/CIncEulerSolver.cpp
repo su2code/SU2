@@ -34,6 +34,7 @@
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/CConfig.hpp"
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
@@ -311,7 +312,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       break;
 
     case MIXTURE_FLUID_MODEL:
-      n_scalars = config->GetNScalarsInit();
+      n_scalars = config->GetnSpecies();
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight(n_scalars)/1000.0));
       // Note: Density_FreeStream = INC_DENSITY_INT and Temperature_FreeStream = INC_TEMPERATURE_INIT.
       // Mixture density is computed based on the MeanMolecularWeight in CFluidScalar.cpp 
@@ -495,7 +496,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case MIXTURE_FLUID_MODEL:
         fluidModel   = new CFluidScalar(config, Pressure_Thermodynamic);
-	      n_scalars    = fluidModel->GetNScalars();
+	      n_scalars    = config->GetnSpecies();
         dummy_scalar = new su2double[n_scalars]();
         fluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
         delete[] dummy_scalar;

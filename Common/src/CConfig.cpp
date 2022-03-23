@@ -1341,7 +1341,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
-  addEnumOption("DIFFUSIVITY_MODEL", Kind_Diffusivity_Model, DiffusivityModel_Map, DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY);
+  addEnumOption("DIFFUSIVITY_MODEL", Kind_Diffusivity_Model, Diffusivity_Model_Map, DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY);
   /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \n DEFAULT 1.0 (~for Gases) \ingroup Config*/
   addDoubleOption("SCHMIDT_NUMBER_LAMINAR", Schmidt_Number_Laminar, 1.0);
   /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.70 (more or less experimental value) \ingroup Config*/
@@ -3758,7 +3758,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   unsigned short n_species = 1; //TODO TK:: make it static?
 
   if (Kind_FluidModel == MIXTURE_FLUID_MODEL)
-    n_species = nSpecies_Init + 1; 
+    n_species = nSpecies_Init+1; 
 
   /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
     * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
@@ -5364,11 +5364,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Some options have to provide as many entries as there are additional species equations. ---*/
     /*--- Fill a vector with the entires and then check if each element is equal to the first one. ---*/
     std::vector<unsigned short> nSpecies_options;
-    nSpecies_options.push_back(nSpecies_Init);
+    nSpecies_options.push_back(nSpecies_Init+1);
     if (Species_Clipping)
       nSpecies_options.insert(nSpecies_options.end(), {nSpecies_Clipping_Min, nSpecies_Clipping_Max});
     if (nMarker_Inlet_Species > 0)
-      nSpecies_options.push_back(nSpecies_per_Inlet);
+      nSpecies_options.push_back(nSpecies_per_Inlet+1);
     // Add more options for size check here.
 
     /*--- nSpecies_Init is the master, but it simply checks for consistency. ---*/
