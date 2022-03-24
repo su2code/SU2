@@ -705,7 +705,7 @@ private:
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
-  SST_OPTION *SST_Options;                    /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/     
+  SST_OPTIONS *SST_Options;                    /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/     
   unsigned short nSST_Options;      /*!< \brief number of SST options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */

@@ -5184,33 +5184,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
-  //TODO this wont work.
-  string sst_string = "SST";
-  struct SST_Struct {
-
-    const Version;
-    const Modified;
-    const Production;
-    const Sustaining;
-    const Curvature;
-    //SAMPLE FAILURE LOGIC
-
-    //VERSION INCOMPATIBILITY
-    if (SST_Options_Map.find("V1994")) sst_string += "1994";
-    //TODO....
-
-    if (SST_Options_Map.find("V1994") && SST_Option_Map.find("V2003"))
-      SU2_MPI::Error(string("Two versions (1994 and 2003) selected for SST Options. Please choose only one."), CURRENT_FUNCTION);
-
-    //PRODUCTION INCOMPABILITY
-    unsigned short counter = 0;
-    if (SST_Options.Map_find("VORTICITY")) counter += 1;
-    if (SST_Options.Map_find("KATO-LAUNDER")) counter += 1;
-    if (SST_Options.Map_find("UQ")) counter += 1;
-    if (counter > 1) SU2_MPI::Error(string("Please select only one SST production term modifier (V, KL, UQ)."), CURRENT_FUNCTION);
-
-  };
-  //if (SST_Options_Map.find("VORTICITY")) cout <<"IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"<<endl;
+  SST_ParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
@@ -5877,8 +5851,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SST:       cout << "Menter's SST"     << endl; break;
-          //TODO: ADD IN PROPER SST OPTIONS HERE....
+          case TURB_MODEL::SST:       cout << SST_ParsedOptions.sst_string << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
@@ -5890,7 +5863,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
-        if (using_uq){
+        if (SST_ParsedOptions.production= SST_OPTIONS::UNCERTAINTY){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
