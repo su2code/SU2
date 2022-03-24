@@ -1124,7 +1124,7 @@ private:
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
-  unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFiles=0;/*!< \brief Number of File formats to output */
   unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
   unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
