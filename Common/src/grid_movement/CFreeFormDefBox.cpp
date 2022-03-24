@@ -108,7 +108,7 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
         delete [] Coord_Control_Points[iOrder][jOrder][kOrder];
         delete [] ParCoord_Control_Points[iOrder][jOrder][kOrder];
         delete [] Coord_Control_Points_Copy[iOrder][jOrder][kOrder];
-        delete [] Coord_SupportCP[iOrder][jOrder][kOrder];
+        if (Coord_SupportCP != nullptr) delete [] Coord_SupportCP[iOrder][jOrder][kOrder];
       }
   delete [] Coord_Control_Points;
   delete [] ParCoord_Control_Points;
@@ -1063,52 +1063,52 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
 
 }
 
-// 2022-01-28: this routine is not used. We should consider deleting it
-//void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
-//  su2double *Coord;
-//  unsigned short iMarker, iVar, jVar;
-//  unsigned long iVertex, iPoint;
-//  bool Inside = false;
-//
-//  unsigned short Index[5][7] = {
-//    {0, 1, 2, 5, 0, 1, 2},
-//    {0, 2, 7, 5, 0, 2, 7},
-//    {0, 2, 3, 7, 0, 2, 3},
-//    {0, 5, 7, 4, 0, 5, 7},
-//    {2, 7, 5, 6, 2, 7, 5}};
-//
-//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//    if (config->GetMarker_All_DV(iMarker) == YES) {
-//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//
-//        Coord = geometry->nodes->GetCoord(iPoint);
-//
-//       /*--- 1st tetrahedron {V0, V1, V2, V5}
-//         2nd tetrahedron {V0, V2, V7, V5}
-//         3th tetrahedron {V0, V2, V3, V7}
-//         4th tetrahedron {V0, V5, V7, V4}
-//         5th tetrahedron {V2, V7, V5, V6} ---*/
-//
-//        for (iVar = 0; iVar < 5; iVar++) {
-//          Inside = true;
-//          for (jVar = 0; jVar < 4; jVar++) {
-//            su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
-//                                                                   Coord_Corner_Points[Index[iVar][jVar+1]],
-//                                                                   Coord_Corner_Points[Index[iVar][jVar+2]],
-//                                                                   Coord_Corner_Points[Index[iVar][jVar+3]]);
-//            su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
-//                                                                    Coord_Corner_Points[Index[iVar][jVar+1]],
-//                                                                    Coord_Corner_Points[Index[iVar][jVar+2]],
-//                                                                    Coord_Corner_Points[Index[iVar][jVar+3]]);
-//            if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
-//          }
-//          if (Inside) break;
-//        }
-//      }
-//    }
-//  }
-//}
+//2022-01-28: this routine is not used. We should consider deleting it
+void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const {
+ su2double *Coord;
+ unsigned short iMarker, iVar, jVar;
+ unsigned long iVertex, iPoint;
+ bool Inside = false;
+
+ unsigned short Index[5][7] = {
+   {0, 1, 2, 5, 0, 1, 2},
+   {0, 2, 7, 5, 0, 2, 7},
+   {0, 2, 3, 7, 0, 2, 3},
+   {0, 5, 7, 4, 0, 5, 7},
+   {2, 7, 5, 6, 2, 7, 5}};
+
+ for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+   if (config->GetMarker_All_DV(iMarker) == YES) {
+     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+       Coord = geometry->nodes->GetCoord(iPoint);
+
+      /*--- 1st tetrahedron {V0, V1, V2, V5}
+        2nd tetrahedron {V0, V2, V7, V5}
+        3th tetrahedron {V0, V2, V3, V7}
+        4th tetrahedron {V0, V5, V7, V4}
+        5th tetrahedron {V2, V7, V5, V6} ---*/
+
+       for (iVar = 0; iVar < 5; iVar++) {
+         Inside = true;
+         for (jVar = 0; jVar < 4; jVar++) {
+           su2double Distance_Point = geometry->Point2Plane_Distance(Coord,
+                                                                  Coord_Corner_Points[Index[iVar][jVar+1]],
+                                                                  Coord_Corner_Points[Index[iVar][jVar+2]],
+                                                                  Coord_Corner_Points[Index[iVar][jVar+3]]);
+           su2double Distance_Vertex = geometry->Point2Plane_Distance(Coord_Corner_Points[Index[iVar][jVar]],
+                                                                   Coord_Corner_Points[Index[iVar][jVar+1]],
+                                                                   Coord_Corner_Points[Index[iVar][jVar+2]],
+                                                                   Coord_Corner_Points[Index[iVar][jVar+3]]);
+           if (Distance_Point*Distance_Vertex < 0.0) Inside = false;
+         }
+         if (Inside) break;
+       }
+     }
+   }
+ }
+}
 
 su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn) const {
 
