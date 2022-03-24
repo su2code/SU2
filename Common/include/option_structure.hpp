@@ -987,23 +987,7 @@ static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
 };
 
 /*!
- * \brief types of scalar transport models
- */
-enum ENUM_SCALAR_MODEL {
-  NO_SCALAR_MODEL   = 0,  /*!< \brief No scalar transport model. */
-  PASSIVE_SCALAR    = 1,  /*!< \brief Passive scalar transport model. */
-  PROGRESS_VARIABLE = 2,  /*!< \brief Progress variable combustion model. */
-  CUSTOM_SCALAR     = 3,  /*!< \brief Custom scalar transport model. */
-};
-static const MapType<std::string, ENUM_SCALAR_MODEL> Scalar_Model_Map = {
-  MakePair("NONE", NO_SCALAR_MODEL)
-  MakePair("PASSIVE_SCALAR", PASSIVE_SCALAR)
-  MakePair("PROGRESS_VARIABLE", PROGRESS_VARIABLE)
-  MakePair("CUSTOM_SCALAR", CUSTOM_SCALAR)
-};
-
-/*!
- * \brief types of subgrid scale models
+ * \brief Types of subgrid scale models
  */
 enum class TURB_SGS_MODEL {
   NONE        , /*!< \brief No subgrid scale model. */
