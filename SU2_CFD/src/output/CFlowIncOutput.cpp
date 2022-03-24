@@ -432,10 +432,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   // All turbulence and species outputs.
   LoadVolumeData_Scalar(config, solver, geometry, iPoint);
 
-  //if(config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT){
-  //  SetVolumeOutputValue("TIMESTEP", iPoint, Node_Flow->GetDelta_Time(iPoint));
-  //}
-
   // Streamwise Periodicity
   if(streamwisePeriodic) {
     SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));

@@ -84,7 +84,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/template.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
-  ../src/numerics/scalar.cpp \
   ../src/numerics/radiation.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \

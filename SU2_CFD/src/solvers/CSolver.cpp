@@ -3576,7 +3576,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const auto species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
   const unsigned short nVar_Species = species ? solver[MESH_0][SPECIES_SOL]->GetnVar() : 0;
 
-    /*--- names of the columns in the profile ---*/
+  /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
   vector<string> columnValues;
 

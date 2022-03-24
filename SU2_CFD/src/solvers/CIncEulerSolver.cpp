@@ -1945,8 +1945,8 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
   unsigned short iDim, jDim, iVar, jVar;
 
-  //su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
-  //su2double  Velocity[MAXNDIM] = {0.0};
+  su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+  su2double  Velocity[MAXNDIM] = {0.0};
 
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1954,13 +1954,12 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
   /*--- Access the primitive variables at this node. ---*/
 
-  su2double Density     = nodes->GetDensity(iPoint);
-  su2double BetaInc2    = nodes->GetBetaInc2(iPoint);
-  su2double Cp          = nodes->GetSpecificHeatCp(iPoint);
-  su2double oneOverCp   = 1.0/Cp;
-  su2double Temperature = nodes->GetTemperature(iPoint);
+  Density     = nodes->GetDensity(iPoint);
+  BetaInc2    = nodes->GetBetaInc2(iPoint);
+  Cp          = nodes->GetSpecificHeatCp(iPoint);
+  oneOverCp   = 1.0/Cp;
+  Temperature = nodes->GetTemperature(iPoint);
 
-  su2double  Velocity[MAXNDIM] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
 
@@ -1968,7 +1967,6 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
    preconditioning matrix. For now, the only option is the ideal gas
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
-  su2double dRhodT;
   if (variable_density) {
     dRhodT = -Density/Temperature;
   } else {
@@ -2044,7 +2042,6 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   }
 
 }
-
 
 void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

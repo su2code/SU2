@@ -54,6 +54,7 @@ Andrew Wendorff
 Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
+Arne Voß
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brendan Tracey
@@ -91,6 +92,7 @@ JonathanSmith1936
 Kedar Naik
 LaSerpe
 Lennaert Tol
+Lisa Kusch
 Matteo Pini
 Max Aehle
 Max Le

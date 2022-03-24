@@ -288,7 +288,7 @@ class CAvgGradInc_Flow final : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity; /*!< \brief Mean value of the effective thermal conductivity. */
   bool energy;                         /*!< \brief computation with the energy equation. */
-  bool flame;                          /*!< \brief computation when combustion is active */
+
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction
    *

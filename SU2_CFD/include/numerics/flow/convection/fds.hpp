@@ -41,7 +41,6 @@ private:
   bool implicit,     /*!< \brief Implicit calculation. */
   dynamic_grid,      /*!< \brief Modification for grid movement. */
   variable_density,  /*!< \brief Variable density incompressible flows. */
-  flame,             /*!< \brief reacting incompressible flows. */
   energy;            /*!< \brief computation with the energy equation. */
   su2double *Diff_V;
   su2double *Velocity_i, *Velocity_j, *MeanVelocity;

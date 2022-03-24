@@ -1246,7 +1246,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) { return true; }
-  
+
   /*!
    * \brief A virtual member.
    */

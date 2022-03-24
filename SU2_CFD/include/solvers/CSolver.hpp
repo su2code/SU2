@@ -126,8 +126,6 @@ protected:
   **Jacobian_ij,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-  su2double **Smatrix;        /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  su2double **Cvector;        /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
   /*--- End variables that need to go. ---*/
 
@@ -446,18 +444,6 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
-
-  /*! 
-   * \brief Set the number of table look up misses.
-   * \param[in] val_n_table_miss - Number of table look up misses.
-   */
-  inline virtual void SetNTableMisses(unsigned short val_n_table_miss) { }
-
-  /*! 
-   * \brief Get the number of table look up misses.
-   * \return Number of table look up misses.
-   */
-  inline virtual unsigned long GetNTableMisses() { return 0; }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -1546,14 +1532,6 @@ public:
   inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry,
                                                const CConfig *config,
                                                bool reconstruction = false) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
   /*!
    * \brief A virtual member.

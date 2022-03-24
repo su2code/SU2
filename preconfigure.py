@@ -276,7 +276,7 @@ def replace_all(text, dic):
     return text
 
 def find_all(text, dic):
-    for i,j in dic.items():
+    for i,j in dic.iteritems():
         if not text.find(i) == -1:
             return True
     return False

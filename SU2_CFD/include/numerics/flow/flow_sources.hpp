@@ -126,7 +126,6 @@ public:
 class CSourceIncAxisymmetric_Flow final : public CSourceBase_Flow {
   bool implicit, /*!< \brief Implicit calculation. */
   viscous,       /*!< \brief Viscous incompressible flows. */
-  flame,         /*!< \brief computation if combustion is present */
   energy;        /*!< \brief computation with the energy equation. */
 
 public:
