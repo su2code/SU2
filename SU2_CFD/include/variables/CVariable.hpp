@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,6 +94,13 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
+  VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
+                                        Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
+  VectorType ExternalExtra; /*!< \brief External storage for the adjoint value (i.e. for the OF mainly */
+
+  VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
+
+ protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
@@ -405,6 +412,31 @@ public:
   inline void Add_External(unsigned long iPoint, const su2double* val_sol) {
     for(unsigned long iVar = 0; iVar < nVar; iVar++) External(iPoint,iVar) += val_sol[iVar];
   }
+
+  /*!
+   * \brief Store the adjoint solution of the extra adjoint into the external container.
+   */
+  void Set_ExternalExtra_To_SolutionExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      ExternalExtra[iEntry] = SolutionExtra[iEntry];
+  }
+
+  /*!
+   * \brief Add the external contribution to the solution for the extra adjoint solutions.
+   */
+  void Add_ExternalExtra_To_SolutionExtra() {
+    assert(SolutionExtra.size() == ExternalExtra.size());
+    for (auto iEntry = 0ul; iEntry < SolutionExtra.size(); iEntry++)
+      SolutionExtra[iEntry] += ExternalExtra[iEntry];
+  }
+
+  /*!
+   * \brief Return the extra adjoint solution.
+   * \return Reference to extra adjoint solution.
+   */
+  inline VectorType& GetSolutionExtra() { return SolutionExtra; }
+  inline const VectorType& GetSolutionExtra() const { return SolutionExtra; }
 
   /*!
    * \brief Update the variables using a conservative format.

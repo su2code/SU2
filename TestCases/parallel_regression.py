@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,18 @@ def main():
     thermalbath.new_output = True
     thermalbath.tol       = 0.00001
     test_list.append(thermalbath)
+
+    # Adiabatic thermal bath
+    ionized           = TestCase('ionized')
+    ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
+    ionized.cfg_file  = "weakly_ionized.cfg"
+    ionized.test_iter = 10
+    ionized.test_vals = [-29.322805, -10.246260, -11.382786, -16.183264, -17.165896, -13.928855, -24.658131, -32.000000, -4.541637, 0.000000, 0.000000]
+    ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
+    ionized.timeout   = 1600
+    ionized.new_output = True
+    ionized.tol       = 0.00001
+    test_list.append(ionized)
 
     # Adiabatic frozen thermal bath
     thermalbath_frozen           = TestCase('thermalbath_frozen')
@@ -204,12 +216,23 @@ def main():
     flatplate           = TestCase('flatplate')
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
-    flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360, 9.0144e-04, 2.3622e+00, -2.3613e+00]
-    flatplate.su2_exec  = "parallel_computation.py -f"
+    flatplate.test_iter = 100
+    flatplate.test_vals = [-9.336395, -3.849426, 0.001112, 0.036276, 2.361500, -2.325300, -2.279700, -2.279700]
+    flatplate.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
     test_list.append(flatplate)
+
+    # Custom objective function
+    flatplate_udobj           = TestCase('flatplate_udobj')
+    flatplate_udobj.cfg_dir   = "user_defined_functions"
+    flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
+    flatplate_udobj.test_iter = 20
+    flatplate_udobj.test_vals = [-6.653802, -1.18143, -0.794887, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 1.7147]
+    flatplate_udobj.su2_exec  = "mpirun -n 2 SU2_CFD"
+    flatplate_udobj.timeout   = 1600
+    flatplate_udobj.tol       = 0.00001
+    test_list.append(flatplate_udobj)
 
     # Laminar cylinder (steady)
     cylinder           = TestCase('cylinder')
@@ -662,8 +685,8 @@ def main():
     turbmod_sa_neg_rae2822           = TestCase('turbmod_sa_neg_rae2822')
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
-    turbmod_sa_neg_rae2822.test_iter = 20
-    turbmod_sa_neg_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
+    turbmod_sa_neg_rae2822.test_iter = 10
+    turbmod_sa_neg_rae2822.test_vals = [-1.094542, 3.161741, 2.333560, 2.864805, 1.494301, 0.530135]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -699,7 +722,7 @@ def main():
     turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
     turbmod_sa_comp_edw_rae2822.test_iter = 20
-    turbmod_sa_comp_edw_rae2822.test_vals = [-2.004687, 0.742306, 0.497310, -5.290769, 0.809485, 0.062036]
+    turbmod_sa_comp_edw_rae2822.test_vals = [-2.004685, 0.742307, 0.497311, -5.290750, 0.809487, 0.062045]
     turbmod_sa_comp_edw_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_comp_edw_rae2822.timeout   = 1600
     turbmod_sa_comp_edw_rae2822.new_output = True
@@ -1366,7 +1389,7 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.739745, -14.448665, 300.900000, 425.320000, 0.000000, 5.000000, -1.448445] #last 7 lines
+    solid_periodic_pins.test_vals = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
     solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
     solid_periodic_pins.timeout   = 1600
     solid_periodic_pins.tol       = 0.00001
@@ -1400,12 +1423,12 @@ def main():
     cht_compressible.tol       = 0.00001
     test_list.append(cht_compressible)
 
-    # 2D CHT case streamwise periodicity
+    # 2D CHT case streamwise periodicity. Also test Multizone PerSurface screen output.
     sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247026, -0.811632, -0.982066, -0.753312, 208.023676, 350.180000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.246959, -0.811849, -0.962120, -0.753320, 208.023676, 349.990000, -8.9660e-10, -7.5332e-01, 7.5332e-01]
     sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
@@ -1417,7 +1440,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451732, -0.008477, 214.707868, 365.670000] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-13.380430, -7.476945, -7.025285, -0.009675, 99.879812, 4.1920e+02]
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001

@@ -3,14 +3,14 @@
  * \brief Class that reads a single zone of a CGNS mesh file from disk into
  *        linear partitions across all ranks.
  * \author T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,12 +35,6 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
 : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
 
 #ifdef HAVE_CGNS
-  /*--- We use val_iZone with +1 for the 1-based indexing in CGNS. ---*/
-  cgnsZone = val_iZone + 1;
-  nZones   = val_nZone;
-
-  /*--- The CGNS reader currently assumes a single database. ---*/
-  cgnsBase = 1;
   OpenCGNSFile(config->GetMesh_FileName());
 
   /*--- Read the basic information about the database and zone(s). ---*/
@@ -89,6 +83,7 @@ void CCGNSMeshReaderFVM::OpenCGNSFile(string val_filename) {
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
   int file_type;
+  float file_version;
   if (cg_is_cgns(val_filename.c_str(), &file_type) != CG_OK) {
     SU2_MPI::Error(val_filename +
                    string(" was not found or is not a properly formatted") +
@@ -107,7 +102,13 @@ void CCGNSMeshReaderFVM::OpenCGNSFile(string val_filename) {
     cout << "Reading the CGNS file: ";
     cout << val_filename.c_str() << "." << endl;
   }
-
+  if (cg_version(cgnsFileID, &file_version))
+    cg_error_exit();
+  if (rank == MASTER_NODE) {
+    if (file_version < 4.0) {
+      cout << "WARNING: The CGNS file version (" << file_version << ")  is old and may cause high memory usage issues, consider updating the file with the cgnsupdate tool.\n";
+    }
+  }
 }
 
 void CCGNSMeshReaderFVM::ReadCGNSDatabaseMetadata() {

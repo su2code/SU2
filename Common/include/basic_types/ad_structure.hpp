@@ -2,14 +2,14 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,6 +104,11 @@ namespace AD{
    * \param[in] leave - Position where we stop evaluating the tape.
    */
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {}
+
+  /*!
+   * \brief Computes the adjoints, i.e., the derivatives of the output with respect to the input variables, using forward tape evaluation.
+   */
+  inline void ComputeAdjointForward() {}
 
   /*!
    * \brief Reset the tape structure to be ready for a new recording.
@@ -354,6 +359,8 @@ namespace AD{
   #endif
   }
 
+  FORCEINLINE void ComputeAdjointForward() {AD::getGlobalTape().evaluateForward();}
+
   FORCEINLINE void Reset() {
     AD::getGlobalTape().reset();
   #if defined(HAVE_OPDI)
@@ -531,7 +538,7 @@ namespace AD{
       }
     }
   }
-
+  
   FORCEINLINE void delete_handler(void *handler) {
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();
