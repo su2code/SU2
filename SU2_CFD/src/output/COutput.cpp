@@ -1253,7 +1253,6 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
   histFile.flush();
 }
 
-
 void COutput::SetScreen_Header(const CConfig *config) {
   if (config->GetMultizone_Problem())
     multiZoneHeaderTable->PrintHeader();
