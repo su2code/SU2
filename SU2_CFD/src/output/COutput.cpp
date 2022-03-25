@@ -1432,7 +1432,6 @@ void COutput::CheckHistoryOutput() {
 
   for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++) {
     const auto& requestedField = requestedScreenFields[iReqField];
-
     const auto it1 = historyOutput_Map.find(requestedField);
     if (it1 != historyOutput_Map.end()) {
       convergenceTable->AddColumn(it1->second.fieldName, fieldWidth);
