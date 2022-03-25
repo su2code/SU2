@@ -974,10 +974,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     isFileWrite = true;
   }
 
-  if (isFileWrite)
-    return true;
-  else 
-   return false;
+  return isFileWrite;
 }
 
 void COutput::PrintConvergenceSummary(){
