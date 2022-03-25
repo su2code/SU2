@@ -3348,7 +3348,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   } else {
     /*--- check how many frequencies. If 1 then use it for all output ---*/
     if (nVolumeOutputFrequencies == 1) {
-      unsigned short outputWriteFreq = VolumeOutputFrequencies[0];
+      const auto outputWriteFreq = VolumeOutputFrequencies[0];
       /*--- we recreate the OutputFrequencies ---*/
       nVolumeOutputFrequencies = nVolumeOutputFiles;
       delete [] VolumeOutputFrequencies;
