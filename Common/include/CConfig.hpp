@@ -9470,11 +9470,6 @@ public:
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
 
   /*!
-   * \brief GetVolumeOutputFrequencies
-   */
-  unsigned long* GetVolumeOutputFrequencies() const { return VolumeOutputFrequencies; }
-
-  /*!
    * \brief GetVolumeOutputFrequency
    * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
    */
