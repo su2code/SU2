@@ -3358,7 +3358,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         VolumeOutputFrequencies[iVolumeFreq] = outputWriteFreq; 
       }
     } else if (nVolumeOutputFrequencies != nVolumeOutputFiles) {
-      SU2_MPI::Error(string("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.\n"), CURRENT_FUNCTION);
+      SU2_MPI::Error("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.", CURRENT_FUNCTION);
     }
   }
 
