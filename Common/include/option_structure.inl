@@ -374,14 +374,6 @@ public:
   }
 };
 
-class COptionLongList final : public COptionScalarList<long> {
-public:
-  template<class... Ts>
-  COptionLongList(Ts&&... args) :
-    COptionScalarList<long>("long", args...) {
-  }
-};
-
 class COptionULongList final : public COptionScalarList<unsigned long> {
 public:
   template<class... Ts>
