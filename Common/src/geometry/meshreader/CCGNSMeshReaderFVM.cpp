@@ -35,12 +35,6 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig        *val_config,
 : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
 
 #ifdef HAVE_CGNS
-  /*--- We use val_iZone with +1 for the 1-based indexing in CGNS. ---*/
-  cgnsZone = val_iZone + 1;
-  nZones   = val_nZone;
-
-  /*--- The CGNS reader currently assumes a single database. ---*/
-  cgnsBase = 1;
   OpenCGNSFile(config->GetMesh_FileName());
 
   /*--- Read the basic information about the database and zone(s). ---*/
