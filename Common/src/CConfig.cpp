@@ -7606,6 +7606,7 @@ void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_mo
   nKind_SurfaceMovement++;
 
 }
+
 CConfig::~CConfig(void) {
 
   unsigned long iDV, iMarker, iPeriodic, iFFD;
@@ -7619,61 +7620,11 @@ CConfig::~CConfig(void) {
   delete [] TimeDOFsADER_DG;
   delete [] TimeIntegrationADER_DG;
   delete [] WeightsIntegrationADER_DG;
-  delete [] RK_Alpha_Step;
-  delete [] MG_PreSmooth;
-  delete [] MG_PostSmooth;
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
   delete[] Aeroelastic_pitch;
   delete[] Aeroelastic_plunge;
-
-  /*--- Free memory for airfoil sections ---*/
-
-  delete [] LocationStations;
-
-  /*--- motion origin: ---*/
-
-  delete [] MarkerMotion_Origin;
-
-  delete [] MoveMotion_Origin;
-
-  /*--- translation: ---*/
-
-  delete [] MarkerTranslation_Rate;
-
-  /*--- rotation: ---*/
-
-  delete [] MarkerRotation_Rate;
-
-  /*--- pitching: ---*/
-
-  delete [] MarkerPitching_Omega;
-
-  /*--- pitching amplitude: ---*/
-
-  delete [] MarkerPitching_Ampl;
-
-  /*--- pitching phase: ---*/
-
-  delete [] MarkerPitching_Phase;
-
-  /*--- plunging: ---*/
-
-  delete [] MarkerPlunging_Omega;
-
-  /*--- plunging amplitude: ---*/
-  delete [] MarkerPlunging_Ampl;
-
-  /*--- reference origin for moments ---*/
-
-  delete [] RefOriginMoment_X;
-  delete [] RefOriginMoment_Y;
-  delete [] RefOriginMoment_Z;
-
-  /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
-
-  delete [] Omega_HB;
 
   /*--- Marker pointers ---*/
 
@@ -7734,28 +7685,12 @@ CConfig::~CConfig(void) {
   delete[] Marker_CfgFile_SobolevBC;
   delete[] Marker_All_SobolevBC;
 
-  delete[] Marker_DV;
-  delete[] Marker_Moving;
-  delete[] Marker_Monitoring;
-  delete[] Marker_Designing;
-  delete[] Marker_GeoEval;
-  delete[] Marker_Plotting;
-  delete[] Marker_Analyze;
   delete[] Marker_WallFunctions;
-  delete[] Marker_ZoneInterface;
-  delete[] Marker_CHTInterface;
-  delete[] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
-  delete[] Marker_SobolevBC;
-
-  delete[] Kind_Inc_Inlet;
-  delete[] Kind_Inc_Outlet;
 
   delete[] Kind_WallFunctions;
 
   delete[] Kind_Wall;
-
-  delete[] Config_Filenames;
 
   if (IntInfo_WallFunctions != nullptr) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
@@ -7772,9 +7707,6 @@ CConfig::~CConfig(void) {
     }
     delete[] DoubleInfo_WallFunctions;
   }
-
-  delete[] Kind_ObjFunc;
-  delete[] Weight_ObjFunc;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
@@ -7795,8 +7727,6 @@ CConfig::~CConfig(void) {
     for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
     delete [] DegreeFFDBox;
   }
-
-  delete[] Design_Variable;
 
   delete[]  Exhaust_Temperature_Target;
   delete[]  Exhaust_Pressure_Target;
@@ -7826,7 +7756,6 @@ CConfig::~CConfig(void) {
   delete[]  Engine_NetThrust;
   delete[]  Engine_GrossThrust;
   delete[]  Engine_Area;
-  delete[] EngineInflow_Target;
 
   delete[]  ActDiskInlet_MassFlow;
   delete[]  ActDiskInlet_Temperature;
@@ -7934,14 +7863,8 @@ CConfig::~CConfig(void) {
 
   delete[] Inlet_Temperature;
   delete[] Inlet_Pressure;
-  delete[] Outlet_Pressure;
-  delete[] Isothermal_Temperature;
-  delete[] Heat_Flux;
   delete[] HeatTransfer_Coeff;
   delete[] HeatTransfer_WallTemp;
-  delete[] Displ_Value;
-  delete[] Load_Value;
-  delete[] Damper_Constant;
   delete[] Load_Dir_Multiplier;
   delete[] Load_Dir_Value;
   delete[] Disp_Dir;
@@ -7949,15 +7872,6 @@ CConfig::~CConfig(void) {
   delete[] Disp_Dir_Value;
   delete[] Load_Sine_Amplitude;
   delete[] Load_Sine_Frequency;
-  delete[] FlowLoad_Value;
-  delete[] Roughness_Height;
-  delete[] Wall_Emissivity;
-
-  if (Inlet_SpeciesVal != nullptr) {
-    for (auto i = 0u; i < nMarker_Inlet_Species; ++i)
-      delete[] Inlet_SpeciesVal[i];
-  }
-  delete[] Inlet_SpeciesVal;
 
   /*--- related to periodic boundary conditions ---*/
 
@@ -7979,53 +7893,19 @@ CConfig::~CConfig(void) {
   delete[] Periodic_Rotation;
   delete[] Periodic_Translate;
 
-  delete[] MG_CorrecSmooth;
   delete[] PlaneTag;
   delete[] CFL;
-  delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 
-  delete[] Marker_Euler;
-  delete[] Marker_FarField;
-  delete[] Marker_Custom;
-  delete[] Marker_SymWall;
   delete[] Marker_PerBound;
   delete[] Marker_PerDonor;
-  delete[] Marker_NearFieldBound;
-  delete[] Marker_Deform_Mesh;
-  delete[] Marker_Deform_Mesh_Sym_Plane;
-  delete[] Marker_Fluid_Load;
-  delete[] Marker_Fluid_InterfaceBound;
   delete[] Marker_Inlet;
   delete[] Marker_Supersonic_Inlet;
-  delete[] Marker_Supersonic_Outlet;
-  delete[] Marker_Outlet;
-  delete[] Marker_Isothermal;
-  delete[] Marker_Smoluchowski_Maxwell;
-  delete[] Marker_EngineInflow;
   delete[] Marker_EngineExhaust;
-  delete[] Marker_Displacement;
-  delete[] Marker_Load;
-  delete[] Marker_Damper;
   delete[] Marker_Load_Dir;
   delete[] Marker_Disp_Dir;
   delete[] Marker_Load_Sine;
-  delete[] Marker_FlowLoad;
-  delete[] Marker_Internal;
-  delete[] Marker_HeatFlux;
-  delete[] Marker_Emissivity;
-  delete[] Marker_Inlet_Species;
-
-  delete [] Int_Coeffs;
-
-  delete [] ElasticityMod;
-  delete [] PoissonRatio;
-  delete [] MaterialDensity;
-  delete [] Electric_Constant;
-  delete [] Electric_Field_Mod;
-  delete [] RefNode_Displacement;
-  delete [] Electric_Field_Dir;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
 
@@ -8042,33 +7922,14 @@ CConfig::~CConfig(void) {
   delete [] RelaxFactorAverage;
   delete [] RelaxFactorFourier;
   delete [] nSpan_iZones;
-  delete [] Kind_TurboMachinery;
 
-  delete [] Marker_MixingPlaneInterface;
   delete [] Marker_TurboBoundIn;
   delete [] Marker_TurboBoundOut;
   delete [] Marker_Riemann;
   delete [] Marker_Giles;
-  delete [] Marker_Shroud;
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
-
-  delete [] top_optim_kernels;
-  delete [] top_optim_kernel_params;
-  delete [] top_optim_filter_radius;
-
-  delete [] ScreenOutput;
-  delete [] HistoryOutput;
-  delete [] VolumeOutput;
-  delete [] Mesh_Box_Size;
-  delete [] VolumeOutputFiles;
-
-  delete [] ConvField;
-
-  delete [] Species_Clipping_Min;
-  delete [] Species_Clipping_Max;
-  delete [] Species_Init;
 
 }
 

@@ -8138,11 +8138,6 @@ public:
   void SetConfig_Options();
 
   /*!
-   * \brief Set the config options.
-   */
-  void SetRunTime_Options(void);
-
-  /*!
    * \brief Set the config file parsing.
    */
   void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);

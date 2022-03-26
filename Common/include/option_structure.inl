@@ -227,6 +227,12 @@ public:
     field(option_field),
     mySize(list_size),
     name(option_field_name) {
+    field = nullptr;
+  }
+
+  ~COptionEnumList() {
+    delete [] field;
+    field = nullptr;
   }
 
   string SetValue(const vector<string>& option_value) override {
@@ -320,6 +326,13 @@ public:
     name(option_field_name),
     mySize(list_size),
     typeName(type_name) {
+    field = nullptr;
+  }
+
+  ~COptionScalarList() {
+    delete [] field;
+    // prevent double free
+    field = nullptr;
   }
 
   string SetValue(const vector<string>& option_value) final {
@@ -1069,6 +1082,7 @@ template <class T>
 struct CStringValuesListHelper {
   static T resize(unsigned short) { return T(); }
   static T& access(T& val, unsigned short) { return val; }
+  static void clear(T&) {}
 };
 
 // Specialization for pointer types (multiple values per string).
@@ -1076,6 +1090,7 @@ template <class T>
 struct CStringValuesListHelper<T*> {
   static T* resize(unsigned short n) { return new T[n]; }
   static T& access(T* ptr, unsigned short i) { return ptr[i]; }
+  static void clear(T* ptr) { delete [] ptr; }
 };
 
 // Class where the option is represented by (string, N * "some type", string, N * "some type", ...)
@@ -1092,10 +1107,24 @@ public:
   COptionStringValuesList(string name_, unsigned short& size_, string*& strings_,
                           Type*& values_, unsigned short& num_vals_) :
     name(name_), size(size_), strings(strings_), values(values_), num_vals(num_vals_) {
+    strings = nullptr;
+    values = nullptr;
   }
 
   COptionStringValuesList(string name_, unsigned short& size_, string*& strings_, Type*& values_) :
     name(name_), size(size_), strings(strings_), values(values_), num_vals(optional_num_vals) {
+    strings = nullptr;
+    values = nullptr;
+  }
+
+  ~COptionStringValuesList() {
+    delete [] strings;
+    strings = nullptr;
+    for (unsigned short i = 0; i < size; ++i) {
+      CStringValuesListHelper<Type>::clear(values[i]);
+    }
+    delete [] values;
+    values = nullptr;
   }
 
   string SetValue(const vector<string>& option_value) override {
