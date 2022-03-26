@@ -496,7 +496,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case MIXTURE_FLUID_MODEL:
         fluidModel   = new CFluidScalar(config, Pressure_Thermodynamic);
-	      n_scalars    = config->GetnSpecies();
+	 n_scalars    = config->GetnSpecies();
         dummy_scalar = new su2double[n_scalars]();
         fluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
         delete[] dummy_scalar;

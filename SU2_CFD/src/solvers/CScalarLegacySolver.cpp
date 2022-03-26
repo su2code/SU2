@@ -909,8 +909,8 @@ void CScalarLegacySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- MPI solution and compute the scalars ---*/
 
-  solver[MESH_0][SCALAR_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][SCALAR_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SPECIES_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SPECIES_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
   // Flow-Pre computes/sets mixture properties
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -918,7 +918,7 @@ void CScalarLegacySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
   if(config->GetKind_Turb_Model() != TURB_MODEL::NONE) solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   // For feature_multicomp this Scalar-Pre only computes the laminar contribution to mass diffusivity
-  solver[MESH_0][SCALAR_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][SPECIES_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -930,18 +930,18 @@ void CScalarLegacySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
       for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh-1][SCALAR_SOL]->GetNodes()->GetSolution(Point_Fine);
+        Solution_Fine = solver[iMesh-1][SPECIES_SOL]->GetNodes()->GetSolution(Point_Fine);
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution_Coarse[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
         }
       }
-      solver[iMesh][SCALAR_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
+      solver[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
     END_SU2_OMP_FOR
-    solver[iMesh][SCALAR_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][SCALAR_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    solver[iMesh][SCALAR_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+    solver[iMesh][SPECIES_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
 
   /*--- Go back to single threaded execution. ---*/

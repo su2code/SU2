@@ -98,6 +98,11 @@ class CIncNSSolver final : public CIncEulerSolver {
 public:
   /*!
    * \brief Constructor of the class.
+   */
+  //CIncNSSolver() : CIncEulerSolver() {}
+
+  /*!
+   * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */

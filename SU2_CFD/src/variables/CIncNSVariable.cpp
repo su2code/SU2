@@ -49,8 +49,9 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   }
 }
 
-bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *val_scalars) {
+bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar) {
 
+  unsigned short iVar;
   bool physical = true;
 
   /*--- Set the value of the pressure ---*/
@@ -59,7 +60,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution(iPoint, nDim+1);
+  su2double Temperature = Solution(iPoint,nDim+1);
   const auto check_temp = SetTemperature(iPoint,Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
@@ -68,10 +69,8 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Use the fluid model to compute the new value of density. ---*/
 
-  FluidModel->SetTDState_T(Temperature,val_scalars);
+  FluidModel->SetTDState_T(Temperature,scalar);
   Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
-  /*Temperature             = Solution(iPoint,nDim+1);
-  check_temp              = SetTemperature(iPoint, Temperature);*/
 
   /*--- Set the value of the density ---*/
 
@@ -83,14 +82,14 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     /*--- Copy the old solution ---*/
 
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution(iPoint, nDim+1);
+    Temperature = Solution(iPoint,nDim+1);
     SetTemperature(iPoint, Temperature);
-    FluidModel->SetTDState_T(Temperature,val_scalars);
+    FluidModel->SetTDState_T(Temperature, scalar);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/

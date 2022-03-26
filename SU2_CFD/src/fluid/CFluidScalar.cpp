@@ -259,13 +259,13 @@ unsigned long CFluidScalar::SetTDState_T(const su2double val_temperature, su2dou
   massToMoleFractions(val_scalars);
 
   if(wilke){
-    Mu  = wilkeViscosity(val_scalars);
+    Mu  = 1.0e-5; //wilkeViscosity(val_scalars);
   }
   else if(davidson){
-    Mu = davidsonViscosity(val_scalars);
+    Mu = 1.0e-5;//davidsonViscosity(val_scalars);
   }
 
-  Kt = wilkeConductivity(val_scalars);
+  Kt = 0.025;//wilkeConductivity(val_scalars);
 
   return 0;
 }

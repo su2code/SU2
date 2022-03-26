@@ -133,7 +133,7 @@ void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall
   AD::EndPreacc();
 }
 
-bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar) {
 
   bool RightVol = true;
 

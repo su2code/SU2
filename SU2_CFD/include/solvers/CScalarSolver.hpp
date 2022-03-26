@@ -180,6 +180,11 @@ class CScalarSolver : public CSolver {
 
  public:
   /*!
+   * \brief Constructor of the class.
+   */
+  CScalarSolver(bool conservative);
+
+  /*!
    * \brief Destructor of the class.
    */
   ~CScalarSolver() override;
