@@ -1055,18 +1055,6 @@ void CConfig::SetPointersNull(void) {
 
 }
 
-void CConfig::SetRunTime_Options(void) {
-
-  /* DESCRIPTION: Number of external iterations */
-
-  addUnsignedLongOption("TIME_ITER", nTimeIter, 999999);
-
-  /* DESCRIPTION: CFL Number */
-
-  addDoubleOption("CFL_NUMBER", CFLFineGrid, 10);
-
-}
-
 void CConfig::SetConfig_Options() {
 
   // This config file is parsed by a number of programs to make it easy to write SU2
@@ -7635,9 +7623,9 @@ CConfig::~CConfig(void) {
   delete[] Aeroelastic_pitch;
   delete[] Aeroelastic_plunge;
 
- /*--- Free memory for airfoil sections ---*/
+  /*--- Free memory for airfoil sections ---*/
 
- delete [] LocationStations;
+  delete [] LocationStations;
 
   /*--- motion origin: ---*/
 
@@ -7729,17 +7717,17 @@ CConfig::~CConfig(void) {
   delete[] Marker_CfgFile_PerBound;
   delete[] Marker_All_PerBound;
 
-  delete [] Marker_CfgFile_Turbomachinery;
-  delete [] Marker_All_Turbomachinery;
+  delete[] Marker_CfgFile_Turbomachinery;
+  delete[] Marker_All_Turbomachinery;
 
-  delete [] Marker_CfgFile_TurbomachineryFlag;
-  delete [] Marker_All_TurbomachineryFlag;
+  delete[] Marker_CfgFile_TurbomachineryFlag;
+  delete[] Marker_All_TurbomachineryFlag;
 
-  delete [] Marker_CfgFile_MixingPlaneInterface;
-  delete [] Marker_All_MixingPlaneInterface;
+  delete[] Marker_CfgFile_MixingPlaneInterface;
+  delete[] Marker_All_MixingPlaneInterface;
 
-  delete [] Marker_CfgFile_SobolevBC;
-  delete [] Marker_All_SobolevBC;
+  delete[] Marker_CfgFile_SobolevBC;
+  delete[] Marker_All_SobolevBC;
 
   delete[] Marker_DV;
   delete[] Marker_Moving;
@@ -7751,7 +7739,7 @@ CConfig::~CConfig(void) {
   delete[] Marker_WallFunctions;
   delete[] Marker_ZoneInterface;
   delete[] Marker_CHTInterface;
-  delete [] Marker_PyCustom;
+  delete[] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
   delete[] Marker_SobolevBC;
 
@@ -7780,8 +7768,8 @@ CConfig::~CConfig(void) {
     delete[] DoubleInfo_WallFunctions;
   }
 
-       delete[] Kind_ObjFunc;
-       delete[] Weight_ObjFunc;
+  delete[] Kind_ObjFunc;
+  delete[] Weight_ObjFunc;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
@@ -7803,97 +7791,97 @@ CConfig::~CConfig(void) {
     delete [] DegreeFFDBox;
   }
 
-     delete[] Design_Variable;
+  delete[] Design_Variable;
 
-     delete[]  Exhaust_Temperature_Target;
-     delete[]  Exhaust_Pressure_Target;
-     delete[] Exhaust_Pressure;
-     delete[] Exhaust_Temperature;
-     delete[] Exhaust_MassFlow;
-     delete[] Exhaust_TotalPressure;
-     delete[] Exhaust_TotalTemperature;
-     delete[] Exhaust_GrossThrust;
-     delete[] Exhaust_Force;
-     delete[] Exhaust_Power;
+  delete[]  Exhaust_Temperature_Target;
+  delete[]  Exhaust_Pressure_Target;
+  delete[] Exhaust_Pressure;
+  delete[] Exhaust_Temperature;
+  delete[] Exhaust_MassFlow;
+  delete[] Exhaust_TotalPressure;
+  delete[] Exhaust_TotalTemperature;
+  delete[] Exhaust_GrossThrust;
+  delete[] Exhaust_Force;
+  delete[] Exhaust_Power;
 
-     delete[]  Inflow_Mach;
-     delete[] Inflow_Pressure;
-     delete[] Inflow_MassFlow;
-     delete[] Inflow_ReverseMassFlow;
-     delete[] Inflow_TotalPressure;
-     delete[] Inflow_Temperature;
-     delete[] Inflow_TotalTemperature;
-     delete[] Inflow_RamDrag;
-     delete[]  Inflow_Force;
-     delete[] Inflow_Power;
+  delete[]  Inflow_Mach;
+  delete[] Inflow_Pressure;
+  delete[] Inflow_MassFlow;
+  delete[] Inflow_ReverseMassFlow;
+  delete[] Inflow_TotalPressure;
+  delete[] Inflow_Temperature;
+  delete[] Inflow_TotalTemperature;
+  delete[] Inflow_RamDrag;
+  delete[]  Inflow_Force;
+  delete[] Inflow_Power;
 
-     delete[]  Engine_Power;
-     delete[]  Engine_Mach;
-     delete[]  Engine_Force;
-     delete[]  Engine_NetThrust;
-     delete[]  Engine_GrossThrust;
-     delete[]  Engine_Area;
-     delete[] EngineInflow_Target;
+  delete[]  Engine_Power;
+  delete[]  Engine_Mach;
+  delete[]  Engine_Force;
+  delete[]  Engine_NetThrust;
+  delete[]  Engine_GrossThrust;
+  delete[]  Engine_Area;
+  delete[] EngineInflow_Target;
 
-     delete[]  ActDiskInlet_MassFlow;
-     delete[]  ActDiskInlet_Temperature;
-     delete[]  ActDiskInlet_TotalTemperature;
-     delete[]  ActDiskInlet_Pressure;
-     delete[]  ActDiskInlet_TotalPressure;
-     delete[]  ActDiskInlet_RamDrag;
-     delete[]  ActDiskInlet_Force;
-     delete[]  ActDiskInlet_Power;
+  delete[]  ActDiskInlet_MassFlow;
+  delete[]  ActDiskInlet_Temperature;
+  delete[]  ActDiskInlet_TotalTemperature;
+  delete[]  ActDiskInlet_Pressure;
+  delete[]  ActDiskInlet_TotalPressure;
+  delete[]  ActDiskInlet_RamDrag;
+  delete[]  ActDiskInlet_Force;
+  delete[]  ActDiskInlet_Power;
 
-     delete[]  ActDiskOutlet_MassFlow;
-     delete[]  ActDiskOutlet_Temperature;
-     delete[]  ActDiskOutlet_TotalTemperature;
-     delete[]  ActDiskOutlet_Pressure;
-     delete[]  ActDiskOutlet_TotalPressure;
-     delete[]  ActDiskOutlet_GrossThrust;
-     delete[]  ActDiskOutlet_Force;
-     delete[]  ActDiskOutlet_Power;
+  delete[]  ActDiskOutlet_MassFlow;
+  delete[]  ActDiskOutlet_Temperature;
+  delete[]  ActDiskOutlet_TotalTemperature;
+  delete[]  ActDiskOutlet_Pressure;
+  delete[]  ActDiskOutlet_TotalPressure;
+  delete[]  ActDiskOutlet_GrossThrust;
+  delete[]  ActDiskOutlet_Force;
+  delete[]  ActDiskOutlet_Power;
 
-     delete[]  Outlet_MassFlow;
-     delete[]  Outlet_Density;
-     delete[]  Outlet_Area;
+  delete[]  Outlet_MassFlow;
+  delete[]  Outlet_Density;
+  delete[]  Outlet_Area;
 
-     delete[]  ActDisk_DeltaPress;
-     delete[]  ActDisk_DeltaTemp;
-     delete[]  ActDisk_TotalPressRatio;
-     delete[]  ActDisk_TotalTempRatio;
-     delete[]  ActDisk_StaticPressRatio;
-     delete[]  ActDisk_StaticTempRatio;
-     delete[]  ActDisk_Power;
-     delete[]  ActDisk_MassFlow;
-     delete[]  ActDisk_Mach;
-     delete[]  ActDisk_Force;
-     delete[]  ActDisk_NetThrust;
-     delete[]  ActDisk_BCThrust;
-     delete[]  ActDisk_BCThrust_Old;
-     delete[]  ActDisk_GrossThrust;
-     delete[]  ActDisk_Area;
-     delete[]  ActDisk_ReverseMassFlow;
+  delete[]  ActDisk_DeltaPress;
+  delete[]  ActDisk_DeltaTemp;
+  delete[]  ActDisk_TotalPressRatio;
+  delete[]  ActDisk_TotalTempRatio;
+  delete[]  ActDisk_StaticPressRatio;
+  delete[]  ActDisk_StaticTempRatio;
+  delete[]  ActDisk_Power;
+  delete[]  ActDisk_MassFlow;
+  delete[]  ActDisk_Mach;
+  delete[]  ActDisk_Force;
+  delete[]  ActDisk_NetThrust;
+  delete[]  ActDisk_BCThrust;
+  delete[]  ActDisk_BCThrust_Old;
+  delete[]  ActDisk_GrossThrust;
+  delete[]  ActDisk_Area;
+  delete[]  ActDisk_ReverseMassFlow;
 
-     delete[]  Surface_MassFlow;
-     delete[]  Surface_Mach;
-     delete[]  Surface_Temperature;
-     delete[]  Surface_Pressure;
-     delete[]  Surface_Density;
-     delete[]  Surface_Enthalpy;
-     delete[]  Surface_NormalVelocity;
-     delete[]  Surface_Uniformity;
-     delete[]  Surface_SecondaryStrength;
-     delete[]  Surface_SecondOverUniform;
-     delete[]  Surface_MomentumDistortion;
-     delete[]  Surface_TotalTemperature;
-     delete[]  Surface_TotalPressure;
-     delete[]  Surface_PressureDrop;
-     delete[]  Surface_Species_0;
-     delete[]  Surface_Species_Variance;
-     delete[]  Surface_DC60;
-     delete[]  Surface_IDC;
-     delete[]  Surface_IDC_Mach;
-     delete[]  Surface_IDR;
+  delete[]  Surface_MassFlow;
+  delete[]  Surface_Mach;
+  delete[]  Surface_Temperature;
+  delete[]  Surface_Pressure;
+  delete[]  Surface_Density;
+  delete[]  Surface_Enthalpy;
+  delete[]  Surface_NormalVelocity;
+  delete[]  Surface_Uniformity;
+  delete[]  Surface_SecondaryStrength;
+  delete[]  Surface_SecondOverUniform;
+  delete[]  Surface_MomentumDistortion;
+  delete[]  Surface_TotalTemperature;
+  delete[]  Surface_TotalPressure;
+  delete[]  Surface_PressureDrop;
+  delete[]  Surface_Species_0;
+  delete[]  Surface_Species_Variance;
+  delete[]  Surface_DC60;
+  delete[]  Surface_IDC;
+  delete[]  Surface_IDC_Mach;
+  delete[]  Surface_IDR;
 
   delete[]  Inlet_Ttotal;
   delete[]  Inlet_Ptotal;
@@ -7939,26 +7927,26 @@ CConfig::~CConfig(void) {
     delete [] Load_Dir;
   }
 
-     delete[] Inlet_Temperature;
-     delete[] Inlet_Pressure;
-     delete[] Outlet_Pressure;
-     delete[] Isothermal_Temperature;
-     delete[] Heat_Flux;
-     delete[] HeatTransfer_Coeff;
-     delete[] HeatTransfer_WallTemp;
-     delete[] Displ_Value;
-     delete[] Load_Value;
-     delete[] Damper_Constant;
-     delete[] Load_Dir_Multiplier;
-     delete[] Load_Dir_Value;
-     delete[] Disp_Dir;
-     delete[] Disp_Dir_Multiplier;
-     delete[] Disp_Dir_Value;
-     delete[] Load_Sine_Amplitude;
-     delete[] Load_Sine_Frequency;
-     delete[] FlowLoad_Value;
-     delete[] Roughness_Height;
-     delete[] Wall_Emissivity;
+  delete[] Inlet_Temperature;
+  delete[] Inlet_Pressure;
+  delete[] Outlet_Pressure;
+  delete[] Isothermal_Temperature;
+  delete[] Heat_Flux;
+  delete[] HeatTransfer_Coeff;
+  delete[] HeatTransfer_WallTemp;
+  delete[] Displ_Value;
+  delete[] Load_Value;
+  delete[] Damper_Constant;
+  delete[] Load_Dir_Multiplier;
+  delete[] Load_Dir_Value;
+  delete[] Disp_Dir;
+  delete[] Disp_Dir_Multiplier;
+  delete[] Disp_Dir_Value;
+  delete[] Load_Sine_Amplitude;
+  delete[] Load_Sine_Frequency;
+  delete[] FlowLoad_Value;
+  delete[] Roughness_Height;
+  delete[] Wall_Emissivity;
 
   if (Inlet_SpeciesVal != nullptr) {
     for (auto i = 0u; i < nMarker_Inlet_Species; ++i)
@@ -7987,41 +7975,41 @@ CConfig::~CConfig(void) {
   delete[] Periodic_Translate;
 
   delete[] MG_CorrecSmooth;
-         delete[] PlaneTag;
-              delete[] CFL;
-   delete[] CFL_AdaptParam;
+  delete[] PlaneTag;
+  delete[] CFL;
+  delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 
-               delete[] Marker_Euler;
-            delete[] Marker_FarField;
-              delete[] Marker_Custom;
-             delete[] Marker_SymWall;
-            delete[] Marker_PerBound;
-            delete[] Marker_PerDonor;
-      delete[] Marker_NearFieldBound;
-         delete[] Marker_Deform_Mesh;
-         delete[] Marker_Deform_Mesh_Sym_Plane;
-          delete[] Marker_Fluid_Load;
-      delete[] Marker_Fluid_InterfaceBound;
-               delete[] Marker_Inlet;
-    delete[] Marker_Supersonic_Inlet;
-    delete[] Marker_Supersonic_Outlet;
-              delete[] Marker_Outlet;
-          delete[] Marker_Isothermal;
+  delete[] Marker_Euler;
+  delete[] Marker_FarField;
+  delete[] Marker_Custom;
+  delete[] Marker_SymWall;
+  delete[] Marker_PerBound;
+  delete[] Marker_PerDonor;
+  delete[] Marker_NearFieldBound;
+  delete[] Marker_Deform_Mesh;
+  delete[] Marker_Deform_Mesh_Sym_Plane;
+  delete[] Marker_Fluid_Load;
+  delete[] Marker_Fluid_InterfaceBound;
+  delete[] Marker_Inlet;
+  delete[] Marker_Supersonic_Inlet;
+  delete[] Marker_Supersonic_Outlet;
+  delete[] Marker_Outlet;
+  delete[] Marker_Isothermal;
   delete[] Marker_Smoluchowski_Maxwell;
-       delete[] Marker_EngineInflow;
-      delete[] Marker_EngineExhaust;
-        delete[] Marker_Displacement;
-                delete[] Marker_Load;
-                delete[] Marker_Damper;
-                delete[] Marker_Load_Dir;
-                delete[] Marker_Disp_Dir;
-                delete[] Marker_Load_Sine;
-            delete[] Marker_FlowLoad;
-             delete[] Marker_Internal;
-                delete[] Marker_HeatFlux;
-          delete[] Marker_Emissivity;
+  delete[] Marker_EngineInflow;
+  delete[] Marker_EngineExhaust;
+  delete[] Marker_Displacement;
+  delete[] Marker_Load;
+  delete[] Marker_Damper;
+  delete[] Marker_Load_Dir;
+  delete[] Marker_Disp_Dir;
+  delete[] Marker_Load_Sine;
+  delete[] Marker_FlowLoad;
+  delete[] Marker_Internal;
+  delete[] Marker_HeatFlux;
+  delete[] Marker_Emissivity;
   delete[] Marker_Inlet_Species;
 
   delete [] Int_Coeffs;
