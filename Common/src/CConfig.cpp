@@ -974,7 +974,6 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Periodic BC pointers. ---*/
 
-  Periodic_Translate  = nullptr;    Periodic_Rotation   = nullptr;    Periodic_Center     = nullptr;
   Periodic_Translation= nullptr;    Periodic_RotAngles  = nullptr;    Periodic_RotCenter  = nullptr;
 
   /* Harmonic Balance Frequency pointer */
@@ -1032,7 +1031,6 @@ void CConfig::SetPointersNull(void) {
   AoS_Offset = 0;
 
   nMarker_PerBound = 0;
-  nPeriodic_Index  = 0;
 
   Aeroelastic_Simulation = false;
 
@@ -7607,9 +7605,9 @@ void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_mo
 
 }
 
-CConfig::~CConfig(void) {
+CConfig::~CConfig() {
 
-  unsigned long iDV, iMarker, iPeriodic, iFFD;
+  unsigned long iDV, iMarker, iFFD;
 
   /*--- Delete all of the option objects in the global option map ---*/
 
@@ -7728,8 +7726,6 @@ CConfig::~CConfig(void) {
     delete [] DegreeFFDBox;
   }
 
-  delete[]  Exhaust_Temperature_Target;
-  delete[]  Exhaust_Pressure_Target;
   delete[] Exhaust_Pressure;
   delete[] Exhaust_Temperature;
   delete[] Exhaust_MassFlow;
@@ -7739,7 +7735,7 @@ CConfig::~CConfig(void) {
   delete[] Exhaust_Force;
   delete[] Exhaust_Power;
 
-  delete[]  Inflow_Mach;
+  delete[] Inflow_Mach;
   delete[] Inflow_Pressure;
   delete[] Inflow_MassFlow;
   delete[] Inflow_ReverseMassFlow;
@@ -7747,89 +7743,75 @@ CConfig::~CConfig(void) {
   delete[] Inflow_Temperature;
   delete[] Inflow_TotalTemperature;
   delete[] Inflow_RamDrag;
-  delete[]  Inflow_Force;
+  delete[] Inflow_Force;
   delete[] Inflow_Power;
 
-  delete[]  Engine_Power;
-  delete[]  Engine_Mach;
-  delete[]  Engine_Force;
-  delete[]  Engine_NetThrust;
-  delete[]  Engine_GrossThrust;
-  delete[]  Engine_Area;
+  delete[] Engine_Power;
+  delete[] Engine_Mach;
+  delete[] Engine_Force;
+  delete[] Engine_NetThrust;
+  delete[] Engine_GrossThrust;
+  delete[] Engine_Area;
 
-  delete[]  ActDiskInlet_MassFlow;
-  delete[]  ActDiskInlet_Temperature;
-  delete[]  ActDiskInlet_TotalTemperature;
-  delete[]  ActDiskInlet_Pressure;
-  delete[]  ActDiskInlet_TotalPressure;
-  delete[]  ActDiskInlet_RamDrag;
-  delete[]  ActDiskInlet_Force;
-  delete[]  ActDiskInlet_Power;
+  delete[] ActDiskInlet_MassFlow;
+  delete[] ActDiskInlet_Temperature;
+  delete[] ActDiskInlet_TotalTemperature;
+  delete[] ActDiskInlet_Pressure;
+  delete[] ActDiskInlet_TotalPressure;
+  delete[] ActDiskInlet_RamDrag;
+  delete[] ActDiskInlet_Force;
+  delete[] ActDiskInlet_Power;
 
-  delete[]  ActDiskOutlet_MassFlow;
-  delete[]  ActDiskOutlet_Temperature;
-  delete[]  ActDiskOutlet_TotalTemperature;
-  delete[]  ActDiskOutlet_Pressure;
-  delete[]  ActDiskOutlet_TotalPressure;
-  delete[]  ActDiskOutlet_GrossThrust;
-  delete[]  ActDiskOutlet_Force;
-  delete[]  ActDiskOutlet_Power;
+  delete[] ActDiskOutlet_MassFlow;
+  delete[] ActDiskOutlet_Temperature;
+  delete[] ActDiskOutlet_TotalTemperature;
+  delete[] ActDiskOutlet_Pressure;
+  delete[] ActDiskOutlet_TotalPressure;
+  delete[] ActDiskOutlet_GrossThrust;
+  delete[] ActDiskOutlet_Force;
+  delete[] ActDiskOutlet_Power;
 
-  delete[]  Outlet_MassFlow;
-  delete[]  Outlet_Density;
-  delete[]  Outlet_Area;
+  delete[] Outlet_MassFlow;
+  delete[] Outlet_Density;
+  delete[] Outlet_Area;
 
-  delete[]  ActDisk_DeltaPress;
-  delete[]  ActDisk_DeltaTemp;
-  delete[]  ActDisk_TotalPressRatio;
-  delete[]  ActDisk_TotalTempRatio;
-  delete[]  ActDisk_StaticPressRatio;
-  delete[]  ActDisk_StaticTempRatio;
-  delete[]  ActDisk_Power;
-  delete[]  ActDisk_MassFlow;
-  delete[]  ActDisk_Mach;
-  delete[]  ActDisk_Force;
-  delete[]  ActDisk_NetThrust;
-  delete[]  ActDisk_BCThrust;
-  delete[]  ActDisk_BCThrust_Old;
-  delete[]  ActDisk_GrossThrust;
-  delete[]  ActDisk_Area;
-  delete[]  ActDisk_ReverseMassFlow;
+  delete[] ActDisk_DeltaPress;
+  delete[] ActDisk_DeltaTemp;
+  delete[] ActDisk_TotalPressRatio;
+  delete[] ActDisk_TotalTempRatio;
+  delete[] ActDisk_StaticPressRatio;
+  delete[] ActDisk_StaticTempRatio;
+  delete[] ActDisk_Power;
+  delete[] ActDisk_MassFlow;
+  delete[] ActDisk_Mach;
+  delete[] ActDisk_Force;
+  delete[] ActDisk_NetThrust;
+  delete[] ActDisk_BCThrust;
+  delete[] ActDisk_BCThrust_Old;
+  delete[] ActDisk_GrossThrust;
+  delete[] ActDisk_Area;
+  delete[] ActDisk_ReverseMassFlow;
 
-  delete[]  Surface_MassFlow;
-  delete[]  Surface_Mach;
-  delete[]  Surface_Temperature;
-  delete[]  Surface_Pressure;
-  delete[]  Surface_Density;
-  delete[]  Surface_Enthalpy;
-  delete[]  Surface_NormalVelocity;
-  delete[]  Surface_Uniformity;
-  delete[]  Surface_SecondaryStrength;
-  delete[]  Surface_SecondOverUniform;
-  delete[]  Surface_MomentumDistortion;
-  delete[]  Surface_TotalTemperature;
-  delete[]  Surface_TotalPressure;
-  delete[]  Surface_PressureDrop;
-  delete[]  Surface_Species_0;
-  delete[]  Surface_Species_Variance;
-  delete[]  Surface_DC60;
-  delete[]  Surface_IDC;
-  delete[]  Surface_IDC_Mach;
-  delete[]  Surface_IDR;
-
-  delete[]  Inlet_Ttotal;
-  delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
-      delete [] Inlet_FlowDir[iMarker];
-    delete [] Inlet_FlowDir;
-  }
-
-  if (Inlet_Velocity != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
-      delete [] Inlet_Velocity[iMarker];
-    delete [] Inlet_Velocity;
-  }
+  delete[] Surface_MassFlow;
+  delete[] Surface_Mach;
+  delete[] Surface_Temperature;
+  delete[] Surface_Pressure;
+  delete[] Surface_Density;
+  delete[] Surface_Enthalpy;
+  delete[] Surface_NormalVelocity;
+  delete[] Surface_Uniformity;
+  delete[] Surface_SecondaryStrength;
+  delete[] Surface_SecondOverUniform;
+  delete[] Surface_MomentumDistortion;
+  delete[] Surface_TotalTemperature;
+  delete[] Surface_TotalPressure;
+  delete[] Surface_PressureDrop;
+  delete[] Surface_Species_0;
+  delete[] Surface_Species_Variance;
+  delete[] Surface_DC60;
+  delete[] Surface_IDC;
+  delete[] Surface_IDC_Mach;
+  delete[] Surface_IDR;
 
   if (Inlet_MassFrac != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
@@ -7849,63 +7831,8 @@ CConfig::~CConfig(void) {
     delete [] Giles_FlowDir;
   }
 
-  if (Load_Sine_Dir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
-      delete [] Load_Sine_Dir[iMarker];
-    delete [] Load_Sine_Dir;
-  }
-
-  if (Load_Dir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Load_Dir; iMarker++)
-      delete [] Load_Dir[iMarker];
-    delete [] Load_Dir;
-  }
-
-  delete[] Inlet_Temperature;
-  delete[] Inlet_Pressure;
-  delete[] HeatTransfer_Coeff;
-  delete[] HeatTransfer_WallTemp;
-  delete[] Load_Dir_Multiplier;
-  delete[] Load_Dir_Value;
-  delete[] Disp_Dir;
-  delete[] Disp_Dir_Multiplier;
-  delete[] Disp_Dir_Value;
-  delete[] Load_Sine_Amplitude;
-  delete[] Load_Sine_Frequency;
-
-  /*--- related to periodic boundary conditions ---*/
-
-  for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
-    if (Periodic_RotCenter   != nullptr) delete [] Periodic_RotCenter[iMarker];
-    if (Periodic_RotAngles   != nullptr) delete [] Periodic_RotAngles[iMarker];
-    if (Periodic_Translation != nullptr) delete [] Periodic_Translation[iMarker];
-  }
-  delete[] Periodic_RotCenter;
-  delete[] Periodic_RotAngles;
-  delete[] Periodic_Translation;
-
-  for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    if (Periodic_Center    != nullptr) delete [] Periodic_Center[iPeriodic];
-    if (Periodic_Rotation  != nullptr) delete [] Periodic_Rotation[iPeriodic];
-    if (Periodic_Translate != nullptr) delete [] Periodic_Translate[iPeriodic];
-  }
-  delete[] Periodic_Center;
-  delete[] Periodic_Rotation;
-  delete[] Periodic_Translate;
-
   delete[] PlaneTag;
   delete[] CFL;
-
-  /*--- String markers ---*/
-
-  delete[] Marker_PerBound;
-  delete[] Marker_PerDonor;
-  delete[] Marker_Inlet;
-  delete[] Marker_Supersonic_Inlet;
-  delete[] Marker_EngineExhaust;
-  delete[] Marker_Load_Dir;
-  delete[] Marker_Disp_Dir;
-  delete[] Marker_Load_Sine;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
 

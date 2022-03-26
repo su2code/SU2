@@ -995,86 +995,85 @@ public:
 
 class COptionInlet : public COptionBase {
   string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double * & ttotal;
-  su2double * & ptotal;
-  su2double ** & flowdir;
+  unsigned short& size;
+  string*& marker;
+  su2double*& ttotal;
+  su2double*& ptotal;
+  su2double**& flowdir;
 
 public:
-  COptionInlet(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal), flowdir(FlowDir) {
-    this->name = option_field_name;
+  COptionInlet(string option_field_name, unsigned short& nMarker_Inlet, string*& Marker_Inlet, su2double*& Ttotal,
+               su2double*& Ptotal, su2double**& FlowDir)
+    : name(option_field_name),
+      size(nMarker_Inlet),
+      marker(Marker_Inlet),
+      ttotal(Ttotal),
+      ptotal(Ptotal),
+      flowdir(FlowDir) {
+    size = 0;
+    marker = nullptr;
+    ttotal = nullptr;
+    ptotal = nullptr;
+    flowdir = nullptr;
   }
 
-  ~COptionInlet() override {};
+  ~COptionInlet() {
+    delete[] marker;
+    delete[] ttotal;
+    delete[] ptotal;
+    for (unsigned short i = 0; i < size; ++i) {
+      delete[] flowdir[i];
+    }
+    delete[] flowdir;
+    marker = nullptr;
+    ttotal = nullptr;
+    ptotal = nullptr;
+    flowdir = nullptr;
+  }
+
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
-    unsigned short totalVals = option_value.size();
+    const unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = nullptr;
-      this->ttotal = nullptr;
-      this->ptotal = nullptr;
-      this->flowdir = nullptr;
       return "";
     }
-
     if (totalVals % 6 != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 6");
-      this->size = 0;
-      this->marker = nullptr;
-      this->ttotal = nullptr;
-      this->ptotal = nullptr;
-      this->flowdir = nullptr;
-      return newstring;
+      return name + ": must have a number of entries divisible by 6";
     }
 
-    unsigned short nVals = totalVals / 6;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->ttotal = new su2double[nVals];
-    this->ptotal = new su2double[nVals];
-    this->flowdir = new su2double*[nVals];
+    const unsigned short nVals = totalVals / 6;
+    size = nVals;
+    marker = new string[nVals];
+    ttotal = new su2double[nVals];
+    ptotal = new su2double[nVals];
+    flowdir = new su2double*[nVals];
     for (unsigned long i = 0; i < nVals; i++) {
-      this->flowdir[i] = new su2double[3];
+      flowdir[i] = new su2double[3];
     }
 
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[6*i]);
-      istringstream ss_1st(option_value[6*i + 1]);
-      if (!(ss_1st >> this->ttotal[i])) {
-        return badValue("inlet", this->name);
-      }
-      istringstream ss_2nd(option_value[6*i + 2]);
-      if (!(ss_2nd >> this->ptotal[i])) {
-        return badValue("inlet", this->name);
-      }
-      istringstream ss_3rd(option_value[6*i + 3]);
-      if (!(ss_3rd >> this->flowdir[i][0])) {
-        return badValue("inlet", this->name);
-      }
-      istringstream ss_4th(option_value[6*i + 4]);
-      if (!(ss_4th >> this->flowdir[i][1])) {
-        return badValue("inlet", this->name);
-      }
-      istringstream ss_5th(option_value[6*i + 5]);
-      if (!(ss_5th >> this->flowdir[i][2])) {
-        return badValue("inlet", this->name);
-      }
-    }
+    bool err = false;
 
+    auto getval = [&](unsigned short i, unsigned short j) {
+      istringstream ss(option_value[6*i + j]);
+      su2double val;
+      if (!(ss >> val)) err = true;
+      return val;
+    };
+
+    for (unsigned short i = 0; i < nVals; i++) {
+      marker[i].assign(option_value[6*i]);
+      ttotal[i] = getval(i, 1);
+      ptotal[i] = getval(i, 2);
+      flowdir[i][0] = getval(i, 3);
+      flowdir[i][1] = getval(i, 4);
+      flowdir[i][2] = getval(i, 5);
+
+      if (err) return badValue("inlet", name);
+    }
     return "";
   }
 
-  void SetDefault() override {
-    this->marker = nullptr;
-    this->ttotal = nullptr;
-    this->ptotal = nullptr;
-    this->flowdir = nullptr;
-    this->size = 0; // There is no default value for list
-  }
+  void SetDefault() override {}
 };
 
 // Base helper for when T is not an array, does dummy allocation and de-allocation.
@@ -1419,237 +1418,179 @@ public:
   }
 };
 
-//Inlet condition where the input direction is assumed
 class COptionExhaust : public COptionBase {
   string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double * & ttotal;
-  su2double * & ptotal;
+  unsigned short& size;
+  string*& marker;
+  su2double*& ttotal;
+  su2double*& ptotal;
 
 public:
-  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, su2double* & Ttotal, su2double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal) {
-    this->name = option_field_name;
+  COptionExhaust(string option_field_name, unsigned short& nMarker_Exhaust, string*& Marker_Exhaust,
+                 su2double*& Ttotal, su2double*& Ptotal)
+    : name(option_field_name),
+      size(nMarker_Exhaust),
+      marker(Marker_Exhaust),
+      ttotal(Ttotal),
+      ptotal(Ptotal) {
+    size = 0;
+    marker = nullptr;
+    ttotal = nullptr;
+    ptotal = nullptr;
   }
 
-  ~COptionExhaust() override {};
+  ~COptionExhaust() {
+    delete[] marker;
+    delete[] ttotal;
+    delete[] ptotal;
+    marker = nullptr;
+    ttotal = nullptr;
+    ptotal = nullptr;
+  }
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
-    unsigned short totalVals = option_value.size();
+    const unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = nullptr;
-      this->ttotal = nullptr;
-      this->ptotal = nullptr;
       return "";
     }
-
     if (totalVals % 3 != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 3");
-      this->size = 0;
-      this->marker = nullptr;
-      this->ttotal = nullptr;
-      this->ptotal = nullptr;
-      return newstring;
+      return name + ": must have a number of entries divisible by 3";
     }
 
-    unsigned short nVals = totalVals / 3;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->ttotal = new su2double[nVals];
-    this->ptotal = new su2double[nVals];
+    const unsigned short nVals = totalVals / 3;
+    size = nVals;
+    marker = new string[nVals];
+    ttotal = new su2double[nVals];
+    ptotal = new su2double[nVals];
 
-    for (unsigned long i = 0; i < nVals; i++) {
+    for (unsigned short i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
-      istringstream ss_1st(option_value[3*i + 1]);
-      if (!(ss_1st >> this->ttotal[i]))
-        return badValue("exhaust fixed", this->name);
-      istringstream ss_2nd(option_value[3*i + 2]);
-      if (!(ss_2nd >> this->ptotal[i]))
-        return badValue("exhaust fixed", this->name);
-    }
 
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> ttotal[i])) return badValue("exhaust fixed", name);
+
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> ptotal[i])) return badValue("exhaust fixed", name);
+    }
     return "";
   }
 
-  void SetDefault() override {
-    this->marker = nullptr;
-    this->ttotal = nullptr;
-    this->ptotal = nullptr;
-    this->size = 0; // There is no default value for list
-  }
-
+  void SetDefault() override {}
 };
 
 class COptionPeriodic : public COptionBase {
   string name; // identifier for the option
-  unsigned short & size;
-  string * & marker_bound;
-  string * & marker_donor;
-  su2double ** & rot_center;
-  su2double ** & rot_angles;
-  su2double ** & translation;
+  unsigned short& size;
+  string*& marker_bound;
+  string*& marker_donor;
+  su2double**& rot_center;
+  su2double**& rot_angles;
+  su2double**& translation;
 
 public:
-  COptionPeriodic(const string option_field_name, unsigned short & nMarker_PerBound,
-                  string* & Marker_PerBound, string* & Marker_PerDonor,
-                  su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation) : size(nMarker_PerBound), marker_bound(Marker_PerBound), marker_donor(Marker_PerDonor), rot_center(RotCenter), rot_angles(RotAngles), translation(Translation) {
-    this->name = option_field_name;
+  COptionPeriodic(const string option_field_name, unsigned short& nMarker_PerBound, string*& Marker_PerBound,
+                  string*& Marker_PerDonor, su2double**& RotCenter, su2double**& RotAngles, su2double**& Translation)
+    : name(option_field_name),
+      size(nMarker_PerBound),
+      marker_bound(Marker_PerBound),
+      marker_donor(Marker_PerDonor),
+      rot_center(RotCenter),
+      rot_angles(RotAngles),
+      translation(Translation) {
+    COptionPeriodic::SetDefault();
   }
 
-  ~COptionPeriodic() override {};
+  ~COptionPeriodic() {
+    delete[] marker_bound;
+    delete[] marker_donor;
+    for (unsigned short i = 0; i < size; ++i) {
+      delete[] rot_center;
+      delete[] rot_angles;
+      delete[] translation;
+    }
+    delete[] rot_center;
+    delete[] rot_angles;
+    delete[] translation;
+    COptionPeriodic::SetDefault();
+  }
+
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 11;
 
-    unsigned short totalVals = option_value.size();
+    const unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker_bound = nullptr;
-      this->marker_donor = nullptr;
-      this->rot_center = nullptr;
-      this->rot_angles = nullptr;
-      this->translation = nullptr;
       return "";
     }
-
     if (totalVals % mod_num != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 11");
-      this->size = 0;
-      this->marker_bound = nullptr;
-      this->marker_donor = nullptr;
-      this->rot_center = nullptr;
-      this->rot_angles = nullptr;
-      this->translation = nullptr;
-      return newstring;
+      return name + ": must have a number of entries divisible by 11";
     }
 
-    unsigned short nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
-    this->size = nVals;
-    this->marker_bound = new string[nVals];
-    this->marker_donor = new string[nVals];
-    this->rot_center = new su2double*[nVals];
-    this->rot_angles = new su2double*[nVals];
-    this->translation = new su2double*[nVals];
+    const unsigned short nVals = 2 * (totalVals / mod_num); // "2" to account for periodic and donor
+    size = nVals;
+    marker_bound = new string[nVals];
+    marker_donor = new string[nVals];
+    rot_center = new su2double*[nVals];
+    rot_angles = new su2double*[nVals];
+    translation = new su2double*[nVals];
     for (unsigned long i = 0; i < nVals; i++) {
-      this->rot_center[i] = new su2double[3];
-      this->rot_angles[i] = new su2double[3];
-      this->translation[i] = new su2double[3];
+      rot_center[i] = new su2double[3];
+      rot_angles[i] = new su2double[3];
+      translation[i] = new su2double[3];
     }
 
-    su2double deg2rad = PI_NUMBER/180.0;
+    const su2double deg2rad = PI_NUMBER/180.0;
 
-    for (unsigned long i = 0; i < (nVals/2); i++) {
-      this->marker_bound[i].assign(option_value[mod_num*i]);
-      this->marker_donor[i].assign(option_value[mod_num*i+1]);
-      istringstream ss_1st(option_value[mod_num*i + 2]);
-      if (!(ss_1st >> this->rot_center[i][0])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_2nd(option_value[mod_num*i + 3]);
-      if (!(ss_2nd >> this->rot_center[i][1])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_3rd(option_value[mod_num*i + 4]);
-      if (!(ss_3rd >> this->rot_center[i][2])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_4th(option_value[mod_num*i + 5]);
-      if (!(ss_4th >> this->rot_angles[i][0])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_5th(option_value[mod_num*i + 6]);
-      if (!(ss_5th >> this->rot_angles[i][1])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_6th(option_value[mod_num*i + 7]);
-      if (!(ss_6th >> this->rot_angles[i][2])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_7th(option_value[mod_num*i + 8]);
-      if (!(ss_7th >> this->translation[i][0])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_8th(option_value[mod_num*i + 9]);
-      if (!(ss_8th >> this->translation[i][1])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_9th(option_value[mod_num*i + 10]);
-      if (!(ss_9th >> this->translation[i][2])) {
-        return badValue("periodic", this->name);
-      }
-      this->rot_angles[i][0] *= deg2rad;
-      this->rot_angles[i][1] *= deg2rad;
-      this->rot_angles[i][2] *= deg2rad;
-    }
+    bool err = false;
 
-    for (unsigned long i = (nVals/2); i < nVals; i++) {
-      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
-      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
-      istringstream ss_1st(option_value[mod_num*(i-nVals/2) + 2]);
-      if (!(ss_1st >> this->rot_center[i][0])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_2nd(option_value[mod_num*(i-nVals/2) + 3]);
-      if (!(ss_2nd >> this->rot_center[i][1])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_3rd(option_value[mod_num*(i-nVals/2) + 4]);
-      if (!(ss_3rd >> this->rot_center[i][2])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_4th(option_value[mod_num*(i-nVals/2) + 5]);
-      if (!(ss_4th >> this->rot_angles[i][0])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_5th(option_value[mod_num*(i-nVals/2) + 6]);
-      if (!(ss_5th >> this->rot_angles[i][1])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_6th(option_value[mod_num*(i-nVals/2) + 7]);
-      if (!(ss_6th >> this->rot_angles[i][2])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_7th(option_value[mod_num*(i-nVals/2) + 8]);
-      if (!(ss_7th >> this->translation[i][0])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_8th(option_value[mod_num*(i-nVals/2) + 9]);
-      if (!(ss_8th >> this->translation[i][1])) {
-        return badValue("periodic", this->name);
-      }
-      istringstream ss_9th(option_value[mod_num*(i-nVals/2) + 10]);
-      if (!(ss_9th >> this->translation[i][2])) {
-        return badValue("periodic", this->name);
-      }
-      /*--- Mirror the rotational angles and translation vector (rotational
-       center does not need to move) ---*/
-      this->rot_center[i][0] *= 1.0;
-      this->rot_center[i][1] *= 1.0;
-      this->rot_center[i][2] *= 1.0;
-      this->rot_angles[i][0] *= -deg2rad;
-      this->rot_angles[i][1] *= -deg2rad;
-      this->rot_angles[i][2] *= -deg2rad;
-      this->translation[i][0] *= -1.0;
-      this->translation[i][1] *= -1.0;
-      this->translation[i][2] *= -1.0;
+    auto getval = [&](unsigned short i, unsigned short j) {
+      istringstream ss(option_value[mod_num*i + j]);
+      su2double val;
+      if (!(ss >> val)) err = true;
+      return val;
+    };
+
+    for (unsigned short i = 0; i < nVals / 2; i++) {
+      marker_bound[i].assign(option_value[mod_num*i]);
+      marker_donor[i].assign(option_value[mod_num*i+1]);
+      /*--- Mirror the connection between markers. ---*/
+      marker_bound[i+nVals/2] = marker_donor[i];
+      marker_donor[i+nVals/2] = marker_bound[i];
+
+      rot_center[i][0] = rot_center[i+nVals/2][0] = getval(i, 2);
+      rot_center[i][1] = rot_center[i+nVals/2][1] = getval(i, 3);
+      rot_center[i][2] = rot_center[i+nVals/2][2] = getval(i, 4);
+
+      rot_angles[i][0] = rot_angles[i+nVals/2][0] = getval(i, 5) * deg2rad;
+      rot_angles[i][1] = rot_angles[i+nVals/2][1] = getval(i, 6) * deg2rad;
+      rot_angles[i][2] = rot_angles[i+nVals/2][2] = getval(i, 7) * deg2rad;
+
+      translation[i][0] = translation[i+nVals/2][0] = getval(i, 8);
+      translation[i][1] = translation[i+nVals/2][1] = getval(i, 9);
+      translation[i][2] = translation[i+nVals/2][2] = getval(i, 10);
+
+      /*--- Mirror the rotational angles and translation vector (rotational center does not need to move). ---*/
+      rot_angles[i+nVals/2][0] *= -1;
+      rot_angles[i+nVals/2][1] *= -1;
+      rot_angles[i+nVals/2][2] *= -1;
+      translation[i+nVals/2][0] *= -1;
+      translation[i+nVals/2][1] *= -1;
+      translation[i+nVals/2][2] *= -1;
+
+      if (err) return badValue("periodic", name);
     }
 
     return "";
   }
 
   void SetDefault() override {
-    this->size = 0;
-    this->marker_bound = nullptr;
-    this->marker_donor = nullptr;
-    this->rot_center = nullptr;
-    this->rot_angles = nullptr;
-    this->translation = nullptr;
+    size = 0;
+    marker_bound = nullptr;
+    marker_donor = nullptr;
+    rot_center = nullptr;
+    rot_angles = nullptr;
+    translation = nullptr;
   }
 };
 
