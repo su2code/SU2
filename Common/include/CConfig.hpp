@@ -387,10 +387,6 @@ private:
   su2double **Periodic_RotCenter;            /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;            /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;          /*!< \brief Translation vector for each periodic boundary. */
-  unsigned short nPeriodic_Index;            /*!< \brief Number of SEND_RECEIVE periodic transformations. */
-  su2double **Periodic_Center;               /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Rotation;             /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Translate;            /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
   string *Marker_CfgFile_TagBound;           /*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,         /*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
@@ -6603,13 +6599,6 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
-   * \brief Get the mass fraction vector at a supersonic inlet boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet mass fraction vector - NEMO only.
-   */
-  const su2double* GetInlet_MassFrac(string val_index) const;
-
-  /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
@@ -8136,11 +8125,6 @@ public:
    * \brief Set the config options.
    */
   void SetConfig_Options();
-
-  /*!
-   * \brief Set the config options.
-   */
-  void SetRunTime_Options(void);
 
   /*!
    * \brief Set the config file parsing.
