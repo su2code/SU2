@@ -858,7 +858,7 @@ void CConfig::SetPointersNull(void) {
 
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
-  Inlet_Velocity  = nullptr;    Inlet_MassFrac    = nullptr;
+  Inlet_Velocity  = nullptr;
   Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
@@ -7607,7 +7607,7 @@ void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_mo
 
 CConfig::~CConfig() {
 
-  unsigned long iDV, iMarker, iFFD;
+  unsigned long iDV, iMarker;
 
   /*--- Delete all of the option objects in the global option map ---*/
 
@@ -7683,28 +7683,9 @@ CConfig::~CConfig() {
   delete[] Marker_CfgFile_SobolevBC;
   delete[] Marker_All_SobolevBC;
 
-  delete[] Marker_WallFunctions;
   delete[] Marker_All_SendRecv;
 
-  delete[] Kind_WallFunctions;
-
   delete[] Kind_Wall;
-
-  if (IntInfo_WallFunctions != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (IntInfo_WallFunctions[iMarker] != nullptr)
-        delete[] IntInfo_WallFunctions[iMarker];
-    }
-    delete[] IntInfo_WallFunctions;
-  }
-
-  if (DoubleInfo_WallFunctions != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (DoubleInfo_WallFunctions[iMarker] != nullptr)
-        delete[] DoubleInfo_WallFunctions[iMarker];
-    }
-    delete[] DoubleInfo_WallFunctions;
-  }
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
@@ -7714,16 +7695,6 @@ CConfig::~CConfig() {
   if (ParamDV != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] ParamDV[iDV];
     delete [] ParamDV;
-  }
-
-  if (CoordFFDBox != nullptr) {
-    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] CoordFFDBox[iFFD];
-    delete [] CoordFFDBox;
-  }
-
-  if (DegreeFFDBox != nullptr) {
-    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
-    delete [] DegreeFFDBox;
   }
 
   delete[] Exhaust_Pressure;
@@ -7813,12 +7784,6 @@ CConfig::~CConfig() {
   delete[] Surface_IDC_Mach;
   delete[] Surface_IDR;
 
-  if (Inlet_MassFrac != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
-      delete [] Inlet_MassFrac[iMarker];
-    delete [] Inlet_MassFrac;
-  }
-
   if (Riemann_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
       delete [] Riemann_FlowDir[iMarker];
@@ -7838,7 +7803,6 @@ CConfig::~CConfig() {
 
   delete [] FFDTag;
   delete [] nDV_Value;
-  delete [] TagFFDBox;
 
   delete [] Kind_Data_Riemann;
   delete [] Riemann_Var1;
@@ -8575,13 +8539,6 @@ const su2double* CConfig::GetInlet_Velocity(string val_marker) const {
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
-}
-
-const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
-  unsigned short iMarker_Supersonic_Inlet;
-  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
-    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
-  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
 }
 
 const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {

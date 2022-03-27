@@ -811,36 +811,42 @@ public:
 
 class COptionFFDDef : public COptionBase {
   string name;
-  unsigned short & nFFD;
-  su2double ** & CoordFFD;
-  string * & FFDTag;
+  unsigned short& nFFD;
+  su2double**& CoordFFD;
+  string*& FFDTag;
 
 public:
-  COptionFFDDef(string option_field_name, unsigned short & nFFD_field, su2double** & coordFFD_field, string* & FFDTag_field) : nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field) {
-    this->name = option_field_name;
+  COptionFFDDef(string option_field_name, unsigned short& nFFD_field, su2double**& coordFFD_field, string*& FFDTag_field)
+    : name(option_field_name),
+      nFFD(nFFD_field),
+      CoordFFD(coordFFD_field),
+      FFDTag(FFDTag_field) {
+    nFFD = 0;
+    CoordFFD = nullptr;
+    FFDTag = nullptr;
   }
 
-  ~COptionFFDDef() override {};
+  ~COptionFFDDef() {
+    for (unsigned short i = 0; i < nFFD; ++i) {
+      delete[] CoordFFD[i];
+    }
+    delete[] CoordFFD;
+    CoordFFD = nullptr;
+    delete[] FFDTag;
+    FFDTag = nullptr;
+  };
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->nFFD = 0;
       return "";
     }
-
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": may not have beginning semicolon");
-      return newstring;
+      return name + ": may not have beginning semicolon";
     }
     if (option_value[option_value.size()-1].compare(";") == 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": may not have ending semicolon");
-      return newstring;
+      return name + ": may not have ending semicolon";
     }
 
 
@@ -897,45 +903,42 @@ public:
     return "";
   }
 
-  void SetDefault() override {
-    this->nFFD = 0;
-    this->CoordFFD = nullptr;
-    this->FFDTag = nullptr;
-  }
-
+  void SetDefault() override {}
 };
 
 class COptionFFDDegree : public COptionBase {
   string name;
-  unsigned short & nFFD;
-  unsigned short ** & DegreeFFD;
+  unsigned short& nFFD;
+  unsigned short**& DegreeFFD;
 
 public:
-  COptionFFDDegree(string option_field_name, unsigned short & nFFD_field, unsigned short** & degreeFFD_field) : nFFD(nFFD_field), DegreeFFD(degreeFFD_field) {
-    this->name = option_field_name;
+  COptionFFDDegree(string option_field_name, unsigned short& nFFD_field, unsigned short**& degreeFFD_field)
+    : name(option_field_name),
+      nFFD(nFFD_field),
+      DegreeFFD(degreeFFD_field) {
+    nFFD = 0;
+    DegreeFFD = nullptr;
   }
 
-  ~COptionFFDDegree() override {};
+  ~COptionFFDDegree() {
+    for (unsigned short i = 0; i < nFFD; ++i) {
+      delete[] DegreeFFD[i];
+    }
+    delete[] DegreeFFD;
+    DegreeFFD = nullptr;
+  };
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->nFFD = 0;
       return "";
     }
-
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": may not have beginning semicolon");
-      return newstring;
+      return name + ": may not have beginning semicolon";
     }
     if (option_value[option_value.size()-1].compare(";") == 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": may not have ending semicolon");
-      return newstring;
+      return name + ": may not have ending semicolon";
     }
 
 
@@ -986,11 +989,7 @@ public:
     return "";
   }
 
-  void SetDefault() override {
-    this->nFFD = 0;
-    this->DegreeFFD = nullptr;
-  }
-
+  void SetDefault() override {}
 };
 
 class COptionInlet : public COptionBase {
@@ -1498,6 +1497,7 @@ public:
       rot_center(RotCenter),
       rot_angles(RotAngles),
       translation(Translation) {
+    size = 0;
     COptionPeriodic::SetDefault();
   }
 
@@ -1505,9 +1505,9 @@ public:
     delete[] marker_bound;
     delete[] marker_donor;
     for (unsigned short i = 0; i < size; ++i) {
-      delete[] rot_center;
-      delete[] rot_angles;
-      delete[] translation;
+      delete[] rot_center[i];
+      delete[] rot_angles[i];
+      delete[] translation[i];
     }
     delete[] rot_center;
     delete[] rot_angles;
@@ -1534,7 +1534,7 @@ public:
     rot_center = new su2double*[nVals];
     rot_angles = new su2double*[nVals];
     translation = new su2double*[nVals];
-    for (unsigned long i = 0; i < nVals; i++) {
+    for (unsigned short i = 0; i < nVals; i++) {
       rot_center[i] = new su2double[3];
       rot_angles[i] = new su2double[3];
       translation[i] = new su2double[3];
@@ -1585,7 +1585,6 @@ public:
   }
 
   void SetDefault() override {
-    size = 0;
     marker_bound = nullptr;
     marker_donor = nullptr;
     rot_center = nullptr;
@@ -1764,29 +1763,42 @@ public:
 
 class COptionWallFunction : public COptionBase {
   string name; // identifier for the option
-  unsigned short &nMarkers;
-  string* &markers;
-  WALL_FUNCTIONS*  &walltype;
-  unsigned short** &intInfo;
-  su2double**      &doubleInfo;
+  unsigned short& nMarkers;
+  string*& markers;
+  WALL_FUNCTIONS*& walltype;
+  unsigned short**& intInfo;
+  su2double**& doubleInfo;
 
 public:
-  COptionWallFunction(const string name, unsigned short &nMarker_WF,
-                      string* &Marker_WF, WALL_FUNCTIONS* &type_WF,
-                      unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
-  nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
-  intInfo(intInfo_WF), doubleInfo(doubleInfo_WF) {
-    this->name = name;
+  COptionWallFunction(const string name_WF, unsigned short& nMarker_WF, string*& Marker_WF, WALL_FUNCTIONS*& type_WF,
+                      unsigned short**& intInfo_WF, su2double**& doubleInfo_WF)
+    : name(name_WF),
+      nMarkers(nMarker_WF),
+      markers(Marker_WF),
+      walltype(type_WF),
+      intInfo(intInfo_WF),
+      doubleInfo(doubleInfo_WF) {
+    nMarkers = 0;
+    COptionWallFunction::SetDefault();
   }
 
-  ~COptionWallFunction() override{}
+  ~COptionWallFunction() {
+    delete[] markers;
+    delete[] walltype;
+    for (unsigned short i = 0; i < nMarkers; ++i) {
+      delete[] intInfo[i];
+      delete[] doubleInfo[i];
+    }
+    delete[] intInfo;
+    delete[] doubleInfo;
+    COptionWallFunction::SetDefault();
+  }
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     /*--- First check if NONE is specified. ---*/
-    unsigned short totalSize = option_value.size();
+    const unsigned short totalSize = option_value.size();
     if ((totalSize == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->SetDefault();
       return "";
     }
 
@@ -1857,13 +1869,8 @@ public:
     this->nMarkers   = nVals;
     this->markers    = new string[nVals];
     this->walltype   = new WALL_FUNCTIONS[nVals];
-    this->intInfo    = new unsigned short*[nVals];
-    this->doubleInfo = new su2double*[nVals];
-
-    for (unsigned short i=0; i<nVals; i++) {
-      this->intInfo[i]    = nullptr;
-      this->doubleInfo[i] = nullptr;
-    }
+    this->intInfo    = new unsigned short*[nVals]();
+    this->doubleInfo = new su2double*[nVals]();
 
     /*--- Loop over the wall markers and store the info in the
           appropriate arrays. ---*/
@@ -1975,10 +1982,9 @@ public:
   }
 
   void SetDefault() override {
-    this->nMarkers   = 0;
-    this->markers    = nullptr;
-    this->walltype   = nullptr;
-    this->intInfo    = nullptr;
-    this->doubleInfo = nullptr;
+    markers = nullptr;
+    walltype = nullptr;
+    intInfo = nullptr;
+    doubleInfo = nullptr;
   }
 };
