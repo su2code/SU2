@@ -28,6 +28,7 @@
 
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsL2Projection.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
 #include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
@@ -2193,6 +2194,27 @@ void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const un
   
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
+    
+}
+
+void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+  
+  //--- communicate the solution values via MPI
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  const auto& solution = base_nodes->GetSolution();
+  auto& gradient = base_nodes->GetGradient_Adaptation();
+
+  computeGradientsL2Projection(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                               *config, solution, 0, nVar, gradient);
+  
+  CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
+  
+  auto& hessian = base_nodes->GetHessian();
+  
+  computeHessiansL2Projection(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
+                              *config, gradient, 0, nVar, hessian);
     
 }
 

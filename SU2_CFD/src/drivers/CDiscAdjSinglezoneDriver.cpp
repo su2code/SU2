@@ -549,17 +549,17 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
-    solver_flow->SetHessian_LS(geometry, config, RUNTIME_FLOW_SYS);
+    solver_flow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
-    solver_adjflow->SetHessian_LS(geometry, config, RUNTIME_FLOW_SYS);
+    solver_adjflow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
     
     if ( config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
-      solver_turb->SetHessian_LS(geometry, config, RUNTIME_TURB_SYS);
+      solver_turb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
-      solver_adjturb->SetHessian_LS(geometry, config, RUNTIME_TURB_SYS);
+      solver_adjturb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
     }
   }
 

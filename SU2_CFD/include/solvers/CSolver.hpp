@@ -585,6 +585,14 @@ public:
   void SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
+   * \brief Compute the L2 projection Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+  /*!
    * \brief Compute the Least Squares Hessian of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
