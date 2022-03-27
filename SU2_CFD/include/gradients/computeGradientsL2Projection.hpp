@@ -91,8 +91,8 @@ void computeGradientsL2Projection(CSolver* solver,
 
       /*--- Inward normal of opposite face ---*/
       if (nDim == 2) {
-        const size_t jPoint = elem->GetFaces(iFace,0);
-        const size_t kPoint = elem->GetFaces(iFace,1);
+        const size_t jPoint = elem->GetNode(elem->GetFaces(iFace,0));
+        const size_t kPoint = elem->GetNode(elem->GetFaces(iFace,1));
         normal[0] = nodes->GetCoord(jPoint, 1) - nodes->GetCoord(kPoint, 1);
         normal[1] = nodes->GetCoord(kPoint, 0) - nodes->GetCoord(jPoint, 0);
       }
@@ -175,8 +175,8 @@ void computeHessiansL2Projection(CSolver* solver,
 
       /*--- Inward normal of opposite face ---*/
       if (nDim == 2) {
-        const size_t jPoint = elem->GetFaces(iFace,0);
-        const size_t kPoint = elem->GetFaces(iFace,1);
+        const size_t jPoint = elem->GetNode(elem->GetFaces(iFace,0));
+        const size_t kPoint = elem->GetNode(elem->GetFaces(iFace,1));
         normal[0] = nodes->GetCoord(jPoint, 1) - nodes->GetCoord(kPoint, 1);
         normal[1] = nodes->GetCoord(kPoint, 0) - nodes->GetCoord(jPoint, 0);
       }
@@ -193,7 +193,7 @@ void computeHessiansL2Projection(CSolver* solver,
             for (size_t jDim = 0; jDim < nDim; ++jDim) {
               su2double grad = gradient(iPoint,iVar,jDim);
               size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
-                                        : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                                          : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
               if (iDim != jDim) grad *= 0.5;
               hessian(jPoint, iVar, ind) += factor*grad*normal[iDim]/Vol;
             }
