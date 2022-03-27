@@ -87,6 +87,7 @@ void computeGradientsL2Projection(CSolver* solver,
     /*--- Add the contribution from each node of the volume. ---*/
     for (size_t iFace = 0; iFace < nFace; ++iFace) {
       const size_t iNode = nNode - iFace;
+      const size_t iPoint = elem->GetNode(iNode);
 
       /*--- Inward normal of opposite face ---*/
       if (nDim == 2) {
@@ -104,7 +105,7 @@ void computeGradientsL2Projection(CSolver* solver,
         const size_t jPoint = elem->GetNode(jNode);
         const su2double Vol = nodes->GetVolume(jPoint);
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-          const su2double var = field(jPoint,iVar);
+          const su2double var = field(iPoint,iVar);
           for (size_t iDim = 0; iDim < nDim; ++iDim) {
             gradient(jPoint, iVar, iDim) += factor*var*normal[iDim]*Vol;
           }
@@ -170,6 +171,7 @@ void computeHessiansL2Projection(CSolver* solver,
     /*--- Add the contribution from each node of the volume. ---*/
     for (size_t iFace = 0; iFace < nFace; ++iFace) {
       const size_t iNode = nNode - iFace;
+      const size_t iPoint = elem->GetNode(iNode);
 
       /*--- Inward normal of opposite face ---*/
       if (nDim == 2) {
@@ -189,7 +191,7 @@ void computeHessiansL2Projection(CSolver* solver,
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
           for (size_t iDim = 0; iDim < nDim; ++iDim) {
             for (size_t jDim = 0; jDim < nDim; ++jDim) {
-              su2double grad = gradient(jPoint,iVar,jDim);
+              su2double grad = gradient(iPoint,iVar,jDim);
               size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                         : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
               if (iDim != jDim) grad *= 0.5;
