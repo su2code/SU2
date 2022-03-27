@@ -107,7 +107,7 @@ void computeGradientsL2Projection(CSolver* solver,
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
           const su2double var = field(iPoint,iVar);
           for (size_t iDim = 0; iDim < nDim; ++iDim) {
-            gradient(jPoint, iVar, iDim) += factor*var*normal[iDim]*Vol;
+            gradient(jPoint, iVar, iDim) += factor*var*normal[iDim]/Vol;
           }
         }
       }
@@ -195,7 +195,7 @@ void computeHessiansL2Projection(CSolver* solver,
               size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                         : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
               if (iDim != jDim) grad *= 0.5;
-              hessian(jPoint, iVar, ind) += factor*grad*normal[iDim]*Vol;
+              hessian(jPoint, iVar, ind) += factor*grad*normal[iDim]/Vol;
             }
           }
         }
