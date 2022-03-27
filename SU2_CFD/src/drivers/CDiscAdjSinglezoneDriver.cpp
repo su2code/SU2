@@ -546,7 +546,7 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     }
   }
   else {
-    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+    if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
     solver_flow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
