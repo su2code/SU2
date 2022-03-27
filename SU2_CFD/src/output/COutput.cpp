@@ -2156,14 +2156,13 @@ bool COutput::WriteHistoryFile_Output(const CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
-  const unsigned long *VolumeFrequencies = config->GetVolumeOutputFrequencies();
 
   if (config->GetTime_Domain()){
 
-    return ((Iter % VolumeFrequencies[iFile] == 0)) || force_writing;
+    return ((Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
   else {
-    return ((Iter > 0) && (Iter % VolumeFrequencies[iFile] == 0)) || force_writing;
+    return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
 }
 

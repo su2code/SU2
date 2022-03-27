@@ -400,13 +400,6 @@ void CConfig::addUShortListOption(const string name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addLongListOption(const string name, unsigned short & size, long * & option_field) {
-  assert(option_map.find(name) == option_map.end());
-  all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionLongList(name, size, option_field);
-  option_map.insert(pair<string, COptionBase *>(name, val));
-}
-
 void CConfig::addULongListOption(const string name, unsigned short & size, unsigned long * & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
