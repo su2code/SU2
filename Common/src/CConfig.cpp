@@ -3322,9 +3322,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
     }
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
-    /*--- Check how many frequencies are in the list. 
-     *    If 1 then use this frequency for all output files. 
-     *    If 2 then use the first value for the first output file, the second for the other output files.
+    /*--- If there are fewer frequencies than files, repeat the last frequency.
      *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
     if ((nVolumeOutputFrequencies <= 2) && (nVolumeOutputFrequencies != nVolumeOutputFiles)) {
 
