@@ -703,7 +703,7 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
-  vector<passivedouble> values;
+  vector<passivedouble> values(nDim, 0.0);
 
   auto normal = main_geometry->vertex[iMarker][iVertex]->GetNormal();
   auto area = GeometryToolbox::Norm(nDim, normal);
