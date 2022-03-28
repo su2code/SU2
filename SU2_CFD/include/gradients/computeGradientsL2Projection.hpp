@@ -103,6 +103,7 @@ void computeGradientsL2Projection(CSolver* solver,
       /*--- Gradient contribution of the node ---*/
       for (size_t jNode = 0; jNode < nNode; ++jNode) {
         const size_t jPoint = elem->GetNode(jNode);
+        if (!nodes->GetDomain(jPoint)) continue;
         const su2double Vol = nodes->GetVolume(jPoint);
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
           const su2double var = field(iPoint,iVar);
@@ -187,6 +188,7 @@ void computeHessiansL2Projection(CSolver* solver,
       /*--- Gradient contribution of the node ---*/
       for (size_t jNode = 0; jNode < nNode; ++jNode) {
         const size_t jPoint = elem->GetNode(jNode);
+        if (!nodes->GetDomain(jPoint)) continue;
         const su2double Vol = nodes->GetVolume(jPoint);
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
           for (size_t iDim = 0; iDim < nDim; ++iDim) {
