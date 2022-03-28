@@ -1261,8 +1261,6 @@ private:
 
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
 
-  void addLongListOption(const string name, unsigned short & size, long * & option_field);
-
   void addULongListOption(const string name, unsigned short & size, unsigned long * & option_field);
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
