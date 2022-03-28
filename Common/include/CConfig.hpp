@@ -9474,11 +9474,6 @@ public:
   unsigned long GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
 
   /*!
-   * \brief GetnVolumeOutputFrequencies
-   */
-  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
-
-  /*!
    * \brief Get the desired factorization frequency for PaStiX
    * \return Number of calls to 'Build' that trigger re-factorization.
    */
