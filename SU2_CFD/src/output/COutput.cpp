@@ -947,7 +947,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     volumeDataSorter->SortOutputData();
 
-    if (rank == MASTER_NODE && nVolumeFiles != 0 && !isFileWrite){
+    if (rank == MASTER_NODE && !isFileWrite){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
       fileWritingTable->PrintHeader();
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
