@@ -169,21 +169,21 @@ public:
      * \brief Get the global IDs of the mesh elements.
      * \return Global element IDs.
      */
-    vector<unsigned long> GetElementIDs() const;
+    vector<unsigned long> GetElementID() const;
     
     /*!
      * \brief Get the global ID of a mesh element.
      * \param[in] iElem - Mesh element index.
      * \return Global element ID.
      */
-    unsigned long GetElementIDs(unsigned long iElem) const;
+    unsigned long GetElementID(unsigned long iElem) const;
     
     /*!
      * \brief Get the global IDs of the marker elements.
      * \param[in] iMarker - Marker index.
      * \return Global element IDs.
      */
-    vector<unsigned long> GetMarkerElementIDs(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerElementID(unsigned short iMarker) const;
     
     /*!
      * \brief Get the global IDs of a marker element.
@@ -191,27 +191,27 @@ public:
      * \param[in] iBound - Marker element index.
      * \return Global element ID.
      */
-    unsigned long GetMarkerElementIDs(unsigned short iMarker, unsigned long iBound) const;
+    unsigned long GetMarkerElementID(unsigned short iMarker, unsigned long iBound) const;
     
     /*!
      * \brief Get the MPI colors for mesh elements.
      * \return Element colors.
      */
-    vector<unsigned long> GetElementColors() const;
+    vector<unsigned long> GetElementColor() const;
     
     /*!
      * \brief Get the MPI color for a mesh element.
      * \param[in] iElem - Mesh element index.
      * \return Element color.
      */
-    unsigned long GetElementColors(unsigned long iElem) const;
+    unsigned long GetElementColor(unsigned long iElem) const;
     
     /*!
      * \brief Get the MPI colors for marker elements.
      * \param[in] iMarker - Marker index.
      * \return Element colors.
      */
-    vector<unsigned long> GetMarkerElementColors(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerElementColor(unsigned short iMarker) const;
     
     /*!
      * \brief Get the MPI color for a marker element.
@@ -219,7 +219,7 @@ public:
      * \param[in] iBound - Marker element index.
      * \return Element color.
      */
-    unsigned long GetMarkerElementColors(unsigned short iMarker, unsigned long iBound) const;
+    unsigned long GetMarkerElementColor(unsigned short iMarker, unsigned long iBound) const;
     
     /*!
      * \brief Get the table of vertex IDs belonging to the mesh elements.
@@ -294,21 +294,21 @@ public:
      * \brief Get the global IDs of the mesh vertices.
      * \return Global vertex IDs.
      */
-    vector<unsigned long> GetVertexIDs() const;
+    vector<unsigned long> GetVertexID() const;
     
     /*!
      * \brief Get the global ID of a mesh vertex.
      * \param[in] iPoint - Mesh vertex index.
      * \return Global vertex ID.
      */
-    unsigned long GetVertexIDs(unsigned long iPoint) const;
+    unsigned long GetVertexID(unsigned long iPoint) const;
     
     /*!
      * \brief Get the global IDs of the marker vertices.
      * \param[in] iMarker - Marker index.
      * \return Global vertex IDs.
      */
-    vector<unsigned long> GetMarkerVertexIDs(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerVertexID(unsigned short iMarker) const;
     
     /*!
      * \brief Get the global ID of a marker vertex.
@@ -316,27 +316,27 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Global vertex ID.
      */
-    unsigned long GetMarkerVertexIDs(unsigned short iMarker, unsigned long iVertex) const;
+    unsigned long GetMarkerVertexID(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the MPI colors of the mesh vertices.
      * \return Vertex colors.
      */
-    vector<unsigned long> GetVertexColors() const;
+    vector<unsigned long> GetVertexColor() const;
     
     /*!
      * \brief Get the MPI color of a mesh vertex.
      * \param[in] iPoint - Mesh vertex index.
      * \return Vertex color.
      */
-    unsigned long GetVertexColors(unsigned long iPoint) const;
+    unsigned long GetVertexColor(unsigned long iPoint) const;
     
     /*!
      * \brief Get the MPI colors of the marker vertices.
      * \param[in] iMarker - Marker index.
      * \return Vertex colors.
      */
-    vector<unsigned long> GetMarkerVertexColors(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerVertexColor(unsigned short iMarker) const;
     
     /*!
      * \brief Get the MPI color of a marker vertex.
@@ -344,7 +344,7 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Vertex color.
      */
-    unsigned long GetMarkerVertexColors(unsigned short iMarker, unsigned long iVertex) const;
+    unsigned long GetMarkerVertexColor(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the halo flags of the mesh vertices.
