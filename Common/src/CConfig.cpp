@@ -3324,28 +3324,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
      *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
-    if ((nVolumeOutputFrequencies <= 2) && (nVolumeOutputFrequencies != nVolumeOutputFiles)) {
-
-      const auto firstOutputWriteFreq = VolumeOutputFrequencies[0];
-      auto secondOutputWriteFreq = VolumeOutputFrequencies[0];
-
-      if (nVolumeOutputFrequencies == 2) {
-        secondOutputWriteFreq = VolumeOutputFrequencies[1];
-      } 
-
-      /*--- we recreate the OutputFrequencies ---*/
-      nVolumeOutputFrequencies = nVolumeOutputFiles;
-      delete [] VolumeOutputFrequencies;
-      VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
-
-      VolumeOutputFrequencies[0] = firstOutputWriteFreq; 
-      
-      for (auto iVolumeFreq = 1; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-        VolumeOutputFrequencies[iVolumeFreq] = secondOutputWriteFreq; 
-      }
-    } else if (nVolumeOutputFrequencies != nVolumeOutputFiles) {
-      SU2_MPI::Error("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.", CURRENT_FUNCTION);
+    auto* newFrequencies = new unsigned long[nVolumeOutputFiles];
+    for (unsigned short i = 0; i < nVolumeOutputFrequencies; ++i) {
+      newFrequencies[i] = VolumeOutputFrequencies[i];
     }
+    for (auto i = nVolumeOutputFrequencies; i < nVolumeOutputFiles; ++i) {
+      newFrequencies[i] = newFrequencies[i-1];
+    }
+    delete [] VolumeOutputFrequencies;
+    VolumeOutputFrequencies = newFrequencies;
+    nVolumeOutputFrequencies = nVolumeOutputFiles;
   }
 
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
