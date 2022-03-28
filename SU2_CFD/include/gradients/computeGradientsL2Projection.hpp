@@ -63,7 +63,8 @@ void computeGradientsL2Projection(CSolver* solver,
   const size_t nPointDomain = geometry.GetnPointDomain();
   const size_t nElem = geometry.GetnElem();
   const size_t nFace = (nDim == 2) ? 3 : 4;
-  const size_t nNode = nFace - 1; // Number of nodes on a face
+  const size_t nNode = (nDim == 2) ? 3 : 4;
+  const size_t nNodeFace = nFace - 1; // Number of nodes on a face
 
   su2double* normal = new su2double[nDim];
 
@@ -86,7 +87,7 @@ void computeGradientsL2Projection(CSolver* solver,
 
     /*--- Add the contribution from each node of the volume. ---*/
     for (size_t iFace = 0; iFace < nFace; ++iFace) {
-      const size_t iNode = nNode - iFace;
+      const size_t iNode = nNodeFace - iFace;
       const size_t iPoint = elem->GetNode(iNode);
 
       /*--- Inward normal of opposite face ---*/
@@ -148,7 +149,8 @@ void computeHessiansL2Projection(CSolver* solver,
   const size_t nPointDomain = geometry.GetnPointDomain();
   const size_t nElem = geometry.GetnElem();
   const size_t nFace = (nDim == 2) ? 3 : 4;
-  const size_t nNode = nFace - 1; // Number of nodes on a face
+  const size_t nNode = (nDim == 2) ? 3 : 4;
+  const size_t nNodeFace = nFace - 1; // Number of nodes on a face
 
   su2double* normal = new su2double[nDim];
 
@@ -171,7 +173,7 @@ void computeHessiansL2Projection(CSolver* solver,
 
     /*--- Add the contribution from each node of the volume. ---*/
     for (size_t iFace = 0; iFace < nFace; ++iFace) {
-      const size_t iNode = nNode - iFace;
+      const size_t iNode = nNodeFace - iFace;
       const size_t iPoint = elem->GetNode(iNode);
 
       /*--- Inward normal of opposite face ---*/
