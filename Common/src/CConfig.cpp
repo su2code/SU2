@@ -6857,8 +6857,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     cout << "File writing frequency: " << endl;
     PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
-    FileFreqTable.AddColumn("File",         25);
-    FileFreqTable.AddColumn("Frequency",    10);
+    FileFreqTable.AddColumn("File", 25);
+    FileFreqTable.AddColumn("Frequency", 10);
     FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     FileFreqTable.PrintHeader();
 
