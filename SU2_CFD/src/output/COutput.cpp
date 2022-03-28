@@ -178,7 +178,6 @@ COutput::~COutput(void) {
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
-  
   delete volumeDataSorter;
   delete surfaceDataSorter;
 
