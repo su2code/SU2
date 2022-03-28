@@ -6855,24 +6855,26 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    cout << "File writing frequency: " << endl;
-    PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
-    FileFreqTable.AddColumn("File", 25);
-    FileFreqTable.AddColumn("Frequency", 10);
-    FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-    FileFreqTable.PrintHeader();
+    if (nVolumeOutputFrequencies != 0) {
+      cout << "File writing frequency: " << endl;
+      PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
+      FileFreqTable.AddColumn("File", 25);
+      FileFreqTable.AddColumn("Frequency", 10);
+      FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      FileFreqTable.PrintHeader();
 
-    for (auto iFreq = 0; iFreq < nVolumeOutputFrequencies; iFreq++){
-      /*--- find the key belonging to the value in the map---*/
-      for (auto& it : Output_Map) {
-        if (it.second == VolumeOutputFiles[iFreq]) {
-          FileFreqTable << it.first << VolumeOutputFrequencies[iFreq];
-          break;
+      for (auto iFreq = 0; iFreq < nVolumeOutputFrequencies; iFreq++){
+        /*--- find the key belonging to the value in the map---*/
+        for (auto& it : Output_Map) {
+          if (it.second == VolumeOutputFiles[iFreq]) {
+            FileFreqTable << it.first << VolumeOutputFrequencies[iFreq];
+            break;
+          }
         }
       }
-    }
 
-    FileFreqTable.PrintFooter();
+      FileFreqTable.PrintFooter();
+    }
 
     cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
     if (Multizone_Problem){
