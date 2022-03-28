@@ -3321,7 +3321,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
       VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
     }
-  } else {
+  } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- Check how many frequencies are in the list. 
      *    If 1 then use this frequency for all output files. 
      *    If 2 then use the first value for the first output file, the second for the other output files.
