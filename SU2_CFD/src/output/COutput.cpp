@@ -958,7 +958,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
      
     WriteToFile(config, geometry, VolumeFiles[iFile]);
 
-    if (rank == MASTER_NODE && nVolumeFiles != 0 && !isFileWrite){
+    if (rank == MASTER_NODE && !isFileWrite){
       fileWritingTable->PrintFooter();
       headerNeeded = true;
     }
