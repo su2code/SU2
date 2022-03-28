@@ -6865,8 +6865,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     for (auto iFreq = 0; iFreq < nVolumeOutputFrequencies; iFreq++){
       /*--- find the key belonging to the value in the map---*/
       for (auto& it : Output_Map) {
-        if (it.second == VolumeOutputFiles[iFreq]) 
+        if (it.second == VolumeOutputFiles[iFreq]) {
           FileFreqTable << it.first << VolumeOutputFrequencies[iFreq];
+          break;
+        }
       }
     }
 
