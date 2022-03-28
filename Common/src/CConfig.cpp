@@ -3339,16 +3339,28 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         VolumeOutputFrequencies[iVolumeFreq] = 250; 
     }
   } else {
-    /*--- check how many frequencies. If 1 then use it for all output ---*/
-    if (nVolumeOutputFrequencies == 1) {
-      const auto outputWriteFreq = VolumeOutputFrequencies[0];
+    /*--- Check how many frequencies are in the list. 
+     *    If 1 then use this frequency for all output files. 
+     *    If 2 then use the first value for the first output file, the second for the other output files.
+     *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
+    if ((nVolumeOutputFrequencies <= 2) && (nVolumeOutputFrequencies != nVolumeOutputFiles)) {
+
+      const auto firstOutputWriteFreq = VolumeOutputFrequencies[0];
+      auto secondOutputWriteFreq = VolumeOutputFrequencies[0];
+
+      if (nVolumeOutputFrequencies == 2) {
+        secondOutputWriteFreq = VolumeOutputFrequencies[1];
+      } 
+
       /*--- we recreate the OutputFrequencies ---*/
       nVolumeOutputFrequencies = nVolumeOutputFiles;
       delete [] VolumeOutputFrequencies;
       VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
 
-      for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-        VolumeOutputFrequencies[iVolumeFreq] = outputWriteFreq; 
+      VolumeOutputFrequencies[0] = firstOutputWriteFreq; 
+      
+      for (auto iVolumeFreq = 1; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+        VolumeOutputFrequencies[iVolumeFreq] = secondOutputWriteFreq; 
       }
     } else if (nVolumeOutputFrequencies != nVolumeOutputFiles) {
       SU2_MPI::Error("Number of entries in OUTPUT_WRT_FREQ is not equal to number of entries in OUTPUT_FILES.", CURRENT_FUNCTION);
@@ -6875,7 +6887,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
     cout << "File writing frequency: " << endl;
+    PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
+    FileFreqTable.AddColumn("File",         25);
+    FileFreqTable.AddColumn("Frequency",    10);
+    FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    FileFreqTable.PrintHeader();
 
+    for (auto iFreq = 0; iFreq < nVolumeOutputFrequencies; iFreq++){
+      /*--- find the key belonging to the value in the map---*/
+      for (auto& it : Output_Map) {
+        if (it.second == VolumeOutputFiles[iFreq]) 
+          FileFreqTable << it.first << VolumeOutputFrequencies[iFreq];
+      }
+    }
+
+    FileFreqTable.PrintFooter();
 
     cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
     if (Multizone_Problem){

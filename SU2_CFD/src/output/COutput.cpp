@@ -174,17 +174,14 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 
 COutput::~COutput(void) {
 
-  if (histFile.is_open()){
-    histFile.close();
-  }
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
-
+  
   delete volumeDataSorter;
   delete surfaceDataSorter;
+
 }
 
 void COutput::SetHistory_Output(CGeometry *geometry,
@@ -934,10 +931,10 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
   unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
   auto VolumeFiles = config->GetVolumeOutputFiles();
 
-  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
+  /*--- Check if the data sorters are allocated, if not, allocate them. --- */
+  AllocateDataSorters(config, geometry);
 
-    /*--- Check if the data sorters are allocated, if not, allocate them. --- */
-    AllocateDataSorters(config, geometry);
+  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
 
     /*--- Collect the volume data from the solvers.
      *  If time-domain is enabled, we also load the data although we don't output it,
@@ -951,7 +948,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     volumeDataSorter->SortOutputData();
 
-    if (rank == MASTER_NODE && nVolumeFiles != 0){
+    if (rank == MASTER_NODE && nVolumeFiles != 0 && !isFileWrite){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
       fileWritingTable->PrintHeader();
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -962,7 +959,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
      
     WriteToFile(config, geometry, VolumeFiles[iFile]);
 
-    if (rank == MASTER_NODE && nVolumeFiles != 0){
+    if (rank == MASTER_NODE && nVolumeFiles != 0 && !isFileWrite){
       fileWritingTable->PrintFooter();
       headerNeeded = true;
     }
