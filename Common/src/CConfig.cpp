@@ -3319,10 +3319,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-      if (Time_Domain) 
-        VolumeOutputFrequencies[iVolumeFreq] = 1; 
-      else
-        VolumeOutputFrequencies[iVolumeFreq] = 250; 
+      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
     }
   } else {
     /*--- Check how many frequencies are in the list. 
