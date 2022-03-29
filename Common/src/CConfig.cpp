@@ -6855,7 +6855,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    if (nVolumeOutputFrequencies != 0) {
+    if (nVolumeOutputFiles != 0) {
       cout << "File writing frequency: " << endl;
       PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
       FileFreqTable.AddColumn("File", 25);
@@ -6863,7 +6863,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       FileFreqTable.PrintHeader();
 
-      for (auto iFreq = 0; iFreq < nVolumeOutputFrequencies; iFreq++){
+      for (auto iFreq = 0; iFreq < nVolumeOutputFiles; iFreq++){
         /*--- find the key belonging to the value in the map---*/
         for (auto& it : Output_Map) {
           if (it.second == VolumeOutputFiles[iFreq]) {

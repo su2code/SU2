@@ -308,7 +308,6 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
 }
 
-
 void CDriver::SetContainers_Null(){
 
   /*--- Create pointers to all of the classes that may be used throughout
