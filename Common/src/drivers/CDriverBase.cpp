@@ -257,8 +257,7 @@ vector<unsigned long> CDriverBase::GetMarkerElementConnectivities(unsigned short
   vector<unsigned long> values;
 
   for (auto iNode = 0u; iNode < nNode; iNode++) {
-    unsigned long iVertex = main_geometry->bound[iMarker][iBound]->GetNode(iNode);
-    unsigned long iPoint  = main_geometry->vertex[iMarker][iVertex]->GetNode();
+    unsigned long iPoint = main_geometry->bound[iMarker][iBound]->GetNode(iNode);
 
     values.push_back(main_geometry->nodes->GetGlobalIndex(iPoint));
   }
