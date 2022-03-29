@@ -1,5 +1,5 @@
 /*!
- * \file driver_structure.cpp
+ * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
  * \version 7.3.0 "Blackbird"
@@ -226,6 +226,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
       DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
+
       /*--- Static mesh processing.  ---*/
 
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);

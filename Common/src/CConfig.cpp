@@ -400,6 +400,13 @@ void CConfig::addUShortListOption(const string name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addULongListOption(const string name, unsigned short & size, unsigned long * & option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionULongList(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -858,7 +865,7 @@ void CConfig::SetPointersNull(void) {
 
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
-  Inlet_Velocity  = nullptr;    Inlet_MassFrac    = nullptr;
+  Inlet_Velocity  = nullptr;
   Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
@@ -974,7 +981,6 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Periodic BC pointers. ---*/
 
-  Periodic_Translate  = nullptr;    Periodic_Rotation   = nullptr;    Periodic_Center     = nullptr;
   Periodic_Translation= nullptr;    Periodic_RotAngles  = nullptr;    Periodic_RotCenter  = nullptr;
 
   /* Harmonic Balance Frequency pointer */
@@ -1019,6 +1025,7 @@ void CConfig::SetPointersNull(void) {
   HistoryOutput = nullptr;
   VolumeOutput = nullptr;
   VolumeOutputFiles = nullptr;
+  VolumeOutputFrequencies = nullptr;
   ConvField = nullptr;
 
   /*--- Variable initialization ---*/
@@ -1032,7 +1039,6 @@ void CConfig::SetPointersNull(void) {
   AoS_Offset = 0;
 
   nMarker_PerBound = 0;
-  nPeriodic_Index  = 0;
 
   Aeroelastic_Simulation = false;
 
@@ -1052,18 +1058,6 @@ void CConfig::SetPointersNull(void) {
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
   Gas_Composition = nullptr;
-
-}
-
-void CConfig::SetRunTime_Options(void) {
-
-  /* DESCRIPTION: Number of external iterations */
-
-  addUnsignedLongOption("TIME_ITER", nTimeIter, 999999);
-
-  /* DESCRIPTION: CFL Number */
-
-  addDoubleOption("CFL_NUMBER", CFLFineGrid, 10);
 
 }
 
@@ -1187,7 +1181,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
@@ -1419,6 +1412,7 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+
   /*!\brief MARKER_CONTROL_VOLUME\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_ANALYZE", nMarker_Analyze, Marker_Analyze);
   /*!\brief MARKER_DESIGNING\n DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
@@ -2458,7 +2452,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
   /*--- Options related to multizone problems ---*/
 
-  /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
+  /* DESCRIPTION List of config files for each zone in a multizone setup with SOLVER=MULTIPHYSICS
+   * Order here has to match the order in the meshfile if just one is used. */
   addStringListOption("CONFIG_LIST", nConfig_Files, Config_Filenames);
 
   /* DESCRIPTION: Determines if the multizone problem is solved for time-domain. */
@@ -2828,8 +2823,9 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1);
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
-  /* DESCRIPTION: Volume solution writing frequency */
-  addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
+  /* DESCRIPTION: list of writing frequencies for each file type (length same as nVolumeOutputFiles) */
+  addULongListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
+
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
 
@@ -3316,6 +3312,30 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
 
+  /*--- Set the default output frequencies ---*/
+  if (!OptionIsSet("OUTPUT_WRT_FREQ")){
+    nVolumeOutputFrequencies = nVolumeOutputFiles;
+    VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
+
+    /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
+    for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
+    }
+  } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
+    /*--- If there are fewer frequencies than files, repeat the last frequency.
+     *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
+    auto* newFrequencies = new unsigned long[nVolumeOutputFiles];
+    for (unsigned short i = 0; i < nVolumeOutputFrequencies; ++i) {
+      newFrequencies[i] = VolumeOutputFrequencies[i];
+    }
+    for (auto i = nVolumeOutputFrequencies; i < nVolumeOutputFiles; ++i) {
+      newFrequencies[i] = newFrequencies[i-1];
+    }
+    delete [] VolumeOutputFrequencies;
+    VolumeOutputFrequencies = newFrequencies;
+    nVolumeOutputFrequencies = nVolumeOutputFiles;
+  }
+
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
@@ -3590,9 +3610,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Delta_DynTime  = Time_Step;
 
     if (TimeMarching == TIME_MARCHING::TIME_STEPPING){ InnerIter = 1; }
-
-    /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
-    if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
 
     /*--- Set History write freq for inner and outer iteration to zero by default, so only time iterations write. ---*/
     if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
@@ -6838,7 +6855,27 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    cout << "Writing solution files every " << VolumeWrtFreq <<" iterations."<< endl;
+    if (nVolumeOutputFiles != 0) {
+      cout << "File writing frequency: " << endl;
+      PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
+      FileFreqTable.AddColumn("File", 25);
+      FileFreqTable.AddColumn("Frequency", 10);
+      FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      FileFreqTable.PrintHeader();
+
+      for (auto iFreq = 0; iFreq < nVolumeOutputFiles; iFreq++){
+        /*--- find the key belonging to the value in the map---*/
+        for (auto& it : Output_Map) {
+          if (it.second == VolumeOutputFiles[iFreq]) {
+            FileFreqTable << it.first << VolumeOutputFrequencies[iFreq];
+            break;
+          }
+        }
+      }
+
+      FileFreqTable.PrintFooter();
+    }
+
     cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
     if (Multizone_Problem){
       cout << "Writing the convergence history file every " << HistoryWrtFreq[1] <<" outer iterations."<< endl;
@@ -7433,10 +7470,10 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) const {
 
   unsigned short iMarker_CfgFile;
 
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
       return iMarker_CfgFile;
-
+  }
   SU2_MPI::Error(string("The configuration file doesn't have any definition for marker ") + val_marker, CURRENT_FUNCTION);
   return 0;
 }
@@ -7618,9 +7655,10 @@ void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_mo
   nKind_SurfaceMovement++;
 
 }
-CConfig::~CConfig(void) {
 
-  unsigned long iDV, iMarker, iPeriodic, iFFD;
+CConfig::~CConfig() {
+
+  unsigned long iDV, iMarker;
 
   /*--- Delete all of the option objects in the global option map ---*/
 
@@ -7631,61 +7669,11 @@ CConfig::~CConfig(void) {
   delete [] TimeDOFsADER_DG;
   delete [] TimeIntegrationADER_DG;
   delete [] WeightsIntegrationADER_DG;
-  delete [] RK_Alpha_Step;
-  delete [] MG_PreSmooth;
-  delete [] MG_PostSmooth;
 
   /*--- Free memory for Aeroelastic problems. ---*/
 
   delete[] Aeroelastic_pitch;
   delete[] Aeroelastic_plunge;
-
- /*--- Free memory for airfoil sections ---*/
-
- delete [] LocationStations;
-
-  /*--- motion origin: ---*/
-
-  delete [] MarkerMotion_Origin;
-
-  delete [] MoveMotion_Origin;
-
-  /*--- translation: ---*/
-
-  delete [] MarkerTranslation_Rate;
-
-  /*--- rotation: ---*/
-
-  delete [] MarkerRotation_Rate;
-
-  /*--- pitching: ---*/
-
-  delete [] MarkerPitching_Omega;
-
-  /*--- pitching amplitude: ---*/
-
-  delete [] MarkerPitching_Ampl;
-
-  /*--- pitching phase: ---*/
-
-  delete [] MarkerPitching_Phase;
-
-  /*--- plunging: ---*/
-
-  delete [] MarkerPlunging_Omega;
-
-  /*--- plunging amplitude: ---*/
-  delete [] MarkerPlunging_Ampl;
-
-  /*--- reference origin for moments ---*/
-
-  delete [] RefOriginMoment_X;
-  delete [] RefOriginMoment_Y;
-  delete [] RefOriginMoment_Z;
-
-  /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
-
-  delete [] Omega_HB;
 
   /*--- Marker pointers ---*/
 
@@ -7734,59 +7722,21 @@ CConfig::~CConfig(void) {
   delete[] Marker_CfgFile_PerBound;
   delete[] Marker_All_PerBound;
 
-  delete [] Marker_CfgFile_Turbomachinery;
-  delete [] Marker_All_Turbomachinery;
+  delete[] Marker_CfgFile_Turbomachinery;
+  delete[] Marker_All_Turbomachinery;
 
-  delete [] Marker_CfgFile_TurbomachineryFlag;
-  delete [] Marker_All_TurbomachineryFlag;
+  delete[] Marker_CfgFile_TurbomachineryFlag;
+  delete[] Marker_All_TurbomachineryFlag;
 
-  delete [] Marker_CfgFile_MixingPlaneInterface;
-  delete [] Marker_All_MixingPlaneInterface;
+  delete[] Marker_CfgFile_MixingPlaneInterface;
+  delete[] Marker_All_MixingPlaneInterface;
 
-  delete [] Marker_CfgFile_SobolevBC;
-  delete [] Marker_All_SobolevBC;
+  delete[] Marker_CfgFile_SobolevBC;
+  delete[] Marker_All_SobolevBC;
 
-  delete[] Marker_DV;
-  delete[] Marker_Moving;
-  delete[] Marker_Monitoring;
-  delete[] Marker_Designing;
-  delete[] Marker_GeoEval;
-  delete[] Marker_Plotting;
-  delete[] Marker_Analyze;
-  delete[] Marker_WallFunctions;
-  delete[] Marker_ZoneInterface;
-  delete[] Marker_CHTInterface;
-  delete [] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
-  delete[] Marker_SobolevBC;
-
-  delete[] Kind_Inc_Inlet;
-  delete[] Kind_Inc_Outlet;
-
-  delete[] Kind_WallFunctions;
 
   delete[] Kind_Wall;
-
-  delete[] Config_Filenames;
-
-  if (IntInfo_WallFunctions != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (IntInfo_WallFunctions[iMarker] != nullptr)
-        delete[] IntInfo_WallFunctions[iMarker];
-    }
-    delete[] IntInfo_WallFunctions;
-  }
-
-  if (DoubleInfo_WallFunctions != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (DoubleInfo_WallFunctions[iMarker] != nullptr)
-        delete[] DoubleInfo_WallFunctions[iMarker];
-    }
-    delete[] DoubleInfo_WallFunctions;
-  }
-
-       delete[] Kind_ObjFunc;
-       delete[] Weight_ObjFunc;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
@@ -7798,127 +7748,92 @@ CConfig::~CConfig(void) {
     delete [] ParamDV;
   }
 
-  if (CoordFFDBox != nullptr) {
-    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] CoordFFDBox[iFFD];
-    delete [] CoordFFDBox;
-  }
+  delete[] Exhaust_Pressure;
+  delete[] Exhaust_Temperature;
+  delete[] Exhaust_MassFlow;
+  delete[] Exhaust_TotalPressure;
+  delete[] Exhaust_TotalTemperature;
+  delete[] Exhaust_GrossThrust;
+  delete[] Exhaust_Force;
+  delete[] Exhaust_Power;
 
-  if (DegreeFFDBox != nullptr) {
-    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
-    delete [] DegreeFFDBox;
-  }
+  delete[] Inflow_Mach;
+  delete[] Inflow_Pressure;
+  delete[] Inflow_MassFlow;
+  delete[] Inflow_ReverseMassFlow;
+  delete[] Inflow_TotalPressure;
+  delete[] Inflow_Temperature;
+  delete[] Inflow_TotalTemperature;
+  delete[] Inflow_RamDrag;
+  delete[] Inflow_Force;
+  delete[] Inflow_Power;
 
-     delete[] Design_Variable;
+  delete[] Engine_Power;
+  delete[] Engine_Mach;
+  delete[] Engine_Force;
+  delete[] Engine_NetThrust;
+  delete[] Engine_GrossThrust;
+  delete[] Engine_Area;
 
-     delete[]  Exhaust_Temperature_Target;
-     delete[]  Exhaust_Pressure_Target;
-     delete[] Exhaust_Pressure;
-     delete[] Exhaust_Temperature;
-     delete[] Exhaust_MassFlow;
-     delete[] Exhaust_TotalPressure;
-     delete[] Exhaust_TotalTemperature;
-     delete[] Exhaust_GrossThrust;
-     delete[] Exhaust_Force;
-     delete[] Exhaust_Power;
+  delete[] ActDiskInlet_MassFlow;
+  delete[] ActDiskInlet_Temperature;
+  delete[] ActDiskInlet_TotalTemperature;
+  delete[] ActDiskInlet_Pressure;
+  delete[] ActDiskInlet_TotalPressure;
+  delete[] ActDiskInlet_RamDrag;
+  delete[] ActDiskInlet_Force;
+  delete[] ActDiskInlet_Power;
 
-     delete[]  Inflow_Mach;
-     delete[] Inflow_Pressure;
-     delete[] Inflow_MassFlow;
-     delete[] Inflow_ReverseMassFlow;
-     delete[] Inflow_TotalPressure;
-     delete[] Inflow_Temperature;
-     delete[] Inflow_TotalTemperature;
-     delete[] Inflow_RamDrag;
-     delete[]  Inflow_Force;
-     delete[] Inflow_Power;
+  delete[] ActDiskOutlet_MassFlow;
+  delete[] ActDiskOutlet_Temperature;
+  delete[] ActDiskOutlet_TotalTemperature;
+  delete[] ActDiskOutlet_Pressure;
+  delete[] ActDiskOutlet_TotalPressure;
+  delete[] ActDiskOutlet_GrossThrust;
+  delete[] ActDiskOutlet_Force;
+  delete[] ActDiskOutlet_Power;
 
-     delete[]  Engine_Power;
-     delete[]  Engine_Mach;
-     delete[]  Engine_Force;
-     delete[]  Engine_NetThrust;
-     delete[]  Engine_GrossThrust;
-     delete[]  Engine_Area;
-     delete[] EngineInflow_Target;
+  delete[] Outlet_MassFlow;
+  delete[] Outlet_Density;
+  delete[] Outlet_Area;
 
-     delete[]  ActDiskInlet_MassFlow;
-     delete[]  ActDiskInlet_Temperature;
-     delete[]  ActDiskInlet_TotalTemperature;
-     delete[]  ActDiskInlet_Pressure;
-     delete[]  ActDiskInlet_TotalPressure;
-     delete[]  ActDiskInlet_RamDrag;
-     delete[]  ActDiskInlet_Force;
-     delete[]  ActDiskInlet_Power;
+  delete[] ActDisk_DeltaPress;
+  delete[] ActDisk_DeltaTemp;
+  delete[] ActDisk_TotalPressRatio;
+  delete[] ActDisk_TotalTempRatio;
+  delete[] ActDisk_StaticPressRatio;
+  delete[] ActDisk_StaticTempRatio;
+  delete[] ActDisk_Power;
+  delete[] ActDisk_MassFlow;
+  delete[] ActDisk_Mach;
+  delete[] ActDisk_Force;
+  delete[] ActDisk_NetThrust;
+  delete[] ActDisk_BCThrust;
+  delete[] ActDisk_BCThrust_Old;
+  delete[] ActDisk_GrossThrust;
+  delete[] ActDisk_Area;
+  delete[] ActDisk_ReverseMassFlow;
 
-     delete[]  ActDiskOutlet_MassFlow;
-     delete[]  ActDiskOutlet_Temperature;
-     delete[]  ActDiskOutlet_TotalTemperature;
-     delete[]  ActDiskOutlet_Pressure;
-     delete[]  ActDiskOutlet_TotalPressure;
-     delete[]  ActDiskOutlet_GrossThrust;
-     delete[]  ActDiskOutlet_Force;
-     delete[]  ActDiskOutlet_Power;
-
-     delete[]  Outlet_MassFlow;
-     delete[]  Outlet_Density;
-     delete[]  Outlet_Area;
-
-     delete[]  ActDisk_DeltaPress;
-     delete[]  ActDisk_DeltaTemp;
-     delete[]  ActDisk_TotalPressRatio;
-     delete[]  ActDisk_TotalTempRatio;
-     delete[]  ActDisk_StaticPressRatio;
-     delete[]  ActDisk_StaticTempRatio;
-     delete[]  ActDisk_Power;
-     delete[]  ActDisk_MassFlow;
-     delete[]  ActDisk_Mach;
-     delete[]  ActDisk_Force;
-     delete[]  ActDisk_NetThrust;
-     delete[]  ActDisk_BCThrust;
-     delete[]  ActDisk_BCThrust_Old;
-     delete[]  ActDisk_GrossThrust;
-     delete[]  ActDisk_Area;
-     delete[]  ActDisk_ReverseMassFlow;
-
-     delete[]  Surface_MassFlow;
-     delete[]  Surface_Mach;
-     delete[]  Surface_Temperature;
-     delete[]  Surface_Pressure;
-     delete[]  Surface_Density;
-     delete[]  Surface_Enthalpy;
-     delete[]  Surface_NormalVelocity;
-     delete[]  Surface_Uniformity;
-     delete[]  Surface_SecondaryStrength;
-     delete[]  Surface_SecondOverUniform;
-     delete[]  Surface_MomentumDistortion;
-     delete[]  Surface_TotalTemperature;
-     delete[]  Surface_TotalPressure;
-     delete[]  Surface_PressureDrop;
-     delete[]  Surface_Species_0;
-     delete[]  Surface_Species_Variance;
-     delete[]  Surface_DC60;
-     delete[]  Surface_IDC;
-     delete[]  Surface_IDC_Mach;
-     delete[]  Surface_IDR;
-
-  delete[]  Inlet_Ttotal;
-  delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
-      delete [] Inlet_FlowDir[iMarker];
-    delete [] Inlet_FlowDir;
-  }
-
-  if (Inlet_Velocity != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
-      delete [] Inlet_Velocity[iMarker];
-    delete [] Inlet_Velocity;
-  }
-
-  if (Inlet_MassFrac != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
-      delete [] Inlet_MassFrac[iMarker];
-    delete [] Inlet_MassFrac;
-  }
+  delete[] Surface_MassFlow;
+  delete[] Surface_Mach;
+  delete[] Surface_Temperature;
+  delete[] Surface_Pressure;
+  delete[] Surface_Density;
+  delete[] Surface_Enthalpy;
+  delete[] Surface_NormalVelocity;
+  delete[] Surface_Uniformity;
+  delete[] Surface_SecondaryStrength;
+  delete[] Surface_SecondOverUniform;
+  delete[] Surface_MomentumDistortion;
+  delete[] Surface_TotalTemperature;
+  delete[] Surface_TotalPressure;
+  delete[] Surface_PressureDrop;
+  delete[] Surface_Species_0;
+  delete[] Surface_Species_Variance;
+  delete[] Surface_DC60;
+  delete[] Surface_IDC;
+  delete[] Surface_IDC_Mach;
+  delete[] Surface_IDR;
 
   if (Riemann_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
@@ -7932,118 +7847,13 @@ CConfig::~CConfig(void) {
     delete [] Giles_FlowDir;
   }
 
-  if (Load_Sine_Dir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
-      delete [] Load_Sine_Dir[iMarker];
-    delete [] Load_Sine_Dir;
-  }
-
-  if (Load_Dir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_Load_Dir; iMarker++)
-      delete [] Load_Dir[iMarker];
-    delete [] Load_Dir;
-  }
-
-     delete[] Inlet_Temperature;
-     delete[] Inlet_Pressure;
-     delete[] Outlet_Pressure;
-     delete[] Isothermal_Temperature;
-     delete[] Heat_Flux;
-     delete[] HeatTransfer_Coeff;
-     delete[] HeatTransfer_WallTemp;
-     delete[] Displ_Value;
-     delete[] Load_Value;
-     delete[] Damper_Constant;
-     delete[] Load_Dir_Multiplier;
-     delete[] Load_Dir_Value;
-     delete[] Disp_Dir;
-     delete[] Disp_Dir_Multiplier;
-     delete[] Disp_Dir_Value;
-     delete[] Load_Sine_Amplitude;
-     delete[] Load_Sine_Frequency;
-     delete[] FlowLoad_Value;
-     delete[] Roughness_Height;
-     delete[] Wall_Emissivity;
-
-  if (Inlet_SpeciesVal != nullptr) {
-    for (auto i = 0u; i < nMarker_Inlet_Species; ++i)
-      delete[] Inlet_SpeciesVal[i];
-  }
-  delete[] Inlet_SpeciesVal;
-
-  /*--- related to periodic boundary conditions ---*/
-
-  for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
-    if (Periodic_RotCenter   != nullptr) delete [] Periodic_RotCenter[iMarker];
-    if (Periodic_RotAngles   != nullptr) delete [] Periodic_RotAngles[iMarker];
-    if (Periodic_Translation != nullptr) delete [] Periodic_Translation[iMarker];
-  }
-  delete[] Periodic_RotCenter;
-  delete[] Periodic_RotAngles;
-  delete[] Periodic_Translation;
-
-  for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    if (Periodic_Center    != nullptr) delete [] Periodic_Center[iPeriodic];
-    if (Periodic_Rotation  != nullptr) delete [] Periodic_Rotation[iPeriodic];
-    if (Periodic_Translate != nullptr) delete [] Periodic_Translate[iPeriodic];
-  }
-  delete[] Periodic_Center;
-  delete[] Periodic_Rotation;
-  delete[] Periodic_Translate;
-
-  delete[] MG_CorrecSmooth;
-         delete[] PlaneTag;
-              delete[] CFL;
-   delete[] CFL_AdaptParam;
-
-  /*--- String markers ---*/
-
-               delete[] Marker_Euler;
-            delete[] Marker_FarField;
-              delete[] Marker_Custom;
-             delete[] Marker_SymWall;
-            delete[] Marker_PerBound;
-            delete[] Marker_PerDonor;
-      delete[] Marker_NearFieldBound;
-         delete[] Marker_Deform_Mesh;
-         delete[] Marker_Deform_Mesh_Sym_Plane;
-          delete[] Marker_Fluid_Load;
-      delete[] Marker_Fluid_InterfaceBound;
-               delete[] Marker_Inlet;
-    delete[] Marker_Supersonic_Inlet;
-    delete[] Marker_Supersonic_Outlet;
-              delete[] Marker_Outlet;
-          delete[] Marker_Isothermal;
-  delete[] Marker_Smoluchowski_Maxwell;
-       delete[] Marker_EngineInflow;
-      delete[] Marker_EngineExhaust;
-        delete[] Marker_Displacement;
-                delete[] Marker_Load;
-                delete[] Marker_Damper;
-                delete[] Marker_Load_Dir;
-                delete[] Marker_Disp_Dir;
-                delete[] Marker_Load_Sine;
-            delete[] Marker_FlowLoad;
-             delete[] Marker_Internal;
-                delete[] Marker_HeatFlux;
-          delete[] Marker_Emissivity;
-  delete[] Marker_Inlet_Species;
-
-  delete [] Int_Coeffs;
-
-  delete [] ElasticityMod;
-  delete [] PoissonRatio;
-  delete [] MaterialDensity;
-  delete [] Electric_Constant;
-  delete [] Electric_Field_Mod;
-  delete [] RefNode_Displacement;
-  delete [] Electric_Field_Dir;
+  delete[] PlaneTag;
+  delete[] CFL;
 
   /*--- Delete some arrays needed just for initializing options. ---*/
 
   delete [] FFDTag;
   delete [] nDV_Value;
-  delete [] TagFFDBox;
 
   delete [] Kind_Data_Riemann;
   delete [] Riemann_Var1;
@@ -8054,34 +7864,14 @@ CConfig::~CConfig(void) {
   delete [] RelaxFactorAverage;
   delete [] RelaxFactorFourier;
   delete [] nSpan_iZones;
-  delete [] Kind_TurboMachinery;
 
-  delete [] Marker_MixingPlaneInterface;
   delete [] Marker_TurboBoundIn;
   delete [] Marker_TurboBoundOut;
   delete [] Marker_Riemann;
   delete [] Marker_Giles;
-  delete [] Marker_Shroud;
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
-
-  delete [] top_optim_kernels;
-  delete [] top_optim_kernel_params;
-  delete [] top_optim_filter_radius;
-
-  delete [] ScreenOutput;
-  delete [] HistoryOutput;
-  delete [] VolumeOutput;
-  delete [] Mesh_Box_Size;
-  delete [] VolumeOutputFiles;
-
-  delete [] ConvField;
-
-  delete [] Species_Clipping_Min;
-  delete [] Species_Clipping_Max;
-  delete [] Species_Init;
-
 }
 
 string CConfig::GetFilename(string filename, string ext, int timeIter) const {
@@ -8799,13 +8589,6 @@ const su2double* CConfig::GetInlet_Velocity(string val_marker) const {
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
-}
-
-const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
-  unsigned short iMarker_Supersonic_Inlet;
-  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
-    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
-  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
 }
 
 const su2double* CConfig::GetInlet_SpeciesVal(string val_marker) const {

@@ -173,13 +173,14 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 }
 
 COutput::~COutput(void) {
+
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
-
   delete volumeDataSorter;
   delete surfaceDataSorter;
+
 }
 
 void COutput::SetHistory_Output(CGeometry *geometry,
@@ -924,30 +925,29 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing){
-
-  bool writeFiles = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged);
+  
+  bool isFileWrite=false;
+  unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
+  auto VolumeFiles = config->GetVolumeOutputFiles();
 
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */
-
   AllocateDataSorters(config, geometry);
 
-  /*--- Collect the volume data from the solvers.
-   *  If time-domain is enabled, we also load the data although we don't output it,
-   *  since we might want to do time-averaging. ---*/
+  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
 
-  if (writeFiles || config->GetTime_Domain())
-    LoadDataIntoSorter(config, geometry, solver_container);
+    /*--- Collect the volume data from the solvers.
+     *  If time-domain is enabled, we also load the data although we don't output it,
+     *  since we might want to do time-averaging. ---*/
+    if (WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile) || config->GetTime_Domain()) 
+      LoadDataIntoSorter(config, geometry, solver_container);
 
-  if (writeFiles){
+    if (!(WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile))) continue;
 
     /*--- Partition and sort the data --- */
 
     volumeDataSorter->SortOutputData();
 
-    unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    auto VolumeFiles = config->GetVolumeOutputFiles();
-
-    if (rank == MASTER_NODE && nVolumeFiles != 0){
+    if (rank == MASTER_NODE && !isFileWrite){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
       fileWritingTable->PrintHeader();
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -955,14 +955,10 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     /*--- Loop through all requested output files and write
      * the partitioned and sorted data stored in the data sorters. ---*/
+     
+    WriteToFile(config, geometry, VolumeFiles[iFile]);
 
-    for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
-
-      WriteToFile(config, geometry, VolumeFiles[iFile]);
-
-    }
-
-    if (rank == MASTER_NODE && nVolumeFiles != 0){
+    if (rank == MASTER_NODE && !isFileWrite){
       fileWritingTable->PrintFooter();
       headerNeeded = true;
     }
@@ -971,10 +967,10 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     WriteAdditionalFiles(config, geometry, solver_container);
 
-    return true;
+    isFileWrite = true;
   }
 
-  return false;
+  return isFileWrite;
 }
 
 void COutput::PrintConvergenceSummary(){
@@ -1228,8 +1224,8 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
     const string &fieldIdentifier = historyOutput_List[iField_Output];
     const HistoryOutputField &field = historyOutput_Map.at(fieldIdentifier);
     for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-      const string &RequestedField = requestedHistoryFields[iReqField];
-      if (RequestedField == field.outputGroup){
+      const string &requestedField = requestedHistoryFields[iReqField];
+      if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
         (*historyFileTable) << field.value;
       }
     }
@@ -1240,8 +1236,8 @@ void COutput::SetHistoryFile_Output(const CConfig *config) {
     for (iMarker = 0; iMarker < historyOutputPerSurface_Map[fieldIdentifier].size(); iMarker++){
       const HistoryOutputField &field = historyOutputPerSurface_Map.at(fieldIdentifier)[iMarker];
       for (iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-        const string &RequestedField = requestedHistoryFields[iReqField];
-        if (RequestedField == field.outputGroup){
+        const string &requestedField = requestedHistoryFields[iReqField];
+        if (requestedField == field.outputGroup || (requestedField == fieldIdentifier)){
           (*historyFileTable) << field.value;
         }
       }
@@ -1480,14 +1476,16 @@ void COutput::CheckHistoryOutput() {
 
   FieldsToRemove.clear();
   FoundField = vector<bool>(nRequestedHistoryFields, false);
-
   for (unsigned short iField_Output = 0; iField_Output < historyOutput_List.size(); iField_Output++){
     const string &fieldReference = historyOutput_List[iField_Output];
     if (historyOutput_Map.count(fieldReference) > 0){
       const HistoryOutputField &field = historyOutput_Map.at(fieldReference);
       for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
         const auto& requestedField = requestedHistoryFields[iReqField];
-        if (requestedField == field.outputGroup){
+        string fieldname_uppercase = field.fieldName;
+        transform(fieldname_uppercase.begin(), fieldname_uppercase.end(), fieldname_uppercase.begin(), ::toupper);
+
+        if ((requestedField == field.outputGroup) || (fieldReference==fieldname_uppercase)){
           FoundField[iReqField] = true;
         }
       }
@@ -2153,12 +2151,14 @@ bool COutput::WriteHistoryFile_Output(const CConfig *config) {
 
 }
 
-bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
+bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+
   if (config->GetTime_Domain()){
-    return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+
+    return ((Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
   else {
-    return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+    return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
 }
 

@@ -387,10 +387,6 @@ private:
   su2double **Periodic_RotCenter;            /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;            /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;          /*!< \brief Translation vector for each periodic boundary. */
-  unsigned short nPeriodic_Index;            /*!< \brief Number of SEND_RECEIVE periodic transformations. */
-  su2double **Periodic_Center;               /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Rotation;             /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Translate;            /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
   string *Marker_CfgFile_TagBound;           /*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,         /*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
@@ -1123,9 +1119,10 @@ private:
 
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
-  unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
-  unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFiles=0;/*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
+  unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
@@ -1259,6 +1256,8 @@ private:
   void addShortListOption(const string name, unsigned short & size, short * & option_field);
 
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
+
+  void addULongListOption(const string name, unsigned short & size, unsigned long * & option_field);
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
@@ -6603,13 +6602,6 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
-   * \brief Get the mass fraction vector at a supersonic inlet boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet mass fraction vector - NEMO only.
-   */
-  const su2double* GetInlet_MassFrac(string val_index) const;
-
-  /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
@@ -8138,11 +8130,6 @@ public:
   void SetConfig_Options();
 
   /*!
-   * \brief Set the config options.
-   */
-  void SetRunTime_Options(void);
-
-  /*!
    * \brief Set the config file parsing.
    */
   void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);
@@ -9455,11 +9442,6 @@ public:
   void SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter; }
 
   /*!
-   * \brief GetScreen_Wrt_Freq_Inner
-   */
-  unsigned long GetVolume_Wrt_Freq() const { return VolumeWrtFreq; }
-
-  /*!
    * \brief GetVolumeOutputFiles
    */
   const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
@@ -9468,6 +9450,12 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetVolumeOutputFrequency
+   * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
+   */
+  unsigned long GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
 
   /*!
    * \brief Get the desired factorization frequency for PaStiX
