@@ -1678,7 +1678,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, CConfig *config) {}
 
   /*!
    * \brief Get the first blending function of the SST model.

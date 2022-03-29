@@ -5184,7 +5184,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
-  SST_ParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
+  sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
@@ -5851,7 +5851,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SST:       cout << SST_ParsedOptions.sst_string << endl; break;
+          case TURB_MODEL::SST:       cout << sstParsedOptions.sst_string << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
@@ -5863,7 +5863,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
-        if (SST_ParsedOptions.production= SST_OPTIONS::UNCERTAINTY){
+        if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }

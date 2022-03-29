@@ -992,63 +992,9 @@ struct SST_ParsedOptions {
   bool sust;                 /*!< \brief Bool for SST model with sustaining terms. */
   bool rc;                   /*!< \brief Bool for SST model with rotational corrections. */
   bool m;                    /*!< \brief Bool for modified (m) SST model. */
-}
+};
 
-/*!
- * \brief function to parse SST options.
- * \param[in] SST_Options - Selected SST option from config.
- * \param[in] nSST_Options - Number of options selected.
- */
-SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS* SST_Options, unsigned short nSST_Options){
 
-  const auto sst_options_end = SST_Options + nSST_Options;
-
-  const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
-  const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
-  const bool sst_m    = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end;
-  const bool sst_sust = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
-  const bool sst_v    = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
-  const bool sst_kl   = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
-  const bool sst_uq   = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
-  const bool sst_rc   = std::find(SST_Options, sst_options_end, SST_OPTIONS::CURVATURE) != sst_options_end;
-
-  // Parse base version
-  if (sst_1994 && sst_2003) {
-    SU2_MPI::Error(string("Two versions (1994 and 2003) selected for SST Options. Please choose only one."), CURRENT_FUNCTION);
-  } else if (sst_2003) {
-    SST_ParsedOptions.version = SST_OPTIONS::V2003;
-    SST_ParsedOptions.sst_string += "-2003";
-  } else if (sst_1994){
-    SST_ParsedOptions.version = SST_OPTIONS::V1994;
-    SST_ParsedOptions.sst_string += "-1994";
-  } else {
-    //What should the default option be here?
-  }
-
-  // Parse production modifications
-  if ((sst_v + sst_kl + sst_uq) > 1) {
-    SU2_MPI::Error(string("Please select only one SST production term modifier (V, KL, UQ)."), CURRENT_FUNCTION);
-  } else if (sst_v) {
-    SST_ParsedOptions.production = SST_OPTIONS::VORTICITY;
-    SST_ParsedOptions.sst_string += "-V";
-  } else if (sst_kl) {
-    SST_ParsedOptions.production = SST_OPTIONS::KL;
-    SST_ParsedOptions.sst_string += "-KL";
-  } esle if (sst_uq) {
-    SST_ParsedOptions.production = SST_OPTIONS::UNCERTAINTY;
-    SST_ParsedOptions.sst_string += "-UQ";
-  }
-
-  // Parse boolean options
-  SST_ParsedOptions.sust = sst_sust;
-  SST_ParsedOptions.rc = sst_rc;
-  SST_ParsedOptions.m = sst_m;
-
-  if (sst_sust) SST_ParsedOptions.sst_string += "-sust"
-  if (sst_rc) SST_ParsedOptions.sst_string += "-RC"
-  if (sst_m) SST_ParsedOptions.sst_string += "-m"
-
-}
 
 /*!
  * \brief Types of transition models
