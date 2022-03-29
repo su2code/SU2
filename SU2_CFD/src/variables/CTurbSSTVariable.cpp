@@ -68,12 +68,9 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
   if (sstParsedOptions.version == SST_OPTIONS::V1994){
-    cout << "parsed option in cturbsstvariable: sst-v1994" << endl;
     CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
   } else {
     /* SST-2003 */
-    cout << "parsed option in cturbsstvariable: sst-v2003" << endl;
-    
     CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -10.0));
   }
 

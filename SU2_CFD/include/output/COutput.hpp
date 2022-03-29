@@ -89,9 +89,8 @@ protected:
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
   string historyFilename;   /*!< \brief The history filename*/
-  char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
-  ofstream histFile;        /*! \brief Output file stream for the history */
-
+  ofstream histFile;        /*!< \brief Output file stream for the history */
+  
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
 
   /** \brief Enum to identify the screen output format. */
@@ -778,8 +777,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    * \param[in] force_writing - boolean that forces writing of volume output
+   * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing);
+  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
 
   /*!
    * \brief Set the values of the volume output fields for a point.

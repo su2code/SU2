@@ -176,7 +176,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
   /*--- General setup. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolumeOutputFrequency(0));
 
     /*--- Set BGS_Solution_k to Solution, this is needed to restart
      * correctly as the first OF gradient will overwrite the solution. ---*/
