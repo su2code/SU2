@@ -1914,7 +1914,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
@@ -4721,7 +4721,11 @@ void CSolver::CorrectBoundMetric(const CGeometry *geometry, const CConfig *confi
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {
+    if (config->GetSolid_Wall(iMarker) || 
+        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+         config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+         config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 

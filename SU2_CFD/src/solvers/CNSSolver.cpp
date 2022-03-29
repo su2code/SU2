@@ -146,7 +146,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
     if (turb_model != TURB_MODEL::NONE && solver_container[TURB_SOL] != nullptr) {
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0)/nodes->GetDensity(iPoint);
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);

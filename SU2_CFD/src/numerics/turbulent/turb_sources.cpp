@@ -897,7 +897,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST<T>::ComputeResidual(const CCo
    Jacobian_i[1][1] = -2.0*beta_blended*ScalarVar_i[1]*Volume;
 
    Jacobian_i[0][0] -= TWO3*diverg*Volume*(diverg > 0);
-  //  Jacobian_i[0][1] -= StrainMag_i*StrainMag_i*ScalarVar_i[0]/pow(zeta,2.)*Volume;
+   Jacobian_i[0][1] -= StrainMag_i*StrainMag_i*ScalarVar_i[0]/pow(zeta,2.)*Volume;
 
    Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume*(diverg > 0);
 

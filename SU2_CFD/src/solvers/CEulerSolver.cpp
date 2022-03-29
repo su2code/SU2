@@ -1892,6 +1892,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
       su2double RoeTke = (R*Turbulent_j+Turbulent_i)/(R+1);
 
+      // su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+      // su2double sq_vel = 0.0;
+      // for (iDim = 0; iDim < nDim; iDim++) {
+      //   su2double RoeVelocity = (R * Primitive_j[iDim+1] +
+      //                            Primitive_i[iDim+1]) / (R+1);
+      //   sq_vel += pow(RoeVelocity, 2);
+      // }
+      // su2double RoeEnthalpy = (R * Primitive_j[nDim+3] + Primitive_i[nDim+3]) / (R+1);
+      // su2double RoeTke = (R*Turbulent_j+Turbulent_i)/(R+1);
+
       bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
