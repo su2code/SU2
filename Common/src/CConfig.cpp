@@ -400,6 +400,13 @@ void CConfig::addUShortListOption(const string name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addULongListOption(const string name, unsigned short & size, unsigned long * & option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionULongList(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -1018,6 +1025,7 @@ void CConfig::SetPointersNull(void) {
   HistoryOutput = nullptr;
   VolumeOutput = nullptr;
   VolumeOutputFiles = nullptr;
+  VolumeOutputFrequencies = nullptr;
   ConvField = nullptr;
 
   /*--- Variable initialization ---*/
@@ -1173,7 +1181,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
@@ -1405,6 +1412,7 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+
   /*!\brief MARKER_CONTROL_VOLUME\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_ANALYZE", nMarker_Analyze, Marker_Analyze);
   /*!\brief MARKER_DESIGNING\n DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
@@ -2444,7 +2452,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
   /*--- Options related to multizone problems ---*/
 
-  /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
+  /* DESCRIPTION List of config files for each zone in a multizone setup with SOLVER=MULTIPHYSICS
+   * Order here has to match the order in the meshfile if just one is used. */
   addStringListOption("CONFIG_LIST", nConfig_Files, Config_Filenames);
 
   /* DESCRIPTION: Determines if the multizone problem is solved for time-domain. */
@@ -2814,8 +2823,9 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("SCREEN_WRT_FREQ_OUTER", ScreenWrtFreq[1], 1);
   /* DESCRIPTION: Screen writing frequency (TIME_ITER) */
   addUnsignedLongOption("SCREEN_WRT_FREQ_TIME", ScreenWrtFreq[0], 1);
-  /* DESCRIPTION: Volume solution writing frequency */
-  addUnsignedLongOption("OUTPUT_WRT_FREQ", VolumeWrtFreq, 250);
+  /* DESCRIPTION: list of writing frequencies for each file type (length same as nVolumeOutputFiles) */
+  addULongListOption("OUTPUT_WRT_FREQ", nVolumeOutputFrequencies, VolumeOutputFrequencies);
+
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
 
@@ -3302,6 +3312,30 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     VolumeOutputFiles[2] = OUTPUT_TYPE::SURFACE_PARAVIEW_XML;
   }
 
+  /*--- Set the default output frequencies ---*/
+  if (!OptionIsSet("OUTPUT_WRT_FREQ")){
+    nVolumeOutputFrequencies = nVolumeOutputFiles;
+    VolumeOutputFrequencies = new unsigned long [nVolumeOutputFrequencies];
+
+    /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
+    for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
+      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
+    }
+  } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
+    /*--- If there are fewer frequencies than files, repeat the last frequency.
+     *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
+    auto* newFrequencies = new unsigned long[nVolumeOutputFiles];
+    for (unsigned short i = 0; i < nVolumeOutputFrequencies; ++i) {
+      newFrequencies[i] = VolumeOutputFrequencies[i];
+    }
+    for (auto i = nVolumeOutputFrequencies; i < nVolumeOutputFiles; ++i) {
+      newFrequencies[i] = newFrequencies[i-1];
+    }
+    delete [] VolumeOutputFrequencies;
+    VolumeOutputFrequencies = newFrequencies;
+    nVolumeOutputFrequencies = nVolumeOutputFiles;
+  }
+
   /*--- Check if SU2 was build with TecIO support, as that is required for Tecplot Binary output. ---*/
 #ifndef HAVE_TECIO
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++){
@@ -3576,9 +3610,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Delta_DynTime  = Time_Step;
 
     if (TimeMarching == TIME_MARCHING::TIME_STEPPING){ InnerIter = 1; }
-
-    /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
-    if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
 
     /*--- Set History write freq for inner and outer iteration to zero by default, so only time iterations write. ---*/
     if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
@@ -6824,7 +6855,27 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    cout << "Writing solution files every " << VolumeWrtFreq <<" iterations."<< endl;
+    if (nVolumeOutputFiles != 0) {
+      cout << "File writing frequency: " << endl;
+      PrintingToolbox::CTablePrinter FileFreqTable(&std::cout);
+      FileFreqTable.AddColumn("File", 25);
+      FileFreqTable.AddColumn("Frequency", 10);
+      FileFreqTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      FileFreqTable.PrintHeader();
+
+      for (auto iFreq = 0; iFreq < nVolumeOutputFiles; iFreq++){
+        /*--- find the key belonging to the value in the map---*/
+        for (auto& it : Output_Map) {
+          if (it.second == VolumeOutputFiles[iFreq]) {
+            FileFreqTable << it.first << VolumeOutputFrequencies[iFreq];
+            break;
+          }
+        }
+      }
+
+      FileFreqTable.PrintFooter();
+    }
+
     cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
     if (Multizone_Problem){
       cout << "Writing the convergence history file every " << HistoryWrtFreq[1] <<" outer iterations."<< endl;
@@ -7419,10 +7470,10 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) const {
 
   unsigned short iMarker_CfgFile;
 
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
       return iMarker_CfgFile;
-
+  }
   SU2_MPI::Error(string("The configuration file doesn't have any definition for marker ") + val_marker, CURRENT_FUNCTION);
   return 0;
 }
@@ -7821,7 +7872,6 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
-
 }
 
 string CConfig::GetFilename(string filename, string ext, int timeIter) const {

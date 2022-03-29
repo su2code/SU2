@@ -97,7 +97,7 @@ public:
    * \param[out] rankID           Rank on which element containing the coordinate is stored.
    * \param[out] parCoor          Parametric coordinates of coor inside the element,
                                   which contains the coordinate.
-   * \param[out] weightsInterpol  Interpolation weigts of of coor inside the element,
+   * \param[out] weightsInterpol  Interpolation weights of coor inside the element,
                                   which contains the coordinate.
    * \return                      True if an element is found, false if not.
    */
