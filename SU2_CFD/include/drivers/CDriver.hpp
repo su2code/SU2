@@ -448,21 +448,21 @@ public:
      * \brief Get the temperature at the mesh vertices.
      * \return Vertex temperatures (nPoint).
      */
-    vector<passivedouble> GetTemperatures() const;
+    vector<passivedouble> GetTemperature() const;
     
     /*!
      * \brief Get the temperature at a mesh vertex.
      * \param[in] iPoint - Mesh vertex index.
      * \return Vertex temperature.
      */
-    passivedouble GetTemperatures(unsigned long iPoint) const;
+    passivedouble GetTemperature(unsigned long iPoint) const;
     
     /*!
      * \brief Get the temperature at the marker vertices.
      * \param[in] iMarker - Marker identifier.
      * \return Vertex temperatures (nVertex).
      */
-    vector<passivedouble> GetMarkerTemperatures(unsigned short iMarker) const;
+    vector<passivedouble> GetMarkerTemperature(unsigned short iMarker) const;
     
     /*!
      * \brief Get the temperature at a marker vertex.
@@ -470,14 +470,14 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Vertex temperature.
      */
-    passivedouble GetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex) const;
+    passivedouble GetMarkerTemperature(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Set the temperatures at the marker vertices.
      * \param[in] iMarker - Marker identifier.
      * \param[in] values - Vertex temperatures (nVertex).
      */
-    void SetMarkerTemperatures(unsigned short iMarker, vector<passivedouble> values);
+    void SetMarkerTemperature(unsigned short iMarker, vector<passivedouble> values);
 
     /*!
      * \brief Set the temperatures at a marker vertex.
@@ -485,7 +485,7 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \param[in] values - Vertex temperature.
      */
-    void SetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex, passivedouble value);
+    void SetMarkerTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble value);
 
     /*!
      * \brief Get the heat fluxes at the mesh vertices.
@@ -690,7 +690,7 @@ public:
      * \brief Get nonequilibrium vibrational electronic temperatures.
      * \return Nonequilibrium vibrational electronic temperatures (nPoint).
      */
-    vector<passivedouble> GetVibrationalTemperatures() const;
+    vector<passivedouble> GetVibrationalTemperature() const;
     
     /*!
      * \brief Preprocess the inlets via file input for all solvers.

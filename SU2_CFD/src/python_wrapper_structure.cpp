@@ -1341,19 +1341,19 @@ string CDriver::GetSurfaceFileName() const {
 /* Functions related to CHT solver.                                          */
 ///////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetTemperatures() const {
+vector<passivedouble> CDriver::GetTemperature() const {
     const auto nPoint = GetNumberVertices();
     
     vector<passivedouble> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        values.push_back(GetTemperatures(iPoint));    
+        values.push_back(GetTemperature(iPoint));    
     }
     
     return values;
 }
 
-passivedouble CDriver::GetTemperatures(unsigned long iPoint) const {
+passivedouble CDriver::GetTemperature(unsigned long iPoint) const {
     if (!main_config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
     }
@@ -1365,19 +1365,19 @@ passivedouble CDriver::GetTemperatures(unsigned long iPoint) const {
     return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetTemperature(iPoint));
 }
 
-vector<passivedouble> CDriver::GetMarkerTemperatures(unsigned short iMarker) const {
+vector<passivedouble> CDriver::GetMarkerTemperature(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
     
     vector<passivedouble> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        values.push_back(GetMarkerTemperatures(iMarker, iVertex));    
+        values.push_back(GetMarkerTemperature(iMarker, iVertex));    
     }
     
     return values;
 }
 
-passivedouble CDriver::GetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex) const {
+passivedouble CDriver::GetMarkerTemperature(unsigned short iMarker, unsigned long iVertex) const {
     if (!main_config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
     }
@@ -1392,7 +1392,7 @@ passivedouble CDriver::GetMarkerTemperatures(unsigned short iMarker, unsigned lo
     }
 }
 
-void CDriver::SetMarkerTemperatures(unsigned short iMarker, vector<passivedouble> values) {
+void CDriver::SetMarkerTemperature(unsigned short iMarker, vector<passivedouble> values) {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
 
     if (values.size() != nVertex) {
@@ -1400,11 +1400,11 @@ void CDriver::SetMarkerTemperatures(unsigned short iMarker, vector<passivedouble
     }
 
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        SetMarkerTemperatures(iMarker, iVertex, values[iVertex]);
+        SetMarkerTemperature(iMarker, iVertex, values[iVertex]);
     }
 }
 
-void CDriver::SetMarkerTemperatures(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+void CDriver::SetMarkerTemperature(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
     if (!main_config->GetFluidProblem()) {
         SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
     }
@@ -1845,7 +1845,7 @@ void CDriver::SetNonequilibriumStates(unsigned long iPoint, vector<passivedouble
     }
 }
 
-vector<passivedouble> CDriver::GetVibrationalTemperatures() const {
+vector<passivedouble> CDriver::GetVibrationalTemperature() const {
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
     
     if (!main_config->GetNEMOProblem()) {
