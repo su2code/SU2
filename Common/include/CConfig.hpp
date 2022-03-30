@@ -1139,7 +1139,6 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
-  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -8979,12 +8978,6 @@ public:
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
-   * \brief Get information about using UQ methodology
-   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
-   */
-  bool GetUsing_UQ(void) const { return using_uq; }
-
-  /*!
    * \brief Get the amount of eigenvalue perturbation to be done
    * \return Value of the uq_delta_b parameter
    */
@@ -9620,74 +9613,77 @@ public:
    */
   unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
 
-    /*!
+  /*!
    * \brief Get max number of iterations of the for the gradient smoothing.
    * \return Max number of iterations of the linear solver for the gradient smoothing.
    */
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
 
+  /*!
+   * \brief Get parsed SST option data structure.
+   * \return SST option data structure.
+   */
   SST_ParsedOptions GetSSTParsedOptions(void) const {return sstParsedOptions; }
-/*!
- * \brief function to parse SST options.
- * \param[in] SST_Options - Selected SST option from config.
- * \param[in] nSST_Options - Number of options selected.
- */
-SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS* SST_Options, unsigned short nSST_Options){
-  SST_ParsedOptions SSTParsedOptions;
-  const auto sst_options_end = SST_Options + nSST_Options;
 
-  const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
-  const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
-  const bool sst_m    = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end;
-  const bool sst_sust = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
-  const bool sst_v    = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
-  const bool sst_kl   = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
-  const bool sst_uq   = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
-  const bool sst_rc   = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
+  /*!
+   * \brief function to parse SST options.
+   * \param[in] SST_Options - Selected SST option from config.
+   * \param[in] nSST_Options - Number of options selected.
+   */
+  SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS* SST_Options, unsigned short nSST_Options){
+    SST_ParsedOptions SSTParsedOptions;
+    const auto sst_options_end = SST_Options + nSST_Options;
 
-  // Parse base version
-  if (sst_1994 && sst_2003) {
-    SU2_MPI::Error("Two versions (1994 and 2003) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
-  } else if (sst_2003) {
-    SSTParsedOptions.version = SST_OPTIONS::V2003;
-    SSTParsedOptions.sst_string += "-2003";
-  } else if (sst_1994){
-    SSTParsedOptions.version = SST_OPTIONS::V1994;
-    SSTParsedOptions.sst_string += "-1994";
-  } else {
-   
-    /* use the most recent model as the default*/ 
-    cout << "SST_OPTIONS not found! using default SST-V2003" << endl;
-    SSTParsedOptions.version = SST_OPTIONS::V2003;
-    SSTParsedOptions.sst_string += "-2003";
+    const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
+    const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
+    const bool sst_m    = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end;
+    const bool sst_sust = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
+    const bool sst_v    = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
+    const bool sst_kl   = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
+    const bool sst_uq   = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
+    const bool sst_rc   = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
+
+    // Parse base version
+    if (sst_1994 && sst_2003) {
+      SU2_MPI::Error("Two versions (1994 and 2003) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
+    } else if (sst_2003) {
+      SSTParsedOptions.version = SST_OPTIONS::V2003;
+      SSTParsedOptions.sst_string += "-2003";
+    } else if (sst_1994){
+      SSTParsedOptions.version = SST_OPTIONS::V1994;
+      SSTParsedOptions.sst_string += "-1994";
+    } else {
+
+      /* use the most recent model as the default*/
+      cout << "SST_OPTIONS not found! using default SST-V2003" << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V2003;
+      SSTParsedOptions.sst_string += "-2003";
+    }
+
+    // Parse production modifications
+    if ((sst_v + sst_kl + sst_uq) > 1) {
+      SU2_MPI::Error("Please select only one SST production term modifier (V, KL, UQ).", CURRENT_FUNCTION);
+    } else if (sst_v) {
+      SSTParsedOptions.production = SST_OPTIONS::VORTICITY;
+      SSTParsedOptions.sst_string += "-V";
+    } else if (sst_kl) {
+      SSTParsedOptions.production = SST_OPTIONS::KL;
+      SSTParsedOptions.sst_string += "-KL";
+    } else if (sst_uq) {
+      SSTParsedOptions.production = SST_OPTIONS::UNCERTAINTY;
+      SSTParsedOptions.sst_string += "-UQ";
+    }
+
+    // Parse boolean options
+    SSTParsedOptions.sust = sst_sust;
+    SSTParsedOptions.rc = sst_rc;
+    SSTParsedOptions.m = sst_m;
+
+    if (sst_sust) SSTParsedOptions.sst_string += "-sust";
+    if (sst_rc) SSTParsedOptions.sst_string += "-RC";
+    if (sst_m) SSTParsedOptions.sst_string += "-m";
+
+    cout << "SST model: " << SSTParsedOptions.sst_string << endl;
+    return SSTParsedOptions;
   }
-
-  // Parse production modifications
-  if ((sst_v + sst_kl + sst_uq) > 1) {
-    SU2_MPI::Error("Please select only one SST production term modifier (V, KL, UQ).", CURRENT_FUNCTION);
-  } else if (sst_v) {
-    SSTParsedOptions.production = SST_OPTIONS::VORTICITY;
-    SSTParsedOptions.sst_string += "-V";
-  } else if (sst_kl) {
-    SSTParsedOptions.production = SST_OPTIONS::KL;
-    SSTParsedOptions.sst_string += "-KL";
-  } else if (sst_uq) {
-    SSTParsedOptions.production = SST_OPTIONS::UNCERTAINTY;
-    SSTParsedOptions.sst_string += "-UQ";
-  }
-
-  // Parse boolean options
-  SSTParsedOptions.sust = sst_sust;
-  SSTParsedOptions.rc = sst_rc;
-  SSTParsedOptions.m = sst_m;
-
-  if (sst_sust) SSTParsedOptions.sst_string += "-sust";
-  if (sst_rc) SSTParsedOptions.sst_string += "-RC";
-  if (sst_m) SSTParsedOptions.sst_string += "-m";
-
-
-  cout << "SST model: " << SSTParsedOptions.sst_string << endl;
-  return SSTParsedOptions;
-}
-
 };

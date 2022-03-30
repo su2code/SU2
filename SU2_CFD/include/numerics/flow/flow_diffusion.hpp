@@ -67,6 +67,9 @@ protected:
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
 
+  /*--- If uq is necessary ---*/
+  SST_ParsedOptions sstParsedOptions = config->GetSSTParsedOptions();
+
   /*!
    * \brief Scale the stress tensor using a predefined wall stress.
    *

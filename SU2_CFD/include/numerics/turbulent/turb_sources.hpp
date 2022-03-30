@@ -559,11 +559,7 @@ template <class FlowIndices>
 class CSourcePieceWise_TurbSST final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-  const bool sustaining_terms = false; //TODO
   const bool axisymmetric = false;
-  bool vorticity_source = false; //TODO
-  bool kato_launder = false; //TODO
-  bool rotate_curve_corrections = false; //TODO
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
@@ -640,7 +636,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                            su2double val_omega_Inf, const CConfig* config)
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
-        sustaining_terms(false),      //TODO this is temporary
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
@@ -739,15 +734,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Modifications of SST production terms (uq, V, KL) --*/
 
       /* --------------------------- */
-      if (using_uq) {
+      if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
         P_Base = PerturbedStrainMag(ScalarVar_i[0]);
 
-      } else if (vorticity_source) {
+      } else if (sstParsedOptions.production == SST_OPTIONS::VORTICITY) {
         P_Base = VorticityMag; 
 
-      } else if (kato_launder) {
+      } else if (sstParsedOptions.production == SST_OPTIONS::KL) {
         P_Base = sqrt(StrainMag_i*VorticityMag);
       }  
       /* ------------------------------ */
@@ -798,7 +793,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
             lead to problems for very big values of the free-stream turbulence
             intensity. ---*/
 
-      if (sustaining_terms) {
+      if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
         pk = max(pk, sust_k);
@@ -806,7 +801,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       /*--- Rotation/ Curvature Corrections ---*/
-      if (rotate_curve_corrections){
+      if (sstParsedOptions.rc){
         //TODO multiply the Ps by some fun stuff that I dont want to implement at the moment.
 
       }

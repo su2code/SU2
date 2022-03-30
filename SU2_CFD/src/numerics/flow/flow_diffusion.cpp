@@ -130,7 +130,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
    * for the turbulent part of tau. Otherwise both the laminar and turbulent
    * parts of tau can be computed with the total viscosity. --- */
 
-  if (using_uq){
+  if (sstParsedOptions.production==SST_OPTIONS::UNCERTAINTY){
     // laminar part
     ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity);
     // add turbulent part which was perturbed
@@ -426,7 +426,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
-  if (using_uq){
+  if (sstParsedOptions.production==SST_OPTIONS::UNCERTAINTY){
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
@@ -611,7 +611,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
-  if (using_uq){
+  if (sstParsedOptions.production==SST_OPTIONS::UNCERTAINTY){
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
@@ -941,7 +941,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
-  if (using_uq){
+  if (sstParsedOptions.production==SST_OPTIONS::UNCERTAINTY){
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);

@@ -2837,9 +2837,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
 
-  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
-  addBoolOption("USING_UQ", using_uq, false);
-
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("UQ_DELTA_B", uq_delta_b, 1.0);
 
@@ -4658,7 +4655,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       CFL[iCFL] = Unst_CFL;
   }
 
-
   /*--- If it is a fixed mode problem, then we will add Iter_dCL_dAlpha iterations to
     evaluate the derivatives with respect to a change in the AoA and CL ---*/
 
@@ -4669,18 +4665,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /* --- Set Finite Difference mode to false by default --- */
 
   Finite_Difference_Mode = false;
-
-  /* --- Throw error if UQ used for any turbulence model other that SST --- */
-  //TODO: Move this to the postprocessing of SST options
-  //if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && using_uq){
-  //  SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
-  //}
-
-  /* --- Throw error if invalid componentiality used --- */
-
-  if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
-    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
-  }
 
   /*--- If there are not design variables defined in the file ---*/
 
@@ -5207,6 +5191,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
+
+  /* --- Throw error if invalid componentiality used --- */
+
+  if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY && (eig_val_comp > 3 || eig_val_comp < 1)){
+    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
+  }
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
