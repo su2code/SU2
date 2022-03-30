@@ -37,6 +37,8 @@ CNumerics::CNumerics(void) {
 
   tau = nullptr;
 
+  using_uq = false;
+
   nemo = false;
 
 }
@@ -67,6 +69,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Dissipation_ij = 1.0;
 
   /* --- Initializing variables for the UQ methodology --- */
+  using_uq = config->GetUsing_UQ();
   Eig_Val_Comp = config->GetEig_Val_Comp();
   uq_delta_b = config->GetUQ_Delta_B();
   uq_urlx = config->GetUQ_URLX();

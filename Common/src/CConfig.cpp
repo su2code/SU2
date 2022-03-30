@@ -5192,9 +5192,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
 
+  /*--- Set sst uq boolean. ---*/
+  using_uq = sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY;
+
   /* --- Throw error if invalid componentiality used --- */
 
-  if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY && (eig_val_comp > 3 || eig_val_comp < 1)){
+  if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
     SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
   }
 
