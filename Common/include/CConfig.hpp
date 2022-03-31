@@ -9646,7 +9646,7 @@ public:
     const bool sst_m    = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end;
     const bool sst_sust = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
     const bool sst_v    = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
-    const bool sst_kl   = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
+    const bool sst_kl   = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
     const bool sst_uq   = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
     const bool sst_rc   = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
 
@@ -9690,7 +9690,6 @@ public:
     if (sst_rc) SSTParsedOptions.sst_string += "-RC";
     if (sst_m) SSTParsedOptions.sst_string += "-m";
 
-    cout << "SST model: " << SSTParsedOptions.sst_string << endl;
     return SSTParsedOptions;
   }
 };
