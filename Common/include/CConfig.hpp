@@ -6630,8 +6630,8 @@ public:
   su2double GetExhaust_Pressure_Target(string val_index) const;
 
   /*!
-   * \brief Value of the CFL reduction in LevelSet problems.
-   * \return Value of the CFL reduction in LevelSet problems.
+   * \brief Value of the CFL reduction in turbulence problems.
+   * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
 
