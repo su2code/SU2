@@ -835,10 +835,6 @@ void CConfig::SetPointersNull(void) {
 
   Config_Filenames = nullptr;
 
-  /*--- Turbulence option pointers ---*/
-
-  SST_Options = nullptr;
-
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = nullptr;    Marker_FarField             = nullptr;    Marker_Custom              = nullptr;
