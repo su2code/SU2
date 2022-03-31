@@ -1105,7 +1105,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     /*--- Uniform inlets or python-customized inlets ---*/
 
     /* --- Initialize quantities for inlet boundary
-     * This routine does not check if they python wrapper is being used to
+     * This routine does not check if the python wrapper is being used to
      * set custom boundary conditions.  This is intentional; the
      * default values for python custom BCs are initialized with the default
      * values specified in the config (avoiding non physical values) --- */

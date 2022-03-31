@@ -4805,7 +4805,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  /*--- Check feassbility for Streamwise Periodic flow ---*/
+  /*--- Check feasibility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
     if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE)
       SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for incompressible flow.", CURRENT_FUNCTION);
