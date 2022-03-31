@@ -977,21 +977,17 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
 void CFlowOutput::DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *config) {
 
-  unsigned short iMarker, iDim, iMarker_Analyze;
+  unsigned short iMarker, iDim, iMarker_Analyze, iAngle;
   unsigned long iPoint, iVertex;
   su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
-  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0;
-  su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0;
-  unsigned short iStation, iAngle, nAngle;
-  su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0, UpVector[3], radians, RotatedVector[3];
+  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0;
+  su2double dx = 0.0, dy = 0.0, dz = 0.0;
   su2double Pressure, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf,
   Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf, Density;
   unsigned short nDim = geometry->GetnDim();
-  unsigned short Theta, nStation;
   unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
   unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
   unsigned long Total_Index;
-  unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
   su2double PT_Mean, Mach_Mean, q_Mean, PT, q, *PT_Sector, PT_Sector_Min, DC60;
 
   int iProcessor, nProcessor;
@@ -1214,7 +1210,7 @@ void CFlowOutput::DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *
       /*--- Compute the location of the critical points of the distortion measure, and center of gravity ---*/
 
       TotalArea = 0.0; xCoord_CG = 0.0; yCoord_CG = 0.0; zCoord_CG = 0.0; PT_Mean = 0.0; Mach_Mean = 0.0;  q_Mean = 0.0;
-
+      unsigned short AT = 0, AM =0, A1 = 0, A2 = 0, A3 = 0, A4 =0, A5 = 0, A6=0;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
 
@@ -1250,137 +1246,84 @@ void CFlowOutput::DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *
       zCoord_CG = zCoord_CG / TotalArea;
       PT_Mean   /= TotalArea;
       Mach_Mean /= TotalArea;
-      q_Mean    /=  TotalArea;
+      q_Mean    /= TotalArea;
 
+      /*--- Compute the Total pressure at each sector ---*/
+      unsigned short Theta = 60;
+      unsigned short nAngle = SU2_TYPE::Int(360/float(Theta));
 
-      /*--- Compute hub and tip radius ---*/
+      PT_Mean = 0; q_Mean = 0;
+      PT_Sector = new su2double[nAngle];
 
-      TipRadius = 1E-6; HubRadius = 1E6;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
 
-          /*--- Current index position and global index ---*/
-
           Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-
-          /*--- Retrieve the merged data for this node ---*/
-
           xCoord = Buffer_Recv_Coord_x[Total_Index];
           yCoord = Buffer_Recv_Coord_y[Total_Index];
           if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
 
-          if (nDim == 2)
-            Distance = sqrt((xCoord_CG-xCoord)*(xCoord_CG-xCoord) +
-                            (yCoord_CG-yCoord)*(yCoord_CG-yCoord));
+          dx = (xCoord - xCoord_CG); dy = (yCoord - yCoord_CG);
+          if (nDim == 3) dz = (zCoord - zCoord_CG);
 
-          if (nDim == 3)
-            Distance = sqrt((xCoord_CG-xCoord)*(xCoord_CG-xCoord) +
-                            (yCoord_CG-yCoord)*(yCoord_CG-yCoord) +
-                            (zCoord_CG-zCoord)*(zCoord_CG-zCoord));
+          /*--- Compute angle of point ---*/
+          su2double add = 0;
+          if (dy<0) add = 180;
+          su2double Angle  = atan(dz/dy)*180/PI_NUMBER+add;
+          if (Angle<0) Angle += 360;
+          if ((abs(dy)<1e-10)&&(abs(dz)<1e-10)) Angle = -1;
 
-          if (Distance > TipRadius) TipRadius = Distance;
-          if (Distance < HubRadius) HubRadius = Distance;
+          /*--- Compute Total PT and q ---*/
+          PT_Mean +=Buffer_Recv_PT[Total_Index];
+          q_Mean  +=Buffer_Recv_q[Total_Index];
+          AT      +=Buffer_Send_Area[Total_Index];
 
-        }
-      }
+          if ((Angle>=0) && (Angle<60)){
+            PT_Sector[0] += Buffer_Recv_PT[Total_Index];
+            A1+=Buffer_Send_Area[Total_Index];
+          
+          } else if ((Angle>=60) && (Angle<120)){
+            PT_Sector[1] += Buffer_Recv_PT[Total_Index];
+            A2+=Buffer_Send_Area[Total_Index];
+          
+          } else if ((Angle>=120) && (Angle<180)){
+            PT_Sector[2] += Buffer_Recv_PT[Total_Index];
+            A3+=Buffer_Send_Area[Total_Index];
+          
+          } else if ((Angle>=180) && (Angle<240)){
+            PT_Sector[3] += Buffer_Recv_PT[Total_Index];
+            A4+=Buffer_Send_Area[Total_Index];
+          
+          } else if ((Angle>=240) && (Angle<300)){
+            PT_Sector[4] += Buffer_Recv_PT[Total_Index];
+            A5+=Buffer_Send_Area[Total_Index];
+          
+          } else if ((Angle>=300) && (Angle<360)){
+            PT_Sector[5] += Buffer_Recv_PT[Total_Index];
+            A6+=Buffer_Send_Area[Total_Index];
 
-      if (HubRadius/TipRadius < 0.05) HubRadius = 0.0;
-
-      /*--- Evaluate the DC60 parameter ---*/
-
-      Theta = Theta_DC60;
-      nStation = nStation_DC60;
-
-      nAngle = SU2_TYPE::Int(360/float(Theta));
-      r = new su2double [nStation+1];
-
-      /*--- Allocate memory ---*/
-
-      PT_Sector = new su2double [nAngle];
-      ProbeArray = new su2double ** [nAngle];
-      for (iAngle = 0; iAngle < nAngle; iAngle++) {
-        ProbeArray[iAngle] = new su2double * [nStation];
-        for (iStation = 0; iStation < nStation; iStation++) {
-          ProbeArray[iAngle][iStation] = new su2double [5];
-        }
-      }
-
-      /*--- Define the radius for each probe ---*/
-
-      r[0] = HubRadius; r[nStation] = TipRadius;
-      for (iStation = 1; iStation < nStation; iStation++) {
-        r[iStation] = sqrt(  r[iStation-1]*r[iStation-1] + (r[nStation]*r[nStation] - r[0]*r[0])/float(nStation) );
-      }
-
-      /*--- Define the probe rack ---*/
-
-      UpVector[0] = 0.0; UpVector[1] = 0.0; UpVector[2] = 1.0;
-
-      for (iAngle = 0; iAngle < nAngle; iAngle++) {
-
-        radians = -iAngle*Theta*2.0*PI_NUMBER/360;
-        RotatedVector[0] =  UpVector[0];
-        RotatedVector[1] =  UpVector[1] * cos(radians) - UpVector[2] * sin(radians);
-        RotatedVector[2] =  UpVector[1] * sin(radians) + UpVector[2] * cos(radians);
-
-        for (iStation = 1; iStation <= nStation; iStation++) {
-          ProbeArray[iAngle][iStation-1][0] = xCoord_CG+RotatedVector[0]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-          ProbeArray[iAngle][iStation-1][1] = yCoord_CG+RotatedVector[1]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-          ProbeArray[iAngle][iStation-1][2] = zCoord_CG+RotatedVector[2]*sqrt(0.5*(r[iStation]*r[iStation]+r[iStation-1]*r[iStation-1]));
-        }
-
-      }
-
-      /*--- Compute the Total pressure at each probe, closes grid point to the location ---*/
-
-      for (iAngle = 0; iAngle < nAngle; iAngle++) {
-
-        for (iStation = 0; iStation < nStation; iStation++) {
-          xCoord_ = ProbeArray[iAngle][iStation][0];
-          yCoord_ = ProbeArray[iAngle][iStation][1];
-          zCoord_ = ProbeArray[iAngle][iStation][2];
-
-          MinDistance = 1E6;
-
-          for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-            for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
-
-              Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-              xCoord = Buffer_Recv_Coord_x[Total_Index];
-              yCoord = Buffer_Recv_Coord_y[Total_Index];
-              if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-
-              dx = (xCoord_ - xCoord); dy = (yCoord_ - yCoord);
-              if (nDim == 3) dz = (zCoord_ - zCoord);
-
-              Distance = dx*dx + dy*dy; if (nDim == 3) Distance += dz*dz; Distance = sqrt(Distance);
-
-              if (Distance <= MinDistance) {
-                MinDistance = Distance;
-                ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index];
-                ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index];
-              }
-
-            }
+          } else if (Angle ==-1){
+            PT_Sector[0] += Buffer_Recv_PT[Total_Index]/6;
+            PT_Sector[1] += Buffer_Recv_PT[Total_Index]/6;
+            PT_Sector[2] += Buffer_Recv_PT[Total_Index]/6;
+            PT_Sector[3] += Buffer_Recv_PT[Total_Index]/6;
+            PT_Sector[4] += Buffer_Recv_PT[Total_Index]/6;
+            PT_Sector[5] += Buffer_Recv_PT[Total_Index]/6;
+            AM += Buffer_Send_Area[Total_Index]/6; //Middle area split into 6 (if exists)
           }
-
         }
       }
-
-      /*--- Evaluate the average pressure at each sector, fan face and dynamic pressure ---*/
-
-      PT_Mean = 0.0; q_Mean = 0.0;
-      for (iAngle = 0; iAngle < nAngle; iAngle++) {
-        PT_Sector[iAngle] = 0.0;
-        for (iStation = 0; iStation < nStation; iStation++) {
-          PT_Sector[iAngle] += ProbeArray[iAngle][iStation][3]/float(nStation);
-          PT_Mean           += ProbeArray[iAngle][iStation][3]/float(nStation*nAngle);
-          q_Mean            += ProbeArray[iAngle][iStation][4]/float(nStation*nAngle);
-        }
-      }
-
+      
+      /*--- Area-Average Node sums ---*/
+      PT_Sector[0] /=(A1+AM);
+      PT_Sector[1] /=(A2+AM);
+      PT_Sector[2] /=(A3+AM);
+      PT_Sector[3] /=(A4+AM);
+      PT_Sector[4] /=(A5+AM);
+      PT_Sector[5] /=(A6+AM);
+      PT_Mean/=AT;
+ 
       /*--- Compute the min value of the averaged pressure at each sector ---*/
-
       PT_Sector_Min = PT_Sector[0];
       for (iAngle = 1; iAngle < nAngle; iAngle++) {
         if (PT_Sector[iAngle] <= PT_Sector_Min) PT_Sector_Min = PT_Sector[iAngle];
@@ -1395,22 +1338,11 @@ void CFlowOutput::DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *
 
       if (q_Mean != 0.0) DC60 = ((PT_Mean - PT_Sector_Min)*TotalPressure_Inf)/q_Mean;
       else DC60 = 0.0;
-
       config->SetSurface_DC60Distortion(iMarker_Analyze, DC60);
       solver->SetTotal_DC60(DC60);
 
       /*--- Deallocate the memory ---*/
-
-      delete[] r;
-
       delete [] PT_Sector;
-
-      for (iAngle = 0; iAngle < nAngle; iAngle++) {
-        for (iStation = 0; iStation < nStation; iStation++) {
-          delete[] ProbeArray[iAngle][iStation];
-        }
-      }
-      delete[] ProbeArray;
 
       /*--- Release the recv buffers on the master node ---*/
 
@@ -1453,10 +1385,7 @@ void CFlowOutput::DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *
     delete [] Buffer_Send_Area;
 
   }
-
-
 }
-
 
 su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
 
