@@ -7733,25 +7733,7 @@ CConfig::~CConfig() {
   delete[] Marker_CfgFile_SobolevBC;
   delete[] Marker_All_SobolevBC;
 
-  delete[] Config_Filenames;
-
-  delete[] SST_Options;
-
-  if (IntInfo_WallFunctions != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (IntInfo_WallFunctions[iMarker] != nullptr)
-        delete[] IntInfo_WallFunctions[iMarker];
-    }
-    delete[] IntInfo_WallFunctions;
-  }
-
-  if (DoubleInfo_WallFunctions != nullptr) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (DoubleInfo_WallFunctions[iMarker] != nullptr)
-        delete[] DoubleInfo_WallFunctions[iMarker];
-    }
-    delete[] DoubleInfo_WallFunctions;
-  }
+  delete[] Marker_All_SendRecv;
 
   delete[] Kind_Wall;
 
