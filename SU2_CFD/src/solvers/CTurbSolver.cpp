@@ -214,6 +214,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   /*--- Restart the solution from file information ---*/
 
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  const bool restart_cfl = config->GetRestart_CFL();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   SU2_OMP_MASTER {
@@ -256,6 +257,10 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+
+        if (restart_cfl) {
+          nodes->SetLocalCFL(iPoint_Local, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint_Local)*config->GetCFLRedCoeff_Turb());
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

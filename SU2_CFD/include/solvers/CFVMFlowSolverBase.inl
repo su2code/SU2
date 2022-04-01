@@ -813,6 +813,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", iter);
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
+  const bool restart_cfl = config->GetRestart_CFL();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   SU2_OMP_MASTER {
@@ -893,6 +894,13 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
             geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
             geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
           }
+        }
+
+        /*--- Load local CFL number ---*/
+
+        if (restart_cfl) {
+          index = counter*Restart_Vars[1] + skipVars + nVar_Restart + config->GetnTurbVar() + nDim*(config->GetGrid_Movement());
+          nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
         }
 
         /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
