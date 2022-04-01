@@ -986,14 +986,14 @@ class CFVMFlowSolverBase : public CSolver {
     
     //TODO: Assert not adjoint
     
-    int m = (int)Mask.size() * nVar;
-    int n = (int)TrialBasis[0].size();
+    unsigned long m       = Mask.size() * nVar;
+    unsigned short nsnaps = TrialBasis[0].size();
     vector<su2double> r(m,0.0);
-    int index = 0;
     
     /*--- Update and obtain residual ---*/
     
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    unsigned long index = 0;
     //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];
@@ -1003,49 +1003,73 @@ class CFVMFlowSolverBase : public CSolver {
       
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         
-        su2double Res = Residual[iVar] + Res_TruncError[iVar];
+        su2double Res = -(Residual[iVar] + Res_TruncError[iVar]);
         r[index] = Res;
       
-        /*--- Update residual information for current thread. ---*/
-        ResidualReductions_PerThread(iPoint, iVar, Res, resRMS, resMax, idxMax);
         index++;
       }
     }
     END_SU2_OMP_FOR
-    /*--- Reduce residual information over all threads in this rank. ---*/
-    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
     
     // DO ROM ITERATION:
     
     /*-- Compute Test Basis: W = J * Phi, where J and Phi may be hyper-reduced --*/
     
-    vector<su2double> TestBasis(m*n, 0.0);
+    vector<su2double> TestBasis(m*nsnaps, 0.0);
+    
+    bool testing = false;
+    if (testing) {
+      ofstream fs;
+      std::string file_name = "check_jacobian.csv";
+      fs.open(file_name);
+      for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+        unsigned long iPoint = Mask[iPoint_mask];
+        for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint)+1; kNeigh++) {
+          unsigned long kPoint = 0;
+          if (kNeigh == geometry->nodes->GetnPoint(iPoint)) kPoint = iPoint;
+          else kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
+          
+          su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
+          
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            for (unsigned short kVar = 0; kVar < nVar; kVar++) {
+              unsigned short index_jik         = kVar*nVar + iVar;
+              
+              fs << setprecision(10) << J_ik[index_jik] << "," ;
+            }
+            fs <<  "\n" ;
+          }
+        }
+      }
+      fs <<  "\n" ;
+      fs.close();
+    }
     
     for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       unsigned long iPoint = Mask[iPoint_mask];
       
       su2mixedfloat* J_ii = Jacobian.GetBlock(iPoint, iPoint);
       
-      for (unsigned long jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
+      for (unsigned short jPoint = 0; jPoint < nsnaps; jPoint++) {
       
-        for (unsigned long kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
-          unsigned long kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
+        for (unsigned short kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
+          unsigned short kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
         
           su2mixedfloat* J_ik = Jacobian.GetBlock(iPoint, kPoint);
           
-          /*--- Compute this block of W_ij = J_ik * Phi_kj, k = kPoint ---*/
+          /*--- Compute this block of W_ij = J_ik * Phi_kj, i = 0:nVar, j = jPoint, k = 0:nVar ---*/
           for (unsigned short iVar = 0; iVar < nVar; iVar++) {
             for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-              unsigned short total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
-              unsigned short total_index_phikj = kVar + kPoint*nVar;
-              unsigned short index_jik         = kVar*nVar + iVar;
+              unsigned long total_index_wij   = iVar + m*jPoint + iPoint_mask*nVar;
+              unsigned long total_index_phikj = kVar + kPoint*nVar;
+              unsigned long index_jik         = kVar*nVar + iVar;
               
               TestBasis[total_index_wij] += TrialBasis[total_index_phikj][jPoint] * J_ik[index_jik];
               
               /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
               if (kNeigh == 0) {
                 unsigned long k = iPoint;
-                unsigned short total_index_phikj = kVar + k*nVar;
+                unsigned long total_index_phikj = kVar + k*nVar;
                 TestBasis[total_index_wij] += TrialBasis[total_index_phikj][jPoint] * J_ii[index_jik];
               }
             }
@@ -1057,12 +1081,12 @@ class CFVMFlowSolverBase : public CSolver {
     
     /*--- Calculate reduced residual ---*/
     
-    vector<su2double> r_red(n,0.0);
+    vector<su2double> r_red(nsnaps, 0.0);
     for (unsigned long jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
       
       for (unsigned long iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
         
-        for (unsigned long i = 0; i < nVar; i++){
+        for (unsigned short i = 0; i < nVar; i++){
           double prod2 = r[iPoint_mask*nVar + i] * TestBasis[jPoint*m + iPoint_mask*nVar + i];
           r_red[jPoint] += prod2;
         }
@@ -1072,7 +1096,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Check for convergence ---*/
     
     su2double ReducedRes = 0.0;
-    for(int i=0; i < n; i++){
+    for(int i=0; i < nsnaps; i++){
       ReducedRes += r_red[i] * r_red[i];
     }
     ReducedRes = sqrt(ReducedRes);
@@ -1082,40 +1106,43 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Write some files before linear solve ---*/
     
     if (true) {
-      writeROMfiles(TestBasis, r, r_red);
-      
       unsigned long InnerIter = config->GetInnerIter();
-      ofstream fs;
-      std::string file_name = "check_coords.csv";
-      if (InnerIter == 0) {
-        fs.open(file_name);
-        for(int i=0; i < n; i++){
-          fs << setprecision(10) << GenCoordsY[i] << "," ;
-        }
-        fs <<  "\n" ;
-        fs.close();
-      }
-      else {
-        std::ofstream file( file_name, std::ios::app ) ;
-        //file.open(file_name);
-        for(int i=0; i < n; i++){
-          file << setprecision(10) << GenCoordsY[i] << "," ;
-        }
-        file <<  "\n" ;
-        file.close();
-      }
+      writeROMfiles(InnerIter, r, r_red);
+      
+      //ofstream fs;
+      //std::string fname = "check_testbasis.csv";
+      //fs.open(fname);
+      //for(unsigned long i=0; i < m; i++){
+      //  for(unsigned long j=0; j < nsnaps; j++){
+      //    fs << setprecision(10) << TestBasis[i +j*m] << "," ;
+      //  }
+      //  fs << "\n";
+      //}
+      //fs.close();
+      //
+      //std::string fname1 = "check_trialbasis.csv";
+      //fs.open(fname1);
+      //for(unsigned long i=0; i < m; i++){
+      //  for(unsigned long j=0; j < nsnaps; j++){
+      //    fs << setprecision(10) << TrialBasis[i][j] << "," ;
+      //  }
+      //  fs << "\n";
+      //}
+      //fs.close();
     }
     
     /*--- Set up variables for QR decomposition ---*/
     
     char TRANS = 'N';
     int NRHS = 1;
-    int LWORK = n+n;
+    int LWORK = nsnaps + nsnaps;
+    int M = (int)m;
+    int N = (int)nsnaps;
     vector<double> WORK(LWORK,0.0);
     int INFO = 1;
     
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
-    dgels_(&TRANS, &m, &n, &NRHS, TestBasis.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
+    dgels_(&TRANS, &M, &N, &NRHS, TestBasis.data(), &M, r.data(), &M, WORK.data(), &LWORK, &INFO);
 #else
     SU2_MPI::Error("Lapack necessary for ROM.", CURRENT_FUNCTION);
 #endif
@@ -1123,8 +1150,8 @@ class CFVMFlowSolverBase : public CSolver {
     
     /*--- Update ROM solution ---*/
     
-    double a = 0.05;
-    for (int i = 0; i < n; i++) {
+    double a = 1000000000.0;
+    for (int i = 0; i < nsnaps; i++) {
       GenCoordsY[i] += a * r[i];
     }
     
@@ -1142,14 +1169,21 @@ class CFVMFlowSolverBase : public CSolver {
           sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
         }
         nodes->AddROMSolution(iPoint, iVar, sum);
+        
+        unsigned long total_index = iPoint*nVar + iVar;
+        /*--- Update residual information for current thread. ---*/
+        ResidualReductions_PerThread(iPoint, iVar, -LinSysRes[total_index], resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
     
+    /*--- "Add" residuals from all threads to global residual variables. ---*/
+    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+    
     ofstream fs;
     std::string fname4 = "check_red_coords_y.csv";
     fs.open(fname4);
-    for(int i=0; i < n; i++){
+    for(int i=0; i < nsnaps; i++){
       fs << setprecision(10) << GenCoordsY[i] << "\n" ;
     }
     fs.close();

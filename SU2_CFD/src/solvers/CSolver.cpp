@@ -4275,7 +4275,8 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   ifstream in_phi(phi_filename);
-  unsigned short s = 0;
+  unsigned long index = 0;
+  if (nModes == 0) nModes = 10000;
   
   if (in_phi) {
     std::string line;
@@ -4287,36 +4288,37 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
       unsigned short modes = 0;
       while (getline(sep, field, ',')) {
         if (modes < nModes) {
-          TrialBasis[s].push_back(stod(field));
+          TrialBasis[index].push_back(stod(field));
           modes++;
         }
       }
-      s++;
+      index++;
     }
   }
   else SU2_MPI::Error("Did not read file for POD matrix (ROM)", CURRENT_FUNCTION);
   
-  unsigned long nsnaps = TrialBasis[0].size();
-  unsigned long iPoint, i, iVar;
-  su2double *ref_sol = new su2double[nPointDomain * nVar]();
-  su2double *init_sol = new su2double[nPointDomain * nVar]();
+  unsigned short nsnaps = TrialBasis[0].size();
+  //su2double *ref_sol = new su2double[nPointDomain * nVar]();
+  //su2double *init_sol = new su2double[nPointDomain * nVar]();
   
   /*--- Reference Solution (read from file) ---*/
   
   ifstream in_ref(ref_filename);
-  s = 0; iPoint = 0; iVar = 0;
   
   if (in_ref) {
     std::string line;
+    unsigned long iPoint = 0;
+    unsigned short iVar  = 0;
+    unsigned long index  = 0;
     
     while (getline(in_ref, line)) {
       stringstream sep(line);
       string field;
       while (getline(sep, field, ',')) {
-        ref_sol[s] = stod(field);
-        nodes->Set_RefSolution(iPoint, iVar, ref_sol[s]);
-        s++;
-        if (s % nVar == 0) iPoint++;
+        su2double ref_sol = stod(field);
+        nodes->Set_RefSolution(iPoint, iVar, ref_sol);
+        index++;
+        if (index % nVar == 0) iPoint++;
         if (iVar == nVar-1) iVar = 0; else iVar++;
       }
     }
@@ -4332,32 +4334,35 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   ifstream in_init(init_filename);
   ifstream in_init_coord(init_coord_filename);
   bool restart = config->GetRestart();
-  s = 0; iPoint = 0; iVar = 0;
   
   if (in_init) {
     /*--- Use initial solution to find reduced coordinates ---*/
+    std::cout << "Reading initial solution from " << init_filename << std::endl;
     std::string line;
+    unsigned long iPoint = 0;
+    unsigned short iVar  = 0;
+    unsigned long index  = 0;
     
     while (getline(in_init, line)) {
       stringstream sep(line);
       string field;
       while (getline(sep, field, ',')) {
-        init_sol[s] = stod(field);
-        nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-        nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-        s++;
-        if (s % nVar == 0) iPoint++;
+        su2double init_sol = stod(field);
+        nodes->SetSolution(iPoint, iVar, init_sol);
+        nodes->SetSolution_Old(iPoint, iVar, init_sol);
+        index++;
+        if (index % nVar == 0) iPoint++;
         if (iVar == nVar-1) iVar = 0; else iVar++;
       }
     }
     
     /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
     
-    for (i = 0; i < nsnaps; i++) {
+    for (unsigned short i = 0; i < nsnaps; i++) {
       double sum = 0.0;
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
+          sum += TrialBasis[iPoint*nVar + iVar][i] * (nodes->GetSolution(iPoint, iVar) - nodes->Get_RefSolution(iPoint, iVar));
         }
       }
       GenCoordsY.push_back(sum);
@@ -4365,15 +4370,17 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   }
   else if (in_init_coord){
     /*--- Use initial coordinates to find inital solution ---*/
+    std::cout << "Reading initial coordinates from " << init_coord_filename << std::endl;
     std::string line;
+    unsigned short modes = 0;
     
     while (getline(in_init_coord, line)) {
       stringstream sep(line);
       string field;
       while (getline(sep, field, ',')) {
-        if (s < nModes) {
+        if (modes < nModes) {
           GenCoordsY.push_back(stod(field));
-          s++;
+          modes++;
         }
       }
     }
@@ -4383,7 +4390,7 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double init_sol2 = 0.0;
-        for (unsigned long j = 0; j < nsnaps; j++) {
+        for (unsigned short j = 0; j < nsnaps; j++) {
           init_sol2 += TrialBasis[iPoint*nVar + iVar][j] * GenCoordsY[j];
         }
         nodes->SetSolution(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
@@ -4394,9 +4401,9 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   else if (restart) {
     /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
     std::cout << "Using restart file for initial condition" << std::endl;
-    for (i = 0; i < nsnaps; i++) {
+    for (unsigned short i = 0; i < nsnaps; i++) {
       double sum = 0.0;
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           sum += TrialBasis[iPoint*nVar + iVar][i] *
           (nodes->GetSolution(iPoint, iVar) - nodes->Get_RefSolution(iPoint, iVar));
@@ -4407,8 +4414,6 @@ void CSolver::SetROM_Variables(CGeometry *geometry, CConfig *config) {
   }
   else SU2_MPI::Error("Did not read file for initial solution or coordinates (ROM)", CURRENT_FUNCTION);
 
-  delete[] ref_sol;
-  delete[] init_sol;
 }
 
 
@@ -4421,8 +4426,8 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   int desired_nodes = (int)config->GetnHyper_Nodes();
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
-  unsigned long iPoint, iVar, nsnaps;
-  int num_cols;
+  unsigned long iPoint;
+  unsigned short nsnaps, num_cols, iVar;
   int firstrun = 0;
   
   if (in_phi) {
@@ -4445,9 +4450,9 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   }
   
   nsnaps = Phi.size();
-  num_cols = (int)nsnaps;
+  num_cols = nsnaps;
   double* PhiNodes = new double[nsnaps*nPointDomain](); // TODO: parallel case?
-  int tally = 0;
+  unsigned long tally = 0;
   
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (unsigned long n = 0; n < nsnaps; n++) {
@@ -4560,14 +4565,14 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   // TODO: Use all modes (since this is "offline") or only use truncated # modes?
   unsigned long nsnaps = Phi.size();
   //unsigned long nsnaps = 10;
-  unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
+  unsigned long j, k, ii, imask, inode, nodewithMax;
   
   /*--- compute PhiNodes, the norm of Phi at each node ---*/
   std::vector<double> PhiNodes;
-  for (i = 0; i < nPointDomain; i++) {
+  for (unsigned long i = 0; i < nPointDomain; i++) {
   
     double norm_phi = 0.0;
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       norm_phi += Phi[0][i*nVar + iVar] * Phi[0][i*nVar + iVar];
     }
   
@@ -4577,7 +4582,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps ; // ceil (nodes to add per loop)
   
   /*--- Add first max node to mask set ---*/
-  for (i = 0; i < nodestoAdd; i++) {
+  for (unsigned long i = 0; i < nodestoAdd; i++) {
     nodewithMax = std::distance(PhiNodes.begin(),
                                 std::max_element(PhiNodes.begin(), PhiNodes.end()) );
     Mask.push_back(nodewithMax);
@@ -4589,7 +4594,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
   std::vector<std::vector<double>> U, masked_U;
 
-  for (ivec = 1; ivec < nsnaps; ivec++) {
+  for (unsigned short ivec = 1; ivec < nsnaps; ivec++) {
     
     U.push_back(Phi[ivec-1]);
     
@@ -4606,10 +4611,10 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     //TODO: simplify this loop
     for (imask = 0; imask < nPointDomain; imask++) {
       if (MaskedNode(imask)) {
-        for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
 
         for (j = 0; j < ivec; j++) {
-          for (iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
+          for (unsigned short iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
         }
       }
     }
@@ -4617,7 +4622,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     /*--- compute gappy reconstruction: GappyPhi = A*B*c ---*/
     for (ii = 0; ii < nPointDomain; ii++) {
       double norm_phi = 0.0;
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         
         unsigned long total_index = ii*nVar+iVar;
         gappy_Phi.push_back({});
@@ -4663,7 +4668,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   if (use_all_nodes) {
     std::cout << "Using all nodes for hyper-reduction." << std::endl;
-    for (int i = 0; i < (int)nPointDomain; i++){
+    for (unsigned long i = 0; i < nPointDomain; i++){
       Mask.push_back(i);
     }
   }
@@ -4692,7 +4697,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   ofstream fs;
   std::string fname = "masked_nodes_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
-  for(int i=0; i < (int)Mask.size(); i++){
+  for(unsigned long i=0; i < Mask.size(); i++){
     fs << Mask[i] << "," ;
   }
   fs << "\n";
@@ -4801,11 +4806,11 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   }
   
   else {
-    if (1.0 / ReducedRes >= 1e2) {
+    if (1.0 / ReducedRes >= 1e10) {
       RomConverged = true;
       return;
     }
-    else if ( abs( (GenCoordsY[1] - Coord1_Old) / Coord1_Old ) < 1e-5 ) {
+    else if ( abs( (GenCoordsY[1] - Coord1_Old) / Coord1_Old ) < 1e-15 ) {
       RomConverged = true;
       return;
     }
@@ -4827,41 +4832,40 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   SetCoord1_Old(GenCoordsY[1]);
 }
 
-void CSolver::writeROMfiles(vector<su2double> &TestBasis, vector<su2double> &r, vector<su2double> &r_red) {
-  int m = (int)Mask.size() * nVar;
-  int n = (int)TrialBasis[0].size();
+void CSolver::writeROMfiles(unsigned long InnerIter, vector<su2double> &r, vector<su2double> &r_red) {
+  unsigned long m = Mask.size() * nVar;
+  unsigned long n = TrialBasis[0].size();
   
   ofstream fs;
-  std::string fname = "check_testbasis.csv";
-  fs.open(fname);
-  for(int i=0; i < m; i++){
-    for(int j=0; j < n; j++){
-      fs << setprecision(10) << TestBasis[i +j*m] << "," ;
+  std::string file_name = "check_coords.csv";
+  if (InnerIter == 0) {
+    fs.open(file_name);
+    for(unsigned long i=0; i < n; i++){
+      fs << setprecision(10) << GenCoordsY[i] << "," ;
     }
-    fs << "\n";
+    fs <<  "\n" ;
+    fs.close();
   }
-  fs.close();
-  
-  std::string fname1 = "check_trialbasis.csv";
-  fs.open(fname1);
-  for(int i=0; i < m; i++){
-    for(int j=0; j < n; j++){
-      fs << setprecision(10) << TrialBasis[i][j] << "," ;
+  else {
+    std::ofstream file( file_name, std::ios::app ) ;
+    //file.open(file_name);
+    for(unsigned long i=0; i < n; i++){
+      file << setprecision(10) << GenCoordsY[i] << "," ;
     }
-    fs << "\n";
+    file <<  "\n" ;
+    file.close();
   }
-  fs.close();
   
   std::string fname2 = "check_residual.csv";
   fs.open(fname2);
-  for(int i=0; i < m; i++){
+  for(unsigned long i=0; i < m; i++){
     fs << setprecision(10) << r[i] << "\n" ;
   }
   fs.close();
   
   std::string fname3 = "check_reduced_residual.csv";
   fs.open(fname3);
-  for(int i=0; i < n; i++){
+  for(unsigned long i=0; i < n; i++){
     fs << setprecision(10) << r_red[i] << "\n";
   }
   fs.close();
@@ -4913,7 +4917,7 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
 
-        for (unsigned long iDim; iDim < nDim; iDim++) {
+        for (unsigned long iDim = 0; iDim < nDim; iDim++) {
           f << Coord[iDim] << ", ";
         }
         f << globalPoint << "\n";

@@ -1493,7 +1493,7 @@ public:
   /*!
    * \brief Write a set of files for debugging purposes
    */
-  void writeROMfiles(vector<su2double> &TestBasis,
+  void writeROMfiles(unsigned long InnerIter,
                      vector<su2double> &r,
                      vector<su2double> &r_red);
   

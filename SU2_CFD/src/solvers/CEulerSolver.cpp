@@ -1734,10 +1734,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   //  }
   //}
   //fs.close();
-  
-  if (rom) nEdge = Edge_masked.size();
-  else     nEdge = geometry->GetnEdge();
-  
     
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
