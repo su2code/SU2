@@ -1415,16 +1415,16 @@ void COutput::CheckHistoryOutput() {
 
   for (const auto& requestedField : requestedScreenFields) {
     bool isGroup = false;
-    for (const auto& item : historyOutput_Map) {
-      if (requestedField == item.second.outputGroup) {
+    for (const auto& name : historyOutput_List) {
+      if (requestedField == historyOutput_Map.at(name).outputGroup) {
         isGroup = true;
-        requestWithExpandedGroups.push_back(item.first);
+        requestWithExpandedGroups.push_back(name);
       }
     }
-    for (const auto& item : historyOutputPerSurface_Map) {
-      if (requestedField == item.second.front().outputGroup) {
+    for (const auto& name : historyOutputPerSurface_List) {
+      if (requestedField == historyOutputPerSurface_Map.at(name).front().outputGroup) {
         isGroup = true;
-        requestWithExpandedGroups.push_back(item.first);
+        requestWithExpandedGroups.push_back(name);
       }
     }
     if (!isGroup) {
