@@ -1648,7 +1648,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
     
   //--- Store primitive variables and coefficients
   const su2double r = varFlo->GetDensity(iPoint);
-  su2double u[3];
+  su2double u[3] = {0.0};
   u[0] = varFlo->GetVelocity(iPoint, 0);
   u[1] = varFlo->GetVelocity(iPoint, 1);
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
@@ -1701,6 +1701,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   //-------------------------//
   //--- Momentum equation ---//
   //-------------------------//
+  
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       weights[1][nDim+2] += r*fv1*tauomut[iDim][jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, jDim);
