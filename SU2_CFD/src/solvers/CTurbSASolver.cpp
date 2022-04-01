@@ -1613,3 +1613,30 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   END_SU2_OMP_FOR
 
 }
+
+void CTurbSASolver::ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                    unsigned long iPoint, vector<vector<su2double> > &weights) {
+
+}
+
+void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                 unsigned long iPoint, vector<vector<su2double> > &weights) {
+
+  LaminarViscosityError(solver, geometry, config, iPoint, weights);
+  EddyViscosityError(solver, geometry, config, iPoint, weights);
+}
+
+void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                   unsigned long iPoint, vector<vector<su2double> > &weights) {
+
+}
+
+void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                          unsigned long iPoint, vector<vector<su2double> > &weights) {
+  
+}
+
+void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                       unsigned long iPoint, vector<vector<su2double> > &weights) {
+  
+}

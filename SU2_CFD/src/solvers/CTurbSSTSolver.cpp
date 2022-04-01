@@ -1118,8 +1118,16 @@ void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
 }
 
-void CTurbSSTSolver::TurbulentMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                                     unsigned long iPoint, vector<vector<su2double> > &weights) {
+// TODO: Move convective SST terms here
+void CTurbSSTSolver::ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                     unsigned long iPoint, vector<vector<su2double> > &weights) { }
+
+// TODO: Move viscous SST terms here
+void CTurbSSTSolver::ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                  unsigned long iPoint, vector<vector<su2double> > &weights) { }
+
+void CTurbSSTSolver::TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                    unsigned long iPoint, vector<vector<su2double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),

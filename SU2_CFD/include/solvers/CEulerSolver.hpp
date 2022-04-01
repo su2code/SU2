@@ -1542,4 +1542,38 @@ public:
    */
   inline bool GetHasHybridParallel() const final { return true; }
 
+  /*!
+   * \brief Compute the convective terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                       unsigned long iPoint, vector<vector<su2double> > &weights) final;
+
+  /*!
+   * \brief Compute the viscous terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                   unsigned long iPoint, vector<vector<su2double> > &weights) final;
+
+  /*!
+   * \brief Compute the viscous terms due to errors in 
+   *        laminar viscosity of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                             unsigned long iPoint, vector<vector<su2double> > &weights);
+
 };

@@ -593,6 +593,22 @@ public:
   void SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
+   * \brief Compute the Green-Gauss Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetGradient_Adaptation_Aux_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+  /*!
+   * \brief Compute the L2 projection Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetGradient_Adaptation_Aux_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+  /*!
    * \brief Compute the Least Squares Hessian of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4366,8 +4382,8 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void ConvectiveMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                        unsigned long iPoint, vector<vector<su2double> > &weights);
+  virtual void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                               unsigned long iPoint, vector<vector<su2double> > &weights) { }
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -4377,8 +4393,8 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  void ViscousMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                     unsigned long iPoint, vector<vector<su2double> > &weights);
+  virtual void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                            unsigned long iPoint, vector<vector<su2double> > &weights) { }
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.
@@ -4388,8 +4404,8 @@ public:
    * \param[in] iPoint - Index of current node.
    * \param[in] weights - Weights of each Hessian in the metric.
    */
-  virtual void TurbulentMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                               unsigned long iPoint, vector<vector<su2double> > &weights) { }
+  virtual void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                              unsigned long iPoint, vector<vector<su2double> > &weights) { }
 
   /*!
    * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.

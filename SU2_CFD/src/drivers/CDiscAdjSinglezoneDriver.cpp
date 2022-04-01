@@ -543,7 +543,11 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_ADJTURB_SYS);
       // solver_adjturb->CorrectBoundHessian(geometry, config, RUNTIME_ADJTURB_SYS);
+
+
     }
+    if(rank == MASTER_NODE) cout << "Computing gradients of additional variables (temperature and viscosity)." << endl;
+    solver_flow->SetGradient_Adaptation_Aux_GG(geometry, config, RUNTIME_FLOW_SYS);
   }
   else {
     if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
@@ -561,6 +565,8 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
     }
+    if(rank == MASTER_NODE) cout << "Computing gradients of additional variables (temperature and viscosity)." << endl;
+    solver_flow->SetGradient_Adaptation_Aux_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
   }
 
   //--- Metric
