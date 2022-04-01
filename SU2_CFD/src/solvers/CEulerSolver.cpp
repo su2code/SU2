@@ -9838,7 +9838,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     const size_t iVar = iDim+1;
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*jDim)/2;
-      weights[2][iVar] -= g*(nu/Pr + nut/Prt)*varAdjFlo->GetHessian(iPoint, nDim+1, ind_jj)*u[iDim];
+      weights[2][iVar] -= g*(nu/Pr + nut/Prt)*u[iDim]*varAdjFlo->GetHessian(iPoint, nDim+1, ind_jj);
       weights[1][iVar] -= g*((gradnu[jDim]/Pr + gradnut[jDim]/Prt)*u[iDim] + (nu+nut)*gradu[iDim][jDim])*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim);
     }
   }
@@ -9858,10 +9858,10 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
                          + (nu/Pr + nut/Prt)*(ujduj - cv*gradT[iDim]))*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
   }
 
-
   //-----------------------//
   //--- Viscosity terms ---//
   //-----------------------//
+  LaminarViscosityError(solver, geometry, config, iPoint, weights);
 
 }
 

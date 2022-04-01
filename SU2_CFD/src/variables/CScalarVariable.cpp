@@ -72,8 +72,4 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     HB_Source.resize(nPoint, nVar) = su2double(0.0);
   }
-
-  if (config->GetBool_Compute_Metric()) {
-    Gradient_Adaptation.resize(nPoint,nVar,nDim,0.0);
-  }
 }
