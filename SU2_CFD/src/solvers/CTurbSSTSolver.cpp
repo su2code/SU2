@@ -143,7 +143,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
 
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  /*--- Initialize quantities for SlidingMesh Interface ---*/
 
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
