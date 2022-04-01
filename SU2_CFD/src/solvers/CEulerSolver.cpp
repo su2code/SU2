@@ -9676,7 +9676,6 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   u[0] = varFlo->GetVelocity(iPoint, 0);
   u[1] = varFlo->GetVelocity(iPoint, 1);
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
-  const su2double e = varFlo->GetEnergy(iPoint);
   su2double k = 0.;
   if(sst) {
     k = varTur->GetPrimitive(iPoint, 0);
@@ -9697,12 +9696,10 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   const su2double cv   = cp/g;
   const su2double Pr   = config->GetPrandtl_Lam();
   const su2double Prt  = config->GetPrandtl_Turb();
-  const su2double lam  = cp*nu*r/Pr;
-  const su2double lamt = cp*nut*r/Prt;
 
 
   //--- Store gradients and stress tensor
-  su2double gradu[3][3], gradT[3], gradnu[3], gradnut[3], divu, tau[3][3];
+  su2double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0};
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
@@ -9716,7 +9713,8 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   //--- Account for wall functions
   // su2double wf = varFlo->GetTauWallFactor(iPoint);
   su2double wf = 1.0;
-  divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+  su2double divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+  su2double tau[3][3] = {0.0};
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       tau[iDim][jDim]  = wf*r*((nu+nut)*( gradu[jDim][iDim] + gradu[iDim][jDim] )
