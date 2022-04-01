@@ -189,6 +189,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const bool limiterFlow =
       (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
 
+  const bool sa_neg = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
+
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Pick one numerics object per thread. ---*/
@@ -349,8 +351,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         bool bad_i = neg_pres_or_rho_i;
         bool bad_j = neg_pres_or_rho_j;
         for (auto iVar = 0; iVar < nVar; iVar++) {
-          bad_i = bad_i || (solution_i[iVar] < 0.0);
-          bad_j = bad_j || (solution_j[iVar] < 0.0);
+          bad_i = bad_i || (solution_i[iVar] < 0.0)*(!sa_neg);
+          bad_j = bad_j || (solution_j[iVar] < 0.0)*(!sa_neg);
         }
 
         // nodes->SetNon_Physical(iPoint, bad_i);
