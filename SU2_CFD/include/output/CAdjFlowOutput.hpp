@@ -2,7 +2,7 @@
  * \file CAdjFlowOutput.hpp
  * \brief Headers of the adjoint flow output.
  * \author T. Kattmann
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,6 @@
 /*! \class CAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
  *  \author T. Kattmann
- *  \date December 3, 2021.
  */
 class CAdjFlowOutput : public COutput {
  protected:

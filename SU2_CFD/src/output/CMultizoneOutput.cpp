@@ -2,7 +2,7 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -78,7 +78,7 @@ CMultizoneOutput::CMultizoneOutput(const CConfig* driver_config, const CConfig* 
 
 }
 
-void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output) {
+void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {
 
   string nameMultizone, zoneIndex;
   su2double comboValue = 0;
@@ -97,11 +97,22 @@ void CMultizoneOutput::LoadMultizoneHistoryData(const COutput* const* output) {
         comboValue += item.second.value;
       }
     }
+
+    /*-- Load the PerSurface values.- ---*/
+    for (const auto& item : output[iZone]->GetHistoryPerSurfaceFields()) {
+      const auto& name = item.first;
+      nameMultizone = name + zoneIndex;
+
+      unsigned short iMarker = 0;
+      for (const auto& field : item.second) {
+        SetHistoryOutputPerSurfaceValue(nameMultizone, field.value, iMarker++);
+      }
+    }
   }
   SetHistoryOutputValue("COMBO", comboValue);
 }
 
-void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* output) {
+void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* output, const CConfig* const* config) {
 
   string name, header, group, zoneIndex;
 
@@ -124,6 +135,52 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
 
         AddHistoryOutput(name, header, field.screenFormat, group, "", field.fieldType );
       }
+    }
+
+    /*--- Prepare Marker lists that are passed to 'AddHistoryOutputPerSurface'. ---*/
+    vector<string> Marker_Analyze;
+    for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[iZone]->GetnMarker_Analyze(); iMarker_Analyze++) {
+      Marker_Analyze.push_back(config[iZone]->GetMarker_Analyze_TagBound(iMarker_Analyze));
+    }
+
+    vector<string> Marker_Monitoring;
+    for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      Marker_Monitoring.push_back(config[iZone]->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
+    }
+
+    /*--- Add the PerSurface outputs. ---*/
+    const auto& ZoneHistoryPerSurfaceFields = output[iZone]->GetHistoryPerSurfaceFields();
+
+    for (const auto& nameSinglezone : output[iZone]->GetHistoryOutputPerSurface_List()) {
+
+      const auto& field = ZoneHistoryPerSurfaceFields.at(nameSinglezone);
+
+      name = nameSinglezone + zoneIndex;
+
+      /*--- Remove the unnecessary Marker name from the fieldName, i.e. "Avg_Massflow(inlet)"->"Avg_Massflow". ---*/
+      /*--- Note that index zero in 'field[0]' refers to a specific Marker. Some attributes remain constant over the markers
+            like the first part of the name, the screenFormat and the fieldType. ---*/
+      string baseheader;
+      const auto pos = field[0].fieldName.find('(');
+      if (pos != std::string::npos)
+        baseheader = field[0].fieldName.substr(0, pos);
+      else
+        SU2_MPI::Error("Cannot process PerSurface *_SURF history output: " + baseheader, CURRENT_FUNCTION);
+
+      header = baseheader + zoneIndex;
+      /*--- Attach zone-index to the group after determining which group it is. ---*/
+      group = field[0].outputGroup;
+
+      /*--- Determine whether Maker_Analyze/Monitoring has to be used. ---*/
+      auto* Marker = &Marker_Monitoring;
+      if (group == "FLOW_COEFF_SURF")
+        Marker = &Marker_Analyze;
+      else if (group != "AERO_COEFF_SURF" && group != "HEAT_SURF")
+        SU2_MPI::Error("Per Surface output group unknown: " + group, CURRENT_FUNCTION);
+
+      group += zoneIndex;
+
+      AddHistoryOutputPerSurface(name, header, field[0].screenFormat, group, *Marker, field[0].fieldType );
     }
   }
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);

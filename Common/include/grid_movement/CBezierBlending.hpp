@@ -3,7 +3,7 @@
  * \brief Headers of the CBezierBlending class.
  *        Defines blending using Bernsteinpolynomials (Bezier Curves)
  * \author T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

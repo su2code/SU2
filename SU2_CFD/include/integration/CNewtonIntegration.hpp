@@ -2,7 +2,7 @@
  * \file CNewtonIntegration.hpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,7 +62,7 @@ public:
 
 private:
   /*--- Residual evaluation modes, explicit for products, default to allow preconditioners to be built. ---*/
-  enum ResEvalType {EXPLICIT, DEFAULT};
+  enum class ResEvalType {EXPLICIT, DEFAULT};
 
   bool setup = false;
   Scalar finDiffStepND = 0.0;

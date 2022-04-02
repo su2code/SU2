@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,8 +58,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   const auto InnerIter = config->GetInnerIter();
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE;
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   const bool wall_functions = config->GetWall_Functions();
@@ -250,7 +250,10 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 
   /*--- Local variables ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+  }
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
@@ -405,7 +408,10 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Get the specified wall heat flux from config ---*/
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+  }
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX    = nodes->GetTIndex();

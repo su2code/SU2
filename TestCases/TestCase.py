@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -79,7 +79,7 @@ class TestCase:
         passed       = True
         exceed_tol   = False
         timed_out    = False
-        iter_missing = False
+        iter_missing = True
         start_solver = True
 
         # if root, add flag to mpirun

@@ -1,8 +1,8 @@
 /*!
- * \file driver_structure.cpp
+ * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -226,6 +226,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
       DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
+
       /*--- Static mesh processing.  ---*/
 
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
@@ -812,6 +813,10 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     geometry[MESH_0]->ComputeSurf_Curvature(config);
   }
 
+  /*--- Compute the global surface areas for all markers. ---*/
+
+  geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);
+
   /*--- Check for periodicity and disable MG if necessary. ---*/
 
   if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
@@ -1100,7 +1105,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
     /*--- Uniform inlets or python-customized inlets ---*/
 
     /* --- Initialize quantities for inlet boundary
-     * This routine does not check if they python wrapper is being used to
+     * This routine does not check if the python wrapper is being used to
      * set custom boundary conditions.  This is intentional; the
      * default values for python custom BCs are initialized with the default
      * values specified in the config (avoiding non physical values) --- */

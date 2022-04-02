@@ -2,7 +2,7 @@
  * \file CTRIA1.cpp
  * \brief Definition of the 3-node triangular element with one Gauss point.
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

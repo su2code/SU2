@@ -2,7 +2,7 @@
  * \file CDiscAdjMeshVariable.cpp
  * \brief Main subroutines for the discrete adjoint mesh variable structure.
  * \author Ruben Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
