@@ -129,7 +129,7 @@ void CScalarSolver<V>::SetPrimitive_Gradient_GG(CGeometry* geometry, const CConf
   const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
 
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVar, gradient);
 }
 
 template <class V>
@@ -154,7 +154,7 @@ void CScalarSolver<V>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConf
   const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
+                               primitives, 0, nPrimVar, gradient, rmatrix);
 }
 
 template <class V>
@@ -167,7 +167,7 @@ void CScalarSolver<V>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* 
   auto& limiter = nodes->GetLimiter();
 
   computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2, *geometry, *config, 0,
-                  nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
+                  nPrimVar, primitives, gradient, primMin, primMax, limiter);
 }
 
 /*--- END: Hack to use conservatives in SST ---*/
