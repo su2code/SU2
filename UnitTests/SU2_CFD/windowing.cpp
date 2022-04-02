@@ -2,7 +2,7 @@
  * \file windowing.cpp
  * \brief Unit tests for windowed time-averaging.
  * \author C. Bauer
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CSysSolve_b.cpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring, J. Blühdorn
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

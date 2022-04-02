@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for integration of source
  *        terms in species problems.
  * \author T. Kattmann
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
