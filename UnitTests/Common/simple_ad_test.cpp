@@ -4,7 +4,7 @@
  *        basic functionality, this also serves as a regression test
  *        to make sure that AD works within unit testing.
  * \author C. Pederson
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

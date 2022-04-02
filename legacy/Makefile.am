@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.3.0 "Blackbird"
+# \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
