@@ -112,7 +112,7 @@ class CAvgGrad_Scalar : public CNumerics {
     AD::SetPreaccIn(Normal, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
-    if (correct_gradient) {
+    if (correct_gradient || config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG) {
       AD::SetPreaccIn(ScalarVar_i, nVar);
       AD::SetPreaccIn(ScalarVar_j, nVar);
     }
