@@ -562,7 +562,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const bool axisymmetric = false;
 
   /*--- Closure constants ---*/
-  const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
+  const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2, ProdLimConstant;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -647,6 +647,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
+        ProdLimConstant(constants[10])
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
@@ -750,13 +751,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /* SST-1994 */
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
-        ProdLimConstant = 20.0; 
         P_Base = VorticityMag;
         /* mut = rho*k/max(w,Omega*F_2/a1) = rho*k/zeta */
       }
       else {
         /* SST-2003 */  
-        ProdLimConstant = 10.0;
         P_Base = StrainMag_i;
         /* mut = rho*k/max(w,S*F_2/a1) = rho*k/zeta */
       }

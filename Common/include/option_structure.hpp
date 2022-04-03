@@ -972,8 +972,8 @@ enum class SST_OPTIONS {
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994", SST_OPTIONS::V1994)
-  MakePair("V2003", SST_OPTIONS::V2003)
-  MakePair("MODIFIED", SST_OPTIONS::MODIFIED)
+  MakePair("V2003m", SST_OPTIONS::V2003)
+  //MakePair("MODIFIED", SST_OPTIONS::MODIFIED)
   MakePair("SUSTAINED", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
@@ -985,7 +985,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
  * \brief Structure containing parsed SST options.
  */
 struct SST_ParsedOptions {
-  std::string sst_string = "Menter's k-w SST"; /*!< \brief Initial string for SST problems. */
+  //std::string sst_string = "Menter's k-w SST"; /*!< \brief Initial string for SST problems. */
 
   SST_OPTIONS version;       /*!< \brief Enum SST base model. */
   SST_OPTIONS production;    /*!< \brief Enum for production corrections/modifiers for SST model. */

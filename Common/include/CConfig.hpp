@@ -9641,30 +9641,37 @@ public:
     SST_ParsedOptions SSTParsedOptions;
     const auto sst_options_end = SST_Options + nSST_Options;
 
-    const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
+    const bool sst_1994  = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
     const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
-    const bool sst_m    = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end;
-    const bool sst_sust = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
-    const bool sst_v    = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
-    const bool sst_kl   = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
-    const bool sst_uq   = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
-    const bool sst_rc   = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
+    /* when V2003 is selected, we automatically select sst_m as well */
+    const bool sst_m     = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end || sst_2003;
+    const bool sst_sust  = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
+    const bool sst_v     = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
+    const bool sst_kl    = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
+    const bool sst_uq    = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
+    const bool sst_rc    = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
 
     // Parse base version
     if (sst_1994 && sst_2003) {
-      SU2_MPI::Error("Two versions (1994 and 2003) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Two versions (1994 and 2003m) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
     } else if (sst_2003) {
+      /*---  sst-2003m model is sst2003 + sstm ---*/
+      
       SSTParsedOptions.version = SST_OPTIONS::V2003;
-      SSTParsedOptions.sst_string += "-2003";
+      //SSTParsedOptions.sst_string += "-2003";
     } else if (sst_1994){
+      /* --- Add warning to switch to SST-2003m --- */
+      cout << "warning: the current SST-1994 model is inconsistent with literature. We recommend to use the SST-2003m model." << endl;
+      cout << "In the future, the 2003m model will become the default SST model. " << endl;
+
       SSTParsedOptions.version = SST_OPTIONS::V1994;
-      SSTParsedOptions.sst_string += "-1994";
+      //SSTParsedOptions.sst_string += "-1994";
     } else {
 
       /* use the most recent model as the default*/
       cout << "SST_OPTIONS not found! using default SST-V2003" << endl;
       SSTParsedOptions.version = SST_OPTIONS::V2003;
-      SSTParsedOptions.sst_string += "-2003";
+      //SSTParsedOptions.sst_string += "-2003";
     }
 
     // Parse production modifications
@@ -9672,13 +9679,13 @@ public:
       SU2_MPI::Error("Please select only one SST production term modifier (V, KL, UQ).", CURRENT_FUNCTION);
     } else if (sst_v) {
       SSTParsedOptions.production = SST_OPTIONS::VORTICITY;
-      SSTParsedOptions.sst_string += "-V";
+      //SSTParsedOptions.sst_string += "-V";
     } else if (sst_kl) {
       SSTParsedOptions.production = SST_OPTIONS::KL;
-      SSTParsedOptions.sst_string += "-KL";
+      //SSTParsedOptions.sst_string += "-KL";
     } else if (sst_uq) {
       SSTParsedOptions.production = SST_OPTIONS::UNCERTAINTY;
-      SSTParsedOptions.sst_string += "-UQ";
+      //SSTParsedOptions.sst_string += "-UQ";
     }
 
     // Parse boolean options
@@ -9686,9 +9693,9 @@ public:
     SSTParsedOptions.rc = sst_rc;
     SSTParsedOptions.m = sst_m;
 
-    if (sst_sust) SSTParsedOptions.sst_string += "-sust";
-    if (sst_rc) SSTParsedOptions.sst_string += "-RC";
-    if (sst_m) SSTParsedOptions.sst_string += "-m";
+    //if (sst_sust) SSTParsedOptions.sst_string += "-sust";
+    //if (sst_rc) SSTParsedOptions.sst_string += "-RC";
+    //if (sst_m) SSTParsedOptions.sst_string += "-m";
 
     return SSTParsedOptions;
   }
