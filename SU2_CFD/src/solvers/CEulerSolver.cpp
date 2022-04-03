@@ -9638,11 +9638,11 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
         weights[1][nVarFlo+0] += (g-1.)*adj;
       }
       //--- Energy equation
-      const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 0),
-                      adjy = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 1);
+      const su2double adjx = varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, 0),
+                      adjy = varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, 1);
       weights[1][nVarFlo+0] += (g-1.)*(u*adjx+v*adjy);
       if (nDim == 3) {
-        const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, 2);
+        const su2double adjz = varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, 2);
         weights[1][nVarFlo+0] += (g-1.)*w*adjz;
       }
     }
@@ -9700,7 +9700,6 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
 
   //--- Store gradients and stress tensor
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0};
-
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
@@ -9781,19 +9780,19 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
       const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
-      weights[2][iVar] -= ONE3 * (nu + nut) * ( 3.0 * varAdjFlo->GetHessian(iPoint, nDim+1, ind_ij) * u[jDim]
-                                            + ( 3.0 * varAdjFlo->GetHessian(iPoint, nDim+1, ind_jj) * u[iDim]
-                                            -   2.0 * varAdjFlo->GetHessian(iPoint, nDim+1, ind_ij) * u[jDim] ) * (iDim != jDim) );
+      weights[2][iVar] -= ONE3 * (nu + nut) * ( 3.0 * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ij) * u[jDim]
+                                            + ( 3.0 * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_jj) * u[iDim]
+                                            -   2.0 * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ij) * u[jDim] ) * (iDim != jDim) );
       const su2double gradnuj_ui = (gradnu[jDim]+gradnut[jDim]) * u[iDim] + (nu+nut) * gradu[iDim][jDim];
       const su2double gradnui_uj = (gradnu[iDim]+gradnut[iDim]) * u[jDim] + (nu+nut) * gradu[jDim][iDim];
       const su2double gradnuj_uj = (gradnu[jDim]+gradnut[jDim]) * u[jDim] + (nu+nut) * gradu[jDim][jDim];
-      weights[1][iVar] -= ONE3 * ( 3.0 * gradnuj_uj * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim)
-                               + ( 3.0 * gradnuj_ui * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim)
-                               -   2.0 * gradnui_uj * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim) ) * (iDim != jDim) );
-      weights[1][iVar] += tau[iDim][jDim]/r * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim);
+      weights[1][iVar] -= ONE3 * ( 3.0 * gradnuj_uj * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim)
+                               + ( 3.0 * gradnuj_ui * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim)
+                               -   2.0 * gradnui_uj * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim) ) * (iDim != jDim) );
+      weights[1][iVar] += tau[iDim][jDim]/r * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim);
     }
-    weights[2][iVar] -= ONE3 * (nu + nut) * varAdjFlo->GetHessian(iPoint, nDim+1, ind_ii) * u[iDim];
-    weights[1][iVar] -= ONE3 * gradnui_ui * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+    weights[2][iVar] -= ONE3 * (nu + nut) * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii) * u[iDim];
+    weights[1][iVar] -= ONE3 * gradnui_ui * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
   }
 
   //--- Errors in shear stress work wrt density
@@ -9805,26 +9804,26 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
       const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
-      weights[2][0] += ONE3 * (nu + nut) * u[iDim] * ( 3.0 * varAdjFlo->GetHessian(iPoint, nDim+1, ind_ij) * u[jDim]
-                                                   + ( 3.0 * varAdjFlo->GetHessian(iPoint, nDim+1, ind_jj) * u[iDim]
-                                                   -   2.0 * varAdjFlo->GetHessian(iPoint, nDim+1, ind_ij) * u[jDim] ) * (iDim != jDim) );
+      weights[2][0] += ONE3 * (nu + nut) * u[iDim] * ( 3.0 * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ij) * u[jDim]
+                                                   + ( 3.0 * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_jj) * u[iDim]
+                                                   -   2.0 * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ij) * u[jDim] ) * (iDim != jDim) );
       const su2double gradnuj_uiuj = (gradnu[jDim]+gradnut[jDim]) * u[iDim]*u[jDim] + (nu+nut) * (gradu[iDim][jDim]*u[jDim]+gradu[jDim][jDim]*u[iDim]);
       const su2double gradnuj_uiui = (gradnu[jDim]+gradnut[jDim]) * u[iDim]*u[iDim] + (nu+nut) * 2.0*(gradu[iDim][jDim]*u[iDim]);
       const su2double gradnui_uiuj = (gradnu[iDim]+gradnut[iDim]) * u[iDim]*u[jDim] + (nu+nut) * (gradu[iDim][iDim]*u[jDim]+gradu[jDim][iDim]*u[iDim]);
-      weights[1][0] += ONE3 * ( 3.0 * gradnuj_uiuj * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim)
-                            + ( 3.0 * gradnuj_uiui * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim)
-                            -   2.0 * gradnui_uiuj * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim) ) * (iDim != jDim) );
-      weights[1][0] -= tau[iDim][jDim]*u[iDim]/r * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim);
+      weights[1][0] += ONE3 * ( 3.0 * gradnuj_uiuj * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim)
+                            + ( 3.0 * gradnuj_uiui * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim)
+                            -   2.0 * gradnui_uiuj * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim) ) * (iDim != jDim) );
+      weights[1][0] -= tau[iDim][jDim]*u[iDim]/r * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim);
     }
-    weights[2][0] += ONE3 * (nu + nut) * varAdjFlo->GetHessian(iPoint, nDim+1, ind_ii) * u[iDim];
-    weights[1][0] += ONE3 * gradnui_uiui * varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+    weights[2][0] += ONE3 * (nu + nut) * varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii) * u[iDim];
+    weights[1][0] += ONE3 * gradnui_uiui * varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
   }
 
   //--- Errors in heat flux wrt energy
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[2][nDim+1] -= g*(nu/Pr + nut/Prt)*varAdjFlo->GetHessian(iPoint, nDim+1, ind_ii);
-    weights[1][nDim+1] -= g*(gradnu[iDim]/Pr + gradnut[iDim]/Prt)*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+    weights[2][nVarFlo-1] -= g*(nu/Pr + nut/Prt)*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii);
+    weights[1][nVarFlo-1] -= g*(gradnu[iDim]/Pr + gradnut[iDim]/Prt)*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
   }
 
   //--- Errors in heat flux wrt momentum
@@ -9832,8 +9831,8 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     const size_t iVar = iDim+1;
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*jDim)/2;
-      weights[2][iVar] += g*(nu/Pr + nut/Prt)*u[iDim]*varAdjFlo->GetHessian(iPoint, nDim+1, ind_jj);
-      weights[1][iVar] += g*((gradnu[jDim]/Pr + gradnut[jDim]/Prt)*u[iDim] + (nu+nut)*gradu[iDim][jDim])*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, jDim);
+      weights[2][iVar] += g*(nu/Pr + nut/Prt)*u[iDim]*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_jj);
+      weights[1][iVar] += g*((gradnu[jDim]/Pr + gradnut[jDim]/Prt)*u[iDim] + (nu+nut)*gradu[iDim][jDim])*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, jDim);
     }
   }
   
@@ -9846,9 +9845,9 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
       
     }
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[2][iVar] -= g*(nu/Pr + nut/Prt)*(0.5*u2 - cv*T)*varAdjFlo->GetHessian(iPoint, nDim+1, ind_ii);
+    weights[2][iVar] -= g*(nu/Pr + nut/Prt)*(0.5*u2 - cv*T)*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii);
     weights[1][iVar] -= g*((gradnu[iDim]/Pr + gradnut[iDim]/Prt)*(0.5*u2 - cv*T)
-                         + (nu/Pr + nut/Prt)*(ujduj - cv*gradT[iDim]))*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+                         + (nu/Pr + nut/Prt)*(ujduj - cv*gradT[iDim]))*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
   }
 
   //-----------------------//
@@ -9893,7 +9892,6 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
 
   //--- Store gradients and stress tensor
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0};
-
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
@@ -9923,7 +9921,7 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       taudUbar += tauomu[iDim][jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, iDim+1, jDim);
     }
-    weights[1][nDim+1] += dmudT/(r*cv)*taudUbar;
+    weights[1][nVarFlo-1] += dmudT/(r*cv)*taudUbar;
     for (auto jDim = 0; jDim < nDim; ++jDim)
       weights[1][jDim+1] -= dmudT/(r*cv)*u[jDim]*taudUbar;
     weights[1][0] += dmudT/(r*cv)*(0.5*u2-cv*T)*taudUbar;
@@ -9939,18 +9937,18 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       work += tauomu[iDim][jDim]*u[jDim];
     }
-    weights[1][nDim+1] += dmudT/(r*cv)*work*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+    weights[1][nVarFlo-1] += dmudT/(r*cv)*work*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
     for (auto jDim = 0; jDim < nDim; ++jDim)
-        weights[1][jDim+1] -= dmudT/(r*cv)*u[jDim]*work*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
-    weights[1][0] += dmudT/(r*cv)*(0.5*u2-cv*T)*work*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+        weights[1][jDim+1] -= dmudT/(r*cv)*u[jDim]*work*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
+    weights[1][0] += dmudT/(r*cv)*(0.5*u2-cv*T)*work*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
   }
 
   //--- Errors in heat flux
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nDim+1] += dmudT/(r*cv)*cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+    weights[1][nVarFlo-1] += dmudT/(r*cv)*cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
     for (auto jDim = 0; jDim < nDim; ++jDim)
-        weights[1][jDim+1] -= dmudT/(r*cv)*u[jDim]*cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
-    weights[1][0] += dmudT/(r*cv)*(0.5*u2-cv*T)*cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, nDim+1, iDim);
+        weights[1][jDim+1] -= dmudT/(r*cv)*u[jDim]*cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
+    weights[1][0] += dmudT/(r*cv)*(0.5*u2-cv*T)*cp/Pr*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, nVarFlo-1, iDim);
   }
 
 }
