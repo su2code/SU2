@@ -178,7 +178,7 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.RESTART_ADJ_FILENAME = cur_solfil_adj
     config.SOLUTION_FILENAME    = cur_solfil
     config.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
-    config.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+    config.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, METRIC"
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
     config.ADAP_HMAX            = config.PYADAP_HMAX

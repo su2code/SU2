@@ -899,7 +899,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
         /*--- Load local CFL number ---*/
 
         if (restart_cfl) {
-          index = counter*Restart_Vars[1] + skipVars + nVar_Restart + config->GetnTurbVar() + nDim*(config->GetGrid_Movement());
+          index = counter*Restart_Vars[1] + skipVars + nVar_Restart + config->GetnTurbVar() + nDim*(dynamic_grid);
           nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
         }
 

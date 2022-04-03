@@ -538,7 +538,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     CGeometry::ComputeWallDistance(config, geometry);
   }
 
-  bool turb = turbulent && config[iZone]->GetFrozen_Visc_Disc();
+  bool turb = turbulent && (!config[iZone]->GetFrozen_Visc_Disc());
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool nemo = (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE);
   bool rads = config[iZone]->AddRadiation();

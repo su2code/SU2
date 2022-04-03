@@ -617,18 +617,17 @@ CSourcePieceWise_TurbSA_Neg<T>::CSourcePieceWise_TurbSA_Neg(unsigned short val_n
 template <class T>
 CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const CConfig* config) {
 
-  unsigned short iDim;
-
-//  AD::StartPreacc();
-//  AD::SetPreaccIn(V_i, nDim+6);
-//  AD::SetPreaccIn(Vorticity_i, nDim);
-//  AD::SetPreaccIn(StrainMag_i);
-//  AD::SetPreaccIn(ScalarVar_i[0]);
-//  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
-//  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
-
   Density_i = V_i[idx.Density()];
   Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(Density_i);
+  AD::SetPreaccIn(Laminar_Viscosity_i);
+  AD::SetPreaccIn(Vorticity_i, nDim);
+  AD::SetPreaccIn(StrainMag_i);
+  AD::SetPreaccIn(ScalarVar_i[0]);
+  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
+  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i); AD::SetPreaccIn(roughness_i);
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -668,9 +667,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       /*--- Production term ---*/;
 
       //    Original SA model
-      //    Production = cb1*(1.0-ft2)*Shat*ScalarVar_i[0]*Volume;
+      Production = cb1*(1.0-ft2)*Shat*ScalarVar_i[0]*Volume;
 
-      Production = cb1*Shat*ScalarVar_i[0]*Volume;
+      // Production = cb1*Shat*ScalarVar_i[0]*Volume;
 
       /*--- Destruction term ---*/
 
@@ -685,7 +684,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       /*--- Diffusion term ---*/
 
       norm2_Grad = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
@@ -698,7 +697,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
       if ( Shat <= 1.0e-10 ) dShat = 0.0;
       else dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
-      Jacobian_i[0] += cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += cb1*(1.0-ft2)*(ScalarVar_i[0]*dShat+Shat)*Volume;
 
       /*--- Implicit part, destruction term ---*/
 
@@ -727,7 +726,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       /*--- Diffusion term ---*/
 
       norm2_Grad = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
@@ -746,8 +745,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
 
   }
 
-//  AD::SetPreaccOut(Residual);
-//  AD::EndPreacc();
+  AD::SetPreaccOut(Residual);
+  AD::EndPreacc();
 
   return ResidualType<>(&Residual, &Jacobian_i, nullptr);
 
