@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,12 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     default:
       break;
   }
+
+  /*--- Set the initial Streamwise periodic pressure drop value. ---*/
+
+  if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
+    // Note during restarts, the flow.meta is read first. But that sets the cfg-value so we are good here.
+    SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop();
 }
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -60,8 +66,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
@@ -132,10 +138,6 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
   /*---    Pressure-Drop update in case of a prescribed massflow.                                 ---*/
   /*-------------------------------------------------------------------------------------------------*/
 
-  const auto nZone = geometry->GetnZone();
-  const auto InnerIter = config->GetInnerIter();
-  const auto OuterIter = config->GetOuterIter();
-
   su2double Area_Local            = 0.0,
             MassFlow_Local        = 0.0,
             Average_Density_Local = 0.0,
@@ -189,44 +191,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
   /*--- Set solver variables ---*/
   SPvals.Streamwise_Periodic_MassFlow = MassFlow_Global;
   SPvals.Streamwise_Periodic_InletTemperature = Temperature_Global;
-
-  /*--- As deltaP changes with prescribed massflow the const config value should only be used once. ---*/
-  if((nZone==1 && InnerIter==0) ||
-     (nZone>1  && OuterIter==0 && InnerIter==0)) {
-    SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
-  }
-
-  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
-    /*------------------------------------------------------------------------------------------------*/
-    /*--- 2. Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/
-    /*---    The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
-    /*------------------------------------------------------------------------------------------------*/
-
-    /*--- Load/define all necessary variables ---*/
-    const su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
-    const su2double damping_factor = config->GetInc_Outlet_Damping();
-    su2double Pressure_Drop_new, ddP;
-
-    /*--- Compute update to Delta p based on massflow-difference ---*/
-    ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
-
-    /*--- Store updated pressure difference ---*/
-    Pressure_Drop_new = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
-    /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times
-          (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts
-          it gets called 2x before the restart files are read such that the current massflow is
-          Area*inital-velocity which can be way off!
-          With this there is still a slight inconsistency wrt to a non-restarted simulation: The restarted "zero-th"
-          iteration does not get a pressure-update but the continuing simulation would have an update here. This can be
-          fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at
-          best. ---*/
-    if((nZone==1 && InnerIter>0) ||
-       (nZone>1  && OuterIter>0)) {
-      SPvals.Streamwise_Periodic_PressureDrop = Pressure_Drop_new;
-    }
-
-  } // if massflow
-
+  SPvals.Streamwise_Periodic_BoundaryArea = Area_Global;
+  SPvals.Streamwise_Periodic_AvgDensity = Average_Density_Global;
 
   if (config->GetEnergy_Equation()) {
     /*---------------------------------------------------------------------------------------------*/

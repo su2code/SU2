@@ -1,8 +1,8 @@
 /*!
- * \file driver_structure.cpp
+ * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -116,146 +116,147 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
 #endif
 #endif
     
-    SU2_MPI::SetComm(MPICommunicator);
-    
-    rank = SU2_MPI::GetRank();
-    size = SU2_MPI::GetSize();
-    
-    /*--- Start timer to track preprocessing for benchmarking. ---*/
-    
-    StartTime = SU2_MPI::Wtime();
-    
-    /*--- Initialize containers with null --- */
-    
-    SetContainers_Null();
-    
-    /*--- Preprocessing of the config files. ---*/
-    
-    Input_Preprocessing(config_container, driver_config);
-    
-    /*--- Retrieve dimension from mesh file ---*/
-    
-    nDim = CConfig::GetnDim(config_container[ZONE_0]->GetMesh_FileName(),
-                            config_container[ZONE_0]->GetMesh_FileFormat());
-    
-    /*--- Output preprocessing ---*/
-    
-    Output_Preprocessing(config_container, driver_config, output_container, driver_output);
-    
-    
-    for (iZone = 0; iZone < nZone; iZone++) {
-        
-        /*--- Read the number of instances for each zone ---*/
-        
-        nInst[iZone] = config_container[iZone]->GetnTimeInstances();
-        
-        geometry_container[iZone]    = new CGeometry**    [nInst[iZone]] ();
-        iteration_container[iZone]   = new CIteration*    [nInst[iZone]] ();
-        solver_container[iZone]      = new CSolver***     [nInst[iZone]] ();
-        integration_container[iZone] = new CIntegration** [nInst[iZone]] ();
-        numerics_container[iZone]    = new CNumerics****  [nInst[iZone]] ();
-        grid_movement[iZone]         = new CVolumetricMovement* [nInst[iZone]] ();
-        
-        /*--- Allocate transfer and interpolation container --- */
-        
-        interface_container[iZone]    = new CInterface*[nZone] ();
-        interpolator_container[iZone].resize(nZone);
-        
-        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-            
-            config_container[iZone]->SetiInst(iInst);
-            
-            /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
-             based data structure is constructed, i.e. node and cell neighbors are
-             identified and linked, face areas and volumes of the dual mesh cells are
-             computed, and the multigrid levels are created using an agglomeration procedure. ---*/
-            
-            Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dry_run);
-            
-        }
+  SU2_MPI::SetComm(MPICommunicator);
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  /*--- Start timer to track preprocessing for benchmarking. ---*/
+
+  StartTime = SU2_MPI::Wtime();
+
+  /*--- Initialize containers with null --- */
+
+  SetContainers_Null();
+
+  /*--- Preprocessing of the config files. ---*/
+
+  Input_Preprocessing(config_container, driver_config);
+
+  /*--- Retrieve dimension from mesh file ---*/
+
+  nDim = CConfig::GetnDim(config_container[ZONE_0]->GetMesh_FileName(),
+                          config_container[ZONE_0]->GetMesh_FileFormat());
+
+  /*--- Output preprocessing ---*/
+
+  Output_Preprocessing(config_container, driver_config, output_container, driver_output);
+
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Read the number of instances for each zone ---*/
+
+    nInst[iZone] = config_container[iZone]->GetnTimeInstances();
+
+    geometry_container[iZone]    = new CGeometry**    [nInst[iZone]] ();
+    iteration_container[iZone]   = new CIteration*    [nInst[iZone]] ();
+    solver_container[iZone]      = new CSolver***     [nInst[iZone]] ();
+    integration_container[iZone] = new CIntegration** [nInst[iZone]] ();
+    numerics_container[iZone]    = new CNumerics****  [nInst[iZone]] ();
+    grid_movement[iZone]         = new CVolumetricMovement* [nInst[iZone]] ();
+
+    /*--- Allocate transfer and interpolation container --- */
+
+    interface_container[iZone]    = new CInterface*[nZone] ();
+    interpolator_container[iZone].resize(nZone);
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+
+      config_container[iZone]->SetiInst(iInst);
+
+      /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
+       based data structure is constructed, i.e. node and cell neighbors are
+       identified and linked, face areas and volumes of the dual mesh cells are
+       computed, and the multigrid levels are created using an agglomeration procedure. ---*/
+
+      Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], dry_run);
+
     }
-    
-    /*--- Before we proceed with the zone loop we have to compute the wall distances.
+  }
+
+  /*--- Before we proceed with the zone loop we have to compute the wall distances.
      * This computation depends on all zones at once. ---*/
-    if (rank == MASTER_NODE)
-        cout << "Computing wall distances." << endl;
-    
+  if (rank == MASTER_NODE)
+    cout << "Computing wall distances." << endl;
+
+  CGeometry::ComputeWallDistance(config_container, geometry_container);
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
+       The solver classes are specific to a particular set of governing equations,
+       and they contain the subroutines with instructions for computing each spatial
+       term of the PDE, i.e. loops over the edges to compute convective and viscous
+       fluxes, loops over the nodes to compute source terms, and routines for
+       imposing various boundary condition type for the PDE. ---*/
+
+      Solver_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst]);
+
+      /*--- Definition of the numerical method class:
+       numerics_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
+       The numerics class contains the implementation of the numerical methods for
+       evaluating convective or viscous fluxes between any two nodes in the edge-based
+       data structure (centered, upwind, galerkin), as well as any source terms
+       (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
+
+      Numerics_Preprocessing(config_container[iZone], geometry_container[iZone][iInst],
+                             solver_container[iZone][iInst], numerics_container[iZone][iInst]);
+
+      /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
+       The integration class orchestrates the execution of the spatial integration
+       subroutines contained in the solver class (including multigrid) for computing
+       the residual at each node, R(U) and then integrates the equations to a
+       steady state or time-accurately. ---*/
+
+      Integration_Preprocessing(config_container[iZone], solver_container[iZone][iInst][MESH_0],
+                                integration_container[iZone][iInst]);
+
+      /*--- Instantiate the type of physics iteration to be executed within each zone. For
+       example, one can execute the same physics across multiple zones (mixing plane),
+       different physics in different zones (fluid-structure interaction), or couple multiple
+       systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
+
+      Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
+
+      /*--- Dynamic mesh processing.  ---*/
+
+      DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
+                                iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
+
+      /*--- Static mesh processing.  ---*/
+
+      StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
+
+    }
+
+  }
+
+  /*! --- Compute the wall distance again to correctly compute the derivatives if we are running direct diff mode --- */
+  if (driver_config->GetDirectDiff() == D_DESIGN){
     CGeometry::ComputeWallDistance(config_container, geometry_container);
-    
+  }
+
+  /*--- Definition of the interface and transfer conditions between different zones. ---*/
+
+  if (nZone > 1) {
+    if (rank == MASTER_NODE)
+      cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
+
+    Interface_Preprocessing(config_container, solver_container, geometry_container,
+                            interface_types, interface_container, interpolator_container);
+  }
+
+  if (fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
-        
-        for (iInst = 0; iInst < nInst[iZone]; iInst++){
-            
-            /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
-             The solver classes are specific to a particular set of governing equations,
-             and they contain the subroutines with instructions for computing each spatial
-             term of the PDE, i.e. loops over the edges to compute convective and viscous
-             fluxes, loops over the nodes to compute source terms, and routines for
-             imposing various boundary condition type for the PDE. ---*/
-            
-            Solver_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst]);
-            
-            /*--- Definition of the numerical method class:
-             numerics_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
-             The numerics class contains the implementation of the numerical methods for
-             evaluating convective or viscous fluxes between any two nodes in the edge-based
-             data structure (centered, upwind, galerkin), as well as any source terms
-             (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
-            
-            Numerics_Preprocessing(config_container[iZone], geometry_container[iZone][iInst],
-                                   solver_container[iZone][iInst], numerics_container[iZone][iInst]);
-            
-            /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
-             The integration class orchestrates the execution of the spatial integration
-             subroutines contained in the solver class (including multigrid) for computing
-             the residual at each node, R(U) and then integrates the equations to a
-             steady state or time-accurately. ---*/
-            
-            Integration_Preprocessing(config_container[iZone], solver_container[iZone][iInst][MESH_0],
-                                      integration_container[iZone][iInst]);
-            
-            /*--- Instantiate the type of physics iteration to be executed within each zone. For
-             example, one can execute the same physics across multiple zones (mixing plane),
-             different physics in different zones (fluid-structure interaction), or couple multiple
-             systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
-            
-            Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
-            
-            /*--- Dynamic mesh processing.  ---*/
-            
-            DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
-                                      iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
-            /*--- Static mesh processing.  ---*/
-            
-            StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
-            
-        }
-        
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
+                       config_container[iZone], true);
+      }
     }
-    
-    /*! --- Compute the wall distance again to correctly compute the derivatives if we are running direct diff mode --- */
-    if (driver_config->GetDirectDiff() == D_DESIGN){
-        CGeometry::ComputeWallDistance(config_container, geometry_container);
-    }
-    
-    /*--- Definition of the interface and transfer conditions between different zones. ---*/
-    
-    if (nZone > 1) {
-        if (rank == MASTER_NODE)
-            cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
-        
-        Interface_Preprocessing(config_container, solver_container, geometry_container,
-                                interface_types, interface_container, interpolator_container);
-    }
-    
-    if (fsi) {
-        for (iZone = 0; iZone < nZone; iZone++) {
-            for (iInst = 0; iInst < nInst[iZone]; iInst++){
-                Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
-                               config_container[iZone], true);
-            }
-        }
-    }
+  }
     
     if (config_container[ZONE_0]->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
@@ -1123,7 +1124,41 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
         }
         
     }
-    
+    if (solver[MESH_0][TURB_SOL]) {
+      solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
+    }
+    if (solver[MESH_0][SPECIES_SOL]) {
+      solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
+    }
+
+    /*--- Exit if profiles were requested for a solver that is not available. ---*/
+
+    if (!config->GetFluidProblem()) {
+      SU2_MPI::Error(string("Inlet profile specification via file (C++) has not been \n") +
+                     string("implemented yet for this solver.\n") +
+                     string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
+    }
+
+  } else {
+
+    /*--- Uniform inlets or python-customized inlets ---*/
+
+    /* --- Initialize quantities for inlet boundary
+     * This routine does not check if the python wrapper is being used to
+     * set custom boundary conditions.  This is intentional; the
+     * default values for python custom BCs are initialized with the default
+     * values specified in the config (avoiding non physical values) --- */
+
+    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][SPECIES_SOL]) solver[iMesh][SPECIES_SOL]->SetUniformInlet(config, iMarker);
+      }
+    }
+
+  }
+
 }
 
 void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,

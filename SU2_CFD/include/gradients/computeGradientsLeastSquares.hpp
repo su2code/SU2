@@ -3,7 +3,7 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -238,7 +238,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       su2double weight = 1.0;
       if(weighted) weight = GeometryToolbox::SquaredNorm(nDim, dist_ij);
 
-      /*--- Sumations for entries of upper triangular matrix R. ---*/
+      /*--- Summations for entries of upper triangular matrix R. ---*/
 
       if (weight > 0.0)
       {

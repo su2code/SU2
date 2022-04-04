@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.3.0 "Blackbird"
+# \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -108,7 +108,6 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
   ../src/numerics/scalar/scalar_sources.cpp \
   ../src/numerics/species/species_sources.cpp \
-  ../src/numerics/turbulent/turb_sources.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
