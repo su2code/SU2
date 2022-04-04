@@ -222,58 +222,6 @@ unsigned long CDriverBase::GetMarkerElementIDs(unsigned short iMarker, unsigned 
     return main_geometry->bound[iMarker][iBound]->GetGlobalIndex();
 }
 
-vector<unsigned long> CDriverBase::GetElementColors() const {
-    const auto nElem = GetNumberElements();
-
-    vector<unsigned long> values;
-
-    for (auto iElem = 0ul; iElem < nElem; iElem++) {
-        values.push_back(GetElementColors(iElem));
-    }
-    
-    return values;
-}
-
-unsigned long CDriverBase::GetElementColors(unsigned long iElem) const {
-    if (iElem >= GetNumberElements()) {
-        SU2_MPI::Error("Element index exceeds size.", CURRENT_FUNCTION);
-    }
-    
-    return main_geometry->elem[iElem]->GetColor();
-}
-
-vector<unsigned long> CDriverBase::GetMarkerElementColors(unsigned short iMarker) const {
-    const auto nBound = GetNumberMarkerElements(iMarker);
-
-    vector<unsigned long> values;
-    
-    for (auto iBound = 0ul; iBound < nBound; iBound++) {
-        values.push_back(GetMarkerElementColors(iMarker, iBound));
-    }
-    
-    return values;
-}
-
-unsigned long CDriverBase::GetMarkerElementColors(unsigned short iMarker, unsigned long iBound) const {
-    if (iBound >= GetNumberMarkerElements(iMarker)) {
-        SU2_MPI::Error("Marker element index exceeds size.", CURRENT_FUNCTION);
-    }
-
-    return main_geometry->bound[iMarker][iBound]->GetColor();
-}
-
-vector<vector<unsigned long>> CDriverBase::GetElementConnectivities() const {
-    const auto nElem = GetNumberElements();
-    
-    vector<vector<unsigned long>> values;
-    
-    for (auto iElem = 0ul; iElem < nElem; iElem++) {
-        values.push_back(GetElementConnectivities(iElem));
-    }
-    
-    return values;
-}
-
 vector<unsigned long> CDriverBase::GetElementConnectivities(unsigned long iElem) const {
     if (iElem >= GetNumberElements()) {
         SU2_MPI::Error("Element index exceeds size.", CURRENT_FUNCTION);
@@ -284,7 +232,9 @@ vector<unsigned long> CDriverBase::GetElementConnectivities(unsigned long iElem)
     vector<unsigned long> values; 
 
     for (auto iNode = 0u; iNode < nNode; iNode++) {
-        values.push_back(main_geometry->elem[iElem]->GetNode(iNode));
+        unsigned long iPoint = main_geometry->elem[iElem]->GetNode(iNode);
+
+        values.push_back(main_geometry->nodes->GetGlobalIndex(iPoint));
     }
     
     return values;
@@ -312,7 +262,9 @@ vector<unsigned long> CDriverBase::GetMarkerElementConnectivities(unsigned short
     vector<unsigned long> values; 
 
     for (auto iNode = 0u; iNode < nNode; iNode++) {
-        values.push_back(main_geometry->bound[iMarker][iBound]->GetNode(iNode));
+        unsigned long iPoint = main_geometry->bound[iMarker][iBound]->GetNode(iNode);
+
+        values.push_back(main_geometry->nodes->GetGlobalIndex(iPoint));
     }
     
     return values;
@@ -414,44 +366,6 @@ unsigned long CDriverBase::GetMarkerVertexIDs(unsigned short iMarker, unsigned l
     auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
 
     return main_geometry->nodes->GetGlobalIndex(iPoint);
-}
-
-vector<unsigned long> CDriverBase::GetVertexColors() const {
-    const auto nPoint = GetNumberVertices();
-    
-    vector<unsigned long> values;
-    
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        values.push_back(GetVertexColors(iPoint));
-    }
-    
-    return values;
-}
-
-unsigned long CDriverBase::GetVertexColors(unsigned long iPoint) const {
-    if (iPoint >= GetNumberVertices()) {
-        SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
-    }
-
-    return main_geometry->nodes->GetColor(iPoint);
-}
-
-vector<unsigned long> CDriverBase::GetMarkerVertexColors(unsigned short iMarker) const {
-    const auto nVertex = GetNumberMarkerVertices(iMarker);
-    
-    vector<unsigned long> values;
-    
-    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        values.push_back(GetMarkerVertexColors(iMarker, iVertex));
-    }
-    
-    return values;
-}
-
-unsigned long CDriverBase::GetMarkerVertexColors(unsigned short iMarker, unsigned long iVertex) const {
-    auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
-    
-    return main_geometry->nodes->GetColor(iPoint);
 }
 
 vector<bool> CDriverBase::GetDomain() const {

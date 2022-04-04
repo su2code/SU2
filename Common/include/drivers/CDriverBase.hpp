@@ -193,34 +193,6 @@ public:
     unsigned long GetMarkerElementIDs(unsigned short iMarker, unsigned long iBound) const;
     
     /*!
-     * \brief Get the MPI colors for mesh elements.
-     * \return Element colors.
-     */
-    vector<unsigned long> GetElementColors() const;
-    
-    /*!
-     * \brief Get the MPI color for a mesh element.
-     * \param[in] iElem - Mesh element index.
-     * \return Element color.
-     */
-    unsigned long GetElementColors(unsigned long iElem) const;
-    
-    /*!
-     * \brief Get the MPI colors for marker elements.
-     * \param[in] iMarker - Marker index.
-     * \return Element colors.
-     */
-    vector<unsigned long> GetMarkerElementColors(unsigned short iMarker) const;
-     
-    /*!
-     * \brief Get the MPI color for a marker element.
-     * \param[in] iMarker - Marker index.
-     * \param[in] iBound - Marker element index.
-     * \return Element color.
-     */
-    unsigned long GetMarkerElementColors(unsigned short iMarker, unsigned long iBound) const;
-
-    /*!
      * \brief Get the table of vertex IDs belonging to the mesh elements.
      * \return Element connectivities (nElem, nNode)
      */
@@ -316,34 +288,6 @@ public:
      * \return Global vertex ID.
      */
     unsigned long GetMarkerVertexIDs(unsigned short iMarker, unsigned long iVertex) const;
-    
-    /*!
-     * \brief Get the MPI colors of the mesh vertices.
-     * \return Vertex colors.
-     */
-    vector<unsigned long> GetVertexColors() const;
-    
-    /*!
-     * \brief Get the MPI color of a mesh vertex.
-     * \param[in] iPoint - Mesh vertex index.
-     * \return Vertex color.
-     */
-    unsigned long GetVertexColors(unsigned long iPoint) const;
-    
-    /*!
-     * \brief Get the MPI colors of the marker vertices.
-     * \param[in] iMarker - Marker index.
-     * \return Vertex colors.
-     */
-    vector<unsigned long> GetMarkerVertexColors(unsigned short iMarker) const;
-    
-    /*!
-     * \brief Get the MPI color of a marker vertex.
-     * \param[in] iMarker - Marker index.
-     * \param[in] iVertex - Marker vertex index.
-     * \return Vertex color.
-     */
-    unsigned long GetMarkerVertexColors(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the halo flags of the mesh vertices.

@@ -1139,26 +1139,6 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                      string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
     }
 
-  } else {
-
-    /*--- Uniform inlets or python-customized inlets ---*/
-
-    /* --- Initialize quantities for inlet boundary
-     * This routine does not check if the python wrapper is being used to
-     * set custom boundary conditions.  This is intentional; the
-     * default values for python custom BCs are initialized with the default
-     * values specified in the config (avoiding non physical values) --- */
-
-    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
-        if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
-        if (solver[iMesh][SPECIES_SOL]) solver[iMesh][SPECIES_SOL]->SetUniformInlet(config, iMarker);
-      }
-    }
-
-  }
-
 }
 
 void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
