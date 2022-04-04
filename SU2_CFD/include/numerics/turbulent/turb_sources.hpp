@@ -715,7 +715,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = 0.0;
 
-    su2double ProdLimConstant;
     su2double zeta;
 
     /*--- Computation of blended constants for the source terms ---*/
