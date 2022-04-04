@@ -3,7 +3,7 @@
  * \brief Header file for the class CCGNSMeshReaderFVM.
  *        The implementations are in the <i>CCGNSMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
