@@ -40,7 +40,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   string text_line;
 
   bool multizone = config->GetMultizone_Problem();
-  SST_ParsedOptions sstParsedOptions = config->GetSSTParsedOptions();
+  sstParsedOptions = config->GetSSTParsedOptions();
 
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
@@ -202,8 +202,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                     CConfig *config, unsigned short iMesh) {
-
-  SST_ParsedOptions sstParsedOptions = config->GetSSTParsedOptions();
 
   const su2double a1 = constants[7];
 

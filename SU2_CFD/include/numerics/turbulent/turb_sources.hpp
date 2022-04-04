@@ -572,6 +572,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4];  /// Static storage for the Jacobian (which needs to be pointer for return type).
 
+  SST_ParsedOptions sstParsedOptions;
+
   /*!
    * \brief Get strain magnitude based on perturbed reynolds stress matrix.
    * \param[in] turb_ke: turbulent kinetic energy of the node.
@@ -647,12 +649,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
-        ProdLimConstant(constants[10])
+        ProdLimConstant(constants[10]),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
+
+    sstParsedOptions = config->GetSSTParsedOptions();
+
   }
 
   /*!
@@ -718,8 +723,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
     const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
-    SST_ParsedOptions sstParsedOptions = config->GetSSTParsedOptions();
-
     if (dist_i > 1e-10) {
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
@@ -730,11 +733,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
 
-      su2double P_Base = StrainMag_i;  //Base production term 
+      su2double P_Base = StrainMag_i;  //Base production term for SST1994 and SST2003
 
       /*--- Modifications of SST production terms (uq, V, KL) --*/
 
-      /* --------------------------- */
       if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
@@ -746,42 +748,35 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       } else if (sstParsedOptions.production == SST_OPTIONS::KL) {
         P_Base = sqrt(StrainMag_i*VorticityMag);
       }  
-      /* ------------------------------ */
-
-
-      /* SST-1994 */
-      if (sstParsedOptions.version == SST_OPTIONS::V1994){
-        P_Base = VorticityMag;
-        /* mut = rho*k/max(w,Omega*F_2/a1) = rho*k/zeta */
-      }
-      else {
-        /* SST-2003 */  
-        P_Base = StrainMag_i;
-        /* mut = rho*k/max(w,S*F_2/a1) = rho*k/zeta */
-      }
 
       zeta = max(ScalarVar_i[1], P_Base * F2_i / a1);
 
-      su2double pk;
+      /*--- first part of the production term ---*/
+      su2double pk = Eddy_Viscosity_i * pow(P_Base,2);
       
-      if (sstParsedOptions.version == SST_OPTIONS::MODIFIED) {
-       /* SST1994m or SST2003m */ 
-       pk = Eddy_Viscosity_i * pow(P_Base,2);
-      } else {
-       /* SST1994 or SST2003 */
-       /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
-       pk = Eddy_Viscosity_i * (pow(P_Base,2) - 2.0 / 3.0 * diverg * diverg) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+       /* in case of unmodified, we add the divergence terms */
+        if (sstParsedOptions.version != SST_OPTIONS::V1994) {
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          pk -=  2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+        } else {
+         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
+         pk -=  (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
+        }
       } 
 
       su2double pw = pk;
 
       /* we also give a lower limit to production of 0, which makes sense numerically but is not in the original papers */
+      /*--- Production limiter on k-equation ---*/
       pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
-        pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-      } else {
+        /*--- no production limiter on w-equation for SST1994 ---*/
         pw = (alfa_blended * Density_i) * pw;
+      } else {
+        /*--- production limiter on w-equation for SST2003 ---*/
+        pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       }
 
 

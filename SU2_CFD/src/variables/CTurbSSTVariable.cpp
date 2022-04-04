@@ -32,6 +32,8 @@
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  sstParsedOptions = config->GetSSTParsedOptions();
+
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution(iPoint,0) = kine;
@@ -53,7 +55,6 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
                                        su2double val_dist, su2double val_density, CConfig *config) {
   su2double arg2, arg2A, arg2B, arg1;
-  SST_ParsedOptions sstParsedOptions = config->GetSSTParsedOptions();
 
   AD::StartPreacc();
   AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
