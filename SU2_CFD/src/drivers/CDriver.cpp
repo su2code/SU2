@@ -2588,6 +2588,11 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     }
   }
 
+  // This gives segmentation fault, but we have to add it, to fix the mass flow computation in the first two zones
+  // for (iZone = 0; iZone < nZone-1; iZone++) {
+  //   interface[iZone][nZone-1]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[nZone-1][INST_0][MESH_0], iZone);
+  // }
+
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
   for (iZone = 1; iZone < nZone; iZone++) {
     nBlades = config[iZone]->GetnBlades(iZone);

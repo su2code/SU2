@@ -223,6 +223,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Exhaust_Pressure.resize(nMarker);
   Exhaust_Area.resize(nMarker);
 
+  /*--- Turbomachinery simulation ---*/
+
+  AverageMassFlowRate.resize(nMarker);
+
   /*--- Read farfield conditions from config ---*/
 
   Temperature_Inf = config->GetTemperature_FreeStreamND();
@@ -270,6 +274,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     Exhaust_Temperature[iMarker] = Temperature_Inf;
     Exhaust_Pressure[iMarker]    = Pressure_Inf;
     Exhaust_Area[iMarker]        = 0.0;
+
+    AverageMassFlowRate[iMarker] = 0.0;
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -6009,7 +6015,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, Density_b, Pressure_b, Temperature_b;
   su2double *Velocity_i, Velocity2_i, Energy_i, StaticEnergy_i, Density_i, Pressure_i;
-  su2double Pressure_e;
+  su2double Pressure_e, MassFlowRate_e, relfacMassFlowRate;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -6309,6 +6315,24 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       break;
 
+    case MASS_FLOW_OUTLET:
+      /*--- Prescribe mass flow rate at the outlet boundary. ---*/
+      // TODO: add mass flow rate normalization to allow for non-dimensional simulation
+      // TODO: implement adapative relfacMassFlowRate
+      MassFlowRate_e = config->GetGiles_Var1(Marker_Tag);
+      relfacMassFlowRate = config->GetGiles_Var2(Marker_Tag);
+      Pressure_e = AveragePressure[val_marker][nSpanWiseSections]+relfacMassFlowRate*(AverageMassFlowRate[val_marker]-MassFlowRate_e);
+
+      /* --- Compute avg characteristic jump  --- */
+      if (nDim == 2){
+        c_avg[3] = -2.0*(AveragePressure[val_marker][nSpanWiseSections]-Pressure_e);
+      }
+      else
+      {
+        c_avg[4] = -2.0*(AveragePressure[val_marker][nSpanWiseSections]-Pressure_e);
+      }
+      break;
+
     }
 
     /*--- Loop over all the vertices on this boundary marker ---*/
@@ -6480,7 +6504,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         break;
 
 
-      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
+      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:case MASS_FLOW_OUTLET:
 
         /* --- implementation of Giles BC---*/
         if(config->GetSpatialFourier()){
@@ -9100,7 +9124,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
             /*--- Retrieve Old Solution ---*/
 
-            /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
+            /*--- Loop over the vertices to sum all the quantities pitch-wise ---*/
             if(iSpan < nSpanWiseSections){
               for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
                 iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
@@ -9379,6 +9403,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               avgMixKine       = avgMassKine;
               avgMixOmega      = avgMassOmega;
               avgMixNu         = avgMassNu;
+            }
+
+            /*--- Store averaged value of mass flow rate over the prescribed boundary, as needed for the mass flow rate BC ---*/
+            if (iSpan == nSpanWiseSections){
+              AverageMassFlowRate[iMarker] = TotalFluxes[0];
             }
 
             /*--- Store averaged value for the selected average method ---*/

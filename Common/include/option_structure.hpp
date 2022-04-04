@@ -1227,8 +1227,10 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT_1D = 11,
   STATIC_PRESSURE_1D = 12,
   MIXING_IN_1D = 13,
-  MIXING_OUT_1D =14
+  MIXING_OUT_1D = 14,
+  MASS_FLOW_OUTLET = 15                /*!< \brief User prescribes the mass flow rate at the outlet boundary */
 };
+
 static const MapType<string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
   MakePair("DENSITY_VELOCITY", DENSITY_VELOCITY)
@@ -1244,6 +1246,7 @@ static const MapType<string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 static const MapType<string, RIEMANN_TYPE> Giles_Map = {
@@ -1261,6 +1264,7 @@ static const MapType<string, RIEMANN_TYPE> Giles_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 /*!

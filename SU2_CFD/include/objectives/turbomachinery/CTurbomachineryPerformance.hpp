@@ -221,7 +221,7 @@ class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
 
 class CTurbomachineryStagePerformance {
    protected:
-      su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
+      su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio, TotalTotalPressureRatio, EulerianWork;
       CFluidModel &fluidModel;
    public:
       CTurbomachineryStagePerformance(CFluidModel& fluid);
@@ -232,9 +232,9 @@ class CTurbomachineryStagePerformance {
       su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
       su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
       su2double GetEulerianWork() const { return EulerianWork; }
-      su2double GetEntropyGen() const { return EntropyGen; }
-      su2double GetPressureRatio() const { return PressureRatio; }
-      su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
+      su2double GetNormEntropyGen() const { return NormEntropyGen; }
+      su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
+      su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
 };
 
 class CTurbomachineryPerformance {
