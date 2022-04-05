@@ -1638,8 +1638,8 @@ void CTurbSASolver::ConvectiveError(CSolver **solver, const CGeometry *geometry,
   //--- Store gradients (we only need dui/dxi because of dot product)
   su2double gradu[3] = {0.0}, gradnut[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    gradu[iDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, iDim);
-    gradnut[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, 2, iDim);
+    gradu[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, iDim+1, iDim);
+    gradnut[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, nDim+2, iDim);
   }
 
   //---------------------------//
@@ -1679,7 +1679,7 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
   su2double gradu[3][3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, iDim+1, jDim);
     }
   }
 
@@ -1748,9 +1748,9 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, iDim+1, jDim);
     }
-    gradT[iDim] = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
+    gradT[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, 0, iDim);
   }
   
   //--- Account for wall functions

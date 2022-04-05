@@ -1380,11 +1380,11 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_ADAPT_AUX:
-      COUNT_PER_POINT  = 3;
+      COUNT_PER_POINT  = nDim+3;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case GRADIENT_ADAPT_AUX:
-      COUNT_PER_POINT  = 3*nDim;
+      COUNT_PER_POINT  = (nDim+3)*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case HESSIAN:
@@ -1526,11 +1526,11 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
           case PRIMITIVE_ADAPT_AUX:
-            for (iVar = 0; iVar < 3; iVar++)
+            for (iVar = 0; iVar < nDim+3; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetPrimitive_Adaptation_Aux(iPoint, iVar);
             break;
           case GRADIENT_ADAPT_AUX:
-            for (iVar = 0; iVar < 3; iVar++)
+            for (iVar = 0; iVar < nDim+3; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
@@ -1694,11 +1694,11 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
           case PRIMITIVE_ADAPT_AUX:
-            for (iVar = 0; iVar < 3; iVar++)
+            for (iVar = 0; iVar < nDim+3; iVar++)
               base_nodes->SetPrimitive_Adaptation_Aux(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case GRADIENT_ADAPT_AUX:
-            for (iVar = 0; iVar < 3; iVar++)
+            for (iVar = 0; iVar < nDim+3; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                  gradient(iPoint, iVar, iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
@@ -2251,11 +2251,14 @@ void CSolver::SetGradient_Adaptation_Aux_GG(CGeometry *geometry, const CConfig *
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double density = base_nodes->GetDensity(iPoint);
     const su2double temp = base_nodes->GetTemperature(iPoint);
+    const su2double* vel = base_nodes->GetPrimitive(iPoint)+1;
     const su2double lam_visc = base_nodes->GetLaminarViscosity(iPoint);
     const su2double eddy_visc = base_nodes->GetEddyViscosity(iPoint);
     base_nodes->SetPrimitive_Adaptation_Aux(iPoint, 0, temp);
-    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, 1, lam_visc/density);
-    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, 2, eddy_visc/density);
+    for (auto iDim = 0; iDim < nDim; ++iDim)
+      base_nodes->SetPrimitive_Adaptation_Aux(iPoint, iDim+1, vel[iDim]);
+    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, nDim+1, lam_visc/density);
+    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, nDim+2, eddy_visc/density);
   }
 
   //--- communicate the solution values via MPI
@@ -2266,7 +2269,7 @@ void CSolver::SetGradient_Adaptation_Aux_GG(CGeometry *geometry, const CConfig *
   auto& gradient = base_nodes->GetGradient_Adaptation_Aux();
 
   computeGradientsGreenGauss(this, GRADIENT_ADAPT_AUX, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, 3, gradient);
+                             *config, solution, 0, nDim+3, gradient);
     
 }
 
@@ -2276,11 +2279,14 @@ void CSolver::SetGradient_Adaptation_Aux_L2_Proj(CGeometry *geometry, const CCon
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
     const su2double density = base_nodes->GetDensity(iPoint);
     const su2double temp = base_nodes->GetTemperature(iPoint);
+    const su2double* vel = base_nodes->GetPrimitive(iPoint)+1;
     const su2double lam_visc = base_nodes->GetLaminarViscosity(iPoint);
     const su2double eddy_visc = base_nodes->GetEddyViscosity(iPoint);
     base_nodes->SetPrimitive_Adaptation_Aux(iPoint, 0, temp);
-    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, 1, lam_visc/density);
-    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, 2, eddy_visc/density);
+    for (auto iDim = 0; iDim < nDim; ++iDim)
+      base_nodes->SetPrimitive_Adaptation_Aux(iPoint, iDim+1, vel[iDim]);
+    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, nDim+1, lam_visc/density);
+    base_nodes->SetPrimitive_Adaptation_Aux(iPoint, nDim+2, eddy_visc/density);
   }
 
   //--- communicate the solution values via MPI
@@ -2291,7 +2297,7 @@ void CSolver::SetGradient_Adaptation_Aux_L2_Proj(CGeometry *geometry, const CCon
   auto& gradient = base_nodes->GetGradient_Adaptation_Aux();
 
   computeGradientsL2Projection(this, GRADIENT_ADAPT_AUX, PERIODIC_SOL_GG, *geometry,
-                               *config, solution, 0, 3, gradient);
+                               *config, solution, 0, nDim+3, gradient);
     
 }
 

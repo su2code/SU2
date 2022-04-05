@@ -9702,11 +9702,11 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, iDim+1, jDim);
     }
-    gradT[iDim] = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
-    gradnu[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, 1, iDim);
-    gradnut[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, 2, iDim);
+    gradT[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, 0, iDim);
+    gradnu[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, nDim+1, iDim);
+    gradnut[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, nDim+2, iDim);
   }
   
   //--- Account for wall functions
@@ -9894,9 +9894,9 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, iDim+1, jDim);
     }
-    gradT[iDim] = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
+    gradT[iDim] = varFlo->GetGradient_Adaptation_Aux(iPoint, 0, iDim);
   }
 
   //--- Account for wall functions

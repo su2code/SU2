@@ -109,7 +109,7 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   if (config->GetBool_Compute_Metric()) {
     Primitive_Adaptation_Aux.resize(nPoint, 3) = su2double(0.0);
-    Gradient_Adaptation_Aux.resize(nPoint,3,nDim,0.0);
+    Gradient_Adaptation_Aux.resize(nPoint,nDim+3,nDim,0.0);
     Metric.resize(nPoint,3*(nDim-1)) = su2double(0.0);
   }
 }
