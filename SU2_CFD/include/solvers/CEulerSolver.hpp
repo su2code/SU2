@@ -254,6 +254,32 @@ protected:
                                                const CConfig *config);
 
   /*!
+   * \brief Store the primitive variables needed for adaptation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) final {
+    //--- store temperature and viscosity in aux vector
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      const su2double density = nodes->GetDensity(iPoint);
+      const su2double temp = nodes->GetTemperature(iPoint);
+      const su2double* vel = nodes->GetPrimitive(iPoint)+1;
+      const su2double lam_visc = nodes->GetLaminarViscosity(iPoint);
+      const su2double eddy_visc = nodes->GetEddyViscosity(iPoint);
+      nodes->SetPrimitive_Adapt(iPoint, 0, temp);
+      for (auto iDim = 0; iDim < nDim; ++iDim)
+        nodes->SetPrimitive_Adapt(iPoint, iDim+1, vel[iDim]);
+      nodes->SetPrimitive_Adapt(iPoint, nDim+1, lam_visc/density);
+      nodes->SetPrimitive_Adapt(iPoint, nDim+2, eddy_visc/density);
+    }
+
+    //--- communicate the solution values via MPI
+    InitiateComms(geometry, config, PRIMITIVE_ADAPT);
+    CompleteComms(geometry, config, PRIMITIVE_ADAPT);
+  }
+
+  /*!
    * \brief Set gradients of coefficients for fixed CL mode
    * \param[in] config - Definition of the particular problem.
    */

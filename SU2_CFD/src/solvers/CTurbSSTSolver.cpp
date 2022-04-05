@@ -1219,14 +1219,14 @@ void CTurbSSTSolver::TurbulentError(CSolver **solver, const CGeometry *geometry,
   // vector<su2double> TmpWeights(weights[0].size(), 0.0);
   // su2double factor = 0.0;
   // for (iDim = 0; iDim < nDim; ++iDim) {
-  //   factor = -TWO3*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim)*pw_positive;
+  //   factor = -TWO3*divu*alfa*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim)*pw_positive;
   //   // if (!pk_limited) {   
-  //   factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)*pk_positive;
+  //   factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim)*pk_positive;
   //   // }
   //   for (jDim = 0; jDim < nDim; ++jDim) {
-  //     factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim)*pw_positive;
+  //     factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adapt(iPoint, 1, jDim)*pw_positive;
   //     // if (!pk_limited) {
-  //     factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim)*pk_positive;
+  //     factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adapt(iPoint, 0, jDim)*pk_positive;
   //     // }
   //   }
   //   TmpWeights[iDim+1] += factor;
@@ -1239,13 +1239,13 @@ void CTurbSSTSolver::TurbulentError(CSolver **solver, const CGeometry *geometry,
   //     iVar = iDim+1;
   //     factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim]) // SST2003
   //     // factor += (tautomut[iDim][jDim]) // SST2003m
-  //             * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
-  //             + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
+  //             * (varAdjFlo->GetGradient_Adapt(iPoint, iVar, jDim)
+  //             + u[jDim]*varAdjFlo->GetGradient_Adapt(iPoint, (nVarFlo-1), iDim));
   //   }
-  //   factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-  //   factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
-  //           // + sigmak*gradk[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim)
-  //           + sigmao*grado[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+  //   factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adapt(iPoint, (nVarFlo-1), iDim);
+  //   factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim)
+  //           // + sigmak*gradk[iDim]*varAdjFlo->GetGradient_Adapt(iPoint, (nVarFlo-1), iDim)
+  //           + sigmao*grado[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim);
   // }
 
   // TmpWeights[nVarFlo+0] += factor/zeta;
@@ -1253,8 +1253,8 @@ void CTurbSSTSolver::TurbulentError(CSolver **solver, const CGeometry *geometry,
   // TmpWeights[nVarFlo+1] += -k*factor/pow(zeta,2.);
   // if (cdkw_positive) {
   //   for (iDim = 0; iDim < nDim; ++iDim) {
-  //     TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmao2/omega*grado[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-  //     TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmao2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+  //     TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmao2/omega*grado[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim);
+  //     TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmao2/omega*gradk[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim);
   //   }
   // }
 

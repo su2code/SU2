@@ -80,6 +80,7 @@ protected:
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nPrimVarAdapGrad,              /*!< \brief Number of primitive variable gradients of the problem needed for adaptation. */
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,             /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
@@ -593,12 +594,20 @@ public:
   void SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  virtual void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
    * \brief Compute the Green-Gauss Hessian of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetGradient_Adaptation_Aux_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+  void SetGradient_Primitive_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
    * \brief Compute the L2 projection Hessian of the solution.
@@ -606,7 +615,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetGradient_Adaptation_Aux_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+  void SetGradient_Primitive_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
 
   /*!
    * \brief Compute the Least Squares Hessian of the solution.

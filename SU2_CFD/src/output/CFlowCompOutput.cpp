@@ -412,17 +412,17 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if(config->GetBool_Compute_Metric()) {
     if (nDim == 2){
-      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 0));
-      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 1));
+      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
+      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
       
       SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
       SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
       SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
     }
     else{
-      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 0));
-      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 1));
-      SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, Node_Flow->GetGradient_Adaptation(iPoint, 0, 2));
+      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
+      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
+      SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 2));
 
       SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
       SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));

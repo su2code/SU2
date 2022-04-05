@@ -566,38 +566,40 @@ void CDiscAdjSinglezoneDriver::ObjectiveRecording(){
 
 void CDiscAdjSinglezoneDriver::ComputeMetric() {
 
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
   auto solver_flow    = solver[FLOW_SOL];
   auto solver_turb    = solver[TURB_SOL];
   auto solver_adjflow = solver[ADJFLOW_SOL];
   auto solver_adjturb = solver[ADJTURB_SOL];
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
     cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
-  
+    cout << "Storing primitive variables needed for gradients in metric." << endl;
+  }
+  solver_flow->SetPrimitive_Adapt(geometry, config);
+  if ( turb ) solver_turb->SetPrimitive_Adapt(geometry, config);
+
   if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
     
     if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
     solver_flow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
-    // solver_flow->CorrectBoundHessian(geometry, config, RUNTIME_FLOW_SYS);
     
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
     solver_adjflow->SetHessian_GG(geometry, config, RUNTIME_ADJFLOW_SYS);
-    // solver_adjflow->CorrectBoundHessian(geometry, config, RUNTIME_ADJFLOW_SYS);
     
-    if ( config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    if ( turb ) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
       solver_turb->SetHessian_GG(geometry, config, RUNTIME_TURB_SYS);
-      // solver_turb->CorrectBoundHessian(geometry, config, RUNTIME_TURB_SYS);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_ADJTURB_SYS);
-      // solver_adjturb->CorrectBoundHessian(geometry, config, RUNTIME_ADJTURB_SYS);
-
 
     }
-    if(rank == MASTER_NODE) cout << "Computing gradients of additional variables (temperature and viscosity)." << endl;
-    solver_flow->SetGradient_Adaptation_Aux_GG(geometry, config, RUNTIME_FLOW_SYS);
+    if(rank == MASTER_NODE) cout << "Computing gradients of primitive variables." << endl;
+    solver_flow->SetGradient_Primitive_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
+    if ( turb ) solver_turb->SetGradient_Primitive_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
   }
   else {
     if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
@@ -608,15 +610,16 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
     solver_adjflow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
     
-    if ( config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    if ( turb ) {
       if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
       solver_turb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
       
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
     }
-    if(rank == MASTER_NODE) cout << "Computing gradients of additional variables (temperature and viscosity)." << endl;
-    solver_flow->SetGradient_Adaptation_Aux_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+    if(rank == MASTER_NODE) cout << "Computing gradients of primitive variables." << endl;
+    solver_flow->SetGradient_Primitive_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+    if ( turb ) solver_turb->SetGradient_Primitive_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
   }
 
   //--- Metric
