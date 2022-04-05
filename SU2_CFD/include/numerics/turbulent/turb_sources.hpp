@@ -748,15 +748,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         P_Base = sqrt(StrainMag_i*VorticityMag);
       }  
 
-      zeta = max(ScalarVar_i[1], P_Base * F2_i / a1);
-
       /*--- first part of the production term ---*/
       su2double pk = Eddy_Viscosity_i * pow(P_Base,2);
       
       if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
        /* in case of unmodified, we add the divergence terms */
-        if (sstParsedOptions.version != SST_OPTIONS::V1994) {
+        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
           /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          //pk -=  (Eddy_Viscosity*2.0/3.0*diverg*diverg + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
           pk -=  2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
         } else {
          /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
@@ -764,19 +763,39 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         }
       } 
 
-      su2double pw = pk;
 
       /* we also give a lower limit to production of 0, which makes sense numerically but is not in the original papers */
       /*--- Production limiter on k-equation ---*/
       pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
+      /*--- For the production of the omega-equation we use alfa*P/nu_t = alfa*rho*P/mu_t = ---*/
+
+      su2double pw = pow(P_Base,2);
+
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
         /*--- no production limiter on w-equation for SST1994 ---*/
+        zeta = max(a1 * ScalarVar_i[1], VorticityMag * F2_i);
         pw = (alfa_blended * Density_i) * pw;
       } else {
         /*--- production limiter on w-equation for SST2003 ---*/
+        zeta = max(a1 * ScalarVar_i[1], StrainMag_i * F2_i);
         pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       }
+
+      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+       /* in case of unmodified, we add the divergence terms */
+        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          /* --- note that mu_t = rho*a1*k/zeta and we can make this term independent of k ---*/
+          // the correct production with the additional divergence term
+          // pw -=  (alfa_blended*Density_i * (2.0 / 3.0 * diverg*diverg) +  2.0 / 3.0 * zeta * diverg);
+          /*--- the tke term only ---*/
+          pw -=  2.0 / 3.0 * zeta * diverg;
+        } else {
+         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
+         pw -=  (alfa_blended*Density_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * zeta * diverg);
+        }
+      } 
 
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
