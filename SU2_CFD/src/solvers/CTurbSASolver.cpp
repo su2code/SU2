@@ -1711,6 +1711,46 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
                                    unsigned long iPoint, vector<vector<su2double> > &weights) {
   // TODO: production, destruction, and diffusion
 
+  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
+            *varTur    = solver[TURB_SOL]->GetNodes(),
+            *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+    
+  //--- Store primitive variables and coefficients
+  const su2double r = varFlo->GetDensity(iPoint);
+  su2double u[3] = {0.0};
+  u[0] = varFlo->GetVelocity(iPoint, 0);
+  u[1] = varFlo->GetVelocity(iPoint, 1);
+  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+
+  const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
+  const su2double nut  = varFlo->GetEddyViscosity(iPoint)/r;
+
+  const su2double sigma = 2.0/3.0;
+  const su2double cb2   = 0.622;
+  const su2double cb2_sigma = cb2/sigma;
+
+  //--- Store gradients and stress tensor
+  su2double gradu[3][3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0}, gradnutilde[3] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto jDim = 0 ; jDim < nDim; jDim++) {
+      gradu[iDim][jDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, iDim+1, jDim);
+    }
+    gradnu[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, nDim+1, iDim);
+    gradnut[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, nDim+2, iDim);
+    gradnutilde[iDim] = varTur->GetGradient_Primitive_Adapt(iPoint, 0, iDim);
+  }
+
+  //----------------------//
+  //--- Diffusion term ---//
+  //----------------------//
+  
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    weights[1][nVarFlo] += 2.0*cb2_sigma*gradnutilde[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+  }
+
 }
 
 void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
