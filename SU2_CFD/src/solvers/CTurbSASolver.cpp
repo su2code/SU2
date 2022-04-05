@@ -483,6 +483,8 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  su2double T_infty[1] = {0.0};
+
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -507,16 +509,28 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
-      /*--- Set turbulent variable at the wall, and at infinity ---*/
-
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
-
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
+      
+      /*--- Set primitive state based on flow direction ---*/
+      
+      const su2double Vn_Infty = GeometryToolbox::DotProduct(nDim,V_infty+1,Normal);
+      if (Vn_Infty > 0.0) {
+        /*--- Outflow conditions ---*/
+        T_infty[0] = nodes->GetSolution(iPoint)[0];
+      }
+      else {
+        /*--- Inflow conditions ---*/
+        T_infty[0] = Solution_Inf[0];
+      }
+
+      /*--- Set turbulent variable at the wall, and at infinity ---*/
+
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), T_infty);
 
       /*--- Compute residuals and Jacobians ---*/
 

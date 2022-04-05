@@ -557,6 +557,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  su2double T_infty[2] = {0.0};
+
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -576,9 +578,30 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
+      /*--- Set Normal (it is necessary to change the sign) ---*/
+
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+      conv_numerics->SetNormal(Normal);
+      
+      /*--- Set primitive state based on flow direction ---*/
+      
+      const su2double Vn_Infty = GeometryToolbox::DotProduct(nDim,V_infty+1,Normal);
+      if (Vn_Infty > 0.0) {
+        /*--- Outflow conditions ---*/
+        T_infty[0] = nodes->GetPrimitive(iPoint)[0];
+        T_infty[1] = nodes->GetPrimitive(iPoint)[1];
+      }
+      else {
+        /*--- Inflow conditions ---*/
+        T_infty[0] = Solution_Inf[0];
+        T_infty[1] = Solution_Inf[1];
+      }
+
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetPrimitive(iPoint), Solution_Inf);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), T_infty);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
