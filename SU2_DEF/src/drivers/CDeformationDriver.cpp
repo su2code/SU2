@@ -286,6 +286,10 @@ void CDeformationDriver::Numerics_Preprocessing() {
     
 }
 
+void CDeformationDriver::Preprocess() {
+
+}
+
 void CDeformationDriver::Run() {
     
     /* --- Start measuring computation time ---*/

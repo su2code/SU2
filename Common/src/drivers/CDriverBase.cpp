@@ -74,6 +74,10 @@ void CDriverBase::SetContainers_Null() {
   main_geometry = nullptr;
 }
 
+unsigned short CDriverBase::GetNumberDesignVariables() const { return main_config->GetnDV(); }
+
+unsigned short CDriverBase::GetNumberFFDBoxes() const { return main_config->GetnFFDBox(); }
+
 unsigned short CDriverBase::GetNumberMarkers() const { return main_config->GetnMarker_All(); }
 
 map<string, unsigned short> CDriverBase::GetMarkerIndices() const {

@@ -409,18 +409,6 @@ public:
     passivedouble GetObjective() const;
     
     /*!
-     * \brief Get the number of design variables.
-     * \return Number of design variables.
-     */
-    passivedouble GetNumberDesignVariables() const;
-    
-    /*!
-     * \brief Get the number of FFD boxes.
-     * \return Number of FFD boxes.
-     */
-    passivedouble GetNumberFFDBoxes() const;
-    
-    /*!
      * \brief Get the number of external iterations.
      * \return Number of external iterations.
      */
@@ -436,7 +424,7 @@ public:
      * \brief Get the unsteady time step.
      * \return Unsteady time step.
      */
-    passivedouble GetUnsteadyTimeStep() const;
+    unsigned long GetUnsteadyTimeStep() const;
     
     /*!
      * \brief Get the name of the output file for the surface.

@@ -58,6 +58,10 @@ int main(int argc, char *argv[]) {
     
     driver = new CDiscAdjDeformationDriver(config_file_name, comm);
     
+    /*--- Pre-process the solver data. ---*/
+    
+    driver->Preprocess();
+
     /*--- Launch the main external loop of the solver. ---*/
     
     driver->Run();

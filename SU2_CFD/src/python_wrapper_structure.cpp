@@ -159,18 +159,6 @@ passivedouble CDriver::GetObjective() const {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/* Functions related to design variables.                                  */
-/////////////////////////////////////////////////////////////////////////////
-
-passivedouble CDriver::GetNumberDesignVariables() const {
-    return SU2_TYPE::GetValue(main_config->GetnDV());
-}
-
-passivedouble CDriver::GetNumberFFDBoxes() const {
-    return SU2_TYPE::GetValue(main_config->GetnFFDBox());
-}
-
-/////////////////////////////////////////////////////////////////////////////
 /* Functions related to the far-field flow variables.                      */
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1329,7 +1317,7 @@ unsigned long CDriver::GetCurrentTimeIteration() const{
     return TimeIter;
 }
 
-passivedouble CDriver::GetUnsteadyTimeStep() const {
+unsigned long CDriver::GetUnsteadyTimeStep() const {
     return SU2_TYPE::GetValue(main_config->GetTime_Step());
 }
 

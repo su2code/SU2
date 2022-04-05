@@ -57,6 +57,10 @@ int main(int argc, char *argv[]) {
     
     driver = new CDeformationDriver(config_file_name, comm);
     
+    /*--- Pre-process the solver data. ---*/
+    
+    driver->Preprocess();
+    
     /*--- Launch the main external loop of the solver. ---*/
     
     driver->Run();

@@ -117,6 +117,18 @@ public:
     virtual void Postprocessing() {};
     
     /*!
+     * \brief Get the number of design variables.
+     * \return Number of design variables.
+     */
+    unsigned short GetNumberDesignVariables() const;
+    
+    /*!
+     * \brief Get the number of FFD boxes.
+     * \return Number of FFD boxes.
+     */
+    unsigned short GetNumberFFDBoxes() const;
+    
+    /*!
      * \brief Get the number of markers in the mesh.
      * \return Number of markers.
      */

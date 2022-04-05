@@ -70,7 +70,12 @@ public:
     ~CDiscAdjDeformationDriver(void);
     
     /*!
-     * \brief [Overload] Launch the computation for single-zone problems.
+     * \brief Pre-process the driver data (includes solution allocation and initialization).
+     */
+    void Preprocess();
+    
+    /*!
+     * \brief Launch the driver computation.
      */
     void Run();
     
@@ -78,6 +83,47 @@ public:
      * \brief Deallocation routine
      */
     void Postprocessing();
+    
+    /*!
+     * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at the mesh vertices.
+     * \return Total sensitivity of the objective function w.r.t. the un-deformed coordinates.
+     */
+    vector<vector<passivedouble>> GetObjectiveCoordinatesTotalSensitivity() const;
+    
+    /*!
+     * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at a mesh vertex.
+     * \param[in] iPoint - Mesh vertex index.
+     * \return Total sensitivity of the objective function w.r.t. the un-deformed coordinates.
+     */
+    vector<passivedouble> GetObjectiveCoordinatesTotalSensitivity(unsigned long iPoint) const;
+    
+    /*!
+     * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at the marker vertices.
+     * \param[in] iMarker - Marker identifier.
+     * \return Total sensitivity of the objective function w.r.t. the surface coordinates.
+     */
+    vector<vector<passivedouble>> GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker) const;
+    
+    /*!
+     * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at a marker vertex.
+     * \param[in] iMarker - Marker identifier.
+     * \param[in] iVertex - Marker vertex index.
+     * \return Total sensitivity of the objective function w.r.t. the surface coordinates.
+     */
+    vector<passivedouble> GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker, unsigned long iVertex) const;
+    
+    /*!
+     * \brief Get the (total) sensitivity of the objective function w.r.t. a design variable.
+     * \return Total sensitivity of the objective function w.r.t. a design variable.
+     */
+    vector<vector<passivedouble>> GetObjectiveDVsTotalSensitivity() const;
+    
+    /*!
+     * \brief Get the (total) sensitivity of the objective function w.r.t. the design variables.
+     * \param[in] iDV - Design Variable index.
+     * \return Total sensitivity of the objective function w.r.t. the design variables.
+     */
+    vector<passivedouble> GetObjectiveDVsTotalSensitivity(unsigned short iDV) const;
     
 protected:
     
@@ -154,5 +200,5 @@ protected:
      */
     
     void DerivativeTreatment_Gradient(CGeometry *geometry, CConfig *config, CVolumetricMovement *grid_movement, CSurfaceMovement *surface_movement, su2double **Gradient);
-    
+
 };

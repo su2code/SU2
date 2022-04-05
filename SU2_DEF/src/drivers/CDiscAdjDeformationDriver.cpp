@@ -54,6 +54,14 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
     
     Input_Preprocessing();
     
+    /*--- Initialize structure to store the gradient ---*/
+    Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+    
+    for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
+        /*--- Initialize to zero ---*/
+        Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
+    }
+    
     /*--- Set up a timer for performance benchmarking ---*/
     
     StartTime = SU2_MPI::Wtime();
@@ -258,6 +266,9 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
         
     }
     
+    /*--- Get the number of dimensions ---*/
+    nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+    
     /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
     main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
     
@@ -267,8 +278,8 @@ void CDiscAdjDeformationDriver::Output_Preprocessing() {
     
 }
 
-void CDiscAdjDeformationDriver::Run() {
-    
+void CDiscAdjDeformationDriver::Preprocess() {
+
     for (iZone = 0; iZone < nZone; iZone++) {
         if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
         unsigned short nInst_Zone = nInst[iZone];
@@ -281,7 +292,12 @@ void CDiscAdjDeformationDriver::Run() {
             geometry_container[iZone][INST_0][MESH_0]->ReadUnorderedSensitivity(config_container[iZone]);
         else
             geometry_container[iZone][INST_0][MESH_0]->SetSensitivity(config_container[iZone]);
-        
+    }
+}
+
+void CDiscAdjDeformationDriver::Run() {
+
+    for (iZone = 0; iZone < nZone; iZone++) {
         if (rank == MASTER_NODE) cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
         if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
             config_container[iZone]->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
@@ -293,14 +309,6 @@ void CDiscAdjDeformationDriver::Run() {
     
     if (rank == MASTER_NODE) cout << "\n------------------------ Mesh sensitivity Output ------------------------" << endl;
     SetSensitivity_Files(geometry_container, config_container, nZone);
-    
-    /*--- Initialize structure to store the gradient ---*/
-    Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
-    
-    for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
-        /*--- Initialize to zero ---*/
-        Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
-    }
     
     Gradient_file.precision(driver_config->OptionIsSet("OUTPUT_PRECISION") ? driver_config->GetOutput_Precision() : 6);
     
@@ -336,7 +344,7 @@ void CDiscAdjDeformationDriver::Run() {
     } // for iZone
     
     /*--- Write the gradient to a file ---*/
-    
+     
     if (rank == MASTER_NODE)
         Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
     
@@ -1053,4 +1061,84 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry *geometry
                config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
         solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
     }
+}
+
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivity() const {
+    const auto nPoint = GetNumberVertices();
+
+    vector<vector<passivedouble>> values;
+    
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+        values.push_back(GetObjectiveCoordinatesTotalSensitivity(iPoint));    
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivity(unsigned long iPoint) const {
+    if (iPoint >= GetNumberVertices()) {
+        SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+    }
+
+    vector<passivedouble> values(nDim, 0.0);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivity(iPoint, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+
+    return values;
+}
+
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker) const {
+    const auto nVertex = GetNumberMarkerVertices(iMarker);
+
+    vector<vector<passivedouble>> values;
+    
+    for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+        values.push_back(GetMarkerObjectiveCoordinatesTotalSensitivity(iMarker, iVertex));    
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    vector<passivedouble> values(nDim, 0.0);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+        const su2double value = geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivity(iPoint, iDim);
+
+        values[iDim] = SU2_TYPE::GetValue(value);
+    }
+
+    return values;
+}
+
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveDVsTotalSensitivity() const {
+    const auto nDV = GetNumberDesignVariables();
+
+    vector<vector<passivedouble>> values;
+    
+    for (auto iDV = 0ul; iDV < nDV; iDV++) {
+        values.push_back(GetObjectiveDVsTotalSensitivity(iDV));    
+    }
+    
+    return values;
+}
+
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveDVsTotalSensitivity(unsigned short iDV) const {
+    if (iDV >= GetNumberDesignVariables()) {
+        SU2_MPI::Error("Design Variable index exceeds size.", CURRENT_FUNCTION);
+    }
+
+    unsigned short nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
+    vector<passivedouble> values(nValue, 0.0);
+    
+    for (auto iValue = 0ul; iValue < nValue; iValue++) {
+        values[iValue] = SU2_TYPE::GetValue(Gradient[iDV][iValue]); 
+    }
+
+    return values;
 }
