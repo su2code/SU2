@@ -1673,15 +1673,18 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
   if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
 
   const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
+  const su2double nut  = varFlo->GetEddyViscosity(iPoint)/r;
 
-  const su2double sigma = 2.0/3.0;
+  const su2double one_sigma = 3.0/2.0;
 
   //--- Store gradients and stress tensor
-  su2double gradu[3][3] = {0.0}, gradnutilde[3] = {0.0};
+  su2double gradu[3][3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0}, gradnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, iDim+1, jDim);
     }
+    gradnu[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, nDim+1, iDim);
+    gradnut[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, nDim+2, iDim);
     gradnutilde[iDim] = varTur->GetGradient_Primitive_Adapt(iPoint, 0, iDim);
   }
 
@@ -1689,10 +1692,17 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
   //--- Turbulence equation ---//
   //---------------------------//
 
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+    weights[1][nVarFlo] -= one_sigma*(gradnu[iDim]*gradnut[iDim])*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    weights[2][nVarFlo] -= one_sigma*(nu+nut)*varAdjTur->GetHessian(iPoint, 0, ind_ii);
+  }
+
   //-----------------------//
   //--- Viscosity terms ---//
   //-----------------------//
 
+  // TODO: turbulent transport equation
   LaminarViscosityError(solver, geometry, config, iPoint, weights);
   EddyViscosityError(solver, geometry, config, iPoint, weights);
 }
