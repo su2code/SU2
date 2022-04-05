@@ -39,6 +39,7 @@ bin_SCRIPTS = \
     package_tests.py \
     shape_optimization.py \
     merge_solution.py \
+    set_corner_points.py \
     set_ffd_design_var.py \
     compute_polar.py \
     compute_multipoint.py \

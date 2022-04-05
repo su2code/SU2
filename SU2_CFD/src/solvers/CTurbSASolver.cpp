@@ -1709,12 +1709,13 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
 
 void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                                    unsigned long iPoint, vector<vector<su2double> > &weights) {
+  // TODO: production, destruction, and diffusion
 
 }
 
 void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                                           unsigned long iPoint, vector<vector<su2double> > &weights) {
-  
+  // TODO: turbulent transport equation
 }
 
 void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
