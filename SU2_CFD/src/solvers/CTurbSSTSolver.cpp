@@ -603,13 +603,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), T_infty);
 
-      /*--- Set Normal (it is necessary to change the sign) ---*/
-
-      su2double Normal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-      conv_numerics->SetNormal(Normal);
-
       /*--- Grid Movement ---*/
 
       if (dynamic_grid)
