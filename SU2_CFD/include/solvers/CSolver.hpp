@@ -3591,6 +3591,14 @@ public:
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
+   */
+  inline virtual void ExtractAdjoint_ObjectiveTerm(CGeometry *geometry, CConfig *config) { }
+
+  /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -4373,6 +4381,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Extract the objective function terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+  void ObjectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                      unsigned long iPoint, vector<vector<su2double> > &weights);
 
   /*!
    * \brief Compute the convective terms of the goal-oriented metric.

@@ -2219,6 +2219,20 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline virtual void SetObjectiveTerm(unsigned long iPoint, unsigned long iVar, const su2double solution) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline virtual su2double GetObjectiveTerm(unsigned long iPoint, unsigned long iVar) { return 0.0; }
+
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
   inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }

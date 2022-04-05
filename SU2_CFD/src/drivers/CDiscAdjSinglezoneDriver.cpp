@@ -242,6 +242,9 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   }//switch
 
   if (config->GetBool_Compute_Metric()) {
+    /*--- Compute df/dU ---*/
+    ObjectiveRecording();
+    
     /*--- Reset solution and primitives ---*/
     AD::Reset();
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
@@ -315,17 +318,28 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
                              INST_0, kind_recording);
 
-  /*--- Do one iteration of the direct solver ---*/
+  if (kind_recording != RECORDING::OBJECTIVE){
+    /*--- Do one iteration of the direct solver ---*/
 
-  DirectRun(kind_recording);
+    DirectRun(kind_recording);
 
-  /*--- Store the recording state ---*/
+    /*--- Store the recording state ---*/
 
-  RecordingState = kind_recording;
+    RecordingState = kind_recording;
 
-  /*--- Register Output of the iteration ---*/
+    /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+    iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  }
+  else {
+    su2double monitor = 1.0;
+    unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
+    integration_container[ZONE_0][INST_0][FLOW_SOL]->NonDimensional_Parameters(geometry_container[ZONE_0][INST_0], 
+                                                                               solver_container[ZONE_0][INST_0],
+                                                                               numerics_container[ZONE_0][INST_0], 
+                                                                               config_container[ZONE_0],
+                                                                               FinestMesh, RUNTIME_FLOW_SYS, &monitor);
+  }
 
   /*--- Extract the objective function and store it --- */
 
@@ -506,6 +520,42 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   }
   else { // MESH_DEFORM
     solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
+  }
+
+  /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+  AD::ClearAdjoints();
+
+}
+
+void CDiscAdjSinglezoneDriver::ObjectiveRecording(){
+  /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
+   *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
+
+  SetRecording(RECORDING::CLEAR_INDICES);
+
+  /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+
+  SetRecording(RECORDING::OBJECTIVE);
+
+  /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+  SetAdj_ObjFunction();
+
+  /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+  AD::ComputeAdjoint();
+
+  /*--- Extract the computed adjoint values of the input variables. ---*/
+
+  if ( config_container[ZONE_0]->GetFluidProblem() ) {
+    solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_ObjectiveTerm(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+
+    solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+  }
+  if ( (config->GetKind_Turb_Model() != TURB_MODEL::NONE) && 
+       (!config_container[ZONE_0]->GetFrozen_Visc_Disc()) ) {
+    solver_container[ZONE_0][INST_0][MESH_0][ADJTURB_SOL]->ExtractAdjoint_ObjectiveTerm(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
   }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/

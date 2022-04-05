@@ -124,6 +124,15 @@ public:
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
+   * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
+   *        after tape has been evaluated.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
+   */
+  void ExtractAdjoint_ObjectiveTerm(CGeometry *geometry, CConfig *config) override;
+
+  /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

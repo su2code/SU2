@@ -4964,6 +4964,9 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
   vector<vector<su2double> > HessianWeights(3, vector<su2double>(nVarTot));
   for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     for (auto& hw : HessianWeights) std::fill(hw.begin(), hw.end(), 0.0);
+    //--- Objective function terms
+    ObjectiveError(solver, geometry, config, iPoint, HessianWeights);
+
     //--- Convective terms
     solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, HessianWeights);
 
@@ -4993,6 +4996,29 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
 
 }
 
+void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                             unsigned long iPoint, vector<vector<su2double> > &weights) {
+  auto varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
+  //--- Mean flow variables
+  for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
+    weights[0][iVar] -= varAdjFlo->GetObjectiveTerm(iPoint, iVar);
+  }
+
+  //--- Turbulent variables
+  if(turb) {
+    auto varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+    const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+    for (auto iVar = 0; iVar < nVarTur; ++iVar) {
+      weights[0][nVarFlo+iVar] -= varAdjTur->GetObjectiveTerm(iPoint, iVar);
+    }
+  }
+}
+
 void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, const CConfig *config,
                                   unsigned long iPoint, vector<vector<su2double> > &weights) {
   
@@ -5008,12 +5034,9 @@ void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, co
 
     for (auto im = 0; im < nMet; ++im) {
       const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
-      // const su2double part = fabs((weights[0][iVar])
-      //                            +(weights[1][iVar])
-      //                            +(weights[2][iVar]))*hess;
-      const su2double part = (fabs(weights[0][iVar])
-                             +fabs(weights[1][iVar])
-                             +fabs(weights[2][iVar]))*hess;
+      const su2double part = fabs(weights[0][iVar]
+                                + weights[1][iVar]
+                                + weights[2][iVar])*hess;
       varFlo->AddMetric(iPoint, im, part);
     }
   }

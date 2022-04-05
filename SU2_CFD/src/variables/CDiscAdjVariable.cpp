@@ -43,6 +43,10 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; ++iVar)
       Solution(iPoint,iVar) = sol[iVar];
+
+  if (config->GetBool_Compute_Metric()) {
+    ObjectiveTerm.resize(nPoint,nVar) = su2double(0.0);
+  }
 }
 
 void CDiscAdjVariable::Set_External_To_DualTimeDer() {

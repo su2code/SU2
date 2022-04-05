@@ -123,6 +123,11 @@ public:
   void SecondaryRecording(void);
 
   /*!
+   * \brief Record just the computational path to the objective.
+   */
+  void ObjectiveRecording(void);
+
+  /*!
    * \brief Perform all steps to compute the metric.
    */
   void ComputeMetric(void);

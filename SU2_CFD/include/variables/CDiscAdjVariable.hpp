@@ -41,6 +41,7 @@ private:
   MatrixType Solution_Direct; /*!< \brief Stores the primal solution of the current timestep in order to be able to reset. */
   MatrixType DualTime_Derivative; /*!< \brief Container holding all/sum-of dual time contributions to the adjoint variable. */
   MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */
+  MatrixType ObjectiveTerm; /*!< \brief Vector holding the partial derivative of target functional with respect to the primal solution at this node. */
 
 public:
   /*!
@@ -121,5 +122,19 @@ public:
    * \brief Set Dual-time derivative contributions to the external.
    */
   void Set_External_To_DualTimeDer() final;
+
+  /*!
+   * \brief Set the partial derivative of the functional wrt the primal.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline void SetObjectiveTerm(unsigned long iPoint, unsigned long iVar, const su2double solution) final { ObjectiveTerm(iPoint,iVar) = solution; }
+
+  /*!
+   * \brief Returns the partial derivative of the functional wrt the primal.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline su2double GetObjectiveTerm(unsigned long iPoint, unsigned long iVar) final { return ObjectiveTerm(iPoint,iVar); }
 
 };

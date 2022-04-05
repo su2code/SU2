@@ -373,6 +373,26 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
 }
 
+void CDiscAdjSolver::ExtractAdjoint_ObjectiveTerm(CGeometry *geometry, CConfig *config) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+
+    /*--- Extract the adjoint solution ---*/
+
+    su2double Solution[MAXNVAR] = {0.0};
+    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
+
+    /*--- Store the adjoint solution ---*/
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      nodes->SetObjectiveTerm(iPoint, iVar, Solution[iVar]);
+    }
+  }
+  END_SU2_OMP_FOR
+
+}
+
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
 
   SU2_OMP_MASTER {
