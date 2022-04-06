@@ -2833,6 +2833,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
 
+  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
+  addBoolOption("USING_UQ", using_uq, false);
+
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("UQ_DELTA_B", uq_delta_b, 1.0);
 
@@ -4662,6 +4665,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Finite_Difference_Mode = false;
 
+ 
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -5186,10 +5190,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
-  sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
+  if (Kind_Turb_Model==TURB_MODEL::SST)
+    sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
 
   /*--- Set sst uq boolean. ---*/
-  using_uq = sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY;
+  // uncertainty quantification is still using the config option
+  //using_uq = sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY;
 
   /* --- Throw error if invalid componentiality used --- */
 

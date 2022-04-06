@@ -108,12 +108,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   if (sstParsedOptions.version == SST_OPTIONS::V1994){
     constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
     constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
-    constants[10] =20.0; // production limiter constant
+    constants[10] = 20.0; // production limiter constant
   } else {
     /* SST-V2003 */ 
     constants[8] = 5.0 / 9.0;
     constants[9] = 0.44;
-    constants[10] =10.0; // production limiter constant
+    constants[10] = 10.0; // production limiter constant
   }
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
@@ -121,7 +121,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   lowerlimit[1] = 1.0e-4;
   upperlimit[1] = 1.0e15;
-
 
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
@@ -248,9 +247,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       P_Base = StrainMag;
     }
 
-    su2double zeta  = max(omega, (P_Base*F2)/a1);
-    su2double muT   = max(rho*kine/zeta,0.0);
-
+    su2double zeta  = min(1.0/omega, a1/(P_Base*F2));
+    su2double muT   = max(rho*kine*zeta,0.0);
+    
     nodes->SetmuT(iPoint,muT);
 
   }

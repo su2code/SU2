@@ -732,7 +732,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
 
-      su2double P_Base = StrainMag_i;  //Base production term for SST1994 and SST2003
+      su2double StrainMag = StrainMag_i;
+      su2double P_Base = StrainMag;  //Base production term for SST1994 and SST2003
 
       /*--- Modifications of SST production terms (uq, V, KL) --*/
 
@@ -766,6 +767,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /* we also give a lower limit to production of 0, which makes sense numerically but is not in the original papers */
       /*--- Production limiter on k-equation ---*/
+
+      // this is the original line for reference
+      //pk = Eddy_Viscosity_i * pow(StrainMag,2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      // pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       /*--- For the production of the omega-equation we use alfa*P/nu_t = alfa*rho*P/mu_t = ---*/
@@ -775,6 +780,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
         /*--- no production limiter on w-equation for SST1994 ---*/
         zeta = max(a1 * ScalarVar_i[1], VorticityMag * F2_i);
+        /*--- ---*/
         pw = (alfa_blended * Density_i) * pw;
       } else {
         /*--- production limiter on w-equation for SST2003 ---*/
@@ -796,6 +802,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
          pw -=  (alfa_blended*Density_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * zeta * diverg);
         }
       } 
+
+
+      // original lines for reference:       
+      //zeta = max(ScalarVar_i[1], StrainMag * F2_i/a1);
+      //pw = alfa_blended * Density_i * max(pow(StrainMag,2) - 2.0/3.0 * zeta * diverg,0.0);
 
 
       /*--- Sustaining terms, if desired. Note that if the production terms are

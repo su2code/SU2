@@ -926,7 +926,7 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("SA_COMP", TURB_MODEL::SA_COMP)
   MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-};
+  };
 
 /*!
  * \brief Families of turbulence models
