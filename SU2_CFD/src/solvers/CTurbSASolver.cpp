@@ -1744,13 +1744,16 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const su2double nutilde  = varTur->GetSolution(iPoint,0);
 
   const su2double sigma = 2.0/3.0;
+  const su2double k2    = pow(0.41, 2.0);
   const su2double cb1   = 0.1355;
   const su2double cb2   = 0.622;
   const su2double cb2_sigma = cb2/sigma;
-  const su2double cv1_3 = pow(7.1, 3.0);
   const su2double ct3   = 1.2;
   const su2double ct4   = 0.5;
-  const su2double k2    = pow(0.41, 2.0);
+  const su2double cv1_3 = pow(7.1, 3.0);
+  const su2double cw1   = cb1/k2+(1.0+cb2)/sigma;
+  const su2double cw2   = 0.3;
+  const su2double cw3_6 = pow(2.0, 6.0);
 
   const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
@@ -1781,7 +1784,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //-----------------------//
 
   const su2double dist2 = dist*dist;
-  const su2double Chi = varTur->GetSolution(iPoint,0)/nu;
+  const su2double Chi = nutilde/nu;
   const su2double Chi_2 = Chi*Chi;
   const su2double Chi_3 = Chi_2*Chi;
   const su2double fv1 = Chi_3/(Chi_3+cv1_3);
@@ -1796,7 +1799,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   weights[0][nVarFlo] -= cb1*(1-ft2) * (S+2.0*fv2*inv_k2_d2) * varAdjTur->GetSolution(iPoint,0);
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      const su2double Wij = (gradu[iDim][jDim] - gradu[jDim][iDim]);
+      const su2double Wij = 0.5*(gradu[iDim][jDim] - gradu[jDim][iDim]);
       weights[1][iDim+1] += cb1*(1-ft2)*Wij*nutilde/(r*S) * varAdjTur->GetGradient_Adapt(iPoint, 0, jDim);
       weights[1][jDim+1] -= cb1*(1-ft2)*Wij*nutilde/(r*S) * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
       weights[1][0] -= cb1*(1-ft2)*Wij*nutilde/(r*S) * ( u[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, jDim)
@@ -1804,6 +1807,22 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
     }
     
   }
+
+  //------------------------//
+  //--- Destruction term ---//
+  //------------------------//
+
+  const su2double Shat = S + nutilde*fv2*inv_k2_d2;
+  const su2double inv_Shat = 1.0/Shat;
+
+  const su2double r = min(nutilde*inv_Shat*inv_k2_d2,10.0);
+  const su2double g = r + cw2*(pow(r,6.0)-r);
+  const su2double g_6 =  pow(g,6.0);
+  const su2double glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
+  const su2double fw = g*glim;
+
+  weights[0][nVarFlo] += (cw1*fw - cb1*ft2/k2)*2.0*nutilde/dist2*varAdjTur->GetSolution(iPoint, 0);
+  
 
 }
 
