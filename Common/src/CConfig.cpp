@@ -5190,20 +5190,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
-  if (Kind_Turb_Model==TURB_MODEL::SST || Kind_Turb_Model==TURB_MODEL::SST_SUST)
+  if (Kind_Turb_Model==TURB_MODEL::SST || Kind_Turb_Model==TURB_MODEL::SST_SUST){
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
 
-  // if uq was set through the sst options, then we set the variable using_uq here  
-  if (sstParsedOptions.uq) 
-    using_uq = true;
+    // if uq was set through the sst options, then we set the variable using_uq here  
+    if (sstParsedOptions.uq) 
+      using_uq = true;
   
-  /* --- Throw error if invalid componentiality used --- */
-       
+    /* --- Throw error if invalid componentiality used --- */
 
-  if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY && (eig_val_comp > 3 || eig_val_comp < 1)){
-    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
+    if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY && (eig_val_comp > 3 || eig_val_comp < 1)){
+      SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
+    }
   }
-
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&

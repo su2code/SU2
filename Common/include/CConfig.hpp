@@ -9687,7 +9687,6 @@ public:
     SSTParsedOptions.rc = sst_rc;
     SSTParsedOptions.m = sst_m;
     SSTParsedOptions.uq = sst_uq;
-
     return SSTParsedOptions;
   }
 };
