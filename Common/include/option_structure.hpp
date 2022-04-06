@@ -917,6 +917,7 @@ enum class TURB_MODEL {
   SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
   SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
+  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
@@ -926,7 +927,8 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("SA_COMP", TURB_MODEL::SA_COMP)
   MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  };
+  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
+};
 
 /*!
  * \brief Families of turbulence models
@@ -950,6 +952,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
+    case TURB_MODEL::SST_SUST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
@@ -990,6 +993,7 @@ struct SST_ParsedOptions {
   SST_OPTIONS version;       /*!< \brief Enum SST base model. */
   SST_OPTIONS production;    /*!< \brief Enum for production corrections/modifiers for SST model. */
   bool sust;                 /*!< \brief Bool for SST model with sustaining terms. */
+  bool uq;                   /*!< \brief Bool for using uncertainty quantification */
   bool rc;                   /*!< \brief Bool for SST model with rotational corrections. */
   bool m;                    /*!< \brief Bool for modified (m) SST model. */
 };

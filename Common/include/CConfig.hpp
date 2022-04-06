@@ -1139,7 +1139,7 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
-  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  bool using_uq = false;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -9647,10 +9647,10 @@ public:
     /* when V2003 is selected, we automatically select sst_m as well */
     const bool sst_m     = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end || sst_2003;
 
-    const bool sst_sust  = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
+    const bool sst_sust  = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end || Kind_Turb_Model==TURB_MODEL::SST_SUST;
     const bool sst_v     = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
     const bool sst_kl    = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
-    const bool sst_uq    = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
+    const bool sst_uq    = (std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end || using_uq);
     const bool sst_rc    = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
 
     // Parse base version
@@ -9686,6 +9686,7 @@ public:
     SSTParsedOptions.sust = sst_sust;
     SSTParsedOptions.rc = sst_rc;
     SSTParsedOptions.m = sst_m;
+    SSTParsedOptions.uq = sst_uq;
 
     return SSTParsedOptions;
   }

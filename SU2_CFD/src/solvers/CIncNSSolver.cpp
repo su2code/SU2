@@ -291,7 +291,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
   su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
 
-  bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  bool tkeNeeded = ((turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST));
 
   AD::StartNoSharedReading();
 

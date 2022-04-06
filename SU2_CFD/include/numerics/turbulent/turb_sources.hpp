@@ -562,8 +562,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const bool axisymmetric = false;
 
   /*--- Closure constants ---*/
-  const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2, ProdLimConstant;
-
+  const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
+  const su2double ProdLimConstant;
+  SST_ParsedOptions sstParsedOptions;
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
@@ -571,8 +572,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   su2double Residual[2];
   su2double* Jacobian_i[2];
   su2double Jacobian_Buffer[4];  /// Static storage for the Jacobian (which needs to be pointer for return type).
-
-  SST_ParsedOptions sstParsedOptions;
 
   /*!
    * \brief Get strain magnitude based on perturbed reynolds stress matrix.
@@ -769,9 +768,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter on k-equation ---*/
 
       // this is the original line for reference
-      //pk = Eddy_Viscosity_i * pow(StrainMag,2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      // pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-      pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      //pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       /*--- For the production of the omega-equation we use alfa*P/nu_t = alfa*rho*P/mu_t = ---*/
 
@@ -805,8 +804,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
 
       // original lines for reference:       
-      //zeta = max(ScalarVar_i[1], StrainMag * F2_i/a1);
-      //pw = alfa_blended * Density_i * max(pow(StrainMag,2) - 2.0/3.0 * zeta * diverg,0.0);
+      zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
+      pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg,0.0);
 
 
       /*--- Sustaining terms, if desired. Note that if the production terms are

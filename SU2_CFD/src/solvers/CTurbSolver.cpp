@@ -103,7 +103,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
 void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config) {
 
-  const bool sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
   const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *PrimVar_j = new su2double[nPrimVar];
   su2double solution_j[MAXNVAR] = {0.0};
