@@ -1815,8 +1815,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const su2double Shat = S + nutilde*fv2*inv_k2_d2;
   const su2double inv_Shat = 1.0/Shat;
 
-  const su2double r = min(nutilde*inv_Shat*inv_k2_d2,10.0);
-  const su2double g = r + cw2*(pow(r,6.0)-r);
+  const su2double rg = min(nutilde*inv_Shat*inv_k2_d2,10.0);
+  const su2double g = rg + cw2*(pow(rg,6.0)-rg);
   const su2double g_6 =  pow(g,6.0);
   const su2double glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
   const su2double fw = g*glim;
