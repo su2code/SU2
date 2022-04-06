@@ -1741,10 +1741,18 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
 
   const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
   const su2double nut  = varFlo->GetEddyViscosity(iPoint)/r;
+  const su2double nutilde  = varTur->GetSolution(iPoint,0);
 
   const su2double sigma = 2.0/3.0;
+  const su2double cb1   = 0.1355;
   const su2double cb2   = 0.622;
   const su2double cb2_sigma = cb2/sigma;
+  const su2double cv1_3 = pow(7.1, 3.0);
+  const su2double ct3   = 1.2;
+  const su2double ct4   = 0.5;
+  const su2double k2    = pow(0.41, 2.0);
+
+  const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
   //--- Store gradients and stress tensor
   su2double gradu[3][3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0}, gradnutilde[3] = {0.0};
@@ -1762,7 +1770,39 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //----------------------//
   
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nVarFlo] += 2.0*cb2_sigma*gradnutilde[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    weights[1][nVarFlo] += 2.0*cb2_sigma * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+  }
+
+  //--- The rest of the terms involve 1/WallDist, so return if small
+  if (dist < 1.0E-10) return;
+
+  //-----------------------//
+  //--- Production term ---//
+  //-----------------------//
+
+  const su2double dist2 = dist*dist;
+  const su2double Chi = varTur->GetSolution(iPoint,0)/nu;
+  const su2double Chi_2 = Chi*Chi;
+  const su2double Chi_3 = Chi_2*Chi;
+  const su2double fv1 = Chi_3/(Chi_3+cv1_3);
+  const su2double fv2 = 1.0 - Chi/(1.0+Chi*fv1);
+  const su2double ft2 = ct3*exp(-ct4*Chi_2);
+  const su2double inv_k2_d2 = 1.0/(k2*dist2);
+
+  su2double S = pow(gradu[1][0] - gradu[0][1], 2.0);
+  if (nDim = 3) S += pow(gradu[2][1] - gradu[1][2], 2.0) + pow(gradu[0][2] - gradu[2][0], 2.0);
+  S = sqrt(S);
+
+  weights[0][nVarFlo] -= cb1*(1-ft2) * (S+2.0*fv2*inv_k2_d2) * varAdjTur->GetSolution(iPoint,0);
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    for (auto jDim = 0; jDim < nDim; ++jDim) {
+      const su2double Wij = (gradu[iDim][jDim] - gradu[jDim][iDim]);
+      weights[1][iDim+1] += cb1*(1-ft2)*Wij*nutilde/(r*S) * varAdjTur->GetGradient_Adapt(iPoint, 0, jDim);
+      weights[1][jDim+1] -= cb1*(1-ft2)*Wij*nutilde/(r*S) * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+      weights[1][0] -= cb1*(1-ft2)*Wij*nutilde/(r*S) * ( u[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, jDim)
+                                                     -   u[jDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim) );
+    }
+    
   }
 
 }
@@ -1804,12 +1844,12 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
 
   dist += rough_const*roughness;
 
-  su2double Ji   = nu_hat/nu ;
+  su2double Chi = nu_hat/nu ;
   if (roughness > 1.0e-10)
-    Ji+= cR1*roughness/(dist+EPS);
+    Chi+= cR1*roughness/(dist+EPS);
 
-  const su2double Ji_3 = Ji*Ji*Ji;
-  const su2double fv1  = Ji_3/(Ji_3+cv1_3);
+  const su2double Chi_3 = Chi*Chi*Chi;
+  const su2double fv1  = Chi_3/(Chi_3+cv1_3);
 
   //--- Store gradients and stress tensor
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0};
@@ -1827,8 +1867,8 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   su2double tauomut[3][3] = {0.0};
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      tauomut[iDim][jDim]  = wf*(( gradu[jDim][iDim] + gradu[iDim][jDim] )
-                           - TWO3*divu*(iDim == jDim));
+      tauomut[iDim][jDim]  = wf * ( ( gradu[jDim][iDim] + gradu[iDim][jDim] )
+                                -     TWO3*divu*(iDim == jDim) );
                        
     }
   }
@@ -1839,8 +1879,8 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      weights[1][nVarFlo] += r*fv1*tauomut[iDim][jDim]*varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
-      weights[1][0] += nu_hat*fv1*tauomut[iDim][jDim]*varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
+      weights[1][nVarFlo] += r*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
+      weights[1][0] +=  nu_hat*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
     }
   }
 
@@ -1854,14 +1894,14 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       work += tauomut[iDim][jDim]*u[jDim];
     }
-    weights[1][nVarFlo] += r*fv1*work*varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
-    weights[1][0] += nu_hat*fv1*work*varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
+    weights[1][nVarFlo] += r*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
+    weights[1][0] +=  nu_hat*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
   }
 
   //--- Errors in heat flux
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nVarFlo] += r*fv1*cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
-    weights[1][0] += nu_hat*fv1*cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
+    weights[1][nVarFlo] += r*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
+    weights[1][0] +=  nu_hat*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
   }
 
   // TODO: turbulent transport equation
