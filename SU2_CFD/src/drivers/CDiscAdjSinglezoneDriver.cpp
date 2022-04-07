@@ -578,7 +578,6 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     cout << "Storing primitive variables needed for gradients in metric." << endl;
   }
   solver_flow->SetPrimitive_Adapt(geometry, config);
-  if ( turb ) solver_turb->SetPrimitive_Adapt(geometry, config);
 
   if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
@@ -599,7 +598,6 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     }
     if(rank == MASTER_NODE) cout << "Computing gradients of primitive variables." << endl;
     solver_flow->SetGradient_Primitive_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
-    if ( turb ) solver_turb->SetGradient_Primitive_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
   }
   else {
     if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
@@ -619,7 +617,6 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     }
     if(rank == MASTER_NODE) cout << "Computing gradients of primitive variables." << endl;
     solver_flow->SetGradient_Primitive_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
-    if ( turb ) solver_turb->SetGradient_Primitive_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
   }
 
   //--- Metric

@@ -117,24 +117,6 @@ public:
                       unsigned short iMesh) override;
 
   /*!
-   * \brief Store the primitive variables needed for adaptation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) final {
-    //--- store temperature and viscosity in aux vector
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      const su2double nutilde = nodes->GetSolution(iPoint, 0);
-      nodes->SetPrimitive_Adapt(iPoint, 0, nutilde);
-    }
-
-    //--- communicate the solution values via MPI
-    InitiateComms(geometry, config, PRIMITIVE_ADAPT);
-    CompleteComms(geometry, config, PRIMITIVE_ADAPT);
-  }
-
-  /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
