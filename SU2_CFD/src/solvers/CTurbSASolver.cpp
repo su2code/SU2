@@ -1823,7 +1823,53 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
 
 void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                                           unsigned long iPoint, vector<vector<su2double> > &weights) {
-  // TODO: turbulent transport equation
+
+  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varTur    = solver[TURB_SOL]->GetNodes(),
+            *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+
+  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+  //--- Store primitive variables and coefficients
+  const su2double r = varFlo->GetDensity(iPoint);
+  su2double u[3] = {0.0};
+  u[0] = varFlo->GetVelocity(iPoint, 0);
+  u[1] = varFlo->GetVelocity(iPoint, 1);
+  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  const su2double u2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
+
+  const su2double T   = varFlo->GetTemperature(iPoint);
+  const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
+
+  const su2double Tref  = config->GetMu_Temperature_RefND();
+  const su2double S     = config->GetMu_SND();
+  const su2double muref = config->GetMu_RefND();
+  const su2double dmudT = muref*(Tref+S)/pow(Tref,1.5) * (3.*S*sqrt(T) + pow(T,1.5))/(2.*pow((T+S),2.));
+
+  const su2double g    = config->GetGamma();
+  const su2double R    = config->GetGas_ConstantND();
+  const su2double cp   = (g/(g-1.))*R;
+  const su2double cv   = cp/g;
+
+  const su2double sigma = 2.0/3.0;
+
+  //--- Store gradients and stress tensor
+  su2double gradnutilde[3] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
+  }
+
+  //---------------------------//
+  //--- Turbulence equation ---//
+  //---------------------------//
+
+  const su2double factor = dmudT/(sigma*r*r*cv);
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    weights[1][nVarFlo-1] += factor * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    for (auto jDim = 0; jDim < nDim; ++jDim)
+        weights[1][jDim+1] -= factor * u[jDim] * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    weights[1][0] += (factor * (0.5*u2-cv*T) - nu/r) * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+  }
 }
 
 void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
@@ -1851,6 +1897,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   const su2double Pr   = config->GetPrandtl_Lam();
   const su2double Prt  = config->GetPrandtl_Turb();
 
+  const su2double sigma = 2.0/3.0;
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
   const su2double nu_hat = nodes->GetSolution(iPoint,0);
   const su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
@@ -1866,12 +1913,13 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   const su2double fv1  = Chi_3/(Chi_3+cv1_3);
 
   //--- Store gradients and stress tensor
-  su2double gradu[3][3] = {0.0}, gradT[3] = {0.0};
+  su2double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, iDim+1, jDim);
     }
     gradT[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, 0, iDim);
+    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
   }
   
   //--- Account for wall functions
@@ -1918,5 +1966,12 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
     weights[1][0] +=  nu_hat*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
   }
 
-  // TODO: turbulent transport equation
+  //---------------------------//
+  //--- Turbulence equation ---//
+  //---------------------------//
+
+  for (auto iDim = 0; iDim < nDim; ++iDim) {
+    weights[1][nVarFlo] += 1.0/sigma * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+  }
+
 }
