@@ -1793,7 +1793,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   S = sqrt(S);
 
   weights[0][nVarFlo] -= cb1*(1-ft2) * (S+2.0*fv2*inv_k2_d2) * varAdjTur->GetSolution(iPoint,0);
-  if (S > 1.0e-10)
+  if (S > std::numeric_limits<passivedouble>::epsilon())
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       const su2double Wij = 0.5*(gradu[iDim][jDim] - gradu[jDim][iDim]);
@@ -1809,7 +1809,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //------------------------//
 
   const su2double Shat = S + nutilde*fv2*inv_k2_d2;
-  const su2double inv_Shat = 1.0/Shat;
+  const su2double inv_Shat = 1.0/max(Shat, std::numeric_limits<passivedouble>::epsilon());
 
   const su2double rg = min(nutilde*inv_Shat*inv_k2_d2,10.0);
   const su2double g = rg + cw2*(pow(rg,6.0)-rg);
