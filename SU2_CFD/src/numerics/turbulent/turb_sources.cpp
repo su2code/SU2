@@ -679,7 +679,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
       fw = g*glim;
 
-      Destruction = cw1*fw*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
+      Destruction = (cw1*fw-cb1*ft2/k2)*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
       /*--- Diffusion term ---*/
 
@@ -705,7 +705,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       if (r == 10.0) dr = 0.0;
       dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
       dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-      Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] +  2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume;
+      dft2 = -2.0*ct3*ct4*Ji/nu*exp(-ct4*Ji_2);
+      Jacobian_i[0] -= cw1*(dfw*ScalarVar_i[0] +  2.0*fw)*ScalarVar_i[0]/dist_i_2*Volume
+                     - cb1*inv_k2_d2*(dft2*ScalarVar_i[0] + 2.0*ft2)*ScalarVar_i[0]*Volume;
 
     }
 

@@ -283,7 +283,7 @@ private:
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
   su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
+  su2double dr, dg, dfw, dft2;
 
 public:
   /*!
