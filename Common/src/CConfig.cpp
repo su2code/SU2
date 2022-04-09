@@ -3398,9 +3398,21 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
 
+
+  /*--- -We still support the old SST_SUST keyword, but internally we convert everything --*/
+  if (Kind_Turb_Model == TURB_MODEL::SST_SUST){
+    cout << "Warning! the SST_SUST keyword will become obsolete. Use the SST model with SST_OPTIONS= (SST_SUST)" << endl;
+    Kind_Turb_Model = TURB_MODEL::SST;
+  }
+
+  /*--- Postprocess SST_OPTIONS into structure. ---*/
+  if (Kind_Turb_Model==TURB_MODEL::SST){
+    sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
+  } 
+
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
-  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST){
-    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST or SST_SUST", CURRENT_FUNCTION);
+  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
+    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -4665,7 +4677,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Finite_Difference_Mode = false;
 
- 
+  /* --- Throw error if UQ used for any turbulence model other that SST --- */
+
+  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && using_uq){
+    SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
+  }
+
+  /* --- Throw error if invalid componentiality used --- */
+
+  if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
+    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
+  }
+
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -5189,20 +5212,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       nTurbVar = 2; break;
   }
 
-  /*--- Postprocess SST_OPTIONS into structure. ---*/
-  if (Kind_Turb_Model==TURB_MODEL::SST || Kind_Turb_Model==TURB_MODEL::SST_SUST){
-    sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
-
-    // if uq was set through the sst options, then we set the variable using_uq here  
-    if (sstParsedOptions.uq) 
-      using_uq = true;
-  
-    /* --- Throw error if invalid componentiality used --- */
-
-    if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY && (eig_val_comp > 3 || eig_val_comp < 1)){
-      SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
-    }
-  }
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model != SPECIES_MODEL::NONE) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
@@ -5868,10 +5877,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SST:       
-            cout << "k-omega SST model " << endl;
-            break;
-          case TURB_MODEL::SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
+          case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:      
+             cout << "Menter's SST"     << endl; 
+             if (sstParsedOptions.sust)  cout << "Menter's SST with sustaining terms" << endl; 
+             break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
@@ -5883,7 +5892,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
-        if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY){
+        if (using_uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }

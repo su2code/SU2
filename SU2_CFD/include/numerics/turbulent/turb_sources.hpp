@@ -559,6 +559,7 @@ template <class FlowIndices>
 class CSourcePieceWise_TurbSST final : public CNumerics {
  private:
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
+  const bool sustaining_terms = false;
   const bool axisymmetric = false;
 
   /*--- Closure constants ---*/
@@ -714,31 +715,28 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     Jacobian_i[1][0] = 0.0;
     Jacobian_i[1][1] = 0.0;
 
-    su2double zeta;
-
     /*--- Computation of blended constants for the source terms ---*/
 
     const su2double alfa_blended = F1_i * alfa_1 + (1.0 - F1_i) * alfa_2;
     const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
     if (dist_i > 1e-10) {
-
-      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-      
       /*--- Production ---*/
 
       su2double diverg = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         diverg += PrimVar_Grad_i[iDim + idx.Velocity()][iDim];
 
+      /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
+
+      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double StrainMag = StrainMag_i;
       su2double P_Base = StrainMag;  //Base production term for SST1994 and SST2003
 
-      /*--- Modifications of SST production terms (uq, V, KL) --*/
-
-      if (sstParsedOptions.production == SST_OPTIONS::UNCERTAINTY) {
+      if (using_uq) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
+        StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
         P_Base = PerturbedStrainMag(ScalarVar_i[0]);
 
       } else if (sstParsedOptions.production == SST_OPTIONS::VORTICITY) {
@@ -763,27 +761,24 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         }
       } 
 
+      //su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      //pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
-      /* we also give a lower limit to production of 0, which makes sense numerically but is not in the original papers */
-      /*--- Production limiter on k-equation ---*/
 
-      // this is the original line for reference
-      pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-      //pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-
-      /*--- For the production of the omega-equation we use alfa*P/nu_t = alfa*rho*P/mu_t = ---*/
+      //const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
+      su2double zeta;
 
       su2double pw = pow(P_Base,2);
 
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
         /*--- no production limiter on w-equation for SST1994 ---*/
-        zeta = max(a1 * ScalarVar_i[1], VorticityMag * F2_i);
+        zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
         /*--- ---*/
         pw = (alfa_blended * Density_i) * pw;
       } else {
         /*--- production limiter on w-equation for SST2003 ---*/
-        zeta = max(a1 * ScalarVar_i[1], StrainMag_i * F2_i);
+        zeta = max(ScalarVar_i[1], StrainMag_i * F2_i / a1);
         pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       }
 
@@ -795,18 +790,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           // the correct production with the additional divergence term
           // pw -=  (alfa_blended*Density_i * (2.0 / 3.0 * diverg*diverg) +  2.0 / 3.0 * zeta * diverg);
           /*--- the tke term only ---*/
-          pw -=  2.0 / 3.0 * zeta * diverg;
+          pw -=  (alfa_blended * Density_i)* 2.0 / 3.0 * zeta * diverg;
         } else {
          /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
          pw -=  (alfa_blended*Density_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * zeta * diverg);
         }
       } 
 
-
-      // original lines for reference:       
-      zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg,0.0);
-
+      //su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      //su2double pw = alfa_blended * Density_i * (pw - 2.0 / 3.0 * zeta * diverg);
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
