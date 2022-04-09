@@ -748,14 +748,14 @@ def main():
         test.tol = 1e-4
     #end
 
-    pass_list = [ test.run_filediff() for test in file_diff_list ]
-    pass_list += [ test.run_test() for test in test_list ]
+    pass_list = [ test.run_test() for test in test_list ]
+    pass_list += [ test.run_filediff() for test in file_diff_list ]
 
     # Tests summary
     print('==================================================================')
     print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
-    for i, test in enumerate(test_list):
+    for i, test in enumerate(test_list+file_diff_list):
         if (pass_list[i]):
             print('  passed - %s'%test.tag)
         else:
