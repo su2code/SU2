@@ -246,7 +246,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     } else {
       P_Base = StrainMag;
     }
-
     su2double zeta  = min(1.0/omega, a1/(P_Base*F2));
     su2double muT   = max(rho*kine*zeta,0.0);
     

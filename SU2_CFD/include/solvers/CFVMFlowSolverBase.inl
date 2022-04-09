@@ -406,8 +406,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
                                                      CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) ||
-                         (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -1317,7 +1316,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
 
         /*--- Turbulent kinetic energy. ---*/
-        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
@@ -1483,7 +1482,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
               /*--- Turbulent kinetic energy ---*/
 
-              if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+              if (config->GetKind_Turb_Model() == TURB_MODEL::SST) 
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 

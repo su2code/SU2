@@ -1139,7 +1139,7 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
-  bool using_uq = false;                /*!< \brief Using uncertainty quantification with SST model */
+  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -9641,7 +9641,7 @@ public:
     SST_ParsedOptions SSTParsedOptions;
     const auto sst_options_end = SST_Options + nSST_Options;
 
-    const bool sst_1994  = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
+    const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
     const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
 
     /* when V2003 is selected, we automatically select sst_m as well */

@@ -951,8 +951,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::SA_COMP:
     case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
-    case TURB_MODEL::SST:
-    case TURB_MODEL::SST_SUST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;

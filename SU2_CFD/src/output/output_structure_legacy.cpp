@@ -479,7 +479,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
     case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
-    case TURB_MODEL::SST:case TURB_MODEL::SST_SUST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\"");
       break;
     default: break;
@@ -488,7 +488,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
     case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
-    case TURB_MODEL::SST:case TURB_MODEL::SST_SUST:
+    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\"");
       break;
     default: break;
@@ -2825,6 +2825,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
           case TURB_MODEL::SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
           case TURB_MODEL::SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
           case TURB_MODEL::SST:       Breakdown_file << "Menter's TURB_MODEL::SST"     << "\n"; break;
+          // nijso: add the SST submodels here
           case TURB_MODEL::SST_SUST:  Breakdown_file << "Menter's TURB_MODEL::SST with sustaining terms" << "\n"; break;
           default: break;
         }
@@ -6084,7 +6085,7 @@ void COutputLegacy::WriteTurboPerfConvHistory(CConfig *config){
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
   bool turbulent = ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS));
-  bool menter_sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  bool menter_sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   unsigned short nBladesRow, nStages;
   unsigned short iStage;
