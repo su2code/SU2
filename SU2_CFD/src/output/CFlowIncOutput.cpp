@@ -400,7 +400,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - config->GetPressure_FreeStreamND())/factor);
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
 
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
