@@ -221,7 +221,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
     VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
 
-    nodes->SetBlendingFunc(iPoint, mu, dist, rho);
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho, config);
 
     su2double F2 = nodes->GetF2blending(iPoint);
 

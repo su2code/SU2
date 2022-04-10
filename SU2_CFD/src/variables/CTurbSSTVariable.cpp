@@ -32,6 +32,8 @@
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  sstParsedOptions = config->GetSSTParsedOptions();
+
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution(iPoint,0) = kine;
@@ -51,7 +53,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
-                                       su2double val_dist, su2double val_density) {
+                                       su2double val_dist, su2double val_density, CConfig *config) {
   su2double arg2, arg2A, arg2B, arg1;
 
   AD::StartPreacc();
@@ -66,7 +68,12 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
-  CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
+  if (sstParsedOptions.version == SST_OPTIONS::V1994){
+    CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
+  } else {
+    /* SST-2003 */
+    CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -10.0));
+  }
 
   /*--- F1 ---*/
 
