@@ -973,8 +973,8 @@ enum class SST_OPTIONS {
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
-  MakePair("V1994m", SST_OPTIONS::V1994)
-  MakePair("V2003m", SST_OPTIONS::V2003)
+  MakePair("V1994m", SST_OPTIONS::V1994m)
+  MakePair("V2003m", SST_OPTIONS::V2003m)
   //MakePair("MODIFIED", SST_OPTIONS::MODIFIED)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
