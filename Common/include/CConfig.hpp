@@ -9643,7 +9643,7 @@ public:
 
     const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
     const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
-
+ 
     /* when V2003 is selected, we automatically select sst_m as well */
     const bool sst_m     = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end || sst_2003;
 
@@ -9659,7 +9659,7 @@ public:
     } else if (sst_2003) {
       /*---  sst-2003m model is sst2003 + sstm ---*/
       cout << "Currently only the SST-2003m (modified) has been implemented. " << endl;
-      SSTParsedOptions.version = SST_OPTIONS::V2003;
+      SSTParsedOptions.version = SST_OPTIONS::V2003m;
     } else if (sst_1994){
       /* --- Add warning to switch to SST-2003m --- */
       cout << "warning: the current SST-1994 model is inconsistent with literature. We recommend to use the SST-2003m model." << endl;

@@ -964,6 +964,8 @@ enum class SST_OPTIONS {
   NONE,        /*!< \brief No SST Turb model. */
   V1994,       /*!< \brief 1994 Menter k-w SST model. */
   V2003,       /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,       /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,       /*!< \brief 2003m Menter k-w SST model. */
   MODIFIED,    /*!< \brief Modified k-w SST model. */
   SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
   VORTICITY,   /*!< \brief Menter k-w SST model with vorticity production terms. */
@@ -975,6 +977,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
   MakePair("V2003m", SST_OPTIONS::V2003m)
+  MakePair("V1994", SST_OPTIONS::V1994)
+  MakePair("V2003", SST_OPTIONS::V2003)
   //MakePair("MODIFIED", SST_OPTIONS::MODIFIED)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
