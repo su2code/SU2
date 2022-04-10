@@ -564,7 +564,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
-
+  const su2double ProdLimConstant;
+  SST_ParsedOptions sstParsedOptions;
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
@@ -637,7 +638,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                            su2double val_omega_Inf, const CConfig* config)
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
-        sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
@@ -649,11 +649,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
+        ProdLimConstant(constants[10]),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
+
+    sstParsedOptions = config->GetSSTParsedOptions();
+
   }
 
   /*!
@@ -725,20 +729,70 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
+      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double StrainMag = StrainMag_i;
+      su2double P_Base = StrainMag;  //Base production term for SST1994 and SST2003
 
       if (using_uq) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
         StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
+        P_Base = PerturbedStrainMag(ScalarVar_i[0]);
+
+      } else if (sstParsedOptions.production == SST_OPTIONS::VORTICITY) {
+        P_Base = VorticityMag; 
+
+      } else if (sstParsedOptions.production == SST_OPTIONS::KL) {
+        P_Base = sqrt(StrainMag_i*VorticityMag);
+      }  
+
+      /*--- first part of the production term ---*/
+      su2double pk = Eddy_Viscosity_i * pow(P_Base,2);
+      
+      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+       /* in case of unmodified, we add the divergence terms */
+        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          //pk -=  (Eddy_Viscosity*2.0/3.0*diverg*diverg + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
+          pk -=  2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+        } else {
+         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
+         pk -=  (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
+        }
+      } 
+
+      pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+
+      su2double zeta;
+      su2double pw = pow(P_Base,2);
+
+      if (sstParsedOptions.version == SST_OPTIONS::V1994){
+        /*--- no production limiter on w-equation for SST1994 ---*/
+        zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
+        /*--- ---*/
+        pw = (alfa_blended * Density_i) * pw;
+      } else {
+        /*--- production limiter on w-equation for SST2003 ---*/
+        zeta = max(ScalarVar_i[1], StrainMag_i * F2_i / a1);
+        pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+       /* in case of unmodified, we add the divergence terms */
+        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          /* --- note that mu_t = rho*a1*k/zeta and we can make this term independent of k ---*/
+          // the correct production with the additional divergence term
+          // pw -=  (alfa_blended*Density_i * (2.0 / 3.0 * diverg*diverg) +  2.0 / 3.0 * zeta * diverg);
+          /*--- the tke term only ---*/
+          pw -=  (alfa_blended * Density_i)* 2.0 / 3.0 * zeta * diverg;
+        } else {
+         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
+         pw -=  (alfa_blended*Density_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * zeta * diverg);
+        }
+      } 
 
-      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-      const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      pw = max(pw, 0.0);
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -747,11 +801,17 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
             lead to problems for very big values of the free-stream turbulence
             intensity. ---*/
 
-      if (sustaining_terms) {
+      if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
         pk = max(pk, sust_k);
         pw = max(pw, sust_w);
+      }
+
+      /*--- Rotation/ Curvature Corrections ---*/
+      if (sstParsedOptions.rc){
+        //TODO multiply the Ps by some fun stuff that I dont want to implement at the moment.
+
       }
 
       /*--- Add the production terms to the residuals. ---*/
@@ -775,6 +835,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
+      // I think should be this, 
+      //Jacobian_i[0][0] = (1.0/zeta) -beta_star * ScalarVar_i[1] * Volume;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
