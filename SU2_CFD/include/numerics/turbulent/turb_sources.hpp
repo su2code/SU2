@@ -761,14 +761,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         }
       } 
 
-      //su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      //pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
-
-      //const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
       su2double zeta;
-
       su2double pw = pow(P_Base,2);
 
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
@@ -797,8 +792,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         }
       } 
 
-      //su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
-      //su2double pw = alfa_blended * Density_i * (pw - 2.0 / 3.0 * zeta * diverg);
+      pw = max(pw, 0.0);
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
