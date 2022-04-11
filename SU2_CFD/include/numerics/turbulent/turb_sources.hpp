@@ -742,7 +742,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      su2double pw = alfa_blended * Density_i * pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg;
+      
+      pw = max(pw, 0.0);
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -785,6 +787,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
+      // I think should be this, 
+      //Jacobian_i[0][0] = (1.0/zeta) -beta_star * ScalarVar_i[1] * Volume;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
