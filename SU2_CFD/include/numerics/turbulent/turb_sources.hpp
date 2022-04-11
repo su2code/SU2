@@ -564,7 +564,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
-
+  const su2double ProdLimConstant;
+  SST_ParsedOptions sstParsedOptions;
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
@@ -637,7 +638,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                            su2double val_omega_Inf, const CConfig* config)
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
-        sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
@@ -649,11 +649,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
+        ProdLimConstant(constants[10]),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
+
+    sstParsedOptions = config->GetSSTParsedOptions();
+
   }
 
   /*!
@@ -747,11 +751,17 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
             lead to problems for very big values of the free-stream turbulence
             intensity. ---*/
 
-      if (sustaining_terms) {
+      if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
         pk = max(pk, sust_k);
         pw = max(pw, sust_w);
+      }
+
+      /*--- Rotation/ Curvature Corrections ---*/
+      if (sstParsedOptions.rc){
+        //TODO multiply the Ps by some fun stuff that I dont want to implement at the moment.
+
       }
 
       /*--- Add the production terms to the residuals. ---*/
