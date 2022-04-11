@@ -971,7 +971,6 @@ enum class SST_OPTIONS {
   VORTICITY,   /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UNCERTAINTY, /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
-  RC,          /*!< \brief Menter k-w SST model with rotation/curvature corrections. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -984,7 +983,6 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UNCERTAINTY", SST_OPTIONS::UNCERTAINTY)
-  MakePair("CURVATURE", SST_OPTIONS::RC)
 };
 
 /*!
@@ -997,7 +995,6 @@ struct SST_ParsedOptions {
   SST_OPTIONS production;    /*!< \brief Enum for production corrections/modifiers for SST model. */
   bool sust;                 /*!< \brief Bool for SST model with sustaining terms. */
   bool uq;                   /*!< \brief Bool for using uncertainty quantification */
-  bool rc;                   /*!< \brief Bool for SST model with rotational corrections. */
   bool m;                    /*!< \brief Bool for modified (m) SST model. */
 };
 

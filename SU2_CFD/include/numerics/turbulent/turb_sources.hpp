@@ -762,12 +762,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
-      /*--- Rotation/ Curvature Corrections ---*/
-      if (sstParsedOptions.rc){
-        //TODO multiply the Ps by some fun stuff that I dont want to implement at the moment.
-
-      }
-
       /*--- Add the production terms to the residuals. ---*/
 
       Residual[0] += pk * Volume;

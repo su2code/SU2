@@ -9651,7 +9651,6 @@ public:
     const bool sst_v     = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
     const bool sst_kl    = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
     const bool sst_uq    = (std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end || using_uq);
-    const bool sst_rc    = std::find(SST_Options, sst_options_end, SST_OPTIONS::RC) != sst_options_end;
 
     // Parse base version
     if (sst_1994 && sst_2003) {
@@ -9684,7 +9683,6 @@ public:
 
     // Parse boolean options
     SSTParsedOptions.sust = sst_sust;
-    SSTParsedOptions.rc = sst_rc;
     SSTParsedOptions.m = sst_m;
     SSTParsedOptions.uq = sst_uq;
     return SSTParsedOptions;
