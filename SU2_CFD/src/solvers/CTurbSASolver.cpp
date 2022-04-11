@@ -1715,14 +1715,12 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
   //--- Viscosity terms ---//
   //-----------------------//
 
-  // TODO: turbulent transport equation
   LaminarViscosityError(solver, geometry, config, iPoint, weights);
   EddyViscosityError(solver, geometry, config, iPoint, weights);
 }
 
 void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                                    unsigned long iPoint, vector<vector<su2double> > &weights) {
-  // TODO: production, destruction, and diffusion
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),

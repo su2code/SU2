@@ -9646,9 +9646,6 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
         weights[1][nVarFlo+0] += (g-1.)*w*adjz;
       }
     }
-    else {
-      //--- TODO: Code SA
-    }
   }
 
 }
