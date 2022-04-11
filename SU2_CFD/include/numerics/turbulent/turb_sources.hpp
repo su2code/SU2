@@ -737,6 +737,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
         StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
+        P_Base = PerturbedStrainMag(ScalarVar_i[0]);
       }
 
       su2double pk = Eddy_Viscosity_i * pow(P_Base, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
