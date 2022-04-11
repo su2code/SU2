@@ -737,40 +737,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
         StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
-        P_Base = PerturbedStrainMag(ScalarVar_i[0]);
-
-      } else if (sstParsedOptions.production == SST_OPTIONS::VORTICITY) {
-        P_Base = VorticityMag; 
-
-      } else if (sstParsedOptions.production == SST_OPTIONS::KL) {
-        P_Base = sqrt(StrainMag_i*VorticityMag);
       }
 
-      //su2double pk = Eddy_Viscosity_i * pow(P_Base, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       //su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      
-      //pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-
-      /*--- first part of the production term ---*/
-      su2double pk = Eddy_Viscosity_i * pow(P_Base,2);
-      
-      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
-       /* in case of unmodified, we add the divergence terms */
-        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-          //pk -=  (Eddy_Viscosity*2.0/3.0*diverg*diverg + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
-          pk -=  2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-        } else {
-         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
-         pk -=  (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
-        }
-      } 
-
-       pk = Eddy_Viscosity_i * pow(P_Base, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-
-       pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
-
-
+      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       //const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
