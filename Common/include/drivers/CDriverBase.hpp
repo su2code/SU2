@@ -251,7 +251,7 @@ public:
      * \param[in] iMarker - Marker index.
      * \return Mesh vertex indices.
      */
-    vector<unsigned long> GetMarkerVertexIndex(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerVertexIndices(unsigned short iMarker) const;
     
     /*!
      * \brief Get the mesh vertex index of a marker vertex.
@@ -259,7 +259,7 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Mesh vertex index.
      */
-    unsigned long GetMarkerVertexIndex(unsigned short iMarker, unsigned long iVertex) const;
+    unsigned long GetMarkerVertexIndices(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the global IDs of the mesh vertices.
