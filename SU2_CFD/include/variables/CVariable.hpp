@@ -2365,7 +2365,7 @@ public:
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
-  inline const MatrixType& GetPrimitive_Adapt(void) { return Primitive_Adapt; }
+  inline const MatrixType& GetPrimitive_Adapt(void) const { return Primitive_Adapt; }
 
   /*!
    * \brief Get the value of the solution gradient.
