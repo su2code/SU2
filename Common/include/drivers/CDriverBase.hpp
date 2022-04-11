@@ -181,21 +181,21 @@ public:
      * \brief Get the global IDs of the mesh elements.
      * \return Global element IDs.
      */
-    vector<unsigned long> GetElementID() const;
+    vector<unsigned long> GetElementIDs() const;
     
     /*!
      * \brief Get the global ID of a mesh element.
      * \param[in] iElem - Mesh element index.
      * \return Global element ID.
      */
-    unsigned long GetElementID(unsigned long iElem) const;
+    unsigned long GetElementIDs(unsigned long iElem) const;
     
     /*!
      * \brief Get the global IDs of the marker elements.
      * \param[in] iMarker - Marker index.
      * \return Global element IDs.
      */
-    vector<unsigned long> GetMarkerElementID(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerElementIDs(unsigned short iMarker) const;
     
     /*!
      * \brief Get the global IDs of a marker element.
@@ -203,7 +203,7 @@ public:
      * \param[in] iBound - Marker element index.
      * \return Global element ID.
      */
-    unsigned long GetMarkerElementID(unsigned short iMarker, unsigned long iBound) const;
+    unsigned long GetMarkerElementIDs(unsigned short iMarker, unsigned long iBound) const;
     
     /*!
      * \brief Get the table of vertex IDs belonging to the mesh elements.
@@ -264,7 +264,7 @@ public:
      * \param[in] iMarker - Marker index.
      * \return Mesh vertex indices.
      */
-    vector<unsigned long> GetMarkerVertexIndex(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerVertexIndices(unsigned short iMarker) const;
     
     /*!
      * \brief Get the mesh vertex index of a marker vertex.
@@ -272,27 +272,27 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Mesh vertex index.
      */
-    unsigned long GetMarkerVertexIndex(unsigned short iMarker, unsigned long iVertex) const;
+    unsigned long GetMarkerVertexIndices(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the global IDs of the mesh vertices.
      * \return Global vertex IDs.
      */
-    vector<unsigned long> GetVertexID() const;
+    vector<unsigned long> GetVertexIDs() const;
     
     /*!
      * \brief Get the global ID of a mesh vertex.
      * \param[in] iPoint - Mesh vertex index.
      * \return Global vertex ID.
      */
-    unsigned long GetVertexID(unsigned long iPoint) const;
+    unsigned long GetVertexIDs(unsigned long iPoint) const;
     
     /*!
      * \brief Get the global IDs of the marker vertices.
      * \param[in] iMarker - Marker index.
      * \return Global vertex IDs.
      */
-    vector<unsigned long> GetMarkerVertexID(unsigned short iMarker) const;
+    vector<unsigned long> GetMarkerVertexIDs(unsigned short iMarker) const;
     
     /*!
      * \brief Get the global ID of a marker vertex.
@@ -300,7 +300,7 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Global vertex ID.
      */
-    unsigned long GetMarkerVertexID(unsigned short iMarker, unsigned long iVertex) const;
+    unsigned long GetMarkerVertexIDs(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the halo flags of the mesh vertices.

@@ -1104,7 +1104,7 @@ vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoord
 }
 
 vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker, unsigned long iVertex) const {
-    const auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
     vector<passivedouble> values(nDim, 0.0);
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {

@@ -169,19 +169,19 @@ unsigned long CDriverBase::GetNumberMarkerElements(unsigned short iMarker) const
   return main_geometry->GetnElem_Bound(iMarker);
 }
 
-vector<unsigned long> CDriverBase::GetElementID() const {
+vector<unsigned long> CDriverBase::GetElementIDs() const {
   const auto nElem = GetNumberElements();
 
   vector<unsigned long> values;
 
   for (auto iElem = 0ul; iElem < nElem; iElem++) {
-    values.push_back(GetElementID(iElem));
+    values.push_back(GetElementIDs(iElem));
   }
 
   return values;
 }
 
-unsigned long CDriverBase::GetElementID(unsigned long iElem) const {
+unsigned long CDriverBase::GetElementIDs(unsigned long iElem) const {
   if (iElem >= GetNumberElements()) {
     SU2_MPI::Error("Element index exceeds size.", CURRENT_FUNCTION);
   }
@@ -189,19 +189,19 @@ unsigned long CDriverBase::GetElementID(unsigned long iElem) const {
   return main_geometry->elem[iElem]->GetGlobalIndex();
 }
 
-vector<unsigned long> CDriverBase::GetMarkerElementID(unsigned short iMarker) const {
+vector<unsigned long> CDriverBase::GetMarkerElementIDs(unsigned short iMarker) const {
   const auto nBound = GetNumberMarkerElements(iMarker);
 
   vector<unsigned long> values;
 
   for (auto iBound = 0ul; iBound < nBound; iBound++) {
-    values.push_back(GetMarkerElementID(iMarker, iBound));
+    values.push_back(GetMarkerElementIDs(iMarker, iBound));
   }
 
   return values;
 }
 
-unsigned long CDriverBase::GetMarkerElementID(unsigned short iMarker, unsigned long iBound) const {
+unsigned long CDriverBase::GetMarkerElementIDs(unsigned short iMarker, unsigned long iBound) const {
   if (iBound >= GetNumberMarkerElements(iMarker)) {
     SU2_MPI::Error("Marker element index exceeds size.", CURRENT_FUNCTION);
   }
@@ -297,7 +297,7 @@ unsigned long CDriverBase::GetNumberMarkerHaloVertices(unsigned short iMarker) c
   unsigned long nHalo = 0;
 
   for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+    auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
     if (!(main_geometry->nodes->GetDomain(iPoint))) {
       nHalo += 1;
@@ -307,19 +307,19 @@ unsigned long CDriverBase::GetNumberMarkerHaloVertices(unsigned short iMarker) c
   return nHalo;
 }
 
-vector<unsigned long> CDriverBase::GetMarkerVertexIndex(unsigned short iMarker) const {
+vector<unsigned long> CDriverBase::GetMarkerVertexIndices(unsigned short iMarker) const {
   const auto nVertex = GetNumberMarkerVertices(iMarker);
 
   vector<unsigned long> values;
 
   for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerVertexIndex(iMarker, iVertex));
+    values.push_back(GetMarkerVertexIndices(iMarker, iVertex));
   }
 
   return values;
 }
 
-unsigned long CDriverBase::GetMarkerVertexIndex(unsigned short iMarker, unsigned long iVertex) const {
+unsigned long CDriverBase::GetMarkerVertexIndices(unsigned short iMarker, unsigned long iVertex) const {
   if (iVertex >= GetNumberMarkerVertices(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
@@ -327,19 +327,19 @@ unsigned long CDriverBase::GetMarkerVertexIndex(unsigned short iMarker, unsigned
   return geometry_container[MESH_0][INST_0][ZONE_0]->vertex[iMarker][iVertex]->GetNode();
 }
 
-vector<unsigned long> CDriverBase::GetVertexID() const {
+vector<unsigned long> CDriverBase::GetVertexIDs() const {
   const auto nPoint = GetNumberVertices();
 
   vector<unsigned long> values;
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetVertexID(iPoint));
+    values.push_back(GetVertexIDs(iPoint));
   }
 
   return values;
 }
 
-unsigned long CDriverBase::GetVertexID(unsigned long iPoint) const {
+unsigned long CDriverBase::GetVertexIDs(unsigned long iPoint) const {
   if (iPoint >= GetNumberVertices()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
@@ -347,20 +347,20 @@ unsigned long CDriverBase::GetVertexID(unsigned long iPoint) const {
   return main_geometry->nodes->GetGlobalIndex(iPoint);
 }
 
-vector<unsigned long> CDriverBase::GetMarkerVertexID(unsigned short iMarker) const {
+vector<unsigned long> CDriverBase::GetMarkerVertexIDs(unsigned short iMarker) const {
   const auto nVertex = GetNumberMarkerVertices(iMarker);
 
   vector<unsigned long> values;
 
   for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerVertexID(iMarker, iVertex));
+    values.push_back(GetMarkerVertexIDs(iMarker, iVertex));
   }
 
   return values;
 }
 
-unsigned long CDriverBase::GetMarkerVertexID(unsigned short iMarker, unsigned long iVertex) const {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+unsigned long CDriverBase::GetMarkerVertexIDs(unsigned short iMarker, unsigned long iVertex) const {
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   return main_geometry->nodes->GetGlobalIndex(iPoint);
 }
@@ -398,7 +398,7 @@ vector<bool> CDriverBase::GetMarkerDomain(unsigned short iMarker) const {
 }
 
 bool CDriverBase::GetMarkerDomain(unsigned short iMarker, unsigned long iVertex) const {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   return main_geometry->nodes->GetDomain(iPoint);
 }
@@ -448,7 +448,7 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerInitialCoordinates(unsigned 
 }
 
 vector<passivedouble> CDriverBase::GetMarkerInitialCoordinates(unsigned short iMarker, unsigned long iVertex) const {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   vector<passivedouble> values(nDim, 0.0);
 
@@ -506,7 +506,7 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerCoordinates(unsigned short i
 }
 
 vector<passivedouble> CDriverBase::GetMarkerCoordinates(unsigned short iMarker, unsigned long iVertex) const {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   vector<passivedouble> values;
 
@@ -558,7 +558,7 @@ void CDriverBase::SetMarkerCoordinates(unsigned short iMarker, vector<vector<pas
 }
 
 void CDriverBase::SetMarkerCoordinates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   if (values.size() != nDim) {
     SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
@@ -582,7 +582,7 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerDisplacements(unsigned short
 }
 
 vector<passivedouble> CDriverBase::GetMarkerDisplacements(unsigned short iMarker, unsigned long iVertex) const {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   vector<passivedouble> values(nDim, 0.0);
 
@@ -620,7 +620,7 @@ void CDriverBase::SetMarkerDisplacements(unsigned short iMarker, unsigned long i
     SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
   }
 
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   if (values.size() != nDim) {
     SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
@@ -644,7 +644,7 @@ vector<vector<passivedouble>> CDriverBase::GetMarkerVelocities(unsigned short iM
 }
 
 vector<passivedouble> CDriverBase::GetMarkerVelocities(unsigned short iMarker, unsigned long iVertex) const {
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   vector<passivedouble> values(nDim, 0.0);
 
@@ -682,7 +682,7 @@ void CDriverBase::SetMarkerVelocities(unsigned short iMarker, unsigned long iVer
     SU2_MPI::Error("Mesh solver is not defined!", CURRENT_FUNCTION);
   }
 
-  auto iPoint = GetMarkerVertexIndex(iMarker, iVertex);
+  auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
 
   if (values.size() != nDim) {
     SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
