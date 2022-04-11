@@ -40,6 +40,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   string text_line;
 
   bool multizone = config->GetMultizone_Problem();
+  sstParsedOptions = config->GetSSTParsedOptions();
 
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
@@ -103,9 +104,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
 
+  if (sstParsedOptions.version == SST_OPTIONS::V1994){
+    constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+    constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+    constants[10] = 20.0; // production limiter constant
+  } else {
+    /* SST-V2003 */ 
+    constants[8] = 5.0 / 9.0;
+    constants[9] = 0.44;
+    constants[10] = 10.0; // production limiter constant
+  }
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0e10;
