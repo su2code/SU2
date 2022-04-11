@@ -3399,17 +3399,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
 
-  /*--- -We still support the old SST_SUST keyword, but internally we convert everything --*/
-  if (Kind_Turb_Model == TURB_MODEL::SST_SUST){
-    cout << "Warning! the SST_SUST keyword will become obsolete. Use the SST model with SST_OPTIONS= (SST_SUST)" << endl;
-    Kind_Turb_Model = TURB_MODEL::SST;
-  }
-
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model==TURB_MODEL::SST){
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
   } 
 
+ /*--- -We still support the old SST_SUST keyword, but internally we convert everything --*/
+  if (Kind_Turb_Model == TURB_MODEL::SST_SUST){
+    cout << "Warning! the SST_SUST keyword will become obsolete. Use the SST model with SST_OPTIONS= (SST_SUSTAINING)" << endl;
+    Kind_Turb_Model = TURB_MODEL::SST;
+  }
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
   if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
     SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
