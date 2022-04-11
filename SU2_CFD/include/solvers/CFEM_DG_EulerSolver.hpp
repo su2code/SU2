@@ -357,13 +357,6 @@ public:
   inline su2double GetPressure_Inf(void) const final { return Pressure_Inf; }
 
   /*!
-   * \brief Compute the density multiply by velocity at the infinity.
-   * \param[in] val_dim - Index of the velocity vector.
-   * \return Value of the density multiply by the velocity at the infinity.
-   */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final { return Density_Inf*Velocity_Inf[val_dim]; }
-
-  /*!
    * \brief Get the velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.

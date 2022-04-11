@@ -37,6 +37,7 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
+    file_diff_list = []
 
     ##########################
     ### Compressible Euler ###
@@ -723,6 +724,20 @@ def main():
     mms_fvm_inc_ns.test_vals = [-7.414944, -7.631546, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_ns)
 
+    ##########################
+    ###   Python wrapper   ###
+    ##########################
+
+    # NACA0012
+    pywrapper_translating_naca0012 = TestCase('pywrapper_translating_naca0012')
+    pywrapper_translating_naca0012.cfg_dir = "py_wrapper/translating_NACA0012"
+    pywrapper_translating_naca0012.cfg_file = "config.cfg"
+    pywrapper_translating_naca0012.su2_exec = "python run_su2.py"
+    pywrapper_translating_naca0012.timeout = 60
+    pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
+    pywrapper_translating_naca0012.test_file = "forces_0.csv"
+    file_diff_list.append(pywrapper_translating_naca0012)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -734,12 +749,13 @@ def main():
     #end
 
     pass_list = [ test.run_test() for test in test_list ]
+    pass_list += [ test.run_filediff() for test in file_diff_list ]
 
     # Tests summary
     print('==================================================================')
     print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
-    for i, test in enumerate(test_list):
+    for i, test in enumerate(test_list+file_diff_list):
         if (pass_list[i]):
             print('  passed - %s'%test.tag)
         else:
