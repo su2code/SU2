@@ -729,7 +729,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
+      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double StrainMag = StrainMag_i;
+      su2double P_Base = StrainMag;  //Base production term for SST1994 and SST2003
 
       if (using_uq) {
         ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
@@ -737,10 +739,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      //su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
-      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
+      //const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
       su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg,0.0);
 
