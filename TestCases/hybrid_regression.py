@@ -436,7 +436,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.162564, 0.066401, 1.399788, 2.220402, 1.399743, 2.218605]
+    square_cylinder.test_vals = [-1.162564, 0.066401, 1.399788, 2.220402, 1.399743, 2.218603]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
 
