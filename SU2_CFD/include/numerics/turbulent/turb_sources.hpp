@@ -754,19 +754,43 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         }
       } 
 
-
       //pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
       pk = max(0.0, pk);
 
-      const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
+      su2double zeta;
 
+      if (sstParsedOptions.version == SST_OPTIONS::V1994){
+        /*--- no production limiter on w-equation for SST1994 ---*/
+        zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
+        /*--- ---*/
+        //pw = (alfa_blended * Density_i) * pw;
+      } else {
+        /*--- production limiter on w-equation for SST2003 ---*/
+        zeta = max(ScalarVar_i[1], StrainMag_i * F2_i / a1);
+        //pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      }
 
       su2double pw = pow(StrainMag, 2); 
-      pw = pw - 2.0 / 3.0 * zeta * diverg;
-      pw = alfa_blended * Density_i * max(pw,0.0);
 
-      //pw = max(pw, 0.0);
+      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+       /* in case of unmodified, we add the divergence terms */
+        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          /* --- note that mu_t = rho*a1*k/zeta and we can make this term independent of k ---*/
+          // the correct production with the additional divergence term
+          // pw -=  (alfa_blended*Density_i * (2.0 / 3.0 * diverg*diverg) +  2.0 / 3.0 * zeta * diverg);
+          /*--- the tke term only ---*/
+          pw = pw - 2.0 / 3.0 * zeta * diverg;
+        } else {
+         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
+         pw = pw - (2.0 / 3.0 * diverg * diverg + 2.0 / 3.0 * zeta * diverg);
+        }
+      } 
+
+      //su2double pw = pow(StrainMag, 2); 
+      //pw = pw - 2.0 / 3.0 * zeta * diverg;
+      pw = (alfa_blended * Density_i) * max(pw,0.0);
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
