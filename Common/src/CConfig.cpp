@@ -3621,6 +3621,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if(nTimeIter <= Restart_Iter) SU2_MPI::Error("TIME_ITER must be larger than RESTART_ITER.", CURRENT_FUNCTION);
     }
 
+    /*--- WINDOW_START_ITER must be larger than or equal to: RESTART_ITER. Otherwise, the running average is wrong. ---*/
+    if (OptionIsSet("WINDOW_START_ITER")) {
+      if (StartWindowIteration < Restart_Iter) {
+        SU2_MPI::Error("WINDOW_START_ITER must be larger than or equal to: RESTART_ITER!", CURRENT_FUNCTION);
+      }
+    } else {
+      /*--- Enforced default behavior: start of the window is the first new iteration. ---*/
+      if (rank == MASTER_NODE) cout << "WARNING: Setting WINDOW_START_ITER = RESTART_ITER for meaningful running average.\n";
+      StartWindowIteration = Restart_Iter;
+    }
+
     if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
   } else {
     nTimeIter = 1;
