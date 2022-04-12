@@ -738,7 +738,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
         StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
         P_Base = PerturbedStrainMag(ScalarVar_i[0]);
-
+        
       } else if (sstParsedOptions.production == SST_OPTIONS::VORTICITY) {
         P_Base = VorticityMag; 
 
@@ -746,15 +746,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         P_Base = sqrt(StrainMag_i*VorticityMag);
       }  
 
-      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
-      pk -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = max(0.0, min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
 
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-
-      su2double pw = pow(StrainMag, 2);
-      pw -= - 2.0 / 3.0 * zeta * diverg;
-      pw = alfa_blended * Density_i * max(pw,0.0);
+      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg,0.0);
 
       //pw = max(pw, 0.0);
 
