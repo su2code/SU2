@@ -762,7 +762,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
 
 
-      su2double pw = pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg;
+      su2double pw = pow(StrainMag, 2); 
+      pw = pw - 2.0 / 3.0 * zeta * diverg;
       pw = alfa_blended * Density_i * max(pw,0.0);
 
       //pw = max(pw, 0.0);
