@@ -755,7 +755,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       } 
 
 
-      pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      //pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
       pk = max(0.0, pk);
 
