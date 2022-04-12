@@ -995,7 +995,7 @@ struct SST_ParsedOptions {
   SST_OPTIONS production;    /*!< \brief Enum for production corrections/modifiers for SST model. */
   bool sust;                 /*!< \brief Bool for SST model with sustaining terms. */
   bool uq;                   /*!< \brief Bool for using uncertainty quantification */
-  bool m;                    /*!< \brief Bool for modified (m) SST model. */
+  bool modified;             /*!< \brief Bool for modified (m) SST model. */
 };
 
 

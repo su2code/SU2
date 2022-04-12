@@ -9683,7 +9683,7 @@ public:
 
     // Parse boolean options
     SSTParsedOptions.sust = sst_sust;
-    SSTParsedOptions.m = sst_m;
+    SSTParsedOptions.modified = sst_m;
     SSTParsedOptions.uq = sst_uq;
     return SSTParsedOptions;
   }

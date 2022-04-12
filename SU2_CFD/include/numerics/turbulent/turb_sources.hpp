@@ -740,7 +740,21 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         P_Base = PerturbedStrainMag(ScalarVar_i[0]);
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2); 
+      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
+
+      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+       /* in case of unmodified, we add the divergence terms */
+        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          //pk -=  (Eddy_Viscosity*2.0/3.0*diverg*diverg + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
+          pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+        } else {
+         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
+         pk -=  (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
+        }
+      } 
+
+
       pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
       pk = max(0.0, pk);
