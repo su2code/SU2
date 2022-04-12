@@ -756,7 +756,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
         } else {
          /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
-         pk = pk - (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
+         pk -=  (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
         }
       } 
 
@@ -764,9 +764,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       pk = max(0.0, pk);
 
       const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      su2double pw = pow(StrainMag, 2);
-      pw = pw - 2.0 / 3.0 * zeta * diverg;
-      pw = alfa_blended * Density_i * max(pw,0.0);
+      
+      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg,0.0);
 
       //pw = max(pw, 0.0);
 
