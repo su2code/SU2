@@ -2431,7 +2431,7 @@ public:
    * \param[in] hess - Matrix to store the hessian.
    */
   template <class Mat>
-  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, su2double scale, Mat& hess) {
+  inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, Mat& hess, su2double scale) {
     switch( nDim ) {
       case 2: {
         Hessian(iPoint,iVar,0) = hess[0][0]*scale;
@@ -2503,7 +2503,7 @@ public:
    * \param[in] met - Matrix to store the metric.
    */
   template <class Mat>
-  inline void SetMetricMat(unsigned long iPoint, su2double scale, Mat& met) {
+  inline void SetMetricMat(unsigned long iPoint, Mat& met, su2double scale) {
     switch( nDim ) {
       case 2: {
         Metric(iPoint,0) = met[0][0]*scale;

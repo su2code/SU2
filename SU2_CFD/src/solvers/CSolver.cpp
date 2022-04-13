@@ -4750,7 +4750,7 @@ void CSolver::CorrectBoundHessian(const CGeometry *geometry, const CConfig *conf
 
               //--- Store new Hessian
               CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
-              base_nodes->SetHessianMat(iPoint, iVar, 1/suminvdist, A);
+              base_nodes->SetHessianMat(iPoint, iVar, A, 1.0/suminvdist);
             }// iVar
           }// if counter
         }// if domain
@@ -4869,7 +4869,7 @@ void CSolver::CorrectBoundMetric(const CGeometry *geometry, const CConfig *confi
 
             //--- Store new Hessian
             CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
-            base_nodes->SetMetricMat(iPoint, 1/suminvdist, A);
+            base_nodes->SetMetricMat(iPoint, A, 1.0/suminvdist);
           }// if counter
         }// if domain
       }// iVertex
@@ -4915,7 +4915,7 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
     }
 
     //--- Store upper half of Hessian matrix
-    base_nodes->SetHessianMat(iPoint, iVar, 1.0, A);
+    base_nodes->SetHessianMat(iPoint, iVar, A, 1.0);
   }
 }
 
@@ -5083,7 +5083,7 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
 
     CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
 
-    base_nodes->SetMetricMat(iPoint, 1., A);
+    base_nodes->SetMetricMat(iPoint, A, 1.0);
 
     //--- compute min, max, total complexity
     const su2double Vol = geometry->nodes->GetVolume(iPoint);
