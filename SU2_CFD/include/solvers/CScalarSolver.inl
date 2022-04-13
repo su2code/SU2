@@ -214,8 +214,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
-
-      unsigned short iDim, iVar;
       
       /*--- Points in edge and normal vectors ---*/
 
@@ -247,7 +245,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
         }
 
@@ -262,9 +260,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
           }
 
-          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          for (auto iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
             su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0; iDim < nDim; iDim++) {
               Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
               Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
             }
@@ -277,7 +275,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
         }
         else {
-          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          for (auto iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
             flowPrimVar_i[iVar] = V_i[iVar];
             flowPrimVar_j[iVar] = V_j[iVar];
           }
@@ -294,9 +292,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = nodes->GetLimiter(jPoint);
           }
 
-          for (iVar = 0; iVar < nVar; iVar++) {
+          for (auto iVar = 0; iVar < nVar; iVar++) {
             su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0; iDim < nDim; iDim++) {
               Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
               Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
             }
@@ -309,7 +307,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
         }
         else {
-          for (iVar = 0; iVar < nVar; iVar++) {
+          for (auto iVar = 0; iVar < nVar; iVar++) {
             solution_i[iVar] = Scalar_i[iVar];
             solution_j[iVar] = Scalar_j[iVar];
           }

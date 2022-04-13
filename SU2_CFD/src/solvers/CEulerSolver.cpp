@@ -1737,8 +1737,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto iEdge = color.indices[k];
 
-    unsigned short iDim, iVar;
-
     /*--- Points in edge and normal vectors ---*/
 
     auto iPoint = geometry->edges->GetNode(iEdge,0);
@@ -1783,19 +1781,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
           Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
@@ -1825,7 +1823,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_ij[iDim]*GradTurb_i[0][iDim];
           Project_Grad_j -= Vector_ij[iDim]*GradTurb_j[0][iDim];
         }
@@ -1885,7 +1883,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       const su2double Enthalpy_j = Energy_j + Pressure_j/Density_j;
 
       su2double sq_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
         sq_vel += pow(RoeVelocity, 2);
       }
