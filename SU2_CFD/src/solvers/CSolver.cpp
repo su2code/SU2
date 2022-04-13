@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -468,7 +468,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
 
         if (nDim==2) {
-          GeometryToolbox::RotationMatrix(Theta, rotMatrix2D);
+          GeometryToolbox::RotationMatrix(Psi, rotMatrix2D);
         } else {
           GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix3D);
         }
@@ -736,6 +736,22 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
+            }
+
+            /*--- Rotate the vector components of the solution. ---*/
+
+            if (rotate_periodic) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                su2double d_diDim[3] = {0.0};
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  d_diDim[iVar-1] = rotBlock(iVar, iDim);
+                }
+                su2double rotated[3] = {0.0};
+                Rotate(zeros, d_diDim, rotated);
+                for (iVar = 1; iVar < 1+nDim; ++iVar) {
+                  rotBlock(iVar, iDim) = rotated[iVar-1];
+                }
+              }
             }
 
             /*--- Store the partial gradient in the buffer. ---*/
@@ -2198,12 +2214,16 @@ void CSolver::Add_External_To_Solution() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
+
+  base_nodes->Add_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Add_Solution_To_External() {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
+
+  base_nodes->Set_ExternalExtra_To_SolutionExtra();
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
@@ -2246,7 +2266,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit());
+  const auto kindLimiter = config->GetKind_SlopeLimit();
   const auto& solution = base_nodes->GetSolution();
   const auto& gradient = base_nodes->GetGradient_Reconstruction();
   auto& solMin = base_nodes->GetSolution_Min();
@@ -3963,79 +3983,49 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
 void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config){
 
-  /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
-  const su2double *Velocity_ND, *Velocity_Real;
-  su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
-  su2double factor;
+  const bool viscous_flow = config->GetViscous();
+  const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
 
-  unsigned short iDim;
-
-  // Check whether the problem is viscous
-  bool viscous_flow = config->GetViscous();
-
-  // Parameters for the calculations
-  su2double Pn = 0.0;
-  su2double auxForce[3] = {1.0, 0.0, 0.0};
-
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  const su2double* iNormal;
-
-  su2double Pressure_Inf = config->GetPressure_FreeStreamND();
-
-  Velocity_Real = config->GetVelocity_FreeStream();
-  Density_Real  = config->GetDensity_FreeStream();
-
-  Velocity_ND = config->GetVelocity_FreeStreamND();
-  Density_ND  = config->GetDensity_FreeStreamND();
-
-  Velocity2_Real = GeometryToolbox::SquaredNorm(nDim, Velocity_Real);
-  Velocity2_ND   = GeometryToolbox::SquaredNorm(nDim, Velocity_ND);
-
-  factor = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- If this is defined as a wall ---*/
     if (!config->GetSolid_Wall(iMarker)) continue;
 
     // Loop over the vertices
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       // Recover the point index
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      // Get the normal at the vertex: this normal goes inside the fluid domain.
-      iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      su2double auxForce[3] = {0.0};
+
+      // Check if the node belongs to the domain (i.e, not a halo node).
       if (geometry->nodes->GetDomain(iPoint)) {
 
+        // Get the normal at the vertex: this normal goes inside the fluid domain.
+        const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
         // Retrieve the values of pressure
-        Pn = base_nodes->GetPressure(iPoint);
+        const su2double Pn = base_nodes->GetPressure(iPoint);
 
         // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-        for (iDim = 0; iDim < nDim; iDim++)
-          auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          auxForce[iDim] = -(Pn-Pressure_Inf)*Normal[iDim];
 
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
-          su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+          const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
           su2double Tau[3][3];
           CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);
           }
         }
-
-        // Redimensionalize the forces
-        for (iDim = 0; iDim < nDim; iDim++) {
-          VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
-        }
       }
-      else{
-        for (iDim = 0; iDim < nDim; iDim++) {
-          VertexTraction[iMarker][iVertex][iDim] = 0.0;
-        }
+
+      // Redimensionalize the forces (Lref is 1, thus only Pref is needed).
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        VertexTraction[iMarker][iVertex][iDim] = config->GetPressure_Ref() * auxForce[iDim];
       }
     }
   }
@@ -4165,8 +4155,6 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     const su2double domain = (iPoint < nPointDomain);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const su2double Res = (base_nodes->Get_BGSSolution(iPoint,iVar) - base_nodes->Get_BGSSolution_k(iPoint,iVar))*domain;
-
-      base_nodes->Set_BGSSolution_k(iPoint,iVar, base_nodes->Get_BGSSolution(iPoint,iVar));
 
       /*--- Update residual information for current thread. ---*/
       resRMS[iVar] += Res*Res;

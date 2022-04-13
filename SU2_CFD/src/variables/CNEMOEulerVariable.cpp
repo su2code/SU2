@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -176,6 +176,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Rename variables for convenience ---*/
   su2double rhoE   = U[nSpecies+nDim];     // Density * energy [J/m3]
   su2double rhoEve = U[nSpecies+nDim+1];   // Density * energy_ve [J/m3]
+
   /*--- Assign species & mixture density ---*/
   // Note: if any species densities are < 0, these values are re-assigned
   //       in the primitive AND conserved vectors to ensure positive density

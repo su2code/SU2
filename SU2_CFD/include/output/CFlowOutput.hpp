@@ -2,7 +2,7 @@
  * \file CFlowOutput.hpp
  * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -257,8 +257,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    * \param[in] force_writing - boolean that forces writing of volume output
+   * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing) override;
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
 
   /*!
    * \brief Write the forces breakdown file

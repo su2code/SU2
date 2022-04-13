@@ -3,7 +3,7 @@
  * \brief Header file for the class CCGNSMeshReaderFVM.
  *        The implementations are in the <i>CCGNSMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,10 +45,9 @@ private:
 
 #ifdef HAVE_CGNS
   int cgnsFileID; /*!< \brief CGNS file identifier. */
-  int cgnsBase;   /*!< \brief CGNS database index. */
-  int cgnsZone;   /*!< \brief CGNS zone index. */
+  const int cgnsBase = 1; /*!< \brief CGNS database index (the CGNS reader currently assumes a single database). */
+  const int cgnsZone = 1; /*!< \brief CGNS zone index (and 1 zone in that database). */
 
-  int nZones;     /*!< \brief Total number of zones in the CGNS file. */
   int nSections;  /*!< \brief Total number of sections in the CGNS file. */
 
   vector<bool> isInterior;             /*!< \brief Vector of booleans to store whether each section in the CGNS file is an interior or boundary section. */

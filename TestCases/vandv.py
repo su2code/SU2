@@ -6,7 +6,7 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 7.3.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -41,12 +41,12 @@ def main():
     ##########################
 
     # 30P30N
-    channel           = TestCase('30P30N')
-    channel.cfg_dir   = "vandv/rans/30p30n"
-    channel.cfg_file  = "config.cfg"
-    channel.test_iter = 20
-    channel.test_vals = [-10.628370, -10.299097, -10.485327, -10.238060, -13.517229, 0.050962, 2.828563, 1.317849, -0.227233]
-    test_list.append(channel)
+    p30n30           = TestCase('30P30N')
+    p30n30.cfg_dir   = "vandv/rans/30p30n"
+    p30n30.cfg_file  = "config.cfg"
+    p30n30.test_iter = 20
+    p30n30.test_vals = [-10.642687, -10.303442, -10.496806, -10.253229, -13.517216, 0.050962, 2.828563, 1.317849, -0.215792]
+    test_list.append(p30n30)
 
     #################
     ### RUN TESTS ###

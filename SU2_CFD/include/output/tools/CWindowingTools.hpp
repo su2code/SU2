@@ -2,7 +2,7 @@
  * \file signal_processing_toolbox.hpp
  * \brief Header file for the signal processing toolbox.
  * \author S. Schotthöfer
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -68,10 +68,22 @@ protected:
 class CWindowedAverage:CWindowingTools{
 private:
   su2double val = 0.0;                 /*!< \brief Value of the windowed-time average (of the instantaneous output) from starting time to the current time iteration. */
+  su2double cachedSum = 0.0;           /*!< \brief Cached sum of windowWeight*value over all previous iterations. */
   std::vector<su2double> values;       /*!< \brief Vector of instantatneous output values from starting time to the current time iteration.*/
   unsigned long lastTimeIter = std::numeric_limits<unsigned long>::max();
+  const WINDOW_FUNCTION windowingFunctionId; /*!< \brief ID of the windowing function to use.*/
 
-public:
+ public:
+
+  /*!
+   * \brief Creates a new CWindowedAverage with the specified windowing function
+   */
+  inline explicit CWindowedAverage(WINDOW_FUNCTION windowId) : windowingFunctionId(windowId)  {
+    if (windowId==WINDOW_FUNCTION::SQUARE) {
+      values.push_back(0.);
+    }  
+  }
+
   /*!
    * \brief Returns the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration
    */
@@ -83,6 +95,7 @@ public:
   inline void Reset() {
     val = 0.0;
     values.clear();
+    cachedSum = 0.0;
     lastTimeIter = std::numeric_limits<unsigned long>::max();
   }
 
@@ -94,32 +107,10 @@ public:
    */
   void addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
 
-  /*!
-   * \brief Computes a windowed-time average of the values stored in the vector "values" using the windowing-function specified in enum windowId
-   *        and stores it in "val".
-   * \param windowId - specified windowing-function
-   * \return windowed-time average of the values stored in the vector "values"
-   */
-  su2double WindowedUpdate(WINDOW_FUNCTION windowId);
-
 private:
-  /*! \brief Computes a Square-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
-  * \return  Squarewindowed-time average of the values stored in the vector "values"
+  /*!
+  * \brief Caches the weighted sums from a previous time-step for later re-use
+  * \param windowWidth - Total width of the window, over which the samples were weighted during the previous timestep
   */
-  su2double NoWindowing() const;
-
-  /*! \brief Computes a Hann-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
-  * \return  Squarewindowed-time average of the values stored in the vector "values"
-  */
-  su2double HannWindowing() const;
-
-  /*! \brief Computes a Hann-Square-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
-  * \return  Squarewindowed-time average of the values stored in the vector "values"
-  */
-  su2double HannSquaredWindowing() const;
-
-  /*! \brief Computes a Bump-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
-  * \return  Squarewindowed-time average of the values stored in the vector "values"
-  */
-  su2double BumpWindowing() const;
+  su2double UpdateCachedSum(unsigned long windowWidth) const;
 };

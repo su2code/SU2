@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -148,7 +148,6 @@ private:
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
-  unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;              /*!< \brief Previous value of the design variable. */
   su2double Venkat_LimiterCoeff;     /*!< \brief Limiter coefficient */
@@ -388,10 +387,6 @@ private:
   su2double **Periodic_RotCenter;            /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;            /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;          /*!< \brief Translation vector for each periodic boundary. */
-  unsigned short nPeriodic_Index;            /*!< \brief Number of SEND_RECEIVE periodic transformations. */
-  su2double **Periodic_Center;               /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Rotation;             /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Translate;            /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
   string *Marker_CfgFile_TagBound;           /*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,         /*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
@@ -490,6 +485,12 @@ private:
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
+  LIMITER Kind_SlopeLimit,    /*!< \brief Global slope limiter. */
+  Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
+  Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
+  Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
+  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -505,12 +506,6 @@ private:
   Kind_AdjTurb_Linear_Prec,              /*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
-  Kind_SlopeLimit,              /*!< \brief Global slope limiter. */
-  Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
-  Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
-  Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
-  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_Species,      /*!< \brief Slope limiter for the species equation.*/
   Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,      /*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
@@ -1127,9 +1122,10 @@ private:
 
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
-  unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
-  unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFiles=0;/*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
+  unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
@@ -1263,6 +1259,8 @@ private:
   void addShortListOption(const string name, unsigned short & size, short * & option_field);
 
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
+
+  void addULongListOption(const string name, unsigned short & size, unsigned long * & option_field);
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
@@ -1667,7 +1665,7 @@ public:
   su2double GetTemperature_FreeStream(void) const { return Temperature_FreeStream; }
   /*!
    * \brief Get the value of the freestream vibrational-electronic temperature.
-   * \return Freestream temperature.
+   * \return Freestream vibe-el temperature.
    */
   su2double GetTemperature_ve_FreeStream(void) const { return Temperature_ve_FreeStream; }
 
@@ -1999,12 +1997,6 @@ public:
   su2double GetLength_Reynolds(void) const { return Length_Reynolds; }
 
   /*!
-   * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
-   * \return Start up iterations using the fine grid.
-   */
-  unsigned short GetnStartUpIter(void) const { return nStartUpIter; }
-
-  /*!
    * \brief Get the reference area for non dimensional coefficient computation. If the value from the
    *        is 0 then, the code will compute the reference area using the projection of the shape into
    *        the z plane (3D) or the x plane (2D).
@@ -2323,7 +2315,7 @@ public:
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind,        unsigned short val_kind_slopelimit,
+                             unsigned short val_kind_upwind,        LIMITER val_kind_slopelimit,
                              bool val_muscl,                        unsigned short val_kind_fem);
 
   /*!
@@ -4612,37 +4604,37 @@ public:
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients.
    */
-  unsigned short GetKind_SlopeLimit(void) const { return Kind_SlopeLimit; }
+  LIMITER GetKind_SlopeLimit(void) const { return Kind_SlopeLimit; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the flow equations.
    */
-  unsigned short GetKind_SlopeLimit_Flow(void) const { return Kind_SlopeLimit_Flow; }
+  LIMITER GetKind_SlopeLimit_Flow(void) const { return Kind_SlopeLimit_Flow; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the turbulent equation.
    */
-  unsigned short GetKind_SlopeLimit_Turb(void) const { return Kind_SlopeLimit_Turb; }
+  LIMITER GetKind_SlopeLimit_Turb(void) const { return Kind_SlopeLimit_Turb; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the species equation.
    */
-  unsigned short GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
+  LIMITER GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint turbulent equation.
    */
-  unsigned short GetKind_SlopeLimit_AdjTurb(void) const { return Kind_SlopeLimit_AdjTurb; }
+  LIMITER GetKind_SlopeLimit_AdjTurb(void) const { return Kind_SlopeLimit_AdjTurb; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint flow equation.
    */
-  unsigned short GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
+  LIMITER GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
 
   /*!
    * \brief Value of the calibrated constant for the Lax method (center scheme).
@@ -6651,13 +6643,6 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
-   * \brief Get the mass fraction vector at a supersonic inlet boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet mass fraction vector - NEMO only.
-   */
-  const su2double* GetInlet_MassFrac(string val_index) const;
-
-  /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
@@ -6686,8 +6671,8 @@ public:
   su2double GetExhaust_Pressure_Target(string val_index) const;
 
   /*!
-   * \brief Value of the CFL reduction in LevelSet problems.
-   * \return Value of the CFL reduction in LevelSet problems.
+   * \brief Value of the CFL reduction in turbulence problems.
+   * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
 
@@ -8186,11 +8171,6 @@ public:
   void SetConfig_Options();
 
   /*!
-   * \brief Set the config options.
-   */
-  void SetRunTime_Options(void);
-
-  /*!
    * \brief Set the config file parsing.
    */
   void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);
@@ -9503,11 +9483,6 @@ public:
   void SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter; }
 
   /*!
-   * \brief GetScreen_Wrt_Freq_Inner
-   */
-  unsigned long GetVolume_Wrt_Freq() const { return VolumeWrtFreq; }
-
-  /*!
    * \brief GetVolumeOutputFiles
    */
   const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
@@ -9516,6 +9491,12 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetVolumeOutputFrequency
+   * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
+   */
+  unsigned long GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
 
   /*!
    * \brief Get the desired factorization frequency for PaStiX

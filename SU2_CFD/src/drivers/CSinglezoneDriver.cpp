@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -213,9 +213,9 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
 
     StartTime = SU2_MPI::Wtime();
-
-    config_container[ZONE_0]->Set_StartTime(StartTime);
   }
+
+  config_container[ZONE_0]->Set_StartTime(StartTime);
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {

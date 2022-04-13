@@ -3,7 +3,7 @@
 ## \file hybrid_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -37,6 +37,7 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
+    file_diff_list = []
 
     ##########################
     ### Compressible Euler ###
@@ -133,6 +134,14 @@ def main():
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals = [-12.494752, -7.712204, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
+
+    # 2D Rotational Periodic
+    periodic2d           = TestCase('periodic2d')
+    periodic2d.cfg_dir   = "navierstokes/periodic2D"
+    periodic2d.cfg_file  = "config.cfg"
+    periodic2d.test_iter = 1400
+    periodic2d.test_vals = [-10.818511, -8.363385, -8.287482, -5.334813, -1.087926, -2945.2]
+    test_list.append(periodic2d)
 
     ##########################
     ### Compressible RANS  ###
@@ -428,7 +437,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.162564, 0.066401, 1.399788, 2.220402]
+    square_cylinder.test_vals = [-1.162564, 0.066401, 1.399788, 2.220402, 1.399743, 2.218603]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
 
@@ -715,6 +724,20 @@ def main():
     mms_fvm_inc_ns.test_vals = [-7.414944, -7.631546, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_ns)
 
+    ##########################
+    ###   Python wrapper   ###
+    ##########################
+
+    # NACA0012
+    pywrapper_translating_naca0012 = TestCase('pywrapper_translating_naca0012')
+    pywrapper_translating_naca0012.cfg_dir = "py_wrapper/translating_NACA0012"
+    pywrapper_translating_naca0012.cfg_file = "config.cfg"
+    pywrapper_translating_naca0012.su2_exec = "python run_su2.py"
+    pywrapper_translating_naca0012.timeout = 60
+    pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
+    pywrapper_translating_naca0012.test_file = "forces_0.csv"
+    file_diff_list.append(pywrapper_translating_naca0012)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -726,12 +749,13 @@ def main():
     #end
 
     pass_list = [ test.run_test() for test in test_list ]
+    pass_list += [ test.run_filediff() for test in file_diff_list ]
 
     # Tests summary
     print('==================================================================')
     print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
-    for i, test in enumerate(test_list):
+    for i, test in enumerate(test_list+file_diff_list):
         if (pass_list[i]):
             print('  passed - %s'%test.tag)
         else:
