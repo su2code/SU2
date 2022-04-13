@@ -39,6 +39,8 @@
 class CSourceBase_TurbSA : public CNumerics {
 protected:
   su2double cv1_3;
+  su2double cv2;
+  su2double cv3;
   su2double k2;
   su2double cb1;
   su2double cw2;
@@ -130,11 +132,11 @@ class CSourcePieceWise_TurbSA final : public CSourceBase_TurbSA {
 private:
   const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Sbar, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
   su2double dfv1, dfv2, dShat;
-  su2double dr, dg, dfw;
+  su2double dr, dg, dfw, dft2;
   unsigned short iDim;
   bool transition;
   bool axisymmetric;
@@ -279,7 +281,7 @@ class CSourcePieceWise_TurbSA_Neg : public CSourceBase_TurbSA {
 private:
   const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
 
-  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Sbar, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
   su2double norm2_Grad;
   su2double dfv1, dfv2, dShat;

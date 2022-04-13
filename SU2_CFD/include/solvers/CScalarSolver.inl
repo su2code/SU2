@@ -216,7 +216,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       auto iEdge = color.indices[k];
 
       unsigned short iDim, iVar;
-
+      
       /*--- Points in edge and normal vectors ---*/
 
       auto iPoint = geometry->edges->GetNode(iEdge, 0);
@@ -240,7 +240,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
       if (dynamic_grid) numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
 
-      if (muscl || musclFlow) {
+      if (muscl) {
         const su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
         const auto Coord_i = geometry->nodes->GetCoord(iPoint);
@@ -365,6 +365,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         numerics->SetPrimitive(bad_i? V_i : flowPrimVar_i, bad_j? V_j : flowPrimVar_j);
         numerics->SetScalarVar(bad_i? Scalar_i : solution_i, bad_j? Scalar_j : solution_j);
       }
+      // else {
+      //   bad_i = true;
+      //   bad_j = true;
+      // }
 
       /*--- Update convective residual value ---*/
 
@@ -378,6 +382,38 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         LinSysRes.SubtractBlock(jPoint, residual);
         if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
+
+      /*--- Compute extra terms for SA, because it should be ---*/
+      /*--- u dot grad (nutilde), not div (u nutilde) ---*/
+
+      // if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::SA) {
+      //   const auto nu_i = bad_i? Scalar_i[0] : solution_i[0];
+      //   const auto nu_j = bad_j? Scalar_j[0] : solution_j[0];
+      //   const auto vel_i = bad_i? V_i+1 : flowPrimVar_i+1;
+      //   const auto vel_j = bad_j? V_j+1 : flowPrimVar_j+1;
+
+      //   su2double q_ij = 0.0;
+      //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      //     q_ij += 0.5 * (vel_i[iDim] + vel_j[iDim]) * geometry->edges->GetNormal(iEdge)[iDim];
+      //   }
+
+      //   // const su2double a0 = 0.5 * (q_ij + fabs(q_ij));
+      //   // const su2double a1 = 0.5 * (q_ij - fabs(q_ij));
+      //   const su2double a0 = q_ij;
+      //   const su2double a1 = q_ij;
+
+      //   su2double res_i[1] = {-nu_i*a0};
+      //   su2double res_j[1] = {-nu_j*a1};
+
+      //   su2double jac_i[1][1] = {-a0};
+      //   su2double jac_j[1][1] = {-a1};
+      //   LinSysRes.AddBlock(iPoint, res_i);
+      //   LinSysRes.SubtractBlock(jPoint, res_j);
+      //   if (implicit) {
+      //     Jacobian.AddBlock2Diag(iPoint, jac_i);
+      //     Jacobian.SubtractBlock2Diag(jPoint, jac_j);
+      //   }
+      // }
 
       /*--- Viscous contribution. ---*/
 

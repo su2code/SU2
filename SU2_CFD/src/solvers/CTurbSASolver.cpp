@@ -1747,6 +1747,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const su2double ct3   = 1.2;
   const su2double ct4   = 0.5;
   const su2double cv1_3 = pow(7.1, 3.0);
+  const su2double cv2   = 0.7;
+  const su2double cv3   = 0.9;
   const su2double cw1   = cb1/k2+(1.0+cb2)/sigma;
   const su2double cw2   = 0.3;
   const su2double cw3_6 = pow(2.0, 6.0);
@@ -1790,7 +1792,16 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   if (nDim = 3) S += pow(gradu[2][1] - gradu[1][2], 2.0) + pow(gradu[0][2] - gradu[2][0], 2.0);
   S = sqrt(S);
 
-  weights[0][nVarFlo] -= cb1*(1-ft2) * (S+2.0*fv2*inv_k2_d2) * varAdjTur->GetSolution(iPoint,0);
+  const su2double Sbar = nutilde*fv2*inv_k2_d2;
+  su2double Stilde = S + Sbar;
+  su2double dSbar = fv2*inv_k2_d2;
+  if (Sbar <= -cv2*S) {
+    Stilde = S + S*(cv2*cv2*S+cv3*Sbar)/((cv3-2.0*cv2)*S-Sbar);
+    dSbar *= S*S*pow(cv2-cv3,2.0)/pow((cv2-2.0*cv3)*S-Sbar,2.0);
+  }
+
+  weights[0][nVarFlo] -= cb1*(1-ft2) * (Stilde + dSbar*nutilde) * varAdjTur->GetSolution(iPoint,0);
+
   if (S > std::numeric_limits<passivedouble>::epsilon())
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
@@ -1806,10 +1817,9 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //--- Destruction term ---//
   //------------------------//
 
-  const su2double Shat = S + nutilde*fv2*inv_k2_d2;
-  const su2double inv_Shat = 1.0/max(Shat, std::numeric_limits<passivedouble>::epsilon());
+  const su2double inv_Stilde = 1.0/max(Stilde, std::numeric_limits<passivedouble>::epsilon());
 
-  const su2double rg = min(nutilde*inv_Shat*inv_k2_d2,10.0);
+  const su2double rg = min(nutilde*inv_Stilde*inv_k2_d2,10.0);
   const su2double g = rg + cw2*(pow(rg,6.0)-rg);
   const su2double g_6 =  pow(g,6.0);
   const su2double glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
