@@ -112,11 +112,7 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
 
    /*--- Implicit part ---*/
 
-   //Jacobian_i[0][0] =0.0;// -beta_star*ScalarVar_i[1]*Volume;
-   //Jacobian_i[0][1] = 0.0;//-beta_star*ScalarVar_i[0]*Volume;
-   //Jacobian_i[1][0] = 0.0;
-   //Jacobian_i[1][1] = 0.0;//-2.0*beta_blended*ScalarVar_i[1]*Volume;
-
+   
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
 

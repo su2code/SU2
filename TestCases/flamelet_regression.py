@@ -59,18 +59,6 @@ def main():
     flamelet_laminar_premixed.tol       = 0.00001
     test_list.append(flamelet_laminar_premixed)
 
-    # 2D CHT case streamwise periodicity
-    sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
-    sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
-    sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
-    sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247026, -0.811632, -0.982066, -0.753312, 208.023676, 350.180000] #last 7 lines
-    sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
-    sp_pinArray_cht_2d_dp_hf.timeout   = 1600
-    sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
-    sp_pinArray_cht_2d_dp_hf.multizone = True
-    test_list.append(sp_pinArray_cht_2d_dp_hf)
-
     ######################################
     ### RUN TESTS                      ###
     ######################################

@@ -124,7 +124,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   if (config[val_iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL){
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_SCALAR_SYS);
-    integration[val_iZone][val_iInst][SCALAR_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, 
+    integration[val_iZone][val_iInst][SCALAR_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, 
                                                                        RUNTIME_SCALAR_SYS, val_iZone, val_iInst);
 
     // In case of turbulence, the Turb-Post computes the correct eddy viscosity based on mixture-density and

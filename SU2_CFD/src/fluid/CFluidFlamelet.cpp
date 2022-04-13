@@ -28,8 +28,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
     table_source_names.at(I_SRC_TOT_NOX)      = "ProdRateTot-X-NOx";
     table_source_names.at(I_SRC_POS_CO)       = "ProdRatePos-CO";
     table_source_names.at(I_SRC_NEG_CO)       = "ProdRateNeg-CO_OverY-CO";
-    table_source_names.at(I_SRC_POS_NOX)      = "ProdRatePos-X-NOx";
-    table_source_names.at(I_SRC_NEG_NOX)      = "ProdRateNeg-X-NOx_OverX-NOx";
+    table_source_names.at(I_SRC_POS_NOX)      = "ProdRatePos-NOx";
+    table_source_names.at(I_SRC_NEG_NOX)      = "ProdRateNeg-NOx_OverY-NOx";
 
     config->SetTableSourceNames(table_source_names);
 
@@ -91,15 +91,15 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   source_scalar.at(I_ENTHALPY) = 0;
   source_scalar.at(I_PROG_VAR) = table_sources[I_SRC_TOT_PROG_VAR];
-  //source_scalar.at(I_CO)       = table_sources[I_SRC_TOT_CO];
-  source_scalar.at(I_CO)       = table_sources[I_SRC_POS_CO] + y_co*table_sources[I_SRC_NEG_CO];
+  source_scalar.at(I_CO)       = table_sources[I_SRC_TOT_CO];
+  //source_scalar.at(I_CO)       = table_sources[I_SRC_POS_CO] + y_co*table_sources[I_SRC_NEG_CO];
   //source_scalar.at(I_NOX)       = table_sources[I_SRC_TOT_NOX];
   //source_scalar.at(I_NOX)       = table_sources[I_SRC_POS_NOX] + y_nox*table_sources[I_SRC_NEG_NOX];
   source_scalar.at(I_NOX)      = table_sources[I_SRC_TOT_NOX];
 
 
   /*--- we clip at a small positive value --- */
-  if (source_scalar.at(I_PROG_VAR)<1.0e-6){
+  if (source_scalar.at(I_PROG_VAR)<EPS){
   // cout << "source term < 0!! (c,h)= "<<prog<<", "<<enth << endl;
   /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
     source_scalar.at(I_PROG_VAR) = 0.0;

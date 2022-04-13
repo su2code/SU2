@@ -206,7 +206,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
 
   CSolver *genericSolver = nullptr;
 
-  TURB_MODEL kindTurbModel = static_cast<TURB_MODEL>(config->GetKind_Turb_Model());
+  TURB_MODEL kindTurbModel = config->GetKind_Turb_Model();
 
   SolverMetaData metaData;
 
@@ -284,7 +284,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       break;
     case SUB_SOLVER_TYPE::SCALAR:
       genericSolver = CreateScalarSolver(solver, geometry, config, iMGLevel, false);
-      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_SCALAR:
       genericSolver = CreateScalarSolver(solver, geometry, config, iMGLevel, true);

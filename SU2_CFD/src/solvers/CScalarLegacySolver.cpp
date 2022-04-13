@@ -913,7 +913,7 @@ void CScalarLegacySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
   if(config->GetKind_Turb_Model() != TURB_MODEL::NONE) solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   // For feature_multicomp this Scalar-Pre only computes the laminar contribution to mass diffusivity
-  solver[MESH_0][SCALAR_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][SCALAR_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_SCALAR_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -936,8 +936,11 @@ void CScalarLegacySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
     solver[iMesh][SCALAR_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][SCALAR_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    solver[iMesh][SCALAR_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
-  }
+    if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+      solver[iMesh][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+
+    solver[iMesh][SCALAR_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                              RUNTIME_SCALAR_SYS, false);}
 
   /*--- Go back to single threaded execution. ---*/
   SU2_OMP_MASTER
@@ -1104,10 +1107,14 @@ su2double CScalarLegacySolver::GetInletAtVertex(su2double       *val_inlet,
 }
 
 void CScalarLegacySolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-  
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Inlet_ScalarVars[iMarker][iVertex][iVar] = Scalar_Inf[iVar];
+  /*--- Find BC string to the numeric-identifier. ---*/
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        Inlet_ScalarVars[iMarker][iVertex][iVar] = config->GetInlet_ScalarVal(Marker_Tag)[iVar];
+      }
+    }
   }
 
 }

@@ -87,8 +87,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
   for (auto& x : conjugate_var) x = config->GetTemperature_FreeStreamND();
 
-  /*--- do not see a reason to use only single grid ---*/
-  //if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -122,7 +121,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
       Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
     }
 
-  //} //iMESH_0
+  } //iMESH_0
 
   /*--- Initialize lower and upper limits---*/
 
@@ -593,6 +592,8 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry,
   unsigned long iVertex, iPoint, total_index;
   su2double enth_inlet;
 
+  bool GetSpecies_StrongBC = true;
+
   string      Marker_Tag    = config->GetMarker_All_TagBound(val_marker);
   su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
   su2double  *inlet_scalar  = config->GetInlet_ScalarVal    (Marker_Tag);
@@ -612,22 +613,60 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry,
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-       if (geometry->nodes->GetDomain(iPoint)) {
-    
-        nodes->SetSolution_Old(iPoint, inlet_scalar);
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        LinSysRes.SetBlock_Zero(iPoint);
+    if (GetSpecies_StrongBC) {
+      nodes->SetSolution_Old(iPoint, inlet_scalar);
 
-        for (iVar = 0; iVar < nVar; iVar++) {
+      LinSysRes.SetBlock_Zero(iPoint);
+       // nijso: leads to slightly more stable convergence
+       for (iVar = 0; iVar < nVar; iVar++) {
           nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
         }
+              /*--- Includes 1 in the diagonal ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        auto total_index = iPoint * nVar + iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+    } else {  // weak BC
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-        /*--- Includes 1 in the diagonal ---*/
-         for (iVar = 0; iVar < nVar; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }      
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+      conv_numerics->SetNormal(Normal);
+
+      /*--- Allocate the value at the inlet ---*/
+
+      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Set the species variable state at the inlet. ---*/
+
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), inlet_scalar);
+
+      /*--- Set various other quantities in the solver class ---*/
+
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
     }
+  
   }
 
 }

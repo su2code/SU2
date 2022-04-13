@@ -618,6 +618,8 @@ public:
     }
 
     if (totalnParamDV > option_value.size()){
+      cout << "total number of params =" << totalnParamDV <<endl;
+      cout << "option_value.size =" << option_value.size() <<endl;
       SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
     }
 

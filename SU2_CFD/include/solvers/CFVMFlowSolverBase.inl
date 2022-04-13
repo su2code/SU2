@@ -695,26 +695,34 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    // note that p_total is either total pressure or velocity depending on tif it is a velocity inlet or pressure inlet
     su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
     su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
     auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
 
+    
+
+
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+        Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
     }
 
-  } else {
-    /*--- For now, non-inlets just get set to zero. In the future, we
-     can do more customization for other boundary types here. ---*/
-
-    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0.0;
-      Inlet_Ptotal[iMarker][iVertex] = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
-    }
-  }
+  } 
+  
+  // commented for now, since this should be done in a different routine
+  //else {
+  //  /*--- For now, non-inlets just get set to zero. In the future, we
+  //   can do more customization for other boundary types here. ---*/
+  //  for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+  //    Inlet_Ttotal[iMarker][iVertex] = 0.0;
+  //    Inlet_Ptotal[iMarker][iVertex] = 0.0;
+  //    for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+  //      Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
+  //  }
+  //}
 }
 
 template <class V, ENUM_REGIME R>
