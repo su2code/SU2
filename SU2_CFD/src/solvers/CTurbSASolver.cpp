@@ -1819,7 +1819,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
 
   weights[0][nVarFlo] -= cb1*(1-ft2) * (Stilde + dSbar*nutilde) * varAdjTur->GetSolution(iPoint,0);
 
-  const int inds_Wij[3][3] = {{0, 2, 1}, {2, 0, 0}, {1, 0, 0}};
+  const unsigned short inds_Wij[3][3] = {{0, 2, 1}, {2, 0, 0}, {1, 0, 0}};
   if (S > std::numeric_limits<passivedouble>::epsilon())
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
@@ -1835,7 +1835,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
       weights[0][iDim+1] += cb1*(1.0-ft2) * ( Wij/(r*S) * gradnutilde[jDim] - Wij*nutilde/(r*r*S) * gradr[jDim]
                                           -   Wij*nutilde/(r*S*S) * gradS[jDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][jDim] )
                                           * varAdjTur->GetSolution(iPoint,0);
-      weights[0][jDim+1] += cb1*(1.0-ft2) * ( Wij/(r*S) * gradnutilde[iDim] - Wij*nutilde/(r*r*S) * gradr[iDim]
+      weights[0][jDim+1] -= cb1*(1.0-ft2) * ( Wij/(r*S) * gradnutilde[iDim] - Wij*nutilde/(r*r*S) * gradr[iDim]
                                           -   Wij*nutilde/(r*S*S) * gradS[iDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][iDim] )
                                           * varAdjTur->GetSolution(iPoint,0);
       weights[0][0] -= cb1*(1.0-ft2) * ( Wij*nutilde/(r*S) * ( gradu[iDim][jDim] - gradu[jDim][iDim] )
