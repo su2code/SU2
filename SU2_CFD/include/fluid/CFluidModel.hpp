@@ -120,9 +120,24 @@ class CFluidModel {
   su2double GetCv() const { return Cv; }
 
   /*!
+   * \brief Get fluid mean molecular weight.
+   */
+  static su2double ComputeMeanMolecularWeight(const std::vector<su2double> molar_masses, const su2double * const val_scalars) {
+    su2double OneOverMeanMolecularWeight = 0.0;
+    su2double val_scalars_sum = 0.0;
+    unsigned short n_scalars = molar_masses.size() - 1;
+
+    for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+      OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
+      val_scalars_sum += val_scalars[i_scalar];
+    }
+    OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
+    return 1/OneOverMeanMolecularWeight;
+  }
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
-  su2double GetLaminarViscosity() {
+  virtual inline su2double GetLaminarViscosity() {
     LaminarViscosity->SetViscosity(Temperature, Density);
     Mu = LaminarViscosity->GetViscosity();
     LaminarViscosity->SetDerViscosity(Temperature, Density);
@@ -135,7 +150,7 @@ class CFluidModel {
    * \brief Get fluid thermal conductivity.
    */
 
-  su2double GetThermalConductivity() {
+  virtual inline su2double GetThermalConductivity() {
     ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
     Kt = ThermalConductivity->GetConductivity();
     ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
@@ -212,12 +227,12 @@ class CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config);
+  virtual void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set thermal conductivity model.
    */
-  void SetThermalConductivityModel(const CConfig* config);
+  virtual void SetThermalConductivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -291,7 +306,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature) {}
+  virtual void SetTDState_T(su2double val_Temperature, su2double *val_scalar = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
