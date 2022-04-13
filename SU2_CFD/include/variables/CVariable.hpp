@@ -95,8 +95,8 @@ protected:
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
   CVectorOfMatrix Gradient_Adapt;        /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
-  MatrixType Primitive_Adapt;   /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
-  CVectorOfMatrix Gradient_Primitive_Adapt;    /*!< \brief Gradient of additional variables used for anisotropy in mesh adaptation. */
+  MatrixType AuxVar_Adapt;   /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Gradient_AuxVar_Adapt;    /*!< \brief Gradient of additional variables used for anisotropy in mesh adaptation. */
   CVectorOfMatrix Hessian;                    /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
   MatrixType Metric;                         /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
@@ -2351,28 +2351,27 @@ public:
    */
   inline su2double GetGradient_Adapt(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_Adapt(iPoint,iVar,iDim); }
 
-
   /*!
    * \brief Set the gradient of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
    */
-  inline void SetPrimitive_Adapt(unsigned long iPoint, unsigned long iVar, su2double primitive) {
-    Primitive_Adapt(iPoint,iVar) = primitive;
+  inline void SetAuxVar_Adapt(unsigned long iPoint, unsigned long iVar, su2double primitive) {
+    AuxVar_Adapt(iPoint,iVar) = primitive;
   }
 
   /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
-  inline const MatrixType& GetPrimitive_Adapt(void) const { return Primitive_Adapt; }
+  inline const MatrixType& GetAuxVar_Adapt(void) const { return AuxVar_Adapt; }
 
   /*!
    * \brief Get the value of the solution gradient.
    * \param[in] iPoint - Point index.
    * \return Value of the gradient solution.
    */
-  inline su2double *GetPrimitive_Adapt(unsigned long iPoint) { return Primitive_Adapt[iPoint]; }
+  inline su2double *GetAuxVar_Adapt(unsigned long iPoint) { return AuxVar_Adapt[iPoint]; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -2380,31 +2379,31 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Value of the solution gradient.
    */
-  inline su2double GetPrimitive_Adapt(unsigned long iPoint, unsigned long iVar) const { return Primitive_Adapt(iPoint,iVar); }
+  inline su2double GetAuxVar_Adapt(unsigned long iPoint, unsigned long iVar) const { return AuxVar_Adapt(iPoint,iVar); }
 
   /*!
    * \brief Set the gradient of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
    */
-  inline void SetGradient_Primitive_Adapt(unsigned long iPoint, su2double** gradient) {
+  inline void SetGradient_AuxVar_Adapt(unsigned long iPoint, su2double** gradient) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        Gradient_Primitive_Adapt(iPoint,iVar,iDim) = gradient[iVar][iDim];
+        Gradient_AuxVar_Adapt(iPoint,iVar,iDim) = gradient[iVar][iDim];
   }
 
   /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Primitive_Adapt(void) { return Gradient_Primitive_Adapt; }
+  inline CVectorOfMatrix& GetGradient_AuxVar_Adapt(void) { return Gradient_AuxVar_Adapt; }
 
   /*!
    * \brief Get the value of the solution gradient.
    * \param[in] iPoint - Point index.
    * \return Value of the gradient solution.
    */
-  inline CMatrixView<su2double> GetGradient_Primitive_Adapt(unsigned long iPoint) { return Gradient_Primitive_Adapt[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_AuxVar_Adapt(unsigned long iPoint) { return Gradient_AuxVar_Adapt[iPoint]; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -2413,7 +2412,7 @@ public:
    * \param[in] iDim - Index of the dimension.
    * \return Value of the solution gradient.
    */
-  inline su2double GetGradient_Primitive_Adapt(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_Primitive_Adapt(iPoint,iVar,iDim); }
+  inline su2double GetGradient_AuxVar_Adapt(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_AuxVar_Adapt(iPoint,iVar,iDim); }
 
   /*!
    * \brief Set the hessian of the solution.

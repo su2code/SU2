@@ -2158,8 +2158,8 @@ enum MPI_QUANTITIES {
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
   WALL_FUNCTION        ,  /*!< \brief Wall function variables. */
   GRADIENT_ADAPT       ,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
-  PRIMITIVE_ADAPT  ,  /*!< \brief Auxiliary vectors for anisotropic mesh adaptation. */
-  PRIMITIVE_GRADIENT_ADAPT   ,  /*!< \brief Auxiliary gradient vectors for anisotropic mesh adaptation. */
+  AUXVAR_ADAPT         ,  /*!< \brief Auxiliary vectors for anisotropic mesh adaptation. */
+  AUXVAR_GRADIENT_ADAPT ,  /*!< \brief Auxiliary gradient vectors for anisotropic mesh adaptation. */
   HESSIAN              ,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
   PRIMITIVE            ,  /*!< \brief Primitive variables. */
   METRIC               ,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */

@@ -577,7 +577,8 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
     cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
     cout << "Storing primitive variables needed for gradients in metric." << endl;
   }
-  solver_flow->SetPrimitive_Adapt(geometry, config);
+  solver_flow->SetAuxVar_Adapt(geometry, config, solver_flow->GetNodes());
+  if (turb) solver_turb->SetAuxVar_Adapt(geometry, config, solver_flow->GetNodes());
 
   if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
@@ -596,8 +597,9 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
       solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_ADJTURB_SYS);
 
     }
-    if(rank == MASTER_NODE) cout << "Computing gradients of primitive variables." << endl;
-    solver_flow->SetGradient_Primitive_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
+    if(rank == MASTER_NODE) cout << "Computing gradients of aux variables." << endl;
+    solver_flow->SetGradient_AuxVar_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
+    if (turb) solver_turb->SetGradient_AuxVar_Adapt_GG(geometry, config, RUNTIME_TURB_SYS);
   }
   else {
     if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
@@ -615,8 +617,9 @@ void CDiscAdjSinglezoneDriver::ComputeMetric() {
       if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
       solver_adjturb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
     }
-    if(rank == MASTER_NODE) cout << "Computing gradients of primitive variables." << endl;
-    solver_flow->SetGradient_Primitive_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+    if(rank == MASTER_NODE) cout << "Computing gradients of aux variables." << endl;
+    solver_flow->SetGradient_AuxVar_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+    if (turb) solver_turb->SetGradient_AuxVar_Adapt_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
   }
 
   //--- Metric

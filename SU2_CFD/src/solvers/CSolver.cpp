@@ -1379,12 +1379,12 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_ADAPT:
-      COUNT_PER_POINT  = nPrimVarAdapGrad;
+    case AUXVAR_ADAPT:
+      COUNT_PER_POINT  = nAuxGradAdap;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_GRADIENT_ADAPT:
-      COUNT_PER_POINT  = nPrimVarAdapGrad*nDim;
+    case AUXVAR_GRADIENT_ADAPT:
+      COUNT_PER_POINT  = nAuxGradAdap*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case HESSIAN:
@@ -1406,7 +1406,7 @@ namespace CommHelpers {
       case PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
       case AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
       case GRADIENT_ADAPT: return nodes->GetGradient_Adapt();
-      case PRIMITIVE_GRADIENT_ADAPT: return nodes->GetGradient_Primitive_Adapt();
+      case AUXVAR_GRADIENT_ADAPT: return nodes->GetGradient_AuxVar_Adapt();
       case HESSIAN: return nodes->GetHessian();
       default: return nodes->GetGradient();
     }
@@ -1525,12 +1525,12 @@ void CSolver::InitiateComms(CGeometry *geometry,
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
-          case PRIMITIVE_ADAPT:
-            for (iVar = 0; iVar < nPrimVarAdapGrad; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetPrimitive_Adapt(iPoint, iVar);
+          case AUXVAR_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
+              bufDSend[buf_offset+iVar] = base_nodes->GetAuxVar_Adapt(iPoint, iVar);
             break;
-          case PRIMITIVE_GRADIENT_ADAPT:
-            for (iVar = 0; iVar < nPrimVarAdapGrad; iVar++)
+          case AUXVAR_GRADIENT_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
@@ -1693,12 +1693,12 @@ void CSolver::CompleteComms(CGeometry *geometry,
               for (iDim = 0; iDim < nDim; iDim++)
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
-          case PRIMITIVE_ADAPT:
-            for (iVar = 0; iVar < nPrimVarAdapGrad; iVar++)
-              base_nodes->SetPrimitive_Adapt(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+          case AUXVAR_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
+              base_nodes->SetAuxVar_Adapt(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case PRIMITIVE_GRADIENT_ADAPT:
-            for (iVar = 0; iVar < nPrimVarAdapGrad; iVar++)
+          case AUXVAR_GRADIENT_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                  gradient(iPoint, iVar, iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
@@ -2245,23 +2245,23 @@ void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, con
     
 }
 
-void CSolver::SetGradient_Primitive_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
 
-  const auto& solution = base_nodes->GetPrimitive_Adapt();
-  auto& gradient = base_nodes->GetGradient_Primitive_Adapt();
+  const auto& solution = base_nodes->GetAuxVar_Adapt();
+  auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
 
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nPrimVarAdapGrad, gradient);
+  computeGradientsGreenGauss(this, AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                             *config, solution, 0, nAuxGradAdap, gradient);
     
 }
 
-void CSolver::SetGradient_Primitive_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+void CSolver::SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
 
-  const auto& solution = base_nodes->GetPrimitive_Adapt();
-  auto& gradient = base_nodes->GetGradient_Primitive_Adapt();
+  const auto& solution = base_nodes->GetAuxVar_Adapt();
+  auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
 
-  computeGradientsL2Projection(this, PRIMITIVE_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                               *config, solution, 0, nPrimVarAdapGrad, gradient);
+  computeGradientsL2Projection(this, AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                               *config, solution, 0, nAuxGradAdap, gradient);
     
 }
 

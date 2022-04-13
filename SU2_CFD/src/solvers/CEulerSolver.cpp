@@ -115,7 +115,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nDim = geometry->GetnDim();
 
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4; nPrimVarAdapGrad = nDim+3;
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+4; nAuxGradAdap = nDim+3;
   nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
@@ -9697,11 +9697,11 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim);
     }
-    gradT[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, 0, iDim);
-    gradnu[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, nDim+1, iDim);
-    gradnut[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, nDim+2, iDim);
+    gradT[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim);
+    gradnu[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+1, iDim);
+    gradnut[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+2, iDim);
   }
   
   //--- Account for wall functions
@@ -9890,9 +9890,9 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
   su2double gradu[3][3] = {0.0}, gradT[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim);
     }
-    gradT[iDim] = varFlo->GetGradient_Primitive_Adapt(iPoint, 0, iDim);
+    gradT[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim);
   }
 
   //--- Account for wall functions
