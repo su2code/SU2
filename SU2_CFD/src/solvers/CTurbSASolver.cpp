@@ -1769,6 +1769,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //----------------------//
   
   for (auto iDim = 0; iDim < nDim; ++iDim) {
+    const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+    weights[0][nVarFlo] += 2.0*cb2_sigma * varTur->GetHessian(iPoint, 0, ind_ii) * varAdjTur->GetSolution(iPoint, 0);
     weights[1][nVarFlo] += 2.0*cb2_sigma * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
   }
 
