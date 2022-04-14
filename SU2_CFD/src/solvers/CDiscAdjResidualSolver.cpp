@@ -561,7 +561,8 @@ void CDiscAdjResidualSolver::SetSensitivity(CGeometry *geometry, CConfig *config
             auto Coord = geometry->nodes->GetCoord(iPoint);
             
             for (auto iDim = 0u; iDim < nDim; iDim++) {
-                
+
+                // TODO: su2double Sensitivity = Partial_Sens_dObjective_dCoordinates(iPoint, iDim) + Partial_Prod_dResiduals_dCoordinates(iPoint, iDim);
                 su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
                 AD::ResetInput(Coord[iDim]);
                 

@@ -839,7 +839,7 @@ vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, un
     vector<passivedouble> values(nDim, 0.0);
     
     for (auto iDim = 0u; iDim < nDim; iDim++) {
-        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetAdjointVertexTractions(iMarker, iVertex, iDim);
+        const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetAdjointVertexTractions(iMarker, iVertex, iDim);
 
         values[iDim] = SU2_TYPE::GetValue(value);
     }

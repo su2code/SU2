@@ -3658,22 +3658,22 @@ public:
     inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
     /*!
-     * \brief A virtual member.
+     * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
      * \param[in] geometry - The geometrical definition of the problem.
      * \param[in] solver_container - The solver container holding all solutions.
      * \param[in] config - The particular config.
      * \param[in] output - Kind of output variables.
      */
-    inline virtual void ExtractAdjoint_Solution_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable){}
+    inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable){}
 
     /*!
-     * \brief A virtual member.
+     * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
      * \param[in] geometry - The geometrical definition of the problem.
      * \param[in] solver_container - The solver container holding all solutions.
      * \param[in] config - The particular config = false.
      * \param[in] objective - Kind of output variables.
      */
-    inline virtual void ExtractAdjoint_Geometry_Residual(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable){}
+    inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable){}
     
     /*!
      * \brief  A virtual member.
@@ -3875,13 +3875,13 @@ public:
     inline virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) { }
 
     /*!
-     * \brief A virtual member.
+     * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
      * \param[in] geometry - The geometrical definition of the problem.
      * \param[in] solver_container - The solver container holding all solutions.
      * \param[in] config - The particular config.
      * \param[in] output - Kind of output variables.
      */
-    inline virtual void ExtractAdjoint_Variables_Residual(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable) { }
+    inline virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config, ENUM_VARIABLE variable) { }
     
     /*!
      * \brief A virtual member.
