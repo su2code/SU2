@@ -798,7 +798,7 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  *Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,           /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
@@ -1135,6 +1135,10 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
+
+  unsigned short n_scalars,       /*!< \brief Number of transported scalars. */
+  //n_species,                      /*!< \brief Number of species in multicomponent flow. */
+  nMolecular_Weight;             /*!< \brief Number of species molecular weights. */        
 
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -1605,7 +1609,7 @@ public:
    * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
    * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
    */
-  su2double GetMolecular_Weight(void) const { return Molecular_Weight; }
+  su2double GetMolecular_Weight(unsigned short val_index = 0) const { return Molecular_Weight [val_index]; }
 
   /*!
    * \brief Get the value of specific heat at constant pressure.

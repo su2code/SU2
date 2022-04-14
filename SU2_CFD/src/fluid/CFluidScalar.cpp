@@ -18,7 +18,7 @@
 
 CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_operating) : CFluidModel() {
   // nijso TODO BUG FIXME
-  n_scalars = 1; //config->GetScalars_Init();
+  n_scalars = config->GetnSpecies();
   //config->SetNScalarsInit(n_scalars);
   n_species_mixture = n_scalars + 1;
 
@@ -31,9 +31,9 @@ CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_opera
 
   // nijso FIXME TODO BUG
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    //molarMasses.at(iVar) = config->GetMolecular_Weight(iVar);
+    molarMasses.at(iVar) = config->GetMolecular_Weight(iVar);
     //specificHeat.at(iVar) = config->GetSpecific_Heat_Cp(iVar);
-    molarMasses.at(iVar) = 28.96;    //config->GetMolecular_Weight(iVar);
+    //molarMasses.at(iVar) = 28.96;    //config->GetMolecular_Weight(iVar);
     specificHeat.at(iVar) = 1000.0 ; //config->GetSpecific_Heat_Cp(iVar);
   }
 

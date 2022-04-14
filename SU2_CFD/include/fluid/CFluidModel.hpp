@@ -306,7 +306,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, su2double *val_scalar = nullptr) {}
+  virtual void SetTDState_T(su2double val_Temperature, su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
