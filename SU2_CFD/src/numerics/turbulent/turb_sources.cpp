@@ -170,7 +170,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA<T>::ComputeResidual(const CCon
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
 
-     Destruction = (cw1*fw-cb1*ft2/k2)*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
+    Destruction = (cw1*fw-cb1*ft2/k2)*ScalarVar_i[0]*ScalarVar_i[0]/dist_i_2*Volume;
 
     /*--- Diffusion term ---*/
 
@@ -188,7 +188,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA<T>::ComputeResidual(const CCon
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     dft2 = -2.0*ct3*ct4*Ji/nu*exp(-ct4*Ji_2);
     dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
-    if (Sbar <= -cv2*S) dShat *= S*S*pow(cv2-cv3,2.0)/pow((cv2-2.0*cv3)*S-Sbar,2.0);
+    if (Sbar <= -cv2*S) dShat *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
 
     if (transition) {
       Jacobian_i[0] += Gamma_BC*cb1*(ScalarVar_i[0]*dShat+Shat)*Volume;
@@ -704,7 +704,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
       dft2 = -2.0*ct3*ct4*Ji/nu*exp(-ct4*Ji_2);
       dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
-      if (Sbar <= -cv2*S) dShat *= S*S*pow(cv2-cv3,2.0)/pow((cv2-2.0*cv3)*S-Sbar,2.0);
+      if (Sbar <= -cv2*S) dShat *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
       Jacobian_i[0] += cb1*(1.0-ft2)*(ScalarVar_i[0]*dShat+Shat)*Volume
                      - cb1*dft2*ScalarVar_i[0]*Shat*Volume;
 
@@ -724,8 +724,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       /*--- Production term ---*/
 
       dist_i_2 = dist_i*dist_i;
-
-      /*--- Production term ---*/;
 
       Production = cb1*(1.0-ct3)*Omega*ScalarVar_i[0]*Volume;
 

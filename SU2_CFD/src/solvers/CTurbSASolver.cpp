@@ -1803,7 +1803,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   su2double dSbar = fv2*inv_k2_d2;
   if (Sbar <= -cv2*S) {
     Stilde = S + S*(cv2*cv2*S+cv3*Sbar)/((cv3-2.0*cv2)*S-Sbar);
-    dSbar *= S*S*pow(cv2-cv3,2.0)/pow((cv2-2.0*cv3)*S-Sbar,2.0);
+    dSbar *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
   }
 
   weights[0][nVarFlo] -= cb1*(1-ft2) * (Stilde + dSbar*nutilde) * varAdjTur->GetSolution(iPoint,0);

@@ -4959,7 +4959,7 @@ void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const C
   }
   
   //--- Apply correction to wall boundary
-  // CorrectBoundMetric(geometry, config);
+  CorrectBoundMetric(geometry, config);
 
   //--- Compute Lp-normalizatio of the metric tensor field
   NormalizeMetric(geometry, config);
