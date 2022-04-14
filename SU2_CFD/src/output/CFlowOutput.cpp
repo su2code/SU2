@@ -2,7 +2,7 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -950,7 +950,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+  if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
       case TURB_FAMILY::SA:
         AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
@@ -967,7 +967,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    if (config->GetKind_SlopeLimit_Species() != NO_LIMITER) {
+    if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
         AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
     }
@@ -1017,7 +1017,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
 
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1062,7 +1062,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      if (config->GetKind_SlopeLimit_Species() != NO_LIMITER)
+      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
         SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
   }
@@ -1070,7 +1070,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  if (!config->GetViscous()) return;
+  if (!config->GetViscous_Wall(iMarker)) return;
 
   const auto heat_sol = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
                          config->GetWeakly_Coupled_Heat() ? HEAT_SOL : FLOW_SOL;
@@ -2032,7 +2032,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.3.0 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.3.1 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -3277,24 +3277,32 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format on
 }
 
-bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
+bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+  
+  bool writeRestart = false;
+  auto FileFormat = config->GetVolumeOutputFiles();
 
   if (config->GetTime_Domain()){
     if (((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) &&
-        ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
+        ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0))){
       return true;
     }
 
+    /* check if we want to write a restart file*/ 
+    if (FileFormat[iFile] == OUTPUT_TYPE::RESTART_ASCII || FileFormat[iFile] == OUTPUT_TYPE::RESTART_BINARY || FileFormat[iFile] == OUTPUT_TYPE::CSV) {
+      writeRestart = true;  
+    }
+
+    /* only write 'double' files for the restart files */
     if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
-        ((Iter == 0) ||
-         (Iter % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
-         ((Iter+2) == config->GetnTime_Iter()))){ // The last timestep is written anyways but again one needs the step before for restarts.
+      ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0) ||
+      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart==true) || // Restarts need 2 old solutions.
+      (((Iter+2) == config->GetnTime_Iter()) && writeRestart==true))){      // The last timestep is written anyway but one needs the step before for restarts.
       return true;
     }
   } else {
     if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode()) return false;
-    return ((Iter > 0) && Iter % config->GetVolume_Wrt_Freq() == 0) || force_writing;
+    return ((Iter > 0) && Iter % config->GetVolumeOutputFrequency(iFile) == 0) || force_writing;
   }
 
   return false || force_writing;

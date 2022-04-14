@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -176,7 +176,8 @@ void CDiscAdjMultizoneDriver::StartSolver() {
   /*--- General setup. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolumeOutputFrequency(0));
 
     /*--- Set BGS_Solution_k to Solution, this is needed to restart
      * correctly as the first OF gradient will overwrite the solution. ---*/

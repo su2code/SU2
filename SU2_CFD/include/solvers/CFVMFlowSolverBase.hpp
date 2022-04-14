@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1166,15 +1166,6 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetTemperature_Inf(void) const { return Temperature_Inf; }
 
   /*!
-   * \brief Compute the density multiply by velocity at the infinity.
-   * \param[in] val_dim - Index of the velocity vector.
-   * \return Value of the density multiply by the velocity at the infinity.
-   */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final {
-    return Density_Inf * Velocity_Inf[val_dim];
-  }
-
-  /*!
    * \brief Get the velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
@@ -1502,6 +1493,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Get the reference force used to compute CL, CD, etc.
    */
   inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
+
+  /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline su2double GetReferenceDynamicPressure() const final { return DynamicPressureRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.

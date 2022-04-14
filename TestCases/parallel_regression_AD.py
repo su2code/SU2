@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -167,6 +167,22 @@ def main():
     discadj_incomp_turb_NACA0012_sst.timeout   = 1600
     discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
     test_list.append(discadj_incomp_turb_NACA0012_sst)
+
+    ####################################################################
+    ###  Disc. Adj. Axisymmetric RANS                                ###
+    ####################################################################
+
+    # Adjoint Axisymmetric RANS
+    discadj_axisymmetric_rans_nozzle            = TestCase('discadj_axisymmetric_rans')
+    discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
+    discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle.cfg"
+    discadj_axisymmetric_rans_nozzle.test_iter  = 10
+    discadj_axisymmetric_rans_nozzle.test_vals  = [-10.391857, -15.524696, -7.715907, -17.350541]        
+    discadj_axisymmetric_rans_nozzle.su2_exec   = "mpirun -n 2 SU2_CFD_AD"
+    discadj_axisymmetric_rans_nozzle.timeout    = 1600
+    discadj_axisymmetric_rans_nozzle.tol        = 0.00001
+    discadj_axisymmetric_rans_nozzle.no_restart = True
+    test_list.append(discadj_axisymmetric_rans_nozzle)
 
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###

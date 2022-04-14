@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -53,6 +53,18 @@ def main():
     thermalbath.new_output = True
     thermalbath.tol       = 0.00001
     test_list.append(thermalbath)
+
+    # Adiabatic thermal bath
+    ionized           = TestCase('ionized')
+    ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
+    ionized.cfg_file  = "weakly_ionized.cfg"
+    ionized.test_iter = 10
+    ionized.test_vals = [-29.322805, -10.246260, -11.382786, -16.183264, -17.165896, -13.928855, -24.658131, -32.000000, -4.541637, 0.000000, 0.000000]
+    ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
+    ionized.timeout   = 1600
+    ionized.new_output = True
+    ionized.tol       = 0.00001
+    test_list.append(ionized)
 
     # Adiabatic frozen thermal bath
     thermalbath_frozen           = TestCase('thermalbath_frozen')
@@ -673,8 +685,8 @@ def main():
     turbmod_sa_neg_rae2822           = TestCase('turbmod_sa_neg_rae2822')
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
-    turbmod_sa_neg_rae2822.test_iter = 20
-    turbmod_sa_neg_rae2822.test_vals = [-2.004689, 0.742306, 0.497308, -5.265793, 0.809463, 0.062016]
+    turbmod_sa_neg_rae2822.test_iter = 10
+    turbmod_sa_neg_rae2822.test_vals = [-1.094542, 3.161741, 2.333560, 2.864805, 1.494301, 0.530135]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -999,7 +1011,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.162664, 0.066378, 1.399789, 2.220404]
+    square_cylinder.test_vals = [-1.162664, 0.066378, 1.399789, 2.220404, 1.399743, 2.218605]
     square_cylinder.su2_exec  = "parallel_computation.py -f"
     square_cylinder.timeout   = 1600
     square_cylinder.tol       = 0.00001
@@ -1466,7 +1478,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
-    pywrapper_square_cylinder.test_vals = [-1.162664, 0.066378, 1.399789, 2.220404] #last 4 columns
+    pywrapper_square_cylinder.test_vals = [-1.162664, 0.066378, 1.399789, 2.220404, 1.399743, 2.218605] #last 4 columns
     pywrapper_square_cylinder.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001

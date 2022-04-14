@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,6 +45,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
   unsigned short iDim, iSpecies;
+
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Setting variable amounts ---*/
 
@@ -109,6 +113,16 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   }
 
   Solution_Old = Solution;
+
+  if (classical_rk4) Solution_New = Solution;
+
+  /*--- Allocate and initializate solution for dual time strategy ---*/
+
+  if (dual_time) {
+    Solution_time_n = Solution;
+    Solution_time_n1 = Solution;
+  }
+
 }
 
 void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
