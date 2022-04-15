@@ -1391,6 +1391,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = 3*(nDim-1)*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case METRIC:
+      COUNT_PER_POINT  = 3*(nDim-1);
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -1538,6 +1542,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVarHess; iVar++)
               for (iHess = 0; iHess < nHess; iHess++)
                 bufDSend[buf_offset+iVar*nHess+iHess] = gradient(iPoint, iVar, iHess);
+            break;
+          case METRIC:
+            for (iHess = 0; iHess < 3*(nDim-1); iHess++)
+              bufDSend[buf_offset+iHess] = base_nodes->GetMetric(iPoint, iHess);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1706,6 +1714,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVarHess; iVar++)
               for (iHess = 0; iHess < nHess; iHess++)
                 gradient(iPoint, iVar, iHess) = bufDRecv[buf_offset+iVar*nHess+iHess];
+            break;
+          case METRIC:
+            for (iHess = 0; iHess < 3*(nDim-1); iHess++)
+              base_nodes->SetMetric(iPoint, iHess, bufDRecv[buf_offset+iHess]);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -4640,7 +4652,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
   delete [] GradDotn;
 }
 
-void CSolver::CorrectBoundHessian(const CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
   constexpr size_t MAXNMET = 30;
   const unsigned short nMet = 3*(nDim-1);
 
@@ -4759,20 +4771,23 @@ void CSolver::CorrectBoundHessian(const CGeometry *geometry, const CConfig *conf
   }// iMarker
 }
 
-void CSolver::CorrectBoundMetric(const CGeometry *geometry, const CConfig *config) {
+void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
   constexpr size_t MAXNMET = 6;
   const unsigned short nMet = 3*(nDim-1);
 
   su2double Basis[MAXNDIM][MAXNDIM] = {0.0};
   su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
+  InitiateComms(geometry, config, METRIC);
+  CompleteComms(geometry, config, METRIC);
+
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker) || 
-        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-         config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-         config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+    if (config->GetSolid_Wall(iMarker)) { //|| 
+        // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+        //  config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
