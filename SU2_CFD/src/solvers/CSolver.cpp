@@ -4800,7 +4800,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
           su2double met[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-            if(!nodes->GetSolidBoundary(jPoint) && !nodes->GetPhysicalBoundary(jPoint)) {
+            if(!nodes->GetSolidBoundary(jPoint)) {// && !nodes->GetPhysicalBoundary(jPoint)) {
               const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
               suminvdist += 1./dist;
               for(auto iMet = 0; iMet < nMet; iMet++) {
