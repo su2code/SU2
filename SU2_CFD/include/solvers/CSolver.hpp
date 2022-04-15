@@ -4389,7 +4389,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config);
+  void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Extract the objective function terms of the goal-oriented metric.

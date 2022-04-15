@@ -4934,7 +4934,7 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
   }
 }
 
-void CSolver::ComputeMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config) {
+void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config) {
 
   unsigned long nPointDomain = geometry->GetnPointDomain();
 
