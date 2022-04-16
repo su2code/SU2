@@ -9652,25 +9652,23 @@ public:
     const bool sst_kl    = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
     const bool sst_uq    = (std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end || using_uq);
 
-    if(rank==MASTER_NODE){
-      // Parse base version
-      if (sst_1994 && sst_2003) {
-        SU2_MPI::Error("Two versions (1994 and 2003m) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
-      } else if (sst_2003) {
-        /*---  sst-2003m model is sst2003 + sstm ---*/
-        if(rank==MASTER_NODE) cout << "Currently only the SST-2003m (modified) has been implemented. " << endl;
-        SSTParsedOptions.version = SST_OPTIONS::V2003m;
-      } else if (sst_1994){
-        /* --- Add warning to switch to SST-2003m --- */
-        if(rank==MASTER_NODE) 
-          cout << "warning: the current SST-1994 model is inconsistent with literature. We recommend to use the SST-2003m model." << endl
-               << "In the future, the 2003m model will become the default SST model. " << endl;
-        SSTParsedOptions.version = SST_OPTIONS::V1994;
-      } else {
-        /* use the most recent model as the default*/
-        if (rank==MASTER_NODE) cout << "SST_OPTIONS not found! using default SST-V1994. " << endl;
-        SSTParsedOptions.version = SST_OPTIONS::V1994;      
-      }
+    // Parse base version
+    if (sst_1994 && sst_2003) {
+      SU2_MPI::Error("Two versions (1994 and 2003m) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
+    } else if (sst_2003) {
+      /*---  sst-2003m model is sst2003 + sstm ---*/
+      if(rank==MASTER_NODE) cout << "Currently only the SST-2003m (modified) has been implemented. " << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V2003m;
+    } else if (sst_1994){
+      /* --- Add warning to switch to SST-2003m --- */
+      if(rank==MASTER_NODE) 
+        cout << "warning: the current SST-1994 model is inconsistent with literature. We recommend to use the SST-2003m model." << endl
+             << "In the future, the 2003m model will become the default SST model. " << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V1994;
+    } else {
+      /* use the most recent model as the default*/
+      if (rank==MASTER_NODE) cout << "SST_OPTIONS not found! using default SST-V1994. " << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V1994;      
     }
 
     // Parse production modifications
