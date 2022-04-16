@@ -326,9 +326,12 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Primitive variables
-  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
-  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
-  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("PRESSURE",       "Pressure",             "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE",    "Temperature",          "PRIMITIVE", "Temperature");
+  AddVolumeOutput("ENTHALPY",       "Enthalpy",             "PRIMITIVE", "Enthalpy");
+  AddVolumeOutput("TOT_ENTHALPY",   "Total_Enthalpy",       "PRIMITIVE", "Total Enthalpy");
+  AddVolumeOutput("SOUND_SPEED",    "Sound_Speed",          "PRIMITIVE", "Speed of Sound");
+  AddVolumeOutput("MACH",           "Mach",                 "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
@@ -473,6 +476,9 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+  SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetEnthalpy(iPoint));
+  SetVolumeOutputValue("TOT_ENTHALPY", iPoint, Node_Flow->GetEnthalpy(iPoint)+0.5*Node_Flow->GetVelocity2(iPoint));
+  SetVolumeOutputValue("SOUND_SPEED", iPoint, Node_Flow->GetSoundSpeed(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
   su2double VelMag = 0.0;
@@ -707,7 +713,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   //   auto m_in = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMassFlow();
   //   auto m_out = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMassFlow();
   //   SetHistoryOutputValue("TURBO_MASS", (m_in - m_out)/m_in);
-  
+
   //   SetHistoryOutputValue("TURBO_EGLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetEntropyGen());
   //   SetHistoryOutputValue("TURBO_KELC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetKineticEnergyLoss());
   //   SetHistoryOutputValue("TURBO_TPLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetTotalPressureLoss());
