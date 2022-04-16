@@ -1190,7 +1190,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
-
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
   /* DESCRIPTION: Critical Temperature, default value for AIR */
