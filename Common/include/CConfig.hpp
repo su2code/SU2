@@ -3055,13 +3055,13 @@ public:
 
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
-   * \return: Number of periodic time instances for Harmonic Balance.
+   * \return Number of periodic time instances for Harmonic Balance.
    */
   unsigned short GetnTimeInstances(void) const { return nTimeInstances; }
 
   /*!
    * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
-   * \return: Period for Harmonic Balance.
+   * \return Period for Harmonic Balance.
    */
   su2double GetHarmonicBalance_Period(void) const { return HarmonicBalance_Period; }
 
@@ -5240,7 +5240,7 @@ public:
 
   /*!
    * \brief Provides the number of species present in the plasma
-   * \return: The number of species present in the plasma, read from input file
+   * \return The number of species present in the plasma, read from input file
    */
   unsigned short GetnSpecies() const { return nSpecies; }
 
@@ -5252,13 +5252,13 @@ public:
 
   /*!
    * \brief Provides the gas mass fractions of the flow.
-   * \return: Gas Mass fractions.
+   * \return Gas Mass fractions.
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
 
   /*!
    * \brief Provides the gas mass fractions at the wall for supercat wall.
-   * \return: Supercat wall gas mass fractions.
+   * \return Supercat wall gas mass fractions.
    */
   const su2double *GetSupercatalytic_Wall_Composition(void) const { return Supercatalytic_Wall_Composition; }
 
