@@ -702,8 +702,8 @@ private:
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
-  SST_OPTIONS *SST_Options;                    /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/     
-  unsigned short nSST_Options;      /*!< \brief number of SST options specified. */
+  SST_OPTIONS *SST_Options;               /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/     
+  unsigned short nSST_Options;            /*!< \brief number of SST options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -9637,7 +9637,7 @@ public:
    * \param[in] SST_Options - Selected SST option from config.
    * \param[in] nSST_Options - Number of options selected.
    */
-  SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS* SST_Options, unsigned short nSST_Options){
+  SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options){
     SST_ParsedOptions SSTParsedOptions;
     const auto sst_options_end = SST_Options + nSST_Options;
 

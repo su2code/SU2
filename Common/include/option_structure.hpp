@@ -998,8 +998,6 @@ struct SST_ParsedOptions {
   bool modified;             /*!< \brief Bool for modified (m) SST model. */
 };
 
-
-
 /*!
  * \brief Types of transition models
  */
