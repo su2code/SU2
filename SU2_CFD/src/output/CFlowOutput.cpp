@@ -2096,11 +2096,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_MODEL::SA_E_COMP:
           file << "Compressibility Correction Edwards Spalart Allmaras\n";
           break;
-        case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+        case TURB_MODEL::SST:
           file << "Menter's SST\n";
           // add the submodels here
           //file << "Menter's SST with sustaining terms\n";
-          break;
+          if (config->GetSSTParsedOptions().sust)
+            cout << "Menter's SST with sustaining terms" << endl; 
+         break;
       }
       break;
     default:

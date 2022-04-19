@@ -38,6 +38,8 @@
 #include <algorithm>
 #include <cassert>
 
+using namespace std;
+
 /*!
  * \class CEmptyMap
  * \brief We use this dummy class instead of std::map when
@@ -917,7 +919,6 @@ enum class TURB_MODEL {
   SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
   SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
@@ -927,7 +928,6 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("SA_COMP", TURB_MODEL::SA_COMP)
   MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -951,7 +951,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::SA_COMP:
     case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
-    case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:
+    case TURB_MODEL::SST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
@@ -976,8 +976,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
   MakePair("V2003m", SST_OPTIONS::V2003m)
-  MakePair("V1994", SST_OPTIONS::V1994)
-  MakePair("V2003", SST_OPTIONS::V2003)
+  //MakePair("V1994", SST_OPTIONS::V1994)
+  //MakePair("V2003", SST_OPTIONS::V2003)
   //MakePair("MODIFIED", SST_OPTIONS::MODIFIED)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
@@ -2369,6 +2369,66 @@ public:
     return newString;
   }
 };
+
+  /*!
+   * \brief function to parse SST options.
+   * \param[in] SST_Options - Selected SST option from config.
+   * \param[in] nSST_Options - Number of options selected.
+   */
+  inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options, int rank){
+    SST_ParsedOptions SSTParsedOptions;
+    const auto sst_options_end = SST_Options + nSST_Options;
+
+    const bool sst_1994 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V1994) != sst_options_end;
+    const bool sst_2003 = std::find(SST_Options, sst_options_end, SST_OPTIONS::V2003) != sst_options_end;
+ 
+    /* when V2003 is selected, we automatically select sst_m as well */
+    const bool sst_m     = std::find(SST_Options, sst_options_end, SST_OPTIONS::MODIFIED) != sst_options_end || sst_2003;
+
+    const bool sst_sust  = std::find(SST_Options, sst_options_end, SST_OPTIONS::SUST) != sst_options_end;
+
+    const bool sst_v     = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
+    const bool sst_kl    = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
+
+    //const bool sst_uq    = (std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end || using_uq);
+    const bool sst_uq    = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
+
+    // Parse base version
+    if (sst_1994 && sst_2003) {
+      SU2_MPI::Error("Two versions (1994 and 2003m) selected for SST Options. Please choose only one.", CURRENT_FUNCTION);
+    } else if (sst_2003) {
+      /*---  sst-2003m model is sst2003 + sstm ---*/
+      if(rank==MASTER_NODE) cout << "Currently only the SST-2003m (modified) has been implemented. " << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V2003m;
+    } else if (sst_1994){
+      /* --- Add warning to switch to SST-2003m --- */
+      if(rank==MASTER_NODE) 
+        cout << "warning: the current SST-1994 model is inconsistent with literature. We recommend to use the SST-2003m model." << endl
+             << "In the future, the 2003m model will become the default SST model. " << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V1994;
+    } else {
+      /* use the most recent model as the default*/
+      if (rank==MASTER_NODE) cout << "SST_OPTIONS not found! using default SST-V1994. " << endl;
+      SSTParsedOptions.version = SST_OPTIONS::V1994;      
+    }
+
+    // Parse production modifications
+    if ((sst_v + sst_kl + sst_uq) > 1) {
+      SU2_MPI::Error("Please select only one SST production term modifier (V, KL, UQ).", CURRENT_FUNCTION);
+    } else if (sst_v) {
+      SSTParsedOptions.production = SST_OPTIONS::VORTICITY;
+    } else if (sst_kl) {
+      SSTParsedOptions.production = SST_OPTIONS::KL;
+    } else if (sst_uq) {
+      SSTParsedOptions.production = SST_OPTIONS::UNCERTAINTY;
+    }
+
+    // Parse boolean options
+    SSTParsedOptions.sust = sst_sust;
+    SSTParsedOptions.modified = sst_m;
+    SSTParsedOptions.uq = sst_uq;
+    return SSTParsedOptions;
+  }
 
 #ifdef ENABLE_MAPS
 #include "option_structure.inl"

@@ -3400,14 +3400,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model==TURB_MODEL::SST){
-    sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options);
+    sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
   } 
-
- /*--- -We still support the old SST_SUST keyword, but internally we convert everything --*/
-  if (Kind_Turb_Model == TURB_MODEL::SST_SUST){
-    cout << "Warning! the SST_SUST keyword will become obsolete. Use the SST model with SST_OPTIONS= (SST_SUSTAINING)" << endl;
-    Kind_Turb_Model = TURB_MODEL::SST;
-  }
 
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
   if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
@@ -4689,7 +4683,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
    /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
-  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && Kind_Turb_Model != TURB_MODEL::SST_SUST && using_uq){
+  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && using_uq){
     SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
   }
 
@@ -5881,8 +5875,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SST: case TURB_MODEL::SST_SUST:      
-             cout << "Menter's SST"     << endl; 
+          case TURB_MODEL::SST:       
+             cout << "Menter's SST" << endl; 
              if (sstParsedOptions.sust)  cout << "Menter's SST with sustaining terms" << endl; 
              break;
         }
