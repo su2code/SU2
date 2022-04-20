@@ -1836,8 +1836,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           lim_j = turbNodes->GetLimiter_Primitive(jPoint, 0);
         }
 
-        Turbulent_i = T_i + lim_i * 0.5*((1.0-kappa_turb)*Project_Grad_i + (1.0+kappa_turb)*Delta)*(Project_Grad_i*Delta>=0);
-        Turbulent_j = T_j - lim_j * 0.5*((1.0-kappa_turb)*Project_Grad_j + (1.0+kappa_turb)*Delta)*(Project_Grad_j*Delta>=0);
+        Turbulent_i = T_i + lim_i * 0.5*((1.0-kappa_turb)*Project_Grad_i + (1.0+kappa_turb)*Delta);
+        Turbulent_j = T_j - lim_j * 0.5*((1.0-kappa_turb)*Project_Grad_j + (1.0+kappa_turb)*Delta);
 
       }
       else {
