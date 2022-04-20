@@ -248,9 +248,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
-        }
+        GeometryToolbox::Distance(nDim,Coord_j,Coord_i,Vector_ij);
 
         if (musclFlow) {
           /*--- Reconstruct mean flow primitive variables. ---*/
@@ -291,12 +289,12 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
           if (limiter) {
-            Limiter_i = nodes->GetLimiter(iPoint);
-            Limiter_j = nodes->GetLimiter(jPoint);
+            Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+            Limiter_j = nodes->GetLimiter_Primitive(jPoint);
           }
 
           for (auto iVar = 0; iVar < nVar; iVar++) {
-            const su2double Delta =  0.5*(V_j[iVar] - V_i[iVar]);
+            const su2double Delta =  0.5*(Scalar_j[iVar] - Scalar_i[iVar]);
 
             su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i[iVar],Vector_ij) - Delta;
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j[iVar],Vector_ij) - Delta;
