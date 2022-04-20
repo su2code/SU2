@@ -2832,9 +2832,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Volume solution files */
   addEnumListOption("OUTPUT_FILES", nVolumeOutputFiles, VolumeOutputFiles, Output_Map);
 
-  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
-  addBoolOption("USING_UQ", using_uq, false);
-
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("UQ_DELTA_B", uq_delta_b, 1.0);
 
@@ -3401,6 +3398,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model==TURB_MODEL::SST){
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
+    using_uq = sstParsedOptions.uq;
   } 
 
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
@@ -4683,7 +4681,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
    /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
-  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && using_uq){
+  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && sstParsedOptions.uq){
     SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
   }
 
@@ -5890,7 +5888,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
-        if (using_uq){
+        if (sstParsedOptions.uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }

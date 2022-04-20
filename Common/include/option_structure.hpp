@@ -94,8 +94,8 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -970,7 +970,7 @@ enum class SST_OPTIONS {
   SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
   VORTICITY,   /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
-  UNCERTAINTY, /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -982,15 +982,13 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
-  MakePair("UNCERTAINTY", SST_OPTIONS::UNCERTAINTY)
+  MakePair("UQ", SST_OPTIONS::UQ)
 };
 
 /*!
  * \brief Structure containing parsed SST options.
  */
 struct SST_ParsedOptions {
-  //std::string sst_string = "Menter's k-w SST"; /*!< \brief Initial string for SST problems. */
-
   SST_OPTIONS version;       /*!< \brief Enum SST base model. */
   SST_OPTIONS production;    /*!< \brief Enum for production corrections/modifiers for SST model. */
   bool sust;                 /*!< \brief Bool for SST model with sustaining terms. */
@@ -2390,8 +2388,7 @@ public:
     const bool sst_v     = std::find(SST_Options, sst_options_end, SST_OPTIONS::VORTICITY) != sst_options_end;
     const bool sst_kl    = std::find(SST_Options, sst_options_end, SST_OPTIONS::KL) != sst_options_end;
 
-    //const bool sst_uq    = (std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end || using_uq);
-    const bool sst_uq    = std::find(SST_Options, sst_options_end, SST_OPTIONS::UNCERTAINTY) != sst_options_end;
+    const bool sst_uq    = std::find(SST_Options, sst_options_end, SST_OPTIONS::UQ) != sst_options_end;
 
     // Parse base version
     if (sst_1994 && sst_2003) {
@@ -2420,7 +2417,7 @@ public:
     } else if (sst_kl) {
       SSTParsedOptions.production = SST_OPTIONS::KL;
     } else if (sst_uq) {
-      SSTParsedOptions.production = SST_OPTIONS::UNCERTAINTY;
+      SSTParsedOptions.production = SST_OPTIONS::UQ;
     }
 
     // Parse boolean options
