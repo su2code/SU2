@@ -1860,7 +1860,7 @@ void CConfig::SetConfig_Options() {
   addConvectFEMOption("NUM_METHOD_FEM_FLOW", Kind_ConvNumScheme_FEM_Flow, Kind_FEM_Flow);
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
-  addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
+  addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);  
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
@@ -2888,6 +2888,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+
+  addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
+  addDoubleOption("MUSCL_KAPPA_TURB", MUSCL_Kappa_Turb, 0.0);
 
   /*--- Options used for mesh adaptation ---*/
   /* DESCRIPTION: Compute an error estimate */

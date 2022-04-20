@@ -564,6 +564,8 @@ private:
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
+  su2double MUSCL_Kappa_Flow, /*!< \brief Coefficient for extrapolation.*/
+  MUSCL_Kappa_Turb;           /*!< \brief Coefficient for extrapolation.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
@@ -4439,6 +4441,24 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjTurb(void) const { return MUSCL_AdjTurb; }
+
+  /*!
+   * \brief Get the extrapolation coefficient.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Flow(void) const { return MUSCL_Kappa_Flow; }
+
+  /*!
+   * \brief Get the extrapolation coefficient.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Turb(void) const { return MUSCL_Kappa_Turb; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).

@@ -1698,6 +1698,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
+  const auto kappa      = config->GetMUSCL_Kappa_Flow();
+  const auto kappa_turb = config->GetMUSCL_Kappa_Turb();
+
   const bool tkeNeeded    = config->GetBool_Turb_Model_SST();
   const bool musclTurb    = config->GetMUSCL_Turb() && muscl;
   const auto nTurbVarGrad = tkeNeeded? 1 : 0;
@@ -1781,22 +1784,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim,Coord_j,Coord_i,Vector_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        const su2double Delta =  0.5*(V_j[iVar] - V_i[iVar]);
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        const su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i[iVar],Vector_ij) - Delta;
+        const su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j[iVar],Vector_ij) - Delta;
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
@@ -1811,8 +1809,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
 
-        Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + lim_i * 0.5*((1.0-kappa)*Project_Grad_i + (1.0+kappa)*Delta);
+        Primitive_j[iVar] = V_j[iVar] - lim_j * 0.5*((1.0-kappa)*Project_Grad_j + (1.0+kappa)*Delta);
 
       }
 
@@ -1820,13 +1818,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         auto GradTurb_i = turbNodes->GetGradient_Reconstruction(iPoint);
         auto GradTurb_j = turbNodes->GetGradient_Reconstruction(jPoint);
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        const su2double Delta =  0.5*(T_j - T_i);
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*GradTurb_i[0][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*GradTurb_j[0][iDim];
-        }
+        const su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,GradTurb_i[0],Vector_ij) - Delta;
+        const su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,GradTurb_j[0],Vector_ij) - Delta;
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
@@ -1841,8 +1836,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           lim_j = nodes->GetLimiter_Primitive(jPoint, 0);
         }
 
-        Turbulent_i = T_i + lim_i * Project_Grad_i;
-        Turbulent_j = T_j + lim_j * Project_Grad_j;
+        Turbulent_i = T_i + lim_i * 0.5*((1.0-kappa_turb)*Project_Grad_i + (1.0+kappa_turb)*Delta);
+        Turbulent_j = T_j - lim_j * 0.5*((1.0-kappa_turb)*Project_Grad_j + (1.0+kappa_turb)*Delta);
 
       }
       else {

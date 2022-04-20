@@ -189,6 +189,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const bool limiterFlow =
       (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
 
+  const auto kappa      = config->GetMUSCL_Kappa_Turb();
+  const auto kappa_flow = config->GetMUSCL_Kappa_Flow();
+
   const bool sa_neg = (config->GetKind_Turb_Model() == TURB_MODEL::SA_NEG);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -261,17 +264,17 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (auto iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
-              Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
-            }
+            const su2double Delta =  0.5*(V_j[iVar] - V_i[iVar]);
+
+            su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i[iVar],Vector_ij) - Delta;
+            su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j[iVar],Vector_ij) - Delta;
+
             if (limiterFlow) {
               Project_Grad_i *= Limiter_i[iVar];
               Project_Grad_j *= Limiter_j[iVar];
             }
-            flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-            flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+            flowPrimVar_i[iVar] = V_i[iVar] + 0.5*((1.0-kappa_flow)*Project_Grad_i + (1.0+kappa_flow)*Delta);
+            flowPrimVar_j[iVar] = V_j[iVar] - 0.5*((1.0-kappa_flow)*Project_Grad_j + (1.0+kappa_flow)*Delta);
           }
         }
         else {
@@ -293,17 +296,17 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (auto iVar = 0; iVar < nVar; iVar++) {
-            su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
-              Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
-            }
+            const su2double Delta =  0.5*(V_j[iVar] - V_i[iVar]);
+
+            su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i[iVar],Vector_ij) - Delta;
+            su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j[iVar],Vector_ij) - Delta;
+
             if (limiter) {
               Project_Grad_i *= Limiter_i[iVar];
               Project_Grad_j *= Limiter_j[iVar];
             }
-            solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
-            solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
+            solution_i[iVar] = Scalar_i[iVar] + 0.5*((1.0-kappa)*Project_Grad_i + (1.0+kappa)*Delta);
+            solution_j[iVar] = Scalar_j[iVar] - 0.5*((1.0-kappa)*Project_Grad_j + (1.0+kappa)*Delta);
           }
         }
         else {
