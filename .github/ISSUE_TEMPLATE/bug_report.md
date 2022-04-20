@@ -7,14 +7,18 @@ assignees: ''
 
 ---
 
+*If this is a general question or difficulty building/using the code, please open a "Discussion" instead.*
+
 **Describe the bug**
-*A clear and concise description of what the bug is and what you expect the behavior to be instead. If applicable, add screenshots to help explain your problem.*
+*Give a clear and concise description of what the bug is and what you expect the behavior to be instead. Please provide enough instructions and data for a developer to reproduce the problem (config, mesh, commands, etc.).*
 
 
+**Bug report checklist**
+*There are common problems that are usually solved by:*
 
-**To Reproduce**
-*Please provide a config file and mesh for a minimal example that recreates the problem.*
-
+- [ ] Consulting the build instructions (https://su2code.github.io/docs_v7/Build-SU2-Linux-MacOS/).
+- [ ] Looking for similar problems on GitHub or CFD-Online (https://www.cfd-online.com/Forums/su2/).
+- [ ] Updating to the newest version of SU2.
 
 
 **Desktop (please complete the following information):**
