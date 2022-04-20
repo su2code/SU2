@@ -3319,7 +3319,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250; 
+      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
     }
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
@@ -3858,10 +3858,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
 
-  if (Kind_GridMovement == ROTATING_FRAME)
-    Rotating_Frame = true;
-  else
-    Rotating_Frame = false;
+  Rotating_Frame = (Kind_GridMovement == ROTATING_FRAME);
 
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
