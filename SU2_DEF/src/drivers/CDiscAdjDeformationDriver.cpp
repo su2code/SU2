@@ -248,7 +248,8 @@ void CDiscAdjDeformationDriver::Geometrical_Preprocessing() {
         /*--- Create the edge structure ---*/
         
         if (rank == MASTER_NODE) cout << "Identify edges and vertices." << endl;
-        geometry_container[iZone][INST_0][MESH_0]->SetEdges(); geometry_container[iZone][INST_0][MESH_0]->SetVertex(config_container[iZone]);
+        geometry_container[iZone][INST_0][MESH_0]->SetEdges(); 
+        geometry_container[iZone][INST_0][MESH_0]->SetVertex(config_container[iZone]);
         
         /*--- Create the dual control volume structures ---*/
         
@@ -1063,19 +1064,19 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry *geometry
     }
 }
 
-vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivity() const {
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities() const {
     const auto nPoint = GetNumberVertices();
 
     vector<vector<passivedouble>> values;
     
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-        values.push_back(GetObjectiveCoordinatesTotalSensitivity(iPoint));    
+        values.push_back(GetObjectiveCoordinatesTotalSensitivities(iPoint));    
     }
     
     return values;
 }
 
-vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivity(unsigned long iPoint) const {
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities(unsigned long iPoint) const {
     if (iPoint >= GetNumberVertices()) {
         SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
@@ -1091,19 +1092,19 @@ vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSen
     return values;
 }
 
-vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker) const {
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker) const {
     const auto nVertex = GetNumberMarkerVertices(iMarker);
 
     vector<vector<passivedouble>> values;
     
     for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-        values.push_back(GetMarkerObjectiveCoordinatesTotalSensitivity(iMarker, iVertex));    
+        values.push_back(GetMarkerObjectiveCoordinatesTotalSensitivities(iMarker, iVertex));    
     }
     
     return values;
 }
 
-vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker, unsigned long iVertex) const {
+vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker, unsigned long iVertex) const {
     const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
     vector<passivedouble> values(nDim, 0.0);
 
@@ -1116,19 +1117,19 @@ vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTo
     return values;
 }
 
-vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveDVsTotalSensitivity() const {
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveDVsTotalSensitivities() const {
     const auto nDV = GetNumberDesignVariables();
 
     vector<vector<passivedouble>> values;
     
     for (auto iDV = 0ul; iDV < nDV; iDV++) {
-        values.push_back(GetObjectiveDVsTotalSensitivity(iDV));    
+        values.push_back(GetObjectiveDVsTotalSensitivities(iDV));    
     }
     
     return values;
 }
 
-vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveDVsTotalSensitivity(unsigned short iDV) const {
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveDVsTotalSensitivities(unsigned short iDV) const {
     if (iDV >= GetNumberDesignVariables()) {
         SU2_MPI::Error("Design Variable index exceeds size.", CURRENT_FUNCTION);
     }

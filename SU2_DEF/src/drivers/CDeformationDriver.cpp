@@ -225,7 +225,7 @@ void CDeformationDriver::Geometrical_Preprocessing() {
     
     /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry ---*/
     main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
-    
+
 }
 
 void CDeformationDriver::Output_Preprocessing() {
@@ -559,9 +559,8 @@ void CDeformationDriver::Postprocessing() {
     
     if (rank == MASTER_NODE)
         cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
-    
-    delete driver_config;
-    driver_config = nullptr;
+
+    if (driver_config != nullptr) delete [] driver_config;
     
     for (iZone = 0; iZone < nZone; iZone++) {
         if (numerics_container[iZone] != nullptr) {

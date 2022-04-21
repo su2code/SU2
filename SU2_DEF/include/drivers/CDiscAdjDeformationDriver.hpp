@@ -88,21 +88,21 @@ public:
      * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at the mesh vertices.
      * \return Total sensitivity of the objective function w.r.t. the un-deformed coordinates.
      */
-    vector<vector<passivedouble>> GetObjectiveCoordinatesTotalSensitivity() const;
+    vector<vector<passivedouble>> GetObjectiveCoordinatesTotalSensitivities() const;
     
     /*!
      * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at a mesh vertex.
      * \param[in] iPoint - Mesh vertex index.
      * \return Total sensitivity of the objective function w.r.t. the un-deformed coordinates.
      */
-    vector<passivedouble> GetObjectiveCoordinatesTotalSensitivity(unsigned long iPoint) const;
+    vector<passivedouble> GetObjectiveCoordinatesTotalSensitivities(unsigned long iPoint) const;
     
     /*!
      * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at the marker vertices.
      * \param[in] iMarker - Marker identifier.
      * \return Total sensitivity of the objective function w.r.t. the surface coordinates.
      */
-    vector<vector<passivedouble>> GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker) const;
+    vector<vector<passivedouble>> GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker) const;
     
     /*!
      * \brief Get the (total) sensitivity of the objective function w.r.t. the surface coordinates or displacements at a marker vertex.
@@ -110,20 +110,20 @@ public:
      * \param[in] iVertex - Marker vertex index.
      * \return Total sensitivity of the objective function w.r.t. the surface coordinates.
      */
-    vector<passivedouble> GetMarkerObjectiveCoordinatesTotalSensitivity(unsigned short iMarker, unsigned long iVertex) const;
+    vector<passivedouble> GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker, unsigned long iVertex) const;
     
     /*!
      * \brief Get the (total) sensitivity of the objective function w.r.t. a design variable.
      * \return Total sensitivity of the objective function w.r.t. a design variable.
      */
-    vector<vector<passivedouble>> GetObjectiveDVsTotalSensitivity() const;
+    vector<vector<passivedouble>> GetObjectiveDVsTotalSensitivities() const;
     
     /*!
      * \brief Get the (total) sensitivity of the objective function w.r.t. the design variables.
      * \param[in] iDV - Design Variable index.
      * \return Total sensitivity of the objective function w.r.t. the design variables.
      */
-    vector<passivedouble> GetObjectiveDVsTotalSensitivity(unsigned short iDV) const;
+    vector<passivedouble> GetObjectiveDVsTotalSensitivities(unsigned short iDV) const;
     
 protected:
     

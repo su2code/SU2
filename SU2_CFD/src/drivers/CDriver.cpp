@@ -360,6 +360,7 @@ void CDriver::SetContainers_Null(){
 void CDriver::Postprocessing() {
     
     const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
+    const bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();  // temporary copy to be used after config is deleted
     
     /*--- Output some information to the console. ---*/
     
@@ -555,8 +556,8 @@ void CDriver::Postprocessing() {
     /*--- Exit the solver cleanly ---*/
     
     if (rank == MASTER_NODE) {
-        if (config_container[ZONE_0]->GetDiscrete_Adjoint()) {
-            cout << endl <<"------------------------- Exit Success (SU2_CFD_AD) ------------------------" << endl << endl;
+        if (discrete_adjoint) {
+            cout << endl <<"----------------------- Exit Success (SU2_CFD_AD) -----------------------" << endl << endl;
         }
         else {
             cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
@@ -595,7 +596,6 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
         
         config[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
     }
-    
     
     /*--- Set the multizone part of the problem. ---*/
     if (driver_config->GetMultizone_Problem()){

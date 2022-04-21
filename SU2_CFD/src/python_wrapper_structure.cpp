@@ -1047,7 +1047,7 @@ vector<passivedouble> CDriver::GetResidualsStatesSensitivities(unsigned long iPo
         SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
     }
     
-    const auto nVar   = GetNumberStateVariables();
+    const auto nVar = GetNumberStateVariables();
     vector<passivedouble> values(nVar, 0.0);
     
     for (auto iVar = 0u; iVar < nVar; iVar++) {

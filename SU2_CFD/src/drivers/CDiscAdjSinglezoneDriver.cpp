@@ -806,14 +806,14 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
     
     /*--- Extract the adjoints of the residuals and store them for the next iteration ---*/
     
-    // if (config->GetFluidProblem()) {
-    //     if (SecondaryVariables == RECORDING::MESH_COORDS) {
-    //         solver[ADJFLOW_SOL]->SetSensitivity(geometry, config);
-    //     }
-    //     else { // MESH_DEFORM
-    //         solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[ADJFLOW_SOL]);
-    //     }
-    // }
+    if (config->GetFluidProblem()) {
+        if (SecondaryVariables == RECORDING::MESH_COORDS) {
+            solver[ADJFLOW_SOL]->SetSensitivity(geometry, config);
+        }
+        else { // MESH_DEFORM
+            solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[ADJFLOW_SOL]);
+        }
+    }
 }
 
 void CDiscAdjSinglezoneDriver::Update_DirectSolution(bool deform) {
