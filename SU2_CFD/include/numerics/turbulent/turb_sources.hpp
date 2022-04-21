@@ -721,7 +721,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
     if (dist_i > 1e-10) {
-      /*--- Production ---*/
 
       su2double diverg = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -742,55 +741,43 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
 
-      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+   //   if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
        /* in case of unmodified, we add the divergence terms */
         if (sstParsedOptions.version == SST_OPTIONS::V1994) {
           /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-          //pk -=  (Eddy_Viscosity*2.0/3.0*diverg*diverg + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
           pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-        } else {
-         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
-         pk -=  (Eddy_Viscosity_i*(2.0 / 3.0 * diverg * diverg) + 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg);
-        }
-      } 
+        } 
+    //  } 
 
-      //pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
       pk = max(0.0, pk);
 
       su2double zeta;
 
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
-        /*--- no production limiter on w-equation for SST1994 ---*/
         zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
         /*--- ---*/
-        //pw = (alfa_blended * Density_i) * pw;
       } else {
-        /*--- production limiter on w-equation for SST2003 ---*/
         zeta = max(ScalarVar_i[1], StrainMag_i * F2_i / a1);
-        //pw = (alfa_blended * Density_i) * max(0.0, min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
       }
 
       su2double pw = pow(StrainMag, 2); 
 
-      if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
+   //   if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
        /* in case of unmodified, we add the divergence terms */
         if (sstParsedOptions.version == SST_OPTIONS::V1994) {
           /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-          /* --- note that mu_t = rho*a1*k/zeta and we can make this term independent of k ---*/
-          // the correct production with the additional divergence term
-          // pw -=  (alfa_blended*Density_i * (2.0 / 3.0 * diverg*diverg) +  2.0 / 3.0 * zeta * diverg);
-          /*--- the tke term only ---*/
           pw = pw - 2.0 / 3.0 * zeta * diverg;
-        } else {
-         /* Note that we have to make the stress tensor tau_ij consistent everywhere when we neglect (or not) the divergence */
-         pw = pw - (2.0 / 3.0 * diverg * diverg + 2.0 / 3.0 * zeta * diverg);
-        }
-      } 
+        } 
+    //  } 
 
-      //su2double pw = pow(StrainMag, 2); 
-      //pw = pw - 2.0 / 3.0 * zeta * diverg;
+
       pw = (alfa_blended * Density_i) * max(pw,0.0);
+
+      if (sstParsedOptions.version == SST_OPTIONS::V2003){
+        /*--- Production limiter only for V2003---*/
+        pw = min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
+      }
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -827,8 +814,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
-      // I think should be this, 
-      //Jacobian_i[0][0] = (1.0/zeta) -beta_star * ScalarVar_i[1] * Volume;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
