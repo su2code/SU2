@@ -741,13 +741,16 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
 
-   //   if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
-       /* in case of unmodified, we add the divergence terms */
+      /*--- note that we currently only have the 1994m and 2003m modified versions,
+            where we neglect the divergence terms. Due to an inconsistency, we still 
+            have a divergence in the current 1994m model ---*/
+      if (sstParsedOptions.modified) {
+        /* in case of unmodified, we add the divergence terms */
         if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS ADDED ---*/
           pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
         } 
-    //  } 
+      } 
 
       pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
       pk = max(0.0, pk);
@@ -763,13 +766,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       su2double pw = pow(StrainMag, 2); 
 
-   //   if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
-       /* in case of unmodified, we add the divergence terms */
+      if (sstParsedOptions.modified){
+        /* in case of unmodified, we add the divergence terms */
         if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS ADDED ---*/
           pw = pw - 2.0 / 3.0 * zeta * diverg;
         } 
-    //  } 
+      } 
 
 
       pw = (alfa_blended * Density_i) * max(pw,0.0);
