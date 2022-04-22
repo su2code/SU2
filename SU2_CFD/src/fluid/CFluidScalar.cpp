@@ -45,17 +45,16 @@ CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_opera
   Gas_Constant = config->GetGas_Constant();
   Gamma = 1.0;
 
-  //SetLaminarViscosityModel(config);
-  //SetThermalConductivityModel(config);
+  SetLaminarViscosityModel(config);
+  SetThermalConductivityModel(config);
 }
-
 
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       LaminarViscosity = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND()));
       break;
-    /*case VISCOSITYMODEL::SUTHERLAND:
+    case VISCOSITYMODEL::SUTHERLAND:
       LaminarViscosity = unique_ptr<CSutherland>(
           new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND()));
       break;
@@ -63,10 +62,8 @@ void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
       LaminarViscosity = unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
       break;
-    */
   }
 }
-
 
 void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
   switch (config->GetKind_ConductivityModel()) {
@@ -78,7 +75,7 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
         ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetThermal_Conductivity_ConstantND()));
       }
       break;
-    /*case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+    case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantPrandtlRANS>(
             new CConstantPrandtlRANS(config->GetPrandtl_Lam(), config->GetPrandtl_Turb()));
@@ -95,13 +92,11 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
             new CPolynomialConductivity<N_POLY_COEFFS>(config->GetKt_PolyCoeffND()));
       }
       break;
-    */
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       break;
   }
 }
-
 /*
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
@@ -126,6 +121,7 @@ void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
       break;
   }
 }*/
+
 /*
 void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
   switch (config->GetKind_ConductivityModel()) {
@@ -281,7 +277,6 @@ su2double CFluidScalar::wilkeConductivity(const su2double * const val_scalars){
 }
 */
 
-/*
 void CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * const val_scalars){
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
 
@@ -296,16 +291,15 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * con
   //massToMoleFractions(val_scalars);
 
 
-  if(wilke){
-    Mu  = wilkeViscosity(val_scalars);
-  }
-  else if(davidson){
-    Mu = davidsonViscosity(val_scalars);
-  }
+  //if(wilke){
+    //Mu  = wilkeViscosity(val_scalars);
+  //}
+  //else if(davidson){
+    //Mu = davidsonViscosity(val_scalars);
+  //}
 
-  Kt = wilkeConductivity(val_scalars);
+  //Kt = wilkeConductivity(val_scalars);
   
 
   //return 0;
 }
-*/

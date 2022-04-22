@@ -87,11 +87,18 @@ private:
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  void SetTDState_T(su2double t, su2double *val_scalars = nullptr) override {
+  void SetTDState_T(su2double t){
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
   }
+  /*!
+   * \brief Set the Dimensionless State using Temperature.
+   * \param[in] t - Temperature value at the point.
+   */
+
+  void SetTDState_T(const su2double val_temperature, su2double * const val_scalars);
+
 /*!
    * \brief Get fluid dynamic viscosity.
    */

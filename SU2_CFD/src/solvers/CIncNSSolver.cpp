@@ -288,8 +288,9 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, scalar0=0.0, *scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
+  const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
   bool tkeNeeded = ((turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST));
 
@@ -309,9 +310,17 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
       }
     }
 
+    CSolver *scalarsolver = solver_container[SPECIES_SOL];
+
+    bool test= solver_container[SPECIES_SOL] != nullptr;
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (species_model!= SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+    //cout << "scalar0 = " << scalar0 << endl;
     /*--- Incompressible flow, primitive variables --- */
 
-    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
 
