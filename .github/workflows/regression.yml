@@ -92,7 +92,7 @@ jobs:
         uses: docker://su2code/test-su2:20200303
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t improve_unsteady_settings -c develop -s ${{matrix.testscript}}
   unit_tests:
     runs-on: ubuntu-latest
     name: Unit Tests

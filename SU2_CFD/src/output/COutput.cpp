@@ -924,16 +924,16 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
 }
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
-                              unsigned long iter, bool force_writing){
+                              unsigned long iter, bool force_writing) {
 
-  bool isFileWrite=false;
-  unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-  auto VolumeFiles = config->GetVolumeOutputFiles();
+  bool isFileWrite = false;
+  const auto nVolumeFiles = config->GetnVolumeOutputFiles();
+  const auto* VolumeFiles = config->GetVolumeOutputFiles();
 
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */
   AllocateDataSorters(config, geometry);
 
-  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
+  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++) {
 
     /*--- Collect the volume data from the solvers.
      *  If time-domain is enabled, we also load the data although we don't output it,
@@ -947,7 +947,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     volumeDataSorter->SortOutputData();
 
-    if (rank == MASTER_NODE && !isFileWrite){
+    if (rank == MASTER_NODE && !isFileWrite) {
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
       fileWritingTable->PrintHeader();
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -958,16 +958,16 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     WriteToFile(config, geometry, VolumeFiles[iFile]);
 
-    if (rank == MASTER_NODE && !isFileWrite){
-      fileWritingTable->PrintFooter();
-      headerNeeded = true;
-    }
-
     /*--- Write any additonal files defined in the child class ----*/
 
     WriteAdditionalFiles(config, geometry, solver_container);
 
     isFileWrite = true;
+  }
+
+  if (rank == MASTER_NODE && isFileWrite) {
+    fileWritingTable->PrintFooter();
+    headerNeeded = true;
   }
 
   return isFileWrite;
@@ -1006,29 +1006,32 @@ void COutput::PrintConvergenceSummary(){
 
 bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
-  unsigned short iCounter;
-
   convergence = true;
 
-  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+  for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
+
+    const auto& convField = convFields[iField_Conv];
+    const auto it = historyOutput_Map.find(convField);
+
+    if (it == historyOutput_Map.end()) continue;
+
+    const auto& field = it->second;
+    const su2double monitor = field.value;
+
+    /*--- Stop the simulation in case a nan appears, do not save the solution. ---*/
+    if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+    }
 
     bool fieldConverged = false;
 
-    const string &convField = convFields[iField_Conv];
-    if (historyOutput_Map.count(convField) > 0){
-      su2double monitor = historyOutput_Map.at(convField).value;
-
-      /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-      if (std::isnan(SU2_TYPE::GetValue(monitor))) {
-        SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
-      }
+    switch (field.fieldType) {
 
       /*--- Cauchy based convergence criteria ---*/
+      case HistoryFieldType::COEFFICIENT: {
 
-      if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::COEFFICIENT) {
-
-        if (Iteration == 0){
-          for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
+        if (Iteration == 0) {
+          for (auto iCounter = 0ul; iCounter < nCauchy_Elems; iCounter++) {
             cauchySerie[iField_Conv][iCounter] = 0.0;
           }
           newFunc[iField_Conv] = monitor;
@@ -1036,60 +1039,45 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
         oldFunc[iField_Conv] = newFunc[iField_Conv];
         newFunc[iField_Conv] = monitor;
-        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
+        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv]) / fabs(monitor);
 
         cauchySerie[iField_Conv][Iteration % nCauchy_Elems] = cauchyFunc;
         cauchyValue = 0.0;
-        for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++)
+        for (auto iCounter = 0ul; iCounter < nCauchy_Elems; iCounter++)
           cauchyValue += cauchySerie[iField_Conv][iCounter];
 
         cauchyValue /= nCauchy_Elems;
 
-        if (cauchyValue >= cauchyEps) { fieldConverged = false;}
-        else { fieldConverged = true;}
-
         /*--- Start monitoring only if the current iteration
-         *  is larger than the number of cauchy elements and
-         * the number of start-up iterations --- */
+         *    is larger than the number of cauchy elements. --- */
+        fieldConverged = (cauchyValue < cauchyEps) && (Iteration >= nCauchy_Elems);
 
-        if (Iteration < max(config->GetStartConv_Iter(), nCauchy_Elems)){
-          fieldConverged = false;
-        }
-
+        if (Iteration == 0) cauchyValue = 1.0;
         SetHistoryOutputValue("CAUCHY_" + convField, cauchyValue);
 
-        if(Iteration == 0){
-          SetHistoryOutputValue("CAUCHY_" + convField, 1.0);
-        }
-      }
+      } break;
 
 
       /*--- Residual based convergence criteria ---*/
+      case HistoryFieldType::RESIDUAL:
+      case HistoryFieldType::AUTO_RESIDUAL:
 
-      if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::RESIDUAL ||
-          historyOutput_Map.at(convField).fieldType == HistoryFieldType::AUTO_RESIDUAL) {
+        fieldConverged = (Iteration != 0) && (monitor <= minLogResidual);
+        break;
 
-        /*--- Check the convergence ---*/
-
-        if (Iteration != 0 && (monitor <= minLogResidual)) { fieldConverged = true;  }
-        else { fieldConverged = false; }
-
-      }
-
-      /*--- Do not apply any convergence criteria of the number
-     of iterations is less than a particular value ---*/
-
-      if (Iteration < config->GetStartConv_Iter()) {
-        fieldConverged = false;
-      }
-
-      convergence = fieldConverged && convergence;
+      default:
+        break;
     }
+
+    convergence = fieldConverged && convergence;
   }
 
-  if (convFields.empty()) convergence = false;
+  /*--- Do not apply any convergence criteria if the number
+   *    of iterations is less than a particular value. ---*/
 
-  /*--- Apply the same convergence criteria to all the processors ---*/
+  if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
+
+  /*--- Apply the same convergence criteria to all processors. ---*/
 
   unsigned short local = convergence, global = 0;
   SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());

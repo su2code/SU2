@@ -233,8 +233,8 @@ def main():
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
-    tutorial_unst_naca0012.test_iter     = 500
-    tutorial_unst_naca0012.test_vals     = [500, 0, 0.302003, 0.665069, -5.300141, 0.000000,  0.0000e+00,  0.0000e+00]
+    tutorial_unst_naca0012.test_iter     = 520
+    tutorial_unst_naca0012.test_vals     = [520, 0, 0.302003, 0.665069, -5.300141, 0.000000,  0.0000e+00,  0.0000e+00]
     tutorial_unst_naca0012.su2_exec      = "mpirun -np 2 SU2_CFD"
     tutorial_unst_naca0012.timeout       = 1600
     tutorial_unst_naca0012.tol           = 0.00001
