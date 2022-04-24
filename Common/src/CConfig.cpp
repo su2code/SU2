@@ -4675,12 +4675,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   Finite_Difference_Mode = false;
 
-   /* --- Throw error if UQ used for any turbulence model other that SST --- */
-
-  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && sstParsedOptions.uq){
-    SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
-  }
-
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -5872,6 +5866,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SST:       
              cout << "Menter's SST" << endl; 
              if (sstParsedOptions.sust)  cout << "Menter's SST with sustaining terms" << endl; 
+             if (sstParsedOptions.uq){
+               cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
+               if (uq_permute) cout << "Permuting eigenvectors" << endl;
+             }
              break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
@@ -5883,10 +5881,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-        }
-        if (sstParsedOptions.uq){
-          cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-          if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
       case MAIN_SOLVER::NEMO_EULER:
