@@ -3398,7 +3398,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model==TURB_MODEL::SST){
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
-    using_uq = sstParsedOptions.uq;
   } 
 
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
@@ -4681,7 +4680,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
    /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
-  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && using_uq){
+  if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model != TURB_MODEL::SST && sstParsedOptions.uq){
     SU2_MPI::Error("UQ capabilities only implemented for NAVIER_STOKES solver SST turbulence model", CURRENT_FUNCTION);
   }
 

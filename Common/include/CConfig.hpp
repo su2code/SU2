@@ -577,7 +577,6 @@ private:
   SPECIES_MODEL Kind_Species_Model; /*!< \brief Species model definition. */
   TURB_SGS_MODEL Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
-  SST_ParsedOptions sstParsedOptions; /*!< \brief boolean options struct for the turbulence model definition */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
@@ -1138,8 +1137,7 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-
-  bool using_uq=false;          /*!< \brief Using uncertainty quantification with SST model */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief additional parameters for the SST turbulence model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -8982,7 +8980,7 @@ public:
    * \brief Get information about using UQ methodology
    * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
    */
-  bool GetUsing_UQ(void) const { return using_uq; }
+  bool GetUsing_UQ(void) const { return sstParsedOptions.uq; }
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done
