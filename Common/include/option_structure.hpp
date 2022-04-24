@@ -991,9 +991,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
 struct SST_ParsedOptions {
   SST_OPTIONS version;       /*!< \brief Enum SST base model. */
   SST_OPTIONS production;    /*!< \brief Enum for production corrections/modifiers for SST model. */
-  bool sust;                 /*!< \brief Bool for SST model with sustaining terms. */
-  bool uq;                   /*!< \brief Bool for using uncertainty quantification */
-  bool modified;             /*!< \brief Bool for modified (m) SST model. */
+  bool sust=false;           /*!< \brief Bool for SST model with sustaining terms. */
+  bool uq=false;             /*!< \brief Bool for using uncertainty quantification */
+  bool modified=false;       /*!< \brief Bool for modified (m) SST model. */
 };
 
 /*!
