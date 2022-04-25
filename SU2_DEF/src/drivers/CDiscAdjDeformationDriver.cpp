@@ -55,11 +55,23 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
     Input_Preprocessing();
     
     /*--- Initialize structure to store the gradient ---*/
-    Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+    std::cout << "Getting no. of Variables ..." << std::endl ;
     
-    for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
+    unsigned short nDV = config_container[ZONE_0]->GetnDV();
+
+    std::cout << nDV;
+
+    Gradient = new su2double*[nDV];
+    
+    std::cout << "Getting no. of Variable Values ..." << std::endl;
+
+    unsigned short nTotal = config_container[ZONE_0]->GetnDV_Total();
+    for (auto iDV = 0u; iDV  < nDV; iDV++) {
         /*--- Initialize to zero ---*/
-        Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
+        std::cout << iDV << std::endl;
+        unsigned short nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
+
+        Gradient[iDV] = new su2double[nValue];
     }
     
     /*--- Set up a timer for performance benchmarking ---*/
@@ -67,6 +79,8 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
     StartTime = SU2_MPI::Wtime();
     
     /*--- Preprocessing of the geometry for all zones. ---*/
+    
+    std::cout << "Geometrical preprocessing ..." << std::endl ;
     
     Geometrical_Preprocessing();
     

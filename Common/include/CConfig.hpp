@@ -2805,7 +2805,14 @@ public:
      * \brief Get the number of design variables.
      * \return Number of the design variables.
      */
-    unsigned short GetnDV_Value(unsigned short iDV) const { return nDV_Value[iDV]; }
+    unsigned short GetnDV_Value(unsigned short iDV) const { 
+        if (!nDV_Value && nDV == 1) {
+            return 0;
+        }
+        else {
+            return nDV_Value[iDV];
+        }
+    }
     
     /*!
      * \brief Get the total number of design variables.
