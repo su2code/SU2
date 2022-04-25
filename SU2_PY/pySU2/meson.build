@@ -1,5 +1,14 @@
 # check for swig
 swig = find_program('swig')
+# check version, manually because meson tries --version but swig uses -version.
+swig_version = run_command('swig', '-version').stdout().split('\n')
+foreach line : swig_version
+    if line.startswith('SWIG Version ')
+        if line.replace('SWIG Version ','').version_compare('<3.0.11')
+            error('The SU2 Python wrapper requires Swig > 3.0.10')
+        endif
+    endif
+endforeach
 
 # add mpi4py include
 if mpi
