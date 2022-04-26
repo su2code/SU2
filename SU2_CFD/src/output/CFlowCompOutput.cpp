@@ -262,6 +262,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   // CFL number
   AddVolumeOutput("CFL_NUMBER", "CFL_Number", "CFL_NUMBER", "Current local flow CFL number");
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+    AddVolumeOutput("CFL_NUMBER_TURB", "CFL_Number_Turb", "CFL_NUMBER", "Current local turbulent CFL number");
 
   // Primitive variables
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
@@ -365,7 +367,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   SetVolumeOutputValue("CFL_NUMBER", iPoint, Node_Flow->GetLocalCFL(iPoint));
-
+  
   SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));

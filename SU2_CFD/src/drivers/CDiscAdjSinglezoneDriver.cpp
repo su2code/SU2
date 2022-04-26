@@ -318,27 +318,20 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
                              INST_0, kind_recording);
 
+  
+  /*--- Do one iteration of the direct solver ---*/
+
+  DirectRun(kind_recording);
+
+  /*--- Store the recording state ---*/
+
+  RecordingState = kind_recording;
+
   if (kind_recording != RECORDING::OBJECTIVE){
-    /*--- Do one iteration of the direct solver ---*/
-
-    DirectRun(kind_recording);
-
-    /*--- Store the recording state ---*/
-
-    RecordingState = kind_recording;
 
     /*--- Register Output of the iteration ---*/
 
     iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-  }
-  else {
-    su2double monitor = 1.0;
-    unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
-    integration_container[ZONE_0][INST_0][FLOW_SOL]->NonDimensional_Parameters(geometry_container[ZONE_0][INST_0], 
-                                                                               solver_container[ZONE_0][INST_0],
-                                                                               numerics_container[ZONE_0][INST_0], 
-                                                                               config_container[ZONE_0],
-                                                                               FinestMesh, RUNTIME_FLOW_SYS, &monitor);
   }
 
   /*--- Extract the objective function and store it --- */
