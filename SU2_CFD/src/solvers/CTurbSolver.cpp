@@ -255,11 +255,12 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
+        auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
         if (restart_cfl) {
-          nodes->SetLocalCFL(iPoint_Local, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint_Local)*config->GetCFLRedCoeff_Turb());
+          index += config->GetnTurbVar() + nDim*(dynamic_grid) + 1;
+          nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
         }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/

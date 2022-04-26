@@ -241,6 +241,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
       if (dynamic_grid) numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
 
+      bool bad_i = false;
+      bool bad_j = false;
+
       if (muscl) {
         const su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
@@ -273,6 +276,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             }
             flowPrimVar_i[iVar] = V_i[iVar] + 0.5*((1.0-kappa_flow)*Project_Grad_i + (1.0+kappa_flow)*Delta);
             flowPrimVar_j[iVar] = V_j[iVar] - 0.5*((1.0-kappa_flow)*Project_Grad_j + (1.0+kappa_flow)*Delta);
+
+            bad_i = bad_i || (Project_Grad_i*Delta>0);
+            bad_j = bad_j || (Project_Grad_j*Delta>0);
           }
         }
         else {
@@ -305,6 +311,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             }
             solution_i[iVar] = Scalar_i[iVar] + 0.5*((1.0-kappa)*Project_Grad_i + (1.0+kappa)*Delta);
             solution_j[iVar] = Scalar_j[iVar] - 0.5*((1.0-kappa)*Project_Grad_j + (1.0+kappa)*Delta);
+
+            bad_i = bad_i || (Project_Grad_i*Delta>0);
+            bad_j = bad_j || (Project_Grad_j*Delta>0);
           }
         }
         else {
@@ -318,37 +327,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         cell-average value of the solution. This is a locally 1st order approximation,
         which is typically only active during the start-up of a calculation. ---*/
 
-        bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
-        bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
-
-        // const su2double Gamma = config->GetGamma();
-        // const su2double Gamma_Minus_One = Gamma - 1.0;
-        // const su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
-
-        // const su2double Pressure_i = flowPrimVar_i[nDim+1];
-        // const su2double Pressure_j = flowPrimVar_j[nDim+1];
-        // const su2double Density_i  = flowPrimVar_i[nDim+2];
-        // const su2double Density_j  = flowPrimVar_j[nDim+2];
-        // const su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+solution_i[0]+0.5*GeometryToolbox::SquaredNorm(nDim,flowPrimVar_i+1);
-        // const su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+solution_j[0]+0.5*GeometryToolbox::SquaredNorm(nDim,flowPrimVar_j+1);
-
-        // const su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
-        // const su2double Enthalpy_j = Energy_j + Pressure_j/Density_j;
-
-        // su2double sq_vel = 0.0;
-        // for (iDim = 0; iDim < nDim; iDim++) {
-        //   su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/(R+1);
-        //   sq_vel += pow(RoeVelocity, 2);
-        // }
-        // su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-        // su2double RoeTke = (R*solution_j[0]+solution_i[0])/(R+1);
-
-        // bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
-
-        // bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-        // bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-        bool bad_i = neg_pres_or_rho_i;
-        bool bad_j = neg_pres_or_rho_j;
+        bad_i = bad_i || (flowPrimVar_i[nDim+2] < 0.0);
+        bad_j = bad_j || (flowPrimVar_j[nDim+2] < 0.0);
         for (auto iVar = 0; iVar < nVar; iVar++) {
           bad_i = bad_i || (solution_i[iVar] < 0.0)*(!sa_neg);
           bad_j = bad_j || (solution_j[iVar] < 0.0)*(!sa_neg);

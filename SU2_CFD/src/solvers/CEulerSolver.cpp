@@ -1789,6 +1789,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
+      bool bad_i = false;
+      bool bad_j = false;
+
       for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         const su2double Delta =  0.5*(V_j[iVar] - V_i[iVar]);
@@ -1812,6 +1815,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Primitive_i[iVar] = V_i[iVar] + lim_i * 0.5*((1.0-kappa)*Project_Grad_i + (1.0+kappa)*Delta);
         Primitive_j[iVar] = V_j[iVar] - lim_j * 0.5*((1.0-kappa)*Project_Grad_j + (1.0+kappa)*Delta);
 
+        bad_i = bad_i || (Project_Grad_i*Delta>0);
+        bad_j = bad_j || (Project_Grad_j*Delta>0);
       }
 
       if (tkeNeeded && musclTurb) {
@@ -1839,6 +1844,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Turbulent_i = T_i + lim_i * 0.5*((1.0-kappa_turb)*Project_Grad_i + (1.0+kappa_turb)*Delta);
         Turbulent_j = T_j - lim_j * 0.5*((1.0-kappa_turb)*Project_Grad_j + (1.0+kappa_turb)*Delta);
 
+        bad_i = bad_i || (Project_Grad_i*Delta>0);
+        bad_j = bad_j || (Project_Grad_j*Delta>0);
       }
       else {
         Turbulent_i = T_i; Turbulent_j = T_j;
@@ -1897,8 +1904,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
 
-      bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-      bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
+      bad_i = neg_sound_speed || neg_pres_or_rho_i;
+      bad_j = neg_sound_speed || neg_pres_or_rho_j;
       if (tkeNeeded) {
         bad_i = bad_i || (Turbulent_i < 0.0);
         bad_j = bad_j || (Turbulent_j < 0.0);
