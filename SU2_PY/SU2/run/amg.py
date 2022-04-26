@@ -200,15 +200,21 @@ def amg ( config , stderr = False ):
         #--- Run a single iteration of the flow if restarting to get history info
         if config['RESTART_SOL'] == 'YES':
             config_cfd.ITER = 1
+            config.RESTART_CFL = 'YES'
 
         SU2_CFD(config_cfd)
         #--- Set RESTART_SOL=YES for runs after adaptation
         config_cfd.RESTART_SOL = 'YES'
+        config.RESTART_CFL = 'NO'
 
         if adap_sensor == 'GOAL':
             config_cfd_ad = copy.deepcopy(config)
             cur_solfil_adj = "restart_adj" + sol_ext
             su2amg.set_adj_config_ini(config_cfd_ad, cur_solfil, cur_solfil_adj, mesh_sizes[0])
+
+            if(os.path.exists(os.path.join(cwd, config.SOLUTION_FILENAME))):
+                os.remove(config.RESTART_FILENAME)
+                os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), config.RESTART_FILENAME)
 
             #--- If restarting, check for the existence of an adjoint restart
             if config['RESTART_SOL'] == 'YES':
@@ -245,6 +251,7 @@ def amg ( config , stderr = False ):
 
             #--- Set RESTART_SOL=YES for runs after adaptation
             config_cfd_ad.RESTART_SOL = 'YES'
+            config_cfd_ad.RESTART_FILENAME = config.RESTART_FILENAME
 
     except:
         sys.stdout = sav_stdout
