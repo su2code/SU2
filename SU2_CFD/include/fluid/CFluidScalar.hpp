@@ -58,21 +58,17 @@ private:
   std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
   std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
 
+  /*!
+   * \brief Convert mass fractions to mole fractions.
+   * \param[in] val_scalars - Scalar mass fraction.
+  */
+  //std::vector<su2double>& massToMoleFractions(const su2double * const val_scalars);
+
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure){
-    /*--- In the incompressible ideal gas model, the thermodynamic pressure
-  is decoupled from the governing equations and held constant. The
-  density is therefore only a function of temperature variations. ---*/
-    Gas_Constant = val_gas_constant;
-    Pressure = val_operating_pressure;
-    Gamma = 1.0;
-    Cp = val_Cp;
-    Cv = Cp;
-  }
-  CFluidScalar(CConfig *config, const su2double value_pressure_operating);
+  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig *config);
   /*!
    * \brief Set viscosity model.
    */
@@ -117,7 +113,13 @@ private:
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt; }
+  inline su2double GetThermalConductivity() override { 
+    ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
+    Kt = ThermalConductivity->GetConductivity();
+    ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
+    dktdrho_T = ThermalConductivity->Getdktdrho_T();
+    dktdT_rho = ThermalConductivity->GetdktdT_rho();
+    return Kt; }
  //private:
   //su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
   //su2double Gamma{0.0};        /*!< \brief Heat Capacity Ratio. */

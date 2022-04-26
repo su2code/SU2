@@ -17,7 +17,7 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 
 
-CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_operating) : CFluidModel() {
+CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const su2double value_pressure_operating, CConfig *config) : CFluidModel() {
   // nijso TODO BUG FIXME
   n_scalars = config->GetnSpecies();
   //config->SetNScalarsInit(n_scalars);
@@ -42,9 +42,10 @@ CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_opera
   davidson = true;
 
   Pressure_Thermodynamic = value_pressure_operating;
-  Gas_Constant = config->GetGas_Constant();
+  Gas_Constant = val_gas_constant; //config->GetGas_Constant();
   Gamma = 1.0;
-
+  Cp = val_Cp;
+  Cv = Cp;
   SetLaminarViscosityModel(config);
   SetThermalConductivityModel(config);
 }
@@ -162,8 +163,7 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
   }
 }*/
 
-/*
-std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double * const val_scalars){
+/*std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double * const val_scalars){
   su2double mixtureMolarMass {0.0};
   su2double val_scalars_sum {0.0};
 
@@ -281,12 +281,13 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * con
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
 
   // CFluidModel::ComputeMeanSpecificHeatCp(specificHeat, val_scalars);
-  const su2double CpAir300Kelvin = 1009.39;
-  const su2double RatioSpecificHeatsAir = 1.4;
-  Cp = CpAir300Kelvin;
-  Cv = Cp/RatioSpecificHeatsAir;
+  //const su2double CpAir300Kelvin = 1009.39;
+  //const su2double RatioSpecificHeatsAir = 1.4;
+  //Cp = CpAir300Kelvin;
+  //Cv = Cp/RatioSpecificHeatsAir;
   Temperature = val_temperature;
-  Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT) / MeanMolecularWeight);
+  //Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
+  Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT*MeanMolecularWeight)); // /MeanMolecularWeight
 
   //massToMoleFractions(val_scalars);
 
