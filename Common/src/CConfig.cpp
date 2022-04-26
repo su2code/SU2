@@ -5864,11 +5864,20 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SST:       
-             cout << "Menter's SST" << endl; 
-             if (sstParsedOptions.sust)  cout << "Menter's SST with sustaining terms" << endl; 
+             cout << "Menter's k-omega SST" << endl;
+             if (sstParsedOptions.version == SST_OPTIONS::V1994)
+               cout << "  version 1994" << endl; 
+             else  
+               cout << "  version 2003" << endl; 
+             if (sstParsedOptions.modified) 
+               cout << "  modified" <<endl; 
+             else
+               cout << "  unmodified" <<endl; 
+
+             if (sstParsedOptions.sust)  cout << "  with sustaining terms" << endl; 
              if (sstParsedOptions.uq){
-               cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-               if (uq_permute) cout << "Permuting eigenvectors" << endl;
+               cout << "  Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
+               if (uq_permute) cout << "  Permuting eigenvectors" << endl;
              }
              break;
         }

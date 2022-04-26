@@ -244,6 +244,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     if (sstParsedOptions.version == SST_OPTIONS::V1994){
       P_Base = VorticityMag;
     } else {
+      /*--- SST V2003 ---*/
       P_Base = StrainMag;
     }
 
