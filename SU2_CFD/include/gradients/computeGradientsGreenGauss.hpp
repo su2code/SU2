@@ -283,7 +283,7 @@ void computeHessiansGreenGauss(CSolver* solver,
 
           su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
 
-          const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+          const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
           for (size_t jDim = 0; jDim < nDim; ++jDim)
           {

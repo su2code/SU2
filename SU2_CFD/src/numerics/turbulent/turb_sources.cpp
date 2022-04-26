@@ -662,12 +662,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       inv_k2_d2 = 1.0/(k2*dist_i_2);
 
       Sbar = ScalarVar_i[0]*fv2*inv_k2_d2;
-      if (Sbar > -cv2*S) {
+      // if (Sbar > -cv2*S) {
         Shat = S + Sbar;
-      }
-      else {
-        Shat = S + S*(cv2*cv2*S+cv3*Sbar)/((cv3-2.0*cv2)*S-Sbar);
-      }
+      // }
+      // else {
+      //   Shat = S + S*(cv2*cv2*S+cv3*Sbar)/((cv3-2.0*cv2)*S-Sbar);
+      // }
       // Shat = max(Shat, 1.0e-10);
       inv_Shat = 1.0/max(Shat, std::numeric_limits<passivedouble>::epsilon());
 
@@ -704,7 +704,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg<T>::ComputeResidual(const 
       dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
       dft2 = -2.0*ct3*ct4*Ji/nu*exp(-ct4*Ji_2);
       dShat = (fv2+ScalarVar_i[0]*dfv2)*inv_k2_d2;
-      if (Sbar <= -cv2*S) dShat *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
+      // if (Sbar <= -cv2*S) dShat *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
       Jacobian_i[0] += cb1*(1.0-ft2)*(ScalarVar_i[0]*dShat+Shat)*Volume
                      - cb1*dft2*ScalarVar_i[0]*Shat*Volume;
 

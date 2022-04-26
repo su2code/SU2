@@ -33,12 +33,12 @@ import pyamg
 
 def call_pyamg(mesh, config):
 
-    remesh_options                = {}
+    remesh_options = {}
 
     if 'hgrad' in config: remesh_options['gradation'] = config['hgrad']
     
-    remesh_options['logfile']     = config['amg_log']
-    remesh_options['options']     = config['options']
+    remesh_options['logfile'] = config['amg_log']
+    remesh_options['options'] = config['options']
     
     Dim = mesh['dimension']
     
@@ -67,10 +67,11 @@ def call_pyamg(mesh, config):
     if 'sensor' in mesh: mesh['sensor'] = mesh['sensor'].tolist()
 
     #--- Give pyamg these parameters in case metric intersection violates hmax, hmin, or target
-    remesh_options['Lp']     = config['Lp']
-    remesh_options['hmax']   = config['hmax']
-    remesh_options['hmin']   = config['hmin']
-    remesh_options['target'] = config['size']
+    if 'sensor' in mesh:
+        remesh_options['Lp']     = config['Lp']
+        remesh_options['hmax']   = config['hmax']
+        remesh_options['hmin']   = config['hmin']
+        remesh_options['target'] = config['size']
 
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
