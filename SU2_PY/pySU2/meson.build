@@ -5,7 +5,7 @@ swig_version = run_command('swig', '-version').stdout().split('\n')
 foreach line : swig_version
     if line.startswith('SWIG Version ')
         if line.replace('SWIG Version ','').version_compare('<3.0.11')
-            error('The SU2 Python wrapper requires Swig > 3.0.10')
+            error('The SU2 Python wrapper requires SWIG version >= 3.0.11')
         endif
     endif
 endforeach
