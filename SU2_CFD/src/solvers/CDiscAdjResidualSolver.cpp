@@ -402,13 +402,50 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConf
     SU2_OMP_BARRIER
 }
 
-void CDiscAdjResidualSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) {
-    
+void CDiscAdjResidualSolver::ExtractAdjoint_Coordinates(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) {
     SU2_OMP_PARALLEL {
-        const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
         
-        //  TODO:   Clean up implementation: some duplicate values for volume and marker data in the legacy mesh deformation, in the mesh solver coordinate sens are empty
+        su2matrix<su2double>* VolumeSensitivity;
         
+        if (variable == ENUM_VARIABLE::OBJECTIVE)
+            VolumeSensitivity = &Partial_Sens_dObjective_dCoordinates;
+        else if (variable == ENUM_VARIABLE::RESIDUALS)
+            VolumeSensitivity = &Partial_Prod_dResiduals_dCoordinates;
+        else if (variable == ENUM_VARIABLE::TRACTIONS)
+            VolumeSensitivity = &Partial_Prod_dTractions_dCoordinates;
+        else
+            return;
+        
+        /*--- Sensitivities w.r.t all reference mesh coordinates ---*/
+        if (mesh_solver) {
+            SU2_OMP_FOR_STAT(omp_chunk_size)
+            mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
+            
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                    (*VolumeSensitivity)(iPoint, iDim) = mesh_solver->GetNodes()->GetSolution(iPoint, iDim);
+                }
+            }
+            END_SU2_OMP_FOR
+        }
+
+        else {
+            SU2_OMP_FOR_STAT(omp_chunk_size)
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+                auto coord = geometry->nodes->GetCoord(iPoint);
+                
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                    (*VolumeSensitivity)(iPoint, iDim) = geometry->nodes->GetAdjointSolution(iPoint, iDim);
+                    AD::ResetInput(coord[iDim]);
+                }
+            }
+            END_SU2_OMP_FOR
+        }
+    }
+}
+
+void CDiscAdjResidualSolver::ExtractAdjoint_Displacements(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) {
+    SU2_OMP_PARALLEL {
         vector<su2matrix<su2double>>* MarkerSensitivity;
         
         if (variable == ENUM_VARIABLE::COORDINATES)
@@ -419,26 +456,13 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfi
             MarkerSensitivity = &Partial_Prod_dResiduals_dDisplacements;
         else if (variable == ENUM_VARIABLE::TRACTIONS)
             MarkerSensitivity = &Partial_Prod_dTractions_dDisplacements;
-        
-        else
-            return;
-        
-        su2matrix<su2double>* VolumeSensitivity;
-        
-        if (variable == ENUM_VARIABLE::COORDINATES)
-            VolumeSensitivity = &Partial_Prod_dCoordinates_dCoordinates;
-        else if (variable == ENUM_VARIABLE::OBJECTIVE)
-            VolumeSensitivity = &Partial_Sens_dObjective_dCoordinates;
-        else if (variable == ENUM_VARIABLE::RESIDUALS)
-            VolumeSensitivity = &Partial_Prod_dResiduals_dCoordinates;
-        else if (variable == ENUM_VARIABLE::TRACTIONS)
-            VolumeSensitivity = &Partial_Prod_dTractions_dCoordinates;
         else
             return;
         
         /*--- If the mesh solver is used, extract the discrete-adjoint sensitivities of the boundary displacements ---*/
+        const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
+
         if (mesh_solver) {
-            mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
             mesh_solver->ExtractAdjoint_Variables(geometry, config);
             
             for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
@@ -460,10 +484,10 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfi
                         limiter = 1.0;
                     }
                     
-                    /*--- Get the gradient from the mesh solver if available, else from legacy implementation ---*/
+                    /*--- Get the gradient from the deformed coordinates in the mesh solver ---*/
                     
                     for (auto iDim = 0u; iDim < nDim; iDim++) {
-                        (*MarkerSensitivity)[iMarker](iVertex, iDim) = -limiter * mesh_solver->GetNodes()->GetBoundDisp_Sens(iPoint, iDim);
+                        (*MarkerSensitivity)[iMarker](iVertex, iDim) = limiter * mesh_solver->GetNodes()->GetBoundDisp_Sens(iPoint, iDim);
                     }
                 }
                 END_SU2_OMP_FOR
@@ -471,49 +495,11 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfi
         }
         
         else {
-            SU2_OMP_FOR_STAT(omp_chunk_size)
-            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-                auto coord = geometry->nodes->GetCoord(iPoint);
-                
-                for (auto iDim = 0u; iDim < nDim; iDim++) {
-                    
-                    /*--- Sensitivities w.r.t all mesh coordinates ---*/
-                    
-                    (*VolumeSensitivity)(iPoint, iDim) = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-                    AD::ResetInput(coord[iDim]);
-                }
-            }
-            END_SU2_OMP_FOR
-            
-            
-            for (auto iMarker = 0ul; iMarker < nMarker; iMarker++) {
-                if (!config->GetSolid_Wall(iMarker)) continue;
-                
-                SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-                for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-                    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                    
-                    /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-                    
-                    su2double limiter;
-                    if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
-                        limiter = 0.0;
-                    }
-                    else {
-                        limiter = 1.0;
-                    }
-                    
-                    for (auto iDim = 0u; iDim < nDim; iDim++) {
-                        (*MarkerSensitivity)[iMarker](iVertex, iDim) = -limiter * (*VolumeSensitivity)(iPoint, iDim);
-                    }
-                }
-                END_SU2_OMP_FOR
-            }
+            //  TODO:   Implement derivation of the legacy mesh deformation (see SU2_DEF_AD)
         }
     }
     END_SU2_OMP_PARALLEL
 }
-
 
 void CDiscAdjResidualSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     
@@ -558,19 +544,16 @@ void CDiscAdjResidualSolver::SetSensitivity(CGeometry *geometry, CConfig *config
         SU2_OMP_FOR_STAT(omp_chunk_size)
         for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
             
-            // auto Coord = geometry->nodes->GetCoord(iPoint);
-            
             for (auto iDim = 0u; iDim < nDim; iDim++) {
 
                 su2double Sensitivity = Partial_Sens_dObjective_dCoordinates(iPoint, iDim) + Partial_Prod_dResiduals_dCoordinates(iPoint, iDim);
-                // su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-                // AD::ResetInput(Coord[iDim]);
                 
                 /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
                 
-                // if (config->GetSens_Remove_Sharp() && geometry->nodes->GetSharpEdge_Distance(iPoint) < eps) {
-                //     Sensitivity = 0.0;
-                // }
+                if (config->GetSens_Remove_Sharp() && geometry->nodes->GetSharpEdge_Distance(iPoint) < eps) {
+                    Sensitivity = 0.0;
+                }
+
                 if (!time_stepping) {
                     nodes->SetSensitivity(iPoint, iDim, Sensitivity);
                 } else {

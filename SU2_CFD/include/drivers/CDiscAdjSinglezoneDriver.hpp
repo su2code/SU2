@@ -28,6 +28,10 @@
 
 #pragma once
 #include "CSinglezoneDriver.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 /*!
  * \class CDiscAdjSinglezoneDriver
@@ -37,6 +41,11 @@
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
+#ifdef CODI_FORWARD_TYPE
+    using Scalar = su2double;
+#else
+    using Scalar = passivedouble;
+#endif
     
     unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
     RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
@@ -55,6 +64,39 @@ protected:
     CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
     
     COutputLegacy* output_legacy;
+    
+    /*!< \brief Fixed-Point corrector that can be applied to inner iterations of the residual-based formulation. */
+    CQuasiNewtonInvLeastSquares<passivedouble> FixPtCorrector;
+
+    /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
+    static constexpr unsigned long KrylovMinIters = 3;
+    const Scalar KrylovTol = 0.01;
+    CSysSolve<Scalar> LinSolver;
+    CSysVector<Scalar> AdjRHS;
+    CSysVector<Scalar> AdjSol;
+
+    class AdjOperator : public CMatrixVectorProduct<Scalar> {
+    public:
+        CDiscAdjSinglezoneDriver* const driver;
+        const unsigned short iZone = 0;
+        mutable unsigned long iInnerIter = 0;
+
+        AdjOperator(CDiscAdjSinglezoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+        inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+            driver->SetAllSolutions(ZONE_0, true, u);
+            //driver->Apply_Residual(ZONE_0, iInnerIter, true);  // fix
+            driver->GetAllSolutions(ZONE_0, true, v);
+            v -= u;
+            ++iInnerIter;
+        }
+    };
+
+    class LinPreconditioner : public CPreconditioner<Scalar> {
+    public:
+        inline bool IsIdentity() const override { return true; }
+        inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+    };
     
 public:
     
@@ -81,14 +123,19 @@ public:
     void Preprocess(unsigned long TimeIter) override;
     
     /*!
-     * \brief Run a single iteration of the discrete adjoint solver with a single zone.
+     * \brief Run the discrete adjoint solver with a single zone.
      */
     void Run(void) override;
     
     /*!
-     * \brief Update the current solution (residuals, tractions, etc.)
+     * \brief Update the discrete adjoint solution.
      */
-    void Update_DirectSolution(bool deform = false);
+    void Apply(void);
+    
+    /*!
+     * \brief Update the direct solution.
+     */
+    void Apply_Direct(bool deform = false);
     
     /*!
      * \brief Postprocess the adjoint iteration for ZONE_0.
@@ -146,6 +193,16 @@ public:
     inline bool GetTimeConvergence() const override {return false;};
     
 protected:
+    
+    /*!
+     * \brief Update the discrete adjoint solver with a single zone.
+     */
+    void Apply_FixedPoint(void);
+    
+    /*!
+     * \brief Update the discrete adjoint solver with a single zone.
+     */
+    void Apply_Residual(void);
     
     /*!
      * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.

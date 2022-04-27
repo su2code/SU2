@@ -3673,7 +3673,16 @@ public:
      * \param[in] config - The particular config = false.
      * \param[in] objective - Kind of output variables.
      */
-    inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable){}
+    inline virtual void ExtractAdjoint_Coordinates(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) { }
+    
+    /*!
+     * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
+     * \param[in] geometry - The geometrical definition of the problem.
+     * \param[in] solver_container - The solver container holding all solutions.
+     * \param[in] config - The particular config = false.
+     * \param[in] objective - Kind of output variables.
+     */
+    inline virtual void ExtractAdjoint_Displacements(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable) { }
     
     /*!
      * \brief  A virtual member.

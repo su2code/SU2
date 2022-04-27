@@ -342,7 +342,15 @@ public:
      * \param[in] config - Definition of the particular problem.
      * \param[in] output - Kind of output variables.
      */
-    void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable);
+    void ExtractAdjoint_Coordinates(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable);
+    
+    /*!
+     * \brief A virtual member.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] output - Kind of output variables.
+     */
+    void ExtractAdjoint_Displacements(CGeometry *geometry, CConfig *config, CSolver *mesh_solver, ENUM_VARIABLE variable);
     
     /*!
      * \brief Update the dual-time derivatives.
