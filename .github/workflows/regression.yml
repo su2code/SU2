@@ -9,6 +9,11 @@ on:
     branches: 
       - 'develop'
       - 'master'
+  workflow_call:
+    # workflows: ["Regression and Unit Post-Validation on Linux ARM64"]
+    # types: [requested]
+    # branches:
+      # - 'develop'
 
 jobs:
   build:
@@ -16,26 +21,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
+        #config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
+        config_set: [BaseMPI]
         include:
           - config_set: BaseMPI
             flags: '-Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
-          - config_set: ReverseMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
-          - config_set: ForwardMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
-          - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
-          - config_set: ReverseNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
-          - config_set: ForwardNoMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
-          - config_set: BaseOMP
-            flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
-          - config_set: ReverseOMP
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
-          - config_set: ForwardOMP
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+          # - config_set: ReverseMPI
+          #   flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+          # - config_set: ForwardMPI
+          #   flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
+          # - config_set: BaseNoMPI
+          #   flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+          # - config_set: ReverseNoMPI
+          #   flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+          # - config_set: ForwardNoMPI
+          #   flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+          # - config_set: BaseOMP
+          #   flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          # - config_set: ReverseOMP
+          #   flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+          # - config_set: ForwardOMP
+          #   flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
@@ -45,7 +51,7 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Build 
-        uses: docker://su2code/build-su2:20191105
+        uses: docker://ghcr.io/martin-g/su2/build-su2:20220505-1111
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Upload Binaries 
@@ -60,24 +66,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        testscript: ['vandv.py', 'tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
+        # testscript: ['vandv.py', 'tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
+        testscript: ['vandv.py']
         include:
           - testscript: 'vandv.py'
             tag: MPI
-          - testscript: 'tutorials.py'
-            tag: MPI
-          - testscript: 'parallel_regression.py'
-            tag: MPI
-          - testscript: 'parallel_regression_AD.py'
-            tag: MPI
-          - testscript: 'serial_regression.py'
-            tag: NoMPI
-          - testscript: 'serial_regression_AD.py'
-            tag: NoMPI
-          - testscript: 'hybrid_regression.py'
-            tag: OMP
-          - testscript: 'hybrid_regression_AD.py'
-            tag: OMP
+          # - testscript: 'tutorials.py'
+          #   tag: MPI
+          # - testscript: 'parallel_regression.py'
+          #   tag: MPI
+          # - testscript: 'parallel_regression_AD.py'
+          #   tag: MPI
+          # - testscript: 'serial_regression.py'
+          #   tag: NoMPI
+          # - testscript: 'serial_regression_AD.py'
+          #   tag: NoMPI
+          # - testscript: 'hybrid_regression.py'
+          #   tag: OMP
+          # - testscript: 'hybrid_regression_AD.py'
+          #   tag: OMP
     steps:
       - name: Download All artifact
         uses: actions/download-artifact@v2
@@ -89,7 +96,7 @@ jobs:
           if [ -d "${{format('Forward{0}', matrix.tag)}}" ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/; fi
           chmod a+x install/bin/*
       - name: Run Tests in Container
-        uses: docker://su2code/test-su2:20200303
+        uses: docker://ghcr.io/martin-g/su2/test-su2:20220505-1111
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
@@ -100,14 +107,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        testdriver: ['test_driver', 'test_driver_AD', 'test_driver_DD']
+        # testdriver: ['test_driver', 'test_driver_AD', 'test_driver_DD']
+        testdriver: ['test_driver']
         include:
           - testdriver: 'test_driver'
             tag: MPI
-          - testdriver: 'test_driver_AD'
-            tag: MPI
-          - testdriver: 'test_driver_DD'
-            tag: MPI
+          # - testdriver: 'test_driver_AD'
+          #   tag: MPI
+          # - testdriver: 'test_driver_DD'
+          #   tag: MPI
     steps:
       - name: Download Base
         uses: actions/download-artifact@v1
@@ -129,6 +137,6 @@ jobs:
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
           chmod a+x install/bin/*
       - name: Run Unit Tests
-        uses: docker://su2code/test-su2:20191031
+        uses: docker://ghcr.io/martin-g/su2/test-su2:20220505-1111
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
