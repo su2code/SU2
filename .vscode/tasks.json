@@ -1,0 +1,99 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Meson configure serial debug",
+            "type": "shell",
+            "command": "./meson.py",
+            "args": [
+                "build",
+                "--reconfigure",
+                "--prefix=/home/gomer/local/codes/su2_install/current_branch/serial/gnu/debug",
+                "-Dwith-mpi=disabled",
+                "--buildtype=debug"
+            ]
+        },
+        {
+            "label": "Meson configure mpi debug",
+            "type": "shell",
+            "command": "./meson.py",
+            "args": [
+                "build",
+                "--reconfigure",
+                "--prefix=/home/gomer/local/codes/su2_install/current_branch/mpi/gnu/debug",
+                "-Dwith-mpi=enabled",
+                "--buildtype=debug"
+            ]
+        },
+        {
+            "label": "Meson configure mpi release",
+            "type": "shell",
+            "command": "./meson.py",
+            "args": [
+                "build",
+                "--reconfigure",
+                "--prefix=/home/gomer/local/codes/su2_install/current_branch/mpi/gnu/release",
+                "-Dwith-mpi=enabled",
+                "--buildtype=release"
+            ]
+        },
+        {
+            "label": "Ninja build install",
+            "type": "shell",
+            "command": "./ninja",
+            "args": [
+                "-C",
+                "build",
+                "install"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Ninja build clean",
+            "type": "shell",
+            "command": "./ninja",
+            "args": [
+                "-C",
+                "build",
+                "clean"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Configure and build current SU2 branch - serial debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Meson configure serial debug",
+                "Ninja build install"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Configure and build current SU2 branch - mpi debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Meson configure mpi debug",
+                "Ninja build install"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Configure and build current SU2 branch - mpi release",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Meson configure mpi release",
+                "Ninja build install"
+            ],
+            "group": "build"
+        }
+    ]
+}
