@@ -548,7 +548,7 @@ using CSourcePieceWise_TurbSA_E_COMP = detail::CCompressibilityCorrection<CSourc
  * \brief Class for integrating the source terms of the negative Spalart-Allmaras model.
  */
 template <class FlowIndices>
-using CSourcePieceWise_TurbSA_Neg = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Zero,
+using CSourcePieceWise_TurbSA_Neg = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Nonzero,
                                                        detail::ModVort::Neg, detail::r::Bsl, detail::SourceTerms::Neg>;
 
 /*!
