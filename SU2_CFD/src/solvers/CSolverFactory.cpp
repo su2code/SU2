@@ -305,14 +305,6 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
-    /*case SUB_SOLVER_TYPE::SPECIES:
-      genericSolver = CreateSpeciesSolver(solver, geometry, config, iMGLevel, false);
-      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
-      break;
-    case SUB_SOLVER_TYPE::DISC_ADJ_SPECIES:
-      genericSolver = CreateSpeciesSolver(solver, geometry, config, iMGLevel, true);
-      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
-      break;*/
     case SUB_SOLVER_TYPE::TEMPLATE:
       genericSolver = new CTemplateSolver(geometry, config);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
