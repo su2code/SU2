@@ -162,15 +162,15 @@ void CDiscAdjSinglezoneDriver::Run() {
 }
 
 void CDiscAdjSinglezoneDriver::Run_FixedPoint() {
-    
-    CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
+   
+    /*--- Initialize the fixed-point corrector ---*/
     if (config->GetnQuasiNewtonSamples() > 1) {
-        fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
-                              geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
-                              GetTotalNumberOfVariables(ZONE_0,true),
-                              geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
+        Corrector.resize(config->GetnQuasiNewtonSamples(),
+                        geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+                        GetTotalNumberOfVariables(),
+                        geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
         
-        if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
+        if (TimeIter != 0) GetAllSolutions(Corrector);
     }
     
     for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
@@ -191,132 +191,65 @@ void CDiscAdjSinglezoneDriver::Run_FixedPoint() {
         
         /*--- Correct the solution with the quasi-Newton approach. ---*/
         
-        if (fixPtCorrector.size()) {
-            GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
-            SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
+        if (Corrector.size()) {
+            GetAllSolutions(Corrector.FPresult());
+            SetAllSolutions(Corrector.compute());
         }
     }
 }
 
 void CDiscAdjSinglezoneDriver::Run_Residual() {
     
-    CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
-    if (config->GetnQuasiNewtonSamples() > 1) {
-        fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
-                              geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
-                              GetTotalNumberOfVariables(ZONE_0,true),
-                              geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
+    /*--- Initialize the fixed-point corrector ---*/
+    const auto nSamples = config->GetnQuasiNewtonSamples();
+
+    if (nSamples > 1) {
+        Corrector.resize(nSamples,
+                         geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
+                         GetTotalNumberOfVariables(),
+                         geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
         
-        if (TimeIter != 0) GetAllSolutions(ZONE_0, true, fixPtCorrector);
+        if (TimeIter != 0) GetAllSolutions(Corrector);
     }
 
     /*--- Use FGMRES to solve the adjoint system, where:
-     *      * the RHS is -dObjective/dStates, 
+     *      * the RHS is -dObjective/dStates (and any external contributions), 
      *      * the solution are the adjoint variables, and
      *      * the system applies the matrix-vector product with dResidual/dStates.  ---*/
+    const auto AdjProduct = LinOperator(this);
+    const auto AdjPreconditioner = LinPreconditioner();
     
-    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
-    unsigned long offset;
+    /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
+    const bool monitor = config_container[ZONE_0]->GetWrt_ZoneConv();
+    const auto wrtFreq = config_container[ZONE_0]->GetScreen_Wrt_Freq(2);
 
-    // /*--- Get all the right-hand side contributions (dObjective_dStates) ---*/
-    // offset = 0;
+    config_container[ZONE_0]->SetScreen_Wrt_Freq(2, nAdjoint_Iter);
+    LinSolver.SetMonitoringFrequency(wrtFreq);
 
-    // for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    //     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-    
-    //     if (!(solver && solver->GetAdjoint())) continue;
-    //     
-    //     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    //         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-    //             auto dObjective_dStates = solver->GetSens_dObjective_dStates(iPoint, iVar);
+    /*--- Initialize the linear solver iterations ---*/
+    Scalar eps = 1.0;
 
-    //             AdjRHS(iPoint, offset + iVar) = -SU2_TYPE::GetValue(dObjective_dStates);
-    //         }
-    //     }
+    for (auto nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovTol; ) {
+        Scalar eps_l = 0.0;
+        Scalar tol_l = KrylovTol / eps;
 
-    //     offset += solver->GetnVar();
-    // }
+        auto nIter = min(nAdjoint_Iter - 2ul, config_container[ZONE_0]->GetnQuasiNewtonSamples() - 2ul);
 
-    // /*--- Get all the solution contributions (AdjStates) ---*/
-    // offset = 0;
-    
-    // for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    //     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-    //     
-    //     if (!(solver && solver->GetAdjoint())) continue;
+        nIter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjProduct, AdjPreconditioner, tol_l, nIter, eps_l, monitor, config_container[ZONE_0]);
+        nKrylov_Iter -= nIter + 1;
 
-    //     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    //         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-    //             auto adjoint = solver->GetNodes()->GetSolution(iPoint, iVar);
+        eps *= eps_l;
+    }
+    
+    /*--- Store the solution and restore user settings. ---*/
+    SetAllSolutions(AdjSol);
+    config_container[ZONE_0]->SetScreen_Wrt_Freq(2, wrtFreq);
+    
+    /*--- Print out the convergence data to screen and history file. ---*/
 
-    //             AdjSol(iPoint, offset + iVar) = +SU2_TYPE::GetValue(adjoint);
-    //         }
-    //     }
-
-    //     offset += solver->GetnVar();
-    // }
-    
-    // const bool monitor = config_container[ZONE_0]->GetWrt_ZoneConv();
-    // const auto product = AdjOperator(this, iZone);
-    
-    // /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
-    // const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
-    // config_container[iZone]->SetScreen_Wrt_Freq(2, nInnerIter[iZone]);
-    // LinSolver[iZone].SetMonitoringFrequency(wrtFreq);
-    
-    // Scalar eps = 1.0;
-    // for (auto totalIter = nInnerIter[iZone]; totalIter >= KrylovMinIters && eps > KrylovTol;) {
-    //     Scalar eps_l = 0.0;
-    //     Scalar tol_l = KrylovTol / eps;
-    //     auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-    //     iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
-    //                                             tol_l, iter, eps_l, monitor, config_container[iZone]);
-    //     totalIter -= iter+1;
-    //     eps *= eps_l;
-    // }
-    
-    // /*--- Store the solution and restore user settings. ---*/
-    // SetAllSolutions(iZone, true, AdjSol[iZone]);
-    // config_container[iZone]->SetScreen_Wrt_Freq(2, wrtFreq);
-    
-    // /*--- Set the old solution such that iterating gives meaningful residuals. ---*/
-    // AdjSol[iZone] += AdjRHS[iZone];
-    // SetAllSolutionsOld(iZone, true, AdjSol[iZone]);
-    
-    // /*--- Iterate to evaluate cross terms and residuals, this cannot happen within GMRES
-    // * because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
-    // eval_transfer = true;
-    // Iterate(iZone, product.iInnerIter);
-    
-    // /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES+Iterate once.
-    // * This is set without the "External" (by adding RHS above) so that it can be added
-    // * again in the next outer iteration with new contributions from other zones. ---*/
-    // SetAllSolutions(iZone, true, AdjSol[iZone]);
-    //     
-    
-    // for (auto Adjoint_Iter = 0ul; Adjoint_Iter < nAdjoint_Iter; Adjoint_Iter++) {
-    //     
-    //     config->SetInnerIter(Adjoint_Iter);
-    //     
-    //     /*--- Update the state of the tape ---*/
-    //     Update_Residual();
-    //     
-    //     /*--- Output files for steady state simulations. ---*/
-    //     
-    //     if (!config->GetTime_Domain()) {
-    //         iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
-    //                           config_container, Adjoint_Iter, false, ZONE_0, INST_0);
-    //     }
-    //     
-    //     if (StopCalc) break;
-    //     
-    //     /*--- Correct the solution with the quasi-Newton approach. ---*/
-    //     
-    //     if (fixPtCorrector.size()) {
-    //         GetAllSolutions(ZONE_0, true, fixPtCorrector.FPresult());
-    //         SetAllSolutions(ZONE_0, true, fixPtCorrector.compute());
-    //     }
-    // }
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                  solver_container, numerics_container, config_container,
+                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 }
 
 

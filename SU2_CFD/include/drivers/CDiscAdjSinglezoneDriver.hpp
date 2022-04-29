@@ -66,7 +66,7 @@ protected:
     COutputLegacy* output_legacy;
     
     /*!< \brief Fixed-Point corrector that can be applied to inner iterations of the residual-based formulation. */
-    CQuasiNewtonInvLeastSquares<passivedouble> FixPtCorrector;
+    CQuasiNewtonInvLeastSquares<passivedouble> Corrector;
 
     /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
     static constexpr unsigned long KrylovMinIters = 3;
@@ -75,27 +75,32 @@ protected:
     CSysVector<Scalar> AdjRHS;
     CSysVector<Scalar> AdjSol;
 
-    class AdjOperator : public CMatrixVectorProduct<Scalar> {
+    class LinOperator : public CMatrixVectorProduct<Scalar> {
     public:
         CDiscAdjSinglezoneDriver* const driver;
-        const unsigned short iZone = 0;
         mutable unsigned long iInnerIter = 0;
 
-        AdjOperator(CDiscAdjSinglezoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+        LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
 
         inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-            driver->SetAllSolutions(ZONE_0, true, u);
-            //driver->Apply_Residual(ZONE_0, iInnerIter, true);  // fix
-            driver->GetAllSolutions(ZONE_0, true, v);
-            v -= u;
+            driver->SetAllSolutions(u);
+
+            driver->Apply_Residual();  // fix
+            
+            driver->GetAllResidualsStatesSensitivities(v);
             ++iInnerIter;
         }
     };
 
     class LinPreconditioner : public CPreconditioner<Scalar> {
     public:
-        inline bool IsIdentity() const override { return true; }
-        inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+        inline bool IsIdentity() const override {
+            return true;
+        }
+
+        inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+            v = u;
+        }
     };
     
 public:
@@ -191,6 +196,137 @@ public:
      * \return false
      */
     inline bool GetTimeConvergence() const override {return false;};
+    
+    /*!
+     * \brief Sum the number adjoint variables for all solvers.
+     * \return Total number of solution variables.
+     */
+    unsigned short GetTotalNumberOfVariables() const {
+        unsigned short nVar = 0;
+
+        for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+            auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+
+            if (!solver || !solver->GetAdjoint()) continue;
+            
+            nVar += solver->GetnVar();
+        }
+
+        return nVar;
+    }
+
+    /*!
+     * \brief Get the adjoint states from all solvers.
+     * \param[out] values - Values object with interface (iPoint, iVar).
+     */
+    template<class Container>
+    void GetAllSolutions(Container& values) const {
+        const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+
+        /*--- Get all the adjoint state variables ---*/
+        offset = 0;
+
+        for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+            auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+        
+            if (!solver || !solver->GetAdjoint()) continue;
+            
+            for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+                for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+                    auto value = solver->GetNodes()->GetSolution(iPoint, iVar);
+
+                    values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
+                }
+            }
+
+            offset += solver->GetnVar();
+        }
+    }
+
+    /*!
+     * \brief Set the adjoint states from all solvers.
+     * \param[out] values - Values object with interface (iPoint, iVar).
+     */
+    template<class Container>
+    void SetAllSolutions(Container& values) const {
+        const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+
+        /*--- Set all the adjoint state variables ---*/
+        offset = 0;
+
+        for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+            auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+        
+            if (!solver || !solver->GetAdjoint()) continue;
+            
+            for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+                for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+                    auto value = values(iPoint, offset + iVar);
+                    
+                    solver->GetNodes()->SetSolution(iPoint, iVar, value);
+                }
+            }
+
+            offset += solver->GetnVar();
+        }
+    }
+
+    /*!
+     * \brief Get the partial objective sensitivities from all solvers.
+     * \param[out] values - Values object with interface (iPoint, iVar).
+     */
+    template<class Container>
+    void GetAllObjectiveStatesSensitivities(Container& values) const {
+        const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+
+        /*--- Get all the partial sensitivities (dObjective/dStates) ---*/
+        offset = 0;
+
+        for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+            auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+        
+            if (!solver || !solver->GetAdjoint()) continue;
+            
+            for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+                for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+                    auto value = solver->GetSens_dObjective_dStates(iPoint, iVar);
+
+                    values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(value);
+                }
+            }
+
+            offset += solver->GetnVar();
+        }
+    }
+
+    /*!
+     * \brief Get the partial jacobian-adjoint products from all solvers.
+     * \param[out] values - Values object with interface (iPoint, iVar).
+     */
+    template<class Container>
+    void GetAllResidualsStatesSensitivities(Container& values) const {
+        const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+
+        /*--- Get all the partial jacobian-adjoint products (dResiduals/dStates) ---*/
+        offset = 0;
+
+        for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+            auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+        
+            if (!solver || !solver->GetAdjoint()) continue;
+            
+            for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+                for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+                    auto value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
+
+                    values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(value);
+                }
+            }
+
+            offset += solver->GetnVar();
+        }
+    }
+
     
 protected:
     
