@@ -3,7 +3,7 @@
 ## \file config_gui.py
 #  \brief _____________.
 #  \author A. Aranake
-#  \version 7.3.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

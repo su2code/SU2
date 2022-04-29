@@ -1,10 +1,14 @@
 project('SU2', 'c', 'cpp',
-        version: '7.3.0 "Blackbird"',
+        version: '7.3.1 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
+                          'c_std=c99',
                           'cpp_std=c++11'])
 
+if meson.version() != '0.61.1'
+  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+endif
 
 pymod = import('python')
 python = pymod.find_installation()
@@ -256,7 +260,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.3.0 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.3.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

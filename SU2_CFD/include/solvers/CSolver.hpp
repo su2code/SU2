@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2412,6 +2412,11 @@ public:
   inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline virtual su2double GetReferenceDynamicPressure() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
@@ -3162,13 +3167,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_dim - Index of the adjoint velocity vector.
-   * \return Value of the density x velocity at the infinity.
-   */
-  inline virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
@@ -3598,6 +3596,28 @@ public:
    * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
+
+  /*!
+   * \brief Register In- or Output.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  virtual unsigned long RegisterSolutionExtra(bool input, const CConfig* config) { return 0; }
+
+  /*!
+   * \brief Seed the adjoint of the extra solution at the output.
+   * \param[in] adj_sol - Vector containing the adjoint solution to seed.
+   * \param[in] config - The particular config.
+   */
+  virtual void SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {}
+
+  /*!
+   * \brief Extract the adjoint of the extra solution at the input.
+   * \param[out] adj_sol - Vector to store the adjoint into.
+   * \param[in] config - The particular config.
+   */
+  virtual void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {}
 
   /*!
    * \brief A virtual member.
@@ -4345,8 +4365,8 @@ public:
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   /*!
-   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
-   * \return Struct holding 4 su2doubles.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
+   * \return Struct holding streamwise periodic values.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 

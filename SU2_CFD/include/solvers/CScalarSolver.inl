@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subrotuines of CScalarSolver class
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -86,8 +86,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
-  const bool limiter = (config->GetKind_SlopeLimit() != NO_LIMITER) &&
-                       (config->GetKind_SlopeLimit() != VAN_ALBADA_EDGE) &&
+  const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Clear residual and system matrix, not needed for
@@ -159,7 +158,7 @@ void CScalarSolver<V>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConf
 
 template <class V>
 void CScalarSolver<V>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
-  auto kindLimiter = static_cast<ENUM_LIMITER>(config->GetKind_SlopeLimit_Flow());
+  auto kindLimiter = config->GetKind_SlopeLimit_Flow();
   const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();
@@ -180,14 +179,14 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
-  const bool limiter = (config->GetKind_SlopeLimit() != NO_LIMITER) &&
+  const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = config->GetMUSCL_Flow() && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
   /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
   const bool limiterFlow =
-      (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
+      (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE);
 
   const auto kappa      = config->GetMUSCL_Kappa_Turb();
   const auto kappa_flow = config->GetMUSCL_Kappa_Flow();

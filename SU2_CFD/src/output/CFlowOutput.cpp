@@ -1,8 +1,8 @@
 /*!
  * \file CFlowOutput.cpp
- * \brief Main subroutines for compressible flow output
+ * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,10 +67,10 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   /// DESCRIPTION: Average total pressure
   AddHistoryOutput("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  if (config->GetnMarker_Analyze() == 2) {
+  if (config->GetnMarker_Analyze() >= 2) {
     AddHistoryOutput("SURFACE_PRESSURE_DROP",    "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   } else if (rank == MASTER_NODE) {
-    cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for 2 surfaces (outlet, inlet)\n" << endl;
+    cout << "\nWARNING: SURFACE_PRESSURE_DROP can only be computed for at least 2 surfaces (outlet, inlet, ...)\n" << endl;
   }
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     /// DESCRIPTION: Average Species
@@ -530,7 +530,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
    which require the outlet to be listed first. This is a simple first version
    that could be generalized to a different orders/lists/etc. ---*/
 
-  if (nMarker_Analyze == 2) {
+  if (nMarker_Analyze >= 2) {
     su2double PressureDrop = (Surface_Pressure_Total[1] - Surface_Pressure_Total[0]) * config->GetPressure_Ref();
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
       config->SetSurface_PressureDrop(iMarker_Analyze, PressureDrop);
@@ -950,7 +950,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
 }
 
 void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
+  if (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE) {
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
       case TURB_FAMILY::SA:
         AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
@@ -967,7 +967,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
   }
 
   if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    if (config->GetKind_SlopeLimit_Species() != NO_LIMITER) {
+    if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
         AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
     }
@@ -1017,7 +1017,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
 
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
 
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
@@ -1064,7 +1064,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      if (config->GetKind_SlopeLimit_Species() != NO_LIMITER)
+      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
         SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
     }
   }
@@ -1072,7 +1072,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
 
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  if (!config->GetViscous()) return;
+  if (!config->GetViscous_Wall(iMarker)) return;
 
   const auto heat_sol = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
                          config->GetWeakly_Coupled_Heat() ? HEAT_SOL : FLOW_SOL;
@@ -1085,7 +1085,7 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
   SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
 }
 
-void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
+void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
   /// DESCRIPTION: Drag coefficient
@@ -1143,7 +1143,7 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
-void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
+void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
 
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
@@ -1185,13 +1185,57 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   SetHistoryOutputValue("AOA", config->GetAoA());
 }
 
-void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {
+void CFlowOutput::AddHeatCoefficients(const CConfig* config) {
+
+  if (!config->GetViscous()) return;
+
+  /// BEGIN_GROUP: HEAT, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
+  /// DESCRIPTION: Total heatflux
+  AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Maximal heatflux
+  AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heatflux across all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+
+  vector<string> Marker_Monitoring;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+    Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker));
+  }
+  /// DESCRIPTION:  Total heatflux
+  AddHistoryOutputPerSurface("TOTAL_HEATFLUX_ON_SURFACE", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION:  Total heatflux
+  AddHistoryOutputPerSurface("MAXIMUM_HEATFLUX_ON_SURFACE", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+}
+
+void CFlowOutput::SetHeatCoefficients(const CConfig* config, const CSolver* flow_solver) {
+
+  if (!config->GetViscous()) return;
+
+  SetHistoryOutputValue("TOTAL_HEATFLUX", flow_solver->GetTotal_HeatFlux());
+  SetHistoryOutputValue("MAXIMUM_HEATFLUX", flow_solver->GetTotal_MaxHeatFlux());
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_Monitoring(); iMarker++) {
+    SetHistoryOutputPerSurfaceValue("TOTAL_HEATFLUX_ON_SURFACE", flow_solver->GetSurface_HF_Visc(iMarker), iMarker);
+    SetHistoryOutputPerSurfaceValue("MAXIMUM_HEATFLUX_ON_SURFACE", flow_solver->GetSurface_MaxHF_Visc(iMarker), iMarker);
+  }
+}
+
+void CFlowOutput::AddRotatingFrameCoefficients() {
+  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
+  /// DESCRIPTION: Merit
+  AddHistoryOutput("FIGURE_OF_MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Thrust over torque", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CT
+  AddHistoryOutput("THRUST", "CT", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Thrust coefficient", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: CQ
+  AddHistoryOutput("TORQUE", "CQ", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Torque coefficient", HistoryFieldType::COEFFICIENT);
+  /// END_GROUP
+}
+
+void CFlowOutput::SetRotatingFrameCoefficients(const CSolver* flow_solver) {
 
   SetHistoryOutputValue("THRUST", flow_solver->GetTotal_CT());
   SetHistoryOutputValue("TORQUE", flow_solver->GetTotal_CQ());
   SetHistoryOutputValue("FIGURE_OF_MERIT", flow_solver->GetTotal_CMerit());
 }
-
 
 void CFlowOutput::Add_CpInverseDesignOutput(){
 
@@ -1738,7 +1782,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  if (config->GetFixed_CL_Mode()){
+  if (config->GetFixed_CL_Mode() ||
+      (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)){
     WriteMetaData(config);
   }
 
@@ -1759,6 +1804,8 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
   /*--- All processors open the file. ---*/
 
   if (rank == MASTER_NODE) {
+    cout << "Writing Flow Meta-Data file: " << filename << endl;
+
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
 
@@ -1784,6 +1831,10 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
       meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
+    }
+
+    if(config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      meta_file << "STREAMWISE_PERIODIC_PRESSURE_DROP=" << GetHistoryFieldValue("STREAMWISE_DP") << endl;
     }
   }
 
@@ -1983,7 +2034,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 7.3.0 \"Blackbird\"                         |\n";
+  file << "|   / __| | | |_  )   Release 7.3.1 \"Blackbird\"                         |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -3228,24 +3279,32 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format on
 }
 
-bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
+bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
+  
+  bool writeRestart = false;
+  auto FileFormat = config->GetVolumeOutputFiles();
 
   if (config->GetTime_Domain()){
     if (((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) &&
-        ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
+        ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0))){
       return true;
     }
 
+    /* check if we want to write a restart file*/ 
+    if (FileFormat[iFile] == OUTPUT_TYPE::RESTART_ASCII || FileFormat[iFile] == OUTPUT_TYPE::RESTART_BINARY || FileFormat[iFile] == OUTPUT_TYPE::CSV) {
+      writeRestart = true;  
+    }
+
+    /* only write 'double' files for the restart files */
     if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
-        ((Iter == 0) ||
-         (Iter % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
-         ((Iter+2) == config->GetnTime_Iter()))){ // The last timestep is written anyways but again one needs the step before for restarts.
+      ((Iter == 0) || (Iter % config->GetVolumeOutputFrequency(iFile) == 0) ||
+      (((Iter+1) % config->GetVolumeOutputFrequency(iFile) == 0) && writeRestart==true) || // Restarts need 2 old solutions.
+      (((Iter+2) == config->GetnTime_Iter()) && writeRestart==true))){      // The last timestep is written anyway but one needs the step before for restarts.
       return true;
     }
   } else {
     if (config->GetFixed_CL_Mode() && config->GetFinite_Difference_Mode()) return false;
-    return ((Iter > 0) && Iter % config->GetVolume_Wrt_Freq() == 0) || force_writing;
+    return ((Iter > 0) && Iter % config->GetVolumeOutputFrequency(iFile) == 0) || force_writing;
   }
 
   return false || force_writing;

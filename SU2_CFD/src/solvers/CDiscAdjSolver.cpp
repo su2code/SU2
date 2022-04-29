@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -85,6 +85,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nodes = new CDiscAdjVariable(Solution.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
+  /*--- Allocate extra solution variables, if any are in use. ---*/
+
+  const auto nVarExtra = direct_solver->RegisterSolutionExtra(true, config);
+  nodes->AllocateAdjointSolutionExtra(nVarExtra);
+
   switch(KindDirect_Solver){
   case RUNTIME_FLOW_SYS:
     SolverName = "ADJ.FLOW";
@@ -161,6 +166,8 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
+
+  direct_solver->RegisterSolutionExtra(true, config);
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
@@ -297,6 +304,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
 
   direct_solver->GetNodes()->RegisterSolution(false);
+
+  direct_solver->RegisterSolutionExtra(false, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
@@ -335,6 +344,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
   }
   END_SU2_OMP_FOR
+
+  direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
   if (CrossTerm) return;
@@ -487,6 +498,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
   END_SU2_OMP_FOR
+
+  direct_solver->SetAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {

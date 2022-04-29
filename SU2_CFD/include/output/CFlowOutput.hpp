@@ -2,7 +2,7 @@
  * \file CFlowOutput.hpp
  * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -140,21 +140,38 @@ protected:
    * \brief Add aerodynamic coefficients as output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void AddAerodynamicCoefficients(CConfig *config);
+  void AddAerodynamicCoefficients(const CConfig* config);
 
   /*!
    * \brief  Set the value of the aerodynamic coefficients
    * \param[in] config - Definition of the particular problem.
    * \param[in] flow_solver - The container holding all solution data.
    */
-  void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
+  void SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver);
 
   /*!
-   * \brief  Set the value of the rotating frame coefficients (CT, CQ and CMerit).
+   * \brief Add heat flux coefficients as output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddHeatCoefficients(const CConfig* config);
+
+  /*!
+   * \brief  Set the value of the heat flux coefficients
    * \param[in] config - Definition of the particular problem.
    * \param[in] flow_solver - The container holding all solution data.
    */
-  void SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver);
+  void SetHeatCoefficients(const CConfig* config, const CSolver* flow_solver);
+
+  /*!
+   * \brief Add rotating frame coefficients as output fields.
+   */
+  void AddRotatingFrameCoefficients();
+
+  /*!
+   * \brief Set the value of the rotating frame coefficients (CT, CQ and CMerit).
+   * \param[in] flow_solver - The container holding all solution data.
+   */
+  void SetRotatingFrameCoefficients(const CSolver* flow_solver);
 
   /*!
    * \brief Add CP inverse design output as history fields
@@ -240,8 +257,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iter - Current iteration index.
    * \param[in] force_writing - boolean that forces writing of volume output
+   * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing) override;
+  bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
 
   /*!
    * \brief Write the forces breakdown file

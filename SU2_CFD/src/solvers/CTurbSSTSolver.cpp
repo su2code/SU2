@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subrotuines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -152,7 +152,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
 
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  /*--- Initialize quantities for SlidingMesh Interface ---*/
 
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
@@ -328,7 +328,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Menter's second blending function ---*/
 
-    numerics->SetF2blending(nodes->GetF2blending(iPoint),0.0);
+    numerics->SetF2blending(nodes->GetF2blending(iPoint));
 
     /*--- Set vorticity and strain rate magnitude ---*/
 
@@ -338,7 +338,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Cross diffusion ---*/
 
-    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     if (axisymmetric){
       /*--- Set y coordinate ---*/
@@ -1089,10 +1089,11 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
-    Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
+      Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+    }
   }
 
 }

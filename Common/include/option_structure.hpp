@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -888,23 +888,23 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 /*!
  * \brief Types of slope limiters
  */
-enum ENUM_LIMITER {
-  NO_LIMITER           = 0, /*!< \brief No limiter. */
-  VENKATAKRISHNAN      = 1, /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
-  VENKATAKRISHNAN_WANG = 2, /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
-  BARTH_JESPERSEN      = 3, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
-  VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
-  SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
-  WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
+enum class LIMITER {
+  NONE                 , /*!< \brief No limiter. */
+  VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
+  BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
+  VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
+  SHARP_EDGES          , /*!< \brief Slope limiter using sharp edges. */
+  WALL_DISTANCE          /*!< \brief Slope limiter using wall distance. */
 };
-static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
-  MakePair("NONE", NO_LIMITER)
-  MakePair("VENKATAKRISHNAN", VENKATAKRISHNAN)
-  MakePair("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
-  MakePair("BARTH_JESPERSEN", BARTH_JESPERSEN)
-  MakePair("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
-  MakePair("SHARP_EDGES", SHARP_EDGES)
-  MakePair("WALL_DISTANCE", WALL_DISTANCE)
+static const MapType<std::string, LIMITER> Limiter_Map = {
+  MakePair("NONE", LIMITER::NONE)
+  MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
+  MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
+  MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
+  MakePair("SHARP_EDGES", LIMITER::SHARP_EDGES)
+  MakePair("WALL_DISTANCE", LIMITER::WALL_DISTANCE)
 };
 
 /*!
@@ -2271,6 +2271,8 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
+  su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
 };
 
 /*!

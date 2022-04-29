@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -621,38 +621,21 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                                     unsigned short val_marker) {
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                   CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double Area, *Normal;
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  if(config->GetIntegrated_HeatFlux()) {
-
-    string HeatFlux_Tag, Marker_Tag;
-
-    for (auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-
-      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
-      Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-      if (Marker_Tag == HeatFlux_Tag) {
-        Wall_HeatFlux = Wall_HeatFlux / Surface_Areas[iMarker_HeatFlux];
-      }
-    }
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+  if (config->GetIntegrated_HeatFlux()) {
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
   }
-  Wall_HeatFlux = Wall_HeatFlux/config->GetHeat_Flux_Ref();
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     if (geometry->nodes->GetDomain(iPoint)) {
-
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
       Res_Visc[0] = 0.0;
 
@@ -662,7 +645,6 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
-
   }
 }
 

@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -94,11 +94,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
-    string filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-
     /*--- Read and store the restart metadata. ---*/
 
+    string filename_ = "flow";
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
@@ -1567,8 +1566,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
   /*--- Common preprocessing steps. ---*/
 
@@ -1695,8 +1694,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
-  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
+  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
   const auto kappa      = config->GetMUSCL_Kappa_Flow();
   const auto kappa_turb = config->GetMUSCL_Kappa_Turb();
@@ -1868,16 +1867,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
-      bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
+      bool neg_pres_or_rho_i = (Primitive_i[prim_idx.Pressure()] < 0.0) || (Primitive_i[prim_idx.Density()] < 0.0);
+      bool neg_pres_or_rho_j = (Primitive_j[prim_idx.Pressure()] < 0.0) || (Primitive_j[prim_idx.Density()] < 0.0);
 
       const su2double Gamma_Minus_One = Gamma - 1.0;
       const su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
 
-      const su2double Pressure_i = Primitive_i[nDim+1];
-      const su2double Pressure_j = Primitive_j[nDim+1];
-      const su2double Density_i  = Primitive_i[nDim+2];
-      const su2double Density_j  = Primitive_j[nDim+2];
+      const su2double Pressure_i = Primitive_i[prim_idx.Pressure()];
+      const su2double Pressure_j = Primitive_j[prim_idx.Pressure()];
+      const su2double Density_i  = Primitive_i[prim_idx.Density()];
+      const su2double Density_j  = Primitive_j[prim_idx.Density()];
       const su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+Turbulent_i+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_i+1);
       const su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+Turbulent_j+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_j+1);
 
@@ -1886,7 +1885,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       su2double sq_vel = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
+        su2double RoeVelocity = (R * Primitive_j[iDim + prim_idx.Velocity()] +
+                                 Primitive_i[iDim + prim_idx.Velocity()]) / (R+1);
         sq_vel += pow(RoeVelocity, 2);
       }
       su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
@@ -2016,19 +2016,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
                                                   su2double *primitive, su2double *secondary) {
-
-  su2double density = primitive[nDim+2];
-  su2double pressure = primitive[nDim+1];
-
-  su2double velocity2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    velocity2 += pow(primitive[iDim+1], 2);
+  const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
+  const su2double density = primitive[prim_idx.Density()];
+  const su2double pressure = primitive[prim_idx.Pressure()];
+  const su2double velocity2 = GeometryToolbox::SquaredNorm(nDim, &primitive[prim_idx.Velocity()]);
 
   fluidModel->SetTDState_Prho(pressure, density);
 
-  primitive[0] = fluidModel->GetTemperature();
-  primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2;
-  primitive[nDim+4] = fluidModel->GetSoundSpeed();
+  primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
+  primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2;
+  primitive[prim_idx.SoundSpeed()] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
   secondary[1] = fluidModel->GetdPde_rho();
 
@@ -6877,7 +6874,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Current solution at this boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Build the fictitious intlet state based on characteristics ---*/
+      /*--- Build the fictitious inlet state based on characteristics ---*/
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
       if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
