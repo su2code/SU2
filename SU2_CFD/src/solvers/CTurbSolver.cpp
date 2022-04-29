@@ -259,7 +259,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
         if (restart_cfl) {
-          index += config->GetnTurbVar() + nDim*(dynamic_grid) + 1;
+          index += nVar + nDim*(dynamic_grid) + 1;
           nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
         }
 

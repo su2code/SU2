@@ -251,7 +251,6 @@ def amg ( config , stderr = False ):
 
             #--- Set RESTART_SOL=YES for runs after adaptation
             config_cfd_ad.RESTART_SOL = 'YES'
-            config_cfd_ad.RESTART_FILENAME = config.RESTART_FILENAME
 
     except:
         sys.stdout = sav_stdout

@@ -8481,7 +8481,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS: case MAIN_SOLVER::DISC_ADJ_INC_RANS: case MAIN_SOLVER::DISC_ADJ_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
