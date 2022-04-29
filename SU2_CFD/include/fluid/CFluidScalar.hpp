@@ -58,12 +58,6 @@ private:
   std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
   std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
 
-  /*!
-   * \brief Convert mass fractions to mole fractions.
-   * \param[in] val_scalars - Scalar mass fraction.
-  */
-  //std::vector<su2double>& massToMoleFractions(const su2double * const val_scalars);
-
  public:
   /*!
    * \brief Constructor of the class.
@@ -95,10 +89,6 @@ private:
 
   void SetTDState_T(const su2double val_temperature, su2double * const val_scalars);
 
-/*!
-   * \brief Get fluid dynamic viscosity.
-   */
-  //inline su2double GetLaminarViscosity() override {return Mu; }
    /*!
    * \brief Get fluid dynamic viscosity.
    */
@@ -120,7 +110,4 @@ private:
     dktdrho_T = ThermalConductivity->Getdktdrho_T();
     dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return Kt; }
- //private:
-  //su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
-  //su2double Gamma{0.0};        /*!< \brief Heat Capacity Ratio. */
 };

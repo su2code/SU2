@@ -127,29 +127,13 @@ class CFluidModel {
     su2double val_scalars_sum = 0.0;
     unsigned short n_scalars = molar_masses.size() - 1;
 
-    
-    /*for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
-      val_scalars_sum += val_scalars[i_scalar];
-    }
-    if(val_scalars_sum>1.0){
-      for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
-        val_scalars[i_scalar]=val_scalars[i_scalar]/val_scalars_sum;
-      }
-    }
-    val_scalars_sum=0.0;*/
-
     for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
       OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
       val_scalars_sum += val_scalars[i_scalar];
-      //cout<<val_scalars[i_scalar]<<endl;
     }
-    /*if(val_scalars_sum>1.0){
-      val_scalars_sum=1.0;
-    }*/
+
     OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
-    //cout<<val_scalars_sum<<endl;
     return OneOverMeanMolecularWeight;
-    //return 1/0.028;
   }
   /*!
    * \brief Get fluid dynamic viscosity.

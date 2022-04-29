@@ -322,16 +322,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         cout<<dummy_scalar[iVar]<<endl;
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
-      //Pressure_Thermodynamic = auxFluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
-      /*config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
-      auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-      break;*/
 
     default:
 
@@ -499,8 +491,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND, dummy_scalar);
         delete[] dummy_scalar;
-        /*fluidModel = new CFluidScalar(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-        fluidModel->SetTDState_T(Temperature_FreeStreamND);*/
         break;
 
       case INC_IDEAL_GAS_POLY:
