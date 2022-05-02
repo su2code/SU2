@@ -32,6 +32,7 @@
 import numpy as np
 from itertools import islice
 import sys, os
+import _amgio as amgio
 
 # --- Prescribed mesh complexities, i.e. desired mesh sizes
 def get_mesh_sizes(config):
@@ -55,20 +56,64 @@ def return_mesh_size(mesh):
             tab_out.append("%d %s" % (nbe, elt_name[elt]))
     
     return ', '.join(map(str, tab_out))
+
+# --- Load parameters from the SU2 config file into the AMG config dict
+def get_amg_config(config_su2):
+
+    #--- Basic parameters
+    config_amg = dict()
     
-# --- Use the python interface to amg (YES)? Or the exe (NO)?
-def get_python_amg(config):
-    
-    if 'ADAP_PYTHON' not in config:
-        return True
-    
-    if config['ADAP_PYTHON'] == "YES":
-        return True
-    elif config['ADAP_PYTHON'] == "NO":
-        return False
+    if 'PYADAP_HGRAD' in config_su2: config_amg['hgrad'] = float(config_su2['PYADAP_HGRAD'])
+
+    config_amg['hmax']        = float(config_su2['PYADAP_HMAX'])
+    config_amg['hmin']        = float(config_su2['PYADAP_HMIN'])
+    config_amg['Lp']          = float(config_su2['ADAP_NORM'])
+    config_amg['mesh_in']     = 'current.meshb'
+    config_amg['amg_log']     = 'amg.out'
+    config_amg['adap_source'] = ''
+
+    #--- Check for background surface mesh, and generate if it doesn't exist
+    cwd = os.path.join(os.getcwd(),'../..')
+    if 'PYADAP_BACK' in config_su2:
+        config_amg['adap_back'] = os.path.join(cwd,config_su2['PYADAP_BACK'])
+        if not config_su2['PYADAP_BACK'] == config_su2['MESH_FILENAME']:
+            os.symlink(os.path.join(cwd, config_su2.PYADAP_BACK), config_su2.PYADAP_BACK)
     else:
-        sys.stderr.write("## WARNING : Invalid value for ADAP_PYTHON option. Assuming YES.\n")
-        return True
+        config_amg['adap_back'] = config_su2['MESH_FILENAME']
+    
+    _, back_extension = os.path.splitext(config_amg['adap_back'])
+    
+    if not os.path.exists(config_amg['adap_back']):
+        raise Exception("\n\n##ERROR : Can't find background surface mesh: %s.\n\n" % config_amg['adap_back'])
+    
+    if back_extension == ".su2":
+        sys.stdout.write("\nGenerating GMF background surface mesh.\n")
+        sys.stdout.flush()
+        amgio.py_ConvertSU2toGMF(config_amg['adap_back'], "", "amg_back", "")
+        config_amg['adap_back'] = os.path.join(cwd, "adap/ite0/amg_back.meshb")
+
+    #--- Add AMG command flags
+    #--- Background surface mesh
+    config_amg['options'] = "-back " + config_amg['adap_back']
+
+    #--- Invert background mesh
+    if 'PYADAP_INV_BACK' in config_su2:
+        if(config_su2['PYADAP_INV_BACK'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -inv-back'
+
+    #--- Metric orthogonal adaptation
+    if 'PYADAP_ORTHO' in config_su2:
+        if(config_su2['PYADAP_ORTHO'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+
+    #--- Ridge detection
+    if 'PYADAP_RDG' not in config_su2:
+        config_amg['options'] = config_amg['options'] + ' -nordg'
+    else:
+        if(config_su2['PYADAP_RDG'] == 'NO'):
+            config_amg['options'] = config_amg['options'] + ' -nordg'
+
+    return config_amg
 
 # --- How many sub-iterations per mesh complexity
 def get_sub_iterations(config):
@@ -142,28 +187,6 @@ def set_cfl(config, cfl_iSiz):
             config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
                                           + str(cfl_params[3]) \
                                           + ")"
-
-def set_remesh_flags(config_amg, config_su2):
-
-    #--- Background surface mesh
-    config_amg['options'] = "-back " + config_amg['adap_back']
-
-    #--- Invert background mesh
-    if 'PYADAP_INV_BACK' in config_su2:
-        if(config_su2['PYADAP_INV_BACK'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -inv-back'
-
-    #--- Metric orthogonal adaptation
-    if 'PYADAP_ORTHO' in config_su2:
-        if(config_su2['PYADAP_ORTHO'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
-
-    #--- Ridge detection
-    if 'PYADAP_RDG' not in config_su2:
-        config_amg['options'] = config_amg['options'] + ' -nordg'
-    else:
-        if(config_su2['PYADAP_RDG'] == 'NO'):
-            config_amg['options'] = config_amg['options'] + ' -nordg'
 
 def set_flow_config_ini(config, cur_solfil):
     config.CONV_FILENAME    = "history"
