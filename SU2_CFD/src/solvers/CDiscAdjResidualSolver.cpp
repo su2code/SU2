@@ -178,11 +178,6 @@ void CDiscAdjResidualSolver::SetRecording(CGeometry* geometry, CConfig *config) 
         END_SU2_OMP_FOR
     }
     
-    /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
-     * when running the discrete adjoint solver. ---*/
-    
-    direct_solver->Jacobian.SetValZero();
-    
     /*--- Set indices to zero ---*/
     
     RegisterVariables(geometry, config, true);

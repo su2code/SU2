@@ -199,41 +199,46 @@ void CDiscAdjSinglezoneDriver::Run_FixedPoint() {
 }
 
 void CDiscAdjSinglezoneDriver::Run_Residual() {
-    
-    /*--- Initialize the fixed-point corrector ---*/
-    const auto nSamples = config->GetnQuasiNewtonSamples();
 
-    if (nSamples > 1) {
-        Corrector.resize(nSamples,
-                         geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(),
-                         GetTotalNumberOfVariables(),
-                         geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain());
-        
-        if (TimeIter != 0) GetAllSolutions(Corrector);
+    /*--- Prepare Krylov or quasi-Newton methods. ---*/
+    const auto nVar = GetTotalNumberOfVariables();
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+    const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+
+    if (!KrylovSet) {
+      AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
+      AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+      
+      LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+      KrylovSet = true;
     }
 
     /*--- Use FGMRES to solve the adjoint system, where:
      *      * the RHS is -dObjective/dStates (and any external contributions), 
      *      * the solution are the adjoint variables, and
      *      * the system applies the matrix-vector product with dResidual/dStates.  ---*/
+    GetAllSolutions(AdjSol);
+    GetAllObjectiveStatesSensitivities(AdjRHS);
+    //AddAllExternals(AdjRHS);
+
     const auto AdjProduct = LinOperator(this);
-    const auto AdjPreconditioner = LinPreconditioner();
+    const auto AdjPreconditioner = LinPreconditioner(this);
     
     /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
-    const bool monitor = config_container[ZONE_0]->GetWrt_ZoneConv();
-    const auto wrtFreq = config_container[ZONE_0]->GetScreen_Wrt_Freq(2);
+    const bool monitor = true;
+    const auto wrtFreq = 1;
 
-    config_container[ZONE_0]->SetScreen_Wrt_Freq(2, nAdjoint_Iter);
     LinSolver.SetMonitoringFrequency(wrtFreq);
 
     /*--- Initialize the linear solver iterations ---*/
     Scalar eps = 1.0;
 
     for (auto nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovTol; ) {
+        std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
+
+        auto nIter = nAdjoint_Iter;
         Scalar eps_l = 0.0;
         Scalar tol_l = KrylovTol / eps;
-
-        auto nIter = min(nAdjoint_Iter - 2ul, config_container[ZONE_0]->GetnQuasiNewtonSamples() - 2ul);
 
         nIter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjProduct, AdjPreconditioner, tol_l, nIter, eps_l, monitor, config_container[ZONE_0]);
         nKrylov_Iter -= nIter + 1;
@@ -243,13 +248,8 @@ void CDiscAdjSinglezoneDriver::Run_Residual() {
     
     /*--- Store the solution and restore user settings. ---*/
     SetAllSolutions(AdjSol);
-    config_container[ZONE_0]->SetScreen_Wrt_Freq(2, wrtFreq);
-    
-    /*--- Print out the convergence data to screen and history file. ---*/
 
-    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                  solver_container, numerics_container, config_container,
-                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    Apply_Residual();
 }
 
 
@@ -471,7 +471,6 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording) {
     }
     
     AD::StopRecording();
-    
 }
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction() {
@@ -920,12 +919,14 @@ void CDiscAdjSinglezoneDriver::Apply_Direct(bool deform) {
     
     direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
     
-    /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+    /*--- Update the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) residuals and objective function (no system solve) ---*/
     
     integration[FLOW_SOL]->ComputeResiduals(geometry_container, solver_container, numerics_container, config_container, FLOW_SOL, ZONE_0, INST_0);
     
     /*--- Flow tractions ---*/
     
     direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-    
+
+    //  TODO: Missing objective function computation ! 
+    // SetObjFunc() without the RegisterOutput here
 }

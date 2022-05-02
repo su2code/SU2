@@ -299,6 +299,11 @@ void CIntegration::ComputeResiduals(CGeometry ****geometry_container, CSolver **
     solvers[EqSystem]->Preprocessing(geometry, solvers, config, MESH_0, 0, EqSystem, false);
 
     /*--- Space integration computes the residuals ---*/
+    
+    /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
+     * when running the discrete adjoint solver. ---*/
+    
+    solvers[EqSystem]->Jacobian.SetValZero();  // TODO: Check if actually necessary (already done in Preprocessing)
 
     Space_Integration(geometry, solvers, numerics, config, MESH_0, NO_RK_ITER, EqSystem);
     
@@ -312,3 +317,7 @@ void CIntegration::ComputeResiduals(CGeometry ****geometry_container, CSolver **
     solvers[EqSystem]->Momentum_Forces(geometry, config);
     solvers[EqSystem]->Friction_Forces(geometry, config);
 }
+
+// void CIntegration::ComputeJacobian(CGeometry ****geometry_container, CSolver *****solvers_container, CNumerics ******numerics_container, CConfig **config_container, unsigned short EqSystem, unsigned short iZone, unsigned short iInst) {
+// 
+// }

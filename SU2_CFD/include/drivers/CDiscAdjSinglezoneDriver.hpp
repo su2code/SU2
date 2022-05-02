@@ -70,7 +70,9 @@ protected:
 
     /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
     static constexpr unsigned long KrylovMinIters = 3;
-    const Scalar KrylovTol = 0.01;
+    const Scalar KrylovTol = 0.001;
+    bool KrylovSet = false;
+    
     CSysSolve<Scalar> LinSolver;
     CSysVector<Scalar> AdjRHS;
     CSysVector<Scalar> AdjSol;
@@ -83,23 +85,84 @@ protected:
         LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
 
         inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+            std::cout << "Applying adjoint operator ... " << std::endl;
             driver->SetAllSolutions(u);
 
-            driver->Apply_Residual();  // fix
+            driver->Apply_Residual();
             
+            std::cout << "Updating sensitivities ... " << std::endl;
             driver->GetAllResidualsStatesSensitivities(v);
             ++iInnerIter;
         }
     };
 
     class LinPreconditioner : public CPreconditioner<Scalar> {
-    public:
-        inline bool IsIdentity() const override {
-            return true;
+    private: 
+        const CPreconditioner<Scalar>* primalPreconditioner;
+        const CMatrixVectorProduct<Scalar>* primalJacobianT;
+        mutable Scalar eps = 0.1;
+        bool isTransposed = false;
+
+    public:    
+        CDiscAdjSinglezoneDriver* const driver;
+        
+        LinPreconditioner(CDiscAdjSinglezoneDriver* d): driver(d) { 
+            std::cout << "Initializing preconditioner ... " << std::endl;
+
+            /*--- Build preconditioner (if necessary) for the transposed Jacobian ---*/
+            auto kindPreconditioner = driver->config->GetKind_DiscAdj_Linear_Prec();
+            auto transposedJacobian = driver->solver[FLOW_SOL]->Jacobian;  // TODO:   Check that this doesn't keep getting re-transposed
+            
+            if (!isTransposed) {
+                std::cout << "Transposing primal Jacobian ... " << std::endl;
+                
+                transposedJacobian.TransposeInPlace();
+
+                std::cout << "Re-building primal preconditioner ... " << std::endl;
+                
+                switch(kindPreconditioner) {
+                case ILU:
+                    transposedJacobian.BuildILUPreconditioner();
+                    break;
+                case JACOBI:
+                default:
+                    SU2_MPI::Error("The specified preconditioner is not yet implemented for the residual-based discrete adjoint method.", CURRENT_FUNCTION);
+                    break;
+                }
+
+                isTransposed = true;
+            } 
+
+            primalPreconditioner = CPreconditioner<Scalar>::Create(static_cast<ENUM_LINEAR_SOLVER_PREC>(kindPreconditioner), transposedJacobian, driver->geometry, driver->config);
+            primalJacobianT      = new CSysMatrixVectorProduct<Scalar>(transposedJacobian, driver->geometry, driver->config);
+        
+            driver->solver[FLOW_SOL]->System.SetMonitoringFrequency(1);
+            driver->solver[FLOW_SOL]->System.SetToleranceType(LinearToleranceType::RELATIVE);
+            driver->solver[FLOW_SOL]->System.SetxIsZero(true);
         }
 
         inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-            v = u;
+            // if identity:
+            // v = u;
+
+            std::cout << "Applying preconditioner ... " << std::endl;
+            std::cout << "Size (in) : " << u.GetLocSize() << std::endl;
+            std::cout << "Size (sol): " << v.GetLocSize() << std::endl;
+            auto nIter = 0;
+            
+            v.SetValZero();
+            
+            if (nIter == 0) {
+                (*primalPreconditioner)(u, v);
+            }
+            else {
+                Scalar tol = eps;
+                std::cout << "Applying primal system ... " << std::endl;
+                
+                nIter = driver->solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *primalJacobianT, *primalPreconditioner, tol, nIter, eps, false, driver->config);
+                
+                eps = tol;
+            }
         }
     };
     
@@ -224,7 +287,7 @@ public:
         const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
         /*--- Get all the adjoint state variables ---*/
-        offset = 0;
+        unsigned short offset = 0;
 
         for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
             auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
@@ -252,7 +315,7 @@ public:
         const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
         /*--- Set all the adjoint state variables ---*/
-        offset = 0;
+        unsigned short offset = 0;
 
         for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
             auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
@@ -280,7 +343,7 @@ public:
         const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
         /*--- Get all the partial sensitivities (dObjective/dStates) ---*/
-        offset = 0;
+        unsigned short offset = 0;
 
         for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
             auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
@@ -308,7 +371,7 @@ public:
         const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
         /*--- Get all the partial jacobian-adjoint products (dResiduals/dStates) ---*/
-        offset = 0;
+        unsigned short offset = 0;
 
         for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
             auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
