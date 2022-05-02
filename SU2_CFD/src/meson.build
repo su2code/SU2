@@ -13,6 +13,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
+                      'output/CAdjFlowOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
                       'output/CAdjHeatOutput.cpp',
@@ -47,7 +48,7 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/filewriter/CParaviewXMLFileWriter.cpp',
                       'output/filewriter/CParaviewVTMFileWriter.cpp',
                       'output/filewriter/CSU2MeshFileWriter.cpp',
-                      'output/filewriter/CCGNSFileWriter.cpp',  
+                      'output/filewriter/CCGNSFileWriter.cpp',
                       'output/tools/CWindowingTools.cpp'])
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',
@@ -56,6 +57,7 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CHeatVariable.cpp',
                       'variables/CTurbVariable.cpp',
                       'variables/CScalarVariable.cpp',
+                      'variables/CSpeciesVariable.cpp',
                       'variables/CAdjNSVariable.cpp',
                       'variables/CBaselineVariable.cpp',
                       'variables/CDiscAdjFEABoundVariable.cpp',
@@ -77,7 +79,8 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CIncEulerVariable.cpp',
                       'variables/CEulerVariable.cpp',
                       'variables/CNEMOEulerVariable.cpp',
-                      'variables/CNEMONSVariable.cpp'])
+                      'variables/CNEMONSVariable.cpp',
+                      'variables/CSobolevSmoothingVariable.cpp'])
 
 su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CAdjEulerSolver.cpp',
@@ -103,10 +106,13 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CNSSolver.cpp',
                       'solvers/CSolver.cpp',
                       'solvers/CTemplateSolver.cpp',
+                      'solvers/CSpeciesSolver.cpp',
                       'solvers/CTransLMSolver.cpp',
                       'solvers/CTurbSolver.cpp',
                       'solvers/CTurbSASolver.cpp',
-                      'solvers/CTurbSSTSolver.cpp'])
+                      'solvers/CTurbSSTSolver.cpp',
+                      'solvers/CFEASolverBase.cpp',
+                      'solvers/CGradientSmoothingSolver.cpp'])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/template.cpp',
@@ -135,11 +141,12 @@ su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/continuous_adjoint/adj_diffusion.cpp',
                       'numerics/continuous_adjoint/adj_sources.cpp',
                       'numerics/scalar/scalar_sources.cpp',
-                      'numerics/turbulent/turb_sources.cpp',
+                      'numerics/species/species_sources.cpp',
                       'numerics/elasticity/CFEAElasticity.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
-                      'numerics/elasticity/nonlinear_models.cpp'])
+                      'numerics/elasticity/nonlinear_models.cpp',
+                      'numerics/CGradSmoothing.cpp'])
 
 su2_cfd_src += files(['../include/numerics_simd/CNumericsSIMD.cpp'])
 

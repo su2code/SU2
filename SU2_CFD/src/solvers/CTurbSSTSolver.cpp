@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subrotuines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -143,7 +143,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
 
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  /*--- Initialize quantities for SlidingMesh Interface ---*/
 
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
@@ -167,11 +167,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
-  /*--- The turbulence models are always solved implicitly, so set the
-  implicit flag in case we have periodic BCs. ---*/
-
-  SetImplicitPeriodic(true);
-
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
@@ -189,39 +184,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
-
-  /*--- Clear residual and system matrix, not needed for
-   * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy) {
-    LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
-    else {SU2_OMP_BARRIER}
-  }
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   /*--- Upwind second order reconstruction and gradients ---*/
-
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-  }
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-    SetSolution_Gradient_GG(geometry, config);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-    SetSolution_Gradient_LS(geometry, config);
-
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
-
+  CommonPreprocessing(geometry, config, Output);
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -253,6 +219,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
+    VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
 
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -333,7 +300,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Menter's second blending function ---*/
 
-    numerics->SetF2blending(nodes->GetF2blending(iPoint),0.0);
+    numerics->SetF2blending(nodes->GetF2blending(iPoint));
 
     /*--- Set vorticity and strain rate magnitude ---*/
 
@@ -343,7 +310,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Cross diffusion ---*/
 
-    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+    numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
     if (axisymmetric){
       /*--- Set y coordinate ---*/
@@ -1059,10 +1026,11 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
-    Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
+      Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
+    }
   }
 
 }

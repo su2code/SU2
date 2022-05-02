@@ -2,14 +2,14 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,7 +110,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
 
@@ -119,7 +119,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
-  if (config->GetKind_Trans_Model() == BC) {
+  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
     nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
   }
 
@@ -164,11 +164,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar) = nu_tilde_Inf;
 
-  /*--- The turbulence models are always solved implicitly, so set the
-   implicit flag in case we have periodic BCs. ---*/
-
-  SetImplicitPeriodic(true);
-
   /*--- Store the initial CFL number for all grid points. ---*/
 
   const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
@@ -186,39 +181,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
   const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
 
-  /*--- Clear residual and system matrix, not needed for
-   * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy) {
-    LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
-    else {SU2_OMP_BARRIER}
-  }
-
-  /*--- Upwind second order reconstruction and gradients ---*/
-
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
-  }
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-    SetSolution_Gradient_GG(geometry, config);
-
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-    SetSolution_Gradient_LS(geometry, config);
-
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+  /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
+  CommonPreprocessing(geometry, config, Output);
 
   if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
 
@@ -307,8 +275,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool transition    = (config->GetKind_Trans_Model() == LM);
-  const bool transition_BC = (config->GetKind_Trans_Model() == BC);
+  const bool transition_BC = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
@@ -335,12 +302,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
 
     numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
-
-    /*--- Set intermittency ---*/
-
-    if (transition) {
-      numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetIntermittency(iPoint));
-    }
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
@@ -1599,11 +1560,11 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
+    }
   }
-
 }
 
 void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {

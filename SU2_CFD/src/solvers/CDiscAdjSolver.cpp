@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,19 +29,18 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_sol,
                                unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+
+  /*-- Store some information about direct solver ---*/
+
+  KindDirect_Solver = Kind_Solver;
+  direct_solver = direct_sol;
 
   adjoint = true;
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
-
-  /*--- Initialize arrays to NULL ---*/
-
-  /*-- Store some information about direct solver ---*/
-  this->KindDirect_Solver = Kind_Solver;
-  this->direct_solver = direct_solver;
 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
@@ -86,6 +85,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nodes = new CDiscAdjVariable(Solution.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
+  /*--- Allocate extra solution variables, if any are in use. ---*/
+
+  const auto nVarExtra = direct_solver->RegisterSolutionExtra(true, config);
+  nodes->AllocateAdjointSolutionExtra(nVarExtra);
+
   switch(KindDirect_Solver){
   case RUNTIME_FLOW_SYS:
     SolverName = "ADJ.FLOW";
@@ -95,6 +99,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     break;
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
+    break;
+  case RUNTIME_SPECIES_SYS:
+    SolverName = "ADJ.SPECIES";
     break;
   case RUNTIME_RADIATION_SYS:
     SolverName = "ADJ.RAD";
@@ -159,6 +166,8 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
+
+  direct_solver->RegisterSolutionExtra(true, config);
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
@@ -295,6 +304,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
 
   direct_solver->GetNodes()->RegisterSolution(false);
+
+  direct_solver->RegisterSolutionExtra(false, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
@@ -305,9 +316,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   const su2double relax = (config->GetInnerIter()==0) ? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
   /*--- Thread-local residual variables. ---*/
-
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Set the old solution and compute residuals. ---*/
@@ -329,33 +338,20 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->AddSolution(iPoint, iVar, relax*residual);
 
       if (iPoint < nPointDomain) {
-        /*--- Update residual information for current thread. ---*/
-        resRMS[iVar] += residual*residual;
-        if (fabs(residual) > resMax[iVar]) {
-          resMax[iVar] = fabs(residual);
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint,iVar,residual,resRMS,resMax,idxMax);
       }
     }
   }
   END_SU2_OMP_FOR
 
+  direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
+
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
   if (CrossTerm) return;
 
-  SetResToZero();
-
-  /*--- Reduce residual information over all threads in this rank. ---*/
-  SU2_OMP_CRITICAL
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
-
-  SetResidual_RMS(geometry, config);
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
 
   SU2_OMP_MASTER {
     SetIterLinSolver(direct_solver->System.GetIterations());
@@ -482,6 +478,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
   END_SU2_OMP_FOR
+
+  direct_solver->SetAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
@@ -586,6 +584,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                    unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -619,8 +618,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Skip flow adjoint variables ---*/
-  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+  if (KindDirect_Solver == RUNTIME_TURB_SYS) {
     skipVars += nDim + 2;
+  }
+
+  if (KindDirect_Solver == RUNTIME_SPECIES_SYS) {
+    // Skip the number of Flow Vars and Turb Vars to get to the adjoint species vars
+    skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Skip flow adjoint and turbulent variables ---*/

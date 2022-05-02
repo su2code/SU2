@@ -2,14 +2,14 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,7 +59,7 @@ protected:
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
-  const ENUM_LIMITER typeLimiter;
+  const LIMITER typeLimiter;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -72,7 +72,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    typeLimiter(static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow())) {
+    typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
 public:

@@ -2,14 +2,14 @@
  * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,8 +102,6 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
 }
 
-CElasticityOutput::~CElasticityOutput(void) {}
-
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
   CSolver* fea_solver = solver[FEA_SOL];
@@ -148,42 +146,45 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("VOLUME_FRACTION", fea_solver->GetTotal_OFVolFrac());
     SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
   }
+  /*--- Keep this as last, since it uses the history values that were set. ---*/
+  SetCustomAndComboObjectives(FEA_SOL, config, solver);
 
 }
 
-void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
+void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
 
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
-  // Residuals
+  if (nonlinear_analysis) {
+    AddHistoryOutput("RMS_UTOL", "rms[U]", ScreenOutputFormat::FIXED, "RMS_RES", "Norm of displacement increment", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_RTOL", "rms[R]", ScreenOutputFormat::FIXED, "RMS_RES", "Norm of residual", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_ETOL", "rms[E]", ScreenOutputFormat::FIXED, "RMS_RES", "Norm of energy/work increment", HistoryFieldType::RESIDUAL);
+  } else if (linear_analysis) {
+    AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED, "RMS_RES", "Residual of X displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED, "RMS_RES", "Residual of Y displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED, "RMS_RES", "Residual of Z displacement", HistoryFieldType::RESIDUAL);
+  }
+  if (multiZone) {
+    AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of X displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of Y displacement", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of Z displacement", HistoryFieldType::RESIDUAL);
+  }
+  AddHistoryOutput("VMS", "VonMises", ScreenOutputFormat::SCIENTIFIC, "Maximum Von-Misses stress", "VMS");
+  AddHistoryOutput("LOAD_RAMP", "Load_Ramp", ScreenOutputFormat::FIXED, "Fraction of total load (ramped)", "LOAD_RAMP");
+  AddHistoryOutput("LOAD_INCREMENT", "Load[%]", ScreenOutputFormat::PERCENT, "Percent of total load (incremental)", "LOAD_INCREMENT");
 
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", ScreenOutputFormat::FIXED,  "RMS_RES", "", HistoryFieldType::RESIDUAL);
-
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
-
-  AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT,    "", "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",ScreenOutputFormat::FIXED,      "", "LOAD_RAMP");
-
-  AddHistoryOutput("REFERENCE_NODE", "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("TOPOL_COMPLIANCE", "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("STRESS_PENALTY", "StressPen", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("REFERENCE_NODE", "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Distance to reference node", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOPOL_COMPLIANCE", "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Structural compliance", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("STRESS_PENALTY", "StressPen", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Aggregate stress penalty", HistoryFieldType::COEFFICIENT);
   if (config->GetRefGeom()) {
-    AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "L2 norm of difference wrt reference geometry", HistoryFieldType::COEFFICIENT);
   }
   if (config->GetTopology_Optimization()) {
-    AddHistoryOutput("VOLUME_FRACTION", "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-    AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("VOLUME_FRACTION", "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Fraction of solid material", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Discreteness of the material distribution", HistoryFieldType::COEFFICIENT);
   }
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 
 }
 

@@ -3,14 +3,14 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -99,7 +99,7 @@ bool CSU2ASCIIMeshReaderFVM::ReadMetadata(const bool single_pass, CConfig *confi
   string text_line;
   if ((nZones > 1 && multizone_file) || harmonic_balance) {
     if (harmonic_balance) {
-      cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
+      if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
     }
     else {
       bool foundZone = false;
@@ -109,7 +109,7 @@ bool CSU2ASCIIMeshReaderFVM::ReadMetadata(const bool single_pass, CConfig *confi
           text_line.erase (0,6);
           unsigned short jZone = atoi(text_line.c_str());
           if (jZone == myZone+1) {
-            cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
+            if (rank == MASTER_NODE) cout << "Reading zone " << myZone << " from native SU2 ASCII mesh." << endl;
             foundZone = true;
             break;
           }

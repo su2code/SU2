@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.2.1 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -248,21 +248,6 @@ def main():
     test_list.append(discadj_heat)
 
     ###################################
-    ### Coupled RHT-CFD Adjoint     ###
-    ###################################
-
-    # Coupled discrete adjoint for radiative heat transfer in heated cylinder
-    discadj_rht                = TestCase('discadj_rht')
-    discadj_rht.cfg_dir        = "radiation/p1adjoint"
-    discadj_rht.cfg_file       = "configp1adjoint.cfg"
-    discadj_rht.test_iter      = 10
-    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
-    discadj_rht.timeout        = 1600
-    discadj_rht.reference_file = "of_grad_cd.csv.ref"
-    discadj_rht.test_file      = "of_grad_cd.csv"
-    test_list.append(discadj_rht)
-
-    ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
    
@@ -294,10 +279,26 @@ def main():
 
     ######################################
     ### RUN TESTS                      ###
-    ######################################  
+    ######################################
 
     pass_list = [ test.run_test() for test in test_list ]
     
+    ###################################
+    ### Coupled RHT-CFD Adjoint     ###
+    ###################################
+
+    # Coupled discrete adjoint for radiative heat transfer in heated cylinder
+    discadj_rht                = TestCase('discadj_rht')
+    discadj_rht.cfg_dir        = "radiation/p1adjoint"
+    discadj_rht.cfg_file       = "configp1adjoint.cfg"
+    discadj_rht.test_iter      = 10
+    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
+    discadj_rht.timeout        = 1600
+    discadj_rht.reference_file = "of_grad_cd.csv.ref"
+    discadj_rht.test_file      = "of_grad_cd.csv"
+    pass_list.append(discadj_rht.run_filediff())
+    test_list.append(discadj_rht)
+
     ######################################
     ### RUN PYTHON TESTS               ###
     ######################################
@@ -387,6 +388,23 @@ def main():
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
     pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+
+
+    ###################################
+    ### Sobolev Gradient Smoothing  ###
+    ###################################
+
+    grad_smooth_naca0012           = TestCase('grad_smooth_naca0012')
+    grad_smooth_naca0012.cfg_dir   = "grad_smooth/naca0012"
+    grad_smooth_naca0012.cfg_file  = "inv_NACA0012_gradsmooth.cfg"
+    grad_smooth_naca0012.test_iter = 1
+    grad_smooth_naca0012.su2_exec  = "SU2_DOT_AD"
+    grad_smooth_naca0012.timeout   = 1600
+    grad_smooth_naca0012.tol       = 0.00001
+    grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
+    grad_smooth_naca0012.test_file = "of_hess.dat"
+    pass_list.append(grad_smooth_naca0012.run_filediff())
+    test_list.append(grad_smooth_naca0012)
 
     # Tests summary
     print('==================================================================')
