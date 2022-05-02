@@ -292,12 +292,12 @@ struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
     var.Shat = var.S + Sbar;
-    var.Shat = max(var.Shat, 1.0e-10);
-    if (var.Shat <= 1.0e-10) {
+    if (var.Shat <= std::numeric_limits<passivedouble>::epsilon()) {
       var.d_Shat = 0.0;
     } else {
       var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
+    var.Shat = max(var.Shat, std::numeric_limits<passivedouble>::epsilon());
   }
 };
 
@@ -321,7 +321,7 @@ struct Neg {
       // Baseline solution
       Bsl::get(nue, nu, var);
     } else {
-      var.Shat = 1.0e-10;
+      var.Shat = std::numeric_limits<passivedouble>::epsilon();
       var.d_Shat = 0.0;
     }
     /*--- Don't check whether Sbar <>= -cv2*S.
