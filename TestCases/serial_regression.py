@@ -374,6 +374,18 @@ def main():
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
 
+    # NACA0012 (SST V2003m, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_2003m           = TestCase('turb_naca0012_sst_2003m')
+    turb_naca0012_sst_2003m.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_2003m.cfg_file  = "turb_NACA0012_sst_2003m.cfg"
+    turb_naca0012_sst_2003m.test_iter = 10
+    turb_naca0012_sst_2003m.test_vals = [-7.698435, -10.060146, -3.421602, 1.049412, 0.019691, -2.193389]
+    turb_naca0012_sst_2003m.su2_exec  = "SU2_CFD"
+    turb_naca0012_sst_2003m.new_output  = True
+    turb_naca0012_sst_2003m.timeout   = 3200
+    turb_naca0012_sst_2003m.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_2003m)
+
     # NACA0012 (SST_SUST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
