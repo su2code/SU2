@@ -976,7 +976,6 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("V2003m", SST_OPTIONS::V2003m)
   //MakePair("V1994", SST_OPTIONS::V1994)
   //MakePair("V2003", SST_OPTIONS::V2003)
-  //MakePair("MODIFIED", SST_OPTIONS::MODIFIED)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::VORTICITY)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
