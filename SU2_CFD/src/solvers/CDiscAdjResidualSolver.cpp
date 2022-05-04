@@ -414,7 +414,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Coordinates(CGeometry *geometry, CCo
         /*--- Sensitivities w.r.t all reference mesh coordinates ---*/
         if (mesh_solver) {
             SU2_OMP_FOR_STAT(omp_chunk_size)
-            mesh_solver->ExtractAdjoint_Solution(geometry, config, false);
+            mesh_solver->ExtractAdjoint_Solution(geometry, config, true);
             
             for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
                 for (auto iDim = 0u; iDim < nDim; iDim++) {

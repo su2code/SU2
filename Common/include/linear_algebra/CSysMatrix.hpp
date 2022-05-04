@@ -418,6 +418,35 @@ public:
     return mat_ij[iVar*nEqn+jVar];
   }
 
+  FORCEINLINE ScalarType *GetDebug_ILUMatrix(unsigned long block_i, unsigned long block_j) {
+    const CSysMatrix& const_this = *this;
+    return const_cast<ScalarType*>( const_this.GetBlock(block_i, block_j) );
+  }
+
+  FORCEINLINE ScalarType *GetDebug_ILUMatrix(unsigned long block_i, unsigned long block_j) const {
+    /*--- The position of the diagonal block is known which allows halving the search space. ---*/
+    const auto end = (block_j<block_i)? dia_ptr_ilu[block_i] : row_ptr_ilu[block_i+1];
+    for (auto index = (block_j<block_i)? row_ptr_ilu[block_i] : dia_ptr_ilu[block_i]; index < end; ++index)
+      if (col_ind_ilu[index] == block_j)
+        return &ILU_matrix[index*nVar*nVar];
+    return nullptr;
+  }
+
+  /*!
+   * \brief TODO: REMOVE !!!!!.
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] iVar - Row of the block.
+   * \param[in] jVar - Column of the block.
+   * \return Value of the block entry.
+   */
+  FORCEINLINE ScalarType GetDebug_ILUMatrix(unsigned long block_i, unsigned long block_j,
+                                            unsigned short iVar, unsigned short jVar) const {
+    auto mat_ij = GetDebug_ILUMatrix(block_i, block_j);
+    if (!mat_ij) return 0.0;
+    return mat_ij[iVar*nEqn+jVar];
+  }
+
   /*!
    * \brief Set the value of a block (in flat format) in the sparse matrix with scaling.
    * \note If the template param Overwrite is false we add to the block (bij += alpha*b).

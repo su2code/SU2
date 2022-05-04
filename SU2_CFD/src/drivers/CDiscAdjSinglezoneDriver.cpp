@@ -150,7 +150,6 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
     if (RecordingState != MainVariables){
         MainRecording();
     }
-    
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
@@ -178,7 +177,7 @@ void CDiscAdjSinglezoneDriver::Run_FixedPoint() {
         config->SetInnerIter(Adjoint_Iter);
         
         /*--- Update the state of the tape ---*/
-        Apply_FixedPoint();
+        UpdateAdjoints_FixedPoint();
 
         /*--- Output files for steady state simulations. ---*/
         
@@ -199,102 +198,151 @@ void CDiscAdjSinglezoneDriver::Run_FixedPoint() {
 }
 
 void CDiscAdjSinglezoneDriver::Run_Residual() {
-
-    /*--- Prepare Krylov or quasi-Newton methods. ---*/
-    const auto nVar = GetTotalNumberOfVariables();
-    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
-    const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
-
     if (!KrylovSet) {
-      AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
-      AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
-      
-      LinSolver.SetToleranceType(LinearToleranceType::RELATIVE);
-      KrylovSet = true;
+
+        /*--- Initialize the solution, right-hand-side, and system ---*/
+
+        const auto nVar = GetTotalNumberOfVariables();
+        const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+        const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
+        
+        AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
+        AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+        
+        AdjSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+        KrylovSet = true;
+
+        /*--- Initialize the preconditioner using the (transpose) approximate Jacobian from the primal problem ---*/ 
+  
+        if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) {
+            std::cout << "Cannot build a preconditioner for the discrete-adjoint system (missing primal Jacobian structure) !" << std::endl;
+
+            return;
+        };
+
+        UpdateJacobians();
+
+        CopiedJacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+        
+        for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+            for (unsigned long jPoint = 0; jPoint < nPoint; jPoint++) {
+                auto value = solver[FLOW_SOL]->Jacobian.GetBlock(iPoint, jPoint);
+
+                CopiedJacobian.SetBlock(iPoint, jPoint, value);
+            }
+        }
+
+        CopiedJacobian.TransposeInPlace();
+        PrimalJacobian = new CSysMatrixVectorProduct<Scalar>(CopiedJacobian, geometry, config);
+        
+        const auto kindPreconditioner = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
+        PrimalPreconditioner = CPreconditioner<Scalar>::Create(kindPreconditioner, CopiedJacobian, geometry, config);
+        PrimalPreconditioner->Build();
     }
 
     /*--- Use FGMRES to solve the adjoint system, where:
      *      * the RHS is -dObjective/dStates (and any external contributions), 
      *      * the solution are the adjoint variables, and
      *      * the system applies the matrix-vector product with dResidual/dStates.  ---*/
+    UpdateAdjoints_Residual();
+
     GetAllSolutions(AdjSol);
     GetAllObjectiveStatesSensitivities(AdjRHS);
     //AddAllExternals(AdjRHS);
 
-    const auto AdjProduct = LinOperator(this);
-    const auto AdjPreconditioner = LinPreconditioner(this);
-    
     /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
     const bool monitor = true;
     const auto wrtFreq = 1;
 
-    LinSolver.SetMonitoringFrequency(wrtFreq);
-
+    AdjSolver.SetMonitoringFrequency(wrtFreq);
+    
     /*--- Initialize the linear solver iterations ---*/
+    const auto AdjOperator = LinOperator(this);
+    const auto AdjPreconditioner = LinPreconditioner(this);
+
     Scalar eps = 1.0;
 
-    for (auto nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovTol; ) {
+    unsigned long nKrylov_Iter;
+    for (nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovSysTol; ) {
         std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
 
-        auto nIter = nAdjoint_Iter;
+        auto nIter = min(nKrylov_Iter - 2ul, config_container[iZone]->GetnQuasiNewtonSamples() - 2ul);
         Scalar eps_l = 0.0;
-        Scalar tol_l = KrylovTol / eps;
+        Scalar tol_l = KrylovSysTol / eps;
 
-        nIter = LinSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjProduct, AdjPreconditioner, tol_l, nIter, eps_l, monitor, config_container[ZONE_0]);
+        nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjOperator, AdjPreconditioner, tol_l, nIter, eps_l, monitor, config_container[ZONE_0]);
         nKrylov_Iter -= nIter + 1;
 
         eps *= eps_l;
     }
     
     /*--- Store the solution and restore user settings. ---*/
+
     SetAllSolutions(AdjSol);
 
-    Apply_Residual();
+    UpdateAdjoints_Residual();
+    
+    /*--- Apply the solution to obtain the total sensitivities (w.r.t. deformed volume coordinates). ---*/
+
+    Postprocess();
+    
+    /*--- HACK ! Force output here until proper convergence monitoring can be implemented ---*/
+
+    const auto inst = config_container[ZONE_0]->GetiInst();
+    
+    for (iInst = 0; iInst < nInst[ZONE_0]; ++iInst) {
+        config_container[ZONE_0]->SetiInst(iInst);
+        output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][iInst][MESH_0],
+                                                  config_container[ZONE_0],
+                                                  solver_container[ZONE_0][iInst][MESH_0],
+                                                  nAdjoint_Iter - nKrylov_Iter, true);
+    }
+    config_container[ZONE_0]->SetiInst(inst);
 }
 
-
-void CDiscAdjSinglezoneDriver::Apply() {
+void CDiscAdjSinglezoneDriver::UpdateAdjoints() {
     if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-        Apply_Residual();
+        UpdateAdjoints_Residual();
     } else {
-        Apply_FixedPoint();
+        UpdateAdjoints_FixedPoint();
     }
 }
 
-void CDiscAdjSinglezoneDriver::Apply_FixedPoint() {
+void CDiscAdjSinglezoneDriver::UpdateAdjoints_FixedPoint() {
+    
         
-        /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-         *--- of the previous iteration. The values are passed to the AD tool.
-         *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
-        
-        iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
-        
-        /*--- Initialize the adjoint of the objective function with 1.0. ---*/
-        
-        SetAdj_ObjFunction();
-        
-        /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-        
-        AD::ComputeAdjoint();
-        
-        /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
-        
-        iteration->IterateDiscAdj(geometry_container, solver_container,
-                                  config_container, ZONE_0, INST_0, false);
-        
-        /*--- Monitor the pseudo-time ---*/
-        
-        StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
-                                      solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-        
-        /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-        
-        AD::ClearAdjoints();
+    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+     *--- of the previous iteration. The values are passed to the AD tool.
+     *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
+    
+    iteration->InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+    
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+    
+    UpdateAdjoints_Objective();
+    
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+    
+    AD::ComputeAdjoint();
+    
+    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+    
+    iteration->IterateDiscAdj(geometry_container, solver_container,
+                              config_container, ZONE_0, INST_0, false);
+    
+    /*--- Monitor the pseudo-time ---*/
+    
+    StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+                                  solver_container, numerics_container, config_container,
+                                  surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+    
+    AD::ClearAdjoints();
 
 }
 
-void CDiscAdjSinglezoneDriver::Apply_Residual() {
+void CDiscAdjSinglezoneDriver::UpdateAdjoints_Residual() {
     
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
      *--- of the previous iteration. The values are passed to the AD tool.
@@ -319,7 +367,7 @@ void CDiscAdjSinglezoneDriver::Apply_Residual() {
     
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
     
-    SetAdj_ObjFunction();
+    UpdateAdjoints_Objective();
     
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
     
@@ -353,6 +401,35 @@ void CDiscAdjSinglezoneDriver::Apply_Residual() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
     
     AD::ClearAdjoints();
+    
+}
+
+void CDiscAdjSinglezoneDriver::UpdateAdjoints_Objective() {
+    /*--- Initialize the seeding value ---*/
+
+    su2double seeding = 1.0;
+
+    /*--- Adapt the value for unsteady simulations ---*/
+
+    const auto IterAvg_Obj = config->GetIter_Avg_Objective();
+    CWindowingTools windowEvaluator = CWindowingTools();
+    
+    if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
+        if (TimeIter < IterAvg_Obj) {
+            /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
+            seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
+        } else {
+            seeding = 0.0;
+        }
+    }
+    
+    /*--- Apply the seeding value ---*/
+
+    if (rank == MASTER_NODE) {
+        SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
+    } else {
+        SU2_TYPE::SetDerivative(ObjFunc, 0.0);
+    }
 
 }
 
@@ -451,7 +528,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording) {
     
     /*--- Extract the objective function and store it --- */
     
-    SetObjFunction();
+    UpdateTractions();
+    UpdateObjective();
+    
+    if (rank == MASTER_NODE) {
+        AD::RegisterOutput(ObjFunc);
+    }
     
     if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
         if (rank == MASTER_NODE) AD::PrintStatistics();
@@ -471,93 +553,6 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording) {
     }
     
     AD::StopRecording();
-}
-
-void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction() {
-    
-    const auto IterAvg_Obj = config->GetIter_Avg_Objective();
-    su2double seeding = 1.0;
-    
-    CWindowingTools windowEvaluator = CWindowingTools();
-    
-    if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
-        if (TimeIter < IterAvg_Obj) {
-            /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
-            seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
-        } else {
-            seeding = 0.0;
-        }
-    }
-    
-    if (rank == MASTER_NODE) {
-        SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
-    } else {
-        SU2_TYPE::SetDerivative(ObjFunc, 0.0);
-    }
-}
-
-void CDiscAdjSinglezoneDriver::SetObjFunction() {
-    
-    ObjFunc = 0.0;
-    
-    /*--- Specific scalar objective functions ---*/
-    
-    switch (config->GetKind_Solver()) {
-        case MAIN_SOLVER::DISC_ADJ_INC_EULER:       case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-        case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
-        case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
-            
-            /*--- Surface based obj. function ---*/
-            
-            direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
-                                             config->GetOuterIter(), config->GetInnerIter());
-            ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-            
-            /*--- These calls to be moved to a generic framework at a next stage        ---*/
-            /*--- Some things that are currently hacked into output must be reorganized ---*/
-            if (config->GetBoolTurbomachinery()) {
-                output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
-                
-                unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-                unsigned short nSpanSections = config->GetnSpanWiseSections();
-                
-                switch (config_container[ZONE_0]->GetKind_ObjFunc()) {
-                    case ENTROPY_GENERATION:
-                        ObjFunc += output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections);
-                        break;
-                    case FLOW_ANGLE_OUT:
-                        ObjFunc += output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections);
-                        break;
-                    case MASS_FLOW_IN:
-                        ObjFunc += output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            break;
-            
-        case MAIN_SOLVER::DISC_ADJ_HEAT:
-            direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
-                                             config->GetOuterIter(), config->GetInnerIter());
-            ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
-            break;
-            
-        case MAIN_SOLVER::DISC_ADJ_FEM:
-            solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
-            
-            direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
-                                             config->GetOuterIter(), config->GetInnerIter());
-            ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
-            break;
-            
-        default:
-            break;
-    }
-    
-    if (rank == MASTER_NODE) {
-        AD::RegisterOutput(ObjFunc);
-    }
 }
 
 void CDiscAdjSinglezoneDriver::DirectRun_FixedPoint(RECORDING kind_recording) {
@@ -586,14 +581,23 @@ void CDiscAdjSinglezoneDriver::DirectRun_FixedPoint(RECORDING kind_recording) {
 
 void CDiscAdjSinglezoneDriver::DirectRun_Residual(RECORDING kind_recording) {
     
-    /*--- Mesh movement ---*/
+    /*--- Deform the mesh ---*/
+    direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);  // TODO: check that RecordingState equals kind_recording
+    // DeformGeometry();
     
-    direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
+    /*--- Pre-process the primal solver state ---*/
     
-    /*--- Residuals calculation ---*/
+    UpdateTimeIter();
+    UpdateFarfield();
+    UpdateGeometry();
+    UpdateStates();
     
-    Apply_Direct(false);
+    /*--- Run the computation of the outputs of interest ---*/
     
+    UpdateResiduals();
+    UpdateTractions();
+    UpdateObjective();
+
     /*--- Print the direct residual to screen ---*/
     
     Print_DirectResidual(kind_recording);
@@ -751,7 +755,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_FixedPoint() {
     
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
     
-    SetAdj_ObjFunction();
+    UpdateAdjoints_Objective();
     
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
     
@@ -801,7 +805,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
     
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
     
-    SetAdj_ObjFunction();
+    UpdateAdjoints_Objective();
     
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
     
@@ -847,31 +851,31 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
     
     /*--- Skip the derivation of the mesh solver if it is not defined ---*/
     
-    if (SecondaryVariables == RECORDING::MESH_DEFORM) {
-        /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
-        
-        SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
-            
-            /*--- Initialize the adjoints of the volume coordinates ---*/
-            
-            solver[ADJMESH_SOL]->SetAdjoint_Output(geometry, config);
-        }
-        END_SU2_OMP_PARALLEL
-        
-        /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-        
-        AD::ComputeAdjoint();
-        
-        /*--- Extract the adjoints of the volume coordinates and store them for the next iteration ---*/
-        
-        if (config->GetFluidProblem()) {
-            solver[ADJFLOW_SOL]->ExtractAdjoint_Coordinates(geometry, config, solver[ADJMESH_SOL], ENUM_VARIABLE::COORDINATES);
-        }
+    // if (SecondaryVariables == RECORDING::MESH_DEFORM) {
+    //     /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
+    //     
+    //     SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
+    //         
+    //         /*--- Initialize the adjoints of the volume coordinates ---*/
+    //         
+    //         solver[ADJMESH_SOL]->SetAdjoint_Output(geometry, config);
+    //     }
+    //     END_SU2_OMP_PARALLEL
+    //     
+    //     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+    //     
+    //     AD::ComputeAdjoint();
+    //     
+    //     /*--- Extract the adjoints of the volume coordinates and store them for the next iteration ---*/
+    //     
+    //     if (config->GetFluidProblem()) {
+    //         solver[ADJFLOW_SOL]->ExtractAdjoint_Coordinates(geometry, config, solver[ADJMESH_SOL], ENUM_VARIABLE::COORDINATES);
+    //     }
     
-        /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-        
-        AD::ClearAdjoints();
-    }
+    //     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+    //     
+    //     AD::ClearAdjoints();
+    // }
     
     /*--- Extract the adjoints of the residuals and store them for the next iteration ---*/
     
@@ -880,17 +884,23 @@ void CDiscAdjSinglezoneDriver::SecondaryRun_Residual() {
     }
 }
 
-void CDiscAdjSinglezoneDriver::Apply_Direct(bool deform) {
+void CDiscAdjSinglezoneDriver::UpdateTimeIter() {
+    /*--- Update the primal time iteration ---*/ 
+
+    solver[FLOW_SOL]->SetTime_Step(geometry, solver, config, MESH_0, config->GetTimeIter());
+}
+
+void CDiscAdjSinglezoneDriver::UpdateFarfield() {
+    /*--- Update the primal far-field variables. ---*/
     
-    //  TODO:   Update/set Far-field conditions here instead of in the setter for AoA and Mach
     su2double Velocity_Ref = config->GetVelocity_Ref();
-    su2double Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
-    su2double Beta                   = config->GetAoS()*PI_NUMBER/180.0;
-    su2double Mach                   = config->GetMach();
-    su2double Temperature            = config->GetTemperature_FreeStream();
-    su2double Gas_Constant           = config->GetGas_Constant();
-    su2double Gamma                  = config->GetGamma();
-    su2double SoundSpeed             = sqrt(Gamma*Gas_Constant*Temperature);
+    su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
+    su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
+    su2double Mach         = config->GetMach();
+    su2double Temperature  = config->GetTemperature_FreeStream();
+    su2double Gas_Constant = config->GetGas_Constant();
+    su2double Gamma        = config->GetGamma();
+    su2double SoundSpeed   = sqrt(Gamma*Gas_Constant*Temperature);
     
     if (nDim == 2) {
         config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
@@ -901,32 +911,142 @@ void CDiscAdjSinglezoneDriver::Apply_Direct(bool deform) {
         config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
         config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
-    
-    /*--- Update the dual grid (without multigrid). ---*/
+}
+
+void CDiscAdjSinglezoneDriver::UpdateGeometry() {
+    /*--- Update the geometry (i.e. dual grid, without multigrid). ---*/
+
     geometry->InitiateComms(geometry, config, COORDINATES);
     geometry->CompleteComms(geometry, config, COORDINATES);
     
     geometry->SetControlVolume(config, UPDATE);
     geometry->SetBoundControlVolume(config, UPDATE);
     geometry->SetMaxLength(config);
+}
+
+void CDiscAdjSinglezoneDriver::DeformGeometry() {
+    /*--- Deform the geometry. ---*/
     
-    /*--- Mesh movement ---*/
-    if (deform) {
-        direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, RecordingState);
+    direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, SecondaryVariables);  // TODO: check that RecordingState equals kind_recording
+}
+
+void CDiscAdjSinglezoneDriver::UpdateObjective() {
+    
+    /*--- Re-set the objective function value ---*/
+
+    ObjFunc = 0.0;
+    
+    /*--- Specific scalar objective functions ---*/
+    
+    switch (config->GetKind_Solver()) {
+        case MAIN_SOLVER::DISC_ADJ_INC_EULER:       case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:      case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+        case MAIN_SOLVER::DISC_ADJ_EULER:           case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:          case MAIN_SOLVER::DISC_ADJ_RANS:
+        case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
+            
+            /*--- Surface based obj. function ---*/
+            
+            direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                             config->GetOuterIter(), config->GetInnerIter());
+            ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+            
+            /*--- These calls to be moved to a generic framework at a next stage        ---*/
+            /*--- Some things that are currently hacked into output must be reorganized ---*/
+            if (config->GetBoolTurbomachinery()) {
+                output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
+                
+                unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
+                unsigned short nSpanSections = config->GetnSpanWiseSections();
+                
+                switch (config_container[ZONE_0]->GetKind_ObjFunc()) {
+                    case ENTROPY_GENERATION:
+                        ObjFunc += output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections);
+                        break;
+                    case FLOW_ANGLE_OUT:
+                        ObjFunc += output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections);
+                        break;
+                    case MASS_FLOW_IN:
+                        ObjFunc += output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            break;
+            
+        case MAIN_SOLVER::DISC_ADJ_HEAT:
+            direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                             config->GetOuterIter(), config->GetInnerIter());
+            ObjFunc = solver[HEAT_SOL]->GetTotal_ComboObj();
+            break;
+            
+        case MAIN_SOLVER::DISC_ADJ_FEM:
+            solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
+            
+            direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
+                                             config->GetOuterIter(), config->GetInnerIter());
+            ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
+            break;
+            
+        default:
+            break;
     }
-    
-    /*--- Flow and turbulent conservative state variables ---*/
+}
+
+void CDiscAdjSinglezoneDriver::UpdateStates() {
+    /*--- Update the flow and turbulent conservative state variables, preparing for other updates ---*/
     
     direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-    
+}
+
+void CDiscAdjSinglezoneDriver::UpdateResiduals() {
     /*--- Update the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) residuals and objective function (no system solve) ---*/
     
     integration[FLOW_SOL]->ComputeResiduals(geometry_container, solver_container, numerics_container, config_container, FLOW_SOL, ZONE_0, INST_0);
-    
-    /*--- Flow tractions ---*/
+}
+
+void CDiscAdjSinglezoneDriver::UpdateTractions() {
+    /*--- Update the surface tractions ---*/
     
     direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+}
 
-    //  TODO: Missing objective function computation ! 
-    // SetObjFunc() without the RegisterOutput here
+void CDiscAdjSinglezoneDriver::UpdateJacobians() {
+    /*--- Compute the approximate Jacobian for preconditioning. ---*/
+
+    solver[FLOW_SOL]->PrepareImplicitIteration(geometry, solver, config);
+}
+
+void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+    auto nIter = 5;
+   
+   /*--- Use an approximate diagonal preconditioning ---*/
+   
+   /*--- Use the preconditioner based on the transpose of the primal Jacobian ---*/
+
+   if (nIter == 0) {
+       (*PrimalPreconditioner)(u, v);
+   }
+
+   /*--- Apply a few FGMRES iterations in addition to the above preconditioner ---*/
+   
+   else {
+       v.SetValZero();
+
+       Scalar KrylovPreEps = KrylovPreTol;
+       nIter = solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, nIter, KrylovPreEps, false, config);
+   }
+}
+
+void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+    /*--- Set the adjoint variables used in the seeding of the tape  ---*/
+    
+    SetAllSolutions(u);
+
+    /*--- Evaluate the tape to and extract the partial derivatives ---*/
+
+    UpdateAdjoints_Residual();
+
+    /*--- Extract the partial residual jacobian-adjoint product ---*/
+
+    GetAllResidualsStatesSensitivities(v);
 }

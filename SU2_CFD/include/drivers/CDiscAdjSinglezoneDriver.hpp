@@ -70,99 +70,36 @@ protected:
 
     /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
     static constexpr unsigned long KrylovMinIters = 3;
-    const Scalar KrylovTol = 0.001;
+    const Scalar KrylovSysTol = 0.00001;
+    const Scalar KrylovPreTol = 0.1;
     bool KrylovSet = false;
-    
-    CSysSolve<Scalar> LinSolver;
+
+    CSysMatrix<Scalar> CopiedJacobian; 
+    CSysSolve<Scalar> AdjSolver;
     CSysVector<Scalar> AdjRHS;
     CSysVector<Scalar> AdjSol;
+    CPreconditioner<Scalar>* PrimalPreconditioner = nullptr;
+    CSysMatrixVectorProduct<Scalar>* PrimalJacobian = nullptr;
 
     class LinOperator : public CMatrixVectorProduct<Scalar> {
     public:
         CDiscAdjSinglezoneDriver* const driver;
-        mutable unsigned long iInnerIter = 0;
 
         LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
 
         inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-            std::cout << "Applying adjoint operator ... " << std::endl;
-            driver->SetAllSolutions(u);
-
-            driver->Apply_Residual();
-            
-            std::cout << "Updating sensitivities ... " << std::endl;
-            driver->GetAllResidualsStatesSensitivities(v);
-            ++iInnerIter;
+            driver->ApplyOperator(u, v);
         }
     };
 
     class LinPreconditioner : public CPreconditioner<Scalar> {
-    private: 
-        const CPreconditioner<Scalar>* primalPreconditioner;
-        const CMatrixVectorProduct<Scalar>* primalJacobianT;
-        mutable Scalar eps = 0.1;
-        bool isTransposed = false;
-
     public:    
         CDiscAdjSinglezoneDriver* const driver;
         
-        LinPreconditioner(CDiscAdjSinglezoneDriver* d): driver(d) { 
-            std::cout << "Initializing preconditioner ... " << std::endl;
-
-            /*--- Build preconditioner (if necessary) for the transposed Jacobian ---*/
-            auto kindPreconditioner = driver->config->GetKind_DiscAdj_Linear_Prec();
-            auto transposedJacobian = driver->solver[FLOW_SOL]->Jacobian;  // TODO:   Check that this doesn't keep getting re-transposed
+        LinPreconditioner(CDiscAdjSinglezoneDriver* d): driver(d) { }
             
-            if (!isTransposed) {
-                std::cout << "Transposing primal Jacobian ... " << std::endl;
-                
-                transposedJacobian.TransposeInPlace();
-
-                std::cout << "Re-building primal preconditioner ... " << std::endl;
-                
-                switch(kindPreconditioner) {
-                case ILU:
-                    transposedJacobian.BuildILUPreconditioner();
-                    break;
-                case JACOBI:
-                default:
-                    SU2_MPI::Error("The specified preconditioner is not yet implemented for the residual-based discrete adjoint method.", CURRENT_FUNCTION);
-                    break;
-                }
-
-                isTransposed = true;
-            } 
-
-            primalPreconditioner = CPreconditioner<Scalar>::Create(static_cast<ENUM_LINEAR_SOLVER_PREC>(kindPreconditioner), transposedJacobian, driver->geometry, driver->config);
-            primalJacobianT      = new CSysMatrixVectorProduct<Scalar>(transposedJacobian, driver->geometry, driver->config);
-        
-            driver->solver[FLOW_SOL]->System.SetMonitoringFrequency(1);
-            driver->solver[FLOW_SOL]->System.SetToleranceType(LinearToleranceType::RELATIVE);
-            driver->solver[FLOW_SOL]->System.SetxIsZero(true);
-        }
-
         inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-            // if identity:
-            // v = u;
-
-            std::cout << "Applying preconditioner ... " << std::endl;
-            std::cout << "Size (in) : " << u.GetLocSize() << std::endl;
-            std::cout << "Size (sol): " << v.GetLocSize() << std::endl;
-            auto nIter = 0;
-            
-            v.SetValZero();
-            
-            if (nIter == 0) {
-                (*primalPreconditioner)(u, v);
-            }
-            else {
-                Scalar tol = eps;
-                std::cout << "Applying primal system ... " << std::endl;
-                
-                nIter = driver->solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *primalJacobianT, *primalPreconditioner, tol, nIter, eps, false, driver->config);
-                
-                eps = tol;
-            }
+            driver->ApplyPreconditioner(u, v);
         }
     };
     
@@ -198,12 +135,52 @@ public:
     /*!
      * \brief Update the discrete adjoint solution.
      */
-    void Apply(void);
+    void UpdateAdjoints(void);
+
+    /*!
+     * \brief Update the primal time iteration.
+     */
+    void UpdateTimeIter(void);
     
     /*!
-     * \brief Update the direct solution.
+     * \brief Update the primal far-field variables.
      */
-    void Apply_Direct(bool deform = false);
+    void UpdateFarfield(void);
+    
+    /*!
+     * \brief Update the primal geometry (does not include mesh deformation).
+     */
+    void UpdateGeometry(void);
+
+    /*!
+     * \brief Deform the primal mesh.
+     */
+    void DeformGeometry(void);
+    
+    /*!
+     * \brief Update the primal states.
+     */
+    void UpdateStates();
+    
+    /*!
+     * \brief Update the primal residuals.
+     */
+    void UpdateResiduals();
+    
+    /*!
+     * \brief Update the primal tractions.
+     */
+    void UpdateTractions();
+
+    /*!
+     * \brief Update the primal objective.
+     */
+    void UpdateObjective();
+
+    /*!
+     * \brief Update the primal jacobian.
+     */
+    void UpdateJacobians();
     
     /*!
      * \brief Postprocess the adjoint iteration for ZONE_0.
@@ -227,16 +204,6 @@ public:
      * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
      */
     void DirectRun_Residual(RECORDING kind_recording);
-    
-    /*!
-     * \brief Set the objective function.
-     */
-    void SetObjFunction(void);
-    
-    /*!
-     * \brief Initialize the adjoint value of the objective function.
-     */
-    void SetAdj_ObjFunction(void);
     
     /*!
      * \brief Print out the direct residuals.
@@ -382,26 +349,15 @@ public:
                 for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
                     auto value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
 
-                    values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(value);
+                    values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
                 }
             }
 
             offset += solver->GetnVar();
         }
     }
-
     
 protected:
-    
-    /*!
-     * \brief Update the discrete adjoint solver with a single zone.
-     */
-    void Apply_FixedPoint(void);
-    
-    /*!
-     * \brief Update the discrete adjoint solver with a single zone.
-     */
-    void Apply_Residual(void);
     
     /*!
      * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.
@@ -423,4 +379,28 @@ protected:
      */
     void SecondaryRun_Residual(void);
     
+    /*!
+     * \brief Update the fixed-point discrete adjoint solver with a single zone.
+     */
+    void UpdateAdjoints_FixedPoint(void);
+    
+    /*!
+     * \brief Update the residual-based discrete adjoint solver with a single zone.
+     */
+    void UpdateAdjoints_Residual(void);
+    
+    /*!
+     * \brief Update the residual-based discrete adjoint solver with a single zone.
+     */
+    void UpdateAdjoints_Objective(void);
+
+    /*!
+    * \brief Adjoint problem Jacobian-vector product.
+    */
+    void ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
+
+    /*!
+    * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
+    */
+    void ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
 };
