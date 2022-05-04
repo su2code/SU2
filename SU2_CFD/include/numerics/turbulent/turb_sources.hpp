@@ -741,7 +741,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           P_Base = PerturbedStrainMag(ScalarVar_i[0]);
           break;
 
-        case SST_OPTIONS::VORTICITY:
+        case SST_OPTIONS::V:
           P_Base = VorticityMag;
           break;
 
