@@ -2896,7 +2896,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-void CConfig::SetConfig_Parsing(istream& config_buffer){
+void CConfig::SetConfig_Parsing(istream& config_buffer){ 
 
   string text_line, option_name;
   vector<string> option_value;
@@ -2944,7 +2944,6 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
      }
 
     if (TokenizeString(text_line, option_name, option_value)) {
-
       /*--- See if it's a python option ---*/
 
       if (option_map.find(option_name) == option_map.end()) {
@@ -3054,6 +3053,14 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
 
       string out = option_map[option_name]->SetValue(option_value);
       if (out.compare("") != 0) {
+        string newString;
+
+        /*--- valid option, but deprecated value ---*/
+        if ((!option_name.compare("KIND_TURB_MODEL")) && (option_value[0]=="SST_SUST"))
+            newString.append("Option KIND_TURB_MODEL=SST_SUST is deprecated. Use KIND_TURB_MODEL=SST, SST_OPTIONS=SUSTAINING instead.\n");
+
+        errorString.append(newString);
+        
         errorString.append(out);
         errorString.append("\n");
         err_count++;

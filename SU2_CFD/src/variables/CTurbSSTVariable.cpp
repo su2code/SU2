@@ -44,6 +44,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   sigma_om2 = constants[3];
   beta_star = constants[6];
+  prodLimConst = constants[10];
 
   F1.resize(nPoint) = su2double(1.0);
   F2.resize(nPoint) = su2double(0.0);
@@ -68,12 +69,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
-  if (sstParsedOptions.version == SST_OPTIONS::V1994){
-    CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -20.0));
-  } else {
-    /* SST-2003 */
-    CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -10.0));
-  }
+  CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -prodLimConst));
 
   /*--- F1 ---*/
 
