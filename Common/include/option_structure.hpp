@@ -38,8 +38,6 @@
 #include <algorithm>
 #include <cassert>
 
-using namespace std;
-
 /*!
  * \class CEmptyMap
  * \brief We use this dummy class instead of std::map when
