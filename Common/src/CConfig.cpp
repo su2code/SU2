@@ -3405,7 +3405,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model==TURB_MODEL::SST){
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
-  } 
+  }
 
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
   if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
@@ -5870,23 +5870,30 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
           case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SST:       
-             cout << "Menter's k-omega SST" << endl;
-             if (sstParsedOptions.version == SST_OPTIONS::V1994)
-               cout << "  version 1994" << endl; 
-             else  
-               cout << "  version 2003" << endl; 
-             if (sstParsedOptions.modified) 
-               cout << "  modified" <<endl; 
-             else
-               cout << "  unmodified" <<endl; 
+          case TURB_MODEL::SST:
+            cout << "Menter's k-omega SST";
+            if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
+            else cout << "-2003";
+            if (sstParsedOptions.modified) cout << "m";
+            if (sstParsedOptions.sust) cout << " with sustaining terms, and";
 
-             if (sstParsedOptions.sust)  cout << "  with sustaining terms" << endl; 
-             if (sstParsedOptions.uq){
-               cout << "  Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-               if (uq_permute) cout << "  Permuting eigenvectors" << endl;
-             }
-             break;
+            switch (sstParsedOptions.production) {
+              case SST_OPTIONS::KL:
+                cout << " with Kato-Launder production";
+                break;
+              case SST_OPTIONS::V:
+                cout << " with Vorticity production";
+                break;
+              case SST_OPTIONS::UQ:
+                cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
+                if (uq_permute) cout << " (permuting eigenvectors)";
+                break;
+              default:
+                cout << " with no production modification";
+                break;
+            }
+            cout << "." << endl;
+            break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
