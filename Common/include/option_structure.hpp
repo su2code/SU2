@@ -964,7 +964,6 @@ enum class SST_OPTIONS {
   V2003,       /*!< \brief 2003 Menter k-w SST model. */
   V1994m,       /*!< \brief 1994m Menter k-w SST model. */
   V2003m,       /*!< \brief 2003m Menter k-w SST model. */
-  MODIFIED,    /*!< \brief Modified k-w SST model. */
   SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
   VORTICITY,   /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
