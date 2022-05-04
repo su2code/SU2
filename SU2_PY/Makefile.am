@@ -41,6 +41,7 @@ bin_SCRIPTS = \
     merge_solution.py \
     set_corner_points.py \
     set_ffd_design_var.py \
+    split_quads.py \
     compute_polar.py \
     compute_multipoint.py \
     discrete_adjoint.py \
