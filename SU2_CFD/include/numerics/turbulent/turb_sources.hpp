@@ -732,11 +732,25 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double StrainMag = StrainMag_i;
       su2double P_Base = StrainMag;  //Base production term for SST1994 and SST2003
 
-      if (sstParsedOptions.uq) {
-        ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
+      /*--- Apply production term modifications ---*/
+      switch (sstParsedOptions.production) {
+        case SST_OPTIONS::UQ:
+          ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
-        StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
-        P_Base = PerturbedStrainMag(ScalarVar_i[0]);
+          StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
+          P_Base = PerturbedStrainMag(ScalarVar_i[0]);
+          break;
+
+        case SST_OPTIONS::VORTICITY:
+          P_Base = VorticityMag;
+          break;
+
+        case SST_OPTIONS::KL:
+          P_Base = sqrt(StrainMag*VorticityMag);
+          break;
+
+        default:
+          P_Base = StrainMag;
       }
 
       su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
