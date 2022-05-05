@@ -759,7 +759,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM IS MISSING ---*/
         P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       }
-      P = max(0, P);
+      P = max(0.0, P);
       su2double pk = min(P, prod_limit);
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
