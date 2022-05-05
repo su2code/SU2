@@ -397,22 +397,22 @@ def main():
     turb_naca0012_sst_2003_Vm.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_2003_Vm.cfg_file  = "turb_NACA0012_sst_2003-Vm.cfg"
     turb_naca0012_sst_2003_Vm.test_iter = 10
-    turb_naca0012_sst_2003_Vm.test_vals = [-11.370785, -12.641676, -5.748419, 1.005233, 0.019017, -2.057144]
+    turb_naca0012_sst_2003_Vm.test_vals = [-7.634562, -9.908551, -3.263757, 1.047597, 0.019811, -2.085445]
     turb_naca0012_sst_2003_Vm.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_2003_Vm.timeout   = 3200
     turb_naca0012_sst_2003_Vm.tol       = 0.00001
-    test_list.append(turb_naca0012_sst_sust2003_Vm)
+    test_list.append(turb_naca0012_sst_2003_Vm)
 
     # NACA0012 (SST, 1994m Kato-Launder)
     turb_naca0012_sst_1994_KLm           = TestCase('turb_naca0012_sst_1994_KLm')
     turb_naca0012_sst_1994_KLm.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_1994_KLm.cfg_file  = "turb_NACA0012_sst_1994-KLm.cfg"
     turb_naca0012_sst_1994_KLm.test_iter = 10
-    turb_naca0012_sst_1994_KLm.test_vals = [-11.370785, -12.641676, -5.748419, 1.005233, 0.019017, -2.057144]
+    turb_naca0012_sst_1994_KLm.test_vals = [-8.648410, -10.723737, -3.872430, 1.049156, 0.019214, -1.559073]
     turb_naca0012_sst_1994_KLm.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_1994_KLm.timeout   = 3200
     turb_naca0012_sst_1994_KLm.tol       = 0.00001
-    test_list.append(turb_naca0012_sst_)
+    test_list.append(turb_naca0012_sst_1994_KLm)
 
 
     # NACA0012 (SST, fixed values for turbulence quantities)
