@@ -726,15 +726,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-      su2double StrainMag = StrainMag_i;
-      su2double P_Base = StrainMag;  // Base production term for SST-1994 and SST-2003
+      su2double P_Base = 0;
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
         case SST_OPTIONS::UQ:
           ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
-          StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
           P_Base = PerturbedStrainMag(ScalarVar_i[0]);
           break;
 
@@ -743,49 +741,32 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           break;
 
         case SST_OPTIONS::KL:
-          P_Base = sqrt(StrainMag*VorticityMag);
+          P_Base = sqrt(StrainMag_i*VorticityMag);
           break;
 
         default:
-          P_Base = StrainMag;
+          /*--- Base production term for SST-1994 and SST-2003 ---*/
+          P_Base = StrainMag_i;
+          break;
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
+      /*--- Production limiter. ---*/
+      const su2double prod_limit = ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
+
+      su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
 
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-        pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+        P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       }
+      su2double pk = max(0.0, min(pk, prod_limit));
 
-      /*--- production limiter ---*/
-      pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
-      pk = max(0.0, pk);
+      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
-      su2double zeta;
-
-      if (sstParsedOptions.version == SST_OPTIONS::V1994){
-        zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-        /*--- ---*/
-      } else {
-        zeta = max(ScalarVar_i[1], StrainMag_i * F2_i / a1);
-      }
-
-      su2double pw = pow(StrainMag, 2);
-
-      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-        pw = pw - 2.0 / 3.0 * zeta * diverg;
-      }
-
-      /*--- Pw = alfa/nu_t * P = alfa/(mu_t/rho) * (mu_t*S*S) ---*/
-      if (sstParsedOptions.version == SST_OPTIONS::V1994){
-        pw = (alfa_blended * Density_i) * max(pw,0.0);
-      } else {
-        /*--- Production limiter only for V2003---*/
-        pw = Eddy_Viscosity_i * pw;
-        pw = min(pw, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
-        pw = (alfa_blended*Density_i/Eddy_Viscosity_i)*pw;
-      }
+      /*--- Production limiter only for V2003---*/
+      const auto& pw_base = sstParsedOptions.version == SST_OPTIONS::V1994 ? P : pk;
+      su2double pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pw_base;
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -793,7 +774,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
             where the sustaining terms are simply added. This latter approach could
             lead to problems for very big values of the free-stream turbulence
             intensity. ---*/
-
       if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
