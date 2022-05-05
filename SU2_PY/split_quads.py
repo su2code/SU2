@@ -35,27 +35,39 @@ from numpy import *
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename",
                   help="read mesh from FILE", metavar="FILE")
+parser.add_option("-o", "--output", dest="outfilename",
+                  help="write new mesh to FILE", metavar="OUTFILE")
 
 (options, args)=parser.parse_args()
 
 # Process options
 filename = str(options.filename)
+outfilename = str(options.outfilename)
 
 with open(filename, 'r') as input:
-    for line in input:
-       if 'NELEM' in line:
-           break
+    with open(outfilename, 'w') as output:
+        # Output mesh contents up to elements
+        for line in input:
+            if 'NELEM' in line:
+                break
+            print(line.rstrip('\n'), file=output)
 
-    quads = []
-    for line in input:
-        if '%' in line:
-            break
-        quads.append(line.split()[1:-1])
+        # Store quads
+        quads = []
+        for line in input:
+            if '%' in line or 'N' in line:
+                end_quads = line
+                break
+            quads.append(line.split()[1:-1])
 
-print(f"NELEM= {len(quads)*2}")
-for i, quad in enumerate(quads):
-    tri = f" 5\t{quad[0]}\t{quad[1]}\t{quad[2]}\t{i*2}"
-    print(tri)
-    tri = f" 5\t{quad[2]}\t{quad[3]}\t{quad[0]}\t{i*2+1}"
-    print(tri)
+        # Split and output quads
+        print(f"NELEM= {len(quads)*2}", file=output)
+        for i, quad in enumerate(quads):
+            print(f" 5 {quad[0]} {quad[1]} {quad[2]} {i*2}", file=output)
+            print(f" 5 {quad[2]} {quad[3]} {quad[0]} {i*2+1}", file=output)
+
+        # Output remainder of mesh
+        print(end_quads.rstrip('\n'), file=output)
+        for line in input:
+            print(line.rstrip('\n'), file=output)
 
