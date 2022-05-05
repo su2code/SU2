@@ -412,7 +412,7 @@ def main():
     turb_naca0012_sst_1994_KLm.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_1994_KLm.timeout   = 3200
     turb_naca0012_sst_1994_KLm.tol       = 0.00001
-    test_list.append(turb_naca0012_sst_)
+    test_list.append(turb_naca0012_sst_1994_KLm)
 
 
     # NACA0012 (SST, fixed values for turbulence quantities)
