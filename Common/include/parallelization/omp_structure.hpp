@@ -146,6 +146,7 @@ void omp_finalize();
 #define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_BARRIER SU2_OMP(barrier)
 #define SU2_OMP_CRITICAL SU2_OMP(critical)
+#define SU2_OMP_SINGLE SU2_OMP(single)
 
 #define SU2_OMP_PARALLEL SU2_OMP(parallel)
 #define SU2_OMP_PARALLEL_(ARGS) SU2_OMP(parallel ARGS)
@@ -161,12 +162,14 @@ void omp_finalize();
 #define END_SU2_OMP_CRITICAL
 #define END_SU2_OMP_PARALLEL
 #define END_SU2_OMP_FOR
+#define END_SU2_OMP_SINGLE
 
 #else
 
 #define SU2_OMP_MASTER OPDI_MASTER()
 #define SU2_OMP_BARRIER OPDI_BARRIER()
 #define SU2_OMP_CRITICAL OPDI_CRITICAL()
+#define SU2_OMP_SINGLE OPDI_SINGLE()
 
 #define SU2_OMP_PARALLEL OPDI_PARALLEL()
 #define SU2_OMP_PARALLEL_(ARGS) OPDI_PARALLEL(ARGS)
@@ -182,6 +185,7 @@ void omp_finalize();
 #define END_SU2_OMP_CRITICAL OPDI_END_CRITICAL
 #define END_SU2_OMP_PARALLEL OPDI_END_PARALLEL
 #define END_SU2_OMP_FOR OPDI_END_FOR
+#define END_SU2_OMP_SINGLE OPDI_END_SINGLE
 
 #endif
 
