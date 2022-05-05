@@ -96,4 +96,4 @@ build/
 ninja
 
 # Ignore vscode folder
-.vscode/
+##.vscode/
