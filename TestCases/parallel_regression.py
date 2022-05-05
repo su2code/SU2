@@ -401,7 +401,7 @@ def main():
     turb_naca0012_sst_2003_Vm.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_2003_Vm.timeout   = 3200
     turb_naca0012_sst_2003_Vm.tol       = 0.00001
-    test_list.append(turb_naca0012_sst_sust2003_Vm)
+    test_list.append(turb_naca0012_sst_2003_Vm)
 
     # NACA0012 (SST, 1994m Kato-Launder)
     turb_naca0012_sst_1994_KLm           = TestCase('turb_naca0012_sst_1994_KLm')
