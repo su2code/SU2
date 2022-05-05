@@ -565,7 +565,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
   const su2double ProdLimConstant;
-  SST_ParsedOptions sstParsedOptions;
+
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
@@ -655,9 +655,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
-
-    sstParsedOptions = config->GetSSTParsedOptions();
-
   }
 
   /*!
@@ -730,7 +727,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double StrainMag = StrainMag_i;
-      su2double P_Base = StrainMag;  //Base production term for SST1994 and SST2003
+      su2double P_Base = StrainMag;  // Base production term for SST-1994 and SST-2003
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
@@ -741,7 +738,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           P_Base = PerturbedStrainMag(ScalarVar_i[0]);
           break;
 
-        case SST_OPTIONS::VORTICITY:
+        case SST_OPTIONS::V:
           P_Base = VorticityMag;
           break;
 
@@ -755,14 +752,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       su2double pk = Eddy_Viscosity_i * pow(P_Base, 2);
 
-   //   if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
-       /* in case of unmodified, we add the divergence terms */
-        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-          /*--- Note that we only keep this divergence term for the 1994v and 2003v model (vorticity)---*/
-          pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-        } 
-    //  } 
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+        pk = pk - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      }
 
       /*--- production limiter ---*/
       pk = min(pk, ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]);
@@ -777,17 +770,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         zeta = max(ScalarVar_i[1], StrainMag_i * F2_i / a1);
       }
 
-      su2double pw = pow(StrainMag, 2); 
+      su2double pw = pow(StrainMag, 2);
 
-   //   if (sstParsedOptions.version != SST_OPTIONS::MODIFIED) {
-       /* in case of unmodified, we add the divergence terms */
-        if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-          /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
-          pw = pw - 2.0 / 3.0 * zeta * diverg;
-        } 
-    //  } 
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994 BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+        pw = pw - 2.0 / 3.0 * zeta * diverg;
+      }
 
-      /*--- Pw = alfa/nu_t * P = alfa/(mu_t/rho) * (mu_t*S*S)---*/
+      /*--- Pw = alfa/nu_t * P = alfa/(mu_t/rho) * (mu_t*S*S) ---*/
       if (sstParsedOptions.version == SST_OPTIONS::V1994){
         pw = (alfa_blended * Density_i) * max(pw,0.0);
       } else {
