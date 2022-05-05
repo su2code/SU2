@@ -960,6 +960,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
             {
               cout << "Warning: T_Wall < 0 " << endl;
             }
+            END_SU2_OMP_CRITICAL
           }
         }
 
