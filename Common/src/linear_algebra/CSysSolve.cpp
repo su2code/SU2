@@ -1057,23 +1057,25 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Solve the system ---*/
 
+  ScalarType residual = 0.0;
+
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
   switch(KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
+      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case PASTIX_LDLT : case PASTIX_LU:
       if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
@@ -1091,8 +1093,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   delete precond;
 
   SU2_OMP_MASTER
-  Iterations = IterLinSol;
-  END_SU2_OMP_MASTER
+  {
+    Residual = residual;
+    Iterations = IterLinSol;
+  } END_SU2_OMP_MASTER
 
   return IterLinSol;
 
