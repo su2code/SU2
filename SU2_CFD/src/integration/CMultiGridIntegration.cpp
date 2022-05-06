@@ -226,7 +226,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Temporarily disable implicit integration, for what follows we do not need the Jacobian. ---*/
 
-    if (implicit) config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+    if (implicit) {
+      SU2_OMP_SINGLE
+        config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+      END_SU2_OMP_SINGLE
+    }
 
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
 
@@ -250,7 +254,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Restore the time integration settings. ---*/
 
-    if (implicit) config->SetKind_TimeIntScheme(EULER_IMPLICIT);
+    if (implicit) {
+      SU2_OMP_SINGLE
+        config->SetKind_TimeIntScheme(EULER_IMPLICIT);
+      END_SU2_OMP_SINGLE
+    }
 
     /*--- Recursive call to MultiGrid_Cycle (this routine). ---*/
 
