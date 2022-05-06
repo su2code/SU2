@@ -342,6 +342,12 @@ namespace AD{
 
   FORCEINLINE void ClearAdjoints() {AD::getGlobalTape().clearAdjoints(); }
 
+  FORCEINLINE void ResizeAdjoints() {
+  #if defined(HAVE_OPDI)
+    AD::getGlobalTape().setGradient(0, 0.0);
+  #endif
+  }
+
   FORCEINLINE void ComputeAdjoint() {
   #if defined(HAVE_OPDI)
     opdi::logic->prepareEvaluate();
