@@ -40,7 +40,7 @@ class CTurbSSTVariable final : public CTurbVariable {
 protected:
   su2double sigma_om2;
   su2double beta_star;
-  su2double prodLimConst;
+  su2double prod_lim_const;
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
@@ -71,7 +71,7 @@ public:
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
    */
-  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, CConfig *config) override;
+  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density) override;
 
   /*!
    * \brief Get the first blending function.

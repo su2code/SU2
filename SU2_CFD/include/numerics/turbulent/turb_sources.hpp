@@ -564,7 +564,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
-  const su2double ProdLimConstant;
+  const su2double prod_lim_const;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -649,7 +649,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
-        ProdLimConstant(constants[10]),
+        prod_lim_const(constants[10]),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
@@ -751,23 +751,27 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       /*--- Production limiter. ---*/
-      const su2double prod_limit = ProdLimConstant * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
+      const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
 
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM IS MISSING ---*/
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
         P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
       }
-      P = max(0.0, P);
-      su2double pk = min(P, prod_limit);
+      su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
-      /*--- Production limiter only for V2003---*/
-      const auto& pw_base = sstParsedOptions.version == SST_OPTIONS::V1994 ? P : pk;
-      su2double pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pw_base;
+      /*--- Production limiter only for V2003, recompute for V1994. ---*/
+      su2double pw;
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
+        pw = alfa_blended * Density_i * max(pow(P_Base, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      } else {
+        pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
+      }
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
