@@ -61,6 +61,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   template<class... Ts>
   static void ompMasterAssignBarrier(Ts&&... lhsRhsPairs) {
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER
     recursiveAssign(lhsRhsPairs...);
     END_SU2_OMP_MASTER
