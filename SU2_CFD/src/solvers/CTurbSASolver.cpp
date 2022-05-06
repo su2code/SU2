@@ -1668,6 +1668,7 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
                                  unsigned long iPoint, vector<vector<su2double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varTur    = solver[TURB_SOL]->GetNodes(),
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
@@ -1676,15 +1677,15 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
   const su2double r = varFlo->GetDensity(iPoint);
 
   const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
-  const su2double nut  = varFlo->GetEddyViscosity(iPoint)/r;
+  const su2double nutilde = varTur->GetSolution(iPoint, 0);
 
   const su2double one_sigma = 3.0/2.0;
 
   //--- Store gradients and stress tensor
-  su2double gradnu[3] = {0.0}, gradnut[3] = {0.0};
+  su2double gradnu[3] = {0.0}, gradnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     gradnu[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+1, iDim);
-    gradnut[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+2, iDim);
+    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
   }
 
   //---------------------------//
@@ -1693,8 +1694,8 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
 
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[1][nVarFlo] -= one_sigma*(gradnu[iDim]*gradnut[iDim])*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-    weights[2][nVarFlo] -= one_sigma*(nu+nut)*varAdjTur->GetHessian(iPoint, 0, ind_ii);
+    weights[1][nVarFlo] -= one_sigma*(gradnu[iDim]*gradnutilde[iDim])*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    weights[2][nVarFlo] -= one_sigma*(nu+nutilde)*varAdjTur->GetHessian(iPoint, 0, ind_ii);
   }
 
   //-----------------------//
