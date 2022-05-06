@@ -94,6 +94,13 @@ namespace AD{
   inline void ClearAdjoints() {}
 
   /*!
+   * \brief Possibly resize the vector of adjoints.
+   * \details After this operation, the vector can store
+   * the adjoints of all variables computed up to this point.
+   */
+  inline void ResizeAdjoints() {}
+
+  /*!
    * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
    */
   inline void ComputeAdjoint() {}
