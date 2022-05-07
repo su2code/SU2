@@ -1836,12 +1836,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
 
-      nodes->SetNon_Physical(iPoint, bad_i);
-      nodes->SetNon_Physical(jPoint, bad_j);
+      auto update_nonphysical = [&](){
+        nodes->SetNon_Physical(iPoint, bad_i);
+        nodes->SetNon_Physical(jPoint, bad_j);
 
-      /*--- Get updated state, in case the point recovered after the set. ---*/
-      bad_i = nodes->GetNon_Physical(iPoint);
-      bad_j = nodes->GetNon_Physical(jPoint);
+        /*--- Get updated state, in case the point recovered after the set. ---*/
+        bad_i = nodes->GetNon_Physical(iPoint);
+        bad_j = nodes->GetNon_Physical(jPoint);
+      };
+
+      if(ReducerStrategy){
+        SU2_OMP_CRITICAL
+        update_nonphysical();
+        END_SU2_OMP_CRITICAL
+      } else {
+        update_nonphysical();
+      }
 
       counter_local += bad_i+bad_j;
 
