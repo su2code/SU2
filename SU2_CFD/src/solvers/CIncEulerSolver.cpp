@@ -1233,20 +1233,30 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
         bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
-        nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
-        nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
+        auto update_nonphysical = [&](){
+          nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
+          nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
 
-        /* Lastly, check for existing first-order points still active from previous iterations. */
+          /* Lastly, check for existing first-order points still active from previous iterations. */
 
-        if (nodes->GetNon_Physical(iPoint)) {
-          counter_local++;
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Primitive_i[iVar] = V_i[iVar];
-        }
-        if (nodes->GetNon_Physical(jPoint)) {
-          counter_local++;
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Primitive_j[iVar] = V_j[iVar];
+          if (nodes->GetNon_Physical(iPoint)) {
+            counter_local++;
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              Primitive_i[iVar] = V_i[iVar];
+          }
+          if (nodes->GetNon_Physical(jPoint)) {
+            counter_local++;
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              Primitive_j[iVar] = V_j[iVar];
+          }
+        };
+
+        if(ReducerStrategy){
+          SU2_OMP_CRITICAL
+          update_nonphysical();
+          END_SU2_OMP_CRITICAL
+        } else {
+          update_nonphysical();
         }
       }
 
