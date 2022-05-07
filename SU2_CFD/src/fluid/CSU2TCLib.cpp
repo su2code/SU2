@@ -2056,18 +2056,19 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   // If the Newton-Raphson method has converged, assign the value of Tve.
   // Otherwise, execute a bisection root-finding method
   Tve_o = Tvemin; Tve2 = Tvemax;
-  if (!NRconvg){
+  if (!NRconvg) {
     for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
       Tve      = (Tve_o+Tve2)/2.0;
       val_eves = ComputeSpeciesEve(Tve);
       rhoEve_t = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
       if (fabs(rhoEve_t - rhoEve) < Btol) {
-      Bconvg = true;
-      break;
-    } else {
-      if (rhoEve_t > rhoEve) Tve2 = Tve;
-      else                  Tve_o = Tve;
+        Bconvg = true;
+        break;
+      } else {
+        if (rhoEve_t > rhoEve) Tve2 = Tve;
+        else                  Tve_o = Tve;
+      }
     }
   }
 
