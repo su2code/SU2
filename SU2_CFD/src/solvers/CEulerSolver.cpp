@@ -5576,24 +5576,26 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   Velocity_i    = new su2double[nDim];
   deltaprim     = new su2double[nVar];
   cj            = new su2double[nVar];
-  complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, expArg;
+  complex<su2double> I, expArg;
+  static complex<su2double> cktemp_inf, cktemp_out1, cktemp_out2;
   I = complex<su2double>(0.0,1.0);
-
-#ifdef HAVE_MPI
-  su2double MyIm_inf, MyRe_inf, Im_inf, Re_inf, MyIm_out1, MyRe_out1, Im_out1, Re_out1, MyIm_out2, MyRe_out2, Im_out2, Re_out2;
-#endif
 
   kend_max = geometry->GetnFreqSpanMax(marker_flag);
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     for(k=0; k < 2*kend_max+1; k++){
       freq = k - kend_max;
-      cktemp_inf = complex<su2double>(0.0,0.0);
-      cktemp_out1 = complex<su2double>(0.0,0.0);
-      cktemp_out2 = complex<su2double>(0.0,0.0);
+      SU2_OMP_SINGLE
+      {
+        cktemp_inf = complex<su2double>(0.0,0.0);
+        cktemp_out1 = complex<su2double>(0.0,0.0);
+        cktemp_out2 = complex<su2double>(0.0,0.0);
+      } END_SU2_OMP_SINGLE
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+              complex<su2double> cktemp_inf_local{0.,0.},cktemp_out1_local{0.,0.}, cktemp_out2_local{0.,0.};
+              SU2_OMP_FOR_DYN(roundUpDiv(geometry->GetnVertexSpan(iMarker,iSpan), 2*omp_get_max_threads()))
               for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
 
                 /*--- find the node related to the vertex ---*/
@@ -5648,64 +5650,73 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 
                 expArg = complex<su2double>(cos(TwoPiThetaFreq_Pitch)) - I*complex<su2double>(sin(TwoPiThetaFreq_Pitch));
                 if (freq != 0){
-                  cktemp_out1 +=  cj_out1*expArg*deltaTheta/pitch;
-                  cktemp_out2 +=  cj_out2*expArg*deltaTheta/pitch;
-                  cktemp_inf  +=  cj_inf*expArg*deltaTheta/pitch;
+                  cktemp_out1_local +=  cj_out1*expArg*deltaTheta/pitch;
+                  cktemp_out2_local +=  cj_out2*expArg*deltaTheta/pitch;
+                  cktemp_inf_local  +=  cj_inf*expArg*deltaTheta/pitch;
                 }
                 else{
-                  cktemp_inf += complex<su2double>(0.0,0.0);
-                  cktemp_out1 += complex<su2double>(0.0,0.0);
-                  cktemp_out2 += complex<su2double>(0.0,0.0);
+                  cktemp_inf_local += complex<su2double>(0.0,0.0);
+                  cktemp_out1_local += complex<su2double>(0.0,0.0);
+                  cktemp_out2_local += complex<su2double>(0.0,0.0);
                 }
               }
-
+              END_SU2_OMP_FOR
+              SU2_OMP_CRITICAL
+              {
+                cktemp_inf += cktemp_inf_local;
+                cktemp_out1 += cktemp_out1_local;
+                cktemp_out2 += cktemp_out2_local;
+              } END_SU2_OMP_CRITICAL
             }
           }
         }
       }
 
+      SU2_OMP_BARRIER
+      SU2_OMP_SINGLE
+      {
 #ifdef HAVE_MPI
-      MyRe_inf = cktemp_inf.real(); Re_inf = 0.0;
-      MyIm_inf = cktemp_inf.imag(); Im_inf = 0.0;
-      cktemp_inf = complex<su2double>(0.0,0.0);
+        su2double MyRe_inf = cktemp_inf.real(); su2double Re_inf = 0.0;
+        su2double MyIm_inf = cktemp_inf.imag(); su2double Im_inf = 0.0;
+        cktemp_inf = complex<su2double>(0.0,0.0);
 
-      MyRe_out1 = cktemp_out1.real(); Re_out1 = 0.0;
-      MyIm_out1 = cktemp_out1.imag(); Im_out1 = 0.0;
-      cktemp_out1 = complex<su2double>(0.0,0.0);
+        su2double MyRe_out1 = cktemp_out1.real(); su2double Re_out1 = 0.0;
+        su2double MyIm_out1 = cktemp_out1.imag(); su2double Im_out1 = 0.0;
+        cktemp_out1 = complex<su2double>(0.0,0.0);
 
-      MyRe_out2 = cktemp_out2.real(); Re_out2 = 0.0;
-      MyIm_out2 = cktemp_out2.imag(); Im_out2 = 0.0;
-      cktemp_out2 = complex<su2double>(0.0,0.0);
+        su2double MyRe_out2 = cktemp_out2.real(); su2double Re_out2 = 0.0;
+        su2double MyIm_out2 = cktemp_out2.imag(); su2double Im_out2 = 0.0;
+        cktemp_out2 = complex<su2double>(0.0,0.0);
 
 
-      SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      cktemp_inf = complex<su2double>(Re_inf,Im_inf);
-      cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
-      cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
-
+        cktemp_inf = complex<su2double>(Re_inf,Im_inf);
+        cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
+        cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
 #endif
 
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              /*-----this is only valid 2D ----*/
-              if (marker_flag == INFLOW){
-                CkInflow[iMarker][iSpan][k]= cktemp_inf;
-              }else{
-                CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
-                CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+          for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+            if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+              if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+                /*-----this is only valid 2D ----*/
+                if (marker_flag == INFLOW){
+                  CkInflow[iMarker][iSpan][k]= cktemp_inf;
+                }else{
+                  CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
+                  CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
+                }
               }
             }
           }
         }
-      }
+      } END_SU2_OMP_SINGLE
     }
   }
 
