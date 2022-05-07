@@ -1988,7 +1988,6 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 
 vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
-  vector<su2double> val_eves;
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
@@ -2012,22 +2011,57 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
+  su2double NRtol         = 1.0E-6     // Tolerance for the Newton-Raphson method
   su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
   unsigned short maxBIter = 50;        // Maximum Bisection method iterations
+  unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  su2double scale         = 0.5;       // Scaling factor for Newton-Raphson step
 
+  /*--- Execute a Newton-Raphson root-finding method for Tve ---*/
   //Initialize solution
   Tve = T;
 
-  // Execute the root-finding method
   bool Bconvg = false;
-  su2double rhoEve_t = 0.0;
+  bool NRconvg = false;
+  su2double rhoEve_t = 0.0, rhoCvve = 0.0;
+  vector<su2double> val_eves;
+  vector<su2double> val_cvves;
 
-  for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
-    Tve      = (Tve_o+Tve2)/2.0;
-    val_eves = ComputeSpeciesEve(Tve);
-    rhoEve_t = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
-    if (fabs(rhoEve_t - rhoEve) < Btol) {
+  /*--- Newton-Raphson Method --*/
+  for (unsigned short iIter = 0; iIter < maxNIter; iIter++) {
+    rhoEve_t = rhoCvve = 0.0;
+    val_eves  = ComputeSpeciesEve(Tve);
+    val_cvves = ComputeSpeciesCvve(Tve); 
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+      rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
+      rhoCvve += rhos[iSpecies] * val_cvves[iSpecies];
+    } 
+
+    /*--- Find the roots ---*/
+    f  = rhoEve - rhoEve_t;
+    df = -rhoCvve;
+    Tve2 = Tve - (f/df)*scale; 
+
+    /*--- Check for convergence ---*/
+    if ((fabs(Tve2-Tve) < NRtol) && (Tve > Tvemin) && (Tve < Tvemax)) {
+      NRconvg = true;
+      break; 
+    } else {
+      Tve = Tve2;  
+    }
+  }
+
+  // If the Newton-Raphson method has converged, assign the value of Tve.
+  // Otherwise, execute a bisection root-finding method
+  Tve_o = 50; Tve2 = 8e4;
+  if (!NRconvg){
+    for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
+      Tve      = (Tve_o+Tve2)/2.0;
+      val_eves = ComputeSpeciesEve(Tve);
+      rhoEve_t = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
+      if (fabs(rhoEve_t - rhoEve) < Btol) {
       Bconvg = true;
       break;
     } else {
@@ -2035,6 +2069,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
       else                  Tve_o = Tve;
     }
   }
+
   // If absolutely no convergence, then assign to the TR temperature
   if (!Bconvg) {
     Tve = T;
