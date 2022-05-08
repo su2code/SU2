@@ -2506,38 +2506,41 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
 }
 
 void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
-  const auto nMarker_Global = config->GetnMarker_CfgFile();
-  SurfaceAreaCfgFile.resize(nMarker_Global);
-  vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
+  SU2_OMP_SINGLE
+  {
+    const auto nMarker_Global = config->GetnMarker_CfgFile();
+    SurfaceAreaCfgFile.resize(nMarker_Global);
+    vector<su2double> LocalSurfaceArea(nMarker_Global, 0.0);
 
-  /*--- Loop over all local markers ---*/
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    /*--- Loop over all local markers ---*/
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
 
-    const auto Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+      const auto Local_TagBound = config->GetMarker_All_TagBound(iMarker);
 
-    /*--- Loop over all global markers, and find the local-global pair via
-          matching unique string tags. ---*/
-    for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+      /*--- Loop over all global markers, and find the local-global pair via
+            matching unique string tags. ---*/
+      for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
 
-      const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
-      if (Local_TagBound == Global_TagBound) {
+        const auto Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+        if (Local_TagBound == Global_TagBound) {
 
-        for(auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++ ) {
+          for(auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++ ) {
 
-          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+            const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-          if(!nodes->GetDomain(iPoint)) continue;
+            if(!nodes->GetDomain(iPoint)) continue;
 
-          const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
-          const auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
+            const auto AreaNormal = vertex[iMarker][iVertex]->GetNormal();
+            const auto Area = GeometryToolbox::Norm(nDim, AreaNormal);
 
-          LocalSurfaceArea[iMarker_Global] += Area;
-        }// for iVertex
-      }//if Local == Global
-    }//for iMarker_Global
-  }//for iMarker
+            LocalSurfaceArea[iMarker_Global] += Area;
+          }// for iVertex
+        }//if Local == Global
+      }//for iMarker_Global
+    }//for iMarker
 
-  SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  } END_SU2_OMP_SINGLE
 }
 
 su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_marker) const {
