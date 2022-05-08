@@ -2003,8 +2003,8 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  su2double Tmin   = 50.0; su2double Tmax   = 8E4;
-  su2double Tvemin = 50.0; su2double Tvemax = 8E4;
+  const su2double Tmin   = 50.0; const su2double Tmax   = 8E4;
+  const su2double Tvemin = 50.0; const su2double Tvemax = 8E4;
   su2double Tve_o  = 50.0; su2double Tve2  = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
@@ -2012,11 +2012,11 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
-  su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
-  su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
-  unsigned short maxBIter = 50;        // Maximum Bisection method iterations
-  unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
-  su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
+  const su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
+  const su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
+  const unsigned short maxBIter = 50;        // Maximum Bisection method iterations
+  const unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  const su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
   /*--- Execute a Newton-Raphson root-finding method for Tve ---*/
   //Initialize solution
@@ -2025,14 +2025,12 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   bool Bconvg = false;
   bool NRconvg = false;
   su2double rhoEve_t = 0.0, rhoCvve = 0.0;
-  vector<su2double> val_eves;
-  vector<su2double> val_cvves;
 
   /*--- Newton-Raphson Method --*/
   for (unsigned short iIter = 0; iIter < maxNIter; iIter++) {
     rhoEve_t = rhoCvve = 0.0;
-    val_eves  = ComputeSpeciesEve(Tve);
-    val_cvves = ComputeSpeciesCvVibEle(Tve); 
+    const auto& val_eves  = ComputeSpeciesEve(Tve);
+    const auto& val_cvves = ComputeSpeciesCvVibEle(Tve);
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
       rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
@@ -2060,7 +2058,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   if (!NRconvg) {
     for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
       Tve      = (Tve_o+Tve2)/2.0;
-      val_eves = ComputeSpeciesEve(Tve);
+      const auto& val_eves = ComputeSpeciesEve(Tve);
       rhoEve_t = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
       if (fabs(rhoEve_t - rhoEve) < Btol) {
