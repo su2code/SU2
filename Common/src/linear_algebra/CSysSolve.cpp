@@ -1081,7 +1081,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
-      Residual = 1e-20;
+      residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
