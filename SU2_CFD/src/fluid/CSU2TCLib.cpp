@@ -2016,7 +2016,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
   unsigned short maxBIter = 50;        // Maximum Bisection method iterations
   unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
-  su2double scale         = 0.5;       // Scaling factor for Newton-Raphson step
+  su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
   /*--- Execute a Newton-Raphson root-finding method for Tve ---*/
   //Initialize solution
