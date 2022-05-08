@@ -5584,12 +5584,12 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     for(k=0; k < 2*kend_max+1; k++){
       freq = k - kend_max;
-      SU2_OMP_SINGLE
+      SU2_OMP_MASTER
       {
         cktemp_inf = complex<su2double>(0.0,0.0);
         cktemp_out1 = complex<su2double>(0.0,0.0);
         cktemp_out2 = complex<su2double>(0.0,0.0);
-      } END_SU2_OMP_SINGLE
+      } END_SU2_OMP_MASTER
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -5673,7 +5673,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
       }
 
       SU2_OMP_BARRIER
-      SU2_OMP_SINGLE
+      SU2_OMP_MASTER
       {
 #ifdef HAVE_MPI
         su2double MyRe_inf = cktemp_inf.real(); su2double Re_inf = 0.0;
@@ -5716,7 +5716,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
             }
           }
         }
-      } END_SU2_OMP_SINGLE
+      } END_SU2_OMP_MASTER
     }
   }
 

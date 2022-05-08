@@ -2506,7 +2506,7 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
 }
 
 void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
-  SU2_OMP_SINGLE
+  SU2_OMP_MASTER
   {
     const auto nMarker_Global = config->GetnMarker_CfgFile();
     SurfaceAreaCfgFile.resize(nMarker_Global);
@@ -2540,7 +2540,7 @@ void CGeometry::ComputeSurfaceAreaCfgFile(const CConfig *config) {
     }//for iMarker
 
     SU2_MPI::Allreduce(LocalSurfaceArea.data(), SurfaceAreaCfgFile.data(), SurfaceAreaCfgFile.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-  } END_SU2_OMP_SINGLE
+  } END_SU2_OMP_MASTER
 }
 
 su2double CGeometry::GetSurfaceArea(const CConfig *config, unsigned short val_marker) const {

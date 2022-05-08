@@ -1890,9 +1890,9 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
 
   if (iMesh == MESH_0) {
-    SU2_OMP_SINGLE
+    SU2_OMP_MASTER
     MaxVel2 = 0.0;
-    END_SU2_OMP_SINGLE
+    END_SU2_OMP_MASTER
     su2double maxVel2 = 0.0;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
