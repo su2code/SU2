@@ -57,7 +57,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.018022, -12.217291, -32.000000, 10.013545]
+    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.018022, -11.978730, -32.000000, 10.013545]
     thermalbath_frozen.su2_exec  = "SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -69,7 +69,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271777, 1.875687, 5.315769, 0.870008]
+    invwedge.test_vals = [-1.046323, -1.571086, -18.299885, -18.627285, -18.573308, 2.271778, 1.875687, 5.315769, 0.870008]
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -81,8 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215288, -5.739428, -20.545050, -20.618702, -20.502532, -1.917680, -2.239596, 1.262771, -3.205521]                                                                                                                             
-    visc_cone.su2_exec  = "SU2_CFD"
+    visc_cone.test_vals = [-5.215236, -5.739371, -20.545048, -20.618700, -20.502532, -1.917617, -2.239664, 1.262783, -3.205463]                            visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
     visc_cone.tol       = 0.00001
