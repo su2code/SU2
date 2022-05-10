@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subrotuines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -143,7 +143,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
 
-  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  /*--- Initialize quantities for SlidingMesh Interface ---*/
 
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);

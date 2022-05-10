@@ -2,7 +2,7 @@
  * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -399,12 +399,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
 
-  su2double VelMag = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0);
-  }
-  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - config->GetPressure_FreeStreamND())*factor);
+  const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
 
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){

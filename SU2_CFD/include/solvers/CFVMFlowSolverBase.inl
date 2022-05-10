@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -689,32 +689,8 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
   unsigned short P_position = nDim + 1;
   unsigned short FlowDir_position = nDim + 2;
 
-  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
+  /*--- Note that it is not necessary anymore to use normalized normals for the inlet velocity ---*/
 
-  su2double norm = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    norm += pow(val_inlet[FlowDir_position + iDim], 2);
-  }
-  norm = sqrt(norm);
-
-  /*--- The tolerance here needs to be loose.  When adding a very
-   * small number (1e-10 or smaller) to a number close to 1.0, floating
-   * point roundoff errors can occur. ---*/
-
-  if (abs(norm - 1.0) > 1e-6) {
-    ostringstream error_msg;
-    error_msg << "ERROR: Found these values in columns ";
-    error_msg << FlowDir_position << " - ";
-    error_msg << FlowDir_position + nDim - 1 << endl;
-    error_msg << std::scientific;
-    error_msg << "  [" << val_inlet[FlowDir_position];
-    error_msg << ", " << val_inlet[FlowDir_position + 1];
-    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
-    error_msg << "]" << endl;
-    error_msg << "  These values should be components of a unit vector for direction," << endl;
-    error_msg << "  but their magnitude is: " << norm << endl;
-    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
-  }
 
   /*--- Store the values in our inlet data structures. ---*/
 

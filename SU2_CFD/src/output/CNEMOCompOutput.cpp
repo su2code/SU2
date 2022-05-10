@@ -2,7 +2,7 @@
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -327,12 +327,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("TEMPERATURE_VE", iPoint, Node_Flow->GetTemperature_ve(iPoint));
   SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
 
-  su2double VelMag = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0);
-  }
-  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
+  const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
 
   if (config->GetViscous()){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));

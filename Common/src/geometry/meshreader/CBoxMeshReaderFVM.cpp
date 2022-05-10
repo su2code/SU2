@@ -3,7 +3,7 @@
  * \brief Reads a 3D box grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
