@@ -3729,7 +3729,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
-  unsigned short n_species = nSpecies_Init; //TODO TK:: make it static?
+  unsigned short n_species = nSpecies_Init;
 
   if (Kind_FluidModel == FLUID_MIXTURE) {
     n_species = nSpecies_Init + 1;
