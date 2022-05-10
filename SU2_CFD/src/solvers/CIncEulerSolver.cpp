@@ -2173,8 +2173,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-
-
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
@@ -2211,6 +2209,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     V_domain = nodes->GetPrimitive(iPoint);
 
     /*--- Neumann condition for dynamic pressure ---*/
+
     V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
 
     /*--- The velocity is either prescribed or computed from total pressure. ---*/
