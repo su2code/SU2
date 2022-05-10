@@ -2321,7 +2321,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       if( config->GetViscous_Wall(iMarker)) {
         /*--- loop over vertices of the wall and check if it matches with our vertex ---*/
         unsigned long jPoint;
-        for (auto jVertex = 0; jVertex < geometry->nVertex[iMarker]; jVertex++) {
+        for (unsigned long jVertex = 0; jVertex < geometry->nVertex[iMarker]; jVertex++) {
           jPoint = geometry->vertex[iMarker][jVertex]->GetNode();
           if (jPoint==iPoint){
             /*--- set the velocity to zero (no-slip boundary on viscous walls) ---*/
