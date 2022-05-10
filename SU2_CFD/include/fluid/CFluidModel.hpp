@@ -122,17 +122,23 @@ class CFluidModel {
   /*!
    * \brief Get fluid mean molecular weight.
    */
-  static su2double ComputeMeanMolecularWeight(const std::vector<su2double> molar_masses, su2double *const val_scalars) {
+  template <class Vector_t>
+  static su2double ComputeMeanMolecularWeight(const Vector_t& molar_masses, const su2double *val_scalars) {
     su2double OneOverMeanMolecularWeight = 0.0;
     su2double val_scalars_sum = 0.0;
-    unsigned short n_scalars = molar_masses.size() - 1;
+    const size_t n_scalars = molar_masses.size() - 1;
 
-    for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+    for (size_t i_scalar = 0; i_scalar < n_scalars; i_scalar++){
       OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
       val_scalars_sum += val_scalars[i_scalar];
     }
-
+    /*if(val_scalars_sum>1){
+      cout<<val_scalars_sum<<endl;
+    }*/
     OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
+    /*if(OneOverMeanMolecularWeight<0){
+      cout<<OneOverMeanMolecularWeight<<endl;
+    }*/
     return OneOverMeanMolecularWeight;
   }
   /*!
@@ -307,7 +313,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, su2double *val_scalars = nullptr) {}
+  virtual void SetTDState_T(su2double val_Temperature, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

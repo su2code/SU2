@@ -104,7 +104,7 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar = nullptr);
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar = nullptr);
   using CVariable::SetPrimVar;
 
   /*!

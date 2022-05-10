@@ -36,9 +36,7 @@
  */
 class CDiffusivityModel {
 public:
-  CDiffusivityModel() = default;
-  CDiffusivityModel(const CDiffusivityModel&) = delete; 
-  void operator=(const CDiffusivityModel&) = delete;
+
   virtual ~CDiffusivityModel() {}
 
 

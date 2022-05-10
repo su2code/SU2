@@ -87,12 +87,12 @@ private:
    * \param[in] t - Temperature value at the point.
    */
 
-  void SetTDState_T(const su2double val_temperature, su2double * const val_scalars);
+  void SetTDState_T(const su2double val_temperature, const su2double * const val_scalars);
 
    /*!
    * \brief Get fluid dynamic viscosity.
    */
-  virtual inline su2double GetLaminarViscosity() {
+  inline su2double GetLaminarViscosity() override {
     LaminarViscosity->SetViscosity(Temperature, Density);
     Mu = LaminarViscosity->GetViscosity();
     LaminarViscosity->SetDerViscosity(Temperature, Density);

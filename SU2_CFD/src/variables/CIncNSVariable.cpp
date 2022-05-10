@@ -48,7 +48,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   }
 }
 
-bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar) {
+bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool physical = true;
 

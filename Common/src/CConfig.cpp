@@ -1058,7 +1058,6 @@ void CConfig::SetPointersNull(void) {
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
   Gas_Composition = nullptr;
-  Molecular_Weight = nullptr;
 }
 
 void CConfig::SetConfig_Options() {
@@ -3718,7 +3717,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nMolecular_Weight = 1;
   }
 
-  /*--- Check whether inputs for MIXTURE_FLUID_MODEL are correctly specified. ---*/
+  /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
   unsigned short n_species = nSpecies_Init; //TODO TK:: make it static?
 
   if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3726,12 +3725,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
     * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
-    * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active. --- */
-  if (nMolecular_Weight != n_species) {
+    * Cp is required in case of FLUID_MIXTURE because the energy equation needs to be active. --- */
+    if (nMolecular_Weight != n_species) {
     SU2_MPI::Error("The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
                    "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+    }
   }
- }
 
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 

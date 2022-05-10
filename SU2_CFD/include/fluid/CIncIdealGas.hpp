@@ -54,7 +54,7 @@ class CIncIdealGas final : public CFluidModel {
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  void SetTDState_T(su2double t, su2double *val_scalars = nullptr) override {
+  void SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);

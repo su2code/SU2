@@ -1,3 +1,30 @@
+/*!
+ * \file CFluidScalar.hpp
+ * \brief Defines the incompressible Ideal Gas model.
+ * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal 
+ * \version 7.3.1 "Blackbird"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cmath>
 #include <math.h>
 #include <vector>
@@ -95,7 +122,7 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
   }
 }
 
-void CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * const val_scalars){
+void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double * const val_scalars){
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT*MeanMolecularWeight)); 
