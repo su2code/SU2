@@ -180,7 +180,7 @@ protected:
   su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
-  su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
+  su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */

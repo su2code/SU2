@@ -888,7 +888,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.985899, 1.137425, 0.375998, -0.078790]
+    turb_naca0012_1c.test_vals = [-4.985899, 1.137425, 0.375986, -0.078795]
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600

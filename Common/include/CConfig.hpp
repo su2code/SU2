@@ -701,7 +701,7 @@ private:
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
-  SST_OPTIONS *SST_Options;               /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/     
+  SST_OPTIONS *SST_Options;               /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   unsigned short nSST_Options;            /*!< \brief number of SST options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
@@ -8977,12 +8977,6 @@ public:
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
-   * \brief Get information about using UQ methodology
-   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
-   */
-  bool GetUsing_UQ(void) const { return sstParsedOptions.uq; }
-
-  /*!
    * \brief Get the amount of eigenvalue perturbation to be done
    * \return Value of the uq_delta_b parameter
    */
@@ -9629,5 +9623,5 @@ public:
    * \return SST option data structure.
    */
   SST_ParsedOptions GetSSTParsedOptions(void) const {return sstParsedOptions; }
-  
+
 };
