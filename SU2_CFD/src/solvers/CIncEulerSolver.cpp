@@ -2173,6 +2173,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
@@ -2209,7 +2211,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     V_domain = nodes->GetPrimitive(iPoint);
 
     /*--- Neumann condition for dynamic pressure ---*/
-
     V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
 
     /*--- The velocity is either prescribed or computed from total pressure. ---*/
@@ -2308,6 +2309,30 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       default:
         SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
         break;
+    }
+
+    /* Loop over markers and check if the vertex is on another marker. If we have found 
+       that a vertex is on a viscous wall, we impose the no-slip condition and the pressure 
+       from the interior.
+    */
+
+   /*--- loop over markers in geometry ---*/
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      /*--- check it is a viscous wall ---*/
+      if( config->GetViscous_Wall(iMarker)) {
+        /*--- loop over vertices of the wall and check if it matches with our vertex ---*/
+        unsigned long jPoint;
+        for (auto jVertex = 0; jVertex < geometry->nVertex[iMarker]; jVertex++) {
+          jPoint = geometry->vertex[iMarker][jVertex]->GetNode();
+          if (jPoint==iPoint){
+            /*--- set the velocity to zero (no-slip boundary on viscous walls) ---*/
+            for (iDim = 0; iDim < nDim; iDim++)
+              V_inlet[iDim+prim_idx.Velocity()] = 0.0;
+            /* pressure obtained from interior */
+            V_inlet[prim_idx.Pressure()] = nodes->GetPressure(jPoint);
+          }
+        }
+      }
     }
 
     /*--- Access density at the node. This is either constant by
