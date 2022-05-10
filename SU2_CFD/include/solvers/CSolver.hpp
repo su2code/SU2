@@ -2356,6 +2356,11 @@ public:
   inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline virtual su2double GetReferenceDynamicPressure() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
@@ -3103,13 +3108,6 @@ public:
    * \return Value of the pressure at the infinity.
    */
   inline virtual su2double GetPressure_Inf(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_dim - Index of the adjoint velocity vector.
-   * \return Value of the density x velocity at the infinity.
-   */
-  inline virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim) const { return 0; }
 
   /*!
    * \brief A virtual member.
