@@ -1058,7 +1058,6 @@ void CConfig::SetPointersNull(void) {
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
   Gas_Composition = nullptr;
-  Molecular_Weight = nullptr;
 }
 
 void CConfig::SetConfig_Options() {
