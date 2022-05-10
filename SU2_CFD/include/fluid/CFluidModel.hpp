@@ -132,13 +132,7 @@ class CFluidModel {
       OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
       val_scalars_sum += val_scalars[i_scalar];
     }
-    /*if(val_scalars_sum>1){
-      cout<<val_scalars_sum<<endl;
-    }*/
     OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
-    /*if(OneOverMeanMolecularWeight<0){
-      cout<<OneOverMeanMolecularWeight<<endl;
-    }*/
     return OneOverMeanMolecularWeight;
   }
   /*!

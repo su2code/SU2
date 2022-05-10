@@ -3741,6 +3741,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
                    "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
     }
+    if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+    SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
