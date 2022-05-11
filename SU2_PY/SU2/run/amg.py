@@ -173,16 +173,16 @@ def amg ( config ):
             cur_solfil_adj = "restart_adj" + sol_ext
             su2amg.set_adj_config_ini(config_cfd_ad, cur_solfil, cur_solfil_adj, mesh_sizes[0])
 
-            if(os.path.exists(os.path.join(cwd, config.SOLUTION_FILENAME))):
-                os.remove(config.RESTART_FILENAME)
-                os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), config.RESTART_FILENAME)
-
             #--- If restarting, check for the existence of an adjoint restart
             if config['RESTART_SOL'] == 'YES':
                 cur_solfil_adj_ini = config_cfd_ad.SOLUTION_ADJ_FILENAME    
                 func_name          = config.OBJECTIVE_FUNCTION
                 suffix             = su2io.get_adjointSuffix(func_name)
                 cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+
+                if(os.path.exists(os.path.join(cwd, config.SOLUTION_FILENAME))):
+                    os.remove(config.RESTART_FILENAME)
+                    os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), config.RESTART_FILENAME)
 
                 #--- Run an adjoint if the solution file doesn't exist
                 if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
