@@ -37,12 +37,12 @@ def amg ( config ):
         
     #--- Check config options related to mesh adaptation
     
-    adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
-                    'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_ARMAX', 'PYADAP_HGRAD', \
-                    'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
-                    'PYADAP_INV_BACK', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
-    required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
-                        'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
+    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_BACK', \
+                       'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', \
+                       'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_INV_BACK', 'ADAP_ORTHO', \
+                       'ADAP_RDG' ]
+    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_HMAX', \
+                         'ADAP_HMIN', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME' ]
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -53,7 +53,7 @@ def amg ( config ):
     
     #--- Print adap options
 
-    sys.stdout.write(su2amg.print_adap_options(config, adap_options))
+    sys.stdout.write(su2amg.print_adap_options(config))
     
     #--- How many iterative loops? Using what prescribed mesh sizes? 
     
@@ -65,9 +65,8 @@ def amg ( config ):
     adap_flow_iter = su2amg.get_flow_iter(config)
     adap_adj_iter  = su2amg.get_adj_iter(config)
     adap_flow_cfl  = su2amg.get_flow_cfl(config)
-    adap_adj_cfl   = su2amg.get_flow_cfl(config)
 
-    adap_sensor = config.PYADAP_SENSOR
+    adap_sensor = config.ADAP_SENSOR
     sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
     
     if adap_sensor not in sensor_avail:
@@ -122,8 +121,9 @@ def amg ( config ):
     
     config_cfd = copy.deepcopy(config)
     config_cfd_ad = copy.deepcopy(config)
-    for opt in adap_options:
+    for opt in pyadap_options:
         config_cfd.pop(opt, None)
+        config_cfd_ad.pop(opt, None)
 
     #--- Check config for filenames if restarting
     if config['RESTART_SOL'] == 'YES':
@@ -181,8 +181,8 @@ def amg ( config ):
                 cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
 
                 if(os.path.exists(os.path.join(cwd, config.SOLUTION_FILENAME))):
-                    os.remove(config.RESTART_FILENAME)
-                    os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), config.RESTART_FILENAME)
+                    os.remove(cur_solfil)
+                    os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), cur_solfil)
 
                 #--- Run an adjoint if the solution file doesn't exist
                 if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
@@ -270,12 +270,6 @@ def amg ( config ):
             config_amg['size'] = mesh_size
                 
             #--- Use pyAmg interface
-            
-            try :
-                import pyamg 
-            except:
-                sys.stderr.write("## ERROR : Unable to import pyamg module.\n")
-                sys.exit(1)
             
             if adap_sensor == 'GOAL':
 

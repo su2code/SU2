@@ -2907,54 +2907,45 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_SIZES");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_SUBITER");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_FLOW_ITER");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_COMPLEXITY");
+  addPythonOption("ADAP_ADJ_ITER");
   
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_SUBITE");
+  addPythonOption("ADAP_FLOW_CFL");
   
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_FLOW_ITER");
+  addPythonOption("ADAP_ADJ_CFL");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_BACK");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_RESIDUAL_REDUCTION");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_SENSOR");
+  
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_HGRAD");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_ADJ_ITER");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_FLOW_CFL");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_ADJ_CFL");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_BACK");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_RESIDUAL_REDUCTION");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_SENSOR");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_HMAX");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_HMIN");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_ARMAX");
-  
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_HGRAD");
+  addPythonOption("ADAP_INV_BACK");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_INV_BACK");
-
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_ORTHO");
+  addPythonOption("ADAP_ORTHO");
   
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("PYADAP_RDG");
+  addPythonOption("ADAP_RDG");
 
   /* END_CONFIG_OPTIONS */
 

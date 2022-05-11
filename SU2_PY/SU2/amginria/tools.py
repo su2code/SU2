@@ -36,7 +36,7 @@ import _amgio as amgio
 
 # --- Prescribed mesh complexities, i.e. desired mesh sizes
 def get_mesh_sizes(config):
-    return config['PYADAP_COMPLEXITY'].strip('()').split(",")
+    return config['ADAP_SIZES'].strip('()').split(",")
 
 # --- Return size info from a python mesh structure
 def return_mesh_size(mesh):
@@ -63,10 +63,10 @@ def get_amg_config(config_su2):
     #--- Basic parameters
     config_amg = dict()
     
-    if 'PYADAP_HGRAD' in config_su2: config_amg['hgrad'] = float(config_su2['PYADAP_HGRAD'])
+    if 'ADAP_HGRAD' in config_su2: config_amg['hgrad'] = float(config_su2['ADAP_HGRAD'])
 
-    config_amg['hmax']        = float(config_su2['PYADAP_HMAX'])
-    config_amg['hmin']        = float(config_su2['PYADAP_HMIN'])
+    config_amg['hmax']        = float(config_su2['ADAP_HMAX'])
+    config_amg['hmin']        = float(config_su2['ADAP_HMIN'])
     config_amg['Lp']          = float(config_su2['ADAP_NORM'])
     config_amg['mesh_in']     = 'current.meshb'
     config_amg['amg_log']     = 'amg.out'
@@ -74,10 +74,10 @@ def get_amg_config(config_su2):
 
     #--- Check for background surface mesh, and generate if it doesn't exist
     cwd = os.path.join(os.getcwd(),'../..')
-    if 'PYADAP_BACK' in config_su2:
-        config_amg['adap_back'] = os.path.join(cwd,config_su2['PYADAP_BACK'])
-        if not config_su2['PYADAP_BACK'] == config_su2['MESH_FILENAME']:
-            os.symlink(os.path.join(cwd, config_su2.PYADAP_BACK), config_su2.PYADAP_BACK)
+    if 'ADAP_BACK' in config_su2:
+        config_amg['adap_back'] = os.path.join(cwd,config_su2['ADAP_BACK'])
+        if not config_su2['ADAP_BACK'] == config_su2['MESH_FILENAME']:
+            os.symlink(os.path.join(cwd, config_su2.ADAP_BACK), config_su2.ADAP_BACK)
     else:
         config_amg['adap_back'] = config_su2['MESH_FILENAME']
     
@@ -97,34 +97,34 @@ def get_amg_config(config_su2):
     config_amg['options'] = "-back " + config_amg['adap_back']
 
     #--- Invert background mesh
-    if 'PYADAP_INV_BACK' in config_su2:
-        if(config_su2['PYADAP_INV_BACK'] == 'YES'):
+    if 'ADAP_INV_BACK' in config_su2:
+        if(config_su2['ADAP_INV_BACK'] == 'YES'):
             config_amg['options'] = config_amg['options'] + ' -inv-back'
 
     #--- Metric orthogonal adaptation
-    if 'PYADAP_ORTHO' in config_su2:
-        if(config_su2['PYADAP_ORTHO'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+    if 'ADAP_ORTHO' in config_su2:
+        if(config_su2['ADAP_ORTHO'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -cart3d'
 
     #--- Ridge detection
-    if 'PYADAP_RDG' not in config_su2:
+    if 'ADAP_RDG' not in config_su2:
         config_amg['options'] = config_amg['options'] + ' -nordg'
     else:
-        if(config_su2['PYADAP_RDG'] == 'NO'):
+        if(config_su2['ADAP_RDG'] == 'NO'):
             config_amg['options'] = config_amg['options'] + ' -nordg'
 
     return config_amg
 
 # --- How many sub-iterations per mesh complexity
 def get_sub_iterations(config):
-    return config['PYADAP_SUBITE'].strip('()').split(",")
+    return config['ADAP_SUBITER'].strip('()').split(",")
 
 # --- What residual reduction for each complexity level
 def get_residual_reduction(config):
-    if 'PYADAP_RESIDUAL_REDUCTION' in config:
-        return config['PYADAP_RESIDUAL_REDUCTION'].strip('()').split(",")
+    if 'ADAP_RESIDUAL_REDUCTION' in config:
+        return config['ADAP_RESIDUAL_REDUCTION'].strip('()').split(",")
     else:
-        nRes = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
+        nRes = len(config['ADAP_SIZES'].strip('()').split(","))
         res = []
         for i in range(nRes):
             res.append(config['RESIDUAL_REDUCTION'])      
@@ -132,40 +132,40 @@ def get_residual_reduction(config):
         
 # --- How many SU2 solver iterations for each complexity level
 def get_adj_iter(config):
-    if 'PYADAP_ADJ_ITER' in config:
-        return config['PYADAP_ADJ_ITER'].strip('()').split(",")
+    if 'ADAP_ADJ_ITER' in config:
+        return config['ADAP_ADJ_ITER'].strip('()').split(",")
     else:
-        nExt_iter = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
         ext_iter = []
         for i in range(nExt_iter):
             ext_iter.append(config['ITER'])        
         return ext_iter
 
 def get_flow_iter(config):
-    if 'PYADAP_FLOW_ITER' in config:
-        return config['PYADAP_FLOW_ITER'].strip('()').split(",")
+    if 'ADAP_FLOW_ITER' in config:
+        return config['ADAP_FLOW_ITER'].strip('()').split(",")
     else:
-        nExt_iter = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(","))
         flow_iter = []
         for i in range(nExt_iter):
             flow_iter.append(config['ITER'])        
         return flow_iter
 
 def get_flow_cfl(config):
-    if 'PYADAP_FLOW_CFL' in config:
-        return config['PYADAP_FLOW_CFL'].strip('()').split(",")
+    if 'ADAP_FLOW_CFL' in config:
+        return config['ADAP_FLOW_CFL'].strip('()').split(",")
     else:
-        ncfl = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
+        ncfl = len(config['ADAP_SIZES'].strip('()').split(","))
         cfl = []
         for i in range(ncfl):
             cfl.append(config['CFL_NUMBER'])        
         return cfl
 
 def get_adj_cfl(config):
-    if 'PYADAP_ADJ_CFL' in config:
-        return config['PYADAP_ADJ_CFL'].strip('()').split(",")
+    if 'ADAP_ADJ_CFL' in config:
+        return config['ADAP_ADJ_CFL'].strip('()').split(",")
     else:
-        ncfl = len(config['PYADAP_COMPLEXITY'].strip('()').split(","))
+        ncfl = len(config['ADAP_SIZES'].strip('()').split(","))
         cfl = []
         for i in range(ncfl):
             cfl.append(config['CFL_NUMBER'])        
@@ -204,9 +204,6 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, METRIC"
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
-    config.ADAP_HMAX            = config.PYADAP_HMAX
-    config.ADAP_HMIN            = config.PYADAP_HMIN
-    config.ADAP_ARMAX           = config.PYADAP_ARMAX
     config.ADAP_COMPLEXITY      = int(mesh_size)
     config.RESTART_CFL          = 'YES'
 
@@ -227,11 +224,11 @@ def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfi
     config.ITER                   = int(adj_iter)
     config.ADAP_COMPLEXITY        = int(mesh_size)
    
-def print_adap_options(config, kwds):
+def print_adap_options(config):
     prt = '\nMesh adaptation options:\n'
-    for kwd in kwds:
-        if kwd in config:
-            prt += kwd + ' : ' + config[kwd] + '\n'
+    for key, value in config.items():
+        if 'ADAP_' in key:
+            prt += key + ' : ' + value + '\n'
     prt += '\n'
     return prt
     
