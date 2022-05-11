@@ -195,7 +195,7 @@ def amg ( config ):
                 #--- Otherwise just compute the metric
                 else:
                     os.symlink(os.path.join(cwd, cur_solfil_adj_ini), cur_solfil_adj_ini)
-                    config_cfd_ad.ITER = 1
+                    config_cfd_ad.ITER = 0
 
                     sav_stdout.write('Initial adjoint CFD solution is provided.\n')
                     sav_stdout.flush()
