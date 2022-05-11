@@ -51,7 +51,7 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Build 
-        uses: docker://ghcr.io/martin-g/su2/build-su2:20220505-1111
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Upload Binaries 
@@ -96,7 +96,7 @@ jobs:
           if [ -d "${{format('Forward{0}', matrix.tag)}}" ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/; fi
           chmod a+x install/bin/*
       - name: Run Tests in Container
-        uses: docker://ghcr.io/martin-g/su2/test-su2:20220505-1111
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
@@ -137,6 +137,6 @@ jobs:
           cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
           chmod a+x install/bin/*
       - name: Run Unit Tests
-        uses: docker://ghcr.io/martin-g/su2/test-su2:20220505-1111
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
