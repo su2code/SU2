@@ -40,7 +40,7 @@ def amg ( config ):
     adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
                     'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_ARMAX', 'PYADAP_HGRAD', \
                     'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
-                    'PYADAP_INV_VOL', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
+                    'PYADAP_INV_BACK', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
     required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
                         'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
     
