@@ -24,23 +24,23 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Denable-tests=true --warnlevel=0 --werror'
           - config_set: ReverseMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=0 --werror'
           - config_set: ForwardMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=0 --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=0 --werror'
           - config_set: ReverseNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=0 --werror'
           - config_set: ForwardNoMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=0 --werror'
           - config_set: BaseOMP
-            flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=0 --werror'
           - config_set: ReverseOMP
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=0 --werror'
           - config_set: ForwardOMP
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=0 --werror'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
