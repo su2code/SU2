@@ -36,7 +36,7 @@ AC_DEFUN([CONFIGURE_AMG],
         ;;
     esac
 
-     AMGIO_INCLUDE="-I\$(top_srcdir)/externals/amgio/sources"
+     AMGIO_INCLUDE="-I\$(top_srcdir)/externals/amgio"
      AMGIO_LIB="\$(top_builddir)/externals/amgio/libMeshb.a"
      AC_DEFINE(HAVE_AMG, 1, [Flag indicating whether the library will be compiled with GMF support])
      AC_MSG_RESULT(<<< Configuring library with GMF support >>>)

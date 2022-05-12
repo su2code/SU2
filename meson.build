@@ -73,7 +73,7 @@ endif
 
 # add amgio library
 if get_option('enable-amg')
-  subdir('externals/amgio/sources')
+  subdir('externals/amgio')
   su2_deps += libmeshb7_dep
   su2_cpp_args += '-DHAVE_AMG'
 endif

@@ -58,7 +58,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = '4007c24a86e18df55f1410115673a76f4af471b0'
+  sha_version_amg = '77ac4bab3bc62476b5d8777fcd9b94305eca1de7'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
@@ -121,7 +121,7 @@ def init_submodules(method = 'auto'):
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
 
-    if '_amgio' in missing:
+    if '_su2gmf' in missing:
       print('Installing _su2gmf.')
       cmd = sys.executable
       amg_ext_dir  = alt_name_amg + '/su2gmf'
@@ -166,7 +166,7 @@ def submodule_status(path, sha_commit):
     elif status_indicator == '-':
       # Initialize the submodule if necessary 
       print('Initialize submodule ' + path + ' using git ... ')
-      subprocess.run(['git', 'submodule', 'update', '--init', path], check = True, cwd = sys.path[0])
+      subprocess.run(['git', 'submodule', 'update', '--init', '--recursive', path], check = True, cwd = sys.path[0])
 
     # Check that the SHA tag stored in this file matches the one stored in the git index
     cur_sha_commit = status[1:].split(' ')[0]
