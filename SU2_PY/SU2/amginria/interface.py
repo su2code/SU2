@@ -25,7 +25,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys
+import sys
 import numpy as np
 
 import _amgio as amgio
@@ -124,15 +124,15 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     mesh = dict()
     
-    mesh['dimension']    = Dim
+    mesh['dimension']  = Dim
     
-    mesh['xyz']          = Ver 
+    mesh['xyz']        = Ver 
     
-    mesh['Triangles']    = Tri
-    mesh['Tetrahedra']   = Tet
-    mesh['Edges']        = Edg
-    mesh['Corners']      = Cor
-    mesh['solution']     = Sol
+    mesh['Triangles']  = Tri
+    mesh['Tetrahedra'] = Tet
+    mesh['Edges']      = Edg
+    mesh['Corners']    = Cor
+    mesh['solution']   = Sol
     
     mesh['solution_tag'] = SolTag
     
@@ -181,14 +181,14 @@ def read_mesh(mesh_name):
     
     mesh = dict()
     
-    mesh['dimension']    = Dim
+    mesh['dimension']  = Dim
     
-    mesh['xyz']          = Ver 
+    mesh['xyz']        = Ver 
     
-    mesh['Triangles']    = Tri
-    mesh['Tetrahedra']   = Tet
-    mesh['Edges']        = Edg
-    mesh['Corners']      = Cor
+    mesh['Triangles']  = Tri
+    mesh['Tetrahedra'] = Tet
+    mesh['Edges']      = Edg
+    mesh['Corners']    = Cor
         
     mesh['markers'] = Markers    
     
@@ -236,14 +236,14 @@ def write_mesh_and_sol(mesh_name, solution_name, mesh):
     Ver     = []
     SolTag  = []
         
-    if 'Triangles' in mesh:     Tri     = mesh['Triangles']
-    if 'Tetrahedra' in mesh:    Tet     = mesh['Tetrahedra']
-    if 'Edges' in mesh:         Edg     = mesh['Edges']
-    if 'Corners' in mesh:       Cor     = mesh['Corners']
-    if 'solution' in mesh:      Sol     = mesh['solution']
-    if 'markers' in mesh:       Markers = mesh['markers']
-    if 'dimension' in mesh:     Dim     = mesh['dimension']
-    if 'solution_tag' in mesh:  SolTag  = mesh['solution_tag']
+    if 'Triangles' in mesh:    Tri     = mesh['Triangles']
+    if 'Tetrahedra' in mesh:   Tet     = mesh['Tetrahedra']
+    if 'Edges' in mesh:        Edg     = mesh['Edges']
+    if 'Corners' in mesh:      Cor     = mesh['Corners']
+    if 'solution' in mesh:     Sol     = mesh['solution']
+    if 'markers' in mesh:      Markers = mesh['markers']
+    if 'dimension' in mesh:    Dim     = mesh['dimension']
+    if 'solution_tag' in mesh: SolTag  = mesh['solution_tag']
     if 'xyz' in mesh:
         Ver = mesh['xyz']
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
@@ -281,12 +281,12 @@ def write_mesh(mesh_name, mesh):
     Dim     = 3
     Ver     = []
         
-    if 'Triangles' in mesh:     Tri     = mesh['Triangles']
-    if 'Tetrahedra' in mesh:    Tet     = mesh['Tetrahedra']
-    if 'Edges' in mesh:         Edg     = mesh['Edges']
-    if 'Corners' in mesh:       Cor     = mesh['Corners']
-    if 'markers' in mesh:       Markers = mesh['markers']
-    if 'dimension' in mesh:     Dim     = mesh['dimension']
+    if 'Triangles' in mesh:  Tri     = mesh['Triangles']
+    if 'Tetrahedra' in mesh: Tet     = mesh['Tetrahedra']
+    if 'Edges' in mesh:      Edg     = mesh['Edges']
+    if 'Corners' in mesh:    Cor     = mesh['Corners']
+    if 'markers' in mesh:    Markers = mesh['markers']
+    if 'dimension' in mesh:  Dim     = mesh['dimension']
     if 'xyz' in mesh:
         Ver = mesh['xyz']
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
@@ -308,16 +308,13 @@ def write_sol(sol_name, sol):
     
     Dim = sol['dimension']
     Sol = sol['solution']
-
-    if Dim == 3:
-        NbrVer = int(len(sol['xyz']))
-    else:
-        NbrVer = int(len(sol['xy']))
     
     if 'xyz' in sol:
+        NbrVer = int(len(sol['xyz']))
         Ver = sol['xyz']
         Ver = np.array(Ver).reshape(3*len(Ver)).tolist()
     elif 'xy' in sol:
+        NbrVer = int(len(sol['xy']))
         Ver = np.array(sol['xy'])
         z = np.zeros(len(sol['xy']))
         Ver = np.c_[Ver, z]

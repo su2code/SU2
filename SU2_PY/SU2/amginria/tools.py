@@ -216,13 +216,13 @@ def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_ite
     set_cfl(config, flow_cfl)
 
 def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, adj_iter, mesh_size):
-    config.MESH_FILENAME          = cur_meshfil
-    config.RESTART_ADJ_FILENAME   = cur_solfil_adj
-    config.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
-    config.SOLUTION_FILENAME      = cur_solfil
-    config.RESTART_FILENAME       = cur_solfil
-    config.ITER                   = int(adj_iter)
-    config.ADAP_COMPLEXITY        = int(mesh_size)
+    config.MESH_FILENAME         = cur_meshfil
+    config.RESTART_ADJ_FILENAME  = cur_solfil_adj
+    config.SOLUTION_ADJ_FILENAME = cur_solfil_adj_ini
+    config.SOLUTION_FILENAME     = cur_solfil
+    config.RESTART_FILENAME      = cur_solfil
+    config.ITER                  = int(adj_iter)
+    config.ADAP_COMPLEXITY       = int(mesh_size)
    
 def print_adap_options(config):
     prt = '\nMesh adaptation options:\n'
@@ -369,12 +369,9 @@ def create_sensor(solution, sensor):
 
     elif sensor == "GOAL":
 
-        if Dim == 2:
-            sensor = Sol[:,-3:]
-            sensor = np.array(sensor).reshape((len(sensor),3))
-        elif Dim == 3:
-            sensor = Sol[:,-6:]
-            sensor = np.array(sensor).reshape((len(sensor),6))
+        nMet = 3*(Dim-1)
+        sensor = Sol[:,-nMet:]
+        sensor = np.array(sensor).reshape((len(sensor),nMet))
         sensor_header = ["Goal"]
                 
     else :
