@@ -32,7 +32,7 @@
 import numpy as np
 from itertools import islice
 import sys, os
-import _amgio as amgio
+import _su2gmf as su2gmf
 
 # --- Prescribed mesh complexities, i.e. desired mesh sizes
 def get_mesh_sizes(config):
@@ -89,7 +89,7 @@ def get_amg_config(config_su2):
     if back_extension == ".su2":
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
-        amgio.py_ConvertSU2toGMF(config_amg['adap_back'], "", "amg_back", "")
+        su2gmf.py_ConvertSU2toGMF(config_amg['adap_back'], "", "amg_back", "")
         config_amg['adap_back'] = os.path.join(cwd, "adap/ite0/amg_back.meshb")
 
     #--- Add AMG command flags

@@ -58,7 +58,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = '9261002daf9fb0300998052f613e9b4c18e11099'
+  sha_version_amg = '4007c24a86e18df55f1410115673a76f4af471b0'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
@@ -117,14 +117,14 @@ def init_submodules(method = 'auto'):
   err = open( 'amgio.err', 'w' )
   if sys.version_info >= (3, 7):
     import pkg_resources
-    required = {'pyamg','_amgio'}
+    required = {'pyamg','_su2gmf'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
 
     if '_amgio' in missing:
-      print('Installing _amgio.')
+      print('Installing _su2gmf.')
       cmd = sys.executable
-      amg_ext_dir  = alt_name_amg + '/su2io'
+      amg_ext_dir  = alt_name_amg + '/su2gmf'
       subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
       subprocess.call([cmd,'setup.py','install'], cwd = amg_ext_dir, stdout = log, stderr = err)
 

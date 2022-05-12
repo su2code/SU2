@@ -28,7 +28,7 @@
 import sys
 import numpy as np
 
-import _amgio as amgio
+import _su2gmf as su2gmf
 import pyamg
 
 def call_pyamg(mesh, config):
@@ -82,7 +82,7 @@ def call_pyamg(mesh, config):
     return mesh_new
     
     
-# --- Read mesh and solution using amgio module
+# --- Read mesh and solution using su2gmf module
 def read_mesh_and_sol(mesh_name, solution_name):
     
     Ver = []
@@ -99,7 +99,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     Markers = []
     
-    amgio.py_ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers)
+    su2gmf.py_ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers)
         
     NbrTet = int(len(Tet)/5)
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
@@ -144,7 +144,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     return mesh
 
-# --- Read mesh using amgio module
+# --- Read mesh using su2gmf module
 def read_mesh(mesh_name):
     
     Ver = []
@@ -159,7 +159,7 @@ def read_mesh(mesh_name):
     
     Markers = []
     
-    amgio.py_ReadMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers)
+    su2gmf.py_ReadMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers)
         
     NbrTet = int(len(Tet)/5)
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
@@ -194,7 +194,7 @@ def read_mesh(mesh_name):
     
     return mesh
 
-# --- Read mesh using amgio module
+# --- Read mesh using su2gmf module
 def read_sol(solution_name, mesh):
     
     NbrVer = len(mesh['xyz'])
@@ -203,7 +203,7 @@ def read_sol(solution_name, mesh):
     Sol = []
     SolTag = []
     
-    amgio.py_ReadSol(solution_name, Sol, SolTag, NbrVer, Dim)
+    su2gmf.py_ReadSol(solution_name, Sol, SolTag, NbrVer, Dim)
         
     SolSiz = int(len(Sol)/NbrVer)
     Sol = np.array(Sol).reshape(NbrVer,SolSiz).tolist()
@@ -219,7 +219,7 @@ def read_sol(solution_name, mesh):
     
     return sol
     
-# --- Write mesh and solution using amgio module
+# --- Write mesh and solution using su2gmf module
 def write_mesh_and_sol(mesh_name, solution_name, mesh):
     
     Tri     = []
@@ -264,9 +264,9 @@ def write_mesh_and_sol(mesh_name, solution_name, mesh):
     else:
         Sol = []
     
-    amgio.py_WriteMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
+    su2gmf.py_WriteMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
 
-# --- Write mesh and solution using amgio module
+# --- Write mesh and solution using su2gmf module
 def write_mesh(mesh_name, mesh):
     
     Tri     = []
@@ -301,9 +301,9 @@ def write_mesh(mesh_name, mesh):
     Edg = np.array(Edg).reshape(3*len(Edg)).tolist()
     Cor = np.array(Cor).reshape(len(Cor)).tolist()
     
-    amgio.py_WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
+    su2gmf.py_WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
     
-# --- Write solution using amgio module
+# --- Write solution using su2gmf module
 def write_sol(sol_name, sol):
     
     Dim = sol['dimension']
@@ -329,7 +329,7 @@ def write_sol(sol_name, sol):
         sys.stderr.write("## ERROR write_sol : No solution.\n")
         sys.exit(1)
         
-    amgio.py_WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
+    su2gmf.py_WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
 
 
 
