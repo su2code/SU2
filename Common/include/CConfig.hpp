@@ -798,7 +798,7 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  *Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  *Molecular_Weight,    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,           /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
