@@ -269,5 +269,19 @@ public:
   inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
   }
+ /*!
+   * \brief Returns the stored value of Eve at the specified node
+   */
+  su2double *GetEve(unsigned long iPoint) {return nullptr;}
+
+  /*!
+   * \brief Returns the value of Cvve at the specified node
+   */
+  su2double *GetCvve(unsigned long iPoint) {return nullptr;}
+
+  /*!
+   * \brief Returns the stored value of Gamma at the specified node
+   */
+  su2double GetGamma(unsigned long iPoint) {return 0;}
 
 };
