@@ -1,2 +1,0 @@
-VARIABLES = \
-"Time_Iter","Outer_Iter","Inner_Iter",   "rms[Rho_0]"   ,   "rms[Rho_1]"   ,    "rms[RhoU]"   ,    "rms[RhoV]"   ,    "rms[RhoW]"   ,    "rms[RhoE]"   ,   "rms[RhoEve]"  ,       "CD"       ,       "CL"       ,       "CSF"      ,       "CMx"      ,       "CMy"      ,       "CMz"      ,       "CFx"      ,       "CFy"      ,       "CFz"      ,      "CEff"      
