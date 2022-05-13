@@ -58,7 +58,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = '77ac4bab3bc62476b5d8777fcd9b94305eca1de7'
+  sha_version_amg = '32f2e533e20f50526a8c9ac72fe67f2ebcba472d'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
