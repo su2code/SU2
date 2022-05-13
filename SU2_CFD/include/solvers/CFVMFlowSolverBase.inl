@@ -1100,6 +1100,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   bool viscous = config->GetViscous();
   bool preprocessed = false;
 
+  cout << "I get called in NEMO" << endl;
+
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
