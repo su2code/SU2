@@ -1137,7 +1137,6 @@ private:
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
   unsigned short n_scalars,       /*!< \brief Number of transported scalars. */
-  //n_species,                      /*!< \brief Number of species in multicomponent flow. */
   nMolecular_Weight;             /*!< \brief Number of species molecular weights. */        
 
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */

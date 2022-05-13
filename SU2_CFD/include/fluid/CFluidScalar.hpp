@@ -63,15 +63,6 @@ private:
    * \brief Constructor of the class.
    */
   CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig *config);
-  /*!
-   * \brief Set viscosity model.
-   */
-  void SetLaminarViscosityModel(const CConfig* config) override;
-
-  /*!
-   * \brief Set thermal conductivity model.
-   */
-  void SetThermalConductivityModel(const CConfig* config) override;
   
   /*!
    * \brief Set the Dimensionless State using Temperature.
@@ -89,25 +80,4 @@ private:
 
   void SetTDState_T(const su2double val_temperature, const su2double * const val_scalars);
 
-   /*!
-   * \brief Get fluid dynamic viscosity.
-   */
-  inline su2double GetLaminarViscosity() override {
-    LaminarViscosity->SetViscosity(Temperature, Density);
-    Mu = LaminarViscosity->GetViscosity();
-    LaminarViscosity->SetDerViscosity(Temperature, Density);
-    dmudrho_T = LaminarViscosity->Getdmudrho_T();
-    dmudT_rho = LaminarViscosity->GetdmudT_rho();
-    return Mu;
-  }
-  /*!
-   * \brief Get fluid thermal conductivity.
-   */
-  inline su2double GetThermalConductivity() override { 
-    ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
-    Kt = ThermalConductivity->GetConductivity();
-    ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
-    dktdrho_T = ThermalConductivity->Getdktdrho_T();
-    dktdT_rho = ThermalConductivity->GetdktdT_rho();
-    return Kt; }
 };
