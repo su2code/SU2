@@ -289,7 +289,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
-  const su2double *scalar = nullptr;
+  const su2double* scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
