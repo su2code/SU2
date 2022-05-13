@@ -3722,7 +3722,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   const su2double Molecular_Weight_Default = 28.96;
 
-  if (Molecular_Weight == nullptr){
+  if (Molecular_Weight == nullptr) {
     Molecular_Weight = new su2double[1];
     Molecular_Weight[0] = Molecular_Weight_Default;
     nMolecular_Weight = 1;
