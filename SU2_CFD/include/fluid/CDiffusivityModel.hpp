@@ -40,7 +40,7 @@ public:
   virtual ~CDiffusivityModel() {}
 
 
-  virtual su2double GetDiffusivity(void) const = 0; /* new added virtual*/
+  virtual su2double GetDiffusivity() const = 0;
 
 /*!
  * \brief Set mass diffusivity
