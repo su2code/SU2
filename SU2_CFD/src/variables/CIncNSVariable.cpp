@@ -67,7 +67,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Use the fluid model to compute the new value of density. ---*/
 
-  FluidModel->SetTDState_T(Temperature,scalar);
+  FluidModel->SetTDState_T(Temperature, scalar);
 
   /*--- Set the value of the density ---*/
 
