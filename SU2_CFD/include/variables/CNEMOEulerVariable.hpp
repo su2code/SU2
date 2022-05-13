@@ -91,6 +91,8 @@ class CNEMOEulerVariable : public CFlowVariable {
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
+  VectorType symmetry;
+
   const bool implicit;      /*!< \brief Implicit flag. */
 
  public:
@@ -415,5 +417,15 @@ class CNEMOEulerVariable : public CFlowVariable {
   inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,nSpecies+iDim) = 0.0;
   }
+
+    /*!
+   * \brief Increases the number of symmetry planes at the specified node by one.
+   */  
+  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1.0;}
+
+  /*!
+   * \brief Retrieves the number of symmetry planes at the specified node.
+   */  
+  inline su2double GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
 
 };

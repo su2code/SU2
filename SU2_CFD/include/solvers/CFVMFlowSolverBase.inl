@@ -1093,8 +1093,12 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  unsigned short iDim, iVar, nSpecies;
-  unsigned long iVertex, iPoint;
+  unsigned short iDim, iVar, iMarker, nLineLets, nSpecies;
+  unsigned long iVertex, iPoint, jPoint, iEdge, counter_local, counter_global = 0;
+
+  su2double Tangent[MAXNDIM]  = {0.0};
+  su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
+  su2double Product, tol = 1e-16;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
@@ -1111,6 +1115,67 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2activematrix Grad_Reflected(nPrimVarGrad, nDim);
+
+  /*--- Count number of symmetry planes where each Vertex is inserted ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        nodes->SetSymmetry(iPoint);
+      }
+    }
+  }
+
+  /*--- Correct normal directions of edges ---*/
+  for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        geometry->vertex[iMarker][iVertex]->GetNormal(Normal_Sym);
+
+        Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+
+        for(iDim = 0; iDim<nDim; iDim++){
+          UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
+        }
+
+        for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh){
+          Product = 0.0;
+
+          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+
+          /*---Check if neighbour point is on the same plane as the Symmetry_Plane
+               by computing the internal product and of the Normal Vertex vector and
+               the vector connecting iPoint and jPoint. If the product is lower than
+               estabilished tolerance (to account for Numerical errors) both points are
+               in the same plane as SYMMETRY_PLANE---*/
+
+          for(iDim = 0; iDim<nDim; iDim++){
+            Tangent[iDim] = geometry->nodes->GetCoord(jPoint,iDim) - geometry->nodes->GetCoord(iPoint,iDim);
+            Product += Tangent[iDim] * Normal_Sym[iDim];
+          }
+
+          if (abs(Product) < tol) {
+            Product = 0.0;
+
+            iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+
+            geometry->edges->GetNormal(iEdge,Normal);
+
+            for(iDim = 0; iDim<nDim; iDim++)
+              Product += Normal[iDim]*UnitNormal_Sym[iDim];
+
+            for(iDim = 0; iDim<nDim; iDim++)
+              Normal[iDim]-=Product*UnitNormal_Sym[iDim];
+
+            geometry->edges->SetNormal(iEdge,Normal);
+          }
+        }
+      }
+    }
+  }
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
