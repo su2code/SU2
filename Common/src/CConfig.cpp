@@ -3720,7 +3720,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set default values for various fluid properties. ---*/
 
-  static const su2double Molecular_Weight_Default = 28.96;
+  const su2double Molecular_Weight_Default = 28.96;
 
   if (Molecular_Weight == nullptr){
     Molecular_Weight = new su2double[1];
