@@ -3735,15 +3735,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     n_species = nSpecies_Init + 1;
 
   /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
-    * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
-    * Cp is required in case of FLUID_MIXTURE because the energy equation needs to be active. --- */
+   nMolecular_Weight is used because it is required for the fluid mixing models. --- */
     if (nMolecular_Weight != n_species) {
     SU2_MPI::Error("The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
                    "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
     }
   /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be VARIABLE. Otherwise, if 
-    the density model is CONSTANT, the scalars will not have influence the mixture density and it will remain constant through the complete
-    domain. --- */
+   the density model is CONSTANT, the scalars will not have influence the mixture density and it will remain constant through the complete
+   domain. --- */
     if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
     SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
     }
