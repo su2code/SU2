@@ -306,5 +306,5 @@ if get_option('enable-librom')
 endif
 
 if get_option('enable-pywrapper') and get_option('enable-cgns') and not get_option('static-cgns-deps')
-  message(''' WARNING: If compilation fails with a message regarding "static linkage of dynamic object", reconfigure with option -Dstatic-cgns-deps=true.''')
+  message(''' WARNING: If compilation fails with a message regarding "attempted static link of dynamic object", reconfigure with option -Dstatic-cgns-deps=true.''')
 endif
