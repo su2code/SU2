@@ -25,7 +25,7 @@ jobs:
           - os_bin: linux64
             flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
+            flags: '-Dcustom-mpi=true -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux_mpi'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
