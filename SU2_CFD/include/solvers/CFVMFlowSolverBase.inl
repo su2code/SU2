@@ -1093,12 +1093,11 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  unsigned short iDim, iVar, iMarker, nLineLets, nSpecies;
-  unsigned long iVertex, iPoint, jPoint, iEdge, counter_local, counter_global = 0;
-
+  unsigned short iDim, iVar, iNeigh, nSpecies;
+  unsigned long iVertex, iPoint, jPoint, iEdge, iMarker;
   su2double Tangent[MAXNDIM]  = {0.0};
   su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
-  su2double Product, tol = 1e-16;
+  su2double Normal_Product, Product, tol = 1e-16;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
@@ -1111,12 +1110,12 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
   su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
-      Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
+      Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0}, Residual[MAXNVAR] = {0.0};
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2activematrix Grad_Reflected(nPrimVarGrad, nDim);
 
-  /*--- Count number of symmetry planes where each Vertex is inserted ---*/
+/*--- Count number of symmetry planes where each Vertex is inserted ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -1127,11 +1126,12 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   }
 
   /*--- Correct normal directions of edges ---*/
-  for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
-      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         geometry->vertex[iMarker][iVertex]->GetNormal(Normal_Sym);
 
@@ -1141,7 +1141,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
           UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
         }
 
-        for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh){
+        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh){
           Product = 0.0;
 
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
@@ -1244,6 +1244,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
+      Normal_Product = 0.0;
       /*-------------------------------------------------------------------------------*/
       /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
       /*---         Primitive variables by copying all interior values to the       ---*/
@@ -1302,8 +1303,16 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       auto residual = conv_numerics->ComputeResidual(config);
 
+    for(iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim]/Area;
+      Normal_Product += residual[nSpecies+iDim]*UnitNormal[iDim];
+    }
+
+    for(iDim = 0; iDim < nDim; iDim++)
+      Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
+
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {
