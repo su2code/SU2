@@ -1293,9 +1293,9 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       if (nemo) {
-        conv_numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
-        conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
-        conv_numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
+        conv_numerics->SetEve(nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
+        conv_numerics->SetCvve(nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
+        conv_numerics->SetGamma(nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
       }
 
       /*--- Compute the residual using an upwind scheme. ---*/
