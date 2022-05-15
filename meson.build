@@ -304,3 +304,7 @@ if get_option('enable-librom')
           '''.format(get_option('librom_root')))
 
 endif
+
+if get_option('enable-pywrapper') and get_option('enable-cgns') and not get_option('static-cgns-deps')
+  message(''' WARNING: If compilation fails with a message regarding "attempted static link of dynamic object", reconfigure with option -Dstatic-cgns-deps=true.''')
+endif
