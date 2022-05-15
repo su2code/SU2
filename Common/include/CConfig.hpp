@@ -9622,6 +9622,6 @@ public:
    * \brief Get parsed SST option data structure.
    * \return SST option data structure.
    */
-  SST_ParsedOptions GetSSTParsedOptions(void) const {return sstParsedOptions; }
+  SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
 
 };

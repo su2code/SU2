@@ -111,8 +111,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     constants[10] = 20.0; // production limiter constant
   } else {
     /* SST-V2003 */
-    constants[8] = 5.0 / 9.0;
-    constants[9] = 0.44;
+    constants[8] = 5.0 / 9.0;  //gamma_1
+    constants[9] = 0.44;  //gamma_2
     constants[10] = 10.0; // production limiter constant
   }
   /*--- Initialize lower and upper limits---*/
