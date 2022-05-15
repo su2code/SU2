@@ -2696,7 +2696,7 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if( MGCycle == FULLMG_CYCLE ){
+    if (MGCycle == FULLMG_CYCLE) {
       SetFinestMesh(val_nMGLevels);
     }
   }
