@@ -1039,7 +1039,12 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
         oldFunc[iField_Conv] = newFunc[iField_Conv];
         newFunc[iField_Conv] = monitor;
-        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv]) / fabs(monitor);
+        /*--- Automatically modify the scaling factor of relative Cauchy convergence for 
+        * coefficients that are close to zero. Example: For the clean aircraft, the rolling 
+        * moment coefficient MOMENT_X is close to zero and thus will never reach a relative 
+        * cauchy convergence ->> dividing tiny numbers is not a good idea. Using absolute 
+        * cauchy convergence is more robust in this case. ---*/
+        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv]) / fmax(fabs(monitor), 0.1);
 
         cauchySerie[iField_Conv][Iteration % nCauchy_Elems] = cauchyFunc;
         cauchyValue = 0.0;
