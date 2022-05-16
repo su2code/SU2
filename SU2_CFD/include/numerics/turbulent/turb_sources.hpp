@@ -71,8 +71,7 @@ class CSourceBase_TurbSA : public CNumerics {
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-  const bool rotating_frame = false;
-  const bool transition = false;
+  const SA_ParsedOptions options; /*!< \brief . */
 
  public:
   /*!
@@ -80,11 +79,10 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceBase_TurbSA(unsigned short nDim, unsigned short, const CConfig* config)
+  CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
-        rotating_frame(config->GetRotating_Frame()),
-        transition(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+        options(config->GetSAParsedOptions()) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
@@ -123,7 +121,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"), this is applied by
      * default for rotating frame, but should be controled in the config. ---*/
-    if (rotating_frame) {
+    if (options.rot) {
       var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
     }
 
@@ -173,7 +171,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
-      if (transition) {
+      if (options.bc) {
         /*--- BC transition model (2020 revision). This should only be used with SA-noft2.
          * TODO: Consider making this part of the "SourceTerms" template. ---*/
         const su2double chi_1 = 0.002;
@@ -466,8 +464,8 @@ class CCompressibilityCorrection final : public ParentClass {
    * \param[in] nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCompressibilityCorrection(unsigned short nDim, unsigned short, const CConfig* config)
-      : ParentClass(nDim, 0, config) {}
+  CCompressibilityCorrection(unsigned short nDim, const CConfig* config)
+      : ParentClass(nDim, config) {}
 
   /*!
    * \brief Residual for source term integration.
@@ -498,58 +496,67 @@ class CCompressibilityCorrection final : public ParentClass {
   }
 };
 
-}  // namespace detail
-
 /* =============================================================================
- * SPALART-ALLMARAS CLASSES
+ * HELPERS TO INTANTIATE THE SA BASE CLASS
  * ============================================================================*/
 
-/// TODO: Factory method to create combinations of the different variations based on the config.
-/// See PR #1413, the combinations exposed should follow https://turbmodels.larc.nasa.gov/spalart.html
+template <class FlowIndices>
+struct BaselineSA {
+  template <class Ft2>
+  using type = CSourceBase_TurbSA<FlowIndices, Omega::Bsl, Ft2, ModVort::Bsl, r::Bsl, SourceTerms::Bsl>;
+};
+
+template <class FlowIndices>
+struct NegativeSA {
+  template <class Ft2>
+  using type = CSourceBase_TurbSA<FlowIndices, Omega::Bsl, Ft2, ModVort::Neg, r::Bsl, SourceTerms::Neg>;
+};
+
+template <class FlowIndices>
+struct EdwardsSA {
+  template <class Ft2>
+  using type = CSourceBase_TurbSA<FlowIndices, Omega::Edw, Ft2, ModVort::Edw, r::Edw, SourceTerms::Bsl>;
+};
+
+template <class BaseType, class... Ts>
+CNumerics* AddCompressibilityCorrection(bool use_comp, Ts... args) {
+  if (use_comp) {
+    return new detail::CCompressibilityCorrection<BaseType>(args...);
+  } else {
+    return new BaseType(args...);
+  }
+}
+
+template <class BaseType, class... Ts>
+CNumerics* SAFactoryImpl(bool use_ft2, Ts... args) {
+  if (use_ft2) {
+    return AddCompressibilityCorrection<typename BaseType::template type<ft2::Nonzero>>(args...);
+  } else {
+    return AddCompressibilityCorrection<typename BaseType::template type<ft2::Zero>>(args...);
+  }
+}
+
+}  // namespace detail
 
 /*!
- * \class CSourcePieceWise_TurbSA
- * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \brief Creates an SA source based on the version and modifications/correction in the config.
  */
 template <class FlowIndices>
-using CSourcePieceWise_TurbSA = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Zero,
-                                                   detail::ModVort::Bsl, detail::r::Bsl, detail::SourceTerms::Bsl>;
+CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
+  const auto options = config->GetSAParsedOptions();
 
-/*!
- * \class CSourcePieceWise_TurbSA_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras model with compressibility correction.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_COMP = detail::CCompressibilityCorrection<CSourcePieceWise_TurbSA<FlowIndices>>;
-
-/*!
- * \class CSourcePieceWise_TurbSA_E
- * \brief Class for integrating the source terms of the Spalart-Allmaras model with Edwards modification.
- * \note From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
- * This form was developed primarily to improve the near-wall numerical behavior of the model (i.e. the goal was to
- * improve the convergence behavior). The reference is: Edwards, J. R. and Chandra, S. "Comparison of Eddy
- * Viscosity-Transport Turbulence Models for Three-Dimensional, Shock-Separated Flowfields," AIAA Journal, Vol. 34, No.
- * 4, 1996, pp. 756-763.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_E = CSourceBase_TurbSA<FlowIndices, detail::Omega::Edw, detail::ft2::Zero,
-                                                     detail::ModVort::Edw, detail::r::Edw, detail::SourceTerms::Bsl>;
-
-/*!
- * \class CSourcePieceWise_TurbSA_E_COMP
- * \brief Class for integrating the source terms of the Spalart-Allmaras model with Edwards modification
- *        and compressibility correction.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_E_COMP = detail::CCompressibilityCorrection<CSourcePieceWise_TurbSA_E<FlowIndices>>;
-
-/*!
- * \class CSourcePieceWise_TurbSA_Neg
- * \brief Class for integrating the source terms of the negative Spalart-Allmaras model.
- */
-template <class FlowIndices>
-using CSourcePieceWise_TurbSA_Neg = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Zero,
-                                                       detail::ModVort::Neg, detail::r::Bsl, detail::SourceTerms::Neg>;
+  switch (options.version) {
+    case SA_OPTIONS::NONE:
+      return detail::SAFactoryImpl<detail::BaselineSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+    case SA_OPTIONS::NEG:
+      return detail::SAFactoryImpl<detail::NegativeSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+    case SA_OPTIONS::EDW:
+      return detail::SAFactoryImpl<detail::EdwardsSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+    default:
+      break;
+  }
+  return nullptr;
+}
 
 /*!
  * \class CSourcePieceWise_TurbSST

@@ -1091,6 +1091,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options, SST_Options_Map);
+  /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
@@ -2767,9 +2769,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
 
-  /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
-  addBoolOption("SA_QCR", QCR, false);
-
   /* DESCRIPTION: Compute Average for unsteady simulations */
   addBoolOption("COMPUTE_AVERAGE", Compute_Average, false);
 
@@ -2996,6 +2995,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
           else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
+          else if (!option_name.compare("QCR"))
+            newString.append("QCR is deprecated. Use SA_OPTIONS=QCR2000 instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3054,9 +3055,21 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
       string out = option_map[option_name]->SetValue(option_value);
       if (out.compare("") != 0) {
         /*--- valid option, but deprecated value ---*/
-        if ((!option_name.compare("KIND_TURB_MODEL")) && (option_value[0]=="SST_SUST"))
-          errorString.append("Option KIND_TURB_MODEL=SST_SUST is deprecated. Use KIND_TURB_MODEL=SST, SST_OPTIONS=SUSTAINING instead.\n");
-
+        if (!option_name.compare("KIND_TURB_MODEL")) {
+          if (option_value[0] == "SST_SUST")
+            errorString.append("Option KIND_TURB_MODEL=SST_SUST is deprecated. Use KIND_TURB_MODEL=SST, SST_OPTIONS=SUSTAINING instead.\n");
+          else if (option_value[0] == "SA_NEG")
+            errorString.append("Option KIND_TURB_MODEL=SA_NEG is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=NEGATIVE instead.\n");
+          else if (option_value[0] == "SA_E")
+            errorString.append("Option KIND_TURB_MODEL=SA_E is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=EDWARDS instead.\n");
+          else if (option_value[0] == "SA_COMP")
+            errorString.append("Option KIND_TURB_MODEL=SA_COMP is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=COMPRESSIBILITY instead.\n");
+          else if (option_value[0] == "SA_E_COMP")
+            errorString.append("Option KIND_TURB_MODEL=SA_E_COMP is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=EDWARDS,COMPRESSIBILITY instead.\n");
+        } else if (!option_name.compare("KIND_TRANS_MODEL")) {
+          if (option_value[0] == "BC")
+            errorString.append("Option KIND_TRANS_MODEL=BC is deprecated. Use KIND_TURB_MODEL=SA, SA_OPTIONS=BCM instead.\n");
+        }
         errorString.append(out);
         errorString.append("\n");
         err_count++;
@@ -3399,8 +3412,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
-  if (Kind_Turb_Model==TURB_MODEL::SST) {
+  if (Kind_Turb_Model == TURB_MODEL::SST) {
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
+  } else if (Kind_Turb_Model == TURB_MODEL::SA) {
+    saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
   }
 
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
@@ -4586,10 +4601,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
-  }
-
-  if ((Kind_Turb_Model != TURB_MODEL::SA) && (Kind_Trans_Model == TURB_TRANS_MODEL::BC)){
-    SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
   }
 
   if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
@@ -5861,11 +5872,26 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case TURB_MODEL::NONE: break;
-          case TURB_MODEL::SA:        cout << "Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case TURB_MODEL::SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case TURB_MODEL::SA:
+            switch (saParsedOptions.version) {
+              case SA_OPTIONS::NEG:
+                cout << "Negative-";
+                break;
+              case SA_OPTIONS::EDW:
+                cout << "Edwards-";
+                break;
+              default:
+                break;
+            }
+            cout << "Spalart-Allmaras";
+
+            if (!saParsedOptions.ft2) cout << "-noft2";
+            if (saParsedOptions.rot) cout << "-R";
+            if (saParsedOptions.comp) cout << "-comp";
+            if (saParsedOptions.qcr2000) cout << "-QCR2000";
+            if (saParsedOptions.bc) cout << "-BCM";
+            cout << endl;
+            break;
           case TURB_MODEL::SST:
             cout << "Menter's k-omega SST";
             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
@@ -5891,11 +5917,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "." << endl;
             break;
         }
-        if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
-        if (Kind_Trans_Model == TURB_TRANS_MODEL::BC) cout << "Using the revised BC transition model (2020)" << endl;
         cout << "Hybrid RANS/LES: ";
-        switch (Kind_HybridRANSLES){
-          case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
+        switch (Kind_HybridRANSLES) {
+          case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
           case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;

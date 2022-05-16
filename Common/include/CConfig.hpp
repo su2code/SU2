@@ -699,10 +699,12 @@ private:
   *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
-  string *Config_Filenames;               /*!< \brief List of names for configuration files. */
-  SST_OPTIONS *SST_Options;               /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
-  unsigned short nSST_Options;            /*!< \brief number of SST options specified. */
+  unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
+  string *Config_Filenames;           /*!< \brief List of names for configuration files. */
+  SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
+  SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
+  unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -1015,7 +1017,6 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
-  bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -1137,7 +1138,8 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-  SST_ParsedOptions sstParsedOptions; /*!< \brief additional parameters for the SST turbulence model */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
+  SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -9054,11 +9056,6 @@ public:
   su2double GetConst_DES(void) const { return Const_DES; }
 
   /*!
-   * \brief Get QCR (SA-QCR2000).
-   */
-  bool GetQCR(void) const { return QCR;}
-
-  /*!
    * \brief Get if AD preaccumulation should be performed.
    */
   bool GetAD_Preaccumulation(void) const { return AD_Preaccumulation;}
@@ -9623,5 +9620,11 @@ public:
    * \return SST option data structure.
    */
   SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
+
+  /*!
+   * \brief Get parsed SA option data structure.
+   * \return SA option data structure.
+   */
+  SA_ParsedOptions GetSAParsedOptions() const { return saParsedOptions; }
 
 };

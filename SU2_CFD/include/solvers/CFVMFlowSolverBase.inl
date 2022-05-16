@@ -1482,7 +1482,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
               /*--- Turbulent kinetic energy ---*/
 
-              if (config->GetKind_Turb_Model() == TURB_MODEL::SST) 
+              if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
@@ -2459,7 +2459,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const bool energy = config->GetEnergy_Equation();
-  const bool QCR = config->GetQCR();
+  const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
   const bool roughwall = (config->GetnRoughWall() > 0);
   const bool nemo = config->GetNEMOProblem();
