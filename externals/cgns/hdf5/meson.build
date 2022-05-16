@@ -24,9 +24,8 @@ hdf5_conf_data.set('version', '1.12.1')
 
 ext_deps = []
 
-
-opt_zlib = dependency('zlib', required: false)
-opt_szip = dependency('szip', required: false)
+opt_zlib = dependency('zlib', required: false, static: true)
+opt_szip = dependency('szip', required: false, static: true)
 
 if opt_zlib.found() and cc.has_header('zlib.h')
   if cc.has_function('inflate', dependencies: opt_zlib, prefix: '#include <zlib.h>')
