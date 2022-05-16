@@ -2008,6 +2008,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   su2double Tve_o  = 50.0; su2double Tve2  = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
+  if (Tve_old < 1) Tve_old = T;                           //For first fluid iteration
   if (T < Tmin) T = Tmin;  else if (T > Tmax) T = Tmax;
   if (Tve_old<Tvemin) Tve_old = Tvemin; else if (Tve_old>Tvemax) Tve_old = Tvemax;
 
