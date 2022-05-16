@@ -2310,29 +2310,14 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         break;
     }
 
-    /* Loop over markers and check if the vertex is on another marker. If we have found 
-       that a vertex is on a viscous wall, we impose the no-slip condition and the pressure 
-       from the interior.
-    */
-
-   /*--- loop over markers in geometry ---*/
-    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      /*--- check it is a viscous wall ---*/
-      if( config->GetViscous_Wall(iMarker)) {
-        /*--- loop over vertices of the wall and check if it matches with our vertex ---*/
-        unsigned long jPoint;
-        for (unsigned long jVertex = 0; jVertex < geometry->nVertex[iMarker]; jVertex++) {
-          jPoint = geometry->vertex[iMarker][jVertex]->GetNode();
-          if (jPoint==iPoint){
-            /*--- set the velocity to zero (no-slip boundary on viscous walls) ---*/
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_inlet[iDim+prim_idx.Velocity()] = 0.0;
-            /* pressure obtained from interior */
-            V_inlet[prim_idx.Pressure()] = nodes->GetPressure(jPoint);
-          }
-        }
-      }
-    }
+    /*--- check if the inlet node is shared with a viscous wall ---*/
+    if (geometry->nodes->GetViscousBoundary(iPoint)) {
+      /*--- match the velocity and pressure for the viscous wall---*/
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
+      /* pressure obtained from interior */
+      V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
+    } 
 
     /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
