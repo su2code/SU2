@@ -9833,15 +9833,14 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   
   //--- Errors in heat flux wrt density
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    const size_t iVar = iDim+1;
     su2double ujduj = 0;
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       ujduj += u[jDim]*gradu[jDim][iDim];
       
     }
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[2][iVar] -= g*(nu/Pr + nut/Prt)*(0.5*u2 - cv*T)*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii);
-    weights[1][iVar] -= g*( (gradnu[iDim]/Pr + gradnut[iDim]/Prt) * (0.5*u2 - cv*T)
+    weights[2][0] -= g*(nu/Pr + nut/Prt)*(0.5*u2 - cv*T)*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii);
+    weights[1][0] -= g*( (gradnu[iDim]/Pr + gradnut[iDim]/Prt) * (0.5*u2 - cv*T)
                          +  (nu/Pr + nut/Prt) * (ujduj - cv*gradT[iDim]) ) * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
   }
 
