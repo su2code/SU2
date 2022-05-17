@@ -34,8 +34,6 @@
 #include "../../Common/include/option_structure.hpp"
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 
-using namespace std;
-
 CFileReaderLUT::CFileReaderLUT() {}
 
 void CFileReaderLUT::ReadRawDRG(string file_name) {
