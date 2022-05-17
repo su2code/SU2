@@ -300,6 +300,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     case RECORDING::SOLUTION_VARIABLES:
       cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
+    case RECORDING::OBJECTIVE:
+      cout << "Computing direct dependence of objective on solution." << endl; break;
     default: break;
     }
   }

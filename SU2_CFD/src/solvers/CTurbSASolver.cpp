@@ -1762,10 +1762,12 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
     hessnutilde[iHess] = varTur->GetHessian(iPoint, 0, iHess);
   }
 
+  if (dist < 1.0e-10) return;
+
   //----------------------//
   //--- Diffusion term ---//
   //----------------------//
-  
+
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
     weights[0][nVarFlo] += 2.0*cb2_sigma * hessnutilde[ind_ii] * varAdjTur->GetSolution(iPoint, 0);
@@ -1773,7 +1775,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   }
 
   //--- The rest of the terms involve 1/WallDist, so return if small
-  if (dist < 1.0e-10) return;
+  // if (dist < 1.0e-10) return;
 
   //-----------------------//
   //--- Production term ---//
@@ -1866,10 +1868,8 @@ void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geo
   const su2double T   = varFlo->GetTemperature(iPoint);
   const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
 
-  const su2double Tref  = config->GetMu_Temperature_RefND();
   const su2double S     = config->GetMu_SND();
-  const su2double muref = config->GetMu_RefND();
-  const su2double dmudT = muref*(Tref+S)/pow(Tref,1.5) * (3.*S*sqrt(T) + pow(T,1.5))/(2.*pow((T+S),2.));
+  const su2double dmudT = 0.5*r*nu*(T + 3*S)/(T*(T+S));
 
   const su2double g    = config->GetGamma();
   const su2double R    = config->GetGas_ConstantND();

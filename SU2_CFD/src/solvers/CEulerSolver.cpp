@@ -9680,11 +9680,6 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
   const su2double nut = varFlo->GetEddyViscosity(iPoint)/r;
 
-  const su2double Tref  = config->GetMu_Temperature_RefND();
-  const su2double S     = config->GetMu_SND();
-  const su2double muref = config->GetMu_RefND();
-  const su2double dmudT = muref*(Tref+S)/pow(Tref,1.5) * (3.*S*sqrt(T) + pow(T,1.5))/(2.*pow((T+S),2.));
-
   const su2double g    = config->GetGamma();
   const su2double R    = config->GetGas_ConstantND();
   const su2double cp   = (g/(g-1.))*R;
@@ -9872,10 +9867,8 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
   const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
   const su2double nut = varFlo->GetEddyViscosity(iPoint)/r;
 
-  const su2double Tref  = config->GetMu_Temperature_RefND();
   const su2double S     = config->GetMu_SND();
-  const su2double muref = config->GetMu_RefND();
-  const su2double dmudT = muref*(Tref+S)/pow(Tref,1.5) * (3.*S*sqrt(T) + pow(T,1.5))/(2.*pow((T+S),2.));
+  const su2double dmudT = 0.5*r*nu*(T + 3*S)/(T*(T+S));
 
   const su2double g    = config->GetGamma();
   const su2double R    = config->GetGas_ConstantND();
