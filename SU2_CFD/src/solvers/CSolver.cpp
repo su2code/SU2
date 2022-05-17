@@ -4977,7 +4977,7 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
 
   //--- Mean flow variables
   for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
-    weights[0][iVar] += varAdjFlo->GetObjectiveTerm(iPoint, iVar);
+    weights[0][iVar] -= varAdjFlo->GetObjectiveTerm(iPoint, iVar);
   }
 
   //--- Turbulent variables
@@ -4985,7 +4985,7 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
     auto varAdjTur = solver[ADJTURB_SOL]->GetNodes();
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     for (auto iVar = 0; iVar < nVarTur; ++iVar) {
-      weights[0][nVarFlo+iVar] += varAdjTur->GetObjectiveTerm(iPoint, iVar);
+      weights[0][nVarFlo+iVar] -= varAdjTur->GetObjectiveTerm(iPoint, iVar);
     }
   }
 }
