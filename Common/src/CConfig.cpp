@@ -2995,8 +2995,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
           else if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
             newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
-          else if (!option_name.compare("QCR"))
-            newString.append("QCR is deprecated. Use SA_OPTIONS=QCR2000 instead.\n\n");
+          else if (!option_name.compare("SA_QCR"))
+            newString.append("SA_QCR is deprecated. Use SA_OPTIONS=QCR2000 instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
