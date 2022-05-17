@@ -32,7 +32,6 @@
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 
-using namespace std;
 
 class CFileReaderLUT {
  protected:
