@@ -23,25 +23,26 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #include "../include/numerics/CFileReaderLUT.hpp"
-#include "../../Common/include/parallelization/mpi_structure.hpp"
-#include "../../Common/include/option_structure.hpp"
-#include <string>
+
 #include <fstream>
 #include <iomanip>
+#include <string>
+
+#include "../../Common/include/option_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 using namespace std;
 
 CFileReaderLUT::CFileReaderLUT() {}
 
 void CFileReaderLUT::ReadRawDRG(string file_name) {
-
   version_reader = "1.0.0";
 
   /*--- Store MPI rank. ---*/
-  
+
   rank = SU2_MPI::GetRank();
 
   string line;
@@ -53,16 +54,15 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
 
   int ixColon;
 
-  bool eoHeader       = false;
-  bool eoData         = false;
+  bool eoHeader = false;
+  bool eoData = false;
   bool eoConnectivity = false;
-  bool eoHull         = false;
+  bool eoHull = false;
 
   file_stream.open(file_name.c_str(), ifstream::in);
 
   if (!file_stream.is_open()) {
-    SU2_MPI::Error(string("There is no look-up-table file called ") + file_name,
-                   CURRENT_FUNCTION);
+    SU2_MPI::Error(string("There is no look-up-table file called ") + file_name, CURRENT_FUNCTION);
   }
 
   /* Read header */
@@ -101,14 +101,13 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
 
     /* variable names */
     if (line.compare("[variable names]") == 0) {
-
       getline(file_stream, line);
       stream_names_var.str(line);
       while (stream_names_var) {
         stream_names_var >> word;
         ixColon = (int)word.find(":");
 
-        PushNameVar(word.substr(ixColon + 1, word.size() - 1)); 
+        PushNameVar(word.substr(ixColon + 1, word.size() - 1));
       }
       PopNameVar();  // removes last redundant element
     }
@@ -119,15 +118,14 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
 
   // check version_lut
   if (version_lut.compare(version_reader) != 0)
-    SU2_MPI::Error(
-        "Version conflict between Dragon reader and Dragon library file.",
-        CURRENT_FUNCTION);
+    SU2_MPI::Error("Version conflict between Dragon reader and Dragon library file.", CURRENT_FUNCTION);
 
   // check header quantities
   if (n_points == 0 || n_triangles == 0 || n_variables == 0 || n_hull_points == 0)
     SU2_MPI::Error(
         "Number of points, triangles, hull points, or variables in Dragon "
-        "library header is zero.", CURRENT_FUNCTION);
+        "library header is zero.",
+        CURRENT_FUNCTION);
 
   // check if number of variables is consistent
   if (n_variables != names_var.size())
@@ -139,35 +137,29 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
 
   /* now that n_variables, n_points, n_hull_points and n_variables is available,
    * allocate memory */
-  if (rank == MASTER_NODE)
-    cout << "allocating memory for the data" << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the data" << endl;
   AllocMemData();
 
-  if (rank == MASTER_NODE)
-    cout << "allocating memory for the triangles" << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the triangles" << endl;
   AllocMemTriangles();
 
-  if (rank == MASTER_NODE)
-    cout << "allocating memory for the hull points" << endl;
+  if (rank == MASTER_NODE) cout << "allocating memory for the hull points" << endl;
   AllocMemHull();
 
   /* flush any cout */
-  if (rank == MASTER_NODE)
-    cout << endl;
+  if (rank == MASTER_NODE) cout << endl;
 
   // read data block
-  if (rank == MASTER_NODE)
-    cout << "loading data block" << endl;
+  if (rank == MASTER_NODE) cout << "loading data block" << endl;
 
   line = SkipToFlag(&file_stream, "<data>");
 
   unsigned long pointCounter = 0;
-    while (getline(file_stream, line) && !eoData) {
+  while (getline(file_stream, line) && !eoData) {
     // check if end of data is reached
     if (line.compare("</data>") == 0) eoData = true;
 
     if (!eoData) {
-
       // one line contains values for one point for all variables
       istringstream streamDataLine(line);
 
@@ -175,7 +167,7 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
       for (unsigned long iVar = 0; iVar < n_variables; iVar++) {
         streamDataLine >> word;
         passivedouble tmp = stod(word);
-        table_data.at(iVar).at(pointCounter) = (su2double) tmp;
+        table_data.at(iVar).at(pointCounter) = (su2double)tmp;
       }
     }
     pointCounter++;
@@ -184,11 +176,11 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
   if (n_points != pointCounter - 1)
     SU2_MPI::Error(
         "Number of read points does not match number of points "
-        "specified in Dragon library header.", CURRENT_FUNCTION);
+        "specified in Dragon library header.",
+        CURRENT_FUNCTION);
 
   // read connectivity
-  if (rank == MASTER_NODE)
-    cout << "loading connectivity block" << endl;
+  if (rank == MASTER_NODE) cout << "loading connectivity block" << endl;
 
   line = SkipToFlag(&file_stream, "<connectivity>");
 
@@ -198,7 +190,6 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
     if (line.compare("</connectivity>") == 0) eoConnectivity = true;
 
     if (!eoConnectivity) {
-
       // one line contains values for one triangle (3 points)
       istringstream streamTriLine(line);
 
@@ -220,8 +211,7 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
         CURRENT_FUNCTION);
 
   // read hull points
-  if (rank == MASTER_NODE)
-    cout << "loading hull block" << endl;
+  if (rank == MASTER_NODE) cout << "loading hull block" << endl;
 
   line = SkipToFlag(&file_stream, "<hull>");
 
@@ -234,11 +224,11 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
       // one line contains one point ID for one point on the hull
       istringstream streamHullLine(line);
 
-        streamHullLine >> word;
+      streamHullLine >> word;
 
-        // Dragon table indices start with 1, convert to c++ indexing starting
-        // with 0:
-        hull.at(hullCounter) = stol(word) - 1;
+      // Dragon table indices start with 1, convert to c++ indexing starting
+      // with 0:
+      hull.at(hullCounter) = stol(word) - 1;
     }
     hullCounter++;
   }
@@ -252,10 +242,9 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
   file_stream.close();
 
   type_lut = "DRG";
-
 }
 
-string CFileReaderLUT::SkipToFlag(ifstream *file_stream, string flag) {
+string CFileReaderLUT::SkipToFlag(ifstream* file_stream, string flag) {
   string line;
   getline(*file_stream, line);
 
@@ -263,8 +252,7 @@ string CFileReaderLUT::SkipToFlag(ifstream *file_stream, string flag) {
     getline(*file_stream, line);
   }
 
-  if ((*file_stream).eof())
-    SU2_MPI::Error("Flag not found in file", CURRENT_FUNCTION);
+  if ((*file_stream).eof()) SU2_MPI::Error("Flag not found in file", CURRENT_FUNCTION);
 
   return line;
 }

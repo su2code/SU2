@@ -23,39 +23,36 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #pragma once
 
-#include<vector>
-#include<iostream>
-#include<fstream>
-#include<iterator>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <vector>
 
 using namespace std;
 
 class CTrapezoidalMap {
-protected:
-
+ protected:
   /* The unique values of x which exist in the data */
-  vector< su2double > unique_bands_x;
+  vector<su2double> unique_bands_x;
 
-  vector< vector< su2double > > edge_limits_x;
-  vector< vector< su2double > > edge_limits_y;
+  vector<vector<su2double> > edge_limits_x;
+  vector<vector<su2double> > edge_limits_y;
 
-  vector< vector< unsigned long > > edge_to_triangle;
+  vector<vector<unsigned long> > edge_to_triangle;
 
   /* The value that each edge which intersects the band takes within that
    * same band. Used to sort the edges */
-  vector< vector< pair< su2double, unsigned long > > > y_edge_at_band_mid;
-  
-public:
+  vector<vector<pair<su2double, unsigned long> > > y_edge_at_band_mid;
+
+ public:
   CTrapezoidalMap();
 
-  CTrapezoidalMap(const vector< su2double >                &samples_x,
-                  const vector< su2double >                &samples_y,
-                  const vector< vector< unsigned long > >  &edges,
-                  const vector< vector< unsigned long > >  &edge_to_triangle);
+  CTrapezoidalMap(const vector<su2double>& samples_x, const vector<su2double>& samples_y,
+                  const vector<vector<unsigned long> >& edges, const vector<vector<unsigned long> >& edge_to_triangle);
 
   ~CTrapezoidalMap(void);
 
@@ -64,10 +61,10 @@ public:
   unsigned long GetTriangle(su2double val_x, su2double val_y);
 
   pair<unsigned long, unsigned long> GetBand(su2double val_x);
-  pair<unsigned long, unsigned long> GetEdges(pair<unsigned long, unsigned long> val_band,
-                                              su2double val_x, su2double val_y);
+  pair<unsigned long, unsigned long> GetEdges(pair<unsigned long, unsigned long> val_band, su2double val_x,
+                                              su2double val_y);
 
   inline bool IsInsideHullX(su2double val_x) {
-    return ( val_x >= unique_bands_x.front() ) && ( val_x <= unique_bands_x.back() );
+    return (val_x >= unique_bands_x.front()) && (val_x <= unique_bands_x.back());
   }
 };
