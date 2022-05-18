@@ -49,7 +49,7 @@ protected:
   size;          /*!< \brief MPI Size. */
   bool Convergence,   /*!< \brief To indicate if the flow solver (direct, adjoint, or linearized) has converged or not. */
   Convergence_FSI,    /*!< \brief To indicate if the FSI problem has converged or not. */
-  Convergence_FullMG;  /*!< \brief Initial value of the residual to evaluate the convergence level. */
+  Convergence_FullMG;  /*!< \brief To indicate if the full multigrid has converged or not. */
 
   /*!
    * \brief Do the space integration of the numerical system.
