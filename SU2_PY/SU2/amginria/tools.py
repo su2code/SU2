@@ -423,7 +423,6 @@ def plot_results(history_format, filename, iter, npoin):
 
         plotfile = open(filename,'w')
         plotfile.write(header)
-        plotfile.write('\n')
 
     # --- Append data on all other iterations
     else:
@@ -439,7 +438,6 @@ def plot_results(history_format, filename, iter, npoin):
     plotfile.write(indent_spacing)
     plotfile.write('%d, %d, '%(iter,npoin))
     plotfile.write(last_line)
-    plotfile.write('\n')
 
     plotfile.close()
         
