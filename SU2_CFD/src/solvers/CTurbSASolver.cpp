@@ -1923,13 +1923,13 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
 
   const su2double sigma = 2.0/3.0;
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
-  const su2double nu_hat = nodes->GetSolution(iPoint,0);
+  const su2double nutilde = nodes->GetSolution(iPoint,0);
   const su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
   su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
   dist += rough_const*roughness;
 
-  su2double Chi = nu_hat/nu ;
+  su2double Chi = nutilde/nu;
   if (roughness > 1.0e-10)
     Chi+= cR1*roughness/(dist+EPS);
 
@@ -1966,7 +1966,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       weights[1][nVarFlo] += r*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
-      weights[1][0] +=  nu_hat*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
+      weights[1][0] += nutilde*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
     }
   }
 
@@ -1980,14 +1980,14 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       work += tauomut[iDim][jDim]*u[jDim];
     }
-    weights[1][nVarFlo] += r*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
-    weights[1][0] +=  nu_hat*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
+    weights[1][nVarFlo] += r*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
+    weights[1][0] += nutilde*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
   }
 
   //--- Errors in heat flux
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nVarFlo] += r*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
-    weights[1][0] +=  nu_hat*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nDim+1, iDim);
+    weights[1][nVarFlo] += r*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
+    weights[1][0] += nutilde*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
   }
 
   //---------------------------//
