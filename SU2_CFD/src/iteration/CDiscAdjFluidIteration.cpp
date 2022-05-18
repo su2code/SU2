@@ -116,7 +116,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
       /*--- Load solution timestep n ---*/
 
-      LoadUnsteady_Solution(geometry, solver, config, iInst, iZone, Direct_Iter);
+      LoadUnsteady_Solution(geometry, solver, config, iZone, iInst, Direct_Iter);
 
       if (config[iZone]->GetDeform_Mesh()) {
         solvers0[MESH_SOL]->LoadRestart(geometries, solver[iZone][iInst], config[iZone], Direct_Iter, true);
