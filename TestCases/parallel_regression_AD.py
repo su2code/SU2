@@ -329,7 +329,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-3.479486, 0.122216, -1.303589, 0.000000, 2.324400]
+    discadj_fsi2.test_vals = [-3.479486, 0.122216, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
