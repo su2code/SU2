@@ -1496,7 +1496,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
 
     /*--- OpenMP loop over the number of ranks to which
           data must be sent. ---*/
-    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
+    SU2_OMP_FOR_(schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1598,7 +1598,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
 
     /*--- OpenMP loop over the number of ranks from which
           this rank has received data. ---*/
-    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
+    SU2_OMP_FOR_(schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1815,7 +1815,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
     /*--- Loop over the number of ranks from which this rank receives data in
           the original communication pattern. In the reverse pattern, data
           has to be sent. ---*/
-    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
+    SU2_OMP_FOR_(schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1983,6 +1983,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
     for(unsigned long i=nVolElemHaloPerTimeLevel[timeLevel];
                       i<nVolElemHaloPerTimeLevel[timeLevel+1]; ++i)
       volElem[i].resTotDOFsADER.setConstant(0.0);
+    END_SU2_OMP_FOR
   }
 
   /*--- Return true to indicate that the communication has been completed. ---*/
