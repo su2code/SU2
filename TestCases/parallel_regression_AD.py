@@ -329,7 +329,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-3.47949, 0.122883, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals = [-3.479486, 0.122216, -1.303589, 0.000000, 2.324400]
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
@@ -344,7 +344,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.364405, -3.085549, -3.085516, -3.085511]
+    discadj_cht.test_vals = [-2.364408, -3.085549, -3.085516, -3.085511]
     discadj_cht.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
