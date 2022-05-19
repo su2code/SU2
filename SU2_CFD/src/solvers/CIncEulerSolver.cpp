@@ -2310,6 +2310,15 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         break;
     }
 
+    /*--- check if the inlet node is shared with a viscous wall ---*/
+    if (geometry->nodes->GetViscousBoundary(iPoint)) {
+      /*--- match the velocity and pressure for the viscous wall---*/
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
+      /* pressure obtained from interior */
+      V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
+    } 
+
     /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
       and equation of state. ---*/

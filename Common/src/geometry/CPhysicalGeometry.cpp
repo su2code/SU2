@@ -3660,6 +3660,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         if (config->GetSolid_Wall(iMarker))
           nodes->SetSolidBoundary(Point_Surface, true);
 
+        if (config->GetViscous_Wall(iMarker))
+          nodes->SetViscousBoundary(Point_Surface, true);
+
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
           nodes->SetPeriodicBoundary(Point_Surface, true);
       }
@@ -4853,6 +4856,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
     nodes->ResetBoundary(iPoint);
     nodes->SetPhysicalBoundary(iPoint, false);
     nodes->SetSolidBoundary(iPoint, false);
+    nodes->SetViscousBoundary(iPoint, false);
     nodes->SetPeriodicBoundary(iPoint, false);
     nodes->SetDomain(iPoint, true);
   }
@@ -4908,6 +4912,9 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
         if (config->GetSolid_Wall(iMarker))
           nodes->SetSolidBoundary(InvResult[iPoint], true);
+
+        if (config->GetViscous_Wall(iMarker) )
+          nodes->SetViscousBoundary(InvResult[iPoint], true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
           nodes->SetPeriodicBoundary(InvResult[iPoint], true);

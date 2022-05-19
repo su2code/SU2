@@ -1,6 +1,6 @@
 /*!
  * \file CTurbSSTSolver.cpp
- * \brief Main subrotuines of CTurbSSTSolver class
+ * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
  * \version 7.3.1 "Blackbird"
  *
@@ -59,7 +59,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 

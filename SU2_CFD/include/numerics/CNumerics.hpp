@@ -1,6 +1,6 @@
 ﻿/*!
  * \file CNumerics.hpp
- * \brief Delaration of the base numerics class, the
+ * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"
