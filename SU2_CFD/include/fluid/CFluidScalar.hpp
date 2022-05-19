@@ -78,6 +78,6 @@ private:
    * \param[in] t - Temperature value at the point.
    */
 
-  void SetTDState_T(const su2double val_temperature, const su2double * const val_scalars);
+  void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
 
 };
