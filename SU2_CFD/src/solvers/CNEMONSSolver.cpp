@@ -738,20 +738,16 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
-  bool implicit, Supercatalytic_Wall;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
-  unsigned long iVertex, iPoint, jPoint;
-  su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, **GradY, **dVdU;
-  vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool supercat = config->GetSupercatalytic_Wall();
 
   /*--- Get universal information ---*/
-  RuSI     = UNIVERSAL_GAS_CONSTANT;
-  Ru       = 1000.0*RuSI;
-  auto& Ms = FluidModel->GetSpeciesMolarMass();
+  const su2double RuSI = UNIVERSAL_GAS_CONSTANT;
+  const su2double Ru = 1000.0*RuSI;
+  const auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short RHOS_INDEX  = nodes->GetRhosIndex();
@@ -768,45 +764,38 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
     dVdU[iVar] = new su2double[nVar];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute closest normal neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Compute distance between wall & normal neighbor ---*/
-      dij = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dij += (geometry->nodes->GetCoord(jPoint, iDim) -
-                geometry->nodes->GetCoord(iPoint, iDim))
-            * (geometry->nodes->GetCoord(jPoint, iDim) -
-               geometry->nodes->GetCoord(iPoint, iDim));
-      }
-      dij = sqrt(dij);
-
+      su2double dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
       /*--- Compute dual-grid area and boundary normal ---*/
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+      const auto Normal Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++)
         Res_Visc[iVar] = 0.0;
 
       /*--- Get primitive information ---*/
-      Vi   = nodes->GetPrimitive(iPoint);
-      Vj   = nodes->GetPrimitive(jPoint);
-      Di   = nodes->GetDiffusionCoeff(iPoint);
-      eves = nodes->GetEve(iPoint);
-      hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
-      rho    = Vi[RHO_INDEX];
-      dTdU   = nodes->GetdTdU(iPoint);
-      dTvedU = nodes->GetdTvedU(iPoint);
+      const auto& Vi = nodes->GetPrimitive(iPoint);
+      const auto& Vj = nodes->GetPrimitive(jPoint);
+      const auto& Di = nodes->GetDiffusionCoeff(iPoint);
+      const auto& eves = nodes->GetEve(iPoint);
+      const auto& hs = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
+      const su2double rho = Vi[RHO_INDEX];
+      const auto dTdU   = nodes->GetdTdU(iPoint);
+      const auto dTvedU = nodes->GetdTvedU(iPoint);
 
-      if (config->GetSupercatalytic_Wall()) {
+      if (supercat) {
 
         const auto& Yst = config->GetSupercatalytic_Wall_Composition();
 
@@ -846,7 +835,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
           }
 
           /*--- Calculate supplementary quantities ---*/
-          Cvtrs = FluidModel->GetSpeciesCvTraRot();
+          const auto& Cvtrs = FluidModel->GetSpeciesCvTraRot();
           Cvve = nodes->GetCvve(iPoint);
 
           /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
@@ -921,7 +910,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       }
 
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
+        Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies])*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }
 
