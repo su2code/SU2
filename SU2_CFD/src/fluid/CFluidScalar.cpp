@@ -73,7 +73,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
   SetThermalConductivityModel(config);
 }
 
-void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double * const val_scalars){
+void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_scalars){
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT*MeanMolecularWeight)); 
