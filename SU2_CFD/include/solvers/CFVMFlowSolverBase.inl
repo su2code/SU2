@@ -2526,10 +2526,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
       Coord = geometry->nodes->GetCoord(iPoint);
-      Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -2594,8 +2592,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       for (iDim = 0; iDim < nDim; iDim++) {
         CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
-
-      WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       /*--- Compute non-dimensional velocity and y+ ---*/
 
