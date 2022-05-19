@@ -39,11 +39,13 @@ public:
 
   virtual ~CDiffusivityModel() = default;
 
-
+  /*!
+   * \brief Get mass diffusivity
+   */
   virtual su2double GetDiffusivity() const = 0;
 
-/*!
- * \brief Set mass diffusivity
- */
+  /*!
+   * \brief Set mass diffusivity
+   */
   virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) = 0;
 };
