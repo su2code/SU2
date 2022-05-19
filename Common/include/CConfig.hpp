@@ -2695,7 +2695,12 @@ public:
    * \brief Set the number of multigrid levels.
    * \param[in] val_nMGLevels - Index of the mesh were the CFL is applied
    */
-  void SetMGLevels(unsigned short val_nMGLevels) { nMGLevels = val_nMGLevels; }
+  void SetMGLevels(unsigned short val_nMGLevels) {
+    nMGLevels = val_nMGLevels;
+    if (MGCycle == FULLMG_CYCLE) {
+      SetFinestMesh(val_nMGLevels);
+    }
+  }
 
   /*!
    * \brief Get the index of the finest grid.
