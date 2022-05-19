@@ -135,6 +135,7 @@ class CFluidModel {
     OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
     return OneOverMeanMolecularWeight;
   }
+
   /*!
    * \brief Get fluid dynamic viscosity.
    */
