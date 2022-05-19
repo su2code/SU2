@@ -23,7 +23,7 @@ jobs:
           - os_bin: macos64-mpi
             flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
           - os_bin: linux64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_linux'
+            flags: '-Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
             flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
     runs-on: ubuntu-latest
