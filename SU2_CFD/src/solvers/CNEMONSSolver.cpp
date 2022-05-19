@@ -738,7 +738,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
+  unsigned short iSpecies, jSpecies, iVar, jVar, kVar;
 
   /*--- Assign booleans ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -765,7 +765,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
+
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -778,7 +778,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       su2double dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
       /*--- Compute dual-grid area and boundary normal ---*/
-      const auto Normal Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the viscous residual to zero ---*/
@@ -836,7 +836,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
           /*--- Calculate supplementary quantities ---*/
           const auto& Cvtrs = FluidModel->GetSpeciesCvTraRot();
-          Cvve = nodes->GetCvve(iPoint);
+          const auto Cvve = nodes->GetCvve(iPoint);
 
           /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
           // Species mass fraction
