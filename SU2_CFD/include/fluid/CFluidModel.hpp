@@ -139,7 +139,7 @@ class CFluidModel {
   /*!
    * \brief Get fluid dynamic viscosity.
    */
-  virtual inline su2double GetLaminarViscosity() {
+  inline su2double GetLaminarViscosity() {
     LaminarViscosity->SetViscosity(Temperature, Density);
     Mu = LaminarViscosity->GetViscosity();
     LaminarViscosity->SetDerViscosity(Temperature, Density);
