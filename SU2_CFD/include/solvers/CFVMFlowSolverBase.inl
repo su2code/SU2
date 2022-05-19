@@ -2516,10 +2516,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
       Coord = geometry->nodes->GetCoord(iPoint);
-      Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -2585,13 +2583,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
 
-      WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
-
       /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
-      if (!wallfunctions) {
+      if (!wallfunctions && (MGLevel == MESH_0 || geometry->nodes->GetDomain(iPoint))) {
+        // for CMultiGridGeometry, the normal neighbor of halo nodes in not set
+        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+        WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 
@@ -2628,7 +2628,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
       }
 
-      /*--- Note that y+, and heat are computed at the
+      /*--- Note that heat is computed at the
        halo cells (for visualization purposes), but not the forces ---*/
 
       if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
