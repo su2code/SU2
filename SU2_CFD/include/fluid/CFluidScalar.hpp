@@ -68,15 +68,6 @@ private:
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  void SetTDState_T(su2double t){
-    /*--- The EoS only depends upon temperature. ---*/
-    Temperature = t;
-    Density = Pressure / (Temperature * Gas_Constant);
-  }
-  /*!
-   * \brief Set the Dimensionless State using Temperature.
-   * \param[in] t - Temperature value at the point.
-   */
 
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
 
