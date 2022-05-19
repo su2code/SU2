@@ -9529,9 +9529,7 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
   unsigned short iDim, iVar, jVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
-  vector<vector<su2double> > A(nDim+2, vector<su2double>(nDim+2, 0.0)),
-                             B(nDim+2, vector<su2double>(nDim+2, 0.0)),
-                             C(nDim+2, vector<su2double>(nDim+2, 0.0));
+  su2double A[5][5] = {0.0}, B[5][5] = {0.0}, C[5][5] = {0.0};
 
   //--- Inviscid terms
   const su2double u  = varFlo->GetVelocity(iPoint, 0);
@@ -9834,9 +9832,9 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
       
     }
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[2][0] -= g*(nu/Pr + nut/Prt)*(0.5*u2 - cv*T)*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii);
-    weights[1][0] -= g*( (gradnu[iDim]/Pr + gradnut[iDim]/Prt) * (0.5*u2 - cv*T)
-                         +  (nu/Pr + nut/Prt) * (ujduj - cv*gradT[iDim]) ) * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
+    weights[2][0] -= g * (nu/Pr + nut/Prt)*(0.5*u2 - cv*T)*varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii);
+    weights[1][0] -= g * ( (gradnu[iDim]/Pr + gradnut[iDim]/Prt) * (0.5*u2 - cv*T)
+                       +   (nu/Pr + nut/Prt) * (ujduj - cv*gradT[iDim]) ) * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
   }
 
   //-----------------------//

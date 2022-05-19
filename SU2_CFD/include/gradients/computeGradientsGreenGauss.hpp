@@ -245,13 +245,11 @@ void computeHessiansGreenGauss(CSolver* solver,
         {
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
           {
-
-            su2double flux = weight * (gradient(iPoint,iVar,jDim) + gradient(jPoint,iVar,jDim));
-
             for (size_t iDim = 0; iDim < nDim; ++iDim)
             {
               size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
                                           : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+              su2double flux = weight * (gradient(iPoint,iVar,jDim) + gradient(jPoint,iVar,jDim));
               if (iDim != jDim) flux *= 0.5;
               hessian(iPoint, iVar, ind) += flux * area[iDim];
             }
@@ -289,12 +287,11 @@ void computeHessiansGreenGauss(CSolver* solver,
           {
             for (size_t iVar = varBegin; iVar < varEnd; iVar++)
             {
-              su2double flux = gradient(iPoint,iVar,jDim) / volume;
-
               for (size_t iDim = 0; iDim < nDim; ++iDim)
               {
                 size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                             : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                su2double flux = gradient(iPoint,iVar,jDim) / volume;
                 if (iDim != jDim) flux *= 0.5;
                 hessian(iPoint, iVar, ind) -= flux * area[iDim];
               }
