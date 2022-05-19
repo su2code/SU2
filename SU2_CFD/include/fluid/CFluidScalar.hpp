@@ -54,7 +54,7 @@ private:
   std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
   std::vector<su2double> laminarthermalConductivity;  /*!< \brief Laminar thermal conductivity of all species. */
 
-  static const int ARRAYSIZE = 100;
+  static constexpr int ARRAYSIZE = 100;
   std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
   std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
 
