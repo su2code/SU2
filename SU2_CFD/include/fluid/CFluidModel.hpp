@@ -234,7 +234,7 @@ class CFluidModel {
   /*!
    * \brief Set thermal conductivity model.
    */
-  virtual void SetThermalConductivityModel(const CConfig* config);
+  void SetThermalConductivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
