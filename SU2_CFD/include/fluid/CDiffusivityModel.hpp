@@ -37,7 +37,7 @@
 class CDiffusivityModel {
 public:
 
-  virtual ~CDiffusivityModel() {}
+  virtual ~CDiffusivityModel() = default;
 
 
   virtual su2double GetDiffusivity() const = 0;
