@@ -11,7 +11,11 @@ else
                            '-Wno-error=maybe-uninitialized',
                            '-Wno-error=unused-function',
                            '-Wno-error=unused-label',
-                           '-Wno-pedantic']
+                           '-Wno-pedantic',
+                           '-Wno-error=stringop-truncation',
+                           '-Wno-error=cast-function-type',
+                           '-Wno-stringop-truncation'
+                           ]
 endif
 
 cc = meson.get_compiler('c')
