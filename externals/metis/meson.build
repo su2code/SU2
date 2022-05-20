@@ -17,7 +17,8 @@ if build_machine.system() != 'windows'
                                '-Wno-misleading-indentation',
                                '-Wno-maybe-uninitialized',
                                '-Wno-pedantic',
-                               '-Wno-error=absolute-value'
+                               '-Wno-error=absolute-value',
+                               '-Wno-absolute-value'
                                ]
   endif
 endif
