@@ -2227,6 +2227,8 @@ void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const un
   
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
+
+  CorrectBoundHessian(geometry, config, Kind_Solver);
     
 }
 
@@ -4647,7 +4649,11 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {
+    if (config->GetSolid_Wall(iMarker)) {// || 
+        // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+        //  config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
@@ -4660,7 +4666,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
           su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-            if(!nodes->GetSolidBoundary(jPoint)) {
+            if(!nodes->GetSolidBoundary(jPoint)) {// && !nodes->GetPhysicalBoundary(jPoint)) {
               const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
               suminvdist += 1./dist;
               for(auto iVar = 0; iVar < nVar; iVar++){
@@ -4769,7 +4775,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) { //|| 
+    if (config->GetSolid_Wall(iMarker)) {// || 
         // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
         //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
         //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
