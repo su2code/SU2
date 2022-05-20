@@ -8,7 +8,6 @@ if build_machine.system() != 'windows'
                                '-Wno-unused-parameter',
                                '-Wno-unused-variable',
                                '-Wno-unused-but-set-variable',
-                               '-Wno-macro-redefined',
                                '-Wno-unknown-pragmas',
                                '-Wno-sign-compare',
                                '-Wno-clobbered',
