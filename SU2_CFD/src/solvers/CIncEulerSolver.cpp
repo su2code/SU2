@@ -2199,11 +2199,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
     Flow_Dir_Mag = GeometryToolbox::Norm(nDim, Flow_Dir);
 
-    /*--- Store the unit flow direction vector. ---*/
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
-
+    /*--- Store the unit flow direction vector. 
+     If requested, use the local boundary normal (negative),
+     instead of the prescribed flow direction in the config. ---*/
+    if (config->GetInc_Inlet_UseNormal()) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = -Normal[iDim]/Area;
+    } else {
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+    }
     /*--- Retrieve solution at this boundary node. ---*/
 
     V_domain = nodes->GetPrimitive(iPoint);
