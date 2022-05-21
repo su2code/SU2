@@ -936,7 +936,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::NONE:
       return TURB_FAMILY::NONE;
     case TURB_MODEL::SA:
-       return TURB_FAMILY::SA;
+      return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
       return TURB_FAMILY::KW;
   }

@@ -71,7 +71,7 @@ class CSourceBase_TurbSA : public CNumerics {
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
-  const SA_ParsedOptions options; /*!< \brief . */
+  const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
 
  public:
   /*!
