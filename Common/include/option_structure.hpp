@@ -92,8 +92,8 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -912,12 +912,11 @@ static const MapType<std::string, LIMITER> Limiter_Map = {
 enum class TURB_MODEL {
   NONE,      /*!< \brief No turbulence model. */
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
+  SA_NEG,    /*!< \brief Kind of Turbulent model (Negative Spalart-Allmaras). */
   SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
   SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
   SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
@@ -927,7 +926,6 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("SA_COMP", TURB_MODEL::SA_COMP)
   MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -952,10 +950,110 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
-    case TURB_MODEL::SST_SUST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
+}
+
+/*!
+ * \brief SST Options
+ */
+enum class SST_OPTIONS {
+  NONE,        /*!< \brief No SST Turb model. */
+  V1994,       /*!< \brief 1994 Menter k-w SST model. */
+  V2003,       /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,      /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,      /*!< \brief 2003m Menter k-w SST model. */
+  SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
+  V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+};
+static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
+  MakePair("NONE", SST_OPTIONS::NONE)
+  MakePair("V1994m", SST_OPTIONS::V1994m)
+  MakePair("V2003m", SST_OPTIONS::V2003m)
+  /// TODO: For now we do not support "unmodified" versions of SST.
+  //MakePair("V1994", SST_OPTIONS::V1994)
+  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("SUSTAINING", SST_OPTIONS::SUST)
+  MakePair("VORTICITY", SST_OPTIONS::V)
+  MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
+  MakePair("UQ", SST_OPTIONS::UQ)
+};
+
+/*!
+ * \brief Structure containing parsed SST options.
+ */
+struct SST_ParsedOptions {
+  SST_OPTIONS version = SST_OPTIONS::V1994;   /*!< \brief Enum SST base model. */
+  SST_OPTIONS production = SST_OPTIONS::NONE; /*!< \brief Enum for production corrections/modifiers for SST model. */
+  bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
+  bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
+  bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+};
+
+/*!
+ * \brief Function to parse SST options.
+ * \param[in] SST_Options - Selected SST option from config.
+ * \param[in] nSST_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ */
+inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options, int rank) {
+  SST_ParsedOptions SSTParsedOptions;
+
+  auto IsPresent = [&](SST_OPTIONS option) {
+    const auto sst_options_end = SST_Options + nSST_Options;
+    return std::find(SST_Options, sst_options_end, option) != sst_options_end;
+  };
+
+  const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
+  const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
+  const bool found_1994m = IsPresent(SST_OPTIONS::V1994m);
+  const bool found_2003m = IsPresent(SST_OPTIONS::V2003m);
+
+  const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
+
+  const bool sst_1994 = found_1994 || found_1994m || default_version;
+  const bool sst_2003 = found_2003 || found_2003m;
+
+  /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
+  const bool sst_m = found_1994m || found_2003m || default_version;
+
+  const bool sst_sust = IsPresent(SST_OPTIONS::SUST);
+  const bool sst_v = IsPresent(SST_OPTIONS::V);
+  const bool sst_kl = IsPresent(SST_OPTIONS::KL);
+  const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+
+  if (sst_1994 && sst_2003) {
+    SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  } else if (sst_2003) {
+    SSTParsedOptions.version = SST_OPTIONS::V2003;
+  } else {
+    SSTParsedOptions.version = SST_OPTIONS::V1994;
+
+    if (rank==MASTER_NODE) {
+      std::cout <<
+        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
+        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
+    }
+  }
+
+  // Parse production modifications
+  if ((int(sst_v) + int(sst_kl) + int(sst_uq)) > 1) {
+    SU2_MPI::Error("Please select only one SST production term modifier (VORTICITY, KATO-LAUNDER, or UQ).", CURRENT_FUNCTION);
+  } else if (sst_v) {
+    SSTParsedOptions.production = SST_OPTIONS::V;
+  } else if (sst_kl) {
+    SSTParsedOptions.production = SST_OPTIONS::KL;
+  } else if (sst_uq) {
+    SSTParsedOptions.production = SST_OPTIONS::UQ;
+  }
+
+  SSTParsedOptions.sust = sst_sust;
+  SSTParsedOptions.modified = sst_m;
+  SSTParsedOptions.uq = sst_uq;
+  return SSTParsedOptions;
 }
 
 /*!
@@ -964,7 +1062,7 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
+  BC     /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
@@ -1001,7 +1099,6 @@ static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
   MakePair("WALE",         TURB_SGS_MODEL::WALE)
   MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
-
 
 /*!
  * \brief Types of window (weight) functions for cost functional
