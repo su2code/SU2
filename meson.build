@@ -28,7 +28,9 @@ if build_machine.system() != 'windows'
                             '-Wno-error=stringop-truncation',
                             '-Wno-stringop-truncation',
                             '-Wno-error=missing-field-initializers',
-                            '-Wno-missing-field-initializers'
+                            '-Wno-missing-field-initializers',
+                            '-Wno-error=class-memaccess',
+                            '-Wno-class-memaccess'
   ]
 
   if get_option('enable-autodiff') or get_option('enable-directdiff')
