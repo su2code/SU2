@@ -392,6 +392,29 @@ def main():
     turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(turb_naca0012_sst_sust)
 
+    # NACA0012 (SST, 2003m, Vorticity)
+    turb_naca0012_sst_2003_Vm           = TestCase('turb_naca0012_sst_2003_Vm')
+    turb_naca0012_sst_2003_Vm.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_2003_Vm.cfg_file  = "turb_NACA0012_sst_2003-Vm.cfg"
+    turb_naca0012_sst_2003_Vm.test_iter = 10
+    turb_naca0012_sst_2003_Vm.test_vals = [-7.672926, -10.025010, -3.365892, 1.048735, 0.019723, -2.052543]
+    turb_naca0012_sst_2003_Vm.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_2003_Vm.timeout   = 3200
+    turb_naca0012_sst_2003_Vm.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_2003_Vm)
+
+    # NACA0012 (SST, 1994m Kato-Launder)
+    turb_naca0012_sst_1994_KLm           = TestCase('turb_naca0012_sst_1994_KLm')
+    turb_naca0012_sst_1994_KLm.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_1994_KLm.cfg_file  = "turb_NACA0012_sst_1994-KLm.cfg"
+    turb_naca0012_sst_1994_KLm.test_iter = 10
+    turb_naca0012_sst_1994_KLm.test_vals = [-8.567268, -10.798763, -3.990577, 1.049274, 0.019199, -1.809017]
+    turb_naca0012_sst_1994_KLm.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_1994_KLm.timeout   = 3200
+    turb_naca0012_sst_1994_KLm.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_1994_KLm)
+
+
     # NACA0012 (SST, fixed values for turbulence quantities)
     turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
@@ -887,7 +910,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.976520, 1.141381, 0.460006, -0.078852]
+    turb_naca0012_1c.test_vals = [-4.976246, 1.141479, 0.459999, -0.078853]
     turb_naca0012_1c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_1c.timeout   = 1600
     turb_naca0012_1c.tol       = 0.00001
@@ -1440,7 +1463,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-13.380430, -7.476945, -7.025285, -0.009675, 99.879812, 4.1920e+02]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-13.374306, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001

@@ -1,6 +1,6 @@
 /*!
  * \file roe.hpp
- * \brief Delarations of numerics classes for Roe-type schemes in NEMO.
+ * \brief Declarations of numerics classes for Roe-type schemes in NEMO.
  * \author S.R. Copeland, W. Maier, C. Garbacz
  * \version 7.3.1 "Blackbird"
  *

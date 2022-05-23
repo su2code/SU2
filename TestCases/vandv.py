@@ -48,6 +48,22 @@ def main():
     p30n30.test_vals = [-10.642593, -10.303413, -10.496728, -10.253130, -13.517216, 0.050962, 2.828563, 1.317849, -0.215834]
     test_list.append(p30n30)
 
+    # flat plate - sst-v1994m
+    flatplate_sst1994m           = TestCase('flatplate_sst1994m')
+    flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
+    flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
+    flatplate_sst1994m.test_iter = 5
+    flatplate_sst1994m.test_vals = [-13.022890, -10.035602, -5.142343, -0.002535, 0.002809]
+    test_list.append(flatplate_sst1994m)
+
+    # bump in channel - sst-v1994m
+    bump_sst1994m           = TestCase('bump_sst1994m')
+    bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
+    bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
+    bump_sst1994m.test_iter = 5
+    bump_sst1994m.test_vals = [-13.069139, -10.325333, -5.558903, 0.024576, 0.004967] 
+    test_list.append(bump_sst1994m)
+
     #################
     ### RUN TESTS ###
     #################
