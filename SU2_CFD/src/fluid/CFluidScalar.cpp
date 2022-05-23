@@ -32,17 +32,6 @@
 #include <iostream>
 
 #include "../../include/fluid/CFluidScalar.hpp"
-#include "../../include/fluid/CConstantViscosity.hpp"
-#include "../../include/fluid/CSutherland.hpp"
-#include "../../include/fluid/CPolynomialViscosity.hpp"
-#include "../../include/fluid/CConstantConductivity.hpp"
-#include "../../include/fluid/CConstantConductivityRANS.hpp"
-#include "../../include/fluid/CConstantPrandtl.hpp"
-#include "../../include/fluid/CConstantPrandtlRANS.hpp"
-#include "../../include/fluid/CPolynomialConductivity.hpp"
-#include "../../include/fluid/CPolynomialConductivityRANS.hpp"
-#include "../../include/fluid/CIncIdealGas.hpp"
-
 
 CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const su2double value_pressure_operating, CConfig *config) : CFluidModel() {
   
@@ -58,14 +47,14 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses.at(iVar) = config->GetMolecular_Weight(iVar);
-    specificHeat.at(iVar) = 1004.703; //config->GetSpecific_Heat_Cp(iVar);
+    specificHeat.at(iVar) = 1004.703; 
   }
 
   wilke = false;
   davidson = true;
 
   Pressure_Thermodynamic = value_pressure_operating;
-  Gas_Constant = val_gas_constant; //config->GetGas_Constant();
+  Gas_Constant = val_gas_constant; 
   Gamma = 1.0;
   Cp = val_Cp;
   Cv = Cp;
