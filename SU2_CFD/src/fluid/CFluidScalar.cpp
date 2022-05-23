@@ -46,8 +46,8 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
   laminarthermalConductivity.resize(n_species_mixture);
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    molarMasses.at(iVar) = config->GetMolecular_Weight(iVar);
-    specificHeat.at(iVar) = 1004.703; 
+    molarMasses[iVar] = config->GetMolecular_Weight(iVar);
+    specificHeat[iVar] = 1004.703; 
   }
 
   wilke = false;
