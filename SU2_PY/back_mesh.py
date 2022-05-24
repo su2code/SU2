@@ -31,6 +31,7 @@ from __future__ import print_function
 
 from optparse import OptionParser
 import numpy as np
+from pathlib import Path
 import SU2.amginria as su2amg
 import pyamg
 
@@ -38,7 +39,7 @@ parser = OptionParser()
 parser.add_option("-f", "--file", dest="file",
                   help="read mesh from FILE", metavar="FILE")
 parser.add_option("-o", "--output", dest="outfile",
-                  help="write new mesh to OUTFILE", metavar="OUTFILE", default="out.meshb")
+                  help="write new mesh to OUTFILE", metavar="OUTFILE", default="out")
 parser.add_option("--hgrad", dest="hgrad",
                   help="gradation", metavar="HGRAD", default=3.0)
 parser.add_option("--hmax", dest="hmax",
@@ -58,6 +59,8 @@ hmin = float(options.hmin)
 mesh = su2amg.read_mesh(file)
 
 remesh_options = {}
+
+# Read in a hybrid mesh and coarsen the volume
 
 remesh_options['logfile'] = 'amg.coarsen.out'
 remesh_options['options'] = '-recover-allsurf-ids -nosurf -propagate-surf-metric'
@@ -80,7 +83,12 @@ if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()
 
 mesh_new = pyamg.adapt_mesh(mesh, remesh_options)
 
+for file in ['back.meshb', 'meshp3_smoo.meshb']:
+    Path(file).unlink()
+
 su2amg.write_mesh(f"{outfile}.coarsen.meshb", mesh_new)
+
+# Generate a background surface mesh and surface metric
 
 remesh_options['gradation'] = hgrad
 remesh_options['hmax']   = hmax
@@ -92,3 +100,20 @@ mesh_new = pyamg.adapt_mesh(mesh_new, remesh_options)
 
 su2amg.write_mesh(f"{outfile}.back.meshb", mesh_new)
 
+# Generate a coarse metric
+
+remesh_options['logfile'] = 'amg.metric.out'
+remesh_options['options'] = '-recover-allsurf-ids -nosurf -novol -nordg -cfac 2'
+
+mesh_new = pyamg.adapt_mesh(mesh_new, remesh_options)
+
+su2amg.write_mesh_and_sol(f"{outfile}.metric.meshb", f"{outfile}.metric.solb", mesh_new)
+
+# Generate a coarse mesh using previous metric
+
+remesh_options['logfile'] = 'amg.out'
+remesh_options['options'] = f'-met {outfile}.metric -back {outfile}.back.meshb -nordg'
+
+mesh_new = pyamg.adapt_mesh(mesh_new, remesh_options)
+
+su2amg.write_mesh(f"{outfile}.meshb", mesh_new)

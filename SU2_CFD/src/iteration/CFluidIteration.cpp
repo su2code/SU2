@@ -104,10 +104,10 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
 
-  // su2double monitor = 1.0;
-  // integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst],
-  //                                                                        numerics[val_iZone][val_iInst], config[val_iZone],
-  //                                                                        MESH_0, RUNTIME_FLOW_SYS, &monitor);
+  su2double monitor = 1.0;
+  integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst],
+                                                                         numerics[val_iZone][val_iInst], config[val_iZone],
+                                                                         MESH_0, RUNTIME_FLOW_SYS, &monitor);
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
