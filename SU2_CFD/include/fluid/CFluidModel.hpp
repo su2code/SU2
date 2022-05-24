@@ -126,13 +126,12 @@ class CFluidModel {
   static su2double ComputeMeanMolecularWeight(const Vector_t& molar_masses, const su2double *val_scalars) {
     su2double OneOverMeanMolecularWeight = 0.0;
     su2double val_scalars_sum = 0.0;
-    const size_t n_scalars = molar_masses.size() - 1;
 
-    for (size_t i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+    for (size_t i_scalar = 0; i_scalar < molar_masses.size() - 1; i_scalar++){
       OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
       val_scalars_sum += val_scalars[i_scalar];
     }
-    OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[n_scalars]/1000);
+    OneOverMeanMolecularWeight += (1 - val_scalars_sum)/(molar_masses[molar_masses.size()-1]/1000);
     return OneOverMeanMolecularWeight;
   }
 

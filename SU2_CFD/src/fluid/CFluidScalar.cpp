@@ -34,9 +34,8 @@
 #include "../../include/fluid/CFluidScalar.hpp"
 
 CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const su2double value_pressure_operating, CConfig *config) : CFluidModel() {
-  
-  n_scalars = config->GetnSpecies();
-  n_species_mixture = n_scalars + 1;
+   
+  n_species_mixture = config->GetnSpecies() + 1;
 
   specificHeat.resize(n_species_mixture);
   molarMasses.resize(n_species_mixture);

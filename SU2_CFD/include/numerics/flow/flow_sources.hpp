@@ -1,6 +1,6 @@
 ﻿/*!
  * \file flow_sources.hpp
- * \brief Delarations of numerics classes for source-term integration.
+ * \brief Declarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"
  *

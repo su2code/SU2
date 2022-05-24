@@ -1,6 +1,6 @@
 ﻿/*!
  * \file turb_convection.hpp
- * \brief Delarations of numerics classes for discretization of
+ * \brief Declarations of numerics classes for discretization of
  *        convective fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"

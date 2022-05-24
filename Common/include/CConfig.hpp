@@ -701,6 +701,8 @@ private:
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
+  SST_OPTIONS *SST_Options;               /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
+  unsigned short nSST_Options;            /*!< \brief number of SST options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -1135,11 +1137,8 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-
-  unsigned short n_scalars,       /*!< \brief Number of transported scalars. */
-  nMolecular_Weight;             /*!< \brief Number of species molecular weights. */        
-
-  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */        
+  SST_ParsedOptions sstParsedOptions; /*!< \brief additional parameters for the SST turbulence model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -2697,7 +2696,12 @@ public:
    * \brief Set the number of multigrid levels.
    * \param[in] val_nMGLevels - Index of the mesh were the CFL is applied
    */
-  void SetMGLevels(unsigned short val_nMGLevels) { nMGLevels = val_nMGLevels; }
+  void SetMGLevels(unsigned short val_nMGLevels) {
+    nMGLevels = val_nMGLevels;
+    if (MGCycle == FULLMG_CYCLE) {
+      SetFinestMesh(val_nMGLevels);
+    }
+  }
 
   /*!
    * \brief Get the index of the finest grid.
@@ -8979,12 +8983,6 @@ public:
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
-   * \brief Get information about using UQ methodology
-   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
-   */
-  bool GetUsing_UQ(void) const { return using_uq; }
-
-  /*!
    * \brief Get the amount of eigenvalue perturbation to be done
    * \return Value of the uq_delta_b parameter
    */
@@ -9620,10 +9618,16 @@ public:
    */
   unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
 
-    /*!
+  /*!
    * \brief Get max number of iterations of the for the gradient smoothing.
    * \return Max number of iterations of the linear solver for the gradient smoothing.
    */
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
+  /*!
+   * \brief Get parsed SST option data structure.
+   * \return SST option data structure.
+   */
+  SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
 
 };
