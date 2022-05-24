@@ -794,7 +794,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool turbulent          = (config->GetKind_Solver() == MAIN_SOLVER::FEM_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::FEM_LES);
-  bool tkeNeeded          = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
+  bool tkeNeeded          = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) ));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 

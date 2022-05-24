@@ -116,7 +116,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
       /*--- Load solution timestep n ---*/
 
-      LoadUnsteady_Solution(geometry, solver, config, iInst, iZone, Direct_Iter);
+      LoadUnsteady_Solution(geometry, solver, config, iZone, iInst, Direct_Iter);
 
       if (config[iZone]->GetDeform_Mesh()) {
         solvers0[MESH_SOL]->LoadRestart(geometries, solver[iZone][iInst], config[iZone], Direct_Iter, true);
@@ -147,9 +147,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
       /*--- Load solution timestep n-1 | n-2 for DualTimestepping 1st | 2nd order ---*/
       if (dual_time_1st) {
-        LoadUnsteady_Solution(geometry, solver, config, iInst, iZone, Direct_Iter - 1);
+        LoadUnsteady_Solution(geometry, solver, config, iZone, iInst, Direct_Iter - 1);
       } else {
-        LoadUnsteady_Solution(geometry, solver, config, iInst, iZone, Direct_Iter - 2);
+        LoadUnsteady_Solution(geometry, solver, config, iZone, iInst, Direct_Iter - 2);
 
         /*--- Set volumes into correct containers ---*/
         if (config[iZone]->GetDynamic_Grid()) {
