@@ -47,7 +47,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
-    specificHeat[iVar] = 1004.703; 
+    specificHeat[iVar] = config->GetSpecific_Heat_Cp(); //1004.703; 
   }
 
   wilke = false;

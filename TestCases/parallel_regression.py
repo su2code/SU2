@@ -1612,6 +1612,18 @@ def main():
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
+    species2_primitiveVenturi.test_iter = 10
+    species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -6.046002, 5, -0.808614, 5 , -2.351161, 5, -0.247992, 0.000092, 0.000090, 0.000002, 0.000000]
+    species2_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species2_primitiveVenturi.timeout   = 1600
+    species2_primitiveVenturi.new_output = True
+    species2_primitiveVenturi.tol       = 0.00001
+    test_list.append(species2_primitiveVenturi)
+ 
+    # 2 species (1 eq) primitive venturi mixing
+    species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
+    species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi.cfg_file  = "species2_primitiveVenturi.cfg"
     species2_primitiveVenturi.test_iter = 50
     species2_primitiveVenturi.test_vals = [-5.957517, -5.187476, -5.037298, -5.851420, -1.511976, -6.046002, 5, -0.808614, 5 , -2.351161, 5, -0.247992, 0.000092, 0.000090, 0.000002, 0.000000]
