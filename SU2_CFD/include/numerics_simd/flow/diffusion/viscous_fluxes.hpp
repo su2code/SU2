@@ -101,7 +101,7 @@ protected:
     correct(iMesh == MESH_0),
     useSA_QCR(config.GetQCR()),
     wallFun(config.GetWall_Functions()),
-    uq(config.GetUsing_UQ()),
+    uq(config.GetSSTParsedOptions().uq),
     uq_permute(config.GetUQ_Permute()),
     uq_eigval_comp(config.GetEig_Val_Comp()),
     uq_delta_b(config.GetUQ_Delta_B()),
