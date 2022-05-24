@@ -11,7 +11,7 @@
         "program": "/home/gomer/local/codes/su2_install/current_branch/serial/gnu/debug/bin/SU2_CFD",
         "args": ["debug_wmles.cfg"],
         "stopAtEntry": true,
-        "cwd": "/home/gomer/local/sims/debug_les/",
+        "cwd": "/home/gomer/local/codes/SU2/TestCases/les_debug/channel",
         "environment": [],
         "externalConsole": false,
         "MIMode": "gdb",
