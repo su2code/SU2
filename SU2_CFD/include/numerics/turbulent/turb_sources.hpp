@@ -564,6 +564,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
+  const su2double prod_lim_const;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -637,7 +638,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
                            su2double val_omega_Inf, const CConfig* config)
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()),
-        sustaining_terms(config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST),
         axisymmetric(config->GetAxisymmetric()),
         sigma_k_1(constants[0]),
         sigma_k_2(constants[1]),
@@ -649,6 +649,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         a1(constants[7]),
         alfa_1(constants[8]),
         alfa_2(constants[9]),
+        prod_lim_const(constants[10]),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
@@ -717,7 +718,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double beta_blended = F1_i * beta_1 + (1.0 - F1_i) * beta_2;
 
     if (dist_i > 1e-10) {
-      /*--- Production ---*/
 
       su2double diverg = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -725,20 +725,53 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- If using UQ methodolgy, calculate production using perturbed Reynolds stress matrix ---*/
 
-      su2double StrainMag = StrainMag_i;
+      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
+      su2double P_Base = 0;
 
-      if (using_uq) {
-        ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
+      /*--- Apply production term modifications ---*/
+      switch (sstParsedOptions.production) {
+        case SST_OPTIONS::UQ:
+          ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
                             Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
-        StrainMag = PerturbedStrainMag(ScalarVar_i[0]);
+          P_Base = PerturbedStrainMag(ScalarVar_i[0]);
+          break;
+
+        case SST_OPTIONS::V:
+          P_Base = VorticityMag;
+          break;
+
+        case SST_OPTIONS::KL:
+          P_Base = sqrt(StrainMag_i*VorticityMag);
+          break;
+
+        default:
+          /*--- Base production term for SST-1994 and SST-2003 ---*/
+          P_Base = StrainMag_i;
+          break;
       }
 
-      su2double pk = Eddy_Viscosity_i * pow(StrainMag, 2) - 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      pk = max(0.0, min(pk, 20.0 * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0]));
+      /*--- Production limiter. ---*/
+      const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
-      const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
-      const su2double zeta = max(ScalarVar_i[1], VorticityMag * F2_i / a1);
-      su2double pw = alfa_blended * Density_i * max(pow(StrainMag, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
+
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
+        P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
+      }
+      su2double pk = max(0.0, min(P, prod_limit));
+
+      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
+
+      /*--- Production limiter only for V2003, recompute for V1994. ---*/
+      su2double pw;
+      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
+        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
+        pw = alfa_blended * Density_i * max(pow(P_Base, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+      } else {
+        pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
+      }
 
       /*--- Sustaining terms, if desired. Note that if the production terms are
             larger equal than the sustaining terms, the original formulation is
@@ -746,8 +779,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
             where the sustaining terms are simply added. This latter approach could
             lead to problems for very big values of the free-stream turbulence
             intensity. ---*/
-
-      if (sustaining_terms) {
+      if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
         pk = max(pk, sust_k);

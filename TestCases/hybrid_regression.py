@@ -384,7 +384,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.436191, -3.098014, -0.017338, -0.193981]
+    inc_lam_bend.test_vals = [-3.437996, -3.086189, -0.015600, 1.142212]
     test_list.append(inc_lam_bend)
 
     ############################
@@ -633,7 +633,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.800401, -2.114687]
+    slinc_steady.test_vals = [19.000000, -1.799803, -2.128200]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 
