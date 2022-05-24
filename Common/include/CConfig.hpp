@@ -1163,7 +1163,8 @@ private:
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
   /* other NEMO configure options*/
-  unsigned short nSpecies,                  /*!< \brief No of species present in flow */
+  unsigned short nSpecies,                  /*!< \brief No. of species present in flow */
+  nSpecies_Cat_Wall,                        /*!< \brief No. of species for a catalytic wall */
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls */
   nWall_Catalytic;                          /*!< \brief No of catalytic walls */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */

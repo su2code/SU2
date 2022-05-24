@@ -1188,7 +1188,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specfify super-catalytic wall */
   addBoolOption("SUPERCATALYTIC_WALL", Supercatalytic_Wall, false);
   /* DESCRIPTION: Wall mass fractions for supercatalytic case */
-  addDoubleListOption("SUPERCATALYTIC_WALL_COMPOSITION", nSpecies, Supercatalytic_Wall_Composition);
+  addDoubleListOption("SUPERCATALYTIC_WALL_COMPOSITION", nSpecies_Cat_Wall, Supercatalytic_Wall_Composition);
   /* DESCRIPTION: Specfify catalytic efficiency of wall if using gamma model */
   addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
