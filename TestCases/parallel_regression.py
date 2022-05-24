@@ -59,7 +59,7 @@ def main():
     ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     ionized.cfg_file  = "weakly_ionized.cfg"
     ionized.test_iter = 10
-    ionized.test_vals = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.070169, -32.000000, -5.174887, 0.000000, 0.000000]
+    ionized.test_vals = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.013626, -32.000000, -5.174887, 0.000000, 0.000000]
     ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
     ionized.timeout   = 1600
     ionized.new_output = True
@@ -83,7 +83,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.042842, -1.567605, -18.299898, -18.627275, -18.573299, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge.test_vals = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -95,7 +95,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222267, -5.746522, -20.569425, -20.633787, -20.547644, -1.928714, -2.247316, 1.255761, -3.208360]
+    visc_cone.test_vals = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
