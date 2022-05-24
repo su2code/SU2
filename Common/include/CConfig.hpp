@@ -1163,8 +1163,9 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
+  unsigned short nSpecies,                  /*!< \brief No of transported species solved (for NEMO and species transport)*/
+
   /* other NEMO configure options*/
-  unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
   nWall_Catalytic;                          /*!< \brief No of catalytic walls */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
@@ -1185,7 +1186,6 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
-  unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
