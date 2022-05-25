@@ -74,6 +74,7 @@ class TestCase:
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
+        self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
     def run_test(self):
@@ -112,9 +113,13 @@ class TestCase:
                                            self.cfg_file, 
                                            logfilename)
 
-        if self.cpu_arch == 'aarch64' and len(self.test_vals_aarch64) != 0:
-            self.test_vals = self.test_vals_aarch64
+        if self.cpu_arch == 'aarch64':
+            if len(self.test_vals_aarch64) != 0:
+                self.test_vals = self.test_vals_aarch64
         
+            if len(self.reference_file_aarch64) != 0:
+                self.reference_file = self.reference_file_aarch64
+
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
