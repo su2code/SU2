@@ -3743,7 +3743,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
    nMolecular_Weight is used because it is required for the fluid mixing models. --- */
     if (nMolecular_Weight != nSpecies_Init + 1) {
-    SU2_MPI::Error("The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
+    SU2_MPI::Error("The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
                    "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
     }
   /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be VARIABLE. Otherwise, if 
