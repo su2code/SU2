@@ -110,7 +110,7 @@ def main():
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
     discadj_incomp_cylinder.test_vals = [20.000000, -2.705921, -2.837904, 0.000000]
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000]
+    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.373367, -2.368305, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
