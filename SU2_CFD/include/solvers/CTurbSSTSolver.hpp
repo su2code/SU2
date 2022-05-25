@@ -37,7 +37,8 @@
  */
 class CTurbSSTSolver final : public CTurbSolver {
 private:
-  su2double constants[10] = {0.0}; /*!< \brief Constants for the model. */
+  su2double constants[11] = {0.0}; /*!< \brief Constants for the model. */
+  SST_ParsedOptions sstParsedOptions;
 
   /*!
    * \brief Compute nu tilde from the wall functions.

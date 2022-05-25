@@ -1,6 +1,6 @@
 ﻿/*!
  * \file adj_convection.hpp
- * \brief Delarations of numerics classes for continuous adjoint
+ * \brief Declarations of numerics classes for continuous adjoint
  *        convective discretization. Implemented in adj_convection.cpp.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"

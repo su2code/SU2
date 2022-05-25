@@ -1,6 +1,6 @@
 ﻿/*!
  * \file adj_sources.hpp
- * \brief Delarations of numerics classes for continuous adjoint
+ * \brief Declarations of numerics classes for continuous adjoint
  *        source term integration. Implemented in adj_sources.cpp.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"

@@ -1,6 +1,6 @@
 ﻿/*!
  * \file species_convection.hpp
- * \brief Delarations of numerics classes for discretization of
+ * \brief Declarations of numerics classes for discretization of
  *        convective fluxes in species problems.
  * \author T. Kattmann
  * \version 7.3.1 "Blackbird"
