@@ -3818,14 +3818,14 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
   int iRow, nRow, iEl;
   std::vector<su2double> rad_v, dCt_v, dCp_v, dCr_v;
   su2double r_ = 0.0, r[MAXNDIM] = {0.0},
-  AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
+  AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, RPM = 0.0, rps = 0.0;
   std::vector<su2double> Fa, Ft, Fr;
   su2double Fx = 0.0, Fy = 0.0, Fz = 0.0,
   Fx_inf = 0.0, Fy_inf = 0.0, Fz_inf = 0.0, Fx_sup = 0.0, Fy_sup = 0.0, Fz_sup = 0.0, h = 0.0;
   const su2double *P = nullptr;
 
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
-  const su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
+//  const su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
 
   /*--- Get the file name that contains the propeller data. ---*/
   string ActDisk_filename = config->GetActDisk_FileName();
@@ -3883,9 +3883,9 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
 
           /*--- Read and assign the value of the actuator disk advance ratio. ---*/
           getline (ActDisk_file, text_line_appo);
-          text_line_appo.erase (0,10);
-          istringstream J_value(text_line_appo);
-          J_value >> AD_J;
+          text_line_appo.erase (0,4);
+          istringstream RPM_value(text_line_appo);
+          RPM_value >> RPM;
 
           /*--- Read and assign the number of radial stations contained in the propeller data file. ---*/
           getline (ActDisk_file, text_line_appo);
@@ -3902,6 +3902,8 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
           Fa.resize(nRow);
           Ft.resize(nRow);
           Fr.resize(nRow);
+
+          rps = RPM / 60.0;
 
           /*--- Read and assign the values of the non-dimensional radius, thrust coefficient, power coefficient
                 and radial force coefficient. ---*/
@@ -3923,30 +3925,42 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
                 per unit area (Fr and Ft) are equal to zero, while the axial force per unit area (Fa) is computed using
                 a linear interpolation in order to avoid a mathematical singularity at actuator disk center. ---*/
           if (rad_v[0] == 0.0){
-            Fa[0] = (((2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                    (pow(AD_J,2)*PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
+            Fa[0] = (((2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                    (PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
             Ft[0] = 0.0;
             Fr[0] = 0.0;
           }
           else {
-            Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                    (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
-            Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                    ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
-            Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                    (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+        	  Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                      (PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+              Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                      ((PI_NUMBER*rad_v[0])*(PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
+              Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                      (PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+//            Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+//                    (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+//            Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+//                    ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
+//            Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+//                    (pow(AD_J,2)*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
           }
 
           /*--- Loop over the radial stations. Computation of Fa (axial force per unit area), Ft (tangential force per unit area)
                 and Fr (radial force per unit area).
                 These equations are not valid if the freestream velocity is equal to zero (hovering condition not enabled yet). ---*/
           for (iEl = 1; iEl < nRow; iEl++){
-            Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                      (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
-            Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                      ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
-            Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                      (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+            Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                      (PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+            Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                      ((PI_NUMBER*rad_v[iEl])*(PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+            Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+                      (PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+//            Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+//                      (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+//            Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+//                      ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+//            Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+//                      (pow(AD_J,2)*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
           }
 
           /*--- Loop over the marker nodes. ---*/
