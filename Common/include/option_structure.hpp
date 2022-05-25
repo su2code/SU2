@@ -1057,16 +1057,18 @@ enum class SA_OPTIONS {
   COMP,     /*!< \brief Compressibility correction. */
   ROT,      /*!< \brief Rotation correction. */
   BC,       /*!< \brief Bas-Cakmakcioclu transition. */
+  EXP,      /*!< \brief Allow experimental combinations of options (according to TMR). */
 };
 static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
   MakePair("NONE", SA_OPTIONS::NONE)
   MakePair("NEGATIVE", SA_OPTIONS::NEG)
   MakePair("EDWARDS", SA_OPTIONS::EDW)
-  MakePair("FT2", SA_OPTIONS::FT2)
+  MakePair("WITHFT2", SA_OPTIONS::FT2)
   MakePair("QCR2000", SA_OPTIONS::QCR2000)
   MakePair("COMPRESSIBILITY", SA_OPTIONS::COMP)
   MakePair("ROTATION", SA_OPTIONS::ROT)
   MakePair("BCM", SA_OPTIONS::BC)
+  MakePair("EXPERIMENTAL", SA_OPTIONS::EXP)
 };
 
 /*!
@@ -1111,19 +1113,34 @@ inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned sh
   } else {
     SAParsedOptions.version = SA_OPTIONS::EDW;
   }
-
-  const bool found_bc = IsPresent(SA_OPTIONS::BC);
-
-  if (found_bc && !found_bsl) {
-    SU2_MPI::Error("The BCM transition model was developed for the baseline SA version.", CURRENT_FUNCTION);
-  }
-
   SAParsedOptions.ft2 = IsPresent(SA_OPTIONS::FT2);
   SAParsedOptions.qcr2000 = IsPresent(SA_OPTIONS::QCR2000);
   SAParsedOptions.comp = IsPresent(SA_OPTIONS::COMP);
   SAParsedOptions.rot = IsPresent(SA_OPTIONS::ROT);
-  SAParsedOptions.bc = found_bc;
+  SAParsedOptions.bc = IsPresent(SA_OPTIONS::BC);
 
+  /*--- Validate user settings when not in experimental mode. ---*/
+  if (!IsPresent(SA_OPTIONS::EXP)) {
+    const bool any_but_bc = SAParsedOptions.ft2 || SAParsedOptions.qcr2000 || SAParsedOptions.comp || SAParsedOptions.rot;
+
+    switch (SAParsedOptions.version) {
+      case SA_OPTIONS::NEG:
+        if (!SAParsedOptions.ft2 || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-neg was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      case SA_OPTIONS::EDW:
+        if (any_but_bc || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-noft2-Edwards was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      default:
+        if (SAParsedOptions.bc && any_but_bc)
+          SU2_MPI::Error("A non-standard version of SA-BCM was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+    }
+  }
   return SAParsedOptions;
 }
 
