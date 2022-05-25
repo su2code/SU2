@@ -119,8 +119,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
     Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
 
-    /*--- Dacles-Mariani et. al. rotation correction ("-R"), this is applied by
-     * default for rotating frame, but should be controled in the config. ---*/
+    /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
       var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
     }
@@ -497,7 +496,7 @@ class CCompressibilityCorrection final : public ParentClass {
 };
 
 /* =============================================================================
- * HELPERS TO INTANTIATE THE SA BASE CLASS
+ * HELPERS TO INSTANTIATE THE SA BASE CLASS
  * ============================================================================*/
 
 template <class FlowIndices>
