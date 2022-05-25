@@ -1,6 +1,6 @@
 /*!
  * \file CFluidScalar.hpp
- * \brief Defines the incompressible Ideal Gas model.
+ * \brief Defines the multicomponent incompressible Ideal Gas model for mixtures.
  * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal 
  * \version 7.3.1 "Blackbird"
  *
