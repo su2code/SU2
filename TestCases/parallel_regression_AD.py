@@ -329,7 +329,8 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals = [-3.479486, 0.122216, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals         = [-3.479486, 0.122216, -1.303589, 7.5407e-09, 2.3244]
+    discadj_fsi2.test_vals_aarch64 = [-3.479505, 0.127953, -1.303589, 7.5407e-09, 2.3244]
     discadj_fsi2.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_fsi2.timeout   = 1600
     discadj_fsi2.tol       = 1e-16
@@ -471,6 +472,7 @@ def main():
     dyn_discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     dyn_discadj_fsi.timeout   = 1600
     dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
+    dyn_discadj_fsi.reference_file_aarch64 = "grad_dv_aarch64.opt.ref"
     dyn_discadj_fsi.test_file = "grad_young.opt"
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())

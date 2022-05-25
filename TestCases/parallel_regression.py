@@ -59,7 +59,8 @@ def main():
     ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     ionized.cfg_file  = "weakly_ionized.cfg"
     ionized.test_iter = 10
-    ionized.test_vals = [-29.322805, -10.246260, -11.382786, -16.183264, -17.165896, -13.928855, -24.658131, -32.000000, -4.541637, 0.000000, 0.000000]
+    ionized.test_vals         = [-29.322805, -10.246260, -11.382786, -16.183264, -17.165896, -13.928855, -24.658131, -32.000000, -4.541637, 0.000000, 0.000000]
+    ionized.test_vals_aarch64 = [-29.412957, -10.512867, -11.626489, -17.999330, -17.728593, -15.176439, -24.805085, -32.000000, -32.000000, 0.000000, 0.000000]
     ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
     ionized.timeout   = 1600
     ionized.new_output = True
@@ -95,7 +96,8 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222001, -5.746254, -20.569422, -20.633784, -20.547640, -1.928394, -2.246909, 1.255970, -3.208248]
+    visc_cone.test_vals         = [-5.222001, -5.746254, -20.569422, -20.633784, -20.547640, -1.928394, -2.246909, 1.255970, -3.208248]
+    visc_cone.test_vals_aarch64 = [-5.222003, -5.746260, -20.569405, -20.633779, -20.546389, -1.928404, -2.246932, 1.255961, -3.208240]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -180,7 +182,8 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals = [-1.217981, 4.256386, 0.009084, 0.016823]
+    polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
+    polar_naca0012.test_vals_aarch64 = [-1.568265, 3.873336, 0.007243, 0.009260]
     polar_naca0012.su2_exec  = "compute_polar.py -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -709,7 +712,8 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [-1.355605, 1.464131, 1.314243, -1.997959, 1.135210, 0.398906]
+    turbmod_sa_neg_rae2822.test_vals         = [-1.355605, 1.464131, 1.314243, -1.997959, 1.135210, 0.398906]
+    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -1213,7 +1217,8 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
+    channel_2D.test_vals         = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
+    channel_2D.test_vals_aarch64 = [2.000000, 0.000000, 0.398036, 0.352783, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1226,7 +1231,8 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
+    channel_3D.test_vals         = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
+    channel_3D.test_vals_aarch64 = [2.000000, 0.000000, 0.620182, 0.505302, 0.415257]
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -1318,7 +1324,8 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-8.396797, -8.162206, -8.156102, 64095.0] #last 4 columns
+    statbeam3d.test_vals         = [-8.396797, -8.162206, -8.156102, 64095.0] #last 4 columns
+    statbeam3d.test_vals_aarch64 = [-8.396793, -8.162255, -8.156118, 64095.0] #last 4 columns
     statbeam3d.su2_exec  = "parallel_computation_fsi.py -f"
     statbeam3d.timeout   = 1600
     statbeam3d.tol       = 0.00001
@@ -1412,7 +1419,8 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals         = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
     solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
     solid_periodic_pins.timeout   = 1600
     solid_periodic_pins.tol       = 0.00001
@@ -1463,7 +1471,8 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-13.374306, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-13.374306, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-13.395532, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
@@ -1662,7 +1671,8 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.test_vals =         [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10.000000, -4.585464, 8.000000, -5.193350]
     species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
     species_passive_val.timeout   = 1600
     species_passive_val.new_output = True
