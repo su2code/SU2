@@ -3931,7 +3931,7 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
             Fr[0] = 0.0;
           }
           else {
-        	  Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
+              Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
                       (PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
               Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*pow(2*rps*AD_Radius,2))/
                       ((PI_NUMBER*rad_v[0])*(PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
