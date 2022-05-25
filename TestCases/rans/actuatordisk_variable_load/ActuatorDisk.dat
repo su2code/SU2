@@ -10,7 +10,7 @@ MARKER_ACTDISK= DISK DISK_BACK
 CENTER= 0.0 0.0 0.0
 AXIS= 1.0 0.0 0.0
 RADIUS= 2.5146
-RPM= 5000
+RPM= 807.625
 NROW= 37
 # rs=r/R    dCT/drs     dCP/drs     dCR/drs
   0.2031   0.020066   0.0890674         0.0
