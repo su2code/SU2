@@ -2476,7 +2476,6 @@ public:
         Hessian(iPoint,iVar,2) = hess[0][2]*scale;
         Hessian(iPoint,iVar,3) = hess[1][1]*scale;
         Hessian(iPoint,iVar,4) = hess[1][2]*scale;
-        Hessian(iPoint,iVar,2) = hess[2][0]*scale;
         Hessian(iPoint,iVar,5) = hess[2][2]*scale;
         break;
       }
