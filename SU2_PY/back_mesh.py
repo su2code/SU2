@@ -46,6 +46,8 @@ parser.add_option("--hmax", dest="hmax",
                   help="max cell size", metavar="HMAX", default=100)
 parser.add_option("--hmin", dest="hmin",
                   help="min cell size", metavar="HMIN", default=0.001)
+parser.add_option("--iters", dest="iters",
+                  help="iterations of coarsening", metavar="ITERS", default=3)
 
 (options, args)=parser.parse_args()
 
@@ -55,15 +57,18 @@ outfile = str(options.outfile)
 hgrad = float(options.hgrad)
 hmax = float(options.hmax)
 hmin = float(options.hmin)
+iters = int(options.iters)
 
 mesh = su2amg.read_mesh(file)
 
 remesh_options = {}
 
-# Read in a hybrid mesh and coarsen the volume
-
+# Set amg options from input
+remesh_options['gradation'] = hgrad
+remesh_options['hmax'] = hmax
+remesh_options['hmin'] = hmin
 remesh_options['logfile'] = 'amg.coarsen.out'
-remesh_options['options'] = '-recover-allsurf-ids -nosurf -propagate-surf-metric'
+remesh_options['options'] = f'-hmsh-line -noline -nordg'
 
 Dim = mesh['dimension']
 
@@ -73,6 +78,7 @@ if Dim == 2 :
     
     del mesh['xyz']
 
+# Store initial mesh
 if 'xy' in mesh:  mesh['xy']  = mesh['xy'].tolist()
 if 'xyz' in mesh: mesh['xyz'] = mesh['xyz'].tolist()
 
@@ -81,39 +87,15 @@ if 'Edges' in mesh:      mesh['Edges']      = mesh['Edges'].tolist()
 if 'Triangles' in mesh:  mesh['Triangles']  = mesh['Triangles'].tolist()
 if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()   
 
-mesh_new = pyamg.adapt_mesh(mesh, remesh_options)
+# Remesh
+for i in range(iters):
+    mesh = pyamg.adapt_mesh(mesh, remesh_options)
+    su2amg.write_mesh(f"{outfile}.{i}.meshb", mesh)
 
+# Rename last output mesh
+p = Path(f"{outfile}.{iters-1}.meshb")
+p.rename(Path(p.parent, f"{outfile}.meshb"))
+
+# Delete intermediate files
 for file in ['back.meshb', 'meshp3_smoo.meshb']:
     Path(file).unlink()
-
-su2amg.write_mesh(f"{outfile}.coarsen.meshb", mesh_new)
-
-# Generate a background surface mesh and surface metric
-
-remesh_options['gradation'] = hgrad
-remesh_options['hmax']   = hmax
-remesh_options['hmin']   = hmin
-remesh_options['logfile'] = 'amg.back.out'
-remesh_options['options'] = '-geoapp-allsurf-ids -prepro'
-
-mesh_new = pyamg.adapt_mesh(mesh_new, remesh_options)
-
-su2amg.write_mesh(f"{outfile}.back.meshb", mesh_new)
-
-# Generate a coarse metric
-
-remesh_options['logfile'] = 'amg.metric.out'
-remesh_options['options'] = '-recover-allsurf-ids -nosurf -novol -nordg -cfac 2'
-
-mesh_new = pyamg.adapt_mesh(mesh_new, remesh_options)
-
-su2amg.write_mesh_and_sol(f"{outfile}.metric.meshb", f"{outfile}.metric.solb", mesh_new)
-
-# Generate a coarse mesh using previous metric
-
-remesh_options['logfile'] = 'amg.out'
-remesh_options['options'] = f'-met {outfile}.metric -back {outfile}.back.meshb -nordg'
-
-mesh_new = pyamg.adapt_mesh(mesh_new, remesh_options)
-
-su2amg.write_mesh(f"{outfile}.meshb", mesh_new)
