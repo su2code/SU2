@@ -45,8 +45,8 @@ def main():
     p30n30.cfg_dir   = "vandv/rans/30p30n"
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 20
-    p30n30.test_vals = [-10.642593, -10.303413, -10.496728, -10.253130, -13.517216, 0.050962, 2.828563, 1.317849, -0.215834]
-    p30n30.test_vals_aarch64 = [-13.517151, 0.050962, 2.828563, 1.317849, -0.206092]
+    p30n30.test_vals         = [-10.642593, -10.303413, -10.496728, -10.253130, -13.517216, 0.050962, 2.828563, 1.317849, -0.215834]
+    p30n30.test_vals_aarch64 = [-10.632412, -10.296085, -10.474942, -10.242152, -13.517151, 0.050962, 2.828563, 1.317849, -0.206092]
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
@@ -54,8 +54,8 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals = [-13.022890, -10.035602, -5.142343, -0.002535, 0.002809]
-    flatplate_sst1994m.test_vals_aarch64 = [-10.642593, -10.303413, -10.496728, -10.253130, -13.517216, 0.050962, 2.828563, 1.317849, -0.215834]
+    flatplate_sst1994m.test_vals         = [-13.022890, -10.035602, -5.142343, -0.002535, 0.002809]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.022995, -10.035604, -5.142242, -0.002535, 0.002809]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -63,7 +63,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals = [-13.069231, -10.325333, -5.558903, 0.024576, 0.004967] 
+    bump_sst1994m.test_vals         = [-13.069231, -10.325333, -5.558903, 0.024576, 0.004967] 
     bump_sst1994m.test_vals_aarch64 = [-13.055133, -10.325357, -5.558448, 0.024576, 0.004967] 
     test_list.append(bump_sst1994m)
 
