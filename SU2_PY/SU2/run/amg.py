@@ -77,7 +77,7 @@ def amg ( config ):
     
     #--- Change current directory
     
-    warn = False
+    warn = True
     adap_dir = './adap'
     cwd = os.getcwd()
         
@@ -86,11 +86,11 @@ def amg ( config ):
         sys.stdout.flush()
         if warn : time.sleep(10)
         shutil.rmtree(adap_dir)
+        sys.stdout.write('The %s folder was deleted\n' % adap_dir)
+        sys.stdout.flush()
     
     os.makedirs(adap_dir)
     os.chdir(adap_dir)
-    sys.stdout.write('The %s folder was deleted\n' % adap_dir)
-    sys.stdout.flush()
     
     cur_dir = './ite0'
     os.makedirs(cur_dir)
@@ -165,6 +165,10 @@ def amg ( config ):
 
         SU2_CFD(config_cfd)
 
+        if config['RESTART_SOL'] == 'YES':
+            os.remove(cur_solfil)
+            os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), cur_solfil)
+
         #--- Set RESTART_SOL=YES for runs after adaptation
         config_cfd.RESTART_SOL = 'YES'
         config_cfd.RESTART_CFL = 'NO'
@@ -179,10 +183,6 @@ def amg ( config ):
                 func_name          = config.OBJECTIVE_FUNCTION
                 suffix             = su2io.get_adjointSuffix(func_name)
                 cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
-
-                if(os.path.exists(os.path.join(cwd, config.SOLUTION_FILENAME))):
-                    os.remove(cur_solfil)
-                    os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), cur_solfil)
 
                 #--- Run an adjoint if the solution file doesn't exist
                 if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
