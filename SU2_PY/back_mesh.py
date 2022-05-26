@@ -41,7 +41,7 @@ parser.add_option("-f", "--file", dest="file",
 parser.add_option("-o", "--output", dest="outfile",
                   help="write new mesh to OUTFILE", metavar="OUTFILE", default="out")
 parser.add_option("--hgrad", dest="hgrad",
-                  help="gradation", metavar="HGRAD", default=3.0)
+                  help="gradation", metavar="HGRAD", default=2.5)
 parser.add_option("--hmax", dest="hmax",
                   help="max cell size", metavar="HMAX", default=100)
 parser.add_option("--hmin", dest="hmin",
@@ -90,11 +90,11 @@ if 'Tetrahedra' in mesh: mesh['Tetrahedra'] = mesh['Tetrahedra'].tolist()
 # Remesh
 for i in range(iters):
     mesh = pyamg.adapt_mesh(mesh, remesh_options)
+    if i == (iters-1): break
     su2amg.write_mesh(f"{outfile}.{i}.meshb", mesh)
 
-# Rename last output mesh
-p = Path(f"{outfile}.{iters-1}.meshb")
-p.rename(Path(p.parent, f"{outfile}.meshb"))
+# Output final mesh
+su2amg.write_mesh(f"{outfile}.meshb", mesh)
 
 # Delete intermediate files
 for file in ['back.meshb', 'meshp3_smoo.meshb']:
