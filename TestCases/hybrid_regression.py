@@ -760,7 +760,7 @@ def main():
     pywrapper_translating_naca0012.su2_exec = "python run_su2.py"
     pywrapper_translating_naca0012.timeout = 60
     pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
-    pywrapper_translating_naca0012.reference_file = "forces_0_aarch64.csv.ref"
+    pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
     file_diff_list.append(pywrapper_translating_naca0012)
 
