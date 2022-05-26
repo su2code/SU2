@@ -117,7 +117,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     Ver = np.reshape(Ver,(NbrVer, 3))
     
     SolSiz = int(len(Sol)/NbrVer)
-    Sol = np.array(Sol).reshape(NbrVer,SolSiz).tolist()
+    Sol = np.reshape(Sol,(NbrVer, SolSiz))
     
     # First row of Markers contains dimension
     Dim = int(Markers[0])
