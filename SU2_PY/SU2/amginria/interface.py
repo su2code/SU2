@@ -102,16 +102,16 @@ def read_mesh_and_sol(mesh_name, solution_name):
     su2gmf.py_ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers)
         
     NbrTet = int(len(Tet)/5)
-    Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
+    Tet = np.reshape(Tet,(NbrTet, 5)).astype(np.int64)
     
     NbrTri = int(len(Tri)/4)
-    Tri = np.reshape(Tri,(NbrTri, 4)).astype(int)
+    Tri = np.reshape(Tri,(NbrTri, 4)).astype(np.int64)
     
     NbrEdg = int(len(Edg)/3)
-    Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
+    Edg = np.reshape(Edg,(NbrEdg, 3)).astype(np.int64)
 
     NbrCor = int(len(Cor))
-    Cor = np.reshape(Cor,(NbrCor, 1)).astype(int)
+    Cor = np.reshape(Cor,(NbrCor, 1)).astype(np.int64)
 
     NbrVer = int(len(Ver)/3)
     Ver = np.reshape(Ver,(NbrVer, 3))
@@ -162,16 +162,16 @@ def read_mesh(mesh_name):
     su2gmf.py_ReadMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers)
         
     NbrTet = int(len(Tet)/5)
-    Tet = np.reshape(Tet,(NbrTet, 5)).astype(int)
+    Tet = np.reshape(Tet,(NbrTet, 5)).astype(np.int64)
     
     NbrTri = int(len(Tri)/4)
-    Tri = np.reshape(Tri,(NbrTri, 4)).astype(int)
+    Tri = np.reshape(Tri,(NbrTri, 4)).astype(np.int64)
     
     NbrEdg = int(len(Edg)/3)
-    Edg = np.reshape(Edg,(NbrEdg, 3)).astype(int)
+    Edg = np.reshape(Edg,(NbrEdg, 3)).astype(np.int64)
 
     NbrCor = int(len(Cor))
-    Cor = np.reshape(Cor,(NbrCor, 1)).astype(int)
+    Cor = np.reshape(Cor,(NbrCor, 1)).astype(np.int64)
 
     NbrVer = int(len(Ver)/3)
     Ver = np.reshape(Ver,(NbrVer, 3))
