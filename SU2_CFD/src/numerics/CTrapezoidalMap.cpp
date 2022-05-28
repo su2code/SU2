@@ -130,9 +130,6 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const& samples_x, vector<su2d
   if (rank == MASTER_NODE) cout << "Construction of trapezoidal map took " << duration << " seconds\n" << endl;
 }
 
-CTrapezoidalMap::CTrapezoidalMap() {}
-
-CTrapezoidalMap::~CTrapezoidalMap(void) {}
 
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   /* find x band in which val_x sits */
