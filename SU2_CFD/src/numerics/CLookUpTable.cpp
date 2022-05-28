@@ -102,8 +102,8 @@ void CLookUpTable::PrintTableInfo() {
   if (rank == MASTER_NODE) {
     cout << setfill(' ');
     cout << endl;
-    cout << "+------------------------------------------------------------------+" << endl;
-    cout << "|                     Look-Up-Table (LUT) info                     |" << endl;
+    cout << "+------------------------------------------------------------------+\n";
+    cout << "|                     Look-Up-Table (LUT) info                     |\n";
     cout << "+------------------------------------------------------------------+" << endl;
     cout << "| File name:" << setw(54) << right << file_name_lut << " |" << endl;
     cout << "| Table type:" << setw(53) << right << type_lut << " |" << endl;
