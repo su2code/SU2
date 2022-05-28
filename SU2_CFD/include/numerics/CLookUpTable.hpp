@@ -80,8 +80,6 @@ class CLookUpTable {
   vector<vector<vector<su2double> > > interp_mat_inv_prog_enth;
 
   inline int GetIndexOfVar(string nameVar) {
-    int index;
-    int endoflist;
     // FIXME dan: there should be an error handling when nameVar is not found in names_var
     int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();
     endoflist = names_var.size();
