@@ -476,7 +476,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    case TURB_MODEL::SA:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
     case TURB_MODEL::SST:
@@ -485,7 +485,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
     default: break;
   }
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    case TURB_MODEL::SA:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
     case TURB_MODEL::SST:
@@ -862,7 +862,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP: nVar_Turb = 1; break;
+        case TURB_MODEL::SA: nVar_Turb = 1; break;
         case TURB_MODEL::SST: nVar_Turb = 2; break;
         default: break;
       }
@@ -884,7 +884,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP: nVar_AdjTurb = 1; break;
+        case TURB_MODEL::SA: nVar_AdjTurb = 1; break;
         case TURB_MODEL::SST: nVar_AdjTurb = 2; break;
         default: break;
       }
@@ -1782,7 +1782,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP:        cout << "       Res[nu]"; break;
+              case TURB_MODEL::SA: cout << "       Res[nu]"; break;
               case TURB_MODEL::SST: cout << "     Res[kine]" << "    Res[omega]"; break;
               default: break;
             }
@@ -2820,11 +2820,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         Breakdown_file << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case TURB_MODEL::SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SST:       Breakdown_file << "Menter's TURB_MODEL::SST"     << "\n"; break;
+          case TURB_MODEL::SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
           default: break;
         }
         break;
