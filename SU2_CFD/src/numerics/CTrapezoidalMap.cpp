@@ -45,8 +45,7 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const& samples_x, vector<su2d
   /* sort x_bands and make them unique */
   sort(unique_bands_x.begin(), unique_bands_x.end());
 
-  vector<su2double>::iterator iter;
-  iter = unique(unique_bands_x.begin(), unique_bands_x.end());
+  auto iter = unique(unique_bands_x.begin(), unique_bands_x.end());
 
   unique_bands_x.resize(distance(unique_bands_x.begin(), iter));
 
