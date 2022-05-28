@@ -83,7 +83,7 @@ class CLookUpTable {
     int index;
     int endoflist;
     // FIXME dan: there should be an error handling when nameVar is not found in names_var
-    index = (int)(find(names_var.begin(), names_var.end(), nameVar) - names_var.begin());
+    int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();
     endoflist = names_var.size();
     if (index == endoflist) {
       index = -1;
