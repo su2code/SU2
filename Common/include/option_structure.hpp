@@ -568,7 +568,7 @@ enum ENUM_FLUIDMODEL {
   INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
-  FLUID_MIXTURE = 9,      /*!< \brief species mixture model */
+  FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
