@@ -83,13 +83,13 @@ class CFileReaderLUT {
  public:
   CFileReaderLUT();
 
-  inline string GetTypeLUT() { return type_lut; }
-  inline string GetVersionLUT() { return version_lut; }
-  inline string GetVersionReader() { return version_reader; }
-  inline unsigned long GetNPoints() { return n_points; }
-  inline unsigned long GetNTriangles() { return n_triangles; }
-  inline unsigned long GetNHullPoints() { return n_hull_points; }
-  inline unsigned long GetNVariables() { return n_variables; }
+  inline const string& GetTypeLUT() const { return type_lut; }
+  inline const string& GetVersionLUT() const { return version_lut; }
+  inline const string& GetVersionReader() const { return version_reader; }
+  inline unsigned long GetNPoints() const { return n_points; }
+  inline unsigned long GetNTriangles() const { return n_triangles; }
+  inline unsigned long GetNHullPoints() const { return n_hull_points; }
+  inline unsigned long GetNVariables() const { return n_variables; }
 
   inline const vector<string>& GetNamesVar() const { return names_var; }
 
