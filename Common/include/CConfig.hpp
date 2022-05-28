@@ -1163,7 +1163,7 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies,                  /*!< \brief No of transported species solved (for NEMO and species transport)*/
+  unsigned short nSpecies,                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
   iWall_Catalytic,
