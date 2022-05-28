@@ -1137,7 +1137,6 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */        
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional parameters for the SST turbulence model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
