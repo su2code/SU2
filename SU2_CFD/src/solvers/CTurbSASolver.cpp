@@ -1623,7 +1623,7 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 }
 
 void CTurbSASolver::ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                                    unsigned long iPoint, vector<vector<su2double> > &weights) {
+                                    unsigned long iPoint, vector<vector<double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
@@ -1632,19 +1632,21 @@ void CTurbSASolver::ConvectiveError(CSolver **solver, const CGeometry *geometry,
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
     
   //--- Store primitive variables and coefficients
-  const su2double r = varFlo->GetDensity(iPoint);
-  su2double u[3] = {0.0};
-  u[0] = varFlo->GetVelocity(iPoint, 0);
-  u[1] = varFlo->GetVelocity(iPoint, 1);
-  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
+  double u[3] = {0.0};
+  u[0] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+  u[1] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+  if (nDim == 3) u[2] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2));
 
-  // const su2double nutilde = varTur->GetSolution(iPoint, 0);
+  const double adjnutilde = SU2_TYPE::GetValue(varAdjTur->GetSolution(iPoint, 0));
+
+  // const double nutilde = SU2_TYPE::GetValue(varTur->GetSolution(iPoint, 0));
 
   //--- Store gradients (we only need dui/dxi because of dot product)
-  su2double gradu[3] = {0.0}, gradnutilde[3] = {0.0};
+  double gradu[3] = {0.0}, gradnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    gradu[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, iDim);
-    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
+    gradu[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, iDim));
+    gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
   }
 
   //---------------------------//
@@ -1652,20 +1654,23 @@ void CTurbSASolver::ConvectiveError(CSolver **solver, const CGeometry *geometry,
   //---------------------------//
 
   for (auto iDim = 0; iDim < nDim; ++iDim) {
+    const double gradadjnutilde_i = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, 0, iDim));
+
     //--- Advection
-    weights[1][nVarFlo] -= u[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-    weights[0][nVarFlo] -= gradu[iDim] * varAdjTur->GetSolution(iPoint, 0);
-    weights[0][iDim+1] += 1.0/r * gradnutilde[iDim] * varAdjTur->GetSolution(iPoint, 0);
-    weights[0][0] -= u[iDim]/r * gradnutilde[iDim] * varAdjTur->GetSolution(iPoint, 0); 
+    weights[1][nVarFlo] -= u[iDim] * gradadjnutilde_i;
+    weights[0][nVarFlo] -= gradu[iDim] * adjnutilde;
+    weights[0][iDim+1] += 1.0/r * gradnutilde[iDim] * adjnutilde;
+    weights[0][0] -= u[iDim]/r * gradnutilde[iDim] * adjnutilde;
+
     //--- Convection
-    // weights[1][nVarFlo] -= u[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-    // weights[1][iDim+1] -= nutilde/r * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-    // weights[1][0] += u[iDim]*nutilde/r * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    // weights[1][nVarFlo] -= u[iDim] * gradadjnutilde_i;
+    // weights[1][iDim+1] -= nutilde/r * gradadjnutilde_i;
+    // weights[1][0] += u[iDim]*nutilde/r * gradadjnutilde_i;
   }
 }
 
 void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                                 unsigned long iPoint, vector<vector<su2double> > &weights) {
+                                 unsigned long iPoint, vector<vector<double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
@@ -1674,18 +1679,19 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
     
   //--- Store primitive variables and coefficients
-  const su2double r = varFlo->GetDensity(iPoint);
+  const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
 
-  const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
-  const su2double nutilde = varTur->GetSolution(iPoint, 0);
+  const double nu  = SU2_TYPE::GetValue(varFlo->GetLaminarViscosity(iPoint))/r;
+  const double nutilde = SU2_TYPE::GetValue(varTur->GetSolution(iPoint, 0));
 
-  const su2double one_sigma = 3.0/2.0;
+  const double one_sigma = 3.0/2.0;
 
   //--- Store gradients and stress tensor
-  su2double gradnu[3] = {0.0}, gradnutilde[3] = {0.0};
+  double gradnu[3] = {0.0}, gradnutilde[3] = {0.0}, gradadjnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    gradnu[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+1, iDim);
-    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
+    gradnu[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+1, iDim));
+    gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
+    gradadjnutilde[iDim] = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, 0, iDim));
   }
 
   //---------------------------//
@@ -1694,8 +1700,10 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
 
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[1][nVarFlo] -= one_sigma*(gradnu[iDim]*gradnutilde[iDim])*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-    weights[2][nVarFlo] -= one_sigma*(nu+nutilde)*varAdjTur->GetHessian(iPoint, 0, ind_ii);
+    const double hessadjnutilde_ii = SU2_TYPE::GetValue(varAdjTur->GetHessian(iPoint, 0, ind_ii));
+
+    weights[1][nVarFlo] -= one_sigma*(gradnu[iDim]*gradnutilde[iDim])*gradadjnutilde[iDim];
+    weights[2][nVarFlo] -= one_sigma*(nu+nutilde)*hessadjnutilde_ii;
   }
 
   //-----------------------//
@@ -1707,7 +1715,7 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
 }
 
 void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                                   unsigned long iPoint, vector<vector<su2double> > &weights) {
+                                   unsigned long iPoint, vector<vector<double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
@@ -1716,50 +1724,54 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
     
   //--- Store primitive variables and coefficients
-  const su2double r = varFlo->GetDensity(iPoint);
-  su2double u[3] = {0.0};
-  u[0] = varFlo->GetVelocity(iPoint, 0);
-  u[1] = varFlo->GetVelocity(iPoint, 1);
-  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
+  double u[3] = {0.0};
+  u[0] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+  u[1] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+  if (nDim == 3) u[2] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2));
 
-  const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
-  const su2double nutilde  = varTur->GetSolution(iPoint,0);
+  const double nu  = SU2_TYPE::GetValue(varFlo->GetLaminarViscosity(iPoint))/r;
+  const double nutilde  = SU2_TYPE::GetValue(varTur->GetSolution(iPoint,0));
 
-  const su2double sigma = 2.0/3.0;
-  const su2double k2    = pow(0.41, 2.0);
-  const su2double cb1   = 0.1355;
-  const su2double cb2   = 0.622;
-  const su2double cb2_sigma = cb2/sigma;
-  const su2double ct3   = 1.2;
-  const su2double ct4   = 0.5;
-  const su2double cv1_3 = pow(7.1, 3.0);
-  const su2double cv2   = 0.7;
-  const su2double cv3   = 0.9;
-  const su2double cw1   = cb1/k2+(1.0+cb2)/sigma;
-  const su2double cw2   = 0.3;
-  const su2double cw3_6 = pow(2.0, 6.0);
+  const double adjnutilde = SU2_TYPE::GetValue(varAdjTur->GetSolution(iPoint, 0));
 
-  const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
+  const double sigma = 2.0/3.0;
+  const double k2    = pow(0.41, 2.0);
+  const double cb1   = 0.1355;
+  const double cb2   = 0.622;
+  const double cb2_sigma = cb2/sigma;
+  const double ct3   = 1.2;
+  const double ct4   = 0.5;
+  const double cv1_3 = pow(7.1, 3.0);
+  // const double cv2   = 0.7;
+  // const double cv3   = 0.9;
+  const double cw1   = cb1/k2+(1.0+cb2)/sigma;
+  const double cw2   = 0.3;
+  const double cw3_6 = pow(2.0, 6.0);
+
+  const double dist = SU2_TYPE::GetValue(geometry->nodes->GetWall_Distance(iPoint));
 
   //--- Store gradients and stress tensor
-  su2double gradu[3][3] = {0.0}, gradnutilde[3] = {0.0}, gradr[3] = {0.0}, gradWij[3][3] = {0.0}, gradS[3] = {0.0};
+  double gradu[3][3] = {0.0}, gradnutilde[3] = {0.0}, gradr[3] = {0.0}, gradWij[3][3] = {0.0}, gradS[3] = {0.0}, gradadjnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim));
     }
-    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
-    gradr[iDim] = varFlo->GetGradient_Adapt(iPoint, 0, iDim);
+    gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
+    gradr[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_Adapt(iPoint, 0, iDim));
     
-    gradWij[0][iDim] = varTur->GetGradient_AuxVar_Adapt(iPoint, 0, iDim);
-    gradWij[1][iDim] = varTur->GetGradient_AuxVar_Adapt(iPoint, 1, iDim);
-    gradWij[2][iDim] = varTur->GetGradient_AuxVar_Adapt(iPoint, 2, iDim);
-    gradS[iDim] = varTur->GetGradient_AuxVar_Adapt(iPoint, 3, iDim);
+    gradWij[0][iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 0, iDim));
+    gradWij[1][iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 1, iDim));
+    gradWij[2][iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 2, iDim));
+    gradS[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 3, iDim));
+
+    gradadjnutilde[iDim] = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, 0, iDim));
   }
 
   //--- Store hessians
-  su2double hessnutilde[6] = {0.0};
+  double hessnutilde[6] = {0.0};
   for (auto iHess = 0 ; iHess < 3*(nDim-1); iHess++) {
-    hessnutilde[iHess] = varTur->GetHessian(iPoint, 0, iHess);
+    hessnutilde[iHess] = SU2_TYPE::GetValue(varTur->GetHessian(iPoint, 0, iHess));
   }
 
   if (dist < 1.0e-10) return;
@@ -1770,8 +1782,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
 
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
-    weights[0][nVarFlo] += 2.0*cb2_sigma * hessnutilde[ind_ii] * varAdjTur->GetSolution(iPoint, 0);
-    weights[1][nVarFlo] += 2.0*cb2_sigma * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    weights[0][nVarFlo] += 2.0*cb2_sigma * hessnutilde[ind_ii] * adjnutilde;
+    weights[1][nVarFlo] += 2.0*cb2_sigma * gradnutilde[iDim] * gradadjnutilde[iDim];
   }
 
   //--- The rest of the terms involve 1/WallDist, so return if small
@@ -1781,54 +1793,54 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //--- Production term ---//
   //-----------------------//
 
-  const su2double dist2 = dist*dist;
-  const su2double Chi = nutilde/nu;
-  const su2double Chi_2 = Chi*Chi;
-  const su2double Chi_3 = Chi_2*Chi;
-  const su2double fv1 = Chi_3/(Chi_3+cv1_3);
-  const su2double fv2 = 1.0 - Chi/(1.0+Chi*fv1);
-  const su2double ft2 = ct3*exp(-ct4*Chi_2);
-  const su2double inv_k2_d2 = 1.0/(k2*dist2);
+  const double dist2 = dist*dist;
+  const double Chi = nutilde/nu;
+  const double Chi_2 = Chi*Chi;
+  const double Chi_3 = Chi_2*Chi;
+  const double fv1 = Chi_3/(Chi_3+cv1_3);
+  const double fv2 = 1.0 - Chi/(1.0+Chi*fv1);
+  const double ft2 = ct3*exp(-ct4*Chi_2);
+  const double inv_k2_d2 = 1.0/(k2*dist2);
 
-  su2double S = pow(gradu[1][0] - gradu[0][1], 2.0);
+  double S = pow(gradu[1][0] - gradu[0][1], 2.0);
   if (nDim == 3) S += pow(gradu[2][1] - gradu[1][2], 2.0) + pow(gradu[0][2] - gradu[2][0], 2.0);
   S = sqrt(S);
 
-  const su2double Sbar = nutilde*fv2*inv_k2_d2;
-  su2double Stilde = S + Sbar;
-  su2double dSbar = fv2*inv_k2_d2;
+  const double Sbar = nutilde*fv2*inv_k2_d2;
+  double Stilde = S + Sbar;
+  double dSbar = fv2*inv_k2_d2;
   // if (Sbar <= -cv2*S) {
   //   Stilde = S + S*(cv2*cv2*S+cv3*Sbar)/((cv3-2.0*cv2)*S-Sbar);
   //   dSbar *= pow(S*(cv2-cv3)/((cv3-2.0*cv2)*S-Sbar),2.0);
   // }
 
-  weights[0][nVarFlo] -= cb1*(1-ft2) * (Stilde + dSbar*nutilde) * varAdjTur->GetSolution(iPoint,0);
+  weights[0][nVarFlo] -= cb1*(1-ft2) * (Stilde + dSbar*nutilde) * adjnutilde;
 
   const unsigned short inds_Wij[3][3] = {{0, 2, 1}, {2, 0, 0}, {1, 0, 0}};
   if (S > std::numeric_limits<passivedouble>::epsilon())
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       if (iDim == jDim) continue;
-      const su2double Wij = 0.5*(gradu[iDim][jDim] - gradu[jDim][iDim]);
-      weights[1][iDim+1] += cb1*(1.0-ft2)*Wij*nutilde/(r*S) * varAdjTur->GetGradient_Adapt(iPoint, 0, jDim);
-      weights[1][jDim+1] -= cb1*(1.0-ft2)*Wij*nutilde/(r*S) * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-      weights[1][0] -= cb1*(1.0-ft2)*Wij*nutilde/(r*S) * ( u[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, jDim)
-                                                       -   u[jDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim) );
+      const double Wij = 0.5*(gradu[iDim][jDim] - gradu[jDim][iDim]);
+      weights[1][iDim+1] += cb1*(1.0-ft2)*Wij*nutilde/(r*S) * gradadjnutilde[jDim];
+      weights[1][jDim+1] -= cb1*(1.0-ft2)*Wij*nutilde/(r*S) * gradadjnutilde[iDim];
+      weights[1][0] -= cb1*(1.0-ft2)*Wij*nutilde/(r*S) * ( u[iDim] * gradadjnutilde[jDim]
+                                                       -   u[jDim] * gradadjnutilde[iDim] );
 
-      const su2double sign = (iDim < jDim)? 1.0 : -1.0;
-      const int ind_Wij = inds_Wij[iDim][jDim];
+      const double sign = (iDim < jDim)? 1.0 : -1.0;
+      const unsigned short ind_Wij = inds_Wij[iDim][jDim];
       weights[0][iDim+1] += cb1*(1.0-ft2) * ( Wij/(r*S) * gradnutilde[jDim] - Wij*nutilde/(r*r*S) * gradr[jDim]
                                           -   Wij*nutilde/(r*S*S) * gradS[jDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][jDim] )
-                                          * varAdjTur->GetSolution(iPoint,0);
+                                          * adjnutilde;
       weights[0][jDim+1] -= cb1*(1.0-ft2) * ( Wij/(r*S) * gradnutilde[iDim] - Wij*nutilde/(r*r*S) * gradr[iDim]
                                           -   Wij*nutilde/(r*S*S) * gradS[iDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][iDim] )
-                                          * varAdjTur->GetSolution(iPoint,0);
+                                          * adjnutilde;
       weights[0][0] -= cb1*(1.0-ft2) * ( Wij*nutilde/(r*S) * ( gradu[iDim][jDim] - gradu[jDim][iDim] )
                                      +   u[iDim] * ( Wij/(r*S) * gradnutilde[jDim] - Wij*nutilde/(r*r*S) * gradr[jDim]
                                                  -   Wij*nutilde/(r*S*S) * gradS[jDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][jDim] )
                                      -   u[jDim] * ( Wij/(r*S) * gradnutilde[iDim] - Wij*nutilde/(r*r*S) * gradr[iDim]
                                                  -   Wij*nutilde/(r*S*S) * gradS[iDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][iDim] ) ) 
-                                     * varAdjTur->GetSolution(iPoint,0);
+                                     * adjnutilde;
     }
   }
 
@@ -1836,20 +1848,20 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //--- Destruction term ---//
   //------------------------//
 
-  const su2double inv_Stilde = 1.0/max(Stilde, std::numeric_limits<passivedouble>::epsilon());
+  const double inv_Stilde = 1.0/max(Stilde, std::numeric_limits<double>::epsilon());
 
-  const su2double rg = min(nutilde*inv_Stilde*inv_k2_d2,10.0);
-  const su2double g = rg + cw2*(pow(rg,6.0)-rg);
-  const su2double g_6 =  pow(g,6.0);
-  const su2double glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
-  const su2double fw = g*glim;
+  const double rg = min(nutilde*inv_Stilde*inv_k2_d2,10.0);
+  const double g = rg + cw2*(pow(rg,6.0)-rg);
+  const double g_6 =  pow(g,6.0);
+  const double glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
+  const double fw = g*glim;
 
-  weights[0][nVarFlo] += (cw1*fw - cb1*ft2/k2)*2.0*nutilde/dist2*varAdjTur->GetSolution(iPoint, 0);
+  weights[0][nVarFlo] += 2.0 * (cw1*fw - cb1*ft2/k2) / dist2 * nutilde * adjnutilde;
   
 }
 
 void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                                          unsigned long iPoint, vector<vector<su2double> > &weights) {
+                                          unsigned long iPoint, vector<vector<double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
@@ -1858,47 +1870,48 @@ void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geo
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   //--- Store primitive variables and coefficients
-  const su2double r = varFlo->GetDensity(iPoint);
-  su2double u[3] = {0.0};
-  u[0] = varFlo->GetVelocity(iPoint, 0);
-  u[1] = varFlo->GetVelocity(iPoint, 1);
-  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
-  const su2double u2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
+  const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
+  double u[3] = {0.0};
+  u[0] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+  u[1] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+  if (nDim == 3) u[2] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2));
+  const double u2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
 
-  const su2double T   = varFlo->GetTemperature(iPoint);
-  const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
+  const double T   = SU2_TYPE::GetValue(varFlo->GetTemperature(iPoint));
+  const double nu  = SU2_TYPE::GetValue(varFlo->GetLaminarViscosity(iPoint))/r;
 
-  const su2double S     = config->GetMu_SND();
-  const su2double dmudT = 0.5*r*nu*(T + 3*S)/(T*(T+S));
+  const double S     = SU2_TYPE::GetValue(config->GetMu_SND());
+  const double dmudT = 0.5*r*nu*(T + 3*S)/(T*(T+S));
 
-  const su2double g    = config->GetGamma();
-  const su2double R    = config->GetGas_ConstantND();
-  const su2double cp   = (g/(g-1.))*R;
-  const su2double cv   = cp/g;
+  const double g   = SU2_TYPE::GetValue(config->GetGamma());
+  const double R   = SU2_TYPE::GetValue(config->GetGas_ConstantND());
+  const double cp  = (g/(g-1.))*R;
+  const double cv  = cp/g;
 
-  const su2double sigma = 2.0/3.0;
+  const double sigma = 2.0/3.0;
 
   //--- Store gradients and stress tensor
-  su2double gradnutilde[3] = {0.0};
+  double gradnutilde[3] = {0.0}, gradadjnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
+    gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
+    gradadjnutilde[iDim] = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, 0, iDim));
   }
 
   //---------------------------//
   //--- Turbulence equation ---//
   //---------------------------//
 
-  const su2double factor = dmudT/(sigma*r*r*cv);
+  const double factor = dmudT/(sigma*r*r*cv);
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nVarFlo-1] += factor * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    weights[1][nVarFlo-1] += factor * gradnutilde[iDim] * gradadjnutilde[iDim];
     for (auto jDim = 0; jDim < nDim; ++jDim)
-        weights[1][jDim+1] -= factor * u[jDim] * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
-    weights[1][0] += (factor * (0.5*u2-cv*T) - nu/r) * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+        weights[1][jDim+1] -= factor * u[jDim] * gradnutilde[iDim] * gradadjnutilde[iDim];
+    weights[1][0] += (factor * (0.5*u2-cv*T) - nu/r) * gradnutilde[iDim] * gradadjnutilde[iDim];
   }
 }
 
 void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                                       unsigned long iPoint, vector<vector<su2double> > &weights) {
+                                       unsigned long iPoint, vector<vector<double> > &weights) {
 
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
@@ -1908,53 +1921,54 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
     
   //--- Store primitive variables and coefficients
-  const su2double r = varFlo->GetDensity(iPoint);
-  su2double u[3] = {0.0};
-  u[0] = varFlo->GetVelocity(iPoint, 0);
-  u[1] = varFlo->GetVelocity(iPoint, 1);
-  if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
+  double u[3] = {0.0};
+  u[0] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+  u[1] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+  if (nDim == 3) u[2] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2));
 
-  const su2double nu  = varFlo->GetLaminarViscosity(iPoint)/r;
+  const double nutilde = SU2_TYPE::GetValue(nodes->GetSolution(iPoint,0));
 
-  const su2double g    = config->GetGamma();
-  const su2double R    = config->GetGas_ConstantND();
-  const su2double cp   = (g/(g-1.))*R;
-  const su2double Prt  = config->GetPrandtl_Turb();
+  const double nu  = SU2_TYPE::GetValue(varFlo->GetLaminarViscosity(iPoint))/r;
 
-  const su2double sigma = 2.0/3.0;
-  const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
-  const su2double nutilde = nodes->GetSolution(iPoint,0);
-  const su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
-  su2double dist = geometry->nodes->GetWall_Distance(iPoint);
+  const double Prt = SU2_TYPE::GetValue(config->GetPrandtl_Turb());
+  const double g   = SU2_TYPE::GetValue(config->GetGamma());
+  const double R   = SU2_TYPE::GetValue(config->GetGas_ConstantND());
+  const double cp  = (g/(g-1.))*R;
+
+  const double sigma = 2.0/3.0;
+  const double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
+  const double roughness = SU2_TYPE::GetValue(geometry->nodes->GetRoughnessHeight(iPoint));
+  double dist = SU2_TYPE::GetValue(geometry->nodes->GetWall_Distance(iPoint));
 
   dist += rough_const*roughness;
 
-  su2double Chi = nutilde/nu;
+  double Chi = nutilde/nu;
   if (roughness > 1.0e-10)
-    Chi+= cR1*roughness/(dist+EPS);
+    Chi+= cR1*roughness/(dist+std::numeric_limits<double>::epsilon());
 
-  const su2double Chi_3 = Chi*Chi*Chi;
-  const su2double fv1  = Chi_3/(Chi_3+cv1_3);
+  const double Chi_3 = Chi*Chi*Chi;
+  const double fv1  = Chi_3/(Chi_3+cv1_3);
 
   //--- Store gradients and stress tensor
-  su2double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnutilde[3] = {0.0};
+  double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0 ; jDim < nDim; jDim++) {
-      gradu[iDim][jDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim);
+      gradu[iDim][jDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim));
     }
-    gradT[iDim] = varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim);
-    gradnutilde[iDim] = varTur->GetGradient_Adapt(iPoint, 0, iDim);
+    gradT[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim));
+    gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
   }
   
   //--- Account for wall functions
-  // su2double wf = varFlo->GetTauWallFactor(iPoint);
-  su2double wf = 1.0;
-  su2double divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
-  su2double tauomut[3][3] = {0.0};
+  // double wf = varFlo->GetTauWallFactor(iPoint);
+  double wf = 1.0;
+  double divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+  double tauomut[3][3] = {0.0};
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       tauomut[iDim][jDim]  = wf * ( ( gradu[jDim][iDim] + gradu[iDim][jDim] )
-                                -     TWO3*divu*(iDim == jDim) );
+                                -     2.0/3.0*divu*(iDim == jDim) );
                        
     }
   }
@@ -1965,8 +1979,10 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      weights[1][nVarFlo] += r*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
-      weights[1][0] += nutilde*fv1 * tauomut[iDim][jDim] * varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim);
+      const double gradadjui_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim));
+
+      weights[1][nVarFlo] += r*fv1 * tauomut[iDim][jDim] * gradadjui_j;
+      weights[1][0] += nutilde*fv1 * tauomut[iDim][jDim] * gradadjui_j;
     }
   }
 
@@ -1976,18 +1992,22 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
 
   //--- Errors in stress work
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    su2double work = 0;
+    double work = 0;
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       work += tauomut[iDim][jDim]*u[jDim];
     }
-    weights[1][nVarFlo] += r*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
-    weights[1][0] += nutilde*fv1 * work * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
+    const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+    weights[1][nVarFlo] += r*fv1 * work * gradadje_i;
+    weights[1][0] += nutilde*fv1 * work * gradadje_i;
   }
 
   //--- Errors in heat flux
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nVarFlo] += r*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
-    weights[1][0] += nutilde*fv1*cp/Prt * gradT[iDim] * varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim);
+    const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+    weights[1][nVarFlo] += r*fv1*cp/Prt * gradT[iDim] * gradadje_i;
+    weights[1][0] += nutilde*fv1*cp/Prt * gradT[iDim] * gradadje_i;
   }
 
   //---------------------------//
@@ -1995,7 +2015,9 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
   //---------------------------//
 
   for (auto iDim = 0; iDim < nDim; ++iDim) {
-    weights[1][nVarFlo] += 1.0/sigma * gradnutilde[iDim] * varAdjTur->GetGradient_Adapt(iPoint, 0, iDim);
+    const double gradadjnutilde_i = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, 0, iDim));
+
+    weights[1][nVarFlo] += 1.0/sigma * gradnutilde[iDim] * gradadjnutilde_i;
   }
 
 }

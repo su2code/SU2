@@ -329,8 +329,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         bad_i = bad_i || (flowPrimVar_i[nDim+2] < 0.0);
         bad_j = bad_j || (flowPrimVar_j[nDim+2] < 0.0);
         for (auto iVar = 0; iVar < nVar; iVar++) {
-          bad_i = bad_i || (solution_i[iVar] < 0.0)*(!sa_neg);
-          bad_j = bad_j || (solution_j[iVar] < 0.0)*(!sa_neg);
+          bad_i = bad_i || ((solution_i[iVar] < 0.0) && (!sa_neg));
+          bad_j = bad_j || ((solution_j[iVar] < 0.0) && (!sa_neg));
         }
 
         // nodes->SetNon_Physical(iPoint, bad_i);

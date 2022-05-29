@@ -98,7 +98,7 @@ protected:
   MatrixType AuxVar_Adapt;   /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
   CVectorOfMatrix Gradient_AuxVar_Adapt;    /*!< \brief Gradient of additional variables used for anisotropy in mesh adaptation. */
   CVectorOfMatrix Hessian;                    /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
-  MatrixType Metric;                         /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
+  su2matrix<double> Metric;                         /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
@@ -2525,7 +2525,7 @@ public:
    * \param[in] iMetr - Index value.
    * \param[in] metric - Metric value. 
    */ 
-  inline void SetMetric(unsigned long iPoint, unsigned short iMetr, su2double metric) { Metric(iPoint,iMetr) = metric; }
+  inline void SetMetric(unsigned long iPoint, unsigned short iMetr, double metric) { Metric(iPoint,iMetr) = metric; }
 
   /*!
    * \brief Store the upper half matrix of the metric.
@@ -2533,7 +2533,7 @@ public:
    * \param[in] met - Matrix to store the metric.
    */
   template <class Mat>
-  inline void SetMetricMat(unsigned long iPoint, Mat& met, su2double scale) {
+  inline void SetMetricMat(unsigned long iPoint, Mat& met, double scale) {
     switch( nDim ) {
       case 2: {
         Metric(iPoint,0) = met[0][0]*scale;
@@ -2558,13 +2558,13 @@ public:
    * \param[in] iMetr - Index value.
    * \param[in] metric - Metric value. 
    */ 
-  inline void AddMetric(unsigned long iPoint, unsigned short iMetr, su2double metric) { Metric(iPoint,iMetr) += metric; }
+  inline void AddMetric(unsigned long iPoint, unsigned short iMetr, double metric) { Metric(iPoint,iMetr) += metric; }
 
   /*!  
    * \brief Get the value of the metric.  
    * \param[in] iMetr  - Index value.
    */ 
-  inline su2double GetMetric(unsigned long iPoint, unsigned short iMetr) const { return Metric(iPoint,iMetr); }
+  inline double GetMetric(unsigned long iPoint, unsigned short iMetr) const { return Metric(iPoint,iMetr); }
 
   /*!
    * \brief Get the full matrix of the metric.

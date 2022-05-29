@@ -543,7 +543,6 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool nemo = (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE);
   bool rads = config[iZone]->AddRadiation();
-  bool sst = config[iZone]->GetBool_Turb_Model_SST();
 
   SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 

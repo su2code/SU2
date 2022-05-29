@@ -401,7 +401,7 @@ public:
    */
   void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) final {
     //--- store upper triangle of Wij and vorticity magnitude in aux vector
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       auto Vorticity = var->GetVorticity(iPoint);
       const su2double S = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1] + Vorticity[2]*Vorticity[2]);
       nodes->SetAuxVar_Adapt(iPoint, 0, -0.5*Vorticity[0]);
@@ -424,7 +424,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                       unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                       unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -435,7 +435,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                   unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                   unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.
@@ -446,7 +446,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                      unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                      unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the viscous terms due to errors in 
@@ -458,7 +458,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                             unsigned long iPoint, vector<vector<su2double> > &weights);
+                             unsigned long iPoint, vector<vector<double> > &weights);
 
   /*!
    * \brief Compute the viscous terms due to errors in 
@@ -470,6 +470,6 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void EddyViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                          unsigned long iPoint, vector<vector<su2double> > &weights);
+                          unsigned long iPoint, vector<vector<double> > &weights);
 
 };

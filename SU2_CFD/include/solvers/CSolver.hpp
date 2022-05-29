@@ -4420,7 +4420,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ObjectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                      unsigned long iPoint, vector<vector<su2double> > &weights);
+                      unsigned long iPoint, vector<vector<double> > &weights);
 
   /*!
    * \brief Compute the convective terms of the goal-oriented metric.
@@ -4431,7 +4431,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   virtual void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                               unsigned long iPoint, vector<vector<su2double> > &weights) { }
+                               unsigned long iPoint, vector<vector<double> > &weights) { }
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -4442,7 +4442,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   virtual void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                            unsigned long iPoint, vector<vector<su2double> > &weights) { }
+                            unsigned long iPoint, vector<vector<double> > &weights) { }
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.
@@ -4453,7 +4453,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   virtual void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                              unsigned long iPoint, vector<vector<su2double> > &weights) { }
+                              unsigned long iPoint, vector<vector<double> > &weights) { }
 
   /*!
    * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
@@ -4464,7 +4464,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void SumWeightedHessians(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                           unsigned long iPoint, vector<vector<su2double> > &weights);
+                           unsigned long iPoint, vector<vector<double> > &weights);
 
   /*!
    * \brief Perform an Lp-norm normalization of the metric.

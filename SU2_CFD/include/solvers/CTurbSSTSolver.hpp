@@ -324,7 +324,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                       unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                       unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -335,7 +335,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                   unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                   unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the turbulent terms of the goal-oriented metric.
@@ -346,7 +346,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                      unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                      unsigned long iPoint, vector<vector<double> > &weights) final;
 
 
 };

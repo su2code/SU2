@@ -1733,7 +1733,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case METRIC:
             for (iHess = 0; iHess < 3*(nDim-1); iHess++)
-              base_nodes->SetMetric(iPoint, iHess, bufDRecv[buf_offset+iHess]);
+              base_nodes->SetMetric(iPoint, iHess, SU2_TYPE::GetValue(bufDRecv[buf_offset+iHess]));
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -4767,8 +4767,8 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
   constexpr size_t MAXNMET = 6;
   const unsigned short nMet = 3*(nDim-1);
 
-  su2double Basis[MAXNDIM][MAXNDIM] = {0.0};
-  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+  double Basis[MAXNDIM][MAXNDIM] = {0.0};
+  double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
   InitiateComms(geometry, config, METRIC);
   CompleteComms(geometry, config, METRIC);
@@ -4789,14 +4789,14 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
         if (nodes->GetDomain(iPoint)) {
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
-          su2double met[MAXNMET] = {0.0}, suminvdist = 0.0;
+          double met[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
             if(!nodes->GetSolidBoundary(jPoint)) {// && !nodes->GetPhysicalBoundary(jPoint)) {
-              const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
-              suminvdist += 1./dist;
+              const auto dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
+              suminvdist += 1./SU2_TYPE::GetValue(dist);
               for(auto iMet = 0; iMet < nMet; iMet++) {
-                met[iMet] += base_nodes->GetMetric(jPoint, iMet)/dist;
+                met[iMet] += base_nodes->GetMetric(jPoint, iMet)/SU2_TYPE::GetValue(dist);
               }// iMet
               counter++;
             }// if boundary
@@ -4806,10 +4806,10 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
             //--- Compute unit normal.
             const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-            su2double Area = GeometryToolbox::Norm(nDim, Normal);
+            const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
             for (auto iDim = 0u; iDim < nDim; iDim++)
-              Basis[iDim][0] = -Normal[iDim]/Area;
+              Basis[iDim][0] = SU2_TYPE::GetValue(-Normal[iDim]/Area);
             
             //--- Compute unit tangent.
             switch( nDim ) {
@@ -4833,7 +4833,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
                   Basis[2][1] =  Basis[1][0] - Basis[0][0];
                 }
                 /*--- Make it a unit vector. ---*/
-                const su2double TangentialNorm = sqrt(pow(Basis[0][1],2) + pow(Basis[1][1],2) + pow(Basis[2][1],2));
+                const double TangentialNorm = sqrt(pow(Basis[0][1],2) + pow(Basis[1][1],2) + pow(Basis[2][1],2));
                 Basis[0][1] = Basis[0][1] / TangentialNorm;
                 Basis[1][1] = Basis[1][1] / TangentialNorm;
                 Basis[2][1] = Basis[2][1] / TangentialNorm;
@@ -4869,7 +4869,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
             if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
             if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
             if (ind != 0) {
-              const su2double tmp = EigVal[ind];
+              const double tmp = EigVal[ind];
               EigVal[ind] = EigVal[0];
               EigVal[0] = tmp;
             }
@@ -4938,23 +4938,23 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
   if(turb) nVarTot += solver[TURB_SOL]->GetnVar();
 
   //--- Compute weights for Hessians
-  vector<vector<su2double> > HessianWeights(3, vector<su2double>(nVarTot));
-  for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    for (auto& hw : HessianWeights) std::fill(hw.begin(), hw.end(), 0.0);
+  vector<vector<double> > weights(3, vector<double>(nVarTot));
+  for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+    for (auto& w : weights) std::fill(w.begin(), w.end(), 0.0);
     //--- Objective function terms
-    ObjectiveError(solver, geometry, config, iPoint, HessianWeights);
+    ObjectiveError(solver, geometry, config, iPoint, weights);
 
     //--- Convective terms
-    solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, HessianWeights);
+    solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
 
     //--- Viscous terms
-    if (visc) solver[FLOW_SOL]->ViscousError(solver, geometry, config, iPoint, HessianWeights);
+    if (visc) solver[FLOW_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
 
     //--- Turbulent terms
     if (turb) {
-      solver[TURB_SOL]->ConvectiveError(solver, geometry, config, iPoint, HessianWeights);
-      solver[TURB_SOL]->ViscousError(solver, geometry, config, iPoint, HessianWeights);
-      solver[TURB_SOL]->TurbulentError(solver, geometry, config, iPoint, HessianWeights);
+      solver[TURB_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
+      solver[TURB_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
+      solver[TURB_SOL]->TurbulentError(solver, geometry, config, iPoint, weights);
     }
     
     //--- Make Hessians positive definite
@@ -4962,19 +4962,22 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
     if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
 
     //--- Add Hessians
-    SumWeightedHessians(solver, geometry, config, iPoint, HessianWeights);
+    SumWeightedHessians(solver, geometry, config, iPoint, weights);
   }
   
   //--- Apply correction to wall boundary
   // CorrectBoundMetric(geometry, config);
 
   //--- Compute Lp-normalizatio of the metric tensor field
+  SU2_OMP_MASTER
   NormalizeMetric(geometry, config);
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }
 
 void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                             unsigned long iPoint, vector<vector<su2double> > &weights) {
+                             unsigned long iPoint, vector<vector<double> > &weights) {
   auto varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
@@ -4983,7 +4986,8 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
 
   //--- Mean flow variables
   for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
-    weights[0][iVar] += varAdjFlo->GetObjectiveTerm(iPoint, iVar);
+    const double ow = SU2_TYPE::GetValue(varAdjFlo->GetObjectiveTerm(iPoint, iVar));
+    weights[0][iVar] += ow;
   }
 
   //--- Turbulent variables
@@ -4991,13 +4995,14 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
     auto varAdjTur = solver[ADJTURB_SOL]->GetNodes();
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     for (auto iVar = 0; iVar < nVarTur; ++iVar) {
-      weights[0][nVarFlo+iVar] += varAdjTur->GetObjectiveTerm(iPoint, iVar);
+      const double ow = SU2_TYPE::GetValue(varAdjTur->GetObjectiveTerm(iPoint, iVar));
+      weights[0][nVarFlo+iVar] += ow;
     }
   }
 }
 
 void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, const CConfig *config,
-                                  unsigned long iPoint, vector<vector<su2double> > &weights) {
+                                  unsigned long iPoint, vector<vector<double> > &weights) {
   
   auto varFlo = solver[FLOW_SOL]->GetNodes();
 
@@ -5008,9 +5013,9 @@ void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, co
   
   //--- Mean flow variables
   for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
-    const su2double weight = fabs( weights[0][iVar] + weights[1][iVar] + weights[2][iVar] );
+    const double weight = fabs( weights[0][iVar] + weights[1][iVar] + weights[2][iVar] );
     for (auto iMet = 0; iMet < nMet; ++iMet) {
-      const su2double hess = varFlo->GetHessian(iPoint, iVar, iMet);
+      const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iVar, iMet));
       varFlo->AddMetric(iPoint, iMet, weight*hess);
     }
   }
@@ -5020,9 +5025,9 @@ void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, co
     auto varTur = solver[TURB_SOL]->GetNodes();
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     for (auto iVar = 0; iVar < nVarTur; ++iVar) {
-      const su2double weight = fabs( weights[0][nVarFlo+iVar] + weights[1][nVarFlo+iVar] + weights[2][nVarFlo+iVar] );
+      const double weight = fabs( weights[0][nVarFlo+iVar] + weights[1][nVarFlo+iVar] + weights[2][nVarFlo+iVar] );
       for (auto iMet = 0; iMet < nMet; ++iMet) {
-        const su2double hess = varTur->GetHessian(iPoint, iVar, iMet);
+        const double hess = SU2_TYPE::GetValue(varTur->GetHessian(iPoint, iVar, iMet));
         varFlo->AddMetric(iPoint, iMet, weight*hess);
       }
     }
@@ -5033,19 +5038,19 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
   
   const unsigned long nPointDomain = geometry->GetnPointDomain();
 
-  su2double localScale = 0.,
-            globalScale = 0.;
+  double localScale = 0.;
+  double globalScale = 0.;
 
-  su2double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
-  su2double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
+  double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+  double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
   
-  const su2double p = config->GetAdap_Norm(),
-                  eigmax = 1./(pow(config->GetAdap_Hmin(),2.)),
-                  eigmin = 1./(pow(config->GetAdap_Hmax(),2.)),
-                  armax2 = pow(config->GetAdap_ARmax(), 2.),
-                  outComplex = su2double(config->GetAdap_Complexity());  // Constraint mesh complexity
+  const double p = SU2_TYPE::GetValue(config->GetAdap_Norm());
+  const double eigmax = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmin()),2.));
+  const double eigmin = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmax()),2.));
+  const double armax2 = pow(SU2_TYPE::GetValue(config->GetAdap_ARmax()), 2.);
+  const double outComplex = double(config->GetAdap_Complexity());  // Constraint mesh complexity
 
-  su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+  double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
   //--- set tolerance and obtain global scaling
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
@@ -5055,16 +5060,12 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
     CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
     if (nDim == 2) EigVal[2] = 1.;
 
-    const su2double Vol = geometry->nodes->GetVolume(iPoint);
+    const double Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
 
     localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-  globalScale = localScale;
-#endif
+  CBaseMPIWrapper::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
@@ -5074,7 +5075,7 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
     CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
     if (nDim == 2) EigVal[2] = 1.;
 
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+    const double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
     for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
@@ -5087,10 +5088,10 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
     base_nodes->SetMetricMat(iPoint, A, 1.0);
 
     //--- compute min, max, total complexity
-    const su2double Vol = geometry->nodes->GetVolume(iPoint);
-    const su2double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
-    su2double hmin= max(EigVal[0], EigVal[1]);
-    su2double hmax= min(EigVal[0], EigVal[1]);
+    const double Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
+    const double density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+    double hmin= max(EigVal[0], EigVal[1]);
+    double hmax= min(EigVal[0], EigVal[1]);
 
     if (nDim == 3) {
       hmin = max(hmin, EigVal[2]);
@@ -5105,17 +5106,10 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
     localTotComplex += density*Vol;
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-#else
-  globalMinDensity = localMinDensity;
-  globalMaxDensity = localMaxDensity;
-  globalMaxAspectR = localMaxAspectR;
-  globalTotComplex = localTotComplex;
-#endif
+  CBaseMPIWrapper::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  CBaseMPIWrapper::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  CBaseMPIWrapper::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  CBaseMPIWrapper::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   if(rank == MASTER_NODE) {
     cout << "Minimum density: " << globalMinDensity << "." << endl;

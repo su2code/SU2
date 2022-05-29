@@ -261,7 +261,7 @@ protected:
    */
   void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) final {
     //--- store temperature and viscosity in aux vector
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       const su2double density = nodes->GetDensity(iPoint);
       const su2double temp = nodes->GetTemperature(iPoint);
       const su2double* vel = nodes->GetPrimitive(iPoint)+1;
@@ -1577,7 +1577,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                       unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                       unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the viscous terms of the goal-oriented metric.
@@ -1588,7 +1588,7 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                   unsigned long iPoint, vector<vector<su2double> > &weights) final;
+                   unsigned long iPoint, vector<vector<double> > &weights) final;
 
   /*!
    * \brief Compute the viscous terms due to errors in 
@@ -1600,6 +1600,6 @@ public:
    * \param[in] weights - Weights of each Hessian in the metric.
    */
   void LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                             unsigned long iPoint, vector<vector<su2double> > &weights);
+                             unsigned long iPoint, vector<vector<double> > &weights);
 
 };
