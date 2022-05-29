@@ -2228,7 +2228,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const un
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
 
-  CorrectBoundHessian(geometry, config, Kind_Solver);
+  // CorrectBoundHessian(geometry, config, Kind_Solver);
     
 }
 
