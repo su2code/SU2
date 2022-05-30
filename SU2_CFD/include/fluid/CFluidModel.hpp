@@ -120,7 +120,7 @@ class CFluidModel {
   su2double GetCv() const { return Cv; }
 
   /*!
-   * \brief Get fluid mean molecular weight.
+   * \brief Compute and return fluid mean molecular weight in kg/mol.
    */
   template <class Vector_t>
   static su2double ComputeMeanMolecularWeight(const Vector_t& molar_masses, const su2double *val_scalars) {
