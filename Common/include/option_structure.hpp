@@ -914,19 +914,11 @@ static const MapType<std::string, LIMITER> Limiter_Map = {
 enum class TURB_MODEL {
   NONE,      /*!< \brief No turbulence model. */
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG,    /*!< \brief Kind of Turbulent model (Negative Spalart-Allmaras). */
-  SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
   MakePair("SA", TURB_MODEL::SA)
-  MakePair("SA_NEG", TURB_MODEL::SA_NEG)
-  MakePair("SA_E", TURB_MODEL::SA_E)
-  MakePair("SA_COMP", TURB_MODEL::SA_COMP)
-  MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
 };
 
@@ -946,10 +938,6 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::NONE:
       return TURB_FAMILY::NONE;
     case TURB_MODEL::SA:
-    case TURB_MODEL::SA_NEG:
-    case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_COMP:
-    case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
       return TURB_FAMILY::KW;
@@ -1000,6 +988,7 @@ struct SST_ParsedOptions {
  * \param[in] SST_Options - Selected SST option from config.
  * \param[in] nSST_Options - Number of options selected.
  * \param[in] rank - MPI rank.
+ * \return Struct with SST options.
  */
 inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options, int rank) {
   SST_ParsedOptions SSTParsedOptions;
@@ -1059,17 +1048,114 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 }
 
 /*!
+ * \brief SA Options
+ */
+enum class SA_OPTIONS {
+  NONE,     /*!< \brief No option / default. */
+  NEG,      /*!< \brief Negative SA. */
+  EDW,      /*!< \brief Edwards version. */
+  FT2,      /*!< \brief Use FT2 term. */
+  QCR2000,  /*!< \brief Quadratic constitutive relation. */
+  COMP,     /*!< \brief Compressibility correction. */
+  ROT,      /*!< \brief Rotation correction. */
+  BC,       /*!< \brief Bas-Cakmakcioclu transition. */
+  EXP,      /*!< \brief Allow experimental combinations of options (according to TMR). */
+};
+static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
+  MakePair("NONE", SA_OPTIONS::NONE)
+  MakePair("NEGATIVE", SA_OPTIONS::NEG)
+  MakePair("EDWARDS", SA_OPTIONS::EDW)
+  MakePair("WITHFT2", SA_OPTIONS::FT2)
+  MakePair("QCR2000", SA_OPTIONS::QCR2000)
+  MakePair("COMPRESSIBILITY", SA_OPTIONS::COMP)
+  MakePair("ROTATION", SA_OPTIONS::ROT)
+  MakePair("BCM", SA_OPTIONS::BC)
+  MakePair("EXPERIMENTAL", SA_OPTIONS::EXP)
+};
+
+/*!
+ * \brief Structure containing parsed SA options.
+ */
+struct SA_ParsedOptions {
+  SA_OPTIONS version = SA_OPTIONS::NONE;  /*!< \brief SA base model. */
+  bool ft2 = false;                       /*!< \brief Use ft2 term. */
+  bool qcr2000 = false;                   /*!< \brief Use QCR-2000. */
+  bool comp = false;                      /*!< \brief Use compressibility correction. */
+  bool rot = false;                       /*!< \brief Use rotation correction. */
+  bool bc = false;                        /*!< \brief BC transition. */
+};
+
+/*!
+ * \brief Function to parse SA options.
+ * \param[in] SA_Options - Selected SA option from config.
+ * \param[in] nSA_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned short nSA_Options, int rank) {
+  SA_ParsedOptions SAParsedOptions;
+
+  auto IsPresent = [&](SA_OPTIONS option) {
+    const auto sa_options_end = SA_Options + nSA_Options;
+    return std::find(SA_Options, sa_options_end, option) != sa_options_end;
+  };
+
+  const bool found_neg = IsPresent(SA_OPTIONS::NEG);
+  const bool found_edw = IsPresent(SA_OPTIONS::EDW);
+  const bool found_bsl = !found_neg && !found_edw;
+
+  if (found_neg && found_edw) {
+    SU2_MPI::Error("Two versions (Negative and Edwards) selected for SA_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (found_bsl) {
+    SAParsedOptions.version = SA_OPTIONS::NONE;
+  } else if (found_neg) {
+    SAParsedOptions.version = SA_OPTIONS::NEG;
+  } else {
+    SAParsedOptions.version = SA_OPTIONS::EDW;
+  }
+  SAParsedOptions.ft2 = IsPresent(SA_OPTIONS::FT2);
+  SAParsedOptions.qcr2000 = IsPresent(SA_OPTIONS::QCR2000);
+  SAParsedOptions.comp = IsPresent(SA_OPTIONS::COMP);
+  SAParsedOptions.rot = IsPresent(SA_OPTIONS::ROT);
+  SAParsedOptions.bc = IsPresent(SA_OPTIONS::BC);
+
+  /*--- Validate user settings when not in experimental mode. ---*/
+  if (!IsPresent(SA_OPTIONS::EXP)) {
+    const bool any_but_bc = SAParsedOptions.ft2 || SAParsedOptions.qcr2000 || SAParsedOptions.comp || SAParsedOptions.rot;
+
+    switch (SAParsedOptions.version) {
+      case SA_OPTIONS::NEG:
+        if (!SAParsedOptions.ft2 || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-neg was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      case SA_OPTIONS::EDW:
+        if (any_but_bc || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-noft2-Edwards was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      default:
+        if (SAParsedOptions.bc && any_but_bc)
+          SU2_MPI::Error("A non-standard version of SA-BCM was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  return SAParsedOptions;
+}
+
+/*!
  * \brief Types of transition models
  */
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC     /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
-  MakePair("BC", TURB_TRANS_MODEL::BC)
 };
 
 /*!

@@ -99,7 +99,7 @@ protected:
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
     correct(iMesh == MESH_0),
-    useSA_QCR(config.GetQCR()),
+    useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
     uq_permute(config.GetUQ_Permute()),
