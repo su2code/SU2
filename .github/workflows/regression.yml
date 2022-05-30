@@ -41,7 +41,7 @@ jobs:
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ForwardOMP
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Cache Object Files
         uses: actions/cache@v1
@@ -59,7 +59,7 @@ jobs:
           name: ${{ matrix.config_set }}
           path: install/bin
   regression_tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: Regression Tests
     needs: build
     strategy:
@@ -99,7 +99,7 @@ jobs:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   unit_tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: Unit Tests
     needs: build
     strategy:
