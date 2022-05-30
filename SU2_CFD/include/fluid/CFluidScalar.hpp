@@ -1,7 +1,7 @@
 /*!
  * \file CFluidScalar.hpp
- * \brief Defines the incompressible Ideal Gas model.
- * \author T. Economon
+ * \brief Defines the mixture incompresible fluid model.
+ * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
  * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,8 +26,8 @@
  */
 
 #pragma once
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "CFluidModel.hpp"
 
@@ -38,31 +38,30 @@
  */
 class CFluidScalar final : public CFluidModel {
  private:
-  unsigned short n_species_mixture ;                  /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant ;                            /*!< \brief Specific gas constant. */
-  su2double Gamma ;                                   /*!< \brief Ratio of specific heats of the gas. */
-  su2double Pressure_Thermodynamic ;                  /*!< \brief Constant pressure thermodynamic. */
+  unsigned short n_species_mixture; /*!< \brief Number of species in mixture. */
+  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
+  su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
 
   bool wilke;
   bool davidson;
 
-  std::vector<su2double> massFractions;               /*!< \brief Mass fractions of all species. */
-  std::vector<su2double> moleFractions;               /*!< \brief Mole fractions of all species. */
-  std::vector<su2double> molarMasses;                 /*!< \brief Molar masses of all species. */
-  std::vector<su2double> laminarViscosity;            /*!< \brief Laminar viscosity of all species. */
-  std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
-  std::vector<su2double> laminarThermalConductivity;  /*!< \brief Laminar thermal conductivity of all species. */
+  std::vector<su2double> massFractions;              /*!< \brief Mass fractions of all species. */
+  std::vector<su2double> moleFractions;              /*!< \brief Mole fractions of all species. */
+  std::vector<su2double> molarMasses;                /*!< \brief Molar masses of all species. */
+  std::vector<su2double> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
+  std::vector<su2double> specificHeat;               /*!< \brief Specific heat of all species. */
+  std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
 
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig *config);
-  
+  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig* config);
+
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
-
 };
