@@ -26,6 +26,8 @@
  */
 
 #include "../include/numerics/CLookUpTable.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
 CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string name_enth) {
   file_name_lut = var_file_name_lut;
@@ -293,108 +295,29 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 
 void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y,
                                    vector<unsigned long>& point_ids, vector<vector<su2double> >& interp_mat_inv) {
-  vector<vector<su2double> > interp_mat(3, vector<su2double>(3, 0));
+  unsigned int M = 3;
+  CSquareMatrixCM global_M(M);
 
   /* setup LHM matrix for the interpolation */
   for (int i_point = 0; i_point < 3; i_point++) {
     su2double x = vec_x.at(point_ids.at(i_point));
     su2double y = vec_y.at(point_ids.at(i_point));
 
-    interp_mat.at(i_point).at(0) = 1;
-    interp_mat.at(i_point).at(1) = x;
-    interp_mat.at(i_point).at(2) = y;
+    global_M(i_point,0) = SU2_TYPE::GetValue(1.0);
+    global_M(i_point,1) = SU2_TYPE::GetValue(x);
+    global_M(i_point,2) = SU2_TYPE::GetValue(y);
   }
 
-  /* invert the Interpolation matrix using Gaussian elimination with pivoting */
-  GaussianInverse(interp_mat, interp_mat_inv);
-
-  /* transpose the inverse */
-  su2double swap_helper;
-  for (int i = 0; i < 2; i++) {
-    for (int j = i + 1; j < 3; j++) {
-      swap_helper = interp_mat_inv.at(i).at(j);
-      interp_mat_inv.at(i).at(j) = interp_mat_inv.at(j).at(i);
-      interp_mat_inv.at(j).at(i) = swap_helper;
-    }
-  }
-}
-
-void CLookUpTable::GaussianInverse(vector<vector<su2double> >& mat, vector<vector<su2double> >& mat_inv) {
-  /* temp provides memory to invert mat */
-  vector<vector<su2double> > temp;
-
-  /* number of dimensions of mat */
-  int n_dim = (int)mat.size();
-
-  temp.resize(n_dim, vector<su2double>(2 * n_dim, 0));
-
-  /* copy original matrix into inverse */
-  for (int i = 0; i < n_dim; i++) {
-    for (int j = 0; j < n_dim; j++) {
-      temp.at(i).at(j) = mat.at(i).at(j);
-      temp.at(i).at(n_dim + j) = 0;
-    }
-    temp.at(i).at(n_dim + i) = 1;
-  }
-
-  su2double max_val;
-  int max_idx;
-  /* pivot each column such that the largest number possible divides the other
-   * rows The goal is to avoid zeros or small numbers in division. */
-  for (int k = 0; k < n_dim - 1; k++) {
-    max_idx = k;
-    max_val = abs(temp.at(k).at(k));
-
-    /* find largest value (pivot) in column */
-    for (int j = k; j < n_dim; j++) {
-      if (abs(temp.at(j).at(k)) > max_val) {
-        max_idx = j;
-        max_val = abs(temp.at(j).at(k));
-      }
-    }
-
-    /* move row with the highest value up */
-    for (int j = 0; j < (n_dim * 2); j++) {
-      su2double d = temp.at(k).at(j);
-      temp.at(k).at(j) = temp.at(max_idx).at(j);
-      temp.at(max_idx).at(j) = d;
-    }
-
-    /* subtract the moved row from all other rows */
-    for (int i = k + 1; i < n_dim; i++) {
-      su2double c = temp.at(i).at(k) / temp.at(k).at(k);
-      for (int j = 0; j < (n_dim * 2); j++) {
-        temp.at(i).at(j) = temp.at(i).at(j) - temp.at(k).at(j) * c;
-      }
+  global_M.Invert();
+  global_M.Transpose();
+ 
+  /* convert back into vector<vector>> for now */
+  for (unsigned int i=0; i<M; i++){
+    for (unsigned int j=0; j<M; j++){
+      interp_mat_inv[i][j] = global_M(i,j);
     }
   }
 
-  /* perform back-substitution */
-  for (int k = n_dim - 1; k > 0; k--) {
-    if (temp.at(k).at(k) != 0) {
-      for (int i = k - 1; i > -1; i--) {
-        su2double c = temp.at(i).at(k) / temp.at(k).at(k);
-        for (int j = 0; j < (n_dim * 2); j++) {
-          temp.at(i).at(j) = temp.at(i).at(j) - temp.at(k).at(j) * c;
-        }
-      }
-    }
-  }
-
-  /* normalize the inverse */
-  for (int i = 0; i < n_dim; i++) {
-    su2double c = temp.at(i).at(i);
-    for (int j = 0; j < n_dim; j++) {
-      temp.at(i).at(j + n_dim) = temp.at(i).at(j + n_dim) / c;
-    }
-  }
-
-  /* copy inverse part into mat_inv */
-  for (int i = 0; i < n_dim; i++) {
-    for (int j = 0; j < n_dim; j++) {
-      mat_inv.at(i).at(j) = temp.at(i).at(j + n_dim);
-    }
-  }
 }
 
 unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double* val_var, su2double val_prog,
@@ -402,7 +325,6 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double* val_
   unsigned long exit_code = 0;
 
   if (val_name_var.compare("NULL") == 0) {
-    // cout << "variable is null, returning nothing" << endl;
     *val_var = 0.0;
     exit_code = 0;
     return exit_code;
@@ -432,14 +354,13 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double* val_
       *val_var = Interpolate(GetData(val_name_var), (triangles.at(id_triangle)), interp_coeffs);
       exit_code = 0;
     } else {
-      // cout << "lookupprogenth: in bounding box but outside of table!, (c,h)="<<val_prog<<", "<<val_enth << endl;
+      /* in bounding box but outside of table */
       unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
       *val_var = GetData(val_name_var).at(nearest_neighbor);
       exit_code = 1;
     }
   } else {
-    // if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<<
-    // val_prog<< " "<<val_enth<<endl;
+    /* lookup is outside of table bounding box */
     unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
     *val_var = GetData(val_name_var).at(nearest_neighbor);
     exit_code = 1;

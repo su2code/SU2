@@ -49,19 +49,22 @@ class CTrapezoidalMap {
   vector<vector<pair<su2double, unsigned long> > > y_edge_at_band_mid;
 
  public:
-  CTrapezoidalMap();
+  CTrapezoidalMap(){};
 
-  CTrapezoidalMap(const vector<su2double>& samples_x, const vector<su2double>& samples_y,
-                  const vector<vector<unsigned long> >& edges, const vector<vector<unsigned long> >& edge_to_triangle);
+  CTrapezoidalMap(const vector<su2double>& samples_x,
+                  const vector<su2double>& samples_y,
+                  const vector<vector<unsigned long> >& edges,
+                  const vector<vector<unsigned long> >& edge_to_triangle);
 
-  ~CTrapezoidalMap(void);
+  ~CTrapezoidalMap(void){};
 
   void Search_Band_For_Edge(su2double val_x, su2double val_y);
 
   unsigned long GetTriangle(su2double val_x, su2double val_y);
 
   pair<unsigned long, unsigned long> GetBand(su2double val_x);
-  pair<unsigned long, unsigned long> GetEdges(pair<unsigned long, unsigned long> val_band, su2double val_x,
+  pair<unsigned long, unsigned long> GetEdges(pair<unsigned long, unsigned long> val_band,
+                                              su2double val_x,
                                               su2double val_y);
 
   inline bool IsInsideHullX(su2double val_x) {
