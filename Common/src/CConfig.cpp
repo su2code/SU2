@@ -3726,7 +3726,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  /*--- Set default values for various fluid properties. ---*/
+/*--- Set default values for various fluid properties. ---*/
 
   const su2double Molecular_Weight_Default = 28.96;
 
@@ -3739,18 +3739,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
   if (Kind_FluidModel == FLUID_MIXTURE) {
-
-  /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
-   nMolecular_Weight is used because it is required for the fluid mixing models. --- */
+    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
+     equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
     if (nMolecular_Weight != nSpecies_Init + 1) {
-    SU2_MPI::Error("The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
-                   "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+      SU2_MPI::Error(
+          "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+          "to be equal to the number of entries of SCALAR_INIT + 1",
+          CURRENT_FUNCTION);
     }
-  /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be VARIABLE. Otherwise, if 
-   the density model is CONSTANT, the scalars will not have influence the mixture density and it will remain constant through the complete
-   domain. --- */
+    /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
+     VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density and
+     it will remain constant through the complete domain. --- */
     if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-    SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
+      SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
     }
   }
 
