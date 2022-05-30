@@ -472,16 +472,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
-  }
-  END_SU2_OMP_FOR
-
-  SU2_OMP_MASTER
-  AD::ResizeAdjoints();
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
     /*--- Set the adjoint values of the primal solution. ---*/
 
