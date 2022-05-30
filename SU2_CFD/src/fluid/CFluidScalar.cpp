@@ -42,7 +42,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
   massFractions.resize(n_species_mixture);
   moleFractions.resize(n_species_mixture);
   laminarViscosity.resize(n_species_mixture);
-  laminarthermalConductivity.resize(n_species_mixture);
+  laminarThermalConductivity.resize(n_species_mixture);
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);

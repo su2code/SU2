@@ -37,11 +37,11 @@
  * \author: T. Economon
  */
 class CFluidScalar final : public CFluidModel {
-private:
-  unsigned short n_species_mixture = 0;               /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant = 0.0;                       /*!< \brief Specific gas constant. */
-  su2double Gamma = 0.0;                              /*!< \brief Ratio of specific heats of the gas. */
-  su2double Pressure_Thermodynamic = 0.0;             /*!< \brief Constant pressure thermodynamic. */
+ private:
+  unsigned short n_species_mixture ;                  /*!< \brief Number of species in mixture. */
+  su2double Gas_Constant ;                            /*!< \brief Specific gas constant. */
+  su2double Gamma ;                                   /*!< \brief Ratio of specific heats of the gas. */
+  su2double Pressure_Thermodynamic ;                  /*!< \brief Constant pressure thermodynamic. */
 
   bool wilke;
   bool davidson;
@@ -51,11 +51,7 @@ private:
   std::vector<su2double> molarMasses;                 /*!< \brief Molar masses of all species. */
   std::vector<su2double> laminarViscosity;            /*!< \brief Laminar viscosity of all species. */
   std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
-  std::vector<su2double> laminarthermalConductivity;  /*!< \brief Laminar thermal conductivity of all species. */
-
-  static constexpr int ARRAYSIZE = 100;
-  std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
-  std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
+  std::vector<su2double> laminarThermalConductivity;  /*!< \brief Laminar thermal conductivity of all species. */
 
  public:
   /*!
