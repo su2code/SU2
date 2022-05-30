@@ -99,7 +99,6 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
-      //solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
