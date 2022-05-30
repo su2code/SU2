@@ -63,6 +63,5 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
 
 void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_scalars){
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
-  Temperature = val_temperature;
-  Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT*MeanMolecularWeight)); 
+  Density = Pressure_Thermodynamic / ((val_temperature * UNIVERSAL_GAS_CONSTANT*MeanMolecularWeight)); 
 }
