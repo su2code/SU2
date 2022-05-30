@@ -59,7 +59,7 @@ def main():
     ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     ionized.cfg_file  = "weakly_ionized.cfg"
     ionized.test_iter = 10
-    ionized.test_vals         = [-29.322805, -10.246260, -11.382786, -16.183264, -17.165896, -13.928855, -24.658131, -32.000000, -4.541637, 0.000000, 0.000000]
+    ionized.test_vals         = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.013626, -32.000000, -5.174887, 0.000000, 0.000000]  
     ionized.test_vals_aarch64 = [-29.412957, -10.512867, -11.626489, -17.999330, -17.728593, -15.176439, -24.805085, -32.000000, -32.000000, 0.000000, 0.000000]
     ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
     ionized.timeout   = 1600
@@ -72,7 +72,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.039251, -12.171781, -32.000000, 10.013545]
+    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -11.962477, -11.962477, -32.000000, 10.013545]
     thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -84,7 +84,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.042843, -1.567606, -18.300689, -18.628064, -18.574092, 2.275192, 1.879772,  5.319420, 0.873699]
+    invwedge.test_vals = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -96,7 +96,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals         = [-5.222001, -5.746254, -20.569422, -20.633784, -20.547640, -1.928394, -2.246909, 1.255970, -3.208248]
+    visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374]
     visc_cone.test_vals_aarch64 = [-5.222003, -5.746260, -20.569405, -20.633779, -20.546389, -1.928404, -2.246932, 1.255961, -3.208240]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
