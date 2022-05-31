@@ -1935,6 +1935,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       bool decNonLinRes = (normNonLinRes <= normNonLinRes_Old);
 
       GetNodes()->SetNonLinRes_Old(iPoint, NonLinRes, 1.0);
+      GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], underRelaxation);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
