@@ -2524,6 +2524,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     su2double *Inlet_XCG              = new su2double [config->GetnMarker_All()]();
     su2double *Inlet_YCG              = new su2double [config->GetnMarker_All()]();
     su2double *Inlet_ZCG              = new su2double [config->GetnMarker_All()]();
+    su2double *Inlet_Velocity         = new su2double [config->GetnMarker_All()]();
 
     su2double *Outlet_MassFlow         = new su2double [config->GetnMarker_All()]();
     su2double *Outlet_Pressure         = new su2double [config->GetnMarker_All()]();
@@ -2582,6 +2583,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
             RamDrag = MassFlow * Vel_Infty;
 
+            Inlet_Velocity[iMarker]         += sqrt(Velocity2);
             Inlet_MassFlow[iMarker]         += MassFlow;
             Inlet_Pressure[iMarker]         += Pressure*MassFlow;
             Inlet_Mach[iMarker]             += Mach*MassFlow;
@@ -2688,6 +2690,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     su2double *Inlet_XCG_Local                  = new su2double [nMarker_Inlet]();
     su2double *Inlet_YCG_Local                  = new su2double [nMarker_Inlet]();
     su2double *Inlet_ZCG_Local                  = new su2double [nMarker_Inlet]();
+    su2double *Inlet_Velocity_Local             = new su2double [nMarker_Inlet]();
 
     su2double *Inlet_MassFlow_Total             = new su2double [nMarker_Inlet]();
     su2double *Inlet_ReverseMassFlow_Total      = new su2double [nMarker_Inlet]();
@@ -2705,6 +2708,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     su2double *Inlet_XCG_Total                  = new su2double [nMarker_Inlet]();
     su2double *Inlet_YCG_Total                  = new su2double [nMarker_Inlet]();
     su2double *Inlet_ZCG_Total                  = new su2double [nMarker_Inlet]();
+    su2double *Inlet_Velocity_Total             = new su2double [nMarker_Inlet]();
 
     su2double *Outlet_MassFlow_Local            = new su2double [nMarker_Outlet]();
     su2double *Outlet_Pressure_Local            = new su2double [nMarker_Outlet]();
@@ -2752,6 +2756,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Inlet_Area_Local[iMarker_Inlet]                 += Inlet_Area[iMarker];
             Inlet_XCG_Local[iMarker_Inlet]                  += Inlet_XCG[iMarker];
             Inlet_YCG_Local[iMarker_Inlet]                  += Inlet_YCG[iMarker];
+            Inlet_Velocity_Local[iMarker_Inlet]             += Inlet_Velocity[iMarker];
             if (nDim == 3) Inlet_ZCG_Local[iMarker_Inlet]   += Inlet_ZCG[iMarker];
           }
 
@@ -2813,6 +2818,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     SU2_MPI::Allreduce(Inlet_Area_Local, Inlet_Area_Total, nMarker_Inlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(Inlet_XCG_Local, Inlet_XCG_Total, nMarker_Inlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(Inlet_YCG_Local, Inlet_YCG_Total, nMarker_Inlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Inlet_Velocity_Local, Inlet_Velocity_Total, nMarker_Inlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     if (nDim == 3) SU2_MPI::Allreduce(Inlet_ZCG_Local, Inlet_ZCG_Total, nMarker_Inlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -2837,6 +2843,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
         Inlet_TotalTemperature_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
         Inlet_XCG_Total[iMarker_Inlet] /= Inlet_Area_Total[iMarker_Inlet];
         Inlet_YCG_Total[iMarker_Inlet] /= Inlet_Area_Total[iMarker_Inlet];
+        Inlet_Velocity_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
         if (nDim == 3) Inlet_ZCG_Total[iMarker_Inlet] /= Inlet_Area_Total[iMarker_Inlet];
       }
       else {
@@ -2847,6 +2854,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
         Inlet_TotalTemperature_Total[iMarker_Inlet] = 0.0;
         Inlet_XCG_Total[iMarker_Inlet] = 0.0;
         Inlet_YCG_Total[iMarker_Inlet] = 0.0;
+        Inlet_Velocity_Total[iMarker_Inlet] = 0.0;
         if (nDim == 3) Inlet_ZCG_Total[iMarker_Inlet] = 0.0;
       }
 
@@ -2862,6 +2870,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           config->SetInflow_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
           config->SetInflow_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
           config->SetInflow_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
+          config->SetInflow_Velocity(iMarker_Inlet, Inlet_Velocity_Total[iMarker_Inlet]);
         }
         else {
           config->SetActDiskInlet_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
@@ -2873,6 +2882,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           config->SetActDiskInlet_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
           config->SetActDiskInlet_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
           config->SetActDiskInlet_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
+          config->SetActDiskInlet_Velocity(iMarker_Inlet, Inlet_Velocity_Total[iMarker_Inlet]);
         }
 
       }
@@ -3315,6 +3325,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     delete [] Inlet_XCG_Local;
     delete [] Inlet_YCG_Local;
     delete [] Inlet_ZCG_Local;
+    delete [] Inlet_Velocity_Local;
 
     delete [] Inlet_MassFlow_Total;
     delete [] Inlet_ReverseMassFlow_Total;
@@ -3332,6 +3343,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     delete [] Inlet_XCG_Total;
     delete [] Inlet_YCG_Total;
     delete [] Inlet_ZCG_Total;
+    delete [] Inlet_Velocity_Total;
 
     delete [] Inlet_MassFlow;
     delete [] Inlet_Mach;
@@ -3349,6 +3361,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     delete [] Inlet_XCG;
     delete [] Inlet_YCG;
     delete [] Inlet_ZCG;
+    delete [] Inlet_Velocity;
 
     delete [] Outlet_MassFlow;
     delete [] Outlet_Pressure;
@@ -6942,9 +6955,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
    so all flow variables can be imposed at the inlet.
    First, retrieve the specified values for the primitive variables. ---*/
 
-  auto Temperature = config->GetInlet_Temperature(Marker_Tag);
-  auto Pressure    = config->GetInlet_Pressure(Marker_Tag);
-  auto Vel         = config->GetInlet_Velocity(Marker_Tag);
+  auto Temperature = config->Inlet_Temperature[val_marker][iVertex];
+  auto Pressure    = config->Inlet_Pressure[val_marker][iVertex];
+  auto Vel         = config->Inlet_Velocity[val_marker][iVertex];
 
   /*--- Non-dim. the inputs if necessary. ---*/
 
