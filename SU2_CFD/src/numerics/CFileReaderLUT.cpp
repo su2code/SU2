@@ -165,7 +165,7 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
       for (unsigned long iVar = 0; iVar < n_variables; iVar++) {
         streamDataLine >> word;
         passivedouble tmp = stod(word);
-        table_data.at(iVar).at(pointCounter) = (su2double)tmp;
+        table_data[iVar][pointCounter] = (su2double)tmp;
       }
     }
     pointCounter++;
@@ -196,7 +196,7 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
         streamTriLine >> word;
         // Dragon table index starts with 1, convert to c++ indexing starting
         // with 0:
-        triangles.at(triCounter).at(iPoint) = stol(word) - 1;
+        triangles[triCounter][iPoint] = stol(word) - 1;
       }
     }
     triCounter++;
@@ -226,7 +226,7 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
 
       // Dragon table indices start with 1, convert to c++ indexing starting
       // with 0:
-      hull.at(hullCounter) = stol(word) - 1;
+      hull[hullCounter] = stol(word) - 1;
     }
     hullCounter++;
   }

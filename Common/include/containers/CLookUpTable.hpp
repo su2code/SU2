@@ -37,6 +37,7 @@
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 
+using namespace std;
 
 class CLookUpTable {
  protected:
@@ -92,7 +93,7 @@ class CLookUpTable {
 
   inline const vector<su2double>& GetData(string name_var) {
     int ix_var = GetIndexOfVar(name_var);
-    return table_data.at(ix_var);
+    return table_data[ix_var];
   }
 
   inline const vector<vector<unsigned long> >& GetEdges() const { return edges; }

@@ -141,8 +141,8 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   pair<unsigned long, unsigned long> edges = GetEdges(band, val_x, val_y);
 
   /* identify the triangle using the two edges */
-  vector<unsigned long> triangles_edge_low = edge_to_triangle.at(edges.first);
-  vector<unsigned long> triangles_edge_up = edge_to_triangle.at(edges.second);
+  vector<unsigned long> triangles_edge_low = edge_to_triangle[edges.first];
+  vector<unsigned long> triangles_edge_up = edge_to_triangle[edges.second];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
@@ -153,7 +153,7 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   set_intersection(triangles_edge_up.begin(), triangles_edge_up.end(), triangles_edge_low.begin(),
                    triangles_edge_low.end(), triangle.begin());
 
-  return triangle.at(0);
+  return triangle[0];
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
@@ -181,9 +181,9 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
   do {
     i_mid = (i_up + i_low) / 2;
 
-    x_mid = unique_bands_x.at(i_mid);
-    x_low = unique_bands_x.at(i_low);
-    x_up = unique_bands_x.at(i_up);
+    x_mid = unique_bands_x[i_mid];
+    x_low = unique_bands_x[i_low];
+    x_up = unique_bands_x[i_up];
 
     /* check and restart the search on the low end */
     if ((val_x < x_low) and (i_low > 0)) {
@@ -229,7 +229,7 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long,
   unsigned long j_mid = 0;
   unsigned long j_up = 0;
 
-  j_up = y_edge_at_band_mid.at(i_band_low).size() - 1;
+  j_up = y_edge_at_band_mid[i_band_low].size() - 1;
   j_low = 0;
 
   while (j_up - j_low > 1) {
@@ -238,12 +238,12 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long,
     // Select the edge associated with the x band (i_band_low)
     // Search for the RunEdge in the y direction (second value is index of
     // edge)
-    next_edge = y_edge_at_band_mid.at(i_band_low).at(j_mid).second;
+    next_edge = y_edge_at_band_mid[i_band_low][j_mid].second;
 
-    y_edge_low = edge_limits_y.at(next_edge).at(0);
-    y_edge_up = edge_limits_y.at(next_edge).at(1);
-    x_edge_low = edge_limits_x.at(next_edge).at(0);
-    x_edge_up = edge_limits_x.at(next_edge).at(1);
+    y_edge_low = edge_limits_y[next_edge][0];
+    y_edge_up = edge_limits_y[next_edge][1];
+    x_edge_low = edge_limits_x[next_edge][0];
+    x_edge_up = edge_limits_x[next_edge][1];
 
     // The search variable in j should be interpolated in i as well
     next_y = y_edge_low + (y_edge_up - y_edge_low) / (x_edge_up - x_edge_low) * (val_x - x_edge_low);
@@ -261,8 +261,8 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long,
     }
   }
 
-  unsigned long edge_low = y_edge_at_band_mid.at(i_band_low).at(j_low).second;
-  unsigned long edge_up = y_edge_at_band_mid.at(i_band_low).at(j_up).second;
+  unsigned long edge_low = y_edge_at_band_mid[i_band_low][j_low].second;
+  unsigned long edge_up = y_edge_at_band_mid[i_band_low][j_up].second;
 
   return make_pair(edge_low, edge_up);
 }

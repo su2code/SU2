@@ -94,10 +94,10 @@ void CLookUpTable::FindTableLimits(string name_prog, string name_enth) {
   int ixEnth = GetIndexOfVar(name_enth);
   int ixProg = GetIndexOfVar(name_prog);
 
-  limits_table_enth[0] = *min_element(table_data.at(ixEnth).begin(), table_data.at(ixEnth).end());
-  limits_table_enth[1] = *max_element(table_data.at(ixEnth).begin(), table_data.at(ixEnth).end());
-  limits_table_prog[0] = *min_element(table_data.at(ixProg).begin(), table_data.at(ixProg).end());
-  limits_table_prog[1] = *max_element(table_data.at(ixProg).begin(), table_data.at(ixProg).end());
+  limits_table_enth[0] = *min_element(table_data[ixEnth].begin(), table_data[ixEnth].end());
+  limits_table_enth[1] = *max_element(table_data[ixEnth].begin(), table_data[ixEnth].end());
+  limits_table_prog[0] = *min_element(table_data[ixProg].begin(), table_data[ixProg].end());
+  limits_table_prog[1] = *max_element(table_data[ixProg].begin(), table_data[ixProg].end());
 }
 
 void CLookUpTable::PrintTableInfo() {
@@ -125,7 +125,7 @@ void CLookUpTable::PrintTableInfo() {
     cout << "|                                                                  |" << endl;
 
     for (unsigned long i_var = 0; i_var < names_var.size(); i_var++)
-      cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var.at(i_var) << " |" << endl;
+      cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var[i_var] << " |" << endl;
 
     cout << "+------------------------------------------------------------------+" << endl;
 
@@ -147,7 +147,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
     /* loop over 3 points per triangle */
     for (unsigned long iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
       /* get the global ID of the current point */
-      const unsigned long GlobalIndex = triangles.at(iElem).at(iPoint);
+      const unsigned long GlobalIndex = triangles[iElem][iPoint];
 
       /* add the current element ID to the neighbor list for this point */
       neighborElemsOfPoint[GlobalIndex].push_back(iElem);
@@ -176,7 +176,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
       /* loop over element points */
       for (unsigned long jPoint = 0; jPoint < N_POINTS_TRIANGLE; jPoint++) {
         /* get the global ID of the current point */
-        const unsigned long GlobalIndex = triangles.at(neighborElemsOfPoint[iPoint][iElem]).at(jPoint);
+        const unsigned long GlobalIndex = triangles[neighborElemsOfPoint[iPoint][iElem]][jPoint];
 
         /* add the current element ID to the neighbor list for this point */
         if (GlobalIndex != iPoint) neighborPointsOfPoint[iPoint].push_back(GlobalIndex);
@@ -230,7 +230,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
       /* loop over 3 points per triangle */
       for (unsigned long kPoint = 0; kPoint < N_POINTS_TRIANGLE; kPoint++) {
         /* Get the global ID of the current point. */
-        const unsigned long GlobalIndex = triangles.at(neighborElemsOfPoint[iPoint][iElem]).at(kPoint);
+        const unsigned long GlobalIndex = triangles[neighborElemsOfPoint[iPoint][iElem]][kPoint];
 
         /* Add the current element ID to the neighbor list for this point. */
         if (GlobalIndex == jPoint) edge_to_triangle[iEdge].push_back(neighborElemsOfPoint[iPoint][iElem]);
@@ -258,30 +258,30 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
   for (unsigned long i_point = 0; i_point < n_points; i_point++) {
     points.push_back(i_point);
 
-    prog_enth_pairs.push_back(prog.at(i_point));
-    prog_enth_pairs.push_back(enth.at(i_point));
+    prog_enth_pairs.push_back(prog[i_point]);
+    prog_enth_pairs.push_back(enth[i_point]);
   }
 
   /* calculate weights for each triangle (basically a distance function) and
    * build inverse interpolation matrices */
   for (unsigned long i_triangle = 0; i_triangle < n_triangles; i_triangle++) {
-    next_triangle = triangles.at(i_triangle);
+    next_triangle = triangles[i_triangle];
 
     /* the query point is the weighted average of the vertexes of the triangle */
-    weights.at(0) = 0;
-    weights.at(1) = 0;
+    weights[0] = 0;
+    weights[1] = 0;
 
     /* enthalpy */
-    weights.at(0) += enth.at(next_triangle.at(0));
-    weights.at(0) += enth.at(next_triangle.at(1));
-    weights.at(0) += enth.at(next_triangle.at(2));
-    weights.at(0) /= 3;
+    weights[0] += enth[next_triangle[0]];
+    weights[0] += enth[next_triangle[1]];
+    weights[0] += enth[next_triangle[2]];
+    weights[0] /= 3;
 
     /* progress variable */
-    weights.at(1) += prog.at(next_triangle.at(0));
-    weights.at(1) += prog.at(next_triangle.at(1));
-    weights.at(1) += prog.at(next_triangle.at(2));
-    weights.at(1) /= 3;
+    weights[1] += prog[next_triangle[0]];
+    weights[1] += prog[next_triangle[1]];
+    weights[1] += prog[next_triangle[2]];
+    weights[1] /= 3;
 
     interp_points.push_back(next_triangle);
 
@@ -300,8 +300,8 @@ void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<
 
   /* setup LHM matrix for the interpolation */
   for (int i_point = 0; i_point < 3; i_point++) {
-    su2double x = vec_x.at(point_ids.at(i_point));
-    su2double y = vec_y.at(point_ids.at(i_point));
+    su2double x = vec_x[point_ids[i_point]];
+    su2double y = vec_y[point_ids[i_point]];
 
     global_M(i_point,0) = SU2_TYPE::GetValue(1.0);
     global_M(i_point,1) = SU2_TYPE::GetValue(x);
@@ -341,28 +341,28 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double* val_
     if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
       /* get interpolation coefficients for point on triangle */
       vector<su2double> interp_coeffs(3);
-      GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth.at(id_triangle), interp_coeffs);
+      GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
 
       /* DEBUG: */
       vector<su2double> corner_prog(3, 0);
       vector<su2double> corner_enth(3, 0);
       for (int iPoint = 0; iPoint < N_POINTS_TRIANGLE; ++iPoint) {
-        corner_prog.at(iPoint) = GetData(name_prog).at(triangles.at(id_triangle).at(iPoint));
-        corner_enth.at(iPoint) = GetData(name_enth).at(triangles.at(id_triangle).at(iPoint));
+        corner_prog[iPoint] = GetData(name_prog)[triangles[id_triangle][iPoint]];
+        corner_enth[iPoint] = GetData(name_enth)[triangles[id_triangle][iPoint]];
       }
 
-      *val_var = Interpolate(GetData(val_name_var), (triangles.at(id_triangle)), interp_coeffs);
+      *val_var = Interpolate(GetData(val_name_var), (triangles[id_triangle]), interp_coeffs);
       exit_code = 0;
     } else {
       /* in bounding box but outside of table */
       unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
-      *val_var = GetData(val_name_var).at(nearest_neighbor);
+      *val_var = GetData(val_name_var)[nearest_neighbor];
       exit_code = 1;
     }
   } else {
     /* lookup is outside of table bounding box */
     unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
-    *val_var = GetData(val_name_var).at(nearest_neighbor);
+    *val_var = GetData(val_name_var)[nearest_neighbor];
     exit_code = 1;
   }
   return exit_code;
@@ -401,7 +401,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
      * the previous range check might be true but the point is still outside of the domain) */
     if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
       /* if so, get interpolation coefficients for point in  the triangle */
-      GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth.at(id_triangle), interp_coeffs);
+      GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
 
       /* exit_code 0 means point was in triangle */
       exit_code = 0;
@@ -424,13 +424,13 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
 
   /* loop over variable names and interpolate / get values */
   for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
-    if (val_names_var.at(i_var).compare("NULL") == 0) {
-      *val_vars.at(i_var) = 0.0;
+    if (val_names_var[i_var].compare("NULL") == 0) {
+      *val_vars[i_var] = 0.0;
     } else {
       if (exit_code == 0)
-        *val_vars.at(i_var) = Interpolate(GetData(val_names_var.at(i_var)), (triangles.at(id_triangle)), interp_coeffs);
+        *val_vars[i_var] = Interpolate(GetData(val_names_var[i_var]), (triangles[id_triangle]), interp_coeffs);
       else
-        *val_vars.at(i_var) = GetData(val_names_var.at(i_var)).at(nearest_neighbor);
+        *val_vars[i_var] = GetData(val_names_var[i_var])[nearest_neighbor];
     }
   }
   return exit_code;
@@ -447,9 +447,9 @@ void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, vector<vect
   for (int i = 0; i < 3; i++) {
     d = 0;
     for (int j = 0; j < 3; j++) {
-      d = d + interp_mat_inv.at(i).at(j) * query_vector.at(j);
+      d = d + interp_mat_inv[i][j] * query_vector[j];
     }
-    interp_coeffs.at(i) = d;
+    interp_coeffs[i] = d;
   }
 }
 
@@ -459,8 +459,8 @@ su2double CLookUpTable::Interpolate(const vector<su2double>& val_samples, vector
   su2double z = 0;
 
   for (int i_point = 0; i_point < N_POINTS_TRIANGLE; i_point++) {
-    z = val_samples.at(val_triangle.at(i_point));
-    result += val_interp_coeffs.at(i_point) * z;
+    z = val_samples[val_triangle[i_point]];
+    result += val_interp_coeffs[i_point] * z;
   }
 
   return result;
@@ -483,14 +483,14 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
   su2double val_enth_norm = val_enth / (limits_table_enth[1] - limits_table_enth[0]);
 
   for (unsigned long i_point = 0; i_point < n_hull_points; ++i_point) {
-    next_prog_norm = prog_table.at(hull.at(i_point)) * norm_coeff_prog;
-    next_enth_norm = enth_table.at(hull.at(i_point)) * norm_coeff_enth;
+    next_prog_norm = prog_table[hull[i_point]] * norm_coeff_prog;
+    next_enth_norm = enth_table[hull[i_point]] * norm_coeff_enth;
 
     next_distance = sqrt(pow(val_prog_norm - next_prog_norm, 2) + pow(val_enth_norm - next_enth_norm, 2));
 
     if (next_distance < min_distance) {
       min_distance = next_distance;
-      neighbor_id = hull.at(i_point);
+      neighbor_id = hull[i_point];
     }
   }
   return neighbor_id;
@@ -498,12 +498,12 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
 
 bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned long val_id_triangle, string name_prog,
                                 string name_enth) {
-  su2double tri_prog_0 = GetData(name_prog).at(triangles.at(val_id_triangle).at(0));
-  su2double tri_enth_0 = GetData(name_enth).at(triangles.at(val_id_triangle).at(0));
-  su2double tri_prog_1 = GetData(name_prog).at(triangles.at(val_id_triangle).at(1));
-  su2double tri_enth_1 = GetData(name_enth).at(triangles.at(val_id_triangle).at(1));
-  su2double tri_prog_2 = GetData(name_prog).at(triangles.at(val_id_triangle).at(2));
-  su2double tri_enth_2 = GetData(name_enth).at(triangles.at(val_id_triangle).at(2));
+  su2double tri_prog_0 = GetData(name_prog)[triangles[val_id_triangle][0]];
+  su2double tri_enth_0 = GetData(name_enth)[triangles[val_id_triangle][0]];
+  su2double tri_prog_1 = GetData(name_prog)[triangles[val_id_triangle][1]];
+  su2double tri_enth_1 = GetData(name_enth)[triangles[val_id_triangle][1]];
+  su2double tri_prog_2 = GetData(name_prog)[triangles[val_id_triangle][2]];
+  su2double tri_enth_2 = GetData(name_enth)[triangles[val_id_triangle][2]];
 
   su2double area_tri = TriArea(tri_prog_0, tri_enth_0, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
   su2double area_0 = TriArea(val_prog, val_enth, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
