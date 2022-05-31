@@ -26,8 +26,7 @@
  */
 
 #include "../../Common/include/option_structure.hpp"
-
-#include "../include/numerics/CTrapezoidalMap.hpp"
+#include "../../Common/include/containers/CTrapezoidalMap.hpp"
 
 using namespace std;
 

@@ -29,9 +29,9 @@
 #include <sstream>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../../../SU2_CFD/include/numerics/CTrapezoidalMap.hpp"
-#include "../../../SU2_CFD/include/numerics/CLookUpTable.hpp"
-#include "../../../SU2_CFD/include/numerics/CFileReaderLUT.hpp"
+#include "../../../Common/include/containers/CTrapezoidalMap.hpp"
+#include "../../../Common/include/containers/CLookUpTable.hpp"
+#include "../../../Common/include/containers/CFileReaderLUT.hpp"
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 

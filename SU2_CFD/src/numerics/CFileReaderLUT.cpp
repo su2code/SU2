@@ -25,14 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/numerics/CFileReaderLUT.hpp"
+#include "../../Common/include/containers/CFileReaderLUT.hpp"
+#include "../../Common/include/option_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <fstream>
 #include <iomanip>
 #include <string>
-
-#include "../../Common/include/option_structure.hpp"
-#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 CFileReaderLUT::CFileReaderLUT() {}
 
