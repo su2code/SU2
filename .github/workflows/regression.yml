@@ -53,11 +53,13 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Tar binaries
+        run: tar -cvf install_bin.tar install/bin
       - name: Upload Binaries 
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config_set }}
-          path: install/bin
+          name: ${{ matrix.config_set }}.tar
+          path: install_bin.tar
   regression_tests:
     runs-on: self-hosted
     name: Regression Tests
@@ -84,8 +86,15 @@ jobs:
           - testscript: 'hybrid_regression_AD.py'
             tag: OMP
     steps:
-      - name: Download All artifact
+      - name: Download All artifacts
         uses: actions/download-artifact@v3
+      - name: Untar binaries
+        run: |
+          echo "Before untar..."
+          ls -la
+          tar -xvf *.tar
+          echo "After untar..."
+          ls -la
       - name: Move Binaries
         run: |
           mkdir -p install/bin
@@ -117,15 +126,22 @@ jobs:
       - name: Download Base
         uses: actions/download-artifact@v3
         with:
-          name: ${{format('Base{0}', matrix.tag)}}
+          name: ${{format('Base{0}', matrix.tag)}}.tar
       - name: Download Reverse
         uses: actions/download-artifact@v3
         with:
-          name: ${{format('Reverse{0}', matrix.tag)}}
+          name: ${{format('Reverse{0}', matrix.tag)}}.tar
       - name: Download Forward
         uses: actions/download-artifact@v3
         with:
-          name: ${{format('Forward{0}', matrix.tag)}}
+          name: ${{format('Forward{0}', matrix.tag)}}.tar
+      - name: Untar binaries
+        run: |
+          echo "Before untar..."
+          ls -la
+          tar -xvf *.tar
+          echo "After untar..."
+          ls -la
       - name: Move Binaries
         run: |
           mkdir -p install/bin
