@@ -311,7 +311,6 @@ private:
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
-  su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
@@ -1163,12 +1162,12 @@ private:
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
   /* other NEMO configure options*/
-  unsigned short nSpecies,                  /*!< \brief No. of species present in flow */
-  nSpecies_Cat_Wall,                        /*!< \brief No. of species for a catalytic wall */
-  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls */
-  nWall_Catalytic;                          /*!< \brief No of catalytic walls */
-  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
-  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless] */
+  unsigned short nSpecies,                  /*!< \brief No. of species present in flow. */
+  nSpecies_Cat_Wall,                        /*!< \brief No. of species for a catalytic wall. */
+  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
+  nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
+  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
@@ -1178,7 +1177,7 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
-  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency */
+  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -5246,16 +5245,10 @@ public:
   TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
-   * \brief Provides the number of species present in the plasma
-   * \return The number of species present in the plasma, read from input file
+   * \brief Provides the number of species present in the gas mixture.
+   * \return The number of species present in the gas mixture.
    */
   unsigned short GetnSpecies() const { return nSpecies; }
-
-   /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \return The heat flux.
-   */
-  const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
 
   /*!
    * \brief Provides the gas mass fractions of the flow.

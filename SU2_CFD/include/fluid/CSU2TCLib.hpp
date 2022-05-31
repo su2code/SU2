@@ -58,7 +58,6 @@ private:
   taus,                           /*!< \brief Relaxtion time scales */
   Diss,                           /*!< \brief Dissociation potential. */
   MassFrac_FreeStream,            /*!< \brief Mixture mass fractions of the fluid. */
-  Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   Particle_Mass,                  /*!< \brief Mass of all particles present in the plasma */
   MolarFracWBE,                   /*!< \brief Molar fractions to be used in Wilke/Blottner/Eucken model */
   phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
