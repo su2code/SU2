@@ -1098,11 +1098,11 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
   su2double Normal_Product, Product, tol = 1e-16;
 
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous = config->GetViscous();
-  bool nemo = config->GetNEMOProblem();
-  bool preprocessed = false;
-  nSpecies = config->GetnSpecies();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool viscous = config->GetViscous();
+  const bool nemo = config->GetNEMOProblem();
+  const bool preprocessed = false;
+  const su2double nSpecies = config->GetnSpecies();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
@@ -1280,13 +1280,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
       }
 
-      if (nemo) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_reflected[nSpecies + iDim + 2] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
-      } else {
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];        
-      }  
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_reflected[prim_idx.Velocity() + iDim] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
 
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
