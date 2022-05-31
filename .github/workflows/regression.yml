@@ -54,7 +54,7 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Upload Binaries 
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config_set }}
           path: install/bin
@@ -85,7 +85,7 @@ jobs:
             tag: OMP
     steps:
       - name: Download All artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
       - name: Move Binaries
         run: |
           mkdir -p install/bin
@@ -115,15 +115,15 @@ jobs:
             tag: MPI
     steps:
       - name: Download Base
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: ${{format('Base{0}', matrix.tag)}}
       - name: Download Reverse
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: ${{format('Reverse{0}', matrix.tag)}}
       - name: Download Forward
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: ${{format('Forward{0}', matrix.tag)}}
       - name: Move Binaries
