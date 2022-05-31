@@ -1912,18 +1912,42 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
 
+      /* Check for decrease in nonlinear residual. */
+
+      if (config->GetInnerIter() == 0) {
+        GetNodes()->SetNonLinRes_Old(iPoint, &LinSysRes[iPoint*nVar], 1.0);
+        GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], underRelaxation);
+      }
+
+      su2double* NonLinRes = &LinSysRes[iPoint*nVar];
+      su2double* NonLinRes_Old = GetNodes()->GetNonLinRes_Old(iPoint);
+      su2double* NonLinSol_Old = GetNodes()->GetNonLinSol_Old(iPoint);
+
+      su2double normNonLinRes = 0.0, normNonLinRes_Old = 0.0;
+      su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double dt  = GetNodes()->GetDelta_Time(iPoint);
+
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        normNonLinRes += pow(NonLinRes[iVar] + vol/dt*NonLinSol_Old[iVar], 2.0);
+        normNonLinRes_Old += pow(NonLinRes_Old[iVar], 2.0);
+      }
+
+      bool decNonLinRes = (normNonLinRes <= normNonLinRes_Old);
+
+      GetNodes()->SetNonLinRes_Old(iPoint, NonLinRes, 1.0);
+
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
        are able to add the entire nonlinear update (under-relaxation = 1)
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if (underRelaxation < 0.1 || reduceCFL) {
+      if (underRelaxation < 0.1 || reduceCFL || !decNonLinRes) {
         CFLFactor = CFLFactorDecrease;
-      } else if ((underRelaxation >= 0.1 && underRelaxation < 1.0) || !canIncrease) {
-        CFLFactor = 1.0;
+      } else if (underRelaxation == 1.0 && canIncrease && decNonLinRes) {
+        CFLFactor *= CFLFactorIncrease;
       } else {
-        CFLFactor = CFLFactorIncrease;
+        CFLFactor = 1.0;
       }
 
       /* Check if we are hitting the min or max and adjust. */
