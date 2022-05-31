@@ -54,7 +54,9 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Tar binaries
-        run: tar -cvf install_bin.tar install/bin
+        run: |
+          tar -cvf install_bin.tar install/bin
+          ls -la
       - name: Upload Binaries 
         uses: actions/upload-artifact@v3
         with:
