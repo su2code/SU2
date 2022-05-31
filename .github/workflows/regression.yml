@@ -44,7 +44,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
