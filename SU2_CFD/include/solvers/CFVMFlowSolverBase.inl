@@ -1092,7 +1092,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  unsigned short iDim, iVar, iNeigh, nSpecies;
+  unsigned short iDim, iVar, iNeigh;
   unsigned long iVertex, iPoint, jPoint, iEdge, iMarker;
   su2double Tangent[MAXNDIM]  = {0.0};
   su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
@@ -1297,13 +1297,14 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       auto residual = conv_numerics->ComputeResidual(config);
 
-    for(iDim = 0; iDim < nDim; iDim++) {
-      UnitNormal[iDim] = Normal[iDim]/Area;
-      Normal_Product += residual[nSpecies+iDim]*UnitNormal[iDim];
-    }
+      for(iDim = 0; iDim < nDim; iDim++) {
+        UnitNormal[iDim] = Normal[iDim]/Area;
+        Normal_Product += residual[nSpecies+iDim]*UnitNormal[iDim];
+      }
 
-    for(iDim = 0; iDim < nDim; iDim++)
-      Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
+      for(iDim = 0; iDim < nDim; iDim++) {
+        Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
+      }
 
       /*--- Update residual value ---*/
       LinSysRes.AddBlock(iPoint, Residual);
