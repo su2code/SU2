@@ -1101,8 +1101,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
   const bool nemo = config->GetNEMOProblem();
-  const bool preprocessed = false;
-  const su2double nSpecies = config->GetnSpecies();
+  bool preprocessed = false;
+  const unsigned short nSpecies = config->GetnSpecies();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
@@ -1297,12 +1297,12 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       auto residual = conv_numerics->ComputeResidual(config);
 
-      for(iDim = 0; iDim < nDim; iDim++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         UnitNormal[iDim] = Normal[iDim]/Area;
         Normal_Product += residual[nSpecies+iDim]*UnitNormal[iDim];
       }
 
-      for(iDim = 0; iDim < nDim; iDim++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
       }
 
