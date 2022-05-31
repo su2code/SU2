@@ -37,7 +37,6 @@
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 
-using namespace std;
 
 class CLookUpTable {
  protected:
