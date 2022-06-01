@@ -67,6 +67,22 @@ def main():
     bump_sst1994m.test_vals_aarch64 = [-13.055133, -10.325357, -5.558448, 0.024576, 0.004967] 
     test_list.append(bump_sst1994m)
 
+    # SWBLI SA
+    swbli_sa           = TestCase('swbli_sa')
+    swbli_sa.cfg_dir   = "vandv/rans/swbli"
+    swbli_sa.cfg_file  = "config_sa.cfg"
+    swbli_sa.test_iter = 20
+    swbli_sa.test_vals = [-11.029255, -10.511982, -11.400926, -10.128471, -14.536798, 0.002233, -2.608466, 2.786]
+    test_list.append(swbli_sa)
+
+    # SWBLI SST
+    swbli_sst           = TestCase('swbli_sst')
+    swbli_sst.cfg_dir   = "vandv/rans/swbli"
+    swbli_sst.cfg_file  = "config_sst.cfg"
+    swbli_sst.test_iter = 20
+    swbli_sst.test_vals = [-11.039738, -10.619752, -11.577767, -10.276345, -11.117432, -3.84103, 0.002315, -2.316445, -5.392453, 2.786]
+    test_list.append(swbli_sst)
+
     #################
     ### RUN TESTS ###
     #################
