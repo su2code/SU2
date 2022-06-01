@@ -93,7 +93,7 @@ jobs:
           BIN_FOLDER="$PWD/install/bin"
           mkdir -p $BIN_FOLDER
           for type in Base Reverse Forward; do
-            TYPE_FOLDER="$type${{matrix.tag)}}"
+            TYPE_FOLDER="$type${{matrix.tag}}"
             echo "Processing $TYPE_FOLDER ..."
             if [ -d $TYPE_FOLDER ];
               pushd $TYPE_FOLDER
