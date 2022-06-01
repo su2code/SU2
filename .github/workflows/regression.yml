@@ -94,6 +94,8 @@ jobs:
         run: |
           echo "Before untar..."
           ls -la
+          ls -la *.tar/
+          ls -la BaseMPI.tar/
           tar -xvf *.tar
           echo "After untar..."
           ls -la
