@@ -123,16 +123,16 @@ class CFluidModel {
    * \brief Compute and return fluid mean molecular weight in kg/mol.
    */
   template <class Vector_t>
-  static su2double ComputeMeanMolecularWeight(const Vector_t& molar_masses, const su2double* val_scalars) {
+  static su2double ComputeMeanMolecularWeight(const Vector_t& molar_masses, const su2double *val_scalars) {
     su2double OneOverMeanMolecularWeight = 0.0;
     su2double val_scalars_sum = 0.0;
 
-    for (size_t i_scalar = 0; i_scalar < molar_masses.size() - 1; i_scalar++) {
+    for (size_t i_scalar = 0; i_scalar < molar_masses.size() - 1; i_scalar++){
       OneOverMeanMolecularWeight += val_scalars[i_scalar] / (molar_masses[i_scalar] / 1000);
       val_scalars_sum += val_scalars[i_scalar];
     }
     OneOverMeanMolecularWeight += (1 - val_scalars_sum) / (molar_masses[molar_masses.size() - 1] / 1000);
-    return 1 / OneOverMeanMolecularWeight;
+    return OneOverMeanMolecularWeight;
   }
 
   /*!
@@ -307,10 +307,11 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+  virtual void SetTDState_T(su2double val_Temperature, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
 };
