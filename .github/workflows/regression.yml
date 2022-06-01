@@ -99,7 +99,7 @@ jobs:
               pushd $TYPE_FOLDER
               ls -lah
               tar -zxvf install_bin.tgz
-              cp -r $TYPE_FOLDER/install/bin/* $BIN_FOLDER;
+              cp -r install/bin/* $BIN_FOLDER;
               popd; 
             fi
           done
