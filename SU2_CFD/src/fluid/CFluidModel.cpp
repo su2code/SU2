@@ -34,6 +34,7 @@
 #include "../../include/fluid/CConstantPrandtl.hpp"
 #include "../../include/fluid/CConstantPrandtlRANS.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
+#include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"

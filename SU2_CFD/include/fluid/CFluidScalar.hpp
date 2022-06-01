@@ -53,11 +53,44 @@ class CFluidScalar final : public CFluidModel {
   std::vector<su2double> specificHeat;               /*!< \brief Specific heat of all species. */
   std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
 
+  static const int ARRAYSIZE = 100;
+  std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
+  std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
+
+  /*!
+   * \brief Convert mass fractions to mole fractions.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  std::vector<su2double>& massToMoleFractions(const su2double* val_scalars);
+
+  /*!
+   * \brief Wilke mixing law for mixture viscosity.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  su2double wilkeViscosity(const su2double* val_scalars);
+
+  /*!
+   * \brief Davidson mixing law for mixture viscosity.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  su2double davidsonViscosity(const su2double* val_scalars);
+
+  /*!
+   * \brief Wilke mixing law for mixture thermal conductivity.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  su2double wilkeConductivity(const su2double* val_scalars);
+
  public:
   /*!
    * \brief Constructor of the class.
    */
   CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig* config);
+  
+  /*!
+   * \brief Set viscosity model.
+   */
+  void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

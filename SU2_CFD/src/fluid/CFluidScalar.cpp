@@ -34,6 +34,10 @@
 #include <numeric>
 #include <vector>
 
+#include "../../include/fluid/CConstantViscosity.hpp"
+#include "../../include/fluid/CPolynomialViscosity.hpp"
+#include "../../include/fluid/CSutherland.hpp"
+
 CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const su2double value_pressure_operating,
                            CConfig* config)
     : CFluidModel() {
@@ -63,7 +67,128 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
   SetThermalConductivityModel(config);
 }
 
+void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
+  switch (config->GetKind_ViscosityModel()) {
+    case VISCOSITYMODEL::CONSTANT:
+      /* Build a list of LaminarViscosity pointers to be used in e.g. wilkeViscosity to get the species viscosities. */
+      for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+        LaminarViscosityPointers[iVar] =
+            std::unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_Constant(iVar)));
+      }
+      break;
+    case VISCOSITYMODEL::SUTHERLAND:
+      for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+        LaminarViscosityPointers[iVar] = std::unique_ptr<CSutherland>(
+            new CSutherland(config->GetMu_Ref(iVar), config->GetMu_Temperature_Ref(iVar), config->GetMu_S(iVar)));
+      }
+      break;
+    case VISCOSITYMODEL::POLYNOMIAL:
+      for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+        LaminarViscosityPointers[iVar] = std::unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
+            new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
+      }
+      break;
+    default:
+      SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+      break;
+  }
+}
+
+std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double* const val_scalars) {
+  su2double mixtureMolarMass{0.0};
+  su2double val_scalars_sum{0.0};
+
+  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+    massFractions[i_scalar] = val_scalars[i_scalar];
+    val_scalars_sum += val_scalars[i_scalar];
+  }
+  massFractions[n_species_mixture - 1] = 1 - val_scalars_sum;
+
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    mixtureMolarMass += massFractions[iVar] / molarMasses[iVar];
+  }
+
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    moleFractions.at(iVar) = (massFractions[iVar] / molarMasses[iVar]) / mixtureMolarMass;
+  }
+
+  return moleFractions;
+}
+
+su2double CFluidScalar::wilkeViscosity(const su2double* const val_scalars) {
+  std::vector<su2double> phi;
+  std::vector<su2double> wilkeNumerator;
+  std::vector<su2double> wilkeDenumeratorSum;
+  su2double wilkeDenumerator = 0.0;
+  wilkeDenumeratorSum.clear();
+  wilkeNumerator.clear();
+  su2double viscosityMixture = 0.0;
+
+  /* Fill laminarViscosity with n_species_mixture viscosity values. */
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
+    laminarViscosity.at(iVar) = LaminarViscosityPointers[iVar]->GetViscosity();
+  }
+
+  for (int i = 0; i < n_species_mixture; i++) {
+    for (int j = 0; j < n_species_mixture; j++) {
+      phi.push_back(
+          pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
+          sqrt(8 * (1 + molarMasses[i] / molarMasses[j])));
+      wilkeDenumerator += moleFractions[j] * phi[j];
+    }
+    wilkeDenumeratorSum.push_back(wilkeDenumerator);
+    wilkeDenumerator = 0.0;
+    phi.clear();
+    wilkeNumerator.push_back(moleFractions[i] * laminarViscosity[i]);
+    viscosityMixture += wilkeNumerator[i] / wilkeDenumeratorSum[i];
+  }
+  return viscosityMixture;
+}
+
+su2double CFluidScalar::davidsonViscosity(const su2double* const val_scalars) {
+  su2double viscosityMixture = 0.0;
+  su2double fluidity = 0.0;
+  su2double E = 0.0;
+  su2double mixtureFractionDenumerator = 0.0;
+  const su2double A = 0.375;
+  std::vector<su2double> mixtureFractions;
+  mixtureFractions.clear();
+
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
+    laminarViscosity.at(iVar) = LaminarViscosityPointers[iVar]->GetViscosity();
+  }
+
+  for (int i = 0; i < n_species_mixture; i++) {
+    mixtureFractionDenumerator += moleFractions[i] * sqrt(molarMasses[i]);
+  }
+
+  for (int j = 0; j < n_species_mixture; j++) {
+    mixtureFractions.push_back((moleFractions[j] * sqrt(molarMasses[j])) / mixtureFractionDenumerator);
+  }
+
+  for (int i = 0; i < n_species_mixture; i++) {
+    for (int j = 0; j < n_species_mixture; j++) {
+      E = (2 * sqrt(molarMasses[i]) * sqrt(molarMasses[j])) / (molarMasses[i] + molarMasses[j]);
+      fluidity +=
+          ((mixtureFractions[i] * mixtureFractions[j]) / (sqrt(laminarViscosity[i]) * sqrt(laminarViscosity[j]))) *
+          pow(E, A);
+    }
+  }
+  return viscosityMixture = 1 / fluidity;
+}
+
 void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
-  Density = Pressure_Thermodynamic / ((val_temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
+  Temperature = val_temperature;
+  Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
+
+  massToMoleFractions(val_scalars);
+
+  if (wilke) {
+    Mu = wilkeViscosity(val_scalars);
+  } else if (davidson) {
+    Mu = davidsonViscosity(val_scalars);
+  }
 }

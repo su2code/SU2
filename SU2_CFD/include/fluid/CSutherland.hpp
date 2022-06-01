@@ -39,47 +39,47 @@ class CSutherland final : public CViscosityModel {
   /*!
    * \brief Constructor of the class.
    */
-  CSutherland(su2double mu_ref, su2double t_ref, su2double s) : mu_ref_(mu_ref), t_ref_(t_ref), s_(s) {}
+  CSutherland(su2double mu_ref, su2double t_ref, su2double s) : mu_ref(mu_ref), t_ref(t_ref), s(s) {}
 
   /*!
    * \brief return viscosity value.
    */
-  su2double GetViscosity() const override { return mu_; }
+  su2double GetViscosity() const override { return mu; }
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double Getdmudrho_T() const override { return dmudrho_t_; }
+  su2double Getdmudrho_T() const override { return dmudrho_t; }
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  su2double GetdmudT_rho() const override { return dmudt_rho_; }
+  su2double GetdmudT_rho() const override { return dmudt_rho; }
 
   /*!
    * \brief Set Viscosity.
    */
   void SetViscosity(su2double t, su2double rho) override {
-    const su2double t_nondim = t / t_ref_;
-    mu_ = mu_ref_ * t_nondim * sqrt(t_nondim) * ((t_ref_ + s_) / (t + s_));
+    const su2double t_nondim = t / t_ref;
+    mu = mu_ref * t_nondim * sqrt(t_nondim) * ((t_ref + s) / (t + s));
   }
 
   /*!
    * \brief Set Viscosity Derivatives.
    */
   void SetDerViscosity(su2double t, su2double rho) override {
-    const su2double t_ref_inv = 1.0 / t_ref_;
+    const su2double t_ref_inv = 1.0 / t_ref;
     const su2double t_nondim = t_ref_inv * t;
-    const su2double ts_inv = 1.0 / (t + s_);
-    dmudrho_t_ = 0.0;
-    dmudt_rho_ = mu_ref_ * (t_ref_ + s_) * ts_inv * sqrt(t_nondim) * (1.5 * t_ref_inv - t_nondim * ts_inv);
+    const su2double ts_inv = 1.0 / (t + s);
+    dmudrho_t = 0.0;
+    dmudt_rho = mu_ref * (t_ref + s) * ts_inv * sqrt(t_nondim) * (1.5 * t_ref_inv - t_nondim * ts_inv);
   }
 
  private:
-  su2double mu_{0.0};        /*!< \brief Dynamic viscosity. */
-  su2double dmudrho_t_{0.0}; /*!< \brief DmuDrho_T. */
-  su2double dmudt_rho_{0.0}; /*!< \brief DmuDT_rho. */
-  su2double mu_ref_{0.0};    /*!< \brief Internal Energy. */
-  su2double t_ref_{0.0};     /*!< \brief DpDd_e. */
-  su2double s_{0.0};         /*!< \brief DpDe_d. */
+  su2double mu{0.0};        /*!< \brief Dynamic viscosity. */
+  su2double dmudrho_t{0.0}; /*!< \brief DmuDrho_T. */
+  su2double dmudt_rho{0.0}; /*!< \brief DmuDT_rho. */
+  su2double mu_ref{0.0};    /*!< \brief Internal Energy. */
+  su2double t_ref{0.0};     /*!< \brief DpDd_e. */
+  su2double s{0.0};         /*!< \brief DpDe_d. */
 };

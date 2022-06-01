@@ -820,17 +820,21 @@ private:
   Pressure_Critical,     /*!< \brief Critical Pressure for real fluid model.  */
   Density_Critical,      /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
-  Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
+  *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
   Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
   Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
   Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
-  Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
+  *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
   Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
-  Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
+  *Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
   Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
-  Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
+  *Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
   Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */
+  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
+  nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
+  nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
+  nMu_Temperature_Ref,            /*!< \brief Number of species reference temperature for Sutherland model. */
+  nMu_S;                         /*!< \brief Number of species reference S for Sutherland model. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
@@ -3825,7 +3829,7 @@ public:
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
-  su2double GetMu_Constant(void) const { return Mu_Constant; }
+  su2double GetMu_Constant(unsigned short val_index = 0) const { return Mu_Constant[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional constant viscosity.
@@ -3873,7 +3877,7 @@ public:
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
-  su2double GetMu_Ref(void) const { return Mu_Ref; }
+  su2double GetMu_Ref(unsigned short val_index = 0) const { return Mu_Ref[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
@@ -3885,7 +3889,7 @@ public:
    * \brief Get the value of the reference temperature for Sutherland model.
    * \return The reference temperature.
    */
-  su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref; }
+  su2double GetMu_Temperature_Ref(unsigned short val_index = 0) const { return Mu_Temperature_Ref[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
@@ -3897,7 +3901,7 @@ public:
    * \brief Get the value of the reference S for Sutherland model.
    * \return The reference S.
    */
-  su2double GetMu_S(void) const { return Mu_S; }
+  su2double GetMu_S(unsigned short val_index = 0) const { return Mu_S[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference S for Sutherland model.

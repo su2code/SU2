@@ -1207,16 +1207,16 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to Constant Viscosity Model ---*/
 
   /* DESCRIPTION: default value for AIR */
-  addDoubleOption("MU_CONSTANT", Mu_Constant , 1.716E-5);
+  addDoubleListOption("MU_CONSTANT", nMu_Constant, Mu_Constant);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
 
   /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
-  addDoubleOption("MU_REF", Mu_Ref, 1.716E-5);
+  addDoubleListOption("MU_REF", nMu_Ref, Mu_Ref);
   /* DESCRIPTION: Sutherland Temperature Ref, default value for AIR SI */
-  addDoubleOption("MU_T_REF", Mu_Temperature_Ref, 273.15);
+  addDoubleListOption("MU_T_REF", nMu_Temperature_Ref, Mu_Temperature_Ref);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
-  addDoubleOption("SUTHERLAND_CONSTANT", Mu_S, 110.4);
+  addDoubleListOption("SUTHERLAND_CONSTANT", nMu_S, Mu_S);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -3744,11 +3744,33 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 /*--- Set default values for various fluid properties. ---*/
 
   const su2double Molecular_Weight_Default = 28.96;
+  const su2double Mu_Constant_Default = 1.716E-5;
+  const su2double Mu_Ref_Default = Mu_Constant_Default;
+  const su2double Mu_Temperature_Ref_Default = 273.15;
+  const su2double Mu_S_Default = 110.4;
 
   if (Molecular_Weight == nullptr) {
     Molecular_Weight = new su2double[1];
     Molecular_Weight[0] = Molecular_Weight_Default;
     nMolecular_Weight = 1;
+  }
+
+  if (Mu_Constant == nullptr) {
+    Mu_Constant = new su2double[1];
+    Mu_Constant[0] = Mu_Constant_Default;
+    nMu_Constant = 1;
+  }
+
+  if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
+    Mu_Ref = new su2double[1];
+    Mu_Temperature_Ref = new su2double[1];
+    Mu_S = new su2double[1];
+    Mu_Ref[0] = Mu_Ref_Default;
+    Mu_Temperature_Ref[0] = Mu_Temperature_Ref_Default;
+    Mu_S[0] = Mu_S_Default;
+    nMu_Ref = 1;
+    nMu_Temperature_Ref = 1;
+    nMu_S = 1;
   }
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
@@ -3768,22 +3790,56 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
       SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
     }
+
+    switch (Kind_ViscosityModel) {
+      case VISCOSITYMODEL::CONSTANT:
+        if (nMu_Constant != nSpecies_Init + 1) {
+          SU2_MPI::Error(
+              "The use of FLUID_MIXTURE requires the number of entries for MU_CONSTANT,\n"
+              "to be equal to the number of entries of SCALAR_INIT + 1",
+              CURRENT_FUNCTION);
+        }
+        break;
+      case VISCOSITYMODEL::SUTHERLAND:
+        if ((nMu_Ref != nSpecies_Init + 1) || (nMu_Temperature_Ref != nSpecies_Init + 1) ||
+            (nMu_S != nSpecies_Init + 1)) {
+          SU2_MPI::Error(
+              "The use of FLUID_MIXTURE requires the number of entries for MU_REF, MU_T_REF and "
+              "SUTHERLAND_CONSTANT,\n"
+              "to be equal to the number of entries of SCALAR_INIT + 1",
+              CURRENT_FUNCTION);
+        }
+        break;
+      default:
+        if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+        break;
+    }
   }
 
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
+    if (Kind_FluidModel == FLUID_MIXTURE) {
+      /* Correct the viscosities, if they contain the default SI values. */
+      for (unsigned short iVar = 0; iVar < nSpecies_Init + 1; iVar++) {
+        if (fabs(Mu_Constant[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
+        if (fabs(Mu_Ref[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Ref[iVar] /= 47.88025898;
 
-    /* Correct the viscosities, if they contain the default SI values. */
-    if(fabs(Mu_Constant-1.716E-5) < 1.0E-15) Mu_Constant /= 47.88025898;
-    if(fabs(Mu_Ref-1.716E-5)      < 1.0E-15) Mu_Ref      /= 47.88025898;
+        /* Correct the values with temperature dimension, if they contain the default SI values. */
+        if (fabs(Mu_Temperature_Ref[iVar] - Mu_Temperature_Ref_Default) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
+        if (fabs(Mu_S[iVar] - Mu_S_Default) < 1.0E-8) Mu_S[iVar] *= 1.8;
+      }
+    } else {
+      /* Correct the viscosities, if they contain the default SI values. */
+      if (fabs(*Mu_Constant - 1.716E-5) < 1.0E-15) *Mu_Constant /= 47.88025898;
+      if (fabs(*Mu_Ref - 1.716E-5) < 1.0E-15) *Mu_Ref /= 47.88025898;
 
-    /* Correct the values with temperature dimension, if they contain the default SI values. */
-    if(fabs(Mu_Temperature_Ref-273.15) < 1.0E-8) Mu_Temperature_Ref *= 1.8;
-    if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
-
+      /* Correct the values with temperature dimension, if they contain the default SI values. */
+      if (fabs(*Mu_Temperature_Ref - 273.15) < 1.0E-8) *Mu_Temperature_Ref *= 1.8;
+      if (fabs(*Mu_S - 110.4) < 1.0E-8) *Mu_S *= 1.8;
+    }
     /* Correct the thermal conductivity, if it contains the default SI value. */
-    if(fabs(Thermal_Conductivity_Constant-0.0257) < 1.0E-10) Thermal_Conductivity_Constant *= 0.577789317;
+    if (fabs(Thermal_Conductivity_Constant - 0.0257) < 1.0E-10) Thermal_Conductivity_Constant *= 0.577789317;
   }
 
   /*--- Check for Measurement System ---*/
