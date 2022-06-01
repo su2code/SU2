@@ -95,7 +95,7 @@ jobs:
           for type in Base Reverse Forward; do
             TYPE_FOLDER="$type${{matrix.tag}}"
             echo "Processing $TYPE_FOLDER ..."
-            if [ -d $TYPE_FOLDER ];
+            if [ -d $TYPE_FOLDER ]; then
               pushd $TYPE_FOLDER
               ls -lah
               tar -zxvf install_bin.tgz
