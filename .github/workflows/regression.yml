@@ -54,14 +54,12 @@ jobs:
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Tar binaries
-        run: |
-          tar -cvf install_bin.tar install/bin
-          ls -la
+        run: tar -zcvf install_bin.tgz install/bin
       - name: Upload Binaries 
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config_set }}.tar
-          path: install_bin.tar
+          name: ${{ matrix.config_set }}
+          path: install_bin.tgz
   regression_tests:
     runs-on: self-hosted
     name: Regression Tests
@@ -90,22 +88,23 @@ jobs:
     steps:
       - name: Download All artifacts
         uses: actions/download-artifact@v3
-      - name: Untar binaries
+      - name: Untar and Move Binaries
         run: |
-          echo "Before untar..."
-          ls -la
-          ls -la *.tar/
-          ls -la BaseMPI.tar/
-          tar -xvf *.tar
-          echo "After untar..."
-          ls -la
-      - name: Move Binaries
-        run: |
-          mkdir -p install/bin
-          if [ -d "${{format('Base{0}', matrix.tag)}}" ];    then cp -r ${{format('Base{0}', matrix.tag)}}/.    install/bin/; fi
-          if [ -d "${{format('Reverse{0}', matrix.tag)}}" ]; then cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/; fi
-          if [ -d "${{format('Forward{0}', matrix.tag)}}" ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/; fi
-          chmod a+x install/bin/*
+          BIN_FOLDER="$PWD/install/bin"
+          mkdir -p $BIN_FOLDER
+          for type in Base Reverse Forward; do
+            TYPE_FOLDER="$type${{matrix.tag)}}"
+            echo "Processing $TYPE_FOLDER ..."
+            if [ -d $TYPE_FOLDER ];
+              pushd $TYPE_FOLDER
+              ls -lah
+              tar -zxvf install_bin.tgz
+              cp -r $TYPE_FOLDER/install/bin/* $BIN_FOLDER;
+              popd; 
+            fi
+          done
+          chmod a+x $BIN_FOLDER/*
+          ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
         uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
         with:
