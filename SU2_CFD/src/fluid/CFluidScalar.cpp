@@ -51,9 +51,6 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
     specificHeat[iVar] = config->GetSpecific_Heat_Cp();
   }
 
-  wilke = false;
-  davidson = true;
-
   Pressure_Thermodynamic = value_pressure_operating;
   Gas_Constant = val_gas_constant;
   Gamma = 1.0;
