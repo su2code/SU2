@@ -59,7 +59,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
           entrypoint: /bin/git
-          args: config --global --add safe.directory /github/workspace/src/SU2_${{ github_ref_underscore }}
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
       - name: Build 
         uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
