@@ -49,15 +49,21 @@ jobs:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
-      - name: Build 
-        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
-        with:
-          args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Set variables
         id: vars
         run: |
           echo "::set-output name=current_user::$(id -u)"
           echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
+      - name: Set local repo as Git safe
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        with:
+          entrypoint: /bin/git
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ github_ref_underscore }}
+      - name: Build 
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        with:
+          args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Fix file ownership to local user
         uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
