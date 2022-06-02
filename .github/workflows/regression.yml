@@ -53,6 +53,16 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Set variables
+        id: vars
+        run: |
+          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_group::$(id -g)"
+      - name: Fix file ownership to local user
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        with:
+          entrypoint: /bin/chown
+          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
       - name: Tar binaries
         run: tar -zcvf install_bin.tgz install/bin
       - name: Upload Binaries 
