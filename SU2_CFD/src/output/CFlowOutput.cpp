@@ -1026,7 +1026,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       if (limiter) {
         SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
       }
-      SetVolumeOutputValue("CFL_NUMBER_TURB", iPoint, Node_Turb->GetLocalCFL(iPoint));
+      // SetVolumeOutputValue("CFL_NUMBER_TURB", iPoint, Node_Turb->GetLocalCFL(iPoint));
       break;
 
     case TURB_FAMILY::KW:
