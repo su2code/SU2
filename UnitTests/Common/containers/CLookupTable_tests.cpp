@@ -49,7 +49,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   vector<string> look_up_tags={"ViscosityDyn", "Density"};
   vector<su2double> look_up_data={0.0, 0.0}; 
   
-  look_up_table = new CLookUpTable("methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  look_up_table = new CLookUpTable("../UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
   look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
   CHECK(look_up_data[0] == Approx(1.19152e-5));
   CHECK(look_up_data[1] == Approx(0.682905));

@@ -26,7 +26,7 @@ prog var = 1*Y-CH4
 35
 
 [variable names]
-1:ProgVar 2:Enthalpy 3:Conductivity 4:Cp 5:Density 6:Diffusivity 7:HeatRelease 8:MolarWeightMix 9:ProdRateNeg-CO_OverY-CO 10:ProdRateNeg-NO2_OverY-NO2 11:ProdRateNeg-NO_OverY-NO 12:ProdRatePos-CO 13:ProdRatePos-NO 14:ProdRatePos-NO2 15:ProdRateTot-CO 16:ProdRateTot-NO 17:ProdRateTot-NO2 18:ProdRateTot-NOx 19:ProdRateTot-PV 20:Temperature 21:ViscosityDyn 22:Y-CO 23:Y-H2O 24:Y-NO 25:Y-O2 26:ProdRateNeg-CO 27:ProdRateNeg-NO 28:ProdRateNeg-NO2 29:ProdRateTot-X-NO 30:ProdRateTot-X-NO2 31:Y-CO2 32:Y-H2 33:Y-N2O 34:Y-NO2 35:Y-OH
+1:PROGVAR 2:ENTHALPY 3:Conductivity 4:Cp 5:Density 6:Diffusivity 7:HeatRelease 8:MolarWeightMix 9:ProdRateNeg-CO_OverY-CO 10:ProdRateNeg-NO2_OverY-NO2 11:ProdRateNeg-NO_OverY-NO 12:ProdRatePos-CO 13:ProdRatePos-NO 14:ProdRatePos-NO2 15:ProdRateTot-CO 16:ProdRateTot-NO 17:ProdRateTot-NO2 18:ProdRateTot-NOx 19:ProdRateTot-PV 20:Temperature 21:ViscosityDyn 22:Y-CO 23:Y-H2O 24:Y-NO 25:Y-O2 26:ProdRateNeg-CO 27:ProdRateNeg-NO 28:ProdRateNeg-NO2 29:ProdRateTot-X-NO 30:ProdRateTot-X-NO2 31:Y-CO2 32:Y-H2 33:Y-N2O 34:Y-NO2 35:Y-OH
 </header>
 
 <data>
