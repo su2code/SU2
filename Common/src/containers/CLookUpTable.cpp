@@ -252,7 +252,9 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 
   vector<su2double> prog_enth_pairs(2 * n_points);
 
-  vector<unsigned long> next_triangle;
+  //nijso: change into std::array?
+  vector<unsigned long> next_triangle(3);
+  //std::array<unsigned long, 3> next_triangle;
 
   const vector<su2double> prog = GetData(name_prog);
   const vector<su2double> enth = GetData(name_enth);
@@ -271,7 +273,8 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
   /* calculate weights for each triangle (basically a distance function) and
    * build inverse interpolation matrices */
   for (unsigned long i_triangle = 0; i_triangle < n_triangles; i_triangle++) {
-    next_triangle = triangles[i_triangle];
+    for (int p = 0; p < 3; p++)
+      next_triangle[p] = triangles[i_triangle][p];
 
     interp_points.push_back(next_triangle);
 
@@ -313,6 +316,7 @@ void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<
 unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_var, su2double val_prog,
                                             su2double val_enth, string name_prog, string name_enth) {
   unsigned long exit_code = 0;
+  std::array<unsigned long,3> triangle{0};
 
   if (val_name_var.compare("NULL") == 0) {
     *val_var = 0.0;
@@ -341,7 +345,12 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_
         corner_enth[iPoint] = GetData(name_enth)[triangles[id_triangle][iPoint]];
       }
 
-      *val_var = Interpolate(GetData(val_name_var), (triangles[id_triangle]), interp_coeffs);
+      /* first, copy the single triangle from the large triangle list*/
+      for (int p = 0; p < 3; p++) 
+        triangle[p] = triangles[id_triangle][p]; 
+
+      //*val_var = Interpolate(GetData(val_name_var), triangles[id_triangle], interp_coeffs);
+      *val_var = Interpolate(GetData(val_name_var), triangle, interp_coeffs);
       exit_code = 0;
     } else {
       /* in bounding box but outside of table */
@@ -379,6 +388,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
   unsigned long id_triangle;
   unsigned long nearest_neighbor;
   std::array<su2double,3> interp_coeffs{0};
+  std::array<unsigned long,3> triangle{0};
 
   /* check if progress variable value is in progress variable table range
    * and if enthalpy is in enthalpy table range */
@@ -417,8 +427,13 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
     if (val_names_var[i_var].compare("NULL") == 0) {
       *val_vars[i_var] = 0.0;
     } else {
-      if (exit_code == 0)
-        *val_vars[i_var] = Interpolate(GetData(val_names_var[i_var]), (triangles[id_triangle]), interp_coeffs);
+      if (exit_code == 0){
+
+        /* first, copy the single triangle from the large triangle list*/
+        for (int p = 0; p < 3; p++) 
+          triangle[p] = triangles[id_triangle][p]; 
+        *val_vars[i_var] = Interpolate(GetData(val_names_var[i_var]), triangle, interp_coeffs);
+      }
       else
         *val_vars[i_var] = GetData(val_names_var[i_var])[nearest_neighbor];
     }
@@ -441,7 +456,7 @@ void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activema
   }
 }
 
-su2double CLookUpTable::Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
+su2double CLookUpTable::Interpolate(const vector<su2double> val_samples, std::array<unsigned long,3>& val_triangle,
                                     std::array<su2double,3>& val_interp_coeffs) {
   su2double result = 0;
   su2double z = 0;

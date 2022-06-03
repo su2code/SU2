@@ -60,7 +60,8 @@ class CFileReaderLUT {
    */
   su2activematrix table_data;
 
-  vector<vector<unsigned long> > triangles;
+  //vector<vector<unsigned long> > triangles;
+  su2matrix<unsigned long> triangles;
 
   vector<unsigned long> hull;
 
@@ -82,7 +83,8 @@ class CFileReaderLUT {
 
   inline const su2activematrix& GetTableData() const { return table_data; }
 
-  inline const vector<vector<unsigned long> >& GetTriangles() const { return triangles; };
+  //inline const vector<vector<unsigned long> >& GetTriangles() const { return triangles; };
+  inline const su2matrix<unsigned long>& GetTriangles() const { return triangles; };
 
   inline const vector<unsigned long>& GetHull() const { return hull; };
 

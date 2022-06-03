@@ -51,23 +51,40 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   
   look_up_table = new CLookUpTable("../UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
   look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
+  cout << "check 1" << endl;
   CHECK(look_up_data[0] == Approx(1.19152e-5));
+  cout << "check 2" << endl;
   CHECK(look_up_data[1] == Approx(0.682905));
 
   /* value lookup based on string*/
   string look_up_tag = "Density";
   su2double look_up_dat;
   look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
+  cout << "check 3" << endl;
   CHECK(look_up_dat == Approx(0.682905));
 
+  // find the table limits
   auto limitsEnth = look_up_table->GetTableLimitsEnth();
+  cout << "check 4" << endl;
   CHECK(limitsEnth.first == Approx(-1.0));
+  cout << "check 5" << endl;
   CHECK(limitsEnth.second == Approx(1.0));
 
   auto limitsProgvar = look_up_table->GetTableLimitsProg();
+  cout << "check 6" << endl;
   CHECK(limitsProgvar.first == Approx(0.0));
+  cout << "check 7" << endl;
   CHECK(limitsProgvar.second == Approx(1.0));
 
+
+  cout << "checking value outside lookup table" << endl;
+  /* lookup value outside of lookup table */
+  prog = 1.10;
+  enth = -220000.0;
+  look_up_tag = "Density";
+  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_prog, name_enth); 
+  cout << "check 8: " << look_up_dat << endl;
+  CHECK(look_up_dat == Approx(0.6516888435));
 
 }
 

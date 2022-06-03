@@ -27,7 +27,7 @@
 
 #include "../../Common/include/option_structure.hpp"
 #include "../../Common/include/containers/CTrapezoidalMap.hpp"
-
+#include <algorithm>
 using namespace std;
 
 /* Trapezoidal map implementation. Reference: 
@@ -208,6 +208,15 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
     }
 
   } while (i_up - i_low > 1);
+
+  //cout << "val_x, ilow,iup=" << val_x << " " <<i_low << " " << i_up << endl; 
+  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
+  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
+  i_up =  bounds.first - unique_bands_x.begin();
+  i_low = i_up-1;
+  //std::cout << "bounds at positions " << (bounds.first - unique_bands_x.begin());
+  //std::cout << " and " << (bounds.second - unique_bands_x.begin()) << '\n';
+  
 
   return make_pair(i_low, i_up);
 }

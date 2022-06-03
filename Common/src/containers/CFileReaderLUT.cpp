@@ -137,12 +137,12 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
   /* now that n_variables, n_points, n_hull_points and n_variables is available,
    * allocate memory */
   if (rank == MASTER_NODE) cout << "allocating memory for the data" << endl;
-  //table_data.resize(GetNVariables(), vector<su2double>(GetNPoints()));
   table_data.resize(GetNVariables(), GetNPoints());
 
 
   if (rank == MASTER_NODE) cout << "allocating memory for the triangles" << endl;
-  triangles.resize(GetNTriangles(), vector<unsigned long>(3));
+  //triangles.resize(GetNTriangles(), vector<unsigned long>(3));
+  triangles.resize(GetNTriangles(), 3);
 
   if (rank == MASTER_NODE) cout << "allocating memory for the hull points" << endl;
   hull.resize(GetNHullPoints());

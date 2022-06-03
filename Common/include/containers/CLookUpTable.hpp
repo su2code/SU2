@@ -69,8 +69,8 @@ class CLookUpTable {
    */
   su2activematrix table_data;
 
-  vector<vector<unsigned long> > triangles;
-  //su2matrix<unsigned long> triangles;
+  //vector<vector<unsigned long> > triangles;
+  su2matrix<unsigned long> triangles;
   vector<vector<unsigned long> > edges;
   vector<vector<unsigned long> > edge_to_triangle;
 
@@ -97,9 +97,8 @@ class CLookUpTable {
 
   inline const vector<su2double> GetData(string name_var) {
     int ix_var = GetIndexOfVar(name_var);
-    
     vector<su2double> tableDataRow(table_data[ix_var],table_data[ix_var]+table_data.cols()); 
-   
+
     return tableDataRow;
   }
 
@@ -122,7 +121,8 @@ class CLookUpTable {
                        std::array<su2double,3>& interp_coeffs);
 
 
-  su2double Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
+  //su2double Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
+  su2double Interpolate(const vector<su2double> val_samples, std::array<unsigned long,3>& val_triangle,
                         std::array<su2double,3>& val_interp_coeffs);
 
   unsigned long FindNearestNeighborOnHull(su2double val_enth, su2double val_prog, string name_prog, string name_enth);
