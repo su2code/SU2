@@ -1914,73 +1914,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     }
     END_SU2_OMP_MASTER
 
-    /* Check for decrease in nonlinear residual. */
-
-    const su2double nonLinTol = 0.5*(1.0+linTol);
-    su2double normNonLinRes = 0.0, normNonLinRes_Old = 0.0;
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
-    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-      const auto nVar = solverFlow->GetnVar();
-      const auto nVarTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetnVar() : 0;
-      
-      const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
-      const su2double dt  = solverFlow->GetNodes()->GetDelta_Time(iPoint);
-      const su2double dtTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetNodes()->GetDelta_Time(iPoint) : 0.0;
-
-      // const su2double underRelaxation = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
-      // su2double underRelaxationTurb = 1.0;
-      // if ((iMesh == MESH_0) && solverTurb)
-      //   underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-      
-      if (config->GetInnerIter() == 0) {
-        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol/dt);
-        if ((iMesh == MESH_0) && solverTurb) {
-          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol/dtTurb);
-        }
-        normNonLinRes = 1.0;
-        continue;
-      }
-
-      su2double* nonLinRes = &(solverFlow->LinSysRes[iPoint*nVar]);
-      su2double* nonLinRes_Old = solverFlow->GetNodes()->GetNonLinRes_Old(iPoint);
-      su2double* nonLinSol_Old = solverFlow->GetNodes()->GetNonLinSol_Old(iPoint);
-
-      for (auto iVar = 0; iVar < nVar; iVar++) {
-        normNonLinRes += pow(nonLinRes[iVar] - nonLinSol_Old[iVar], 2.0);
-        normNonLinRes_Old += pow(nonLinRes_Old[iVar], 2.0);
-      }
-      if ((iMesh == MESH_0) && solverTurb) {
-        su2double* nonLinResTurb = &(solverTurb->LinSysRes[iPoint*nVarTurb]);
-        su2double* nonLinResTurb_Old = solverTurb->GetNodes()->GetNonLinRes_Old(iPoint);
-        su2double* nonLinSolTurb_Old = solverTurb->GetNodes()->GetNonLinSol_Old(iPoint);
-        for (auto iVar = 0; iVar < nVarTurb; iVar++) {
-          normNonLinRes += pow(nonLinResTurb[iVar] - nonLinSolTurb_Old[iVar], 2.0);
-          normNonLinRes_Old += pow(nonLinResTurb_Old[iVar], 2.0);
-        }
-      }
-
-      solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
-      solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol/dt);
-      if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
-        solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol/dtTurb);
-      }
-    }
-    END_SU2_OMP_FOR
-
-    SU2_OMP_MASTER
-    { /* MPI reduction. */
-      su2double myNormNonLinRes = normNonLinRes, myNormNonLinRes_Old = normNonLinRes_Old;
-      SU2_MPI::Allreduce(&myNormNonLinRes, &normNonLinRes, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-
-    bool decNonLinRes = (sqrt(normNonLinRes) <= nonLinTol*sqrt(normNonLinRes_Old));
-
     SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
 
@@ -1998,6 +1931,59 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if ((iMesh == MESH_0) && solverTurb)
         underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
       const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+      
+      /* Check for decrease in nonlinear residual. */
+
+      const su2double nonLinTol = 0.5*(1.0+linTol);
+      su2double normNonLinRes = 0.0, normNonLinRes_Old = 0.0;
+
+      const auto nVar = solverFlow->GetnVar();
+      const auto nVarTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetnVar() : 0;
+      
+      const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
+      const su2double dt  = solverFlow->GetNodes()->GetDelta_Time(iPoint);
+      const su2double dtTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetNodes()->GetDelta_Time(iPoint) : 0.0;
+      
+      if (config->GetInnerIter() == 0) {
+        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
+        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), underRelaxation*vol/dt);
+        if ((iMesh == MESH_0) && solverTurb) {
+          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
+          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), underRelaxationTurb*vol/dtTurb);
+        }
+        normNonLinRes_Old = 1.0;
+      }
+      else {
+        su2double* nonLinRes = &(solverFlow->LinSysRes[iPoint*nVar]);
+        su2double* nonLinRes_Old = solverFlow->GetNodes()->GetNonLinRes_Old(iPoint);
+        su2double* nonLinSol_Old = solverFlow->GetNodes()->GetNonLinSol_Old(iPoint);
+
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          normNonLinRes += pow(nonLinSol_Old[iVar] - nonLinRes[iVar], 2.0);
+          normNonLinRes_Old += pow(nonLinRes_Old[iVar], 2.0);
+        }
+        if ((iMesh == MESH_0) && solverTurb) {
+          su2double* nonLinResTurb = &(solverTurb->LinSysRes[iPoint*nVarTurb]);
+          su2double* nonLinResTurb_Old = solverTurb->GetNodes()->GetNonLinRes_Old(iPoint);
+          su2double* nonLinSolTurb_Old = solverTurb->GetNodes()->GetNonLinSol_Old(iPoint);
+          for (auto iVar = 0; iVar < nVarTurb; iVar++) {
+            normNonLinRes += pow(nonLinSolTurb_Old[iVar] - nonLinResTurb[iVar], 2.0);
+            normNonLinRes_Old += pow(nonLinResTurb_Old[iVar], 2.0);
+          }
+        }
+
+        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
+        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), underRelaxation*vol/dt);
+        if ((iMesh == MESH_0) && solverTurb) {
+          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
+          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), underRelaxationTurb*vol/dtTurb);
+        }
+        normNonLinRes = sqrt(normNonLinRes);
+        normNonLinRes_Old = sqrt(normNonLinRes_Old);
+      }
+
+      bool decNonLinRes = (normNonLinRes <= nonLinTol*normNonLinRes_Old);
+      bool incNonLinRes = (normNonLinRes > normNonLinRes_Old);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -2005,7 +1991,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if (underRelaxation < 0.1 || reduceCFL || !decNonLinRes) {
+      if (underRelaxation < 0.1 || reduceCFL || incNonLinRes) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation == 1.0 && canIncrease && decNonLinRes) {
         CFLFactor = CFLFactorIncrease;
