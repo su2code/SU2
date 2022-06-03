@@ -34,12 +34,16 @@ from itertools import islice
 import sys, os
 import _su2gmf as su2gmf
 
-# --- Prescribed mesh complexities, i.e. desired mesh sizes
+""" 
+Get prescribed mesh complexities, i.e. desired mesh sizes
+"""
 def get_mesh_sizes(config):
     return config['ADAP_SIZES'].strip('()').split(",")
 
-# --- Return size info from a python mesh structure
-def return_mesh_size(mesh):
+"""
+Get mesh size info from a python mesh structure
+"""
+def get_mesh_size(mesh):
     
     elt_key  = ['xy', 'xyz',  'Triangles', 'Edges', 'Tetrahedra']
     elt_name = {'xy':'vertices', 'xyz':'vertices',  'Triangles':'triangles', 'Edges':'edges', 'Tetrahedra':'tetrahedra'}
@@ -57,7 +61,9 @@ def return_mesh_size(mesh):
     
     return ', '.join(map(str, tab_out))
 
-# --- Load parameters from the SU2 config file into the AMG config dict
+"""
+Load parameters from the SU2 config file into the AMG config dict
+"""
 def get_amg_config(config_su2):
 
     #--- Basic parameters
@@ -115,11 +121,15 @@ def get_amg_config(config_su2):
 
     return config_amg
 
-# --- How many sub-iterations per mesh complexity
+"""
+Get number of adaptation iterations for each mesh complexity
+"""
 def get_sub_iterations(config):
     return config['ADAP_SUBITER'].strip('()').split(",")
 
-# --- What residual reduction for each complexity level
+"""
+Get residual reduction for each complexity level
+"""
 def get_residual_reduction(config):
     if 'ADAP_RESIDUAL_REDUCTION' in config:
         return config['ADAP_RESIDUAL_REDUCTION'].strip('()').split(",")
@@ -130,7 +140,9 @@ def get_residual_reduction(config):
             res.append(config['RESIDUAL_REDUCTION'])      
         return res 
         
-# --- How many SU2 solver iterations for each complexity level
+"""
+Get number of adjoint solver iterations for each mesh complexity
+"""
 def get_adj_iter(config):
     if 'ADAP_ADJ_ITER' in config:
         return config['ADAP_ADJ_ITER'].strip('()').split(",")
@@ -141,6 +153,9 @@ def get_adj_iter(config):
             ext_iter.append(config['ITER'])        
         return ext_iter
 
+"""
+Get number of primal solver iterations for each mesh complexity
+"""
 def get_flow_iter(config):
     if 'ADAP_FLOW_ITER' in config:
         return config['ADAP_FLOW_ITER'].strip('()').split(",")
@@ -151,6 +166,9 @@ def get_flow_iter(config):
             flow_iter.append(config['ITER'])        
         return flow_iter
 
+"""
+Get initial CFL number for each mesh complexity
+"""
 def get_flow_cfl(config):
     if 'ADAP_FLOW_CFL' in config:
         return config['ADAP_FLOW_CFL'].strip('()').split(",")
@@ -161,6 +179,9 @@ def get_flow_cfl(config):
             cfl.append(config['CFL_NUMBER'])        
         return cfl
 
+"""
+Get adjoint CFL number for each mesh complexity
+"""
 def get_adj_cfl(config):
     if 'ADAP_ADJ_CFL' in config:
         return config['ADAP_ADJ_CFL'].strip('()').split(",")
@@ -171,23 +192,25 @@ def get_adj_cfl(config):
             cfl.append(config['CFL_NUMBER'])        
         return cfl
 
+"""
+Set CFL parameters for current mesh complexity
+"""
 def set_cfl(config, cfl_iSiz):
     config.CFL_NUMBER = float(cfl_iSiz)
     if 'CFL_ADAPT' in config:
         if config['CFL_ADAPT'] == 'YES':
-            cfl_params = config['CFL_ADAPT_PARAM'].strip('()').split(",")
+            cfl_params = [float(x) for x in config['CFL_ADAPT_PARAM'].strip('()').split(",")]
             cfl_params[2] = cfl_iSiz
 
-            config['CFL_ADAPT_PARAM'] = '('
-            for i in range(3):
-                config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
-                                          + str(cfl_params[i]) \
-                                          + ","
+            config['CFL_ADAPT_PARAM'] = '( '
+            for i, param in enumerate(cfl_params):
+                config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] + f'{param}'
+                if (i == len(cfl_params)-1): config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] + " )"
+                else: config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] + ", "
 
-            config['CFL_ADAPT_PARAM'] = config['CFL_ADAPT_PARAM'] \
-                                          + str(cfl_params[3]) \
-                                          + ")"
-
+"""
+Set primal config for initial solution
+"""
 def set_flow_config_ini(config, cur_solfil):
     config.CONV_FILENAME    = "history"
     config.RESTART_FILENAME = cur_solfil
@@ -196,6 +219,9 @@ def set_flow_config_ini(config, cur_solfil):
     config.COMPUTE_METRIC   = 'NO'
     config.MATH_PROBLEM     = 'DIRECT'
 
+"""
+Set adjoint config for initial solution
+"""
 def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.CONV_FILENAME        = "history_adj"
     config.RESTART_ADJ_FILENAME = cur_solfil_adj
@@ -207,6 +233,9 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.ADAP_COMPLEXITY      = int(mesh_size)
     config.RESTART_CFL          = 'YES'
 
+"""
+Set primal config for current solution
+"""
 def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl):
     config.MESH_FILENAME     = cur_meshfil
     config.SOLUTION_FILENAME = cur_solfil_ini
@@ -215,6 +244,9 @@ def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_ite
 
     set_cfl(config, flow_cfl)
 
+"""
+Set adjoint config for current solution
+"""
 def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, adj_iter, mesh_size):
     config.MESH_FILENAME         = cur_meshfil
     config.RESTART_ADJ_FILENAME  = cur_solfil_adj
@@ -224,6 +256,9 @@ def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfi
     config.ITER                  = int(adj_iter)
     config.ADAP_COMPLEXITY       = int(mesh_size)
    
+"""
+Print options used for mesh adaptation
+"""
 def print_adap_options(config):
     prt = '\nMesh adaptation options:\n'
     for key, value in config.items():
@@ -232,6 +267,9 @@ def print_adap_options(config):
     prt += '\n'
     return prt
     
+"""
+Get dimension from su2 mesh
+"""
 def get_su2_dim(filename):
     
     meshfile = open(filename,'r')
@@ -268,6 +306,9 @@ def get_su2_dim(filename):
         
     return dim
 
+"""
+Get number of points from su2 mesh
+"""
 def get_su2_npoin(filename):
     
     meshfile = open(filename,'r')
@@ -304,14 +345,18 @@ def get_su2_npoin(filename):
         
     return npoin
 
-# --- Merge 2 solutions (e.g. primal and dual)
+"""
+Merge 2 solutions (e.g. primal and adjoint)
+"""
 def merge_sol(mesh0, mesh1):
     mesh0['solution'] = np.hstack((mesh0['solution'], \
                                    mesh1['solution'])).tolist()
     mesh0['solution_tag'] = np.hstack((np.array(mesh0['solution_tag']), \
                                        np.array(mesh1['solution_tag']))).tolist()
 
-# --- Split adjoint solution
+"""
+Separate adjoint solution from primal
+"""
 def split_adj_sol(mesh):
     nsol = len(mesh['solution_tag'])
 
@@ -338,7 +383,12 @@ def split_adj_sol(mesh):
 
     return adj_sol
 
-# ---- Process solution to store desired sensor for adaptation
+"""
+Store desired sensor for adaptation
+
+Returns array of scalars for MACH/PRES, or array of tensors
+for GOAL
+"""
 def create_sensor(solution, sensor):
     
     Dim = solution['dimension']
@@ -388,9 +438,10 @@ def create_sensor(solution, sensor):
     
     return sensor_wrap
 
+""" 
+Write primal results to a Tecplot or CSV file
+"""
 def plot_results(history_format, filename, iter, npoin):
-    """ writes a Tecplot or CSV file for plotting adaptation results
-    """
 
     default_spacing = 16
     indent_spacing  = 0

@@ -310,7 +310,7 @@ def amg ( config ):
                             
             #--- print mesh size
             
-            sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.return_mesh_size(mesh_new)))
+            sys.stdout.write(' %s AMG done: %s\n' % (pad_nul, su2amg.get_mesh_size(mesh_new)))
             sys.stdout.flush()
 
             mesh_new['markers'] = mesh['markers']

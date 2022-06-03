@@ -31,6 +31,9 @@ import numpy as np
 import _su2gmf as su2gmf
 import pyamg
 
+"""
+Adapt mesh using pyamg module
+"""
 def call_pyamg(mesh, config):
 
     remesh_options = {}
@@ -82,7 +85,9 @@ def call_pyamg(mesh, config):
     return mesh_new
     
     
-# --- Read mesh and solution using su2gmf module
+"""
+Read mesh and solution using su2gmf module
+"""
 def read_mesh_and_sol(mesh_name, solution_name):
     
     Ver = []
@@ -119,7 +124,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     SolSiz = int(len(Sol)/NbrVer)
     Sol = np.reshape(Sol,(NbrVer, SolSiz))
     
-    # First row of Markers contains dimension
+    #--- First row of Markers contains dimension
     Dim = int(Markers[0])
     
     mesh = dict()
@@ -144,7 +149,9 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     return mesh
 
-# --- Read mesh using su2gmf module
+"""
+Read mesh using su2gmf module
+"""
 def read_mesh(mesh_name):
     
     Ver = []
@@ -176,7 +183,7 @@ def read_mesh(mesh_name):
     NbrVer = int(len(Ver)/3)
     Ver = np.reshape(Ver,(NbrVer, 3))
     
-    # First row of Markers contains dimension
+    #--- First row of Markers contains dimension
     Dim = int(Markers[0])
     
     mesh = dict()
@@ -194,7 +201,9 @@ def read_mesh(mesh_name):
     
     return mesh
 
-# --- Read mesh using su2gmf module
+"""
+Read mesh using su2gmf module
+"""
 def read_sol(solution_name, mesh):
     
     NbrVer = len(mesh['xyz'])
@@ -219,7 +228,9 @@ def read_sol(solution_name, mesh):
     
     return sol
     
-# --- Write mesh and solution using su2gmf module
+"""
+Write mesh and solution using su2gmf module
+"""
 def write_mesh_and_sol(mesh_name, solution_name, mesh):
     
     Tri     = []
@@ -266,7 +277,9 @@ def write_mesh_and_sol(mesh_name, solution_name, mesh):
     
     su2gmf.py_WriteMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
 
-# --- Write mesh and solution using su2gmf module
+"""
+Write mesh and solution using su2gmf module
+"""
 def write_mesh(mesh_name, mesh):
     
     Tri     = []
@@ -303,7 +316,9 @@ def write_mesh(mesh_name, mesh):
     
     su2gmf.py_WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
     
-# --- Write solution using su2gmf module
+"""
+Write solution using su2gmf module
+"""
 def write_sol(sol_name, sol):
     
     Dim = sol['dimension']
