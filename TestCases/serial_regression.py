@@ -70,7 +70,7 @@ def main():
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
     invwedge.test_vals         = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271778, 1.875687, 5.315769, 0.870008]
-    invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.299165, -18.626583, -18.572588, 2.271777, 1.875687, 5.315769, 0.870008]
+    invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.300012, -18.627418, -18.573436, 2.271778, 1.875687, 5.315769, 0.870008]
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -83,7 +83,7 @@ def main():
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals         = [-5.215236, -5.739371, -20.545048, -20.618700, -20.502532, -1.917617, -2.239664, 1.262783, -3.205463]
-    visc_cone.test_vals_aarch64 = [-5.215288, -5.739428, -20.545050, -20.618699, -20.501528, -1.917680, -2.239597, 1.262771, -3.205521]
+    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.545048, -20.618697, -20.501528, -1.917617, -2.239664, 1.262783, -3.205463]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -169,8 +169,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.new_output= True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
-    polar_naca0012.test_vals_aarch64 = [-1.998414, 3.415860, 0.014272, 0.009027]
+    polar_naca0012.test_vals = [-1.243326, 4.224483, 0.016432, 0.016145]
     polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -371,7 +370,8 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-11.451010, -12.798258, -5.863895, 1.049989, 0.019163, -1.925018]
+    turb_naca0012_sst.test_vals         = [-11.451010, -12.798258, -5.863895, 1.049989, 0.019163, -1.925018]
+    turb_naca0012_sst.test_vals_aarch64 = [-11.451008, -12.798258, -5.863895, 1.049989, 0.019163, -1.925030]
     turb_naca0012_sst.su2_exec  = "SU2_CFD"
     turb_naca0012_sst.new_output  = True
     turb_naca0012_sst.timeout   = 3200
@@ -892,7 +892,8 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.985899, 1.137425, 0.375986, -0.078795]
+    turb_naca0012_1c.test_vals         = [-4.985899, 1.137425, 0.375986, -0.078795]
+    turb_naca0012_1c.test_vals_aarch64 = [-4.985900, 1.137455, 0.376000, -0.078781]
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600
@@ -904,7 +905,8 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.483374, 0.968842, 0.255857, -0.109404] #last 4 columns
+    turb_naca0012_2c.test_vals         = [-5.483374, 0.968842, 0.255857, -0.109404] #last 4 columns
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483375, 0.968843, 0.255870, -0.109398] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.new_output = True
     turb_naca0012_2c.timeout   = 1600
@@ -928,7 +930,8 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.127531, 1.077321, 0.543822, -0.018663] #last 4 columns
+    turb_naca0012_p1c1.test_vals         = [-5.127531, 1.077321, 0.543822, -0.018663] #last 4 columns
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.127470, 1.077487, 0.543977, -0.018609] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
     turb_naca0012_p1c1.timeout   = 1600
@@ -940,7 +943,8 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.554491, 0.943648, 0.320568, -0.091089] #last 4 columns
+    turb_naca0012_p1c2.test_vals         = [-5.554491, 0.943648, 0.320568, -0.091089] #last 4 columns
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554486, 0.943644, 0.320343, -0.091167] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
     turb_naca0012_p1c2.timeout   = 1600
@@ -1217,7 +1221,8 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.205134, -13.250406] #last 4 columns
+    uniform_flow.test_vals         = [2.000000, 0.000000, -0.205134, -13.250406] #last 4 columns
+    uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.205134, -13.253776] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1347,7 +1352,7 @@ def main():
     statbeam3d.new_output= True
     statbeam3d.test_iter = 0
     statbeam3d.test_vals         = [-8.498245, -8.230816, -8.123810, 64095.0] #last 4 columns
-    statbeam3d.test_vals_aarch64 = [-8.498242, -8.230725, -8.123805, 64095.0] #last 4 columns
+    statbeam3d.test_vals_aarch64 = [-8.498254, -8.230683, -8.123819, 64095.0] #last 4 columns
     statbeam3d.su2_exec  = "SU2_CFD"
     statbeam3d.timeout   = 1600
     statbeam3d.tol       = 0.00001

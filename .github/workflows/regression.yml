@@ -69,7 +69,7 @@ jobs:
         with:
           entrypoint: /bin/chown
           args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
-      - name: Tar binaries
+      - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/bin
       - name: Upload Binaries 
         uses: actions/upload-artifact@v3
@@ -104,10 +104,28 @@ jobs:
     steps:
       - name: Download All artifacts
         uses: actions/download-artifact@v3
-      - name: Untar and Move Binaries
+      - name: Set variables
+        id: vars
+        run: |
+          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
+      - name: Set local repo as Git safe
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/git
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
+
+      - name: Fix file ownership to local user
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/chown
+          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
+      - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
           mkdir -p $BIN_FOLDER
+          ls -laH $BIN_FOLDER
           for type in Base Reverse Forward; do
             TYPE_FOLDER="${type}${{matrix.tag}}"
             echo "Processing '$TYPE_FOLDER' ..."
@@ -115,6 +133,7 @@ jobs:
               pushd $TYPE_FOLDER
               ls -lah
               tar -zxvf install_bin.tgz
+              ls -laH install/bin/
               cp -r install/bin/* $BIN_FOLDER;
               popd; 
             fi
@@ -145,29 +164,51 @@ jobs:
       - name: Download Base
         uses: actions/download-artifact@v3
         with:
-          name: ${{format('Base{0}', matrix.tag)}}.tar
+          name: ${{format('Base{0}', matrix.tag)}}
       - name: Download Reverse
         uses: actions/download-artifact@v3
         with:
-          name: ${{format('Reverse{0}', matrix.tag)}}.tar
+          name: ${{format('Reverse{0}', matrix.tag)}}
       - name: Download Forward
         uses: actions/download-artifact@v3
         with:
-          name: ${{format('Forward{0}', matrix.tag)}}.tar
-      - name: Untar binaries
+          name: ${{format('Forward{0}', matrix.tag)}}
+      - name: Set variables
+        id: vars
         run: |
-          echo "Before untar..."
-          ls -la
-          tar -xvf *.tar
-          echo "After untar..."
-          ls -la
-      - name: Move Binaries
+          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
+      - name: Set local repo as Git safe
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/git
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
+
+      - name: Fix file ownership to local user
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/chown
+          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
+      - name: Uncompress and Move Binaries
         run: |
-          mkdir -p install/bin
-          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
-          cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
-          cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
-          chmod a+x install/bin/*
+          BIN_FOLDER="$PWD/install/bin"
+          mkdir -p $BIN_FOLDER
+          ls -laH $BIN_FOLDER
+          for type in Base Reverse Forward; do
+            TYPE_FOLDER="${type}${{matrix.tag}}"
+            echo "Processing '$TYPE_FOLDER' ..."
+            if [ -d $TYPE_FOLDER ]; then
+              pushd $TYPE_FOLDER
+              ls -lah
+              tar -zxvf install_bin.tgz
+              ls -laH install/bin/
+              cp -r install/bin/* $BIN_FOLDER;
+              popd; 
+            fi
+          done
+          chmod a+x $BIN_FOLDER/*
+          ls -lahR $BIN_FOLDER
       - name: Run Unit Tests
         uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
         with:
