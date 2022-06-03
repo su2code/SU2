@@ -119,11 +119,11 @@ class CLookUpTable {
                        su2activematrix& interp_mat_inv);
 
   void GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
-                       vector<su2double>& interp_coeffs);
+                       std::array<su2double,3>& interp_coeffs);
 
 
   su2double Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
-                        vector<su2double>& val_interp_coeffs);
+                        std::array<su2double,3>& val_interp_coeffs);
 
   unsigned long FindNearestNeighborOnHull(su2double val_enth, su2double val_prog, string name_prog, string name_enth);
 

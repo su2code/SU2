@@ -249,7 +249,6 @@ void CLookUpTable::IdentifyUniqueEdges() {
 void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
   /* build KD tree for enthalpy, progress variable space */
   vector<unsigned long> points(n_points);
-  vector<su2double> weights(2, 0);
 
   vector<su2double> prog_enth_pairs(2 * n_points);
 
@@ -274,27 +273,10 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
   for (unsigned long i_triangle = 0; i_triangle < n_triangles; i_triangle++) {
     next_triangle = triangles[i_triangle];
 
-    /* the query point is the weighted average of the vertexes of the triangle */
-    weights[0] = 0;
-    weights[1] = 0;
-
-    /* enthalpy */
-    weights[0] += enth[next_triangle[0]];
-    weights[0] += enth[next_triangle[1]];
-    weights[0] += enth[next_triangle[2]];
-    weights[0] /= 3;
-
-    /* progress variable */
-    weights[1] += prog[next_triangle[0]];
-    weights[1] += prog[next_triangle[1]];
-    weights[1] += prog[next_triangle[2]];
-    weights[1] /= 3;
-
     interp_points.push_back(next_triangle);
 
     // Now use the nearest 16 points to construct an interpolation function
     // for each search pair option
-    //vector<vector<su2double> > prog_interp_mat_inv(3, vector<su2double>(3, 0));
     su2activematrix prog_interp_mat_inv(3, 3);
     GetInterpMatInv(prog, enth, next_triangle, prog_interp_mat_inv);
     interp_mat_inv_prog_enth.push_back(prog_interp_mat_inv);
@@ -302,7 +284,6 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 }
 
 void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y,
-                                   //vector<unsigned long>& point_ids, vector<vector<su2double> >& interp_mat_inv) {
                                    vector<unsigned long>& point_ids, su2activematrix& interp_mat_inv) {
   unsigned int M = 3;
   CSquareMatrixCM global_M(M);
@@ -349,7 +330,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_
 
     if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
       /* get interpolation coefficients for point on triangle */
-      vector<su2double> interp_coeffs(3);
+      std::array<su2double,3> interp_coeffs{0};
       GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
 
       /* DEBUG: */
@@ -397,7 +378,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
   unsigned long exit_code = 0;
   unsigned long id_triangle;
   unsigned long nearest_neighbor;
-  vector<su2double> interp_coeffs(3);
+  std::array<su2double,3> interp_coeffs{0};
 
   /* check if progress variable value is in progress variable table range
    * and if enthalpy is in enthalpy table range */
@@ -445,13 +426,10 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
   return exit_code;
 }
 
-//void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, vector<vector<su2double> >& interp_mat_inv,
 void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
-                                   vector<su2double>& interp_coeffs) {
-  vector<su2double> query_vector;
-  query_vector.push_back(1);
-  query_vector.push_back(val_x);
-  query_vector.push_back(val_y);
+                                   array<su2double,3>& interp_coeffs) {
+
+  array<su2double,3> query_vector = {1,val_x,val_y};
 
   su2double d;
   for (int i = 0; i < 3; i++) {
@@ -464,7 +442,7 @@ void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activema
 }
 
 su2double CLookUpTable::Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
-                                    vector<su2double>& val_interp_coeffs) {
+                                    std::array<su2double,3>& val_interp_coeffs) {
   su2double result = 0;
   su2double z = 0;
 
