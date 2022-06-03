@@ -69,8 +69,9 @@ class CLookUpTable {
    */
   su2activematrix table_data;
 
-  //vector<vector<unsigned long> > triangles;
   su2matrix<unsigned long> triangles;
+
+  /* we do not know this size in advance until we go through the entire lookup table */
   vector<vector<unsigned long> > edges;
   vector<vector<unsigned long> > edge_to_triangle;
 
@@ -78,9 +79,6 @@ class CLookUpTable {
 
   CTrapezoidalMap trap_map_prog_enth;
 
-  vector<vector<unsigned long> > interp_points;
-
-  //vector<vector<vector<su2double> > > interp_mat_inv_prog_enth;
   vector<su2activematrix> interp_mat_inv_prog_enth;
 
   inline int GetIndexOfVar(string nameVar) {
@@ -97,14 +95,12 @@ class CLookUpTable {
 
   inline const vector<su2double> GetData(string name_var) {
     int ix_var = GetIndexOfVar(name_var);
+
+    /* NB: check if this function can be made to return a pointer to a vector<su2double> */
     vector<su2double> tableDataRow(table_data[ix_var],table_data[ix_var]+table_data.cols()); 
 
     return tableDataRow;
   }
-
-  inline const vector<vector<unsigned long> >& GetEdges() const { return edges; }
-
-  inline const vector<vector<unsigned long> >& GetEdgeToTriangle() const { return edge_to_triangle; }
 
   void FindTableLimits(string name_prog, string name_enth);
 
@@ -114,14 +110,12 @@ class CLookUpTable {
 
   void ComputeInterpCoeffs(string name_prog, string name_enth);
 
-  void GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y, vector<unsigned long>& point_ids,
+  void GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y, std::array<unsigned long,3>& point_ids,
                        su2activematrix& interp_mat_inv);
 
   void GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
                        std::array<su2double,3>& interp_coeffs);
 
-
-  //su2double Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
   su2double Interpolate(const vector<su2double> val_samples, std::array<unsigned long,3>& val_triangle,
                         std::array<su2double,3>& val_interp_coeffs);
 

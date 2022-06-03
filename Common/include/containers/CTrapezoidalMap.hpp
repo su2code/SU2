@@ -31,6 +31,8 @@
 #include <iostream>
 #include <iterator>
 #include <vector>
+#include "../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
 using namespace std;
 
@@ -39,8 +41,8 @@ class CTrapezoidalMap {
   /* The unique values of x which exist in the data */
   vector<su2double> unique_bands_x;
 
-  vector<vector<su2double> > edge_limits_x;
-  vector<vector<su2double> > edge_limits_y;
+  su2activematrix edge_limits_x;
+  su2activematrix edge_limits_y;
 
   vector<vector<unsigned long> > edge_to_triangle;
 

@@ -54,7 +54,7 @@ CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string na
             "space ..."
          << endl;
 
-  trap_map_prog_enth = CTrapezoidalMap(GetData(name_prog), GetData(name_enth), GetEdges(), GetEdgeToTriangle());
+  trap_map_prog_enth = CTrapezoidalMap(GetData(name_prog), GetData(name_enth), edges, edge_to_triangle);
 
   if (rank == MASTER_NODE) cout << " done." << endl;
 
@@ -93,16 +93,12 @@ void CLookUpTable::FindTableLimits(string name_prog, string name_enth) {
   int ixEnth = GetIndexOfVar(name_enth);
   int ixProg = GetIndexOfVar(name_prog);
 
-  // get rid of vector<vector<>> table_data
-  vector<su2double> tabledataE(table_data[ixEnth],table_data[ixEnth]+table_data.cols());
-  vector<su2double> tabledataP(table_data[ixProg],table_data[ixProg]+table_data.cols());
+  /* we find the lowest and highest value of enthalpy and progress variable in the table */
+  limits_table_enth[0] = *min_element(&table_data[ixEnth][0], &table_data[ixEnth][0]+table_data.cols());
+  limits_table_enth[1] = *max_element(&table_data[ixEnth][0], &table_data[ixEnth][0]+table_data.cols());
+  limits_table_prog[0] = *min_element(&table_data[ixProg][0], &table_data[ixProg][0]+table_data.cols());
+  limits_table_prog[1] = *max_element(&table_data[ixProg][0], &table_data[ixProg][0]+table_data.cols());
 
-  // could also work directly without intermediate vector
-  //limits_table_enth[0] = *min_element(&table_data[ixEnth][0], &table_data[ixEnth][0]+table_data.cols());
-  limits_table_enth[0] = *min_element(tabledataE.begin(), tabledataE.end());
-  limits_table_enth[1] = *max_element(tabledataE.begin(), tabledataE.end());
-  limits_table_prog[0] = *min_element(tabledataP.begin(), tabledataP.end());
-  limits_table_prog[1] = *max_element(tabledataP.begin(), tabledataP.end());
 }
 
 void CLookUpTable::PrintTableInfo() {
@@ -139,10 +135,6 @@ void CLookUpTable::PrintTableInfo() {
 }
 
 void CLookUpTable::IdentifyUniqueEdges() {
-  /* we will fill these two data members with the point pair and adjacent
-     elements, respectively, for each unique edge in the grid */
-  edges.clear();
-  edge_to_triangle.clear();
 
   /* loop through elements and store the element ID as
      a neighbor for each point in the element */
@@ -248,38 +240,20 @@ void CLookUpTable::IdentifyUniqueEdges() {
 
 void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
   /* build KD tree for enthalpy, progress variable space */
-  vector<unsigned long> points(n_points);
 
-  vector<su2double> prog_enth_pairs(2 * n_points);
-
-  //nijso: change into std::array?
-  vector<unsigned long> next_triangle(3);
-  //std::array<unsigned long, 3> next_triangle;
+  std::array<unsigned long, 3> next_triangle;
 
   const vector<su2double> prog = GetData(name_prog);
   const vector<su2double> enth = GetData(name_enth);
 
-  vector<unsigned long> result_ids;
-  vector<int> result_ranks;
-  vector<su2double> best_dist;
-
-  for (unsigned long i_point = 0; i_point < n_points; i_point++) {
-    points.push_back(i_point);
-
-    prog_enth_pairs.push_back(prog[i_point]);
-    prog_enth_pairs.push_back(enth[i_point]);
-  }
-
   /* calculate weights for each triangle (basically a distance function) and
    * build inverse interpolation matrices */
   for (unsigned long i_triangle = 0; i_triangle < n_triangles; i_triangle++) {
-    for (int p = 0; p < 3; p++)
+
+    for (int p = 0; p < 3; p++) {
       next_triangle[p] = triangles[i_triangle][p];
+    }
 
-    interp_points.push_back(next_triangle);
-
-    // Now use the nearest 16 points to construct an interpolation function
-    // for each search pair option
     su2activematrix prog_interp_mat_inv(3, 3);
     GetInterpMatInv(prog, enth, next_triangle, prog_interp_mat_inv);
     interp_mat_inv_prog_enth.push_back(prog_interp_mat_inv);
@@ -287,7 +261,7 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 }
 
 void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y,
-                                   vector<unsigned long>& point_ids, su2activematrix& interp_mat_inv) {
+                                   std::array<unsigned long,3>& point_ids, su2activematrix& interp_mat_inv) {
   unsigned int M = 3;
   CSquareMatrixCM global_M(M);
 
@@ -316,7 +290,6 @@ void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<
 unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_var, su2double val_prog,
                                             su2double val_enth, string name_prog, string name_enth) {
   unsigned long exit_code = 0;
-  std::array<unsigned long,3> triangle{0};
 
   if (val_name_var.compare("NULL") == 0) {
     *val_var = 0.0;
@@ -337,15 +310,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_
       std::array<su2double,3> interp_coeffs{0};
       GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
 
-      /* DEBUG: */
-      vector<su2double> corner_prog(3, 0);
-      vector<su2double> corner_enth(3, 0);
-      for (int iPoint = 0; iPoint < N_POINTS_TRIANGLE; ++iPoint) {
-        corner_prog[iPoint] = GetData(name_prog)[triangles[id_triangle][iPoint]];
-        corner_enth[iPoint] = GetData(name_enth)[triangles[id_triangle][iPoint]];
-      }
-
       /* first, copy the single triangle from the large triangle list*/
+      std::array<unsigned long,3> triangle{0};
       for (int p = 0; p < 3; p++) 
         triangle[p] = triangles[id_triangle][p]; 
 
@@ -430,6 +396,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
       if (exit_code == 0){
 
         /* first, copy the single triangle from the large triangle list*/
+        /* nijso: TODO */
         for (int p = 0; p < 3; p++) 
           triangle[p] = triangles[id_triangle][p]; 
         *val_vars[i_var] = Interpolate(GetData(val_names_var[i_var]), triangle, interp_coeffs);
@@ -442,9 +409,9 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
 }
 
 void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
-                                   array<su2double,3>& interp_coeffs) {
+                                   std::array<su2double,3>& interp_coeffs) {
 
-  array<su2double,3> query_vector = {1,val_x,val_y};
+  std::array<su2double,3> query_vector = {1,val_x,val_y};
 
   su2double d;
   for (int i = 0; i < 3; i++) {

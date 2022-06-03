@@ -51,8 +51,8 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const samples_x, vector<su2do
 
   unique_bands_x.resize(distance(unique_bands_x.begin(), iter));
 
-  edge_limits_x.resize(edges.size(), vector<su2double>(2, 0));
-  edge_limits_y.resize(edges.size(), vector<su2double>(2, 0));
+  edge_limits_x.resize(edges.size(), 2);
+  edge_limits_y.resize(edges.size(), 2);
 
   /* store x and y values of each edge in a vector for a slight speed up
    * as it prevents some uncoalesced accesses */
@@ -156,67 +156,17 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
-  su2double x_low;
-  su2double x_mid;
-  su2double x_up;
-
   unsigned long i_low = 0;
-  unsigned long i_mid = 0;
   unsigned long i_up = 0;
 
-  /* start search at table limits */
-  i_up = unique_bands_x.size() - 1;
-  i_low = 0;
-
   /* check if val_x is in bounds of the table */
-  // if (val_x < unique_bands_x.front() or val_x > unique_bands_x.back())
-  //   SU2_MPI::Error("Table-look-up is out of bounds.", CURRENT_FUNCTION);
-
   if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
   if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
 
-  /* the next loop implements a binary search and computes i_low and i_up
-   * which are the band indices that include val_x */
-  do {
-    i_mid = (i_up + i_low) / 2;
-
-    x_mid = unique_bands_x[i_mid];
-    x_low = unique_bands_x[i_low];
-    x_up = unique_bands_x[i_up];
-
-    /* check and restart the search on the low end */
-    if ((val_x < x_low) and (i_low > 0)) {
-      i_up = i_low;
-      i_low = i_low / 2;
-
-      /* check and restart the search on the upper end */
-    } else if ((val_x > x_up) and (i_up < (unique_bands_x.size() - 1))) {
-      i_low = i_up;
-      i_up = (i_up + (unique_bands_x.size() - 1)) / 2;
-
-      /*  continue with regular binary search */
-    } else if (val_x < x_mid) {
-      i_up = i_mid;
-
-    } else if (val_x > x_mid) {
-      i_low = i_mid;
-
-    } else if (x_mid == val_x) {
-      i_low = i_mid;
-      i_up = i_low + 1;
-      break;
-    }
-
-  } while (i_up - i_low > 1);
-
-  //cout << "val_x, ilow,iup=" << val_x << " " <<i_low << " " << i_up << endl; 
   std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
   bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
   i_up =  bounds.first - unique_bands_x.begin();
   i_low = i_up-1;
-  //std::cout << "bounds at positions " << (bounds.first - unique_bands_x.begin());
-  //std::cout << " and " << (bounds.second - unique_bands_x.begin()) << '\n';
-  
 
   return make_pair(i_low, i_up);
 }
