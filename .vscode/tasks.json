@@ -4,19 +4,18 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Meson configure serial debug",
+            "label": "Initial Meson configure serial debug",
             "type": "shell",
             "command": "./meson.py",
             "args": [
                 "build",
-                "--reconfigure",
                 "--prefix=/home/gomer/local/codes/su2_install/current_branch/serial/gnu/debug",
                 "-Dwith-mpi=disabled",
                 "--buildtype=debug"
             ]
         },
         {
-            "label": "Meson configure mpi debug",
+            "label": "Meson reconfigure mpi debug",
             "type": "shell",
             "command": "./meson.py",
             "args": [
@@ -28,7 +27,7 @@
             ]
         },
         {
-            "label": "Meson configure mpi release",
+            "label": "Meson reconfigure mpi release",
             "type": "shell",
             "command": "./meson.py",
             "args": [
@@ -66,10 +65,10 @@
             ]
         },
         {
-            "label": "Configure and build current SU2 branch - serial debug",
+            "label": "Initial Configure and build current SU2 branch - serial debug",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Meson configure serial debug",
+                "Initial Meson configure serial debug",
                 "Ninja build install"
             ],
             "group": {
@@ -78,19 +77,19 @@
             }
         },
         {
-            "label": "Configure and build current SU2 branch - mpi debug",
+            "label": "Reconfigure and build current SU2 branch - mpi debug",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Meson configure mpi debug",
+                "Meson reconfigure mpi debug",
                 "Ninja build install"
             ],
             "group": "build"
         },
         {
-            "label": "Configure and build current SU2 branch - mpi release",
+            "label": "Reconfigure and build current SU2 branch - mpi release",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Meson configure mpi release",
+                "Meson reconfigure mpi release",
                 "Ninja build install"
             ],
             "group": "build"
