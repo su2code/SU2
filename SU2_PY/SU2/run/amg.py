@@ -171,7 +171,7 @@ def amg ( config ):
 
         #--- Set RESTART_SOL=YES for runs after adaptation
         config_cfd.RESTART_SOL = 'YES'
-        config_cfd.RESTART_CFL = 'YES'
+        config_cfd.RESTART_CFL = 'NO'
 
         if adap_sensor == 'GOAL':
             cur_solfil_adj = "restart_adj" + sol_ext
