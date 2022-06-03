@@ -51,8 +51,8 @@ class CTrapezoidalMap {
  public:
   CTrapezoidalMap(){};
 
-  CTrapezoidalMap(const vector<su2double>& samples_x,
-                  const vector<su2double>& samples_y,
+  CTrapezoidalMap(const vector<su2double> samples_x,
+                  const vector<su2double> samples_y,
                   const vector<vector<unsigned long> >& edges,
                   const vector<vector<unsigned long> >& edge_to_triangle);
 

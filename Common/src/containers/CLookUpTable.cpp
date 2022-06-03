@@ -81,7 +81,6 @@ void CLookUpTable::LoadTableRaw(string var_file_name_lut) {
   type_lut = file_reader.GetTypeLUT();
   version_lut = file_reader.GetVersionLUT();
   version_reader = file_reader.GetVersionReader();
-
   names_var = file_reader.GetNamesVar();
   table_data = file_reader.GetTableData();
   triangles = file_reader.GetTriangles();
@@ -94,10 +93,16 @@ void CLookUpTable::FindTableLimits(string name_prog, string name_enth) {
   int ixEnth = GetIndexOfVar(name_enth);
   int ixProg = GetIndexOfVar(name_prog);
 
-  limits_table_enth[0] = *min_element(table_data[ixEnth].begin(), table_data[ixEnth].end());
-  limits_table_enth[1] = *max_element(table_data[ixEnth].begin(), table_data[ixEnth].end());
-  limits_table_prog[0] = *min_element(table_data[ixProg].begin(), table_data[ixProg].end());
-  limits_table_prog[1] = *max_element(table_data[ixProg].begin(), table_data[ixProg].end());
+  // get rid of vector<vector<>> table_data
+  vector<su2double> tabledataE(table_data[ixEnth],table_data[ixEnth]+table_data.cols());
+  vector<su2double> tabledataP(table_data[ixProg],table_data[ixProg]+table_data.cols());
+
+  // could also work directly without intermediate vector
+  //limits_table_enth[0] = *min_element(&table_data[ixEnth][0], &table_data[ixEnth][0]+table_data.cols());
+  limits_table_enth[0] = *min_element(tabledataE.begin(), tabledataE.end());
+  limits_table_enth[1] = *max_element(tabledataE.begin(), tabledataE.end());
+  limits_table_prog[0] = *min_element(tabledataP.begin(), tabledataP.end());
+  limits_table_prog[1] = *max_element(tabledataP.begin(), tabledataP.end());
 }
 
 void CLookUpTable::PrintTableInfo() {
@@ -141,7 +146,9 @@ void CLookUpTable::IdentifyUniqueEdges() {
 
   /* loop through elements and store the element ID as
      a neighbor for each point in the element */
+
   vector<vector<unsigned long> > neighborElemsOfPoint;
+  
   neighborElemsOfPoint.resize(n_points);
   for (unsigned long iElem = 0; iElem < n_triangles; iElem++) {
     /* loop over 3 points per triangle */
@@ -248,8 +255,8 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 
   vector<unsigned long> next_triangle;
 
-  const vector<su2double>& prog = GetData(name_prog);
-  const vector<su2double>& enth = GetData(name_enth);
+  const vector<su2double> prog = GetData(name_prog);
+  const vector<su2double> enth = GetData(name_enth);
 
   vector<unsigned long> result_ids;
   vector<int> result_ranks;
@@ -287,14 +294,16 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 
     // Now use the nearest 16 points to construct an interpolation function
     // for each search pair option
-    vector<vector<su2double> > prog_interp_mat_inv(3, vector<su2double>(3, 0));
+    //vector<vector<su2double> > prog_interp_mat_inv(3, vector<su2double>(3, 0));
+    su2activematrix prog_interp_mat_inv(3, 3);
     GetInterpMatInv(prog, enth, next_triangle, prog_interp_mat_inv);
     interp_mat_inv_prog_enth.push_back(prog_interp_mat_inv);
   }
 }
 
 void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y,
-                                   vector<unsigned long>& point_ids, vector<vector<su2double> >& interp_mat_inv) {
+                                   //vector<unsigned long>& point_ids, vector<vector<su2double> >& interp_mat_inv) {
+                                   vector<unsigned long>& point_ids, su2activematrix& interp_mat_inv) {
   unsigned int M = 3;
   CSquareMatrixCM global_M(M);
 
@@ -320,7 +329,7 @@ void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<
 
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double* val_var, su2double val_prog,
+unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_var, su2double val_prog,
                                             su2double val_enth, string name_prog, string name_enth) {
   unsigned long exit_code = 0;
 
@@ -436,7 +445,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
   return exit_code;
 }
 
-void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, vector<vector<su2double> >& interp_mat_inv,
+//void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, vector<vector<su2double> >& interp_mat_inv,
+void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
                                    vector<su2double>& interp_coeffs) {
   vector<su2double> query_vector;
   query_vector.push_back(1);
@@ -453,7 +463,7 @@ void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, vector<vect
   }
 }
 
-su2double CLookUpTable::Interpolate(const vector<su2double>& val_samples, vector<unsigned long>& val_triangle,
+su2double CLookUpTable::Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
                                     vector<su2double>& val_interp_coeffs) {
   su2double result = 0;
   su2double z = 0;
@@ -474,8 +484,8 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
   su2double next_enth_norm;
   unsigned long neighbor_id = 0;
 
-  const vector<su2double>& prog_table = GetData(name_prog);
-  const vector<su2double>& enth_table = GetData(name_enth);
+  const vector<su2double> prog_table = GetData(name_prog);
+  const vector<su2double> enth_table = GetData(name_enth);
 
   su2double norm_coeff_prog = 1. / (limits_table_prog[1] - limits_table_prog[0]);
   su2double norm_coeff_enth = 1. / (limits_table_enth[1] - limits_table_enth[0]);

@@ -34,6 +34,8 @@
 #include <vector>
 
 #include "../../Common/include/option_structure.hpp"
+#include "../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 
@@ -65,9 +67,10 @@ class CLookUpTable {
    * Holds all data stored in the table. First index addresses the variable
    * while second index addresses the point.
    */
-  vector<vector<su2double> > table_data;
+  su2activematrix table_data;
 
   vector<vector<unsigned long> > triangles;
+  //su2matrix<unsigned long> triangles;
   vector<vector<unsigned long> > edges;
   vector<vector<unsigned long> > edge_to_triangle;
 
@@ -77,7 +80,8 @@ class CLookUpTable {
 
   vector<vector<unsigned long> > interp_points;
 
-  vector<vector<vector<su2double> > > interp_mat_inv_prog_enth;
+  //vector<vector<vector<su2double> > > interp_mat_inv_prog_enth;
+  vector<su2activematrix> interp_mat_inv_prog_enth;
 
   inline int GetIndexOfVar(string nameVar) {
     int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();
@@ -91,9 +95,12 @@ class CLookUpTable {
     return index;
   }
 
-  inline const vector<su2double>& GetData(string name_var) {
+  inline const vector<su2double> GetData(string name_var) {
     int ix_var = GetIndexOfVar(name_var);
-    return table_data[ix_var];
+    
+    vector<su2double> tableDataRow(table_data[ix_var],table_data[ix_var]+table_data.cols()); 
+   
+    return tableDataRow;
   }
 
   inline const vector<vector<unsigned long> >& GetEdges() const { return edges; }
@@ -109,14 +116,13 @@ class CLookUpTable {
   void ComputeInterpCoeffs(string name_prog, string name_enth);
 
   void GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y, vector<unsigned long>& point_ids,
-                       vector<vector<su2double> >& interp_mat_inv);
+                       su2activematrix& interp_mat_inv);
 
-  void GetInterpCoeffs(su2double val_x, su2double val_y, vector<vector<su2double> >& interp_mat_inv,
+  void GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
                        vector<su2double>& interp_coeffs);
 
-  void GaussianInverse(vector<vector<su2double> >& mat, vector<vector<su2double> >& mat_inv);
 
-  su2double Interpolate(const vector<su2double>& val_samples, vector<unsigned long>& val_triangle,
+  su2double Interpolate(const vector<su2double> val_samples, vector<unsigned long>& val_triangle,
                         vector<su2double>& val_interp_coeffs);
 
   unsigned long FindNearestNeighborOnHull(su2double val_enth, su2double val_prog, string name_prog, string name_enth);

@@ -31,6 +31,8 @@
 #include <vector>
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
 using namespace std;
 
@@ -56,7 +58,7 @@ class CFileReaderLUT {
    * Holds all data stored in the table. First index addresses the variable
    * while second index addresses the point.
    */
-  vector<vector<su2double> > table_data;
+  su2activematrix table_data;
 
   vector<vector<unsigned long> > triangles;
 
@@ -64,21 +66,6 @@ class CFileReaderLUT {
 
   string SkipToFlag(ifstream* file_stream, string flag);
 
-  inline void SetTypeLUT(string value) { type_lut = value; }
-  inline void SetVersionLUT(string value) { version_lut = value; }
-  inline void SetNPoints(unsigned long value) { n_points = value; }
-  inline void SetNTriangles(unsigned long value) { n_triangles = value; }
-  inline void SetNHullPoints(unsigned long value) { n_hull_points = value; }
-  inline void SetNVariables(unsigned long value) { n_variables = value; }
-
-  inline void PushNameVar(string value) { names_var.push_back(value); }
-  inline void PopNameVar() { names_var.pop_back(); }
-
-  inline void AllocMemData() { table_data.resize(GetNVariables(), vector<su2double>(GetNPoints())); }
-
-  inline void AllocMemTriangles() { triangles.resize(GetNTriangles(), vector<unsigned long>(3)); }
-
-  inline void AllocMemHull() { hull.resize(GetNHullPoints()); }
 
  public:
   CFileReaderLUT();
@@ -93,7 +80,7 @@ class CFileReaderLUT {
 
   inline const vector<string>& GetNamesVar() const { return names_var; }
 
-  inline const vector<vector<su2double> >& GetTableData() const { return table_data; }
+  inline const su2activematrix& GetTableData() const { return table_data; }
 
   inline const vector<vector<unsigned long> >& GetTriangles() const { return triangles; };
 

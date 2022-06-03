@@ -28,6 +28,8 @@
 #include "../../Common/include/containers/CFileReaderLUT.hpp"
 #include "../../Common/include/option_structure.hpp"
 #include "../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -69,31 +71,31 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
     /* number of points in LUT */
     if (line.compare("[version]") == 0) {
       getline(file_stream, line);
-      SetVersionLUT(line);
+      version_lut = line;
     }
 
     /* number of points in LUT */
     if (line.compare("[number of points]") == 0) {
       getline(file_stream, line);
-      SetNPoints(stoi(line));
+      n_points = stoi(line);
     }
 
     /* number of triangles in LUT */
     if (line.compare("[number of triangles]") == 0) {
       getline(file_stream, line);
-      SetNTriangles(stoi(line));
+      n_triangles = stoi(line);
     }
 
     /* number of points on the hull */
     if (line.compare("[number of hull points]") == 0) {
       getline(file_stream, line);
-      SetNHullPoints(stoi(line));
+      n_hull_points = stoi(line);
     }
 
     /* number of variables in LUT */
     if (line.compare("[number of variables]") == 0) {
       getline(file_stream, line);
-      SetNVariables(stoi(line));
+      n_variables = stoi(line);
     }
 
     /* variable names */
@@ -104,9 +106,9 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
         stream_names_var >> word;
         ixColon = (int)word.find(":");
 
-        PushNameVar(word.substr(ixColon + 1, word.size() - 1));
+        names_var.push_back(word.substr(ixColon + 1, word.size() - 1));
       }
-      PopNameVar();  // removes last redundant element
+      names_var.pop_back();  // removes last redundant element
     }
 
     // check if end of header is reached
@@ -135,13 +137,15 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
   /* now that n_variables, n_points, n_hull_points and n_variables is available,
    * allocate memory */
   if (rank == MASTER_NODE) cout << "allocating memory for the data" << endl;
-  AllocMemData();
+  //table_data.resize(GetNVariables(), vector<su2double>(GetNPoints()));
+  table_data.resize(GetNVariables(), GetNPoints());
+
 
   if (rank == MASTER_NODE) cout << "allocating memory for the triangles" << endl;
-  AllocMemTriangles();
+  triangles.resize(GetNTriangles(), vector<unsigned long>(3));
 
   if (rank == MASTER_NODE) cout << "allocating memory for the hull points" << endl;
-  AllocMemHull();
+  hull.resize(GetNHullPoints());
 
   /* flush any cout */
   if (rank == MASTER_NODE) cout << endl;

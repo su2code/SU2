@@ -34,7 +34,7 @@ using namespace std;
  * M. de Berg, O. Cheongm M. van Kreveld, M. Overmars, 
  * Computational Geometry, Algorithms and Applications pp. 121-146 (2008)
  */
-CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const& samples_x, vector<su2double> const& samples_y,
+CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const samples_x, vector<su2double> const samples_y,
                                  vector<vector<unsigned long> > const& edges,
                                  vector<vector<unsigned long> > const& val_edge_to_triangle) {
   int rank = SU2_MPI::GetRank();
