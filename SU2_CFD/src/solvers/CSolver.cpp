@@ -1946,10 +1946,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       
       if (config->GetInnerIter() == 0) {
         solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), underRelaxation*vol/dt);
+        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol/dt);
         if ((iMesh == MESH_0) && solverTurb) {
           solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), underRelaxationTurb*vol/dtTurb);
+          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol/dtTurb);
         }
         normNonLinRes_Old = 1.0;
       }
@@ -1973,10 +1973,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
 
         solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), underRelaxation*vol/dt);
+        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol/dt);
         if ((iMesh == MESH_0) && solverTurb) {
           solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), underRelaxationTurb*vol/dtTurb);
+          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol/dtTurb);
         }
         normNonLinRes = sqrt(normNonLinRes);
         normNonLinRes_Old = sqrt(normNonLinRes_Old);
