@@ -1,6 +1,6 @@
 ﻿/*!
  * \file centered.hpp
- * \brief Delaration of numerics classes for centered schemes,
+ * \brief Declaration of numerics classes for centered schemes,
  *        the implementation is in centered.cpp.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"

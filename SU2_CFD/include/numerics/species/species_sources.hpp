@@ -1,6 +1,6 @@
 ﻿/*!
  * \file species_sources.hpp
- * \brief Delarations of numerics classes for integration of source
+ * \brief Declarations of numerics classes for integration of source
  *        terms in species problems.
  * \author T. Kattmann
  * \version 7.3.1 "Blackbird"

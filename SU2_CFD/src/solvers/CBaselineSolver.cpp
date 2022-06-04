@@ -421,7 +421,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
 
-        if (turb_model == TURB_MODEL::SA || turb_model == TURB_MODEL::SA_NEG) {
+        if (turb_model == TURB_MODEL::SA) {
           index++;
         } else if (turb_model == TURB_MODEL::SST) {
           index+=2;

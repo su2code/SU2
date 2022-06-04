@@ -37,6 +37,7 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
+    file_diff_list = []
 
     ##########################
     ### Compressible Euler ###
@@ -383,7 +384,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.436191, -3.098014, -0.017338, -0.193981]
+    inc_lam_bend.test_vals = [-3.437996, -3.086189, -0.015600, 1.142212]
     test_list.append(inc_lam_bend)
 
     ############################
@@ -436,7 +437,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.162564, 0.066401, 1.399788, 2.220402]
+    square_cylinder.test_vals = [-1.162564, 0.066401, 1.399788, 2.220402, 1.399743, 2.218603]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
 
@@ -632,7 +633,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.800401, -2.114687]
+    slinc_steady.test_vals = [19.000000, -1.799803, -2.128200]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 
@@ -723,6 +724,20 @@ def main():
     mms_fvm_inc_ns.test_vals = [-7.414944, -7.631546, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_ns)
 
+    ##########################
+    ###   Python wrapper   ###
+    ##########################
+
+    # NACA0012
+    pywrapper_translating_naca0012 = TestCase('pywrapper_translating_naca0012')
+    pywrapper_translating_naca0012.cfg_dir = "py_wrapper/translating_NACA0012"
+    pywrapper_translating_naca0012.cfg_file = "config.cfg"
+    pywrapper_translating_naca0012.su2_exec = "python run_su2.py"
+    pywrapper_translating_naca0012.timeout = 60
+    pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
+    pywrapper_translating_naca0012.test_file = "forces_0.csv"
+    file_diff_list.append(pywrapper_translating_naca0012)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -734,12 +749,13 @@ def main():
     #end
 
     pass_list = [ test.run_test() for test in test_list ]
+    pass_list += [ test.run_filediff() for test in file_diff_list ]
 
     # Tests summary
     print('==================================================================')
     print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
-    for i, test in enumerate(test_list):
+    for i, test in enumerate(test_list+file_diff_list):
         if (pass_list[i]):
             print('  passed - %s'%test.tag)
         else:
