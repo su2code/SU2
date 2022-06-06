@@ -55,7 +55,7 @@ def main():
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
     flatplate_sst1994m.test_vals         = [-13.022890, -10.035602, -5.142343, -0.002535, 0.002809]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.022995, -10.035604, -5.142242, -0.002535, 0.002809]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.022223, -10.035608, -5.142357, -0.002535, 0.002809]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -64,7 +64,7 @@ def main():
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
     bump_sst1994m.test_vals         = [-13.069231, -10.325333, -5.558903, 0.024576, 0.004967] 
-    bump_sst1994m.test_vals_aarch64 = [-13.055133, -10.325357, -5.558448, 0.024576, 0.004967] 
+    bump_sst1994m.test_vals_aarch64 = [-13.057600, -10.325331, -5.558653, 0.024576, 0.004967]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
