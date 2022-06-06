@@ -184,7 +184,7 @@ def main():
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
-    polar_naca0012.test_vals_aarch64 = [-1.530736, 3.907308, 0.008883, 0.009019]
+    polar_naca0012.test_vals_aarch64 = [-1.787018, 3.632922, 0.013657, 0.008783]
     polar_naca0012.su2_exec  = "compute_polar.py -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001

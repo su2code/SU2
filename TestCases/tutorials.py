@@ -114,7 +114,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
     DAspecies3_primitiveVenturi.test_vals         = [-8.519150, -7.786969, -7.774848, -7.474167, -12.127149, -12.262476, -11.456643]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.536296, -7.813916, -7.790230, -7.482267, -12.133410, -12.330512, -11.530216]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.536429, -7.813860, -7.790489, -7.482271, -12.133357, -9.509867, -8.775885]
     DAspecies3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     DAspecies3_primitiveVenturi.timeout   = 1600
     DAspecies3_primitiveVenturi.new_output = True
