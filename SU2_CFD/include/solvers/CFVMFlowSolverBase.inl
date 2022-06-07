@@ -2442,7 +2442,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, GradTemperature = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2458,7 +2458,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   auto Origin = config->GetRefOriginMoment(0);
 
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const bool energy = config->GetEnergy_Equation();
   const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
   const bool roughwall = (config->GetnRoughWall() > 0);

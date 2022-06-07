@@ -111,6 +111,7 @@ private:
   unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
+  Catalyic,                 /*!< \brief Flag to know if the code is solving a catalytic problem.*/
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
@@ -6258,16 +6259,22 @@ public:
   bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
-   * \brief Determines if problem is adjoint
-   * \return true if Adjoint
+   * \brief Determines if problem is adjoint.
+   * \return true if Adjoint.
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
   /*!
-   * \brief Determines if problem is viscous
-   * \return true if Viscous
+   * \brief Determines if problem is viscous.
+   * \return true if Viscous.
    */
   bool GetViscous(void) const { return Viscous; }
+
+  /*!
+   * \brief Determines if problem has catalytic walls.
+   * \return true if catalytic walls are present.
+   */
+  bool GetCatalytic(void) const { return Catalyic; }
 
   /*!
    * \brief Provides the index of the solution in the container.
