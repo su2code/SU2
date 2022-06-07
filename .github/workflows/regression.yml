@@ -9,6 +9,11 @@ on:
     branches: 
       - 'develop'
       - 'master'
+  workflow_call:
+    # workflows: ["Regression and Unit Post-Validation on Linux ARM64"]
+    # types: [requested]
+    # branches:
+      # - 'develop'
 
 jobs:
   build:
@@ -36,25 +41,43 @@ jobs:
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ForwardOMP
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
+      - name: Set variables
+        id: vars
+        run: |
+          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
+      - name: Set local repo as Git safe
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        with:
+          entrypoint: /bin/git
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
       - name: Build 
-        uses: docker://su2code/build-su2:20191105
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Fix file ownership to local user
+        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        with:
+          entrypoint: /bin/chown
+          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
+      - name: Compress binaries
+        run: tar -zcvf install_bin.tgz install/bin
       - name: Upload Binaries 
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config_set }}
-          path: install/bin
+          path: install_bin.tgz
   regression_tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: Regression Tests
     needs: build
     strategy:
@@ -79,22 +102,51 @@ jobs:
           - testscript: 'hybrid_regression_AD.py'
             tag: OMP
     steps:
-      - name: Download All artifact
-        uses: actions/download-artifact@v2
-      - name: Move Binaries
+      - name: Download All artifacts
+        uses: actions/download-artifact@v3
+      - name: Set variables
+        id: vars
         run: |
-          mkdir -p install/bin
-          if [ -d "${{format('Base{0}', matrix.tag)}}" ];    then cp -r ${{format('Base{0}', matrix.tag)}}/.    install/bin/; fi
-          if [ -d "${{format('Reverse{0}', matrix.tag)}}" ]; then cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/; fi
-          if [ -d "${{format('Forward{0}', matrix.tag)}}" ]; then cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/; fi
-          chmod a+x install/bin/*
+          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
+      - name: Set local repo as Git safe
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/git
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
+
+      - name: Fix file ownership to local user
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/chown
+          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
+      - name: Uncompress and Move Binaries
+        run: |
+          BIN_FOLDER="$PWD/install/bin"
+          mkdir -p $BIN_FOLDER
+          ls -laH $BIN_FOLDER
+          for type in Base Reverse Forward; do
+            TYPE_FOLDER="${type}${{matrix.tag}}"
+            echo "Processing '$TYPE_FOLDER' ..."
+            if [ -d $TYPE_FOLDER ]; then
+              pushd $TYPE_FOLDER
+              ls -lah
+              tar -zxvf install_bin.tgz
+              ls -laH install/bin/
+              cp -r install/bin/* $BIN_FOLDER;
+              popd; 
+            fi
+          done
+          chmod a+x $BIN_FOLDER/*
+          ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://su2code/test-su2:20200303
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   unit_tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: Unit Tests
     needs: build
     strategy:
@@ -110,25 +162,54 @@ jobs:
             tag: MPI
     steps:
       - name: Download Base
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: ${{format('Base{0}', matrix.tag)}}
       - name: Download Reverse
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: ${{format('Reverse{0}', matrix.tag)}}
       - name: Download Forward
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: ${{format('Forward{0}', matrix.tag)}}
-      - name: Move Binaries
+      - name: Set variables
+        id: vars
         run: |
-          mkdir -p install/bin
-          cp -r ${{format('Base{0}', matrix.tag)}}/. install/bin/
-          cp -r ${{format('Reverse{0}', matrix.tag)}}/. install/bin/
-          cp -r ${{format('Forward{0}', matrix.tag)}}/. install/bin/
-          chmod a+x install/bin/*
+          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
+      - name: Set local repo as Git safe
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/git
+          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
+
+      - name: Fix file ownership to local user
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        with:
+          entrypoint: /bin/chown
+          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
+      - name: Uncompress and Move Binaries
+        run: |
+          BIN_FOLDER="$PWD/install/bin"
+          mkdir -p $BIN_FOLDER
+          ls -laH $BIN_FOLDER
+          for type in Base Reverse Forward; do
+            TYPE_FOLDER="${type}${{matrix.tag}}"
+            echo "Processing '$TYPE_FOLDER' ..."
+            if [ -d $TYPE_FOLDER ]; then
+              pushd $TYPE_FOLDER
+              ls -lah
+              tar -zxvf install_bin.tgz
+              ls -laH install/bin/
+              cp -r install/bin/* $BIN_FOLDER;
+              popd; 
+            fi
+          done
+          chmod a+x $BIN_FOLDER/*
+          ls -lahR $BIN_FOLDER
       - name: Run Unit Tests
-        uses: docker://su2code/test-su2:20191031
+        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
         with:
           entrypoint: install/bin/${{matrix.testdriver}}

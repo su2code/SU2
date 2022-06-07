@@ -1,0 +1,10 @@
+name: Post-Validation on Linux ARM64
+
+on:
+  schedule:
+    - cron: "*/2 * * * *"
+
+jobs:
+  regression:
+    uses: './.github/workflows/regression.yml'
+    runs-on: self-hosted

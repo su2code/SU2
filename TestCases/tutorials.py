@@ -113,7 +113,8 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
+    DAspecies3_primitiveVenturi.test_vals         = [-8.519150, -7.786969, -7.774848, -7.474167, -12.127149, -12.262476, -11.456643]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.536429, -7.813860, -7.790489, -7.482271, -12.133357, -9.509867, -8.775885]
     DAspecies3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     DAspecies3_primitiveVenturi.timeout   = 1600
     DAspecies3_primitiveVenturi.new_output = True
@@ -234,7 +235,8 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals     = [520, 0, -5.301340, 0, 0.303926, 0.782462, 0.003118, 0.015962]
+    tutorial_unst_naca0012.test_vals         = [520, 0, -5.297133, 0, 0.312721, 0.793897, 0.003417, 0.015934]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.297724, 0, 0.300206, 0.794023, 0.002877, 0.014433]
     tutorial_unst_naca0012.su2_exec      = "mpirun -np 2 SU2_CFD"
     tutorial_unst_naca0012.timeout       = 1600
     tutorial_unst_naca0012.tol           = 0.00001

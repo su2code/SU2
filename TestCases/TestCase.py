@@ -27,6 +27,7 @@
 from __future__ import print_function, division, absolute_import
 import time, os, subprocess, datetime, sys
 import difflib
+import platform
 
 
 def print_vals(vals, name="Values"):
@@ -63,6 +64,8 @@ class TestCase:
         self.test_iter = 1
         self.ntest_vals = 4
         self.test_vals = []  
+        self.test_vals_aarch64 = []
+        self.cpu_arch = platform.processor()
 
         # These can be optionally varied 
         self.su2_exec    = "SU2_CFD" 
@@ -71,6 +74,7 @@ class TestCase:
 
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
+        self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
     def run_test(self):
@@ -108,6 +112,13 @@ class TestCase:
             command = "%s %s > %s 2>&1" % (self.su2_exec, 
                                            self.cfg_file, 
                                            logfilename)
+
+        if self.cpu_arch == 'aarch64':
+            if len(self.test_vals_aarch64) != 0:
+                self.test_vals = self.test_vals_aarch64
+        
+            if len(self.reference_file_aarch64) != 0:
+                self.reference_file = self.reference_file_aarch64
 
         # Run SU2
         workdir = os.getcwd()
@@ -209,6 +220,7 @@ class TestCase:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
         if len(self.test_vals) != 0:
+            print('CPU architecture=%s' % self.cpu_arch)
             print('test_iter=%d' % self.test_iter)
 
             print_vals(self.test_vals, name="test_vals (stored)")
