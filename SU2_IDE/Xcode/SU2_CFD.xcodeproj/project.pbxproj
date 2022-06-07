@@ -259,10 +259,7 @@
 		35D63007259987B8008DF28B /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D63006259987B7008DF28B /* blas_structure.cpp */; };
 		35D6301625998877008DF28B /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301325998877008DF28B /* mpi_structure.cpp */; };
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
-
 		400F2BCA27607A4100B84906 /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 400F2BC927607A4100B84906 /* libROM.dylib */; };
-
-
 		401A905F27ACB42500CCF9B7 /* species_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 401A905D27ACB42500CCF9B7 /* species_sources.cpp */; };
 		401A906027ACB42500CCF9B7 /* CGradSmoothing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 401A905E27ACB42500CCF9B7 /* CGradSmoothing.cpp */; };
 		401A906927ACB49700CCF9B7 /* CSpeciesSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 401A906627ACB49700CCF9B7 /* CSpeciesSolver.cpp */; };
@@ -282,7 +279,6 @@
 		40C6D18D271F81AD009B5531 /* CNewtonIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D18C271F81AD009B5531 /* CNewtonIntegration.cpp */; };
 		40C6D193271F822F009B5531 /* CCGNSFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D192271F822E009B5531 /* CCGNSFileWriter.cpp */; };
 		40C6D19D271F840E009B5531 /* scalar_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C6D19A271F840E009B5531 /* scalar_sources.cpp */; };
-
 		40EECF6827604D9D00C77056 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40EECF6727604D9D00C77056 /* Accelerate.framework */; };
 		E9D6EE572316522800618E36 /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
@@ -2774,6 +2770,7 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
+				GCC_VERSION = "";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_SHADOW = YES;
@@ -2784,12 +2781,13 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				HEADER_SEARCH_PATHS = (
 					/Users/jessie/Software/libROM,
 					../../externals/CLI11,
 					../../externals/mel,
+					/usr/local/include,
 				);
+				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -2813,6 +2811,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_VERSION = "";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_SHADOW = YES;
@@ -2823,12 +2822,13 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				HEADER_SEARCH_PATHS = (
 					/Users/jessie/Software/libROM,
 					../../externals/CLI11,
 					../../externals/mel,
+					/usr/local/include,
 				);
+				LIBRARY_SEARCH_PATHS = /Users/jessie/Software/libROM/build/lib;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
