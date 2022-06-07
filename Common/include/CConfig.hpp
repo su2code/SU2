@@ -111,7 +111,7 @@ private:
   unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
-  Catalyic,                 /*!< \brief Flag to know if the code is solving a catalytic problem.*/
+  Catalytic,                /*!< \brief Flag to know if the code is solving a catalytic problem.*/
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */

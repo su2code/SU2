@@ -4946,6 +4946,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
    }
 
   /*--- Check for wall catalycity. ---*/
+
   if (nWall_Catalytic > 0) Catalytic = true;
 
   /*--- Handle default options for topology optimization ---*/
