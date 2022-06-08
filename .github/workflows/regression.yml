@@ -9,6 +9,7 @@ on:
     branches: 
       - 'develop'
       - 'master'
+      - 'arm64_runner_group'
   workflow_call:
     # workflows: ["Regression and Unit Post-Validation on Linux ARM64"]
     # types: [requested]
