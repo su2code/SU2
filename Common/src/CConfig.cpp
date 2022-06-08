@@ -1933,6 +1933,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
   addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
+  addStringOption("CUSTOM_OUTPUTS", CustomOutputs, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);

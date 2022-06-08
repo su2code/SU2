@@ -301,6 +301,8 @@ void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHist
 
 void COutput::SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver) {
 
+  if (!config->GetCustomOutputs().empty()) {}
+
   if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC && !config->GetCustomObjFunc().empty()) {
     if (!customObjFunc.ready) {
       SetupCustomHistoryOutput(config->GetCustomObjFunc(), customObjFunc);
@@ -1039,10 +1041,10 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
         oldFunc[iField_Conv] = newFunc[iField_Conv];
         newFunc[iField_Conv] = monitor;
-        /*--- Automatically modify the scaling factor of relative Cauchy convergence for 
-        * coefficients that are close to zero. Example: For the clean aircraft, the rolling 
-        * moment coefficient MOMENT_X is close to zero and thus will never reach a relative 
-        * cauchy convergence ->> dividing tiny numbers is not a good idea. Using absolute 
+        /*--- Automatically modify the scaling factor of relative Cauchy convergence for
+        * coefficients that are close to zero. Example: For the clean aircraft, the rolling
+        * moment coefficient MOMENT_X is close to zero and thus will never reach a relative
+        * cauchy convergence ->> dividing tiny numbers is not a good idea. Using absolute
         * cauchy convergence is more robust in this case. ---*/
         cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv]) / fmax(fabs(monitor), 0.1);
 

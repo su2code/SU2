@@ -172,7 +172,7 @@ protected:
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
 
-  /** \brief Struct to hold a parsed user-defined expression. */
+  /*! \brief Struct to hold a parsed user-defined expression. */
   struct CustomHistoryOutput {
     mel::ExpressionTree<passivedouble> expression;
     /*--- Pointers to values in the history output maps, to avoid key lookup every time. ---*/
@@ -186,13 +186,32 @@ protected:
 
   CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
+  /*! \brief Type of averaging for custom outputs. */
+  enum class AverageType { AREA, MASSFLOW, VOLUME, MASS };
+
+  /*! \brief Struct to hold a parsed custom output function. */
+  struct CustomOutput {
+    // First level of parsing.
+    // name = type{func}[markers]
+    std::string name;
+    AverageType type;
+    std::string func;
+    std::vector<std::string> markers;
+
+    // Second level, func into expression, and acceleration structures.
+    mel::ExpressionTree<passivedouble> expression;
+    std::vector<std::string> symbols;
+
+    std::vector<unsigned short> markerIndices;
+  };
+
    /*----------------------------- Volume output ----------------------------*/
 
    CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
    CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
 
    vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-   unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */
+   unsigned short nVolumeFields;        //!< \brief Number of fields in the volume output */
 
    string volumeFilename,               //!< Volume output filename
    surfaceFilename,                     //!< Surface output filename
