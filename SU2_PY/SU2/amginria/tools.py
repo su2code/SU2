@@ -32,7 +32,7 @@
 import numpy as np
 from itertools import islice
 import sys, os
-import _su2gmf as su2gmf
+import su2gmf
 
 """ 
 Get prescribed mesh complexities, i.e. desired mesh sizes

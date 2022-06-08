@@ -28,7 +28,7 @@
 import sys
 import numpy as np
 
-import _su2gmf as su2gmf
+import su2gmf
 import pyamg
 
 """

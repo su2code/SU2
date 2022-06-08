@@ -41,6 +41,7 @@ def remove_file(path, retries=3, sleep=0.1):
 def init_submodules(method = 'auto'):
 
   cur_dir = sys.path[0]
+  print(cur_dir)
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
@@ -58,7 +59,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = '749006ec9ccbd1b3d2f126642f1354f1606c3e72'
+  sha_version_amg = '8acd94de7fd6b00cd26fd4b13e984af4530d1935'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
@@ -117,16 +118,16 @@ def init_submodules(method = 'auto'):
   err = open( 'amgio.err', 'w' )
   if sys.version_info >= (3, 7):
     import pkg_resources
-    required = {'pyamg','_su2gmf'}
+    required = {'pyamg','su2gmf'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
 
-    if '_su2gmf' in missing:
-      print('Installing _su2gmf.')
+    if 'su2gmf' in missing:
+      print('Installing su2gmf.')
       cmd = sys.executable
-      amg_ext_dir  = alt_name_amg + '/su2gmf'
-      subprocess.call([cmd,'setup.py','build_ext'], cwd = amg_ext_dir, stdout = log, stderr = err)
-      subprocess.call([cmd,'setup.py','install'], cwd = amg_ext_dir, stdout = log, stderr = err)
+      ext_dir = alt_name_amg + '/su2gmf/'
+      subprocess.call([cmd, 'setup.py', 'build_ext'], cwd=ext_dir, stdout = log, stderr = err)
+      subprocess.call([cmd, '-m', 'pip', 'install', '.'], cwd=ext_dir, stdout = log, stderr = err)
 
     # Setup pyamg
     if 'pyamg' in missing:
@@ -258,7 +259,7 @@ def install_pyamg(log, err):
 
   pyamg_whl = 'externals/amgio/pyamg/python3/' + pyamg_whl
   try:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], stdout=log, stderr = err)
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], cwd=sys.path[0], stdout=log, stderr = err)
     log.close()
     err.close()
   except:
