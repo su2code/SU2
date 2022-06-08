@@ -95,7 +95,7 @@ def get_amg_config(config_su2):
     if back_extension == ".su2":
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
-        su2gmf.py_ConvertSU2toGMF(config_amg['adap_back'], "", "amg_back", "")
+        su2gmf.SU2toGMF(config_amg['adap_back'], "", "amg_back", "")
         config_amg['adap_back'] = os.path.join(cwd, "adap/ite0/amg_back.meshb")
 
     #--- Add AMG command flags

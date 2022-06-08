@@ -104,7 +104,7 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     Markers = []
     
-    su2gmf.py_ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers)
+    su2gmf.ReadMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers)
         
     NbrTet = int(len(Tet)/5)
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(np.int64)
@@ -166,7 +166,7 @@ def read_mesh(mesh_name):
     
     Markers = []
     
-    su2gmf.py_ReadMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers)
+    su2gmf.ReadMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers)
         
     NbrTet = int(len(Tet)/5)
     Tet = np.reshape(Tet,(NbrTet, 5)).astype(np.int64)
@@ -212,7 +212,7 @@ def read_sol(solution_name, mesh):
     Sol = []
     SolTag = []
     
-    su2gmf.py_ReadSol(solution_name, Sol, SolTag, NbrVer, Dim)
+    su2gmf.ReadSol(solution_name, Sol, SolTag, NbrVer, Dim)
         
     SolSiz = int(len(Sol)/NbrVer)
     Sol = np.array(Sol).reshape(NbrVer,SolSiz).tolist()
@@ -275,7 +275,7 @@ def write_mesh_and_sol(mesh_name, solution_name, mesh):
     else:
         Sol = []
     
-    su2gmf.py_WriteMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
+    su2gmf.WriteMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
 
 """
 Write mesh and solution using su2gmf module
@@ -314,7 +314,7 @@ def write_mesh(mesh_name, mesh):
     Edg = np.array(Edg).reshape(3*len(Edg)).tolist()
     Cor = np.array(Cor).reshape(len(Cor)).tolist()
     
-    su2gmf.py_WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
+    su2gmf.WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
     
 """
 Write solution using su2gmf module
@@ -344,7 +344,7 @@ def write_sol(sol_name, sol):
         sys.stderr.write("## ERROR write_sol : No solution.\n")
         sys.exit(1)
         
-    su2gmf.py_WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
+    su2gmf.WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
 
 
 
