@@ -93,7 +93,7 @@ class CLookUpTable {
     return index;
   }
 
-  inline const vector<su2double> GetData(string name_var) {
+  inline const su2double* GetData(const std::string& name_var) const {
     int ix_var = GetIndexOfVar(name_var);
 
     /* NB: check if this function can be made to return a pointer to a vector<su2double> */
