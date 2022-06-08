@@ -59,7 +59,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = 'c271465359ac338d8cc7d573e594759d0bd8c50f'
+  sha_version_amg = 'ce5a75116884a516451b47b78e033da3041ee17d'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
@@ -126,7 +126,7 @@ def init_submodules(method = 'auto'):
       print('Installing su2gmf.')
       cmd = sys.executable
       ext_dir = alt_name_amg + '/su2gmf/'
-      subprocess.call([cmd, 'setup.py', 'build_ext'], cwd=ext_dir, stdout = log, stderr = err)
+      subprocess.call(['swig', '-python', 'src/su2gmf.i'], cwd=ext_dir, stdout = log, stderr = err)
       subprocess.call([cmd, '-m', 'pip', 'install', '.'], cwd=ext_dir, stdout = log, stderr = err)
 
     # Setup pyamg
