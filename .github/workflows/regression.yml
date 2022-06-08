@@ -56,16 +56,16 @@ jobs:
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
       - name: Set local repo as Git safe
-        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/build-su2:220608-0826
         with:
           entrypoint: /bin/git
-          args: config --global --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
+          args: config --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
       - name: Build 
-        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/build-su2:220608-0826
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Fix file ownership to local user
-        uses: docker://ghcr.io/su2code/su2/build-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/build-su2:220608-0826
         with:
           entrypoint: /bin/chown
           args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
@@ -111,13 +111,13 @@ jobs:
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
       - name: Set local repo as Git safe
-        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/test-su2:220608-0826
         with:
           entrypoint: /bin/git
           args: config --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
 
       - name: Fix file ownership to local user
-        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/test-su2:220608-0826
         with:
           entrypoint: /bin/chown
           args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
@@ -141,7 +141,7 @@ jobs:
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/test-su2:220608-0826
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
@@ -180,13 +180,13 @@ jobs:
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
       - name: Set local repo as Git safe
-        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/test-su2:220608-0826
         with:
           entrypoint: /bin/git
           args: config --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
 
       - name: Fix file ownership to local user
-        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/test-su2:220608-0826
         with:
           entrypoint: /bin/chown
           args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
@@ -210,6 +210,6 @@ jobs:
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Unit Tests
-        uses: docker://ghcr.io/su2code/su2/test-su2:220510-1800
+        uses: docker://ghcr.io/su2code/su2/test-su2:220608-0826
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
