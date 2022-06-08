@@ -6456,7 +6456,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann,
-  Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
+  Pressure, Density, Energy, Flow_Dir[MAXNDIM] = {0.0}, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[MAXNDIM], Normal[MAXNDIM] = {0.0};
   su2double *V_inlet, *V_domain;
 
@@ -6510,13 +6510,17 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Total properties have been specified at the inlet. ---*/
 
-        case INLET_TYPE::TOTAL_CONDITIONS:
+        case INLET_TYPE::TOTAL_CONDITIONS: {
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
           P_Total  = Inlet_Ptotal[val_marker][iVertex];
           T_Total  = Inlet_Ttotal[val_marker][iVertex];
-          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+          const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
+          const su2double mag = GeometryToolbox::Norm(nDim, dir);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Flow_Dir[iDim] = dir[iDim] / mag
+          }
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -6623,7 +6627,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           Density  = Inlet_Ttotal[val_marker][iVertex];
           Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
-          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+          const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
+          const su2double mag = GeometryToolbox::Norm(nDim, dir);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Flow_Dir[iDim] = dir[iDim] / mag
+          }
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
