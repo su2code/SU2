@@ -10,8 +10,13 @@ on:
       - 'develop'
       - 'master'
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    permissions:
+      contents: none
     name: Build SU2
     strategy:
       fail-fast: false
@@ -54,6 +59,8 @@ jobs:
           name: ${{ matrix.config_set }}
           path: install/bin
   regression_tests:
+    permissions:
+      contents: none
     runs-on: ubuntu-latest
     name: Regression Tests
     needs: build
@@ -94,6 +101,8 @@ jobs:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   unit_tests:
+    permissions:
+      contents: none
     runs-on: ubuntu-latest
     name: Unit Tests
     needs: build
