@@ -2813,6 +2813,14 @@ public:
    * \return Value of the total temperature
    */
   inline virtual su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  
+  /*!
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the static temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the static temperature is evaluated.
+   * \return Value of the static temperature
+   */
+  inline virtual su2double GetInlet_Temperature(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member
@@ -2821,6 +2829,14 @@ public:
    * \return Value of the total pressure
    */
   inline virtual su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  
+  /*!
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the static pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the static pressure is evaluated.
+   * \return Value of the static pressure
+   */
+  inline virtual su2double GetInlet_Pressure(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member
@@ -2832,6 +2848,17 @@ public:
   inline virtual su2double GetInlet_FlowDir(unsigned short val_marker,
                                             unsigned long val_vertex,
                                             unsigned short val_dim) const { return 0; }
+                                            
+  /*!
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the inlet velocity is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the inlet velocity is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a inlet velocity vectir.
+   */
+  inline virtual su2double GetInlet_Velocity(unsigned short val_marker,
+                                             unsigned long val_vertex,
+                                             unsigned short val_dim) const { return 0; }                                         
 
   /*!
    * \brief A virtual member
@@ -3434,6 +3461,13 @@ public:
                         int val_iter,
                         unsigned short val_kind_solver,
                         unsigned short val_kind_marker) const;
+                        
+  void LoadSupersonicInletProfile(CGeometry **geometry,
+                                  CSolver ***solver,
+                                  CConfig *config,
+                                  int val_iter,
+                                  unsigned short val_kind_solver,
+                                  unsigned short val_kind_marker) const;                      
 
   /*!
    * \brief A virtual member.
