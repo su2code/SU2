@@ -171,6 +171,9 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > Inlet_Ptotal;      /*!< \brief Value of the Total P. */
   vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
   vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
+  vector<vector<su2double> > Inlet_Pressure;    /*!< \brief Value of the static P. */
+  vector<vector<su2double> > Inlet_Temperature; /*!< \brief Value of the static T. */
+  vector<su2activematrix> Inlet_Velocity;       /*!< \brief Value of the Velocity components. */
   vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
@@ -2116,6 +2119,38 @@ class CFVMFlowSolverBase : public CSolver {
                                     unsigned short val_dim) const final {
     return Inlet_FlowDir[val_marker][val_vertex][val_dim];
   }
+  
+  /*!
+   * \brief Value of the static temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the static temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the static temperature is evaluated.
+   * \return Value of the static temperature
+   */
+  inline su2double GetInlet_Temperature(unsigned short val_marker, unsigned long val_vertex) const final {
+    return Inlet_Temperature[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Value of the static pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the static pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the static pressure is evaluated.
+   * \return Value of the static pressure
+   */
+  inline su2double GetInlet_Pressure(unsigned short val_marker, unsigned long val_vertex) const final {
+    return Inlet_Pressure[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief A component of the velocity vector at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the velocity vector is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the velocity vector is evaluated
+   * \param[in] val_dim - The component of the velocity vector to be evaluated
+   * \return Component of a velocity vector.
+   */
+  inline su2double GetInlet_Velocity(unsigned short val_marker, unsigned long val_vertex,
+                                    unsigned short val_dim) const final {
+    return Inlet_Velocity[val_marker][val_vertex][val_dim];
+  }
 
   /*!
    * \brief Set the value of the total temperature at an inlet boundary.
@@ -2169,7 +2204,60 @@ class CFVMFlowSolverBase : public CSolver {
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
   }
+    
+  /*!
+   * \brief Set the value of the static temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the static temperature is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the static temperature is set.
+   * \param[in] val_ttotal - Value of the static temperature
+   */
+  inline void SetInlet_Temperature(unsigned short val_marker, unsigned long val_vertex, su2double val_temperature) {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    if (val_marker >= nMarker)
+      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    else if (val_vertex >= nVertex[val_marker])
+      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    else
+      Inlet_Temperature[val_marker][val_vertex] = val_temperature;
+  }
 
+  /*!
+   * \brief Set the value of the static pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the static pressure is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the static pressure is set.
+   * \param[in] val_ptotal - Value of the static pressure
+   */
+  inline void SetInlet_Pressure(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure) {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    if (val_marker >= nMarker)
+      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    else if (val_vertex >= nVertex[val_marker])
+      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    else
+      Inlet_Pressure[val_marker][val_vertex] = val_pressure;
+  }
+
+  /*!
+   * \brief Set a component of the velocity vector at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the velocity vector is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the velocity vector is set.
+   * \param[in] val_dim - The component of the velocity vector to be set
+   * \param[in] val_flowdir - Component of a velocity vector.
+   */
+  inline void SetInlet_Velocity(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
+                               su2double val_velocity) {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    if (val_marker >= nMarker)
+      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    else if (val_vertex >= nVertex[val_marker])
+      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    else
+      Inlet_Velocity[val_marker][val_vertex][val_dim] = val_velocity;
+  }
+  
   /*!
    * \brief Compute the global error measures (L2, Linf) for verification cases.
    * \param[in] geometry - Geometrical definition.

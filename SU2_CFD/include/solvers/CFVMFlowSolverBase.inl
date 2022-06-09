@@ -746,6 +746,34 @@ su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(su2double* val_inlet, unsig
         }
       }
     }
+  } else if (val_kind_marker == SUPERSONIC_INLET) {
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ((config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) &&
+            (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+            if (iPoint == val_inlet_point) {
+              /*-- Compute boundary face area for this vertex. ---*/
+
+              geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+              Area = GeometryToolbox::Norm(nDim, Normal);
+
+              /*--- Access and store the inlet variables for this vertex. ---*/
+
+              val_inlet[T_position] = Inlet_Temperature[iMarker][iVertex];
+              val_inlet[P_position] = Inlet_Pressure[iMarker][iVertex];
+              for (iDim = 0; iDim < nDim; iDim++) {
+                val_inlet[FlowDir_position + iDim] = Inlet_Velocity[iMarker][iVertex][iDim];
+              }
+
+              /*--- Exit once we find the point. ---*/
+
+              return Area;
+          }
+        }
+      }
+    }
   }
 
   /*--- If we don't find a match, then the child point is not on the
@@ -767,6 +795,18 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+    }
+
+  } else if (config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
+    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    su2double pressure = config->GetInlet_Pressure(Marker_Tag);
+    su2double temperature = config->GetInlet_Temperature(Marker_Tag);
+    auto velocity = config->GetInlet_Velocity(Marker_Tag);
+
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_Temperature[iMarker][iVertex] = temperature;
+      Inlet_Pressure[iMarker][iVertex] = pressure;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_Velocity[iMarker][iVertex][iDim] = velocity[iDim];
     }
 
   } else {
@@ -1891,7 +1931,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
     if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY) || (Boundary == INLET_FLOW) ||
         (Boundary == OUTLET_FLOW) || (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET) ||
-        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
+        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST) || (Boundary == SUPERSONIC_INLET)) {
       /*--- Forces initialization at each Marker ---*/
 
       InvCoeff.setZero(iMarker);
@@ -2193,7 +2233,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
     }
 
     if ((Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) || (Boundary == ACTDISK_INLET) ||
-        (Boundary == ACTDISK_OUTLET) || (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
+        (Boundary == ACTDISK_OUTLET) || (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST) || (Boundary == SUPERSONIC_INLET)) {
       /*--- Forces initialization at each Marker ---*/
 
       MntCoeff.setZero(iMarker);
