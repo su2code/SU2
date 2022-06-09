@@ -1100,6 +1100,34 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                      string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
     }
 
+  } else if (config->GetSupersonicInlet_Profile_From_File()) {
+
+      /*--- Use LoadSupersonicInletProfile() routines for the particular solver. ---*/
+
+      if (rank == MASTER_NODE) {
+        cout << endl;
+        cout << "Reading supersonic inlet profile from file: ";
+        cout << config->GetSupersonicInlet_FileName() << endl;
+      }
+
+      if (solver[MESH_0][FLOW_SOL]) {
+        solver[MESH_0][FLOW_SOL]->LoadSupersonicInletProfile(geometry, solver, config, val_iter, FLOW_SOL, SUPERSONIC_INLET);
+      }
+      if (solver[MESH_0][TURB_SOL]) {
+        solver[MESH_0][TURB_SOL]->LoadSupersonicInletProfile(geometry, solver, config, val_iter, TURB_SOL, SUPERSONIC_INLET);
+      }
+      if (solver[MESH_0][SPECIES_SOL]) {
+        solver[MESH_0][SPECIES_SOL]->LoadSupersonicInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, SUPERSONIC_INLET);
+      }
+
+      /*--- Exit if profiles were requested for a solver that is not available. ---*/
+
+      if (!config->GetFluidProblem()) {
+        SU2_MPI::Error(string("Supersonic inlet profile specification via file (C++) has not been \n") +
+                       string("implemented yet for this solver.\n") +
+                       string("Please set SPECIFIED_SUPERSONIC_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
+    }
+
   } else {
 
     /*--- Uniform inlets or python-customized inlets ---*/
