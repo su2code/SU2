@@ -43,12 +43,8 @@ class CFluidScalar final : public CFluidModel {
   su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
   su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
 
-  std::vector<su2double> massFractions;              /*!< \brief Mass fractions of all species. */
-  std::vector<su2double> moleFractions;              /*!< \brief Mole fractions of all species. */
-  std::vector<su2double> molarMasses;                /*!< \brief Molar masses of all species. */
-  std::vector<su2double> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
-  std::vector<su2double> specificHeat;               /*!< \brief Specific heat of all species. */
-  std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
+  std::vector<su2double> molarMasses;  /*!< \brief Molar masses of all species. */
+  std::vector<su2double> specificHeat; /*!< \brief Specific heat of all species. */
 
  public:
   /*!
