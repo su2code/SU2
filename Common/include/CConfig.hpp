@@ -219,10 +219,12 @@ private:
   nMarker_CfgFile;                /*!< \brief Total number of markers using the config file (note that in
                                         parallel computations this number can be different from nMarker_All). */
 
-  bool Inlet_From_File;         /*!< \brief True if the inlet profile is to be loaded from a file. */
-  string Inlet_Filename;        /*!< \brief Filename specifying an inlet profile. */
-  su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
-  string ActDisk_FileName;      /*!< \brief Filename specifying an actuator disk. */
+  bool Inlet_From_File;             /*!< \brief True if the inlet profile is to be loaded from a file. */
+  string Inlet_Filename;            /*!< \brief Filename specifying an inlet profile. */
+  bool Supersonic_Inlet_From_File;  /*!< \brief True if the supersonic inlet profile is to be loaded from a file. */
+  string Supersonic_Inlet_Filename; /*!< \brief Filename specifying a supersonic inlet profile. */
+  su2double Inlet_Matching_Tol;     /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
+  string ActDisk_FileName;          /*!< \brief Filename specifying an actuator disk. */
 
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
@@ -4844,12 +4846,24 @@ public:
    * \return True if an input file is to be used for the inlet profile(s)
    */
   bool GetInlet_Profile_From_File(void) const { return Inlet_From_File; }
+  
+  /*!
+   * \brief Check if the supersonic inlet profile(s) are specified in an input file
+   * \return True if an input file is to be used for the supersonic inlet profile(s)
+   */
+  bool GetSupersonicInlet_Profile_From_File(void) const { return Supersonic_Inlet_From_File; }
 
   /*!
    * \brief Get name of the input file for the specified inlet profile.
    * \return Name of the input file for the specified inlet profile.
    */
   string GetInlet_FileName(void) const { return Inlet_Filename; }
+  
+  /*!
+   * \brief Get name of the input file for the specified supersonic inlet profile.
+   * \return Name of the input file for the specified supersonic inlet profile.
+   */
+  string GetSupersonicInlet_FileName(void) const { return Supersonic_Inlet_Filename; }
 
   /*!
    * \brief Get name of the input file for the specified actuator disk.
