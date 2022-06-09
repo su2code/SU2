@@ -1240,7 +1240,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     }      // if bound_is_straight
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
+      
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
       Normal_Product = 0.0;
@@ -1270,11 +1270,11 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
             the velocity is mirrored along the symmetry boundary, i.e. the velocity in
             normal direction is substracted twice. ---*/
       for (iVar = 0; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
-
+        
       /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
             velocity in normal direction: v_r = v - 2 (v*n)n ---*/
       ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
-
+        
       /*--- Adjustment to v.n due to grid movement. ---*/
       if (dynamic_grid) {
         ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
@@ -1294,20 +1294,10 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       }
 
       /*--- Compute the residual using an upwind scheme. ---*/
-
       auto residual = conv_numerics->ComputeResidual(config);
 
-      for (iDim = 0; iDim < nDim; iDim++) {
-        UnitNormal[iDim] = Normal[iDim]/Area;
-        Normal_Product += residual[nSpecies+iDim]*UnitNormal[iDim];
-      }
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
-      }
-
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration. ---*/
       if (implicit) {

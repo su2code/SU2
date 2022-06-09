@@ -155,7 +155,6 @@
 		354903C12537E0290095B597 /* nonlinear_models.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032A2537E0280095B597 /* nonlinear_models.cpp */; };
 		354903C22537E0290095B597 /* transition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032B2537E0280095B597 /* transition.cpp */; };
 		354903C32537E0290095B597 /* radiation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032C2537E0280095B597 /* radiation.cpp */; };
-		354903C52537E0290095B597 /* turb_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3549032F2537E0280095B597 /* turb_sources.cpp */; };
 		354903C72537E0290095B597 /* heat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903312537E0280095B597 /* heat.cpp */; };
 		354903C82537E0290095B597 /* adj_diffusion.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903332537E0280095B597 /* adj_diffusion.cpp */; };
 		354903C92537E0290095B597 /* adj_sources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 354903342537E0280095B597 /* adj_sources.cpp */; };
@@ -665,7 +664,6 @@
 		3549032A2537E0280095B597 /* nonlinear_models.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = nonlinear_models.cpp; sourceTree = "<group>"; };
 		3549032B2537E0280095B597 /* transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = transition.cpp; sourceTree = "<group>"; };
 		3549032C2537E0280095B597 /* radiation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = radiation.cpp; sourceTree = "<group>"; };
-		3549032F2537E0280095B597 /* turb_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = turb_sources.cpp; sourceTree = "<group>"; };
 		354903312537E0280095B597 /* heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = heat.cpp; sourceTree = "<group>"; };
 		354903332537E0280095B597 /* adj_diffusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = adj_diffusion.cpp; sourceTree = "<group>"; };
 		354903342537E0280095B597 /* adj_sources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = adj_sources.cpp; sourceTree = "<group>"; };
@@ -1790,7 +1788,6 @@
 				357BEEE9256D71E100423D14 /* NEMO */,
 				40C6D199271F840E009B5531 /* scalar */,
 				401A905C27ACB42500CCF9B7 /* species */,
-				3549032D2537E0280095B597 /* turbulent */,
 				401A905E27ACB42500CCF9B7 /* CGradSmoothing.cpp */,
 				354903362537E0280095B597 /* CNumerics.cpp */,
 				354903312537E0280095B597 /* heat.cpp */,
@@ -1810,14 +1807,6 @@
 				3549032A2537E0280095B597 /* nonlinear_models.cpp */,
 			);
 			path = elasticity;
-			sourceTree = "<group>";
-		};
-		3549032D2537E0280095B597 /* turbulent */ = {
-			isa = PBXGroup;
-			children = (
-				3549032F2537E0280095B597 /* turb_sources.cpp */,
-			);
-			path = turbulent;
 			sourceTree = "<group>";
 		};
 		354903322537E0280095B597 /* continuous_adjoint */ = {
@@ -2474,7 +2463,6 @@
 				354901DA2537E0050095B597 /* CMMSIncNSSolution.cpp in Sources */,
 				354901D82537E0050095B597 /* CSymmetricMatrix.cpp in Sources */,
 				354903A32537E0290095B597 /* CTurbSolver.cpp in Sources */,
-				354903C52537E0290095B597 /* turb_sources.cpp in Sources */,
 				354903D52537E0290095B597 /* CTurbSSTVariable.cpp in Sources */,
 				3549020B2537E0050095B597 /* CTETRA1.cpp in Sources */,
 				354903C82537E0290095B597 /* adj_diffusion.cpp in Sources */,
