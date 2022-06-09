@@ -39,22 +39,22 @@ class CConstantConductivity final : public CConductivityModel {
   /*!
    * \brief Constructor of the class.
    */
-  CConstantConductivity(su2double kt_const) : kt_(kt_const) {}
+  CConstantConductivity(su2double kt_const) : kt(kt_const) {}
 
   /*!
    * \brief return conductivity value.
    */
-  su2double GetConductivity() const override { return kt_; }
+  su2double GetConductivity() const override { return kt; }
 
   /*!
    * \brief return conductivity partial derivative value.
    */
-  su2double Getdktdrho_T() const override { return dktdrho_t_; }
+  su2double Getdktdrho_T() const override { return dktdrho_t; }
 
   /*!
    * \brief return conductivity partial derivative value.
    */
-  su2double GetdktdT_rho() const override { return dktdt_rho_; }
+  su2double GetdktdT_rho() const override { return dktdt_rho; }
 
   /*!
    * \brief Set thermal conductivity.
@@ -68,7 +68,7 @@ class CConstantConductivity final : public CConductivityModel {
   }
 
  private:
-  su2double kt_{0.0};        /*!< \brief Thermal conductivity. */
-  su2double dktdrho_t_{0.0}; /*!< \brief DktDrho_T. */
-  su2double dktdt_rho_{0.0}; /*!< \brief DktDT_rho. */
+  su2double kt{0.0};        /*!< \brief Thermal conductivity. */
+  su2double dktdrho_t{0.0}; /*!< \brief DktDrho_T. */
+  su2double dktdt_rho{0.0}; /*!< \brief DktDT_rho. */
 };

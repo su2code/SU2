@@ -1228,7 +1228,7 @@ void CConfig::SetConfig_Options() {
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-  addDoubleOption("THERMAL_CONDUCTIVITY_CONSTANT", Thermal_Conductivity_Constant , 0.0257);
+  addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", nThermal_Conductivity_Constant , Thermal_Conductivity_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
@@ -1244,9 +1244,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
   addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /*!\brief PRANDTL_LAM \n DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) \n DEFAULT: 0.72 \ingroup Config*/
-  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+  addDoubleListOption("PRANDTL_LAM", nPrandtl_Lam , Prandtl_Lam);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
-  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  addDoubleListOption("PRANDTL_TURB", nPrandtl_Turb , Prandtl_Turb);
 
   /*--- Options related to wall models. ---*/
 
@@ -3748,6 +3748,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Mu_Ref_Default = Mu_Constant_Default;
   const su2double Mu_Temperature_Ref_Default = 273.15;
   const su2double Mu_S_Default = 110.4;
+  const su2double Thermal_Conductivity_Constant_Default = 2.57E-2;
+  const su2double Prandtl_Lam_Default = 0.72;
+  const su2double Prandtl_Turb_Default = 0.9;
 
   if (Molecular_Weight == nullptr) {
     Molecular_Weight = new su2double[1];
@@ -3773,6 +3776,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nMu_S = 1;
   }
 
+  if (Thermal_Conductivity_Constant == nullptr) {
+    Thermal_Conductivity_Constant = new su2double[1];
+    Thermal_Conductivity_Constant[0] = Thermal_Conductivity_Constant_Default;
+    nThermal_Conductivity_Constant = 1;
+  }
+  
+  if (Prandtl_Lam == nullptr) {
+    Prandtl_Lam = new su2double[1];
+    Prandtl_Lam[0] = Prandtl_Lam_Default;
+    nPrandtl_Lam = 1;
+  }
+
+  if (Prandtl_Turb == nullptr) {
+    Prandtl_Turb = new su2double[1];
+    Prandtl_Turb[0] = Prandtl_Turb_Default;
+    nPrandtl_Turb = 1;
+  }
+  
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
   if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3781,7 +3802,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (nMolecular_Weight != nSpecies_Init + 1) {
       SU2_MPI::Error(
           "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
-          "to be equal to the number of entries of SCALAR_INIT + 1",
+          "to be equal to the number of entries of SPECIES_INIT + 1",
           CURRENT_FUNCTION);
     }
     /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
@@ -3796,7 +3817,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         if (nMu_Constant != nSpecies_Init + 1) {
           SU2_MPI::Error(
               "The use of FLUID_MIXTURE requires the number of entries for MU_CONSTANT,\n"
-              "to be equal to the number of entries of SCALAR_INIT + 1",
+              "to be equal to the number of entries of SPECIES_INIT + 1",
               CURRENT_FUNCTION);
         }
         break;
@@ -3806,12 +3827,53 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           SU2_MPI::Error(
               "The use of FLUID_MIXTURE requires the number of entries for MU_REF, MU_T_REF and "
               "SUTHERLAND_CONSTANT,\n"
-              "to be equal to the number of entries of SCALAR_INIT + 1",
+              "to be equal to the number of entries of SPECIES_INIT + 1",
               CURRENT_FUNCTION);
         }
         break;
       default:
         if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+        break;
+    }
+
+    switch (Kind_ConductivityModel) {
+      case CONDUCTIVITYMODEL::CONSTANT:
+        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          if ((nThermal_Conductivity_Constant != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
+            SU2_MPI::Error(
+                "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and "
+                "PRANDTL_TURB,\n"
+                "to be equal to the number of entries of SPECIES_INIT + 1",
+                CURRENT_FUNCTION);
+          }
+        } else {
+          if (nThermal_Conductivity_Constant != nSpecies_Init + 1) {
+            SU2_MPI::Error(
+                "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
+                "to be equal to the number of entries of SPECIES_INIT + 1",
+                CURRENT_FUNCTION);
+          }
+        }
+        break;
+      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          if ((nPrandtl_Lam != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
+            SU2_MPI::Error(
+                "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
+                "to be equal to the number of entries of SPECIES_INIT + 1",
+                CURRENT_FUNCTION);
+          }
+        } else {
+          if (nPrandtl_Lam != nSpecies_Init + 1) {
+            SU2_MPI::Error(
+                "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM,\n"
+                "to be equal to the number of entries of SPECIES_INIT + 1",
+                CURRENT_FUNCTION);
+          }
+        }
+        break;
+      default:
+        if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
         break;
     }
   }
@@ -3828,6 +3890,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         /* Correct the values with temperature dimension, if they contain the default SI values. */
         if (fabs(Mu_Temperature_Ref[iVar] - Mu_Temperature_Ref_Default) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
         if (fabs(Mu_S[iVar] - Mu_S_Default) < 1.0E-8) Mu_S[iVar] *= 1.8;
+
+        /* Correct the thermal conductivity, if it contains the default SI value. */
+        if (fabs(Thermal_Conductivity_Constant[iVar] - Thermal_Conductivity_Constant_Default) < 1.0E-10)
+          Thermal_Conductivity_Constant[iVar] *= 0.577789317;
       }
     } else {
       /* Correct the viscosities, if they contain the default SI values. */
@@ -3837,9 +3903,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /* Correct the values with temperature dimension, if they contain the default SI values. */
       if (fabs(*Mu_Temperature_Ref - 273.15) < 1.0E-8) *Mu_Temperature_Ref *= 1.8;
       if (fabs(*Mu_S - 110.4) < 1.0E-8) *Mu_S *= 1.8;
-    }
-    /* Correct the thermal conductivity, if it contains the default SI value. */
-    if (fabs(Thermal_Conductivity_Constant - 0.0257) < 1.0E-10) Thermal_Conductivity_Constant *= 0.577789317;
+      
+      /* Correct the thermal conductivity, if it contains the default SI value. */
+      if (fabs(*Thermal_Conductivity_Constant - 0.0257) < 1.0E-10) *Thermal_Conductivity_Constant *= 0.577789317;
+    } 
   }
 
   /*--- Check for Measurement System ---*/

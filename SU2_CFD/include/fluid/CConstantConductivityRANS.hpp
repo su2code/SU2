@@ -42,28 +42,28 @@ class CConstantConductivityRANS final : public CConductivityModel {
    * \brief Constructor of the class.
    */
   CConstantConductivityRANS(su2double kt_lam_const, su2double pr_turb)
-      : kt_lam_const_(kt_lam_const), pr_turb_(pr_turb) {}
+      : kt_lam_const(kt_lam_const), pr_turb(pr_turb) {}
 
   /*!
    * \brief return conductivity value.
    */
-  su2double GetConductivity() const override { return kt_; }
+  su2double GetConductivity() const override { return kt; }
 
   /*!
    * \brief return conductivity partial derivative value.
    */
-  su2double Getdktdrho_T() const override { return dktdrho_t_; }
+  su2double Getdktdrho_T() const override { return dktdrho_t; }
 
   /*!
    * \brief return conductivity partial derivative value.
    */
-  su2double GetdktdT_rho() const override { return dktdt_rho_; }
+  su2double GetdktdT_rho() const override { return dktdt_rho; }
 
   /*!
    * \brief Set thermal conductivity.
    */
   void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override {
-    kt_ = kt_lam_const_ + cp * mu_turb / pr_turb_;
+    kt = kt_lam_const + cp * mu_turb / pr_turb;
   }
 
   /*!
@@ -73,9 +73,9 @@ class CConstantConductivityRANS final : public CConductivityModel {
   }
 
  private:
-  su2double kt_{0.0};           /*!< \brief Effective thermal conductivity. */
-  su2double dktdrho_t_{0.0};    /*!< \brief DktDrho_T. */
-  su2double dktdt_rho_{0.0};    /*!< \brief DktDT_rho. */
-  su2double kt_lam_const_{0.0}; /*!< \brief Constant laminar conductivity. */
-  su2double pr_turb_{0.0};      /*!< \brief Turbulent Prandtl number. */
+  su2double kt{0.0};           /*!< \brief Effective thermal conductivity. */
+  su2double dktdrho_t{0.0};    /*!< \brief DktDrho_T. */
+  su2double dktdt_rho{0.0};    /*!< \brief DktDT_rho. */
+  su2double kt_lam_const{0.0}; /*!< \brief Constant laminar conductivity. */
+  su2double pr_turb{0.0};      /*!< \brief Turbulent Prandtl number. */
 };

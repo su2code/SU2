@@ -822,7 +822,7 @@ private:
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
   *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
   Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
-  Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  *Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
   Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
   *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
   Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
@@ -834,7 +834,10 @@ private:
   nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
   nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
   nMu_Temperature_Ref,            /*!< \brief Number of species reference temperature for Sutherland model. */
-  nMu_S;                         /*!< \brief Number of species reference S for Sutherland model. */
+  nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
+  nThermal_Conductivity_Constant,  /*!< \brief Number of species constant thermal conductivity. */
+  nPrandtl_Lam,                   /*!< \brief Number of species laminar Prandtl number. */
+  nPrandtl_Turb;                 /*!< \brief Number of species turbulent Prandtl number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
@@ -864,8 +867,8 @@ private:
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
   wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
   wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
-  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
+  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  *Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -1708,13 +1711,13 @@ public:
    * \brief Get the value of the laminar Prandtl number.
    * \return Laminar Prandtl number.
    */
-  su2double GetPrandtl_Lam(void) const { return Prandtl_Lam; }
+  su2double GetPrandtl_Lam(unsigned short val_index = 0) const { return Prandtl_Lam[val_index]; }
 
   /*!
    * \brief Get the value of the turbulent Prandtl number.
    * \return Turbulent Prandtl number.
    */
-  su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
+  su2double GetPrandtl_Turb(unsigned short val_index = 0) const { return Prandtl_Turb[val_index]; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
@@ -3841,7 +3844,7 @@ public:
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant; }
+  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const { return Thermal_Conductivity_Constant[val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.

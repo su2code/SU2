@@ -34,7 +34,13 @@
 #include <numeric>
 #include <vector>
 
+#include "../../include/fluid/CConstantConductivity.hpp"
+#include "../../include/fluid/CConstantConductivityRANS.hpp"
+#include "../../include/fluid/CConstantPrandtl.hpp"
+#include "../../include/fluid/CConstantPrandtlRANS.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
+#include "../../include/fluid/CPolynomialConductivity.hpp"
+#include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
 
@@ -94,7 +100,48 @@ void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
   }
 }
 
-std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double* const val_scalars) {
+void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
+  switch (config->GetKind_ConductivityModel()) {
+    case CONDUCTIVITYMODEL::CONSTANT:
+      for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+        if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          ThermalConductivityPointers[iVar] = std::unique_ptr<CConstantConductivityRANS>(new CConstantConductivityRANS(
+              config->GetThermal_Conductivity_Constant(iVar), config->GetPrandtl_Turb(iVar)));
+        } else {
+          ThermalConductivityPointers[iVar] = std::unique_ptr<CConstantConductivity>(
+              new CConstantConductivity(config->GetThermal_Conductivity_Constant(iVar)));
+        }
+      }
+      break;
+    case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+      for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+        if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          ThermalConductivityPointers[iVar] = std::unique_ptr<CConstantPrandtlRANS>(
+              new CConstantPrandtlRANS(config->GetPrandtl_Lam(iVar), config->GetPrandtl_Turb(iVar)));
+        } else {
+          ThermalConductivityPointers[iVar] =
+              std::unique_ptr<CConstantPrandtl>(new CConstantPrandtl(config->GetPrandtl_Lam(iVar)));
+        }
+      }
+      break;
+    case CONDUCTIVITYMODEL::POLYNOMIAL:
+      for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+        if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          ThermalConductivity = std::unique_ptr<CPolynomialConductivityRANS<N_POLY_COEFFS>>(
+              new CPolynomialConductivityRANS<N_POLY_COEFFS>(config->GetKt_PolyCoeffND(), config->GetPrandtl_Turb()));
+        } else {
+          ThermalConductivity = std::unique_ptr<CPolynomialConductivity<N_POLY_COEFFS>>(
+              new CPolynomialConductivity<N_POLY_COEFFS>(config->GetKt_PolyCoeffND()));
+        }
+      }
+      break;
+    default:
+      SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
+      break;
+  }
+}
+
+std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double* val_scalars) {
   su2double mixtureMolarMass{0.0};
   su2double val_scalars_sum{0.0};
 
@@ -115,7 +162,7 @@ std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double* const
   return moleFractions;
 }
 
-su2double CFluidScalar::wilkeViscosity(const su2double* const val_scalars) {
+su2double CFluidScalar::wilkeViscosity(const su2double* val_scalars) {
   std::vector<su2double> phi;
   std::vector<su2double> wilkeNumerator;
   std::vector<su2double> wilkeDenumeratorSum;
@@ -146,7 +193,7 @@ su2double CFluidScalar::wilkeViscosity(const su2double* const val_scalars) {
   return viscosityMixture;
 }
 
-su2double CFluidScalar::davidsonViscosity(const su2double* const val_scalars) {
+su2double CFluidScalar::davidsonViscosity(const su2double* val_scalars) {
   su2double viscosityMixture = 0.0;
   su2double fluidity = 0.0;
   su2double E = 0.0;
@@ -177,6 +224,36 @@ su2double CFluidScalar::davidsonViscosity(const su2double* const val_scalars) {
     }
   }
   return viscosityMixture = 1 / fluidity;
+}
+
+su2double CFluidScalar::wilkeConductivity(const su2double* val_scalars) {
+  std::vector<su2double> phi;
+  std::vector<su2double> wilkeNumerator;
+  std::vector<su2double> wilkeDenumeratorSum;
+  su2double wilkeDenumerator = 0.0;
+  su2double conductivityMixture = 0.0;
+  wilkeDenumeratorSum.clear();
+  wilkeNumerator.clear();
+
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
+    laminarThermalConductivity.at(iVar) = ThermalConductivityPointers[iVar]->GetConductivity();
+  }
+
+  for (int i = 0; i < n_species_mixture; i++) {
+    for (int j = 0; j < n_species_mixture; j++) {
+      phi.push_back(
+          pow(1 + sqrt((laminarViscosity[i]) / (laminarViscosity[j])) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
+          sqrt(8 * (1 + molarMasses[i] / molarMasses[j])));
+      wilkeDenumerator += moleFractions[j] * phi[j];
+    }
+    wilkeDenumeratorSum.push_back(wilkeDenumerator);
+    wilkeDenumerator = 0.0;
+    phi.clear();
+    wilkeNumerator.push_back(moleFractions[i] * laminarThermalConductivity[i]);
+    conductivityMixture += wilkeNumerator[i] / wilkeDenumeratorSum[i];
+  }
+  return conductivityMixture;
 }
 
 void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {

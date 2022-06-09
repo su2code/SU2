@@ -93,6 +93,11 @@ class CFluidScalar final : public CFluidModel {
   void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
+   * \brief Set thermal conductivity model.
+   */
+  void SetThermalConductivityModel(const CConfig* config);
+
+  /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
