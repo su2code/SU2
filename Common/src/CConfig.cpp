@@ -1474,8 +1474,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET, INPUT_FILE. \ingroup Config*/
   addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
+  addBoolOption("SPECIFIED_SUPERSONIC_INLET_PROFILE", Supersonic_Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
   addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
+  addStringOption("SUPERSONIC_INLET_FILENAME", Supersonic_Inlet_Filename, string("supersonic_inlet.dat"));
   /*!\brief INLET_MATCHING_TOLERANCE
    * \n DESCRIPTION: If a file is provided to specify the inlet profile,
    * this tolerance will be used to match the coordinates in the input file to
