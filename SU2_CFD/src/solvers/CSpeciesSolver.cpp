@@ -454,6 +454,36 @@ su2double CSpeciesSolver::GetInletAtVertex(su2double *val_inlet,
       }
     }
 
+  } else if (val_kind_marker == SUPERSONIC_INLET) {
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = GeometryToolbox::Norm(nDim, Normal);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+            for (unsigned short iVar = 0; iVar < nVar; iVar++)
+              val_inlet[Inlet_Position + iVar] = Inlet_SpeciesVars[iMarker][iVertex][iVar];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
+      }
+    }
+
   }
 
   /*--- If we don't find a match, then the child point is not on the
@@ -466,7 +496,7 @@ su2double CSpeciesSolver::GetInletAtVertex(su2double *val_inlet,
 
 void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   /*--- Find BC string to the numeric-identifier. ---*/
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
     const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {

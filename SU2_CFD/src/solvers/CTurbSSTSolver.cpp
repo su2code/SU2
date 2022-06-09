@@ -1015,6 +1015,40 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
       }
     }
 
+  } else if (val_kind_marker == SUPERSONIC_INLET) {
+
+    unsigned short tke_position   = nDim+2+nDim;
+    unsigned short omega_position = nDim+2+nDim+1;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = GeometryToolbox::Norm(nDim, Normal);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+
+            val_inlet[tke_position]   = Inlet_TurbVars[iMarker][iVertex][0];
+            val_inlet[omega_position] = Inlet_TurbVars[iMarker][iVertex][1];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
+      }
+    }
+
   }
 
   /*--- If we don't find a match, then the child point is not on the
@@ -1026,7 +1060,7 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
       Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
