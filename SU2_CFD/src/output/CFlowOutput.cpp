@@ -30,6 +30,9 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../include/variables/CEulerVariable.hpp"
+#include "../../include/variables/CIncEulerVariable.hpp"
+#include "../../include/variables/CNEMOEulerVariable.hpp"
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
   CFVMOutput(config, nDim, fem_output),
@@ -772,6 +775,42 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
     config->SetSurface_Species_Variance(iMarker_Analyze, Tot_Surface_SpeciesVariance);
   }
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
+}
+
+template <class FlowIndices>
+unsigned long IndexOfVariable(const FlowIndices& idx, const std::string& var) {
+
+  if ("TEMPERATURE" == var) return idx.Temperature();
+  else if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
+  else if ("VELOCITY-X" == var) return idx.Velocity();
+  else if ("VELOCITY-Y" == var) return idx.Velocity() + 1;
+  else if ("VELOCITY-Z" == var) return idx.Velocity() + 2;
+  else if ("PRESSURE" == var) return idx.Pressure();
+  else if ("DENSITY" == var) return idx.Density();
+  else if ("ENTHALPY" == var) return idx.Enthalpy();
+  else if ("SOUND_SPEED" == var) return idx.SoundSpeed();
+  else if ("LAMINAR_VISCOSITY" == var) return idx.LaminarViscosity();
+  else if ("EDDY_VISCOSITY" == var) return idx.EddyViscosity();
+  else if ("THERMAL_CONDUCTIVITY" == var) return idx.ThermalConductivity();
+  else SU2_MPI::Error("The variable '" + var + "' is not available in custom outputs.", CURRENT_FUNCTION);
+
+  return 0;
+}
+
+void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config) {
+
+  for (auto& output : customOutputs) {
+    /*--- Setup indices for the symbols in the expression, for now this only recognizes primitives. ---*/
+    if (output.varIndices.empty()) {
+      if (config->GetNEMOProblem()) {
+        const auto idx = CNEMOEulerVariable::template CIndices<unsigned long>(nDim, )
+      } else if (config->GetKind_Regime() == COMPRESSIBLE) {
+
+      } else {
+
+      }
+    }
+  }
 }
 
 // The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing

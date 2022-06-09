@@ -191,8 +191,7 @@ protected:
 
   /*! \brief Struct to hold a parsed custom output function. */
   struct CustomOutput {
-    // First level of parsing.
-    // name = type{func}[markers]
+    // First level of parsing the syntax "name : type{func}[markers];".
     std::string name;
     AverageType type;
     std::string func;
@@ -200,10 +199,24 @@ protected:
 
     // Second level, func into expression, and acceleration structures.
     mel::ExpressionTree<passivedouble> expression;
-    std::vector<std::string> symbols;
+    std::vector<std::string> varSymbols;
 
-    std::vector<unsigned short> markerIndices;
+    /*--- The symbols (strings) are associated with an integer index for efficiency. For evaluation this index
+     is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"
+     and needs to be generated on-the-fly for each point. The functor approach is more generic than a pointer, for
+     example it allows wrapping the access to multiple solvers. ---*/
+    std::vector<unsigned long> varIndices;
+
+    /*--- For evaluation vars is a functor (i.e. has operator()) that returns the value of a variable at a given
+     point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
+     with primitive indices. ---*/
+    template <class Variables>
+    su2double eval(const Variables& vars) const {
+      return mel::Eval<su2double>(expression, [&](int i) {return vars(varIndices[i]);});
+    }
   };
+
+  std::vector<CustomOutput> customOutputs;  /*!< \brief User-defined outputs. */
 
    /*----------------------------- Volume output ----------------------------*/
 
@@ -744,6 +757,11 @@ protected:
    * \brief Set the history fields common for all solvers.
    */
   void SetCommonHistoryFields();
+
+  /*!
+   * \brief Parses user-defined outputs.
+   */
+  void SetCustomOutputs(const CConfig *config);
 
   /*!
    * \brief Load values of the history fields common for all solvers.

@@ -301,8 +301,6 @@ void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHist
 
 void COutput::SetCustomAndComboObjectives(int idxSol, const CConfig *config, CSolver **solver) {
 
-  if (!config->GetCustomOutputs().empty()) {}
-
   if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC && !config->GetCustomObjFunc().empty()) {
     if (!customObjFunc.ready) {
       SetupCustomHistoryOutput(config->GetCustomObjFunc(), customObjFunc);
@@ -1300,6 +1298,10 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   SetHistoryOutputFields(config);
 
+  /*--- Detect user-defined outputs ---*/
+
+  SetCustomOutputs(config);
+
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
   Postprocess_HistoryFields(config);
@@ -2177,6 +2179,81 @@ void COutput::SetCommonHistoryFields() {
   AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
+
+}
+
+void COutput::SetCustomOutputs(const CConfig* config) {
+
+  const auto& inputString = config->GetCustomOutputs();
+  if (inputString.empty()) return;
+
+  /*--- Split the different functions. ---*/
+
+  auto DebugPrint = [](const std::string& str) {
+#ifndef NDEBUG
+    std::cout << str << std::endl;
+#endif
+  };
+  DebugPrint(inputString);
+
+  const auto last = inputString.end();
+  for (auto it = inputString.begin(); it != last;) {
+
+    /*--- Find the start of the function name. ---*/
+    while (it != last && (*it == ' ' || *it == ';')) ++it;
+    if (it == last) break;
+
+    customOutputs.push_back(CustomOutput());
+    auto& output = customOutputs.back();
+
+    /*--- Find the end of the function name. ---*/
+    auto start = it;
+    while (it != last && *it != ' ' && *it != ':') ++it;
+    output.name = std::string(start, it);
+    DebugPrint(output.name);
+
+    /*--- Find the start and end of the averaging type. ---*/
+    while (it != last && (*it == ' ' || *it == ':')) ++it;
+    start = it;
+    while (it != last && *it != ' ' && *it != '{') ++it;
+    const auto avgType = std::string(start, it);
+    DebugPrint(avgType);
+
+    if (avgType == "AreaAvg") {
+      output.type = AverageType::AREA;
+    } else if (avgType == "MassFlowAvg") {
+      output.type = AverageType::MASSFLOW;
+    } else {
+      SU2_MPI::Error("Invalid averaging type '" + avgType + "'", CURRENT_FUNCTION);
+    }
+
+    /*--- Find and parse the user expression. ---*/
+    while (it != last && (*it == ' ' || *it == '{')) ++it;
+    start = it;
+    while (it != last && *it != '}') ++it;
+    output.func = std::string(start, it);
+    DebugPrint(output.func);
+
+    output.expression = mel::Parse<passivedouble>(output.func, output.varSymbols);
+    for (const auto& s : output.varSymbols) {
+      DebugPrint(s);
+    }
+
+    /*--- Find the marker names. ---*/
+    while (it != last && (*it == ' ' || *it == '}' || *it == '[')) ++it;
+    while (it != last && *it != ']') {
+      start = it;
+      while (it != last && *it != ' ' && *it != ',' && *it != ']') ++it;
+      output.markers.emplace_back(start, it);
+      DebugPrint(output.markers.back());
+
+      while (it != last && (*it == ' ' || *it == ',')) ++it;
+    }
+    /*--- Skip the terminating "]". ---*/
+    if (it != last) ++it;
+
+    AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+  }
 
 }
 
