@@ -476,7 +476,7 @@ vector<string> CDriver::GetAllInletMarkersTag() const {
 
   for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
     bool isCustomizable = config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker);
-    bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET);
     if(isCustomizable && isInlet) {
       Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
       BoundariesTagList.push_back(Marker_Tag);
@@ -526,6 +526,9 @@ map<string, string> CDriver::GetAllBoundaryMarkersType() const {
         break;
       case INLET_FLOW:
         Marker_Type = "INLET_FLOW";
+        break;
+      case SUPERSONIC_INLET:
+        Marker_Type = "SUPERSONIC_INLET";
         break;
       case OUTLET_FLOW:
         Marker_Type = "OUTLET_FLOW";
