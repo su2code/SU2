@@ -14,8 +14,7 @@ else
                            '-Wno-pedantic',
                            '-Wno-error=stringop-truncation',
                            '-Wno-error=cast-function-type',
-                           '-Wno-stringop-truncation',
-                           '-Werror=stringop-truncation'
+                           '-Wno-stringop-truncation'
                            ]
 endif
 
