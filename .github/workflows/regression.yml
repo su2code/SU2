@@ -101,17 +101,6 @@ jobs:
           echo "::set-output name=current_user::$(id -u)"
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
-      - name: Set local repo as Git safe
-        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
-        with:
-          entrypoint: /bin/git
-          args: config --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
-
-      - name: Fix file ownership to local user
-        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
-        with:
-          entrypoint: /bin/chown
-          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
