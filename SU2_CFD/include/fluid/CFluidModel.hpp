@@ -118,21 +118,6 @@ class CFluidModel {
    * \brief Get fluid specific heat at constant volume.
    */
   su2double GetCv() const { return Cv; }
-  
-  /*!
-   * \brief Get fluid mean specific heat capacity at constant pressure.
-   */
-  template <class Vector_t>
-  su2double ComputeMeanSpecificHeatCp(const Vector_t& specific_heat_cp, const su2double* val_scalars) {
-    su2double val_scalars_sum = 0.0;
-    su2double mean_cp = 0.0;
-
-    for (size_t i_scalar = 0; i_scalar < specific_heat_cp.size() - 1; i_scalar++) {
-      mean_cp += specific_heat_cp[i_scalar] * val_scalars[i_scalar];
-      val_scalars_sum += val_scalars[i_scalar];
-    }
-    return mean_cp += specific_heat_cp[specific_heat_cp.size() - 1] * (1 - val_scalars_sum);
-  }
 
   /*!
    * \brief Compute and return fluid mean molecular weight in kg/mol.
