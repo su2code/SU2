@@ -2872,6 +2872,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+  
+  /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: Flag for sending data for dynamic mode decomposition. */
+  addBoolOption("DMD", saveDMD, false);
 
   /* END_CONFIG_OPTIONS */
 

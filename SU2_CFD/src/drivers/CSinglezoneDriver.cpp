@@ -99,6 +99,10 @@ void CSinglezoneDriver::StartSolver() {
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                      config_container[ZONE_0], StopCalc);
     }
+    if (config_container[MESH_0]->GetSave_DMD()){
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SaveDMD(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                     config_container[ZONE_0], StopCalc);
+    }
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 

@@ -1163,6 +1163,7 @@ private:
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
+  bool saveDMD;                             /*!< \brief Toggle capturing of solutions for dynamic mode decomposition. */
 
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -9547,6 +9548,12 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+  
+  /*!
+   * \brief Get whether or not to send solutions for dynamic mode decomposition.
+   * \return True or false.
+   */
+  unsigned short GetSave_DMD(void) const { return saveDMD; }
 
   /*!
    * \brief Check if the gradient smoothing is active

@@ -4323,5 +4323,41 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 #else
   SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
 #endif
+  
+}
 
+void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged) {
+
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  
+  const bool unsteady            = config->GetTime_Domain();
+  const unsigned long TimeIter   = config->GetTimeIter();
+  const unsigned long nTimeIter  = config->GetnTime_Iter();
+  const bool save_DMD            = config->GetSave_DMD();
+  int dim = int(nPointDomain * nVar);
+  
+  if (!unsteady)
+    SU2_MPI::Error("DMD can only be used for unsteady simulations.", CURRENT_FUNCTION);
+  
+  su2double dt = config->GetDelta_UnstTime();
+  su2double t =  config->GetCurrent_UnstTime();
+
+  if (!dmd_u) {
+    dmd_u = new CAROM::DMD(nPointDomain, dt);
+  }
+  
+  dmd_u->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t);
+  
+  if (converged) {
+    /*--- Calculate the DMD modes ---*/
+    const unsigned short rdim = config->GetMax_BasisDim();
+    if (rank == MASTER_NODE) std::cout << "Calculating the " << rdim << " DMD modes." << std::endl;
+    
+    dmd_u->train(rdim);
+    dmd_u->save("DMD_modes_" + to_string(rdim) + "_dt_" + to_string(dt) + "_t_" + to_string(t));
+  }
+  
+#else
+  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
+#endif
 }
