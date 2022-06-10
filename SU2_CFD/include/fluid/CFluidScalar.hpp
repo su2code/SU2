@@ -44,7 +44,6 @@ class CFluidScalar final : public CFluidModel {
   su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
 
   std::vector<su2double> molarMasses;  /*!< \brief Molar masses of all species. */
-  std::vector<su2double> specificHeat; /*!< \brief Specific heat of all species. */
 
  public:
   /*!
