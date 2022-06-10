@@ -50,6 +50,11 @@ jobs:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
+      - name: Pre Cleanup 
+        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf .
       - name: Set variables
         id: vars
         run: |
@@ -67,6 +72,11 @@ jobs:
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
+      - name: Cleanup 
+        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf .
   regression_tests:
     runs-on: self-hosted
     name: Regression Tests
@@ -93,6 +103,11 @@ jobs:
           - testscript: 'hybrid_regression_AD.py'
             tag: OMP
     steps:
+      - name: Pre Cleanup 
+        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf .
       - name: Download All artifacts
         uses: actions/download-artifact@v3
       - name: Set variables
@@ -125,6 +140,11 @@ jobs:
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+      - name: Cleanup 
+        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf .
   unit_tests:
     runs-on: self-hosted
     name: Unit Tests
@@ -141,6 +161,11 @@ jobs:
           - testdriver: 'test_driver_DD'
             tag: MPI
     steps:
+      - name: Pre Cleanup 
+        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf .
       - name: Download Base
         uses: actions/download-artifact@v3
         with:
@@ -159,17 +184,6 @@ jobs:
           echo "::set-output name=current_user::$(id -u)"
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
-      - name: Set local repo as Git safe
-        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
-        with:
-          entrypoint: /bin/git
-          args: config --add safe.directory /github/workspace/src/SU2_${{ steps.vars.outputs.github_ref_underscore }}
-
-      - name: Fix file ownership to local user
-        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
-        with:
-          entrypoint: /bin/chown
-          args: -R ${{ steps.vars.outputs.current_user }}:${{ steps.vars.outputs.current_group }} .
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
@@ -193,3 +207,8 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
+      - name: Post Cleanup 
+        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf .
