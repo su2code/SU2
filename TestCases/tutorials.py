@@ -49,7 +49,8 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450,  0.0000e+00, 0.0, 0.0, 0.0, 0.0000e+00, 2.3824e+02] #last columns
+    cht_incompressible_unsteady.test_vals         = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450, 0.000000, 0, 0, 0, 0, 2.3824e+02] #last columns
+    cht_incompressible_unsteady.test_vals_aarch64 = [-2.659243, -2.533012, -0.080399, -0.080399, -0.080399, -12.421392, 0.000000, 0, 0, 0, 0, 2.3824e+02] #last columns
     cht_incompressible_unsteady.su2_exec  = "mpirun -n 2 SU2_CFD"
     cht_incompressible_unsteady.timeout   = 1600
     cht_incompressible_unsteady.multizone = True
@@ -62,7 +63,8 @@ def main():
     cht_incompressible.cfg_dir   = "../Tutorials/multiphysics/steady_cht"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
+    cht_incompressible.test_vals         = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
+    cht_incompressible.test_vals_aarch64 = [-2.131056, -0.588670, -0.588664, -0.588653] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
@@ -76,7 +78,8 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.626384, 1.444465, -0.750978, 241.757337] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals         = [-4.626384, 1.444465, -0.750978, 241.757337] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.626385, 1.444465, -0.750977, 241.757358] #last 4 lines
     sp_pinArray_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_2d_mf_hf.timeout   = 1600
     sp_pinArray_2d_mf_hf.tol       = 0.00001
@@ -100,7 +103,8 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.026100, -5.265495, -5.110799, -5.931985, -1.585414, -6.311820, -6.434690, 5, -0.841163, 5, -2.343847, 5, -0.295673, 1.645199, 0.498941, 0.600911, 0.545347]
+    species3_primitiveVenturi.test_vals         = [-6.026100, -5.265495, -5.110799, -5.931985, -1.585414, -6.311820, -6.434690, 5, -0.841163, 5, -2.343847, 5, -0.295673, 1.645199, 0.498941, 0.600911, 0.545347]
+    species3_primitiveVenturi.test_vals_aarch64 = [-6.026100, -5.265497, -5.110800, -5.931986, -1.585414, -6.311807, -6.434682, 5, -0.841187, 5, -2.343845, 5, -0.295687, 1.645199, 0.498941, 0.600911, 0.545347]
     species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
     species3_primitiveVenturi.timeout   = 1600
     species3_primitiveVenturi.new_output = True
@@ -114,7 +118,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
     DAspecies3_primitiveVenturi.test_vals         = [-8.519150, -7.786969, -7.774848, -7.474167, -12.127149, -12.262476, -11.456643]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.536429, -7.813860, -7.790489, -7.482271, -12.133357, -9.509867, -8.775885]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
     DAspecies3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     DAspecies3_primitiveVenturi.timeout   = 1600
     DAspecies3_primitiveVenturi.new_output = True
@@ -164,7 +168,8 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.125776, 69.613563]
+    tutorial_lam_cylinder.test_vals          = [-6.162141, -0.699617, 0.125776, 69.613563]
+    tutorial_lam_cylinder.test_vals_aarch64  = [-6.162141, -0.699617, 0.125771, 69.613625]
     tutorial_lam_cylinder.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_lam_cylinder.timeout    = 1600
     tutorial_lam_cylinder.tol        = 0.00001
@@ -212,7 +217,8 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524277, 0.327954, 0.097349]
+    tutorial_turb_oneram6.test_vals          = [-4.564441, -11.524277, 0.327954, 0.097349]
+    tutorial_turb_oneram6.test_vals_aarch64  = [-4.564441, -11.524300, 0.327951, 0.097349]
     tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
@@ -236,7 +242,7 @@ def main():
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
     tutorial_unst_naca0012.test_vals         = [520, 0, -5.297133, 0, 0.312721, 0.793897, 0.003417, 0.015934]
-    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.297724, 0, 0.300206, 0.794023, 0.002877, 0.014433]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.295662, 0, 0.299033, 0.752471, 0.003482, 0.013508]
     tutorial_unst_naca0012.su2_exec      = "mpirun -np 2 SU2_CFD"
     tutorial_unst_naca0012.timeout       = 1600
     tutorial_unst_naca0012.tol           = 0.00001

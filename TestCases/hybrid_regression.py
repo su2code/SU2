@@ -532,7 +532,7 @@ def main():
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
     edge_PPR.test_vals         = [-5.401601, 0.738205, -0.000035, 0.000000]
-    edge_PPR.test_vals_aarch64 = [-5.401767, 0.738039, -0.000035, 0.000000]
+    edge_PPR.test_vals_aarch64 = [-5.401642, 0.738164, -0.000035, 0.000000]
     test_list.append(edge_PPR)
 
     ######################################
@@ -544,8 +544,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals         = [-5.279930, 0.379651, 72.212100, 1.277439]
-    Jones_tc.test_vals_aarch64 = [-5.279937, 0.379653, 72.211730, 1.277472]
+    Jones_tc.test_vals = [-5.279930, 0.379651, 72.212100, 1.277439]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -564,7 +563,7 @@ def main():
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
     axial_stage2D.test_vals         = [-1.933139, 5.380376, 73.357910, 0.925874]
-    axial_stage2D.test_vals_aarch64 = [-1.933153, 5.379657, 73.357940, 0.925870]
+    axial_stage2D.test_vals_aarch64 = [-1.933139, 5.380373, 73.357910, 0.925874]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
 
@@ -574,7 +573,7 @@ def main():
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
     transonic_stator.test_vals         = [-0.565608, 5.833408, 96.476150, 0.062517]
-    transonic_stator.test_vals_aarch64 = [-0.563318, 5.833490, 96.257510, 0.062597]
+    transonic_stator.test_vals_aarch64 = [-0.565610, 5.833410, 96.476160, 0.062517]
     transonic_stator.new_output = False
     test_list.append(transonic_stator)
 
@@ -584,7 +583,7 @@ def main():
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
     transonic_stator_rst.test_vals         = [-6.619122, -0.615716, 5.002986, 0.002951]
-    transonic_stator_rst.test_vals_aarch64 = [-6.601169, -0.619939, 5.002986, 0.002951]
+    transonic_stator_rst.test_vals_aarch64 = [-6.619122, -0.615705, 5.002986, 0.002951]
     transonic_stator_rst.new_output = False
     test_list.append(transonic_stator_rst)
 
@@ -648,8 +647,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals         = [5.000000, 0.000000, 1.216554, 1.639119]
-    supersonic_vortex_shedding.test_vals_aarch64 = [5.000000, 0.000000, 1.227921, 1.638901]
+    supersonic_vortex_shedding.test_vals = [5.000000, 0.000000, 1.216554, 1.639119]
     supersonic_vortex_shedding.unsteady  = True
     supersonic_vortex_shedding.multizone  = True
     test_list.append(supersonic_vortex_shedding)
@@ -669,7 +667,7 @@ def main():
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
     slinc_steady.test_vals         = [19.000000, -1.799803, -2.128200]
-    slinc_steady.test_vals_aarch64 = [19.000000, -1.803732, -2.108492]
+    slinc_steady.test_vals_aarch64 = [19.000000, -1.799803, -2.128199]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 
@@ -683,7 +681,7 @@ def main():
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
     statbeam3d.test_vals         = [-2.378370, -1.585252, -2.028505, 64359.000000]
-    statbeam3d.test_vals_aarch64 = [-8.498242, -8.230725, -8.123805, 64095.000000]
+    statbeam3d.test_vals_aarch64 = [-2.382650, -1.561882, -2.045083, 64433.000000]
     test_list.append(statbeam3d)
 
     # Dynamic beam, 2d
@@ -711,7 +709,7 @@ def main():
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
     stat_fsi.test_vals         = [-5.403596, -5.722583, 0.000000, 10.000000]
-    stat_fsi.test_vals_aarch64 = [-3.326934, -4.981505, 0.000000, 7.000000]
+    stat_fsi.test_vals_aarch64 = [-5.423016, -5.753459, 0.000000, 10.000000]
     stat_fsi.multizone = True
     test_list.append(stat_fsi)
 
@@ -721,7 +719,7 @@ def main():
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
     dyn_fsi.test_vals         = [-4.355806, -4.060582, 0.000000, 102.000000]
-    dyn_fsi.test_vals_aarch64 = [-4.355809, -4.060588, 0.000000, 86.000000]
+    dyn_fsi.test_vals_aarch64 = [-4.355806, -4.060582, 0.000000, 103.000000]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -732,7 +730,7 @@ def main():
     stat_fsi_restart.cfg_file  = "config_restart.cfg"
     stat_fsi_restart.test_iter = 1
     stat_fsi_restart.test_vals         = [-3.474082, -4.242343, 0.000000, 37.000000]
-    stat_fsi_restart.test_vals_aarch64 = [-3.407486, -4.339837, 0.000000, 27.000000]
+    stat_fsi_restart.test_vals_aarch64 = [-3.474081, -4.242372, 0.000000, 37.000000]
     stat_fsi_restart.multizone = True
     test_list.append(stat_fsi_restart)
 
@@ -754,7 +752,7 @@ def main():
     mms_fvm_inc_euler.cfg_file  = "inv_mms_jst.cfg"
     mms_fvm_inc_euler.test_iter = 20
     mms_fvm_inc_euler.test_vals         = [-9.128033, -9.441406, 0.000000, 0.000000]
-    mms_fvm_inc_euler.test_vals_aarch64 = [-9.128345, -9.441741, 0.000000, 0.000000]
+    mms_fvm_inc_euler.test_vals_aarch64 = [-9.128034, -9.441406, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_euler)
 
     # FVM, incompressible, laminar N-S
