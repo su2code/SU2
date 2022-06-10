@@ -6519,7 +6519,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
           const su2double mag = GeometryToolbox::Norm(nDim, dir);
           for (iDim = 0; iDim < nDim; iDim++) {
-            Flow_Dir[iDim] = dir[iDim] / mag
+            Flow_Dir[iDim] = dir[iDim] / mag;
           }
 
           /*--- Non-dim. the inputs if necessary. ---*/
@@ -6618,10 +6618,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
 
           break;
+        }
+        /*--- Mass flow has been specified at the inlet. ---*/
 
-          /*--- Mass flow has been specified at the inlet. ---*/
-
-        case INLET_TYPE::MASS_FLOW:
+        case INLET_TYPE::MASS_FLOW: {
 
           /*--- Retrieve the specified mass flow for the inlet. ---*/
 
@@ -6630,7 +6630,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
           const su2double mag = GeometryToolbox::Norm(nDim, dir);
           for (iDim = 0; iDim < nDim; iDim++) {
-            Flow_Dir[iDim] = dir[iDim] / mag
+            Flow_Dir[iDim] = dir[iDim] / mag;
           }
 
           /*--- Non-dim. the inputs if necessary. ---*/
@@ -6680,7 +6680,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
 
           break;
-
+        }
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;
