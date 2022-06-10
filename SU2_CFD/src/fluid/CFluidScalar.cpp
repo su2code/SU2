@@ -39,12 +39,10 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
     : CFluidModel() {
   n_species_mixture = config->GetnSpecies() + 1;
 
-  specificHeat.resize(n_species_mixture);
   molarMasses.resize(n_species_mixture);
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
-    specificHeat[iVar] = config->GetSpecific_Heat_Cp();
   }
 
   Pressure_Thermodynamic = value_pressure_operating;
