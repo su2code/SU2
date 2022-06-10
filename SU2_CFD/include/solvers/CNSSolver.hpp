@@ -85,6 +85,16 @@ private:
                                   su2double Temperature_Ref) const;
 
   /*!
+   * \brief Get computed radiative equilibrium wall temperature of a given vertex
+   * for radiative equilibrium wall boundary condition.
+   */
+
+  su2double GetRadiativeWallTemperature(su2double thermal_conductivity,
+                                        su2double dist_ij, 
+                                        su2double There, 
+                                        su2double Twall) const;
+
+  /*!
    * \brief Generic implementation of the isothermal wall also covering CHT cases,
    * for which the wall temperature is given by GetCHTWallTemperature.
    */

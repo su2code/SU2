@@ -611,6 +611,36 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
   return Twall;
 }
 
+su2double CNSSolver::GetRadiativeWallTemperature(su2double thermal_conductivity,
+                                           su2double dist_ij, su2double There, su2double Twall) const {
+
+  su2double Ti = Twall;
+  su2double Tj = There;
+
+  su2double q = (Tj - Ti)/dist_ij * thermal_conductivity;
+
+  unsigned short N = 0, Nmax = 1e3;
+  su2double a = 0, b = 1e3, tol = 1e-6, e = 1, sigma = STEFAN_BOLTZMANN; // e = surface emissivity, set to 1 for blackbody radiation
+
+  while (N < Nmax) {
+          
+    Twall = (a + b) / 2;
+
+    if (q - e*sigma*pow(Twall,4) == 0 || (b - a) / 2 < tol) {
+      break;
+    }
+
+    N++;
+
+    if ((q - e*sigma*pow(Twall,4) > 0 && q - e*sigma*pow(a,4) > 0) || (q - e*sigma*pow(Twall,4) < 0 && q - e*sigma*pow(a,4) < 0)) {
+      a = Twall;
+    } else {
+      b = Twall;
+    }
+  }
+    return Twall;
+}
+
 void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics,
                                            CConfig *config, unsigned short val_marker, bool cht_mode) {
@@ -711,6 +741,12 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
     }
 
+    // TODO: temporary fix for now, will add config option
+    bool rad_wall = true;
+    if (rad_wall) {
+      Twall = GetRadiativeWallTemperature(thermal_conductivity, dist_ij, There, Twall);
+    }
+
     /*--- Compute the normal gradient in temperature using Twall ---*/
 
     su2double dTdn = -(There - Twall)/dist_ij;
@@ -719,7 +755,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
      Compute the residual due to the prescribed heat flux. ---*/
 
     su2double Res_Conv = 0.0;
-    su2double Res_Visc = thermal_conductivity * dTdn * Area;
+    //su2double Res_Visc = thermal_conductivity * dTdn * Area;
+    su2double Res_Visc = (thermal_conductivity * dTdn) * Area;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
 

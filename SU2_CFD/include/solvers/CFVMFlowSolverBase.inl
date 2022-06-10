@@ -2653,6 +2653,31 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
       }
 
+/*      
+      if (radWall) {
+
+        unsigned short N = 0, Nmax = 50;
+        su2double a = 0, b = 8e4, Twall, tol = 1e-6, e = 1, sigma = STEFAN_BOLTZMANN; // e = surface emissivity, set to 1 for blackbody radiation
+        su2double q = HeatFlux[iMarker][iVertex];
+
+        while (N < Nmax) {
+          
+          Twall = (a + b) / 2;
+
+          if (q - e*sigma*pow(Twall,4) == 0 || (b - a) / 2 < tol) {
+            break;
+          }
+
+          N++;
+
+          if ((q - e*sigma*pow(Twall,4) > 0 && q - e*sigma*pow(a,4) > 0) || (q - e*sigma*pow(Twall,4) < 0 && q - e*sigma*pow(a,4) < 0)) {
+            a = Twall;
+          } else {
+            b = Twall;
+          }
+        }
+      }*/
+
       /*--- Note that y+, and heat are computed at the
        halo cells (for visualization purposes), but not the forces ---*/
 
