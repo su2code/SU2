@@ -54,7 +54,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf .
+          args: -rf ./*
       - name: Set variables
         id: vars
         run: |
@@ -76,7 +76,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf .
+          args: -rf ./*
   regression_tests:
     runs-on: self-hosted
     name: Regression Tests
@@ -107,7 +107,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf .
+          args: -rf ./*
       - name: Download All artifacts
         uses: actions/download-artifact@v3
       - name: Set variables
@@ -144,7 +144,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf .
+          args: -rf ./*
   unit_tests:
     runs-on: self-hosted
     name: Unit Tests
@@ -165,7 +165,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf .
+          args: -rf ./*
       - name: Download Base
         uses: actions/download-artifact@v3
         with:
@@ -211,4 +211,4 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf .
+          args: -rf ./*
