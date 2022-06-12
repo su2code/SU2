@@ -65,6 +65,17 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Check 1
+        run: |
+          pwd
+          ls -laRh .
+      - name: Check 2
+        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
+        with:
+          entrypoint: /bin/ls
+          args: -laRh .
+      - name: Manual Stop
+        run: "false"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/bin
       - name: Upload Binaries 
