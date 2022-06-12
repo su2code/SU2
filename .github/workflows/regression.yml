@@ -76,7 +76,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf ./*
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Check 1
         run: |
           pwd
@@ -86,6 +86,11 @@ jobs:
         with:
           entrypoint: /bin/ls
           args: -lah .
+      - name: Check 3 - id
+        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
+        with:
+          entrypoint: /usr/bin/id
+          user: ${{ steps.vars.outputs.current_user }}
   regression_tests:
     runs-on: self-hosted
     name: Regression Tests
@@ -116,7 +121,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf ./*
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Check 1
         run: |
           pwd
@@ -162,7 +167,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf ./*
+          args: --rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   unit_tests:
     runs-on: self-hosted
     name: Unit Tests
@@ -229,4 +234,4 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf ./*
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
