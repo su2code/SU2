@@ -103,8 +103,11 @@ jobs:
           - testscript: 'hybrid_regression_AD.py'
             tag: OMP
     steps:
-      - name: Pre Cleanup 
-        run: rm -rf ./*
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf ./*
       - name: Download All artifacts
         uses: actions/download-artifact@v3
       - name: Set variables
@@ -159,7 +162,10 @@ jobs:
             tag: MPI
     steps:
       - name: Pre Cleanup 
-        run: rm -rf ./*
+        uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
+        with:
+          entrypoint: /bin/rm
+          args: -rf ./*
       - name: Download Base
         uses: actions/download-artifact@v3
         with:
