@@ -65,17 +65,6 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
-      - name: Check 1
-        run: |
-          pwd
-          ls -laRh .
-      - name: Check 2
-        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
-        with:
-          entrypoint: /bin/ls
-          args: -laRh .
-      - name: Manual Stop
-        run: "false"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/bin
       - name: Upload Binaries 
@@ -88,6 +77,15 @@ jobs:
         with:
           entrypoint: /bin/rm
           args: -rf ./*
+      - name: Check 1
+        run: |
+          pwd
+          ls -lah .
+      - name: Check 2
+        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
+        with:
+          entrypoint: /bin/ls
+          args: -lah .
   regression_tests:
     runs-on: self-hosted
     name: Regression Tests
@@ -119,6 +117,15 @@ jobs:
         with:
           entrypoint: /bin/rm
           args: -rf ./*
+      - name: Check 1
+        run: |
+          pwd
+          ls -lah .
+      - name: Check 2
+        uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
+        with:
+          entrypoint: /bin/ls
+          args: -lah .
       - name: Download All artifacts
         uses: actions/download-artifact@v3
       - name: Set variables
@@ -131,7 +138,7 @@ jobs:
         run: |
           BIN_FOLDER="$PWD/install/bin"
           mkdir -p $BIN_FOLDER
-          ls -laH $BIN_FOLDER
+          ls -lah $BIN_FOLDER
           for type in Base Reverse Forward; do
             TYPE_FOLDER="${type}${{matrix.tag}}"
             echo "Processing '$TYPE_FOLDER' ..."
@@ -139,7 +146,7 @@ jobs:
               pushd $TYPE_FOLDER
               ls -lah
               tar -zxvf install_bin.tgz
-              ls -laH install/bin/
+              ls -lah install/bin/
               cp -r install/bin/* $BIN_FOLDER;
               popd; 
             fi
