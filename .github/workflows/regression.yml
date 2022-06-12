@@ -54,12 +54,12 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf ./*
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Set variables
         id: vars
         run: |
-          echo "::set-output name=current_user::$(id -u)"
-          echo "::set-output name=current_group::$(id -g)"
+          echo "::set-output name=current_user::$(id -un)"
+          echo "::set-output name=current_group::$(id -gn)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
       - name: Build 
         uses: docker://ghcr.io/su2code/su2/build-su2:220609-1143
@@ -136,7 +136,7 @@ jobs:
       - name: Set variables
         id: vars
         run: |
-          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_user::$(id -un)"
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
       - name: Uncompress and Move Binaries
@@ -188,7 +188,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: -rf ./*
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download Base
         uses: actions/download-artifact@v3
         with:
@@ -204,7 +204,7 @@ jobs:
       - name: Set variables
         id: vars
         run: |
-          echo "::set-output name=current_user::$(id -u)"
+          echo "::set-output name=current_user::$(id -un)"
           echo "::set-output name=current_group::$(id -g)"
           echo "::set-output name=github_ref_underscore::$(echo "${{github.ref}}" | tr '/' '_')"
       - name: Uncompress and Move Binaries
