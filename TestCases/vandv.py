@@ -46,7 +46,7 @@ def main():
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 20
     p30n30.test_vals         = [-10.642593, -10.303413, -10.496728, -10.253130, -13.517216, 0.050962, 2.828563, 1.317849, -0.215834]
-    p30n30.test_vals_aarch64 = [-10.645588, -10.299716, -10.485508, -10.256151, -13.517112, 0.050962, 2.828564, 1.317850, -0.263030]
+    p30n30.test_vals_aarch64 = [-10.632412, -10.296085, -10.474942, -10.242152, -13.517151, 0.050962, 2.828563, 1.317849, -0.206092]
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
@@ -55,7 +55,7 @@ def main():
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
     flatplate_sst1994m.test_vals         = [-13.022890, -10.035602, -5.142343, -0.002535, 0.002809]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.023857, -10.035606, -5.142190, -0.002535, 0.002809]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.022223, -10.035608, -5.142357, -0.002535, 0.002809]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -64,7 +64,7 @@ def main():
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
     bump_sst1994m.test_vals         = [-13.069231, -10.325333, -5.558903, 0.024576, 0.004967] 
-    bump_sst1994m.test_vals_aarch64 = [-13.085642, -10.325330, -5.557928, 0.024576, 0.004967]
+    bump_sst1994m.test_vals_aarch64 = [-13.057600, -10.325331, -5.558653, 0.024576, 0.004967]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
@@ -73,7 +73,6 @@ def main():
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 20
     swbli_sa.test_vals         = [-11.029255, -10.511982, -11.400926, -10.128471, -14.536798, 0.002233, -2.608466, 2.786]
-    swbli_sa.test_vals_aarch64 = [-11.033668, -10.516942, -11.543640, -10.141842, -14.305338, 0.002233, -2.664860, 2.786000]
     test_list.append(swbli_sa)
 
     # SWBLI SST
