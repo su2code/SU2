@@ -1222,7 +1222,7 @@ def main():
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
     uniform_flow.test_vals         = [2.000000, 0.000000, -0.205134, -13.250406] #last 4 columns
-    uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.205134, -13.254433] #last 4 columns
+    uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.205134, -13.253776] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -1352,7 +1352,7 @@ def main():
     statbeam3d.new_output= True
     statbeam3d.test_iter = 0
     statbeam3d.test_vals         = [-8.498245, -8.230816, -8.123810, 64095.0] #last 4 columns
-    statbeam3d.test_vals_aarch64 = [-8.498242, -8.230725, -8.123805, 64095.0] #last 4 columns
+    statbeam3d.test_vals_aarch64 = [-8.498254, -8.230683, -8.123819, 64095.0] #last 4 columns
     statbeam3d.su2_exec  = "SU2_CFD"
     statbeam3d.timeout   = 1600
     statbeam3d.tol       = 0.00001
