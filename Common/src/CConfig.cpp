@@ -1050,9 +1050,9 @@ void CConfig::SetPointersNull(void) {
 
   Time_Ref = 1.0;
 
-  Delta_UnstTime   = 0.0;
+  Delta_UnstTime = 0.0;
   Delta_UnstTimeND = 0.0;
-  Total_UnstTime   = 0.0;
+  Total_UnstTime = 0.0;
   Total_UnstTimeND = 0.0;
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
