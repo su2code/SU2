@@ -27,10 +27,9 @@
 
 #pragma once
 
-#include <fstream>
-#include <iostream>
-#include <iterator>
+#include <string>
 #include <vector>
+
 #include "../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
