@@ -31,10 +31,10 @@
 using namespace std;
 
 /* Trapezoidal map implementation. Reference: 
- * M. de Berg, O. Cheongm M. van Kreveld, M. Overmars, 
+ * M. de Berg, O. Cheong M. van Kreveld, M. Overmars, 
  * Computational Geometry, Algorithms and Applications pp. 121-146 (2008)
  */
-CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const samples_x, vector<su2double> const samples_y,
+CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
                                  vector<vector<unsigned long> > const& edges,
                                  vector<vector<unsigned long> > const& val_edge_to_triangle) {
   int rank = SU2_MPI::GetRank();
@@ -42,7 +42,8 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const samples_x, vector<su2do
 
   edge_to_triangle = vector<vector<unsigned long> >(val_edge_to_triangle);
 
-  unique_bands_x = vector<su2double>(samples_x);
+  //unique_bands_x = vector<su2double>(samples_x);
+  unique_bands_x.assign(samples_x,samples_x+size);
 
   /* sort x_bands and make them unique */
   sort(unique_bands_x.begin(), unique_bands_x.end());
@@ -159,7 +160,7 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
   unsigned long i_low = 0;
   unsigned long i_up = 0;
 
-  /* check if val_x is in bounds of the table */
+  /* check if val_x is in x-bounds of the table, if not then project val_x to either x-min or x-max */
   if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
   if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
 

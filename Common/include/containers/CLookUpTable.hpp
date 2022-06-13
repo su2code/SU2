@@ -57,13 +57,12 @@ class CLookUpTable {
   su2double limits_table_enth[2];
   su2double limits_table_prog[2];
 
-  /* !brief
-   * Holds the variable names stored in the table file.
+  /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with data
    */
   vector<string> names_var;
 
-  /* !brief
+  /*! \brief
    * Holds all data stored in the table. First index addresses the variable
    * while second index addresses the point.
    */
@@ -93,15 +92,22 @@ class CLookUpTable {
     return index;
   }
 
-  inline const vector<su2double> GetData(string name_var) {
+/* get the pointer to the column data of the table (density, temperature, source terms, ...) */
+inline const su2double* GetDataP(string name_var) {
     int ix_var = GetIndexOfVar(name_var);
 
-    /* NB: check if this function can be made to return a pointer to a vector<su2double> */
-    vector<su2double> tableDataRow(table_data[ix_var],table_data[ix_var]+table_data.cols()); 
+    su2double* tableDataRow(table_data[ix_var]); 
 
     return tableDataRow;
   }
 
+  /*!
+   * \brief find the table limits, i.e. the minimum and maximum values of the 2 independent
+   * controlling variables (progress variable and enthalpy). We put the values in the variables
+   * limits_table_prog[2] and limit_table_enth[2]. 
+   * \param[in] name_prog - the string name for the first controlling variable
+   * \param[in] name_enth - the string name of the second controlling variable 
+   */
   void FindTableLimits(string name_prog, string name_enth);
 
   void IdentifyUniqueEdges();
@@ -110,13 +116,13 @@ class CLookUpTable {
 
   void ComputeInterpCoeffs(string name_prog, string name_enth);
 
-  void GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y, std::array<unsigned long,3>& point_ids,
+  void GetInterpMatInv(const su2double* vec_x, const su2double* vec_y, std::array<unsigned long,3>& point_ids,
                        su2activematrix& interp_mat_inv);
 
   void GetInterpCoeffs(su2double val_x, su2double val_y, su2activematrix& interp_mat_inv,
                        std::array<su2double,3>& interp_coeffs);
 
-  su2double Interpolate(const vector<su2double> val_samples, std::array<unsigned long,3>& val_triangle,
+  su2double Interpolate(const su2double* val_samples, std::array<unsigned long,3>& val_triangle,
                         std::array<su2double,3>& val_interp_coeffs);
 
   unsigned long FindNearestNeighborOnHull(su2double val_enth, su2double val_prog, string name_prog, string name_enth);

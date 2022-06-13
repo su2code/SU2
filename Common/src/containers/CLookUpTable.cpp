@@ -54,7 +54,7 @@ CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string na
             "space ..."
          << endl;
 
-  trap_map_prog_enth = CTrapezoidalMap(GetData(name_prog), GetData(name_enth), edges, edge_to_triangle);
+  trap_map_prog_enth = CTrapezoidalMap(GetDataP(name_prog), GetDataP(name_enth), table_data.cols(), edges, edge_to_triangle);
 
   if (rank == MASTER_NODE) cout << " done." << endl;
 
@@ -243,8 +243,8 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
 
   std::array<unsigned long, 3> next_triangle;
 
-  const vector<su2double> prog = GetData(name_prog);
-  const vector<su2double> enth = GetData(name_enth);
+  const su2double* prog = GetDataP(name_prog);
+  const su2double* enth = GetDataP(name_enth);
 
   /* calculate weights for each triangle (basically a distance function) and
    * build inverse interpolation matrices */
@@ -260,7 +260,7 @@ void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
   }
 }
 
-void CLookUpTable::GetInterpMatInv(const vector<su2double>& vec_x, const vector<su2double>& vec_y,
+void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_y,
                                    std::array<unsigned long,3>& point_ids, su2activematrix& interp_mat_inv) {
   unsigned int M = 3;
   CSquareMatrixCM global_M(M);
@@ -316,18 +316,18 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_
         triangle[p] = triangles[id_triangle][p]; 
 
       //*val_var = Interpolate(GetData(val_name_var), triangles[id_triangle], interp_coeffs);
-      *val_var = Interpolate(GetData(val_name_var), triangle, interp_coeffs);
+      *val_var = Interpolate(GetDataP(val_name_var), triangle, interp_coeffs);
       exit_code = 0;
     } else {
       /* in bounding box but outside of table */
       unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
-      *val_var = GetData(val_name_var)[nearest_neighbor];
+      *val_var = GetDataP(val_name_var)[nearest_neighbor];
       exit_code = 1;
     }
   } else {
     /* lookup is outside of table bounding box */
     unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
-    *val_var = GetData(val_name_var)[nearest_neighbor];
+    *val_var = GetDataP(val_name_var)[nearest_neighbor];
     exit_code = 1;
   }
   return exit_code;
@@ -351,8 +351,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
                                             su2double val_prog, su2double val_enth, string name_prog,
                                             string name_enth) {
   unsigned long exit_code = 0;
+  unsigned long nearest_neighbor = 0;
   unsigned long id_triangle;
-  unsigned long nearest_neighbor;
   std::array<su2double,3> interp_coeffs{0};
   std::array<unsigned long,3> triangle{0};
 
@@ -381,7 +381,6 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
 
   } else {
     // if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<<
-    // val_prog<< " "<<val_enth<<endl;
 
     /* if point is outside of table range, search nearest neighbor */
     nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
@@ -396,13 +395,12 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
       if (exit_code == 0){
 
         /* first, copy the single triangle from the large triangle list*/
-        /* nijso: TODO */
         for (int p = 0; p < 3; p++) 
           triangle[p] = triangles[id_triangle][p]; 
-        *val_vars[i_var] = Interpolate(GetData(val_names_var[i_var]), triangle, interp_coeffs);
+        *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var]), triangle, interp_coeffs);
       }
       else
-        *val_vars[i_var] = GetData(val_names_var[i_var])[nearest_neighbor];
+        *val_vars[i_var] = GetDataP(val_names_var[i_var])[nearest_neighbor];
     }
   }
   return exit_code;
@@ -423,7 +421,7 @@ void CLookUpTable::GetInterpCoeffs(su2double val_x, su2double val_y, su2activema
   }
 }
 
-su2double CLookUpTable::Interpolate(const vector<su2double> val_samples, std::array<unsigned long,3>& val_triangle,
+su2double CLookUpTable::Interpolate(const su2double* val_samples, std::array<unsigned long,3>& val_triangle,
                                     std::array<su2double,3>& val_interp_coeffs) {
   su2double result = 0;
   su2double z = 0;
@@ -444,8 +442,8 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
   su2double next_enth_norm;
   unsigned long neighbor_id = 0;
 
-  const vector<su2double> prog_table = GetData(name_prog);
-  const vector<su2double> enth_table = GetData(name_enth);
+  const su2double* prog_table = GetDataP(name_prog);
+  const su2double* enth_table = GetDataP(name_enth);
 
   su2double norm_coeff_prog = 1. / (limits_table_prog[1] - limits_table_prog[0]);
   su2double norm_coeff_enth = 1. / (limits_table_enth[1] - limits_table_enth[0]);
@@ -468,12 +466,12 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
 
 bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned long val_id_triangle, string name_prog,
                                 string name_enth) {
-  su2double tri_prog_0 = GetData(name_prog)[triangles[val_id_triangle][0]];
-  su2double tri_enth_0 = GetData(name_enth)[triangles[val_id_triangle][0]];
-  su2double tri_prog_1 = GetData(name_prog)[triangles[val_id_triangle][1]];
-  su2double tri_enth_1 = GetData(name_enth)[triangles[val_id_triangle][1]];
-  su2double tri_prog_2 = GetData(name_prog)[triangles[val_id_triangle][2]];
-  su2double tri_enth_2 = GetData(name_enth)[triangles[val_id_triangle][2]];
+  su2double tri_prog_0 = GetDataP(name_prog)[triangles[val_id_triangle][0]];
+  su2double tri_enth_0 = GetDataP(name_enth)[triangles[val_id_triangle][0]];
+  su2double tri_prog_1 = GetDataP(name_prog)[triangles[val_id_triangle][1]];
+  su2double tri_enth_1 = GetDataP(name_enth)[triangles[val_id_triangle][1]];
+  su2double tri_prog_2 = GetDataP(name_prog)[triangles[val_id_triangle][2]];
+  su2double tri_enth_2 = GetDataP(name_enth)[triangles[val_id_triangle][2]];
 
   su2double area_tri = TriArea(tri_prog_0, tri_enth_0, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
   su2double area_0 = TriArea(val_prog, val_enth, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);

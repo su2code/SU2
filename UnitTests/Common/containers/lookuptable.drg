@@ -1,0 +1,73 @@
+Dragon library
+
+<header>
+[version]
+1.0.0
+
+[number of points]
+12
+
+[number of triangles]
+14
+
+[number of hull points]
+8
+
+progress variable definition
+prog var = 1*Y-CH4
+
+[progress variable range]
+0.0 | 1.0
+
+[enthalpy range]
+0.0 | 1.0
+
+[number of variables]
+3
+
+[variable names]
+1:PROGVAR 2:ENTHALPY 3:Density
+</header>
+
+<data>
+0.0 0.0 1.0 
+0.3 0.0 1.0
+0.6 0.0 1.0
+1.0 0.0 1.0
+0.5 0.25 1.05
+0.75 0.25 1.05
+0.3 0.5 1.1
+0.6 0.5 1.1
+1.0 0.5 1.1
+0.0 1.0 1.2
+0.3 1.0 1.2
+1.0 1.0 1.2
+</data>
+
+<connectivity>
+1 2 7
+1 7 11
+1 11 10
+2 5 7
+2 3 5
+3 8 5
+5 8 7
+7 8 11
+3 6 8
+3 4 6
+4 9 6
+6 9 8
+8 9 12
+8 12 11
+</connectivity>
+
+<hull>
+1
+2
+3
+4
+9
+12
+11
+10
+</hull>

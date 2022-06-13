@@ -86,5 +86,31 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   cout << "check 8: " << look_up_dat << endl;
   CHECK(look_up_dat == Approx(0.6516888435));
 
+
+
+
+
+  look_up_table = new CLookUpTable("../UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
+
+  prog = 0.55;
+  enth = 0.25; 
+  look_up_tag = "Density";
+  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
+  cout << "check 9" << endl;
+  CHECK(look_up_dat == Approx(1.05));
+
+
+  prog = 0.65;
+  enth = 0.95; 
+  look_up_tag = "Density";
+  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
+  cout << "check 10" << endl;
+  CHECK(look_up_dat == Approx(1.19));
+
+
+
+
+
+
 }
 
