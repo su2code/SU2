@@ -33,60 +33,52 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
-
-using namespace std;
-
 class CFileReaderLUT {
  protected:
   int rank;
 
-  string type_lut;
-  string version_lut;
-  string version_reader;
+  std::string type_lut;
+  std::string version_lut;
+  std::string version_reader;
   unsigned long n_points;
   unsigned long n_triangles;
   unsigned long n_hull_points;
   unsigned long n_variables;
 
-  /* !brief
-   * Holds the variable names stored in the table file. Order is in sync with
-   * tableFlamelet.
+  /*! \brief Holds the variable names stored in the table file. 
+   * Order is in sync with tableFlamelet.
    */
-  vector<string> names_var;
+  std::vector<std::string> names_var;
 
-  /* !brief
-   * Holds all data stored in the table. First index addresses the variable
-   * while second index addresses the point.
+  /*! \brief Holds all data stored in the table. 
+   * First index addresses the variable while second index addresses the point.
    */
   su2activematrix table_data;
 
-  //vector<vector<unsigned long> > triangles;
   su2matrix<unsigned long> triangles;
 
-  vector<unsigned long> hull;
+  std::vector<unsigned long> hull;
 
-  string SkipToFlag(ifstream* file_stream, string flag);
-
+  std::string SkipToFlag(std::ifstream* file_stream, const std::string& flag);
 
  public:
   CFileReaderLUT();
 
-  inline const string& GetTypeLUT() const { return type_lut; }
-  inline const string& GetVersionLUT() const { return version_lut; }
-  inline const string& GetVersionReader() const { return version_reader; }
+  inline const std::string& GetTypeLUT() const { return type_lut; }
+  inline const std::string& GetVersionLUT() const { return version_lut; }
+  inline const std::string& GetVersionReader() const { return version_reader; }
   inline unsigned long GetNPoints() const { return n_points; }
   inline unsigned long GetNTriangles() const { return n_triangles; }
   inline unsigned long GetNHullPoints() const { return n_hull_points; }
   inline unsigned long GetNVariables() const { return n_variables; }
 
-  inline const vector<string>& GetNamesVar() const { return names_var; }
+  inline const std::vector<std::string>& GetNamesVar() const { return names_var; }
 
   inline const su2activematrix& GetTableData() const { return table_data; }
 
-  //inline const vector<vector<unsigned long> >& GetTriangles() const { return triangles; };
   inline const su2matrix<unsigned long>& GetTriangles() const { return triangles; };
 
-  inline const vector<unsigned long>& GetHull() const { return hull; };
+  inline const std::vector<unsigned long>& GetHull() const { return hull; };
 
-  void ReadRawDRG(string file_name);
+  void ReadRawDRG(const std::string& file_name);
 };

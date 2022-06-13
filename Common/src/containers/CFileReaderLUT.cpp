@@ -35,9 +35,11 @@
 #include <iomanip>
 #include <string>
 
+using namespace std;
+
 CFileReaderLUT::CFileReaderLUT() {}
 
-void CFileReaderLUT::ReadRawDRG(string file_name) {
+void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   version_reader = "1.0.0";
 
   /*--- Store MPI rank. ---*/
@@ -245,7 +247,7 @@ void CFileReaderLUT::ReadRawDRG(string file_name) {
   type_lut = "DRG";
 }
 
-string CFileReaderLUT::SkipToFlag(ifstream* file_stream, string flag) {
+string CFileReaderLUT::SkipToFlag(ifstream* file_stream, const string& flag) {
   string line;
   getline(*file_stream, line);
 

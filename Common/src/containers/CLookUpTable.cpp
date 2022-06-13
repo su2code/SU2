@@ -29,7 +29,9 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
-CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string name_enth) {
+using namespace std;
+
+CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_prog, const string& name_enth) {
   file_name_lut = var_file_name_lut;
 
   rank = SU2_MPI::GetRank();
@@ -67,7 +69,7 @@ CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string na
   if (rank == MASTER_NODE) cout << "LUT fluid model ready for use" << endl;
 }
 
-void CLookUpTable::LoadTableRaw(string var_file_name_lut) {
+void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   CFileReaderLUT file_reader;
 
   if (rank == MASTER_NODE) cout << "Loading look-up-table-file " << var_file_name_lut << " ..." << endl;
@@ -89,7 +91,7 @@ void CLookUpTable::LoadTableRaw(string var_file_name_lut) {
   if (rank == MASTER_NODE) cout << " done." << endl;
 }
 
-void CLookUpTable::FindTableLimits(string name_prog, string name_enth) {
+void CLookUpTable::FindTableLimits(const string& name_prog, const string& name_enth) {
   int ixEnth = GetIndexOfVar(name_enth);
   int ixProg = GetIndexOfVar(name_prog);
 
@@ -238,7 +240,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
   }
 }
 
-void CLookUpTable::ComputeInterpCoeffs(string name_prog, string name_enth) {
+void CLookUpTable::ComputeInterpCoeffs(const string& name_prog, const string& name_enth) {
   /* build KD tree for enthalpy, progress variable space */
 
   std::array<unsigned long, 3> next_triangle;
@@ -287,8 +289,8 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_var, su2double val_prog,
-                                            su2double val_enth, string name_prog, string name_enth) {
+unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2double *val_var, su2double val_prog,
+                                            su2double val_enth, const string& name_prog, const string& name_enth) {
   unsigned long exit_code = 0;
 
   if (val_name_var.compare("NULL") == 0) {
@@ -334,8 +336,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string val_name_var, su2double *val_
 }
 
 unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vector<su2double>& val_vars,
-                                            su2double val_prog, su2double val_enth, string name_prog,
-                                            string name_enth) {
+                                            su2double val_prog, su2double val_enth, const string& name_prog,
+                                            const string& name_enth) {
   vector<su2double*> look_up_data;
 
   for (long unsigned int i_var = 0; i_var < val_vars.size(); ++i_var) {
@@ -348,8 +350,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
 }
 
 unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vector<su2double*>& val_vars,
-                                            su2double val_prog, su2double val_enth, string name_prog,
-                                            string name_enth) {
+                                            su2double val_prog, su2double val_enth, const string& name_prog,
+                                            const string& name_enth) {
   unsigned long exit_code = 0;
   unsigned long nearest_neighbor = 0;
   unsigned long id_triangle;
@@ -434,8 +436,8 @@ su2double CLookUpTable::Interpolate(const su2double* val_samples, std::array<uns
   return result;
 }
 
-unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2double val_enth, string name_prog,
-                                                      string name_enth) {
+unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2double val_enth, const string& name_prog,
+                                                      const string& name_enth) {
   su2double min_distance = 1.e99;
   su2double next_distance = 1.e99;
   su2double next_prog_norm;
@@ -464,8 +466,8 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog, su2dou
   return neighbor_id;
 }
 
-bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned long val_id_triangle, string name_prog,
-                                string name_enth) {
+bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned long val_id_triangle, const string& name_prog,
+                                const string& name_enth) {
   su2double tri_prog_0 = GetDataP(name_prog)[triangles[val_id_triangle][0]];
   su2double tri_enth_0 = GetDataP(name_enth)[triangles[val_id_triangle][0]];
   su2double tri_prog_1 = GetDataP(name_prog)[triangles[val_id_triangle][1]];

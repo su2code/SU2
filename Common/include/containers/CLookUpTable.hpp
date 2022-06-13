@@ -39,16 +39,14 @@
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 
-using namespace std;
-
 class CLookUpTable {
  protected:
   int rank; /*!< \brief MPI Rank. */
 
-  string file_name_lut;
-  string type_lut;
-  string version_lut;
-  string version_reader;
+  std::string file_name_lut;
+  std::string type_lut;
+  std::string version_lut;
+  std::string version_reader;
   unsigned long n_points;
   unsigned long n_triangles;
   unsigned long n_variables;
@@ -60,7 +58,7 @@ class CLookUpTable {
   /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with data
    */
-  vector<string> names_var;
+  std::vector<std::string> names_var;
 
   /*! \brief
    * Holds all data stored in the table. First index addresses the variable
@@ -71,20 +69,21 @@ class CLookUpTable {
   su2matrix<unsigned long> triangles;
 
   /* we do not know this size in advance until we go through the entire lookup table */
-  vector<vector<unsigned long> > edges;
-  vector<vector<unsigned long> > edge_to_triangle;
+  std::vector<std::vector<unsigned long> > edges;
+  std::vector<std::vector<unsigned long> > edge_to_triangle;
+  //su2matrix<unsigned long> edge_to_triangle;
 
-  vector<unsigned long> hull;
+  std::vector<unsigned long> hull;
 
   CTrapezoidalMap trap_map_prog_enth;
 
-  vector<su2activematrix> interp_mat_inv_prog_enth;
+  std::vector<su2activematrix> interp_mat_inv_prog_enth;
 
-  inline int GetIndexOfVar(string nameVar) {
+  inline int GetIndexOfVar(const std::string& nameVar) {
     int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();
     if (index == int(names_var.size())) {
       index = -1;
-      string error_msg = "Variable '";
+      std::string error_msg = "Variable '";
       error_msg.append(nameVar);
       error_msg.append("' is not in the lookup table.");
       SU2_MPI::Error(error_msg, CURRENT_FUNCTION);
@@ -93,7 +92,7 @@ class CLookUpTable {
   }
 
 /* get the pointer to the column data of the table (density, temperature, source terms, ...) */
-inline const su2double* GetDataP(string name_var) {
+inline const su2double* GetDataP(const std::string& name_var) {
     int ix_var = GetIndexOfVar(name_var);
 
     su2double* tableDataRow(table_data[ix_var]); 
@@ -108,13 +107,13 @@ inline const su2double* GetDataP(string name_var) {
    * \param[in] name_prog - the string name for the first controlling variable
    * \param[in] name_enth - the string name of the second controlling variable 
    */
-  void FindTableLimits(string name_prog, string name_enth);
+  void FindTableLimits(const std::string& name_prog, const std::string& name_enth);
 
   void IdentifyUniqueEdges();
 
-  void LoadTableRaw(string file_name_lut);
+  void LoadTableRaw(const std::string& file_name_lut);
 
-  void ComputeInterpCoeffs(string name_prog, string name_enth);
+  void ComputeInterpCoeffs(const std::string& name_prog, const std::string& name_enth);
 
   void GetInterpMatInv(const su2double* vec_x, const su2double* vec_y, std::array<unsigned long,3>& point_ids,
                        su2activematrix& interp_mat_inv);
@@ -125,34 +124,34 @@ inline const su2double* GetDataP(string name_var) {
   su2double Interpolate(const su2double* val_samples, std::array<unsigned long,3>& val_triangle,
                         std::array<su2double,3>& val_interp_coeffs);
 
-  unsigned long FindNearestNeighborOnHull(su2double val_enth, su2double val_prog, string name_prog, string name_enth);
+  unsigned long FindNearestNeighborOnHull(su2double val_enth, su2double val_prog, const std::string& name_prog, const std::string& name_enth);
 
-  bool IsInTriangle(su2double val_x, su2double val_y, unsigned long val_id_triangle, string name_prog,
-                    string name_enth);
+  bool IsInTriangle(su2double val_x, su2double val_y, unsigned long val_id_triangle, const std::string& name_prog,
+                    const std::string& name_enth);
 
   inline su2double TriArea(su2double x1, su2double y1, su2double x2, su2double y2, su2double x3, su2double y3) {
     return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) * 0.5);
   }
 
  public:
-  CLookUpTable(string file_name_lut, string name_prog, string name_enth);
+  CLookUpTable(const std::string& file_name_lut, const std::string& name_prog, const std::string& name_enth);
 
   void PrintTableInfo();
 
-  unsigned long LookUp_ProgEnth(string val_name_var, su2double* val_var, su2double val_prog, su2double val_enth,
-                                string name_prog, string name_enth);
+  unsigned long LookUp_ProgEnth(const std::string& val_name_var, su2double* val_var, su2double val_prog, su2double val_enth,
+                                const std::string& name_prog, const std::string& name_enth);
 
-  unsigned long LookUp_ProgEnth(vector<string>& val_names_var, vector<su2double*>& val_vars, su2double val_prog,
-                                su2double val_enth, string name_prog, string name_enth);
+  unsigned long LookUp_ProgEnth(std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_prog,
+                                su2double val_enth, const std::string& name_prog, const std::string& name_enth);
 
-  unsigned long LookUp_ProgEnth(vector<string>& val_names_var, vector<su2double>& val_vars, su2double val_prog,
-                                su2double val_enth, string name_prog, string name_enth);
+  unsigned long LookUp_ProgEnth(std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars, su2double val_prog,
+                                su2double val_enth, const std::string& name_prog, const std::string& name_enth);
 
-  inline pair<su2double, su2double> GetTableLimitsEnth() {
-    return make_pair(limits_table_enth[0], limits_table_enth[1]);
+  inline std::pair<su2double, su2double> GetTableLimitsEnth() {
+    return std::make_pair(limits_table_enth[0], limits_table_enth[1]);
   }
 
-  inline pair<su2double, su2double> GetTableLimitsProg() {
-    return make_pair(limits_table_prog[0], limits_table_prog[1]);
+  inline std::pair<su2double, su2double> GetTableLimitsProg() {
+    return std::make_pair(limits_table_prog[0], limits_table_prog[1]);
   }
 };

@@ -34,7 +34,6 @@
 #include "../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../Common/include/toolboxes/CSquareMatrixCM.hpp"
 
-using namespace std;
 /*!
  * \class CTrapezoidalMap
  * \brief Construction of trapezoidal map for tabulated lookup 
@@ -43,18 +42,18 @@ using namespace std;
  */
   class CTrapezoidalMap {
  protected:
- 
+
   /* The unique values of x which exist in the data */
-  vector<su2double> unique_bands_x;
+  std::vector<su2double> unique_bands_x;
 
   su2activematrix edge_limits_x;
   su2activematrix edge_limits_y;
 
-  vector<vector<unsigned long> > edge_to_triangle;
+  std::vector<std::vector<unsigned long> > edge_to_triangle;
 
   /* The value that each edge which intersects the band takes within that
    * same band. Used to sort the edges */
-  vector<vector<pair<su2double, unsigned long> > > y_edge_at_band_mid;
+  std::vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
 
  public:
   CTrapezoidalMap(){};
@@ -62,8 +61,8 @@ using namespace std;
   CTrapezoidalMap(const su2double* samples_x,
                   const su2double* samples_y,
                   const unsigned long size,
-                  const vector<vector<unsigned long> >& edges,
-                  const vector<vector<unsigned long> >& edge_to_triangle);
+                  const std::vector<std::vector<unsigned long> >& edges,
+                  const std::vector<std::vector<unsigned long> >& edge_to_triangle);
 
   ~CTrapezoidalMap(void){};
 
@@ -83,7 +82,7 @@ using namespace std;
    * \param[out] val_band - a pair(i_low,i_up) , the lower index and upper index between which the value val_x 
    * can be found 
    */
-  pair<unsigned long, unsigned long> GetBand(su2double val_x);
+  std::pair<unsigned long, unsigned long> GetBand(su2double val_x);
 
 
  /*!
@@ -94,9 +93,9 @@ using namespace std;
   * \param[in]  val_y  - y-coordinate or first independent variable 
   * \param[out] pair (edge_low,edge_up) - lower edge and upper edge of a triangle that encloses the coordinate 
   */
-  pair<unsigned long, unsigned long> GetEdges(pair<unsigned long, unsigned long> val_band,
-                                              su2double val_x,
-                                              su2double val_y);
+  std::pair<unsigned long, unsigned long> GetEdges(std::pair<unsigned long, unsigned long> val_band,
+                                                   su2double val_x,
+                                                   su2double val_y);
 
  /*!
   * \brief determine if the x-coordinate falls within the bounds xmin,xmax of the table  
