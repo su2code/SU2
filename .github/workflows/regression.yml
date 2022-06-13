@@ -167,7 +167,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:220609-1143
         with:
           entrypoint: /bin/rm
-          args: --rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   unit_tests:
     runs-on: self-hosted
     name: Unit Tests
