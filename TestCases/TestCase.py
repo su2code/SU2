@@ -317,6 +317,7 @@ class TestCase:
         else:
             passed = False
 
+        print('CPU architecture=%s'%self.cpu_arch)
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 

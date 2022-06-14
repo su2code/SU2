@@ -313,7 +313,7 @@ def main():
     discadj_euler_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_euler_py.timeout   = 1600
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
-    discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc–aarch64.dat.ref"
+    discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
     pass_list.append(discadj_euler_py.run_filediff())
     test_list.append(discadj_euler_py)
