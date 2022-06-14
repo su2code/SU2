@@ -94,13 +94,6 @@ namespace AD{
   inline void ClearAdjoints() {}
 
   /*!
-   * \brief Possibly resize the vector of adjoints.
-   * \details After this operation, the vector can store
-   * the adjoints of all variables computed up to this point.
-   */
-  inline void ResizeAdjoints() {}
-
-  /*!
    * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
    */
   inline void ComputeAdjoint() {}
@@ -348,12 +341,6 @@ namespace AD{
   FORCEINLINE void PrintStatistics() {AD::getGlobalTape().printStatistics();}
 
   FORCEINLINE void ClearAdjoints() {AD::getGlobalTape().clearAdjoints(); }
-
-  FORCEINLINE void ResizeAdjoints() {
-  #if defined(HAVE_OPDI)
-    AD::getGlobalTape().setGradient(0, 0.0);
-  #endif
-  }
 
   FORCEINLINE void ComputeAdjoint() {
   #if defined(HAVE_OPDI)
