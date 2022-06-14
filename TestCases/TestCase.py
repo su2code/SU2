@@ -66,6 +66,7 @@ class TestCase:
         self.test_vals = []  
         self.test_vals_aarch64 = []
         self.cpu_arch = platform.processor()
+        self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
 
         # These can be optionally varied 
         self.su2_exec    = "SU2_CFD" 
@@ -78,6 +79,9 @@ class TestCase:
         self.test_file      = "of_grad.dat"
 
     def run_test(self):
+
+        if not self.is_enabled():
+            return True
 
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
@@ -219,8 +223,9 @@ class TestCase:
         if iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
+        print('CPU architecture=%s' % self.cpu_arch)
+
         if len(self.test_vals) != 0:
-            print('CPU architecture=%s' % self.cpu_arch)
             print('test_iter=%d' % self.test_iter)
 
             print_vals(self.test_vals, name="test_vals (stored)")
@@ -237,6 +242,10 @@ class TestCase:
         return passed
 
     def run_filediff(self):
+
+        if not self.is_enabled():
+            return True
+
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
         timed_out    = False
@@ -326,6 +335,9 @@ class TestCase:
         return passed
 
     def run_opt(self):
+
+        if not self.is_enabled():
+            return True
 
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
@@ -446,6 +458,9 @@ class TestCase:
         return passed
 
     def run_geo(self):
+
+        if not self.is_enabled():
+            return True
 
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
@@ -575,7 +590,10 @@ class TestCase:
         return passed
 
     def run_def(self):
-    
+
+        if not self.is_enabled():
+            return True
+
         print('==================== Start Test: %s ===================='%self.tag)
         passed       = True
         exceed_tol   = False
@@ -773,3 +791,11 @@ class TestCase:
         os.chdir(workdir)
 
         return
+
+    def is_enabled(self):
+        is_enabled = self.cpu_arch in self.enabled_on_cpu_arch
+
+        if not is_enabled:
+            print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % self.tag, self.cpu_arch)
+
+        return is_enabled

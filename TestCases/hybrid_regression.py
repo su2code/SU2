@@ -478,6 +478,7 @@ def main():
     aeroelastic.test_vals         = [0.074433, 0.033108, -0.001650, -0.000127]
     aeroelastic.test_vals_aarch64 = [0.074836, 0.033102, -0.001650, -0.000127]
     aeroelastic.unsteady  = True
+    aeroelastic.enabled_on_cpu_arch = ["x86_64"] # Requires AVX-capable architecture
     test_list.append(aeroelastic)
 
     # Delayed Detached Eddy Simulation
