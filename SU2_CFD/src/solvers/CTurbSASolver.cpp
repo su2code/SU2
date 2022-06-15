@@ -1817,7 +1817,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   weights[0][nVarFlo] -= cb1*(1-ft2) * (Stilde + dSbar*nutilde) * adjnutilde;
 
   const unsigned short inds_Wij[3][3] = {{0, 2, 1}, {2, 0, 0}, {1, 0, 0}};
-  if (S > std::numeric_limits<passivedouble>::epsilon())
+  if (S > std::numeric_limits<double>::min())
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       if (iDim == jDim) continue;
@@ -1848,7 +1848,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   //--- Destruction term ---//
   //------------------------//
 
-  const double inv_Stilde = 1.0/max(Stilde, std::numeric_limits<double>::epsilon());
+  const double inv_Stilde = 1.0/max(Stilde, std::numeric_limits<double>::min());
 
   const double rg = min(nutilde*inv_Stilde*inv_k2_d2,10.0);
   const double g = rg + cw2*(pow(rg,6.0)-rg);
@@ -1945,7 +1945,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
 
   double Chi = nutilde/nu;
   if (roughness > 1.0e-10)
-    Chi+= cR1*roughness/(dist+std::numeric_limits<double>::epsilon());
+    Chi+= cR1*roughness/(dist+std::numeric_limits<double>::min());
 
   const double Chi_3 = Chi*Chi*Chi;
   const double fv1  = Chi_3/(Chi_3+cv1_3);
