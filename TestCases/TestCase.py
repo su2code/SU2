@@ -796,6 +796,6 @@ class TestCase:
         is_enabled = self.cpu_arch in self.enabled_on_cpu_arch
 
         if not is_enabled:
-            print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % self.tag, self.cpu_arch)
+            print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
 
         return is_enabled
