@@ -926,7 +926,6 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       /*--- Automatic switch off when y+ < "limit" according to Nichols & Nelson (2004) ---*/
 
       if (Y_Plus_Start < config->GetwallModel_MinYPlus()) {
-        SU2_OMP_ATOMIC
         smallYPlusCounter++;
         continue;
       }
@@ -1000,7 +999,6 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
         counter++;
         if (counter > max_iter) {
-          SU2_OMP_ATOMIC
           notConvergedCounter++;
           // use some safe values for convergence
           Y_Plus = 30.0;
