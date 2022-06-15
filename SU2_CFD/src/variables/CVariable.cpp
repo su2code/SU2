@@ -78,6 +78,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 
   if (config->GetCFL_Adapt() == YES && !config->GetDiscrete_Adjoint()) {
+    NonLinRes.resize(nPoint,nVar) = su2double(0.0);
     NonLinRes_Old.resize(nPoint,nVar) = su2double(0.0);
     NonLinSol_Old.resize(nPoint,nVar) = su2double(0.0);
   }

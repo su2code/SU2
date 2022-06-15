@@ -89,6 +89,7 @@ protected:
   MatrixType Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
 
   MatrixType Res_TruncError;  /*!< \brief Truncation error for multigrid cycle. */
+  MatrixType NonLinRes;
   MatrixType NonLinRes_Old;
   MatrixType NonLinSol_Old;
   MatrixType Residual_Old;    /*!< \brief Auxiliary structure for residual smoothing. */
@@ -510,6 +511,16 @@ public:
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
 
   /*!
+   * \brief Set the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_residual - Pointer to the nonlinear residual vector.
+   */
+  inline void SetNonLinRes(unsigned long iPoint, const su2double *val_residual) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      NonLinRes(iPoint,iVar) = val_residual[iVar];
+  }
+
+  /*!
    * \brief Get the nonlinear residual of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the nonlinear residual vector.
@@ -517,14 +528,13 @@ public:
   inline su2double *GetNonLinRes_Old(unsigned long iPoint) { return NonLinRes_Old[iPoint]; }
 
   /*!
-   * \brief Get the nonlinear residual of the problem.
+   * \brief Set the nonlinear residual of the problem.
    * \param[in] iPoint - Point index.
    * \param[in] val_residual - Pointer to the nonlinear residual vector.
-   * \param[in] factor - Constant scaling factor for nonlinear residual vector.
    */
-  inline void SetNonLinRes_Old(unsigned long iPoint, const su2double *val_residual, const su2double factor) {
+  inline void SetNonLinRes_Old(unsigned long iPoint, const su2double *val_residual) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      NonLinRes_Old(iPoint,iVar) = factor*val_residual[iVar];
+      NonLinRes_Old(iPoint,iVar) = val_residual[iVar];
   }
 
   /*!
@@ -535,14 +545,38 @@ public:
   inline su2double *GetNonLinSol_Old(unsigned long iPoint) { return NonLinSol_Old[iPoint]; }
 
   /*!
-   * \brief Get the nonlinear residual of the problem.
+   * \brief Set the nonlinear residual of the problem.
    * \param[in] iPoint - Point index.
    * \param[in] val_residual - Pointer to the nonlinear residual vector.
-   * \param[in] factor - Constant scaling factor for nonlinear residual vector.
+   * \param[in] vol - Dual-cell volume.
    */
-  inline void SetNonLinSol_Old(unsigned long iPoint, const su2double *val_solution, const su2double factor) {
+  inline void SetNonLinSol_Old(unsigned long iPoint, const su2double *val_solution, const su2double vol) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      NonLinSol_Old(iPoint,iVar) = factor*val_solution[iVar];
+      NonLinSol_Old(iPoint,iVar) = val_solution[iVar]*vol/Delta_Time(iPoint);
+  }
+
+  /*!
+   * \brief Get the norm of the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the nonlinear residual vector.
+   */
+  inline su2double GetNonLinResNorm(unsigned long iPoint) {
+    su2double norm = 0.0;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      norm += pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
+    return norm;
+  }
+
+  /*!
+   * \brief Get the norm of the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the nonlinear residual vector.
+   */
+  inline su2double GetNonLinResNorm_Old(unsigned long iPoint) {
+    su2double norm = 0.0;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      norm += pow(NonLinRes_Old(iPoint,iVar), 2.0);
+    return norm;
   }
 
   /*!

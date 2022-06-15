@@ -1935,48 +1935,38 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Check for decrease in nonlinear residual. */
 
       const su2double nonLinTol = 0.5*(1.0+linTol);
-      su2double normNonLinRes = 0.0, normNonLinRes_Old = 0.0;
+      su2double normNonLinRes = 1.0, normNonLinRes_Old = 1.0;
 
       const auto nVar = solverFlow->GetnVar();
       const auto nVarTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetnVar() : 0;
       
       const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
-      const su2double dt  = solverFlow->GetNodes()->GetDelta_Time(iPoint);
-      const su2double dtTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetNodes()->GetDelta_Time(iPoint) : 0.0;
       
       if (config->GetInnerIter() == 0) {
-        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol/dt);
+        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]));
+        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol);
         if ((iMesh == MESH_0) && solverTurb) {
-          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol/dtTurb);
+          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
+          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol);
         }
-        normNonLinRes_Old = 1.0;
       }
       else {
-        su2double* nonLinRes = &(solverFlow->LinSysRes[iPoint*nVar]);
-        su2double* nonLinRes_Old = solverFlow->GetNodes()->GetNonLinRes_Old(iPoint);
-        su2double* nonLinSol_Old = solverFlow->GetNodes()->GetNonLinSol_Old(iPoint);
+        solverFlow->GetNodes()->SetNonLinRes(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]));
+        
+        normNonLinRes = solverFlow->GetNodes()->GetNonLinResNorm(iPoint);
+        normNonLinRes_Old = solverFlow->GetNodes()->GetNonLinResNorm_Old(iPoint);
 
-        for (auto iVar = 0; iVar < nVar; iVar++) {
-          normNonLinRes += pow(nonLinSol_Old[iVar] - nonLinRes[iVar], 2.0);
-          normNonLinRes_Old += pow(nonLinRes_Old[iVar], 2.0);
-        }
-        if ((iMesh == MESH_0) && solverTurb) {
-          su2double* nonLinResTurb = &(solverTurb->LinSysRes[iPoint*nVarTurb]);
-          su2double* nonLinResTurb_Old = solverTurb->GetNodes()->GetNonLinRes_Old(iPoint);
-          su2double* nonLinSolTurb_Old = solverTurb->GetNodes()->GetNonLinSol_Old(iPoint);
-          for (auto iVar = 0; iVar < nVarTurb; iVar++) {
-            normNonLinRes += pow(nonLinSolTurb_Old[iVar] - nonLinResTurb[iVar], 2.0);
-            normNonLinRes_Old += pow(nonLinResTurb_Old[iVar], 2.0);
-          }
-        }
+        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]));
+        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol);
 
-        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]), 1.0);
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol/dt);
         if ((iMesh == MESH_0) && solverTurb) {
-          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]), 1.0);
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol/dtTurb);
+          solverTurb->GetNodes()->SetNonLinRes(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
+
+          normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint);
+          normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint);
+
+          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
+          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol);
         }
         normNonLinRes = sqrt(normNonLinRes);
         normNonLinRes_Old = sqrt(normNonLinRes_Old);
