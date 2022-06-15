@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
@@ -762,7 +763,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
 }
 
 void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
-
+  cout << "Start nondimensionalization" << endl;
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -847,6 +848,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
 
+    case DATADRIVEN_FLUID:
+      auxFluidModel = new CDataDrivenFluid(Gamma, config->GetGas_Constant());
+      break;
+
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
       break;
@@ -862,7 +867,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Temperature_FreeStream = auxFluidModel->GetTemperature();
     config->SetTemperature_FreeStream(Temperature_FreeStream);
   }
-
   Mach2Vel_FreeStream = auxFluidModel->GetSoundSpeed();
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
@@ -1083,9 +1087,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
         break;
+      case DATADRIVEN_FLUID:
+        FluidModel[thread] = new CDataDrivenFluid(Gamma, Gas_ConstantND);
+        break;
     }
-
+    
     GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+    cout << Pressure_FreeStreamND << " " << Density_FreeStreamND << " " << GetFluidModel()->GetStaticEnergy() << endl;
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
@@ -1229,6 +1237,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case PR_GAS:
       ModelTable << "PR_GAS";
       break;
+    case DATADRIVEN_FLUID:
+      ModelTable << "DATADRIVEN_FLUID";
+      break;
     }
 
     if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
@@ -1324,7 +1335,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     cout << NonDimTableOut.str();
 
   }
-
+  cout << "End nondimensionalization" << endl;
 }
 
 void CEulerSolver::SetReferenceValues(const CConfig& config) {
@@ -1688,6 +1699,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool mlp_gas          = config->GetKind_FluidModel() == DATADRIVEN_FLUID;
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   const bool low_mach_corr    = config->Low_Mach_Correction();
@@ -1804,7 +1816,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
-      if (!ideal_gas || low_mach_corr) {
+      if (!ideal_gas || low_mach_corr || !mlp_gas) {
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
       }
@@ -1844,7 +1856,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       bad_j = nodes->GetNon_Physical(jPoint);
 
       counter_local += bad_i+bad_j;
-
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
       numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
 
@@ -1928,7 +1939,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
-
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
@@ -1937,9 +1947,11 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   const su2double density = primitive[prim_idx.Density()];
   const su2double pressure = primitive[prim_idx.Pressure()];
   const su2double velocity2 = GeometryToolbox::SquaredNorm(nDim, &primitive[prim_idx.Velocity()]);
-
-  fluidModel->SetTDState_Prho(pressure, density);
-
+  
+  const su2double energy = primitive[prim_idx.Enthalpy()] - pressure / density;
+  fluidModel->SetTDState_rhoe(density, energy);
+  //fluidModel->SetTDState_Prho(pressure, density);
+  
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2;
   primitive[prim_idx.SoundSpeed()] = fluidModel->GetSoundSpeed();
@@ -6469,7 +6481,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 

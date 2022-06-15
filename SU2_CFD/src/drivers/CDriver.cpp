@@ -1419,6 +1419,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   bool compressible = false;
   bool incompressible = false;
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
+  bool mlp_gas = config->GetKind_FluidModel() == DATADRIVEN_FLUID;
+
   bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS);
 
   /*--- Initialize some useful booleans ---*/
@@ -1640,7 +1642,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case ROE:
-              if (ideal_gas) {
+              if (ideal_gas || mlp_gas) {
 
                 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                   numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwRoe_Flow(nDim, nVar_Flow, config, roe_low_dissipation);
@@ -1768,7 +1770,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
-      if (ideal_gas) {
+      if (ideal_gas || mlp_gas) {
 
         /*--- Compressible flow Ideal gas ---*/
         numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGrad_Flow(nDim, nVar_Flow, true, config);

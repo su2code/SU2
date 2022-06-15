@@ -2182,6 +2182,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         file << "Specific Heat Ratio: " << config->GetGamma() << "\n";
         break;
 
+      case DATADRIVEN_FLUID:
+        file << "Fluid Model: Data driven fluid \n";
+        break;
+        
       case VW_GAS:
         file << "Fluid Model: Van der Waals \n";
         file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";

@@ -29,12 +29,21 @@
 #include <string>
 #include <cmath>
 #include <fstream>
+// #include "/home/evert/PhD/cppflow/include/cppflow/ops.h"
+// #include "/home/evert/PhD/cppflow/include/cppflow/model.h"
 
 using namespace std;
 
 LookUp_MLP::LookUp_MLP(string inputFileName)
 {
     
+    // string model_dir;
+    // unsigned short n_inputs, n_outputs;
+    // cout << "Provide the directory to the model: ";
+    // cin >> model_dir;
+
+    //cppflow::model model(model_dir);
+
     #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     #endif
@@ -52,7 +61,6 @@ LookUp_MLP::LookUp_MLP(string inputFileName)
         GenerateANN(NeuralNetworks.at(i_ANN), ANN_filenames.at(i_ANN));
         ANN_inputs[i_ANN].resize(NeuralNetworks.at(i_ANN)->GetnInputs());
         ANN_outputs[i_ANN].resize(NeuralNetworks.at(i_ANN)->GetnOutputs());
-        NeuralNetworks.at(i_ANN)->displayNetwork();
     }
 }
 

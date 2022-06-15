@@ -56,6 +56,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CNEMOGas.cpp \
   ../src/fluid/CSU2TCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
+  ../src/fluid/CDataDrivenFluid.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \
   ../src/integration/CMultiGridIntegration.cpp \

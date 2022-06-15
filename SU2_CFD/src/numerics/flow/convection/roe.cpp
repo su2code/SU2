@@ -743,7 +743,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
-  su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
+  su2double U_i[nDim + 2] = {0.0,0.0,0.0,0.0,0.0}, U_j[nDim + 2] = {0.0,0.0,0.0,0.0,0.0};
 
   /*--- Face area (norm or the normal vector) ---*/
 
