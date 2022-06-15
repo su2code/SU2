@@ -770,6 +770,7 @@ def main():
     pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
+    pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
     file_diff_list.append(pywrapper_translating_naca0012)
 
     ######################################
