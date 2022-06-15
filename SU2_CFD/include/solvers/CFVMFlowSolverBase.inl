@@ -406,8 +406,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
                                                      CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) ||
-                         (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -1317,7 +1316,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
 
         /*--- Turbulent kinetic energy. ---*/
-        if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
@@ -1483,7 +1482,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
               /*--- Turbulent kinetic energy ---*/
 
-              if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+              if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
@@ -2460,7 +2459,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const bool energy = config->GetEnergy_Equation();
-  const bool QCR = config->GetQCR();
+  const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
   const bool roughwall = (config->GetnRoughWall() > 0);
   const bool nemo = config->GetNEMOProblem();
@@ -2516,10 +2515,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
       Coord = geometry->nodes->GetCoord(iPoint);
-      Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -2585,13 +2582,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
 
-      WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
-
       /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
-      if (!wallfunctions) {
+      if (!wallfunctions && (MGLevel == MESH_0 || geometry->nodes->GetDomain(iPoint))) {
+        // for CMultiGridGeometry, the normal neighbor of halo nodes in not set
+        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+        WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 
@@ -2628,7 +2627,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
       }
 
-      /*--- Note that y+, and heat are computed at the
+      /*--- Note that heat is computed at the
        halo cells (for visualization purposes), but not the forces ---*/
 
       if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
@@ -2750,7 +2749,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   AllBoundViscCoeff.CEff = AllBoundViscCoeff.CL / (AllBoundViscCoeff.CD + EPS);
   AllBoundViscCoeff.CMerit = AllBoundViscCoeff.CT / (AllBoundViscCoeff.CQ + EPS);
-  AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0 / MaxNorm);
 
 #ifdef HAVE_MPI
 
@@ -2785,7 +2783,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     AllBoundViscCoeff.CMerit = AllBoundViscCoeff.CT / (AllBoundViscCoeff.CQ + EPS);
 
     AllBound_HF_Visc = Allreduce(AllBound_HF_Visc);
-    AllBound_MaxHF_Visc = pow(Allreduce(pow(AllBound_MaxHF_Visc, MaxNorm)), 1.0 / MaxNorm);
+    AllBound_MaxHF_Visc = Allreduce(AllBound_MaxHF_Visc);
   }
 
   /*--- Add the forces on the surfaces using all the nodes ---*/
@@ -2827,6 +2825,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
 #endif
 
+  /*--- Complete the calculation of maximum heat flux. ---*/
+
+  for (auto& hf : Surface_MaxHF_Visc) {
+    hf = pow(hf, 1.0 / MaxNorm);
+  }
+  AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0 / MaxNorm);
+
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
 
   TotalCoeff.CD += AllBoundViscCoeff.CD;
@@ -2863,7 +2868,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     SurfaceCoeff.CMy[iMarker_Monitoring] += SurfaceViscCoeff.CMy[iMarker_Monitoring];
     SurfaceCoeff.CMz[iMarker_Monitoring] += SurfaceViscCoeff.CMz[iMarker_Monitoring];
   }
-
 
   Buffet_Monitoring(geometry, config);
 

@@ -1,6 +1,6 @@
 ﻿/*!
  * \file transition.hpp
- * \brief Delarations of numerics classes for transition problems.
+ * \brief Declarations of numerics classes for transition problems.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"
  *

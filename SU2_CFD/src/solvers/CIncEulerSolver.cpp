@@ -253,7 +253,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool viscous       = config->GetViscous();
   bool turbulent     = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
                         (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
-  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
+  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
@@ -2141,7 +2141,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2211,10 +2211,17 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
     Flow_Dir_Mag = GeometryToolbox::Norm(nDim, Flow_Dir);
 
-    /*--- Store the unit flow direction vector. ---*/
+    /*--- Store the unit flow direction vector. 
+     If requested, use the local boundary normal (negative),
+     instead of the prescribed flow direction in the config. ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+    if (config->GetInc_Inlet_UseNormal()) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = -Normal[iDim]/Area;
+    } else {
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+    }
 
     /*--- Retrieve solution at this boundary node. ---*/
 
@@ -2290,14 +2297,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           Vel_Mag = sqrt((P_total - P_domain)/(0.5*nodes->GetDensity(iPoint)));
 
-          /*--- If requested, use the local boundary normal (negative),
-           instead of the prescribed flow direction in the config. ---*/
-
-          if (config->GetInc_Inlet_UseNormal()) {
-            for (iDim = 0; iDim < nDim; iDim++)
-              UnitFlowDir[iDim] = -Normal[iDim]/Area;
-          }
-
           /*--- Compute the delta change in velocity in each direction. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
@@ -2321,6 +2320,15 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
         break;
     }
+
+    /*--- check if the inlet node is shared with a viscous wall ---*/
+    if (geometry->nodes->GetViscousBoundary(iPoint)) {
+      /*--- match the velocity and pressure for the viscous wall---*/
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
+      /* pressure obtained from interior */
+      V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
+    } 
 
     /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
@@ -2383,7 +2391,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2581,7 +2589,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 

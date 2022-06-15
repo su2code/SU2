@@ -1,6 +1,6 @@
 ﻿/*!
  * \file roe.hpp
- * \brief Delarations of numerics classes for Roe-type schemes,
+ * \brief Declarations of numerics classes for Roe-type schemes,
  *        implemented in roe.cpp.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"

@@ -125,7 +125,7 @@ public:
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old) final;
 
   /*!
    * \brief Get species molar mass.

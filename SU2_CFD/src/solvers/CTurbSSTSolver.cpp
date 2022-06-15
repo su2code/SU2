@@ -1,6 +1,6 @@
 /*!
  * \file CTurbSSTSolver.cpp
- * \brief Main subrotuines of CTurbSSTSolver class
+ * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
  * \version 7.3.1 "Blackbird"
  *
@@ -40,6 +40,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   string text_line;
 
   bool multizone = config->GetMultizone_Problem();
+  sstParsedOptions = config->GetSSTParsedOptions();
 
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
@@ -58,7 +59,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -103,9 +104,17 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
 
+  if (sstParsedOptions.version == SST_OPTIONS::V1994){
+    constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+    constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+    constants[10] = 20.0; // production limiter constant
+  } else {
+    /* SST-V2003 */
+    constants[8] = 5.0 / 9.0;  //gamma_1
+    constants[9] = 0.44;  //gamma_2
+    constants[10] = 10.0; // production limiter constant
+  }
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0e10;
@@ -211,30 +220,30 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Compute blending functions and cross diffusion ---*/
 
-    su2double rho = flowNodes->GetDensity(iPoint);
-    su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
+    const su2double rho = flowNodes->GetDensity(iPoint);
+    const su2double mu = flowNodes->GetLaminarViscosity(iPoint);
 
-    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
+    const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    VorticityMag = max(VorticityMag, 1e-12); // safety against division by zero
-
+    const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+    const su2double StrainMag = max(nodes->GetStrainMag(iPoint), 1e-12);
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
-    su2double F2 = nodes->GetF2blending(iPoint);
+    const su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
 
-    su2double kine  = nodes->GetSolution(iPoint,0);
-    su2double omega = nodes->GetSolution(iPoint,1);
-    su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
-    su2double muT   = max(rho*kine*zeta,0.0);
+    const su2double kine = nodes->GetSolution(iPoint,0);
+    const su2double omega = nodes->GetSolution(iPoint,1);
 
-    nodes->SetmuT(iPoint,muT);
+    const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
+    const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
+
+    nodes->SetmuT(iPoint, muT);
 
   }
   END_SU2_OMP_FOR

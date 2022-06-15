@@ -3513,14 +3513,16 @@ void CGeometry::SetRotationalVelocity(const CConfig *config, bool print) {
   unsigned long iPoint;
   unsigned short iDim;
 
-  su2double RotVel[3] = {0.0,0.0,0.0}, Distance[3] = {0.0,0.0,0.0},
-            Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0};
+  su2double GridVel[3] = {0.0,0.0,0.0}, Distance[3] = {0.0,0.0,0.0},
+            Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0},
+            xDot[3] = {0.0,0.0,0.0};
 
   /*--- Center of rotation & angular velocity vector from config ---*/
 
   for (iDim = 0; iDim < 3; iDim++) {
     Center[iDim] = config->GetMotion_Origin(iDim);
     Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
+    xDot[iDim] = config->GetTranslation_Rate(iDim)/config->GetVelocity_Ref();
   }
 
   su2double L_Ref = config->GetLength_Ref();
@@ -3532,9 +3534,11 @@ void CGeometry::SetRotationalVelocity(const CConfig *config, bool print) {
     cout << ", " << Center[2] << " )\n";
     cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
     cout << Omega[1] << ", " << Omega[2] << " ) rad/s" << endl;
+    cout << " Translational velocity in x, y, z direction: ("
+         << xDot[0] << ", " << xDot[1] << ", " << xDot[2] << ")." << endl;
   }
 
-  /*--- Loop over all nodes and set the rotational velocity ---*/
+  /*--- Loop over all nodes and set the rotational and translational velocity ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -3547,15 +3551,15 @@ void CGeometry::SetRotationalVelocity(const CConfig *config, bool print) {
     for (iDim = 0; iDim < nDim; iDim++)
       Distance[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
 
-    /*--- Calculate the angular velocity as omega X r ---*/
+    /*--- Calculate the angular velocity as omega X r and add translational velocity ---*/
 
-    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
-    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    GridVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]) + xDot[0];
+    GridVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]) + xDot[1];
+    GridVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]) + xDot[2];
 
     /*--- Store the grid velocity at this node ---*/
 
-    nodes->SetGridVel(iPoint, RotVel);
+    nodes->SetGridVel(iPoint, GridVel);
 
   }
 
