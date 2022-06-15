@@ -117,12 +117,7 @@ class TestCase:
                                            self.cfg_file, 
                                            logfilename)
 
-        if self.cpu_arch == 'aarch64':
-            if len(self.test_vals_aarch64) != 0:
-                self.test_vals = self.test_vals_aarch64
-        
-            if len(self.reference_file_aarch64) != 0:
-                self.reference_file = self.reference_file_aarch64
+        self.adjust_test_data()
 
         # Run SU2
         workdir = os.getcwd()
@@ -253,6 +248,8 @@ class TestCase:
         # Adjust the number of iterations in the config file
         self.adjust_iter()
 
+        self.adjust_test_data()
+
         # if root, add flag to mpirun
         if os.geteuid()==0:
             if self.su2_exec.startswith('mpirun'):
@@ -348,6 +345,8 @@ class TestCase:
 
         # Adjust the number of iterations in the config file   
         self.adjust_opt_iter()
+
+        self.adjust_test_data()
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
@@ -473,6 +472,8 @@ class TestCase:
         found_area   = False
         found_twist  = False
         found_chord  = False
+
+        self.adjust_test_data()
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
@@ -601,6 +602,8 @@ class TestCase:
         iter_missing = True
         start_solver = True
     
+        self.adjust_test_data()
+
         # if root, add flag to mpirun
         if os.geteuid()==0:
             if self.su2_exec.startswith('mpirun'):
@@ -799,3 +802,12 @@ class TestCase:
             print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
 
         return is_enabled
+
+    def adjust_test_data(self):
+
+        if self.cpu_arch == 'aarch64':
+            if len(self.test_vals_aarch64) != 0:
+                self.test_vals = self.test_vals_aarch64
+        
+            if len(self.reference_file_aarch64) != 0:
+                self.reference_file = self.reference_file_aarch64
