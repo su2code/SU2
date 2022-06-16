@@ -460,8 +460,7 @@ def main():
     naca_restart_shape_opt.cfg_dir    = "optimization_rans/naca0012"
     naca_restart_shape_opt.cfg_file   = "naca0012.cfg"
     naca_restart_shape_opt.test_iter  = 1
-    naca_restart_shape_opt.test_vals         = [1.000000, 1.000000, 0.007046, 0.196671]
-    naca_restart_shape_opt.test_vals_aarch64 = [1.000000, 1.000000, 0.007063, 0.196689]
+    naca_restart_shape_opt.test_vals  = [1.000000, 1.000000, 0.007046, 0.196671]
     naca_restart_shape_opt.su2_exec   = "shape_optimization.py -f"
     naca_restart_shape_opt.timeout    = 1600
     naca_restart_shape_opt.tol       = 0.00001
