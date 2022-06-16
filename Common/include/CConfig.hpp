@@ -803,8 +803,9 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
-  Specific_Heat_Cp,           /*!< \brief Specific heat at constant pressure. */
+  *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */
+  su2double Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
@@ -1165,8 +1166,9 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
+  unsigned short nSpecies,                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+
   /* other NEMO configure options*/
-  unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
   nWall_Catalytic;                          /*!< \brief No of catalytic walls */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
@@ -1187,7 +1189,6 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
-  unsigned short n_species;        /*!< \brief Number of species equations! Not species itself which would be 1 more. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1609,7 +1610,7 @@ public:
    * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
    * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
    */
-  su2double GetMolecular_Weight(void) const { return Molecular_Weight; }
+  su2double GetMolecular_Weight(unsigned short val_index = 0) const { return Molecular_Weight[val_index]; }
 
   /*!
    * \brief Get the value of specific heat at constant pressure.

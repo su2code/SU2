@@ -926,7 +926,7 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing) {
 
-  bool isFileWrite = false;
+  bool isFileWrite = false, dataIsLoaded = false;
   const auto nVolumeFiles = config->GetnVolumeOutputFiles();
   const auto* VolumeFiles = config->GetVolumeOutputFiles();
 
@@ -938,10 +938,13 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     /*--- Collect the volume data from the solvers.
      *  If time-domain is enabled, we also load the data although we don't output it,
      *  since we might want to do time-averaging. ---*/
-    if (WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile) || config->GetTime_Domain())
-      LoadDataIntoSorter(config, geometry, solver_container);
+    const bool write_file = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile);
 
-    if (!(WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile))) continue;
+    if ((write_file || config->GetTime_Domain()) && !dataIsLoaded) {
+      LoadDataIntoSorter(config, geometry, solver_container);
+      dataIsLoaded = true;
+    }
+    if (!write_file) continue;
 
     /*--- Partition and sort the data --- */
 
