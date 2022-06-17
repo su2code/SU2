@@ -73,27 +73,27 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /*--- Set up catalytic recombination table. ---*/
   // Creation/Destruction (+1/-1), Index of monoatomic reactants
   // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
-  if (gas_model == "N2"){
+  if (gas_model == "N2") {
     CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1;
     CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
 
-  if (gas_model == "air_5"){
+  } else if (gas_model == "air_5"){
     CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0;
     CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
-    CatRecombTable(2,0) =  0; CatRecombTable(0,1) = 4;
-    CatRecombTable(3,0) =  1; CatRecombTable(1,1) = 0;
-    CatRecombTable(4,0) =  1; CatRecombTable(0,1) = 1;
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4;
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0;
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1;
 
   } else if (gas_model == "air_6") {
     CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0;
     CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
-    CatRecombTable(2,0) =  0; CatRecombTable(0,1) = 4;
-    CatRecombTable(3,0) =  1; CatRecombTable(1,1) = 0;
-    CatRecombTable(4,0) =  1; CatRecombTable(0,1) = 1;
-    CatRecombTable(5,0) =  0; CatRecombTable(0,1) = 4;
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4;
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0;
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1;
+    CatRecombTable(5,0) =  0; CatRecombTable(5,1) = 4;
 
   } else {
-    if (config->GetCatlytic())
+    if (config->GetCatalytic())
       SU2_MPI::Error("Cataylic wall recombination not implemented for specified Mutation gas model.", CURRENT_FUNCTION);
   }
 

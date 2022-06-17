@@ -614,9 +614,9 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
     CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 3;
     CatRecombTable(1,0) =  1; CatRecombTable(1,1) = 4;
-    CatRecombTable(2,0) =  0; CatRecombTable(0,1) = 0;
-    CatRecombTable(3,0) = -1; CatRecombTable(1,1) = 3;
-    CatRecombTable(4,0) = -1; CatRecombTable(0,1) = 4;
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 0;
+    CatRecombTable(3,0) = -1; CatRecombTable(3,1) = 3;
+    CatRecombTable(4,0) = -1; CatRecombTable(4,1) = 4;
 
   } else if (gas_model == "AIR-7"){
 
@@ -1052,11 +1052,11 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
     CatRecombTable(0,0) =  0; CatRecombTable(0,1) = 1;
     CatRecombTable(1,0) =  1; CatRecombTable(1,1) = 4;
-    CatRecombTable(2,0) =  1; CatRecombTable(0,1) = 5;
-    CatRecombTable(3,0) =  0; CatRecombTable(1,1) = 1;
-    CatRecombTable(4,0) = -1; CatRecombTable(0,1) = 4;
-    CatRecombTable(5,0) = -1; CatRecombTable(1,1) = 5;
-    CatRecombTable(6,0) =  0; CatRecombTable(0,1) = 1;
+    CatRecombTable(2,0) =  1; CatRecombTable(2,1) = 5;
+    CatRecombTable(3,0) =  0; CatRecombTable(3,1) = 1;
+    CatRecombTable(4,0) = -1; CatRecombTable(4,1) = 4;
+    CatRecombTable(5,0) = -1; CatRecombTable(5,1) = 5;
+    CatRecombTable(6,0) =  0; CatRecombTable(6,1) = 1;
   }
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }

@@ -6274,7 +6274,7 @@ public:
    * \brief Determines if problem has catalytic walls.
    * \return true if catalytic walls are present.
    */
-  bool GetCatalytic(void) const { return Catalyic; }
+  bool GetCatalytic(void) const { return Catalytic; }
 
   /*!
    * \brief Provides the index of the solution in the container.

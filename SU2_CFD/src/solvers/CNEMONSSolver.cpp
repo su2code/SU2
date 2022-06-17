@@ -890,28 +890,16 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         const su2double gam = config->GetCatalytic_Efficiency();
 
         /*--- Get gas model ---*/
-        const auto gas_model = config->GetGasModel();
+        const auto& RxnTable = FluidModel->GetCatalyticRecombination();
 
-        /*--- Catalytic scaling factor ---*/
+	/*--- Catalytic scaling factor ---*/
         su2double Scale = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
 
         /*--- Compute catalytic recombination flux ---*/
-        if (gas_model == string("N2")) {
-          Res_Visc[0] = Scale*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*sqrt(1/Ms[1]);
-          Res_Visc[1] = -Scale*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*sqrt(1/Ms[1]);
-        } else if (gas_model == string("AIR-5")) {
-          Res_Visc[0] = Scale*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*sqrt(1/Ms[0]);
-          Res_Visc[1] = Scale*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*sqrt(1/Ms[1]);
-          Res_Visc[3] = -Scale*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*sqrt(1/Ms[0]);
-          Res_Visc[4] = -Scale*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*sqrt(1/Ms[1]);
-        } else if (gas_model == string("air_5") || gas_model == string("air_6")) {
-          Res_Visc[0] = -Scale*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*sqrt(1/Ms[0]);
-          Res_Visc[1] = -Scale*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*sqrt(1/Ms[1]);
-          Res_Visc[3] = Scale*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*sqrt(1/Ms[0]);
-          Res_Visc[4] = Scale*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*sqrt(1/Ms[1]);
-        } else {
-          SU2_MPI::Error("Use of gamma model only valid for N2, AIR-5, air_5, and air_6 gas models.",CURRENT_FUNCTION);
-        }
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+	  int Index = SU2_TYPE::Int(RxnTable(iSpecies,1));
+	  Res_Visc[iSpecies] = RxnTable(iSpecies,0)*Scale*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
+	}
       }
 
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
