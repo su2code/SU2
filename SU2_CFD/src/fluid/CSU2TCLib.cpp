@@ -47,7 +47,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   Omega00.resize(nSpecies,nSpecies,4,0.0);
   Omega11.resize(nSpecies,nSpecies,4,0.0);
   RxnConstantTable.resize(6,5) = su2double(0.0);
-  CatRecombTable.resize(nSpecies,2) = su2double(0.0);
+  CatRecombTable.resize(nSpecies,2) = int(0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
   taus.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
