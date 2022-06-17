@@ -264,6 +264,6 @@ public:
   /*!
    * \brief Get catalytic wall recombination indices and constants.
    */
-  inline const su2matrix<int>& GetCatalyticRecombination() {return CatRecombTable;}
+  inline const su2matrix<int>& GetCatalyticRecombination() const {return CatRecombTable;}
 
 };
