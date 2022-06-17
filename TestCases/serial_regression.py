@@ -170,7 +170,7 @@ def main():
     polar_naca0012.new_output= True
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
-    polar_naca0012.test_vals_aarch64 = [-1.963957, 3.454076, 0.012563, 0.008925]
+    polar_naca0012.test_vals_aarch64 = [-1.835780, 3.581033, 0.008680, 0.009093]
     polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -254,7 +254,7 @@ def main():
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
     poiseuille_profile.test_vals         = [-12.494715, -7.711824, -0.000000, 2.085796] #last 4 columns
-    poiseuille_profile.test_vals_aarch64 = [-12.494716, -7.711539, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals_aarch64 = [-12.494695, -7.711914, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.su2_exec  = "SU2_CFD"
     poiseuille_profile.new_output = True
     poiseuille_profile.timeout   = 1600
