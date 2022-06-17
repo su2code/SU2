@@ -1168,7 +1168,7 @@ private:
   unsigned short nSpecies,                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
-  unsigned nSpecies_Cat_Wall,               /*!< \brief No. of species for a catalytic wall. */
+  unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
