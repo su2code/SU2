@@ -2444,7 +2444,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
+            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
+            Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
@@ -2524,6 +2525,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
         }
         Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+        if (nemo) Grad_Temp_ve[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature_ve(), iDim);
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
@@ -2595,7 +2597,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
-      const su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+      const su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
 
       if (!nemo){
 
@@ -2608,15 +2610,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTn * RefHeatFlux;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
 
       } else {
 
-        const su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+        const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
 
-        HeatFlux[iMarker][iVertex] = (thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven) * RefHeatFlux;
+        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn) * RefHeatFlux;
       }
 
       /*--- Note that heat is computed at the

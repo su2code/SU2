@@ -1050,9 +1050,9 @@ void CConfig::SetPointersNull(void) {
 
   Time_Ref = 1.0;
 
-  Delta_UnstTime   = 0.0;
+  Delta_UnstTime = 0.0;
   Delta_UnstTimeND = 0.0;
-  Total_UnstTime   = 0.0;
+  Total_UnstTime = 0.0;
   Total_UnstTimeND = 0.0;
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
@@ -1169,7 +1169,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
-  addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
+  addDoubleListOption("MOLECULAR_WEIGHT", nMolecular_Weight, Molecular_Weight);
 
   ///* DESCRIPTION: Specify if Mutation++ library is used */
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
@@ -3315,6 +3315,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
+                    (Kind_FluidModel == FLUID_MIXTURE) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
@@ -3745,6 +3746,35 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Gamma != 1.4 || Gas_Constant != 287.058) {
       Gamma = 1.4;
       Gas_Constant = 287.058;
+    }
+  }
+
+/*--- Set default values for various fluid properties. ---*/
+
+  const su2double Molecular_Weight_Default = 28.96;
+
+  if (Molecular_Weight == nullptr) {
+    Molecular_Weight = new su2double[1];
+    Molecular_Weight[0] = Molecular_Weight_Default;
+    nMolecular_Weight = 1;
+  }
+
+  /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
+
+  if (Kind_FluidModel == FLUID_MIXTURE) {
+    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
+     equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
+    if (nMolecular_Weight != nSpecies_Init + 1) {
+      SU2_MPI::Error(
+          "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+          "to be equal to the number of entries of SCALAR_INIT + 1",
+          CURRENT_FUNCTION);
+    }
+    /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
+     VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density and
+     it will remain constant through the complete domain. --- */
+    if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+      SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
     }
   }
 
@@ -4732,7 +4762,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -4745,7 +4775,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
     if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
-      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY)) {
+      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLUID_MIXTURE)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }

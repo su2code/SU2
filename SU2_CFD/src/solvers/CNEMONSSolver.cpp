@@ -736,7 +736,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                  sour_numerics, config, val_marker);
 
-  ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
   unsigned short iSpecies, jSpecies, iVar, jVar, kVar;
   su2double **GradY, **dVdU;
@@ -889,17 +888,19 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         /*--- Get wall catalytic efficiency ----*/
         const su2double gam = config->GetCatalytic_Efficiency();
 
-        /*--- Get gas model ---*/
+        /*--- Get cataltyic reaction map ---*/
         const auto& RxnTable = FluidModel->GetCatalyticRecombination();
 
-	/*--- Catalytic scaling factor ---*/
-        su2double Scale = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
+	      /*--- Catalytic scaling factor ---*/
+        const su2double Scale = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
 
         /*--- Compute catalytic recombination flux ---*/
+        // Ref: 10.2514/6.2022-1636
+        // ws = gam_s*Ys*rho_wall*sqrt(Ru*Tw/(2*Pi*M_combine)
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-	  int Index = SU2_TYPE::Int(RxnTable(iSpecies,1));
-	  Res_Visc[iSpecies] = RxnTable(iSpecies,0)*Scale*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
-	}
+	        int Index = SU2_TYPE::Int(RxnTable(iSpecies,1));
+	        Res_Visc[iSpecies] = RxnTable(iSpecies,0)*Scale*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
+	      }
       }
 
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
