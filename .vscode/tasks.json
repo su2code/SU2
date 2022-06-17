@@ -9,7 +9,7 @@
             "command": "./meson.py",
             "args": [
                 "build",
-                "--prefix=/home/gomer/local/codes/su2_install/current_branch/serial/gnu/debug",
+                "--prefix=${workspaceFolder}/build/current_branch/serial/gnu/debug",
                 "-Dwith-mpi=disabled",
                 "--buildtype=debug"
             ]
@@ -21,7 +21,7 @@
             "args": [
                 "build",
                 "--reconfigure",
-                "--prefix=/home/gomer/local/codes/su2_install/current_branch/mpi/gnu/debug",
+                "--prefix=${workspaceFolder}/build/current_branch/mpi/gnu/debug",
                 "-Dwith-mpi=enabled",
                 "--buildtype=debug"
             ]
@@ -33,7 +33,7 @@
             "args": [
                 "build",
                 "--reconfigure",
-                "--prefix=/home/gomer/local/codes/su2_install/current_branch/mpi/gnu/release",
+                "--prefix=${workspaceFolder}/build/current_branch/mpi/gnu/release",
                 "-Dwith-mpi=enabled",
                 "--buildtype=release"
             ]
@@ -93,6 +93,17 @@
                 "Ninja build install"
             ],
             "group": "build"
+        },
+        {
+            "label": "Test output variables",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Workspace root = ${workspaceFolder}",
+                "User home = ${userHome}",
+                "Current working dir = ${cwd}"
+            ],
+            "problemMatcher": []
         }
     ]
 }

@@ -784,4 +784,380 @@ public:
                                    su2double &dMuTdy,
                                    su2double &dMuTdz) override;
 };
+
+/*!
+ * \class CSIGMAModel
+ * \brief Derived class for defining the SIGMA SGS model.
+ * \author: E. van der Weide, T. Economon, P. Urbanczyk
+ * \version 7.0.3 "Blackbird"
+ */
+class CSIGMAModel : public CSGSModel {
+
+public:
+  su2double const_SIGMA; /*!< \brief SIGMA Constant Cs.  */
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CSIGMAModel(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSIGMAModel(void) override;
+
+  /*!
+   * \brief Function to determine the eddy viscosity for
+            the given function arguments for a 2D simulation.
+   * \param[in] rho        - Density
+   * \param[in] dudx       - x-derivative of the u-velocity.
+   * \param[in] dudy       - y-derivative of the u-velocity.
+   * \param[in] dvdx       - x-derivative of the v-velocity.
+   * \param[in] dvdy       - y-derivative of the v-velocity.
+   * \param[in] lenScale   - Length scale of the corresponding element.
+   * \param[in] distToWall - Distance to the nearest wall.
+   * \return Value of the dynamic eddy viscosity for the WALE model.
+   */
+  su2double ComputeEddyViscosity_2D(const su2double rho,
+                                    const su2double dudx,
+                                    const su2double dudy,
+                                    const su2double dvdx,
+                                    const su2double dvdy,
+                                    const su2double lenScale,
+                                    const su2double distToWall) override;
+
+/*!
+   * \brief Function to determine the eddy viscosity for
+            the given function arguments for a 3D simulation.
+   * \param[in] rho        - Density
+   * \param[in] dudx       - x-derivative of the u-velocity.
+   * \param[in] dudy       - y-derivative of the u-velocity.
+   * \param[in] dudz       - z-derivative of the u-velocity.
+   * \param[in] dvdx       - x-derivative of the v-velocity.
+   * \param[in] dvdy       - y-derivative of the v-velocity.
+   * \param[in] dvdz       - z-derivative of the v-velocity.
+   * \param[in] dwdx       - x-derivative of the w-velocity.
+   * \param[in] dwdy       - y-derivative of the w-velocity.
+   * \param[in] dwdz       - z-derivative of the w-velocity.
+   * \param[in] lenScale   - Length scale of the corresponding element.
+   * \param[in] distToWall - Distance to the nearest wall.
+   * \return Value of the dynamic eddy viscosity for the WALE model.
+   */
+  su2double ComputeEddyViscosity_3D(const su2double rho,
+                                    const su2double dudx,
+                                    const su2double dudy,
+                                    const su2double dudz,
+                                    const su2double dvdx,
+                                    const su2double dvdy,
+                                    const su2double dvdz,
+                                    const su2double dwdx,
+                                    const su2double dwdy,
+                                    const su2double dwdz,
+                                    const su2double lenScale,
+                                    const su2double distToWall) override;
+
+  /*!
+   * \brief Function to determine the gradients of the eddy viscosity
+            for the given function arguments for a 2D simulation.
+   * \param[in]  rho        - Density.
+   * \param[in]  drhodx     - x-derivative of the density.
+   * \param[in]  drhody     - y-derivative of the density.
+   * \param[in]  dudx       - x-derivative of the u-velocity.
+   * \param[in]  dudy       - y-derivative of the u-velocity.
+   * \param[in]  dvdx       - x-derivative of the v-velocity.
+   * \param[in]  dvdy       - y-derivative of the v-velocity.
+   * \param[in]  d2udx2     - 2nd x-derivative of the u-velocity.
+   * \param[in]  d2udy2     - 2nd y-derivative of the u-velocity.
+   * \param[in]  d2udxdy    - x-y cross-derivative of the u-velocity.
+   * \param[in]  d2vdx2     - 2nd x-derivative of the v-velocity.
+   * \param[in]  d2vdy2     - 2nd y-derivative of the v-velocity.
+   * \param[in]  d2vdxdy    - x-y cross-derivative of the v-velocity.
+   * \param[in]  lenScale   - Length scale of the corresponding element.
+   * \param[in]  distToWall - Distance to the nearest wall.
+   * \param[out] dMuTdx     - x-derivative of the turbulent viscosity.
+   * \param[out] dMuTdy     - y-derivative of the turbulent viscosity.
+   */
+  void ComputeGradEddyViscosity_2D(const su2double rho,
+                                   const su2double drhodx,
+                                   const su2double drhody,
+                                   const su2double dudx,
+                                   const su2double dudy,
+                                   const su2double dvdx,
+                                   const su2double dvdy,
+                                   const su2double d2udx2,
+                                   const su2double d2udy2,
+                                   const su2double d2udxdy,
+                                   const su2double d2vdx2,
+                                   const su2double d2vdy2,
+                                   const su2double d2vdxdy,
+                                   const su2double lenScale,
+                                   const su2double distToWall,
+                                         su2double &dMuTdx,
+                                         su2double &dMuTdy) override;
+
+  /*!
+   * \brief function to determine the gradients of the eddy viscosity
+            for the given function arguments for a 3D simulation.
+   * \param[in]  rho        - Density.
+   * \param[in]  drhodx     - x-derivative of the density.
+   * \param[in]  drhody     - y-derivative of the density.
+   * \param[in]  drhodz     - z-derivative of the density.
+   * \param[in]  dudx       - x-derivative of the u-velocity.
+   * \param[in]  dudy       - y-derivative of the u-velocity.
+   * \param[in]  dudz       - z-derivative of the u-velocity.
+   * \param[in]  dvdx       - x-derivative of the v-velocity.
+   * \param[in]  dvdy       - y-derivative of the v-velocity.
+   * \param[in]  dvdz       - z-derivative of the v-velocity.
+   * \param[in]  dwdx       - x-derivative of the w-velocity.
+   * \param[in]  dwdy       - y-derivative of the w-velocity.
+   * \param[in]  dwdz       - z-derivative of the w-velocity.
+   * \param[in]  d2udx2     - 2nd x-derivative of the u-velocity.
+   * \param[in]  d2udy2     - 2nd y-derivative of the u-velocity.
+   * \param[in]  d2udz2     - 2nd z-derivative of the u-velocity.
+   * \param[in]  d2udxdy    - x-y cross-derivative of the u-velocity.
+   * \param[in]  d2udxdz    - x-z cross-derivative of the u-velocity.
+   * \param[in]  d2udydz    - y-z cross-derivative of the u-velocity.
+   * \param[in]  d2vdx2     - 2nd x-derivative of the v-velocity.
+   * \param[in]  d2vdy2     - 2nd y-derivative of the v-velocity.
+   * \param[in]  d2vdz2     - 2nd z-derivative of the v-velocity.
+   * \param[in]  d2vdxdy    - x-y cross-derivative of the v-velocity.
+   * \param[in]  d2vdxdz    - x-z cross-derivative of the v-velocity.
+   * \param[in]  d2vdydz    - y-z cross-derivative of the v-velocity.
+   * \param[in]  d2wdx2     - 2nd x-derivative of the w-velocity.
+   * \param[in]  d2wdy2     - 2nd y-derivative of the w-velocity.
+   * \param[in]  d2wdz2     - 2nd z-derivative of the w-velocity.
+   * \param[in]  d2wdxdy    - x-y cross-derivative of the w-velocity.
+   * \param[in]  d2wdxdz    - x-z cross-derivative of the w-velocity.
+   * \param[in]  d2wdydz    - y-z cross-derivative of the w-velocity.
+   * \param[in]  lenScale   - Length scale of the corresponding element.
+   * \param[in]  distToWall - Distance to the nearest wall.
+   * \param[out] dMuTdx     - x-derivative of the turbulent viscosity.
+   * \param[out] dMuTdy     - y-derivative of the turbulent viscosity.
+   * \param[out] dMuTdz     - z-derivative of the turbulent viscosity.
+   */
+  void ComputeGradEddyViscosity_3D(const su2double rho,
+                                   const su2double drhodx,
+                                   const su2double drhody,
+                                   const su2double drhodz,
+                                   const su2double dudx,
+                                   const su2double dudy,
+                                   const su2double dudz,
+                                   const su2double dvdx,
+                                   const su2double dvdy,
+                                   const su2double dvdz,
+                                   const su2double dwdx,
+                                   const su2double dwdy,
+                                   const su2double dwdz,
+                                   const su2double d2udx2,
+                                   const su2double d2udy2,
+                                   const su2double d2udz2,
+                                   const su2double d2udxdy,
+                                   const su2double d2udxdz,
+                                   const su2double d2udydz,
+                                   const su2double d2vdx2,
+                                   const su2double d2vdy2,
+                                   const su2double d2vdz2,
+                                   const su2double d2vdxdy,
+                                   const su2double d2vdxdz,
+                                   const su2double d2vdydz,
+                                   const su2double d2wdx2,
+                                   const su2double d2wdy2,
+                                   const su2double d2wdz2,
+                                   const su2double d2wdxdy,
+                                   const su2double d2wdxdz,
+                                   const su2double d2wdydz,
+                                   const su2double lenScale,
+                                   const su2double distToWall,
+                                         su2double &dMuTdx,
+                                         su2double &dMuTdy,
+                                         su2double &dMuTdz) override;
+};
+/*!
+ * \class CAMDModel
+ * \brief Derived class for defining the AMD SGS model.
+ * \author: Hj Bae
+ * \version 7.0.3 "Blackbird"
+ */
+class CAMDModel : public CSGSModel {
+
+public:
+  su2double const_AMD; /*!< \brief AMD Constant Cs.  */
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CAMDModel(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAMDModel(void) override;
+
+  /*!
+   * \brief Function to determine the eddy viscosity for
+            the given function arguments for a 2D simulation.
+   * \param[in] rho        - Density
+   * \param[in] dudx       - x-derivative of the u-velocity.
+   * \param[in] dudy       - y-derivative of the u-velocity.
+   * \param[in] dvdx       - x-derivative of the v-velocity.
+   * \param[in] dvdy       - y-derivative of the v-velocity.
+   * \param[in] lenScale   - Length scale of the corresponding element.
+   * \param[in] distToWall - Distance to the nearest wall.
+   * \return Value of the dynamic eddy viscosity for the WALE model.
+   */
+  su2double ComputeEddyViscosity_2D(const su2double rho,
+                                    const su2double dudx,
+                                    const su2double dudy,
+                                    const su2double dvdx,
+                                    const su2double dvdy,
+                                    const su2double lenScale,
+                                    const su2double distToWall) override;
+
+/*!
+   * \brief Function to determine the eddy viscosity for
+            the given function arguments for a 3D simulation.
+   * \param[in] rho        - Density
+   * \param[in] dudx       - x-derivative of the u-velocity.
+   * \param[in] dudy       - y-derivative of the u-velocity.
+   * \param[in] dudz       - z-derivative of the u-velocity.
+   * \param[in] dvdx       - x-derivative of the v-velocity.
+   * \param[in] dvdy       - y-derivative of the v-velocity.
+   * \param[in] dvdz       - z-derivative of the v-velocity.
+   * \param[in] dwdx       - x-derivative of the w-velocity.
+   * \param[in] dwdy       - y-derivative of the w-velocity.
+   * \param[in] dwdz       - z-derivative of the w-velocity.
+   * \param[in] lenScale   - Length scale of the corresponding element.
+   * \param[in] distToWall - Distance to the nearest wall.
+   * \return Value of the dynamic eddy viscosity for the WALE model.
+   */
+  su2double ComputeEddyViscosity_3D(const su2double rho,
+                                    const su2double dudx,
+                                    const su2double dudy,
+                                    const su2double dudz,
+                                    const su2double dvdx,
+                                    const su2double dvdy,
+                                    const su2double dvdz,
+                                    const su2double dwdx,
+                                    const su2double dwdy,
+                                    const su2double dwdz,
+                                    const su2double lenScale,
+                                    const su2double distToWall) override;
+
+  /*!
+   * \brief Function to determine the gradients of the eddy viscosity
+            for the given function arguments for a 2D simulation.
+   * \param[in]  rho        - Density.
+   * \param[in]  drhodx     - x-derivative of the density.
+   * \param[in]  drhody     - y-derivative of the density.
+   * \param[in]  dudx       - x-derivative of the u-velocity.
+   * \param[in]  dudy       - y-derivative of the u-velocity.
+   * \param[in]  dvdx       - x-derivative of the v-velocity.
+   * \param[in]  dvdy       - y-derivative of the v-velocity.
+   * \param[in]  d2udx2     - 2nd x-derivative of the u-velocity.
+   * \param[in]  d2udy2     - 2nd y-derivative of the u-velocity.
+   * \param[in]  d2udxdy    - x-y cross-derivative of the u-velocity.
+   * \param[in]  d2vdx2     - 2nd x-derivative of the v-velocity.
+   * \param[in]  d2vdy2     - 2nd y-derivative of the v-velocity.
+   * \param[in]  d2vdxdy    - x-y cross-derivative of the v-velocity.
+   * \param[in]  lenScale   - Length scale of the corresponding element.
+   * \param[in]  distToWall - Distance to the nearest wall.
+   * \param[out] dMuTdx     - x-derivative of the turbulent viscosity.
+   * \param[out] dMuTdy     - y-derivative of the turbulent viscosity.
+   */
+  void ComputeGradEddyViscosity_2D(const su2double rho,
+                                   const su2double drhodx,
+                                   const su2double drhody,
+                                   const su2double dudx,
+                                   const su2double dudy,
+                                   const su2double dvdx,
+                                   const su2double dvdy,
+                                   const su2double d2udx2,
+                                   const su2double d2udy2,
+                                   const su2double d2udxdy,
+                                   const su2double d2vdx2,
+                                   const su2double d2vdy2,
+                                   const su2double d2vdxdy,
+                                   const su2double lenScale,
+                                   const su2double distToWall,
+                                         su2double &dMuTdx,
+                                         su2double &dMuTdy) override;
+
+  /*!
+   * \brief function to determine the gradients of the eddy viscosity
+            for the given function arguments for a 3D simulation.
+   * \param[in]  rho        - Density.
+   * \param[in]  drhodx     - x-derivative of the density.
+   * \param[in]  drhody     - y-derivative of the density.
+   * \param[in]  drhodz     - z-derivative of the density.
+   * \param[in]  dudx       - x-derivative of the u-velocity.
+   * \param[in]  dudy       - y-derivative of the u-velocity.
+   * \param[in]  dudz       - z-derivative of the u-velocity.
+   * \param[in]  dvdx       - x-derivative of the v-velocity.
+   * \param[in]  dvdy       - y-derivative of the v-velocity.
+   * \param[in]  dvdz       - z-derivative of the v-velocity.
+   * \param[in]  dwdx       - x-derivative of the w-velocity.
+   * \param[in]  dwdy       - y-derivative of the w-velocity.
+   * \param[in]  dwdz       - z-derivative of the w-velocity.
+   * \param[in]  d2udx2     - 2nd x-derivative of the u-velocity.
+   * \param[in]  d2udy2     - 2nd y-derivative of the u-velocity.
+   * \param[in]  d2udz2     - 2nd z-derivative of the u-velocity.
+   * \param[in]  d2udxdy    - x-y cross-derivative of the u-velocity.
+   * \param[in]  d2udxdz    - x-z cross-derivative of the u-velocity.
+   * \param[in]  d2udydz    - y-z cross-derivative of the u-velocity.
+   * \param[in]  d2vdx2     - 2nd x-derivative of the v-velocity.
+   * \param[in]  d2vdy2     - 2nd y-derivative of the v-velocity.
+   * \param[in]  d2vdz2     - 2nd z-derivative of the v-velocity.
+   * \param[in]  d2vdxdy    - x-y cross-derivative of the v-velocity.
+   * \param[in]  d2vdxdz    - x-z cross-derivative of the v-velocity.
+   * \param[in]  d2vdydz    - y-z cross-derivative of the v-velocity.
+   * \param[in]  d2wdx2     - 2nd x-derivative of the w-velocity.
+   * \param[in]  d2wdy2     - 2nd y-derivative of the w-velocity.
+   * \param[in]  d2wdz2     - 2nd z-derivative of the w-velocity.
+   * \param[in]  d2wdxdy    - x-y cross-derivative of the w-velocity.
+   * \param[in]  d2wdxdz    - x-z cross-derivative of the w-velocity.
+   * \param[in]  d2wdydz    - y-z cross-derivative of the w-velocity.
+   * \param[in]  lenScale   - Length scale of the corresponding element.
+   * \param[in]  distToWall - Distance to the nearest wall.
+   * \param[out] dMuTdx     - x-derivative of the turbulent viscosity.
+   * \param[out] dMuTdy     - y-derivative of the turbulent viscosity.
+   * \param[out] dMuTdz     - z-derivative of the turbulent viscosity.
+   */
+  void ComputeGradEddyViscosity_3D(const su2double rho,
+                                   const su2double drhodx,
+                                   const su2double drhody,
+                                   const su2double drhodz,
+                                   const su2double dudx,
+                                   const su2double dudy,
+                                   const su2double dudz,
+                                   const su2double dvdx,
+                                   const su2double dvdy,
+                                   const su2double dvdz,
+                                   const su2double dwdx,
+                                   const su2double dwdy,
+                                   const su2double dwdz,
+                                   const su2double d2udx2,
+                                   const su2double d2udy2,
+                                   const su2double d2udz2,
+                                   const su2double d2udxdy,
+                                   const su2double d2udxdz,
+                                   const su2double d2udydz,
+                                   const su2double d2vdx2,
+                                   const su2double d2vdy2,
+                                   const su2double d2vdz2,
+                                   const su2double d2vdxdy,
+                                   const su2double d2vdxdz,
+                                   const su2double d2vdydz,
+                                   const su2double d2wdx2,
+                                   const su2double d2wdy2,
+                                   const su2double d2wdz2,
+                                   const su2double d2wdxdy,
+                                   const su2double d2wdxdz,
+                                   const su2double d2wdydz,
+                                   const su2double lenScale,
+                                   const su2double distToWall,
+                                         su2double &dMuTdx,
+                                         su2double &dMuTdy,
+                                         su2double &dMuTdz) override;
+};
 #include "sgs_model.inl"
+

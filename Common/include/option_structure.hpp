@@ -992,7 +992,9 @@ enum class TURB_SGS_MODEL {
   IMPLICIT_LES, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
   SMAGORINSKY , /*!< \brief Smagorinsky SGS model. */
   WALE        , /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
-  VREMAN        /*!< \brief Vreman SGS model. */
+  VREMAN      , /*!< \brief Vreman SGS model. */
+  SIGMA       , /*!< \brief Sigma SGS model. */
+  AMD           /*!< \brief AMD SGS model. */
 };
 static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
   MakePair("NONE",         TURB_SGS_MODEL::NONE)
@@ -1000,6 +1002,8 @@ static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
   MakePair("SMAGORINSKY",  TURB_SGS_MODEL::SMAGORINSKY)
   MakePair("WALE",         TURB_SGS_MODEL::WALE)
   MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
+  MakePair("SIGMA",        TURB_SGS_MODEL::SIGMA)
+  MakePair("AMD",          TURB_SGS_MODEL::AMD)
 };
 
 
