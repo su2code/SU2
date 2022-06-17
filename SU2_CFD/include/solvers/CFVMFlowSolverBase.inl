@@ -2459,6 +2459,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   auto Origin = config->GetRefOriginMoment(0);
 
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  const bool energy = config->GetEnergy_Equation();
   const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
   const bool roughwall = (config->GetnRoughWall() > 0);
@@ -2607,7 +2608,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
         }
         if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
-
+          if (!energy) dTdn = 0.0;
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
         HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
