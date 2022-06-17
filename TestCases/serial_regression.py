@@ -253,7 +253,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494720, -7.711373, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals         = [-12.494715, -7.711824, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.test_vals_aarch64 = [-12.494716, -7.711539, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.su2_exec  = "SU2_CFD"
     poiseuille_profile.new_output = True
