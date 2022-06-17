@@ -2598,7 +2598,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
-      const su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+      su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
 
       if (!nemo){
 
