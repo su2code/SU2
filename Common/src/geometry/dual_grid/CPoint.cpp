@@ -95,6 +95,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   Domain.resize(npoint) = true;
   Boundary.resize(npoint) = false;
   SolidBoundary.resize(npoint) = false;
+  ViscousBoundary.resize(npoint) = false;
   PhysicalBoundary.resize(npoint) = false;
   PeriodicBoundary.resize(npoint) = false;
 

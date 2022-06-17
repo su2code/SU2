@@ -100,7 +100,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.028145, -5.258104, -5.107927, -5.922051, -1.582604, -6.314220, -6.431771, 5, -0.808615, 5, -2.351160, 5, -0.288300, 1.645644, 0.499064, 0.601230, 0.545351]
+    species3_primitiveVenturi.test_vals = [-6.026100, -5.265495, -5.110799, -5.931985, -1.585414, -6.311820, -6.434690, 5, -0.841163, 5, -2.343847, 5, -0.295673, 1.645199, 0.498941, 0.600911, 0.545347]
     species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
     species3_primitiveVenturi.timeout   = 1600
     species3_primitiveVenturi.new_output = True
@@ -113,7 +113,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals = [-8.519150, -7.786969, -7.774848, -7.474167, -12.127149, -12.262476, -11.456643]
+    DAspecies3_primitiveVenturi.test_vals = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
     DAspecies3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     DAspecies3_primitiveVenturi.timeout   = 1600
     DAspecies3_primitiveVenturi.new_output = True
@@ -233,8 +233,8 @@ def main():
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
-    tutorial_unst_naca0012.test_iter     = 500
-    tutorial_unst_naca0012.test_vals     = [500, 0, 0.302003, 0.665069, -5.300141, 0.000000,  0.0000e+00,  0.0000e+00]
+    tutorial_unst_naca0012.test_iter     = 520
+    tutorial_unst_naca0012.test_vals     = [520, 0, -5.301340, 0, 0.303926, 0.782462, 0.003118, 0.015962]
     tutorial_unst_naca0012.su2_exec      = "mpirun -np 2 SU2_CFD"
     tutorial_unst_naca0012.timeout       = 1600
     tutorial_unst_naca0012.tol           = 0.00001

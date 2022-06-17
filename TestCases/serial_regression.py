@@ -57,7 +57,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.018022, -12.217291, -32.000000, 10.013545]
+    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.018022, -11.978730, -32.000000, 10.013545]
     thermalbath_frozen.su2_exec  = "SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -69,7 +69,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271777, 1.875687, 5.315769, 0.870008]
+    invwedge.test_vals = [-1.046323, -1.571086, -18.300667, -18.628064, -18.574092, 2.271778, 1.875687, 5.315769, 0.870008]
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -81,7 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215288, -5.739428, -20.545050, -20.618702, -20.502532, -1.917680, -2.239596, 1.262771, -3.205521]                                                                                                                             
+    visc_cone.test_vals = [-5.215236, -5.739371, -20.545048, -20.618700, -20.502532, -1.917617, -2.239664, 1.262783, -3.205463]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -250,7 +250,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.494720, -7.711373, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals = [-12.494715, -7.711824, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.su2_exec  = "SU2_CFD"
     poiseuille_profile.new_output = True
     poiseuille_profile.timeout   = 1600
@@ -373,6 +373,18 @@ def main():
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
+
+    # NACA0012 (SST V2003m, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_2003m           = TestCase('turb_naca0012_sst_2003m')
+    turb_naca0012_sst_2003m.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_2003m.cfg_file  = "turb_NACA0012_sst_2003m.cfg"
+    turb_naca0012_sst_2003m.test_iter = 10
+    turb_naca0012_sst_2003m.test_vals = [-7.698435, -10.060146, -3.421602, 1.049412, 0.019691, -2.193389]
+    turb_naca0012_sst_2003m.su2_exec  = "SU2_CFD"
+    turb_naca0012_sst_2003m.new_output  = True
+    turb_naca0012_sst_2003m.timeout   = 3200
+    turb_naca0012_sst_2003m.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_2003m)
 
     # NACA0012 (SST_SUST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
@@ -529,7 +541,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.450879, -3.083720, -0.020699, -0.168420] #last 4 columns
+    inc_lam_bend.test_vals = [-3.455147, -3.082194, -0.018579, 1.169947] #last 4 columns
     inc_lam_bend.su2_exec  = "SU2_CFD"
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
@@ -876,7 +888,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.985899, 1.137425, 0.375998, -0.078790]
+    turb_naca0012_1c.test_vals = [-4.985899, 1.137425, 0.375986, -0.078795]
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600
@@ -1291,7 +1303,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.803326, -2.097400] #last 3 columns
+    slinc_steady.test_vals = [19.000000, -1.803732, -2.108492] #last 3 columns
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00001
