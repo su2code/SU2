@@ -37,7 +37,6 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
-
   /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
    * Axisymmetric: total-viscosity * y-vel / y-coord
    * Streamwise Periodic: eddy viscosity (mu_t) ---*/
@@ -49,7 +48,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   }
 }
 
-bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool physical = true;
 
@@ -68,7 +67,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Use the fluid model to compute the new value of density. ---*/
 
-  FluidModel->SetTDState_T(Temperature);
+  FluidModel->SetTDState_T(Temperature, scalar);
 
   /*--- Set the value of the density ---*/
 
@@ -87,7 +86,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     Temperature = Solution(iPoint, nDim+1);
     SetTemperature(iPoint, Temperature);
-    FluidModel->SetTDState_T(Temperature);
+    FluidModel->SetTDState_T(Temperature, scalar);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/

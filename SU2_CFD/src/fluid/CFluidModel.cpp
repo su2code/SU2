@@ -25,9 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/fluid/CFluidModel.hpp"
+
 #include <utility>
 
-#include "../../include/fluid/CFluidModel.hpp"
 #include "../../include/fluid/CConstantConductivity.hpp"
 #include "../../include/fluid/CConstantConductivityRANS.hpp"
 #include "../../include/fluid/CConstantPrandtl.hpp"
@@ -61,7 +62,8 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
         ThermalConductivity = unique_ptr<CConstantConductivityRANS>(
             new CConstantConductivityRANS(config->GetThermal_Conductivity_ConstantND(), config->GetPrandtl_Turb()));
       } else {
-        ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetThermal_Conductivity_ConstantND()));
+        ThermalConductivity =
+            unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetThermal_Conductivity_ConstantND()));
       }
       break;
     case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
