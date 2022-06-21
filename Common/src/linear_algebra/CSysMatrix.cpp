@@ -205,12 +205,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
-    const unsigned long begin = omp_partitions[thread];
-    const unsigned long end = omp_partitions[thread + 1];
-    if (begin > end) {
-      SU2_MPI::Error("Invalid nodes are distributed in the thread " + to_string(thread) + ".", CURRENT_FUNCTION);
-    } else if (begin == end) {
-      cout << "WARNING: Redundent thread has been detected. Performance could be impacted." << endl;
+    const auto begin = omp_partitions[thread];
+    const auto end = omp_partitions[thread + 1];
+    if (begin == end) {
+      cout << "WARNING: Redundant thread has been detected. Performance could be impacted due to low number of nodes per thread." << endl;
       break;
     }
   }
