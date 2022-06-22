@@ -184,6 +184,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   SU2_OMP_MASTER
   config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
   END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
 
