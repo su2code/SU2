@@ -56,8 +56,18 @@ constexpr size_t PREFERRED_SIZE = 8;
  */
 template<class T>
 constexpr size_t preferredLen() { return PREFERRED_SIZE / sizeof(T); }
+
+#if !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 template<>
 constexpr size_t preferredLen<su2double>() { return PREFERRED_SIZE / sizeof(passivedouble); }
+#else
+/* enforce one element per SIMD array since (1) arrays of AD types cannot be auto vectorized and (2) they might violate
+ * exclusive read declarations if masking is not applied throughout */
+template<>
+constexpr size_t preferredLen<su2double>() { return 1; }
+#endif
+
+
 
 /*!
  * \class Array
