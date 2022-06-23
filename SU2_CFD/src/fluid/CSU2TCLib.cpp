@@ -1986,9 +1986,8 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 
 }
 
-vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old) {
 
-  vector<su2double> val_eves;
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
@@ -2004,39 +2003,77 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  su2double Tmin  = 50.0; su2double Tmax = 8E4;
-  su2double Tve_o = 50.0; su2double Tve2 = 8E4;
+  const su2double Tmin   = 50.0; const su2double Tmax   = 8E4;
+  const su2double Tvemin = 50.0; const su2double Tvemax = 8E4;
+  su2double Tve_o  = 50.0; su2double Tve2  = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
-  if      (T < Tmin) T = Tmin;
-  else if (T > Tmax) T = Tmax;
+  if (Tve_old < 1) Tve_old = T;                           //For first fluid iteration
+  if (T < Tmin) T = Tmin;  else if (T > Tmax) T = Tmax;
+  if (Tve_old<Tvemin) Tve_old = Tvemin; else if (Tve_old>Tvemax) Tve_old = Tvemax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
-  su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
-  unsigned short maxBIter = 50;        // Maximum Bisection method iterations
+  const su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
+  const su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
+  const unsigned short maxBIter = 50;        // Maximum Bisection method iterations
+  const unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  const su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
+  /*--- Execute a Newton-Raphson root-finding method for Tve ---*/
   //Initialize solution
-  Tve = T;
+  Tve = Tve_old;
 
-  // Execute the root-finding method
   bool Bconvg = false;
-  su2double rhoEve_t = 0.0;
+  bool NRconvg = false;
+  su2double rhoEve_t = 0.0, rhoCvve = 0.0;
 
-  for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
-    Tve      = (Tve_o+Tve2)/2.0;
-    val_eves = ComputeSpeciesEve(Tve);
-    rhoEve_t = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
-    if (fabs(rhoEve_t - rhoEve) < Btol) {
-      Bconvg = true;
-      break;
+  /*--- Newton-Raphson Method --*/
+  for (unsigned short iIter = 0; iIter < maxNIter; iIter++) {
+    rhoEve_t = rhoCvve = 0.0;
+    const auto& val_eves  = ComputeSpeciesEve(Tve);
+    const auto& val_cvves = ComputeSpeciesCvVibEle(Tve);
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+      rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
+      rhoCvve += rhos[iSpecies] * val_cvves[iSpecies];
+    } 
+
+    /*--- Find the roots ---*/
+    su2double f  = rhoEve - rhoEve_t;
+    su2double df = -rhoCvve;
+    Tve2 = Tve - (f/df)*scale; 
+
+    /*--- Check for convergence ---*/
+    if ((fabs(Tve2-Tve) < NRtol) && (Tve > Tvemin) && (Tve < Tvemax)) {
+      NRconvg = true;
+      Tve = Tve2;
+      break; 
     } else {
-      if (rhoEve_t > rhoEve) Tve2 = Tve;
-      else                  Tve_o = Tve;
+      Tve = Tve2;  
     }
   }
+
+  // If the Newton-Raphson method has converged, assign the value of Tve.
+  // Otherwise, execute a bisection root-finding method
+  Tve_o = Tvemin; Tve2 = Tvemax;
+  if (!NRconvg) {
+    for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
+      Tve      = (Tve_o+Tve2)/2.0;
+      const auto& val_eves = ComputeSpeciesEve(Tve);
+      rhoEve_t = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
+      if (fabs(rhoEve_t - rhoEve) < Btol) {
+        Bconvg = true;
+        break;
+      } else {
+        if (rhoEve_t > rhoEve) Tve2 = Tve;
+        else                  Tve_o = Tve;
+      }
+    }
+  }
+
   // If absolutely no convergence, then assign to the TR temperature
-  if (!Bconvg) {
+  if (!NRconvg && !Bconvg ) {
     Tve = T;
     cout <<"Warning: temperatures did not converge, error= "<< fabs(rhoEve_t-rhoEve)<<endl;
   }

@@ -1,6 +1,6 @@
 ﻿/*!
  * \file CNumerics.hpp
- * \brief Delaration of the base numerics class, the
+ * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
  * \version 7.3.1 "Blackbird"
@@ -180,8 +180,8 @@ protected:
   su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
-  su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
-  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
