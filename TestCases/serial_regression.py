@@ -1106,6 +1106,18 @@ def main():
     ls89_sa.tol       = 0.00001
     test_list.append(ls89_sa)
 
+    # ls89_sa_NPPR
+    ls89_sa_NPPR           = TestCase('ls89_sa_NPPR')
+    ls89_sa_NPPR.cfg_dir   = "nicf/LS89"
+    ls89_sa_NPPR.cfg_file  = "turb_SA_NPPR.cfg"
+    ls89_sa_NPPR.test_iter = 20
+    ls89_sa_NPPR.test_vals = [-5.050483, -13.389547, 0.174939, 0.430757] #last 4 columns
+    ls89_sa_NPPR.su2_exec  = "SU2_CFD"
+    ls89_sa_NPPR.new_output= True
+    ls89_sa_NPPR.timeout   = 1600
+    ls89_sa_NPPR.tol       = 0.00001
+    test_list.append(ls89_sa_NPPR)
+
     # Rarefaction shock wave edge_VW
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
@@ -1130,6 +1142,17 @@ def main():
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
 
+    # Rarefaction shock wave edge_NPPR
+    edge_NPPR           = TestCase('edge_NPPR')
+    edge_NPPR.cfg_dir   = "nicf/edge"
+    edge_NPPR.cfg_file  = "edge_NPPR.cfg"
+    edge_NPPR.test_iter = 20
+    edge_NPPR.test_vals = [-1.670439, 4.522842, 0.001027, 0.000000] #last 4 columns
+    edge_NPPR.su2_exec  = "SU2_CFD"
+    edge_NPPR.new_output = True
+    edge_NPPR.timeout   = 1600
+    edge_NPPR.tol       = 0.00001
+    test_list.append(edge_NPPR)
 
     ######################################
     ### turbomachinery                 ###

@@ -31,6 +31,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CNonPolytropicPengRobinson.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -782,7 +783,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
 
-  unsigned short iDim;
+  unsigned short iDim, iVar;
 
   /*--- Local variables ---*/
 
@@ -859,6 +860,25 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
       FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                      config->GetTemperature_Critical(), config->GetAcentric_Factor());
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+      break;
+
+    case NPPR_GAS:  
+      FluidModel = new CNonPolytropicPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+                                                  config->GetTemperature_Critical(), config->GetAcentric_Factor(), config);
+      config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+      for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+      FluidModel->SetCpModel(config);
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
@@ -1064,6 +1084,15 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
+    case NPPR_GAS:
+      FluidModel = new CNonPolytropicPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
+                                                  config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor(), config);
+      config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+      for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+      FluidModel->SetCpModel(config);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1218,9 +1247,20 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     case PR_GAS:
       ModelTable << "PR_GAS";
       break;
+    case NPPR_GAS:
+      ModelTable << "NPPR_GAS";
+      break;
     }
 
-    if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
+    if (config->GetKind_FluidModel() == NPPR_GAS){
+      for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+      stringstream ss;
+      ss << iVar;
+      if (config->GetCp_PolyCoeff(iVar) != 0.0)
+        NonDimTable << "Cp(T) Poly. Coeff. " + ss.str()  << config->GetCp_PolyCoeff(iVar) << config->GetCp_PolyCoeff(iVar)/config->GetCp_PolyCoeffND(iVar) << "-" << config->GetCp_PolyCoeffND(iVar);
+      }
+    }
+    if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS || config->GetKind_FluidModel() == NPPR_GAS){
         NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
         Unit << "K";

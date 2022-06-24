@@ -34,7 +34,7 @@
  * \brief Child class for defining the Peng-Robinson model.
  * \author: S.Vitale, G. Gori
  */
-class CPengRobinson final : public CIdealGas {
+class CPengRobinson : public CIdealGas {
  protected:
   su2double a{0.0};         /*!< \brief model parameter. */
   su2double b{0.0};         /*!< \brief model parameter. */
@@ -53,14 +53,14 @@ class CPengRobinson final : public CIdealGas {
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  void SetTDState_rhoe(su2double rho, su2double e) override;
+  virtual void SetTDState_rhoe(su2double rho, su2double e) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  void SetTDState_PT(su2double P, su2double T) override;
+  virtual void SetTDState_PT(su2double P, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
@@ -74,7 +74,7 @@ class CPengRobinson final : public CIdealGas {
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho(su2double P, su2double rho) override;
+  virtual void SetEnergy_Prho(su2double P, su2double rho) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -83,7 +83,7 @@ class CPengRobinson final : public CIdealGas {
    * \param[in] th2 - second thermodynamic variable (s).
    *
    */
-  void SetTDState_hs(su2double h, su2double s) override;
+  virtual void SetTDState_hs(su2double h, su2double s) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -92,14 +92,14 @@ class CPengRobinson final : public CIdealGas {
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  void SetTDState_rhoT(su2double rho, su2double T) override;
+  virtual void SetTDState_rhoT(su2double rho, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (s).
    */
-  void SetTDState_Ps(su2double P, su2double s) override;
+  virtual void SetTDState_Ps(su2double P, su2double s) override;
 
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
@@ -110,7 +110,7 @@ class CPengRobinson final : public CIdealGas {
    */
   void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
 
- private:
+ protected:
   /*!
    * \brief Internal model parameter.
    */
@@ -119,7 +119,7 @@ class CPengRobinson final : public CIdealGas {
   /*!
    * \brief Internal function for the implicit call hs.
    */
-  su2double T_v_h(su2double v, su2double h);
+  virtual su2double T_v_h(su2double v, su2double h);
 
   /*!
    * \brief Internal function for the implicit call Ps.

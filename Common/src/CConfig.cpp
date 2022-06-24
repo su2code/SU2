@@ -4790,6 +4790,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model INC_IDEAL_GAS_POLY. \n"), CURRENT_FUNCTION);
   }
 
+  if ((Kind_Solver == MAIN_SOLVER::EULER || Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::RANS) && (Kind_FluidModel == NPPR_GAS)) {
+    su2double sum = 0.0;
+    for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
+      sum += GetCp_PolyCoeff(iVar);
+    }
+    if ((N_POLY_COEFFS < 1) || (sum == 0.0))
+      SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model NPPR_GAS. \n"), CURRENT_FUNCTION);
+  }
+
   if (((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS)) && (Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {

@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CNonPolytropicPengRobinson.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
@@ -776,7 +777,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
 
-  unsigned short iDim;
+  unsigned short iDim, iVar;
 
   /*--- Local variables ---*/
 
@@ -845,6 +846,16 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
+      break;
+
+    case NPPR_GAS:
+
+      auxFluidModel = new CNonPolytropicPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+                                                     config->GetTemperature_Critical(), config->GetAcentric_Factor(), 
+                                                     config);
+      for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
+        auxFluidModel->SetCpModel(config);
       break;
 
     default:
@@ -1083,6 +1094,18 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
         break;
+      
+      case NPPR_GAS:
+        FluidModel[thread] = new CNonPolytropicPengRobinson(Gamma, Gas_ConstantND,
+                                                            config->GetPressure_Critical() / config->GetPressure_Ref(),
+                                                            config->GetTemperature_Critical() / config->GetTemperature_Ref(),
+                                                            config->GetAcentric_Factor(),
+                                                            config);
+        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+        for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+        FluidModel[thread]->SetCpModel(config);
+        break;
     }
 
     GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
@@ -1229,9 +1252,20 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case PR_GAS:
       ModelTable << "PR_GAS";
       break;
+    case NPPR_GAS:
+      ModelTable << "NPPR_GAS";
+      break;
     }
-
-    if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
+    
+    if (config->GetKind_FluidModel() == NPPR_GAS){
+      for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+      stringstream ss;
+      ss << iVar;
+      if (config->GetCp_PolyCoeff(iVar) != 0.0)
+        NonDimTable << "Cp(T) Poly. Coeff. " + ss.str()  << config->GetCp_PolyCoeff(iVar) << config->GetCp_PolyCoeff(iVar)/config->GetCp_PolyCoeffND(iVar) << "-" << config->GetCp_PolyCoeffND(iVar);
+      }
+    }
+    if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS || config->GetKind_FluidModel() == NPPR_GAS){
         NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
         Unit << "K";

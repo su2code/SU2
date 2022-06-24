@@ -2186,7 +2186,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         break;
 
       case PR_GAS:
-        file << "Fluid Model: Peng-Robinson \n";
+        file << "Fluid Model: Polytropic Peng-Robinson \n";
         file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
         file << "Specific gas constant(non-dim): " << config->GetGas_ConstantND() << "\n";
         file << "Specific Heat Ratio: " << config->GetGamma() << "\n";
@@ -2196,6 +2196,31 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
              << "\n";
         file << "Critical Temperature (non-dim) :  "
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
+        break;
+
+      case NPPR_GAS:
+        file << "Fluid Model: Non Polytropic Peng-Robinson \n";
+        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
+        file << "Specific gas constant(non-dim): " << config->GetGas_ConstantND() << "\n";
+        file << "Specific Heat Ratio: " << config->GetGamma() << "\n";
+        file << "Critical Pressure:   " << config->GetPressure_Critical() << " Pa.\n";
+        file << "Critical Temperature:  " << config->GetTemperature_Critical() << " K.\n";
+        file << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() / config->GetPressure_Ref()
+             << "\n";
+        file << "Critical Temperature (non-dim) :  "
+             << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
+        file << "Cp(T) polynomial coefficients: \n  (";
+        for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          file << config->GetCp_PolyCoeff(iVar);
+          if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
+        }
+        file << ").\n";
+        file << "Cp(T) polynomial coefficients (non-dim.): \n  (";
+        for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          file << config->GetCp_PolyCoeffND(iVar);
+          if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
+        }
+        file << ").\n";
         break;
     }
 
