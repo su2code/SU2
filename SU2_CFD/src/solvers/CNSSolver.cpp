@@ -200,6 +200,11 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       }
     }
 
+    /*--- Get Eddy viscosity from SGS model ---*/
+    if (turb_model == TURB_MODEL::NONE && SGSModelUsed){
+      eddy_visc = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint);
+    }
+
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
     bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
