@@ -53,14 +53,14 @@ class CPengRobinson : public CIdealGas {
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  virtual void SetTDState_rhoe(su2double rho, su2double e) override;
+  void SetTDState_rhoe(su2double rho, su2double e) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  virtual void SetTDState_PT(su2double P, su2double T) override;
+  void SetTDState_PT(su2double P, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
@@ -74,7 +74,7 @@ class CPengRobinson : public CIdealGas {
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  virtual void SetEnergy_Prho(su2double P, su2double rho) override;
+  void SetEnergy_Prho(su2double P, su2double rho) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -83,7 +83,7 @@ class CPengRobinson : public CIdealGas {
    * \param[in] th2 - second thermodynamic variable (s).
    *
    */
-  virtual void SetTDState_hs(su2double h, su2double s) override;
+  void SetTDState_hs(su2double h, su2double s) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -92,14 +92,14 @@ class CPengRobinson : public CIdealGas {
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  virtual void SetTDState_rhoT(su2double rho, su2double T) override;
+  void SetTDState_rhoT(su2double rho, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (s).
    */
-  virtual void SetTDState_Ps(su2double P, su2double s) override;
+  void SetTDState_Ps(su2double P, su2double s) override;
 
   /*!
    * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC

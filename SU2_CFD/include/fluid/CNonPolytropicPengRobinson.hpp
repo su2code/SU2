@@ -46,49 +46,49 @@ class CNonPolytropicPengRobinson : public CPengRobinson {
    * \brief Set the temperature polynomial coefficients for variable Cp.
    * \param[in] config - configuration container for the problem.
    */
-  virtual void SetCpModel(const CConfig* config) override;
+  void SetCpModel(const CConfig* config) override;
 
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  virtual void SetTDState_rhoe(su2double rho, su2double e) override;
+  void SetTDState_rhoe(su2double rho, su2double e) override;
 
   /*!
    * \brief Set the Dimensionless State using Density and Temperature
    * \param[in] rho - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  virtual void SetTDState_rhoT(su2double rho, su2double T) override;
+  void SetTDState_rhoT(su2double rho, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  virtual void SetTDState_PT(su2double P, su2double T) override;
+  void SetTDState_PT(su2double P, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Enthalpy and Entropy
    * \param[in] h - first thermodynamic variable.
    * \param[in] s - second thermodynamic variable.
    */
-  virtual void SetTDState_hs(su2double h, su2double s) override;
+  void SetTDState_hs(su2double h, su2double s) override;
 
   /*!
    * \brief Set the Dimensionless Energy using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  virtual void SetEnergy_Prho(su2double P, su2double rho) override;
+  void SetEnergy_Prho(su2double P, su2double rho) override;
 
    /*!
    * \brief Set the Dimensionless State using Pressure and Entropy
    * \param[in] P - first thermodynamic variable.
    * \param[in] s - second thermodynamic variable.
    */
-  virtual void SetTDState_Ps(su2double P, su2double s) override;
+  void SetTDState_Ps(su2double P, su2double s) override;
 
  private:
 
@@ -110,7 +110,7 @@ class CNonPolytropicPengRobinson : public CPengRobinson {
   /*!
    * \brief Internal function for the implicit call hs.
    */
-  virtual su2double T_v_h(su2double v, su2double h) override;
+  su2double T_v_h(su2double v, su2double h) override;
 
   array<su2double, N_POLY_COEFFS> coeffs_; /*!< \brief Polynomial coefficients for heat capacity as a function of temperature. */
 };
