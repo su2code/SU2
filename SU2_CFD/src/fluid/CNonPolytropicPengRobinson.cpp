@@ -116,11 +116,11 @@ su2double CNonPolytropicPengRobinson::T_v_h(su2double v, su2double h){
 
 void CNonPolytropicPengRobinson::SetTDState_rhoe(su2double rho, su2double e){
   su2double toll = 1e-9, FACTOR = 0.2;
-  su2double f, fv, A, B, C0, C1, C2, C4, C6, C8, C10, T, d, atanh;
+  su2double f, fv, A, B, C0, C1, C2, C4, C6, C8, C10, T, atanh;
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
   unsigned short countrtb = 0, NTRY = 100, ITMAX = 100;
   su2double DpDd_T, DpDT_d, DeDd_T, Cv0;
-  su2double sqrt2, a2T, rho2, rhoig, sig, sres;
+  su2double sqrt2, a2T, rho2, sig, sres;
 
   Density = rho;
   StaticEnergy = e;
@@ -293,8 +293,8 @@ void CNonPolytropicPengRobinson::SetTDState_PT(su2double P, su2double T){
 }
 
 void CNonPolytropicPengRobinson::SetTDState_hs(su2double h, su2double s) {
-  su2double T, fv, sqrt2 = sqrt(2.0), A;
-  su2double f, v1, v2, v, atanh, sig, sres;
+  su2double T, fv, sqrt2 = sqrt(2.0);
+  su2double f, v, atanh, sig, sres;
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
   su2double toll = 1e-9, FACTOR = 0.2;
   su2double cons_s, cons_h;
@@ -435,7 +435,7 @@ void CNonPolytropicPengRobinson::SetTDState_rhoT(su2double rho, su2double T) {
 
 
 void CNonPolytropicPengRobinson::SetTDState_Ps(su2double P, su2double s) {
-  su2double T, rho, v, cons_P, cons_s, fv, A, atanh, sig, sres;
+  su2double T, rho, v, cons_P, cons_s, fv, atanh, sig, sres;
   su2double x1, x2, fx1, fx2, f, fmid, rtb, dx, xmid, sqrt2 = sqrt(2.0);
   su2double toll = 1e-5, FACTOR = 0.2;
   unsigned short count = 0, NTRY = 100, ITMAX = 100;
