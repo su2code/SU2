@@ -53,7 +53,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   
   look_up_table1 = new CLookUpTable("../UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
 
-/*
+
   look_up_table1->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
   CHECK(look_up_data[0] == Approx(1.19152e-5));
   CHECK(look_up_data[1] == Approx(0.682905));
@@ -63,7 +63,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   su2double look_up_dat;
   look_up_table1->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
   CHECK(look_up_dat == Approx(0.682905));
-*/
+
 
   // find the table limits
   /*
