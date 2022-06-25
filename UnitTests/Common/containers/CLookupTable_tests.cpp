@@ -37,7 +37,7 @@ using namespace std;
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
-  CLookUpTable *look_up_table1, *look_up_table2;
+  CLookUpTable *look_up_table1;
 
   /* string names of the controlling variables */
   string name_prog = "PROGVAR";
@@ -89,6 +89,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   delete look_up_table1; 
 
 /*
+  CLookUpTable *look_up_table2;
   look_up_table2 = new CLookUpTable("../UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
 
   prog = 0.55;
