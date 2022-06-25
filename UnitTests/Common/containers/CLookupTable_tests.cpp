@@ -99,7 +99,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   look_up_tag = "Density";
   look_up_table2->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
   cout << "check 9" << endl;
-  CHECK(look_up_dat == Approx(1.05));
+  CHECK(look_up_dat == Approx(1.00));
 
 
   prog = 0.65;
@@ -107,7 +107,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   look_up_tag = "Density";
   look_up_table2->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
   cout << "check 10" << endl;
-  CHECK(look_up_dat == Approx(1.19));
+  CHECK(look_up_dat == Approx(1.20));
 
   delete look_up_table2; 
 
