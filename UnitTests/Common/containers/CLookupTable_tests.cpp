@@ -85,7 +85,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
  */
 
 
-  delete look_up_table1; 
+//  delete look_up_table1; 
 
 /*
   CLookUpTable *look_up_table2;
