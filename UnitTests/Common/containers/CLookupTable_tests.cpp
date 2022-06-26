@@ -36,9 +36,10 @@
 using namespace std;
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
-/*
-  CLookUpTable *look_up_table1;
 
+  CLookUpTable *look_up_table1;
+  look_up_table1 = new CLookUpTable("../UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
+/*
   // string names of the controlling variables 
   string name_prog = "PROGVAR";
   string name_enth = "ENTHALPY";
@@ -51,8 +52,6 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   vector<string> look_up_tags={"ViscosityDyn", "Density"};
   vector<su2double> look_up_data={0.0, 0.0}; 
   
-  look_up_table1 = new CLookUpTable("../UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
-
   look_up_table1->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
   CHECK(look_up_data[0] == Approx(1.19152e-5));
   CHECK(look_up_data[1] == Approx(0.682905));
@@ -85,7 +84,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
  */
 
 
-//  delete look_up_table1; 
+  delete look_up_table1; 
 
 /*
   CLookUpTable *look_up_table2;
