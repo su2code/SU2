@@ -2199,6 +2199,15 @@ void COutput::SetCustomOutputs(const CConfig* config) {
   };
   DebugPrint(inputString);
 
+  const std::map<std::string, OperationType> opMap = {
+    {"AreaAvg", OperationType::AREA_AVG},
+    {"AreaInt", OperationType::AREA_INT},
+    {"MassFlowAvg", OperationType::MASSFLOW_AVG},
+    {"MassFlowInt", OperationType::MASSFLOW_INT},
+  };
+  std::stringstream knownOps;
+  for (const auto& item : opMap) knownOps << item.first << ", ";
+
   const auto last = inputString.end();
   for (auto it = inputString.begin(); it != last;) {
 
@@ -2222,17 +2231,11 @@ void COutput::SetCustomOutputs(const CConfig* config) {
     const auto opType = std::string(start, it);
     DebugPrint(opType);
 
-    if (opType == "AreaAvg") {
-      output.type = OperationType::AREA_AVG;
-    } else if (opType == "AreaInt") {
-      output.type = OperationType::AREA_INT;
-    } else if (opType == "MassFlowAvg") {
-      output.type = OperationType::MASSFLOW_AVG;
-    } else if (opType == "MassFlowInt") {
-      output.type = OperationType::MASSFLOW_INT;
-    } else {
-      SU2_MPI::Error("Invalid averaging type '" + opType + "'", CURRENT_FUNCTION);
+    auto item = opMap.find(opType);
+    if (item == opMap.end()) {
+      SU2_MPI::Error("Invalid operation type '" + opType + "', must be one of: " + knownOps.str(), CURRENT_FUNCTION);
     }
+    output.type = item->second;
 
     /*--- Find and parse the user expression. ---*/
     while (it != last && (*it == ' ' || *it == '{')) ++it;

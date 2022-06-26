@@ -772,7 +772,7 @@ void ConvertVariableSymbolToIndex(const FlowIndices& idx, const SymbolVector& sy
 void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config) {
 
   const bool axisymmetric = config->GetAxisymmetric();
-  const auto* flow_nodes = solver->GetNodes();
+  const auto* flowNodes = solver->GetNodes();
 
   for (auto& output : customOutputs) {
     if (output.varIndices.empty()) {
@@ -811,13 +811,13 @@ void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geome
 
         if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const auto* normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
         su2double weight = 1.0;
         if (output.type == OperationType::MASSFLOW_AVG || output.type == OperationType::MASSFLOW_INT) {
-          weight = flow_nodes->GetDensity(iPoint) * flow_nodes->GetProjVel(iPoint, Normal);
+          weight = flowNodes->GetDensity(iPoint) * flowNodes->GetProjVel(iPoint, normal);
         } else {
-          weight = GeometryToolbox::Norm(nDim, Normal);
+          weight = GeometryToolbox::Norm(nDim, normal);
         }
         weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
         integral[1] += weight;
@@ -825,8 +825,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geome
         /*--- Prepare the functor that maps symbol indices to values. For now the only allowed symbols
          * are the primitive variables, and thus the indices match the primitive indices. ---*/
 
-        auto Functor = [flow_nodes, iPoint](int i) {
-          return flow_nodes->GetPrimitive(iPoint, i);
+        auto Functor = [flowNodes, iPoint](int i) {
+          return flowNodes->GetPrimitive(iPoint, i);
         };
         integral[0] += weight * output.eval(Functor);
       }
