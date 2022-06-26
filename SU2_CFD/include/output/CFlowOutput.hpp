@@ -247,6 +247,25 @@ protected:
   }
 
   /*!
+   * \brief Returns the axisymmetric factor for a point on a marker.
+   */
+  template <class GeoNodes>
+  inline su2double GetAxiFactor(bool axisymmetric, const GeoNodes& nodes, unsigned long iPoint,
+                                unsigned short iMarker) {
+    if (!axisymmetric) return 1.0;
+
+    if (nodes.GetCoord(iPoint, 1) > EPS) return 2 * PI_NUMBER * nodes.GetCoord(iPoint, 1);
+
+    for (const auto jPoint : nodes.GetPoints(iPoint)) {
+      if (nodes.GetVertex(jPoint, iMarker) >= 0) {
+        /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+        return PI_NUMBER * nodes.GetCoord(jPoint, 1);
+      }
+    }
+    return 0.0;
+  }
+
+  /*!
    * \brief Write information to meta data file
    * \param[in] config - Definition of the particular problem per zone.
    */

@@ -2215,19 +2215,23 @@ void COutput::SetCustomOutputs(const CConfig* config) {
     output.name = std::string(start, it);
     DebugPrint(output.name);
 
-    /*--- Find the start and end of the averaging type. ---*/
+    /*--- Find the start and end of the operation type. ---*/
     while (it != last && (*it == ' ' || *it == ':')) ++it;
     start = it;
     while (it != last && *it != ' ' && *it != '{') ++it;
-    const auto avgType = std::string(start, it);
-    DebugPrint(avgType);
+    const auto opType = std::string(start, it);
+    DebugPrint(opType);
 
-    if (avgType == "AreaAvg") {
-      output.type = AverageType::AREA;
-    } else if (avgType == "MassFlowAvg") {
-      output.type = AverageType::MASSFLOW;
+    if (opType == "AreaAvg") {
+      output.type = OperationType::AREA_AVG;
+    } else if (opType == "AreaInt") {
+      output.type = OperationType::AREA_INT;
+    } else if (opType == "MassFlowAvg") {
+      output.type = OperationType::MASSFLOW_AVG;
+    } else if (opType == "MassFlowInt") {
+      output.type = OperationType::MASSFLOW_INT;
     } else {
-      SU2_MPI::Error("Invalid averaging type '" + avgType + "'", CURRENT_FUNCTION);
+      SU2_MPI::Error("Invalid averaging type '" + opType + "'", CURRENT_FUNCTION);
     }
 
     /*--- Find and parse the user expression. ---*/
@@ -2238,9 +2242,9 @@ void COutput::SetCustomOutputs(const CConfig* config) {
     DebugPrint(output.func);
 
     output.expression = mel::Parse<passivedouble>(output.func, output.varSymbols);
-    for (const auto& s : output.varSymbols) {
-      DebugPrint(s);
-    }
+#ifndef NDEBUG
+    mel::Print(output.expression, output.varSymbols, std::cout);
+#endif
 
     /*--- Find the marker names. ---*/
     while (it != last && (*it == ' ' || *it == '}' || *it == '[')) ++it;

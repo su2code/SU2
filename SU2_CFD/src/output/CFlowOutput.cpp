@@ -135,7 +135,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
   Enthalpy, Velocity[3] = {0.0}, TangVel[3], Vector[3], Velocity2, MassFlow, Density, Area,
-  AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
+  SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
   const su2double Gas_Constant      = config->GetGas_ConstantND();
   const su2double Gamma             = config->GetGamma();
@@ -201,24 +201,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-          if (axisymmetric) {
-            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-            else {
-              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
-              AxiFactor = 0.0;
-              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
-                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
-                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
-                  break;
-                }
-              }
-            }
-          } else {
-            AxiFactor = 1.0;
-          }
+          const su2double AxiFactor = GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
 
           Density = flow_nodes->GetDensity(iPoint);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
@@ -683,25 +666,7 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
 
         if (geometry->nodes->GetDomain(iPoint)) {
 
-          su2double AxiFactor = 0.0;
-          if (axisymmetric) {
-            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-            else {
-              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
-              AxiFactor = 0.0;
-              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
-                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
-                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
-                  break;
-                }
-              }
-            }
-          } else {
-            AxiFactor = 1.0;
-          }
+          const su2double AxiFactor = GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
 
           su2double Vector[3];
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
@@ -781,35 +746,98 @@ template <class FlowIndices>
 unsigned long IndexOfVariable(const FlowIndices& idx, const std::string& var) {
 
   if ("TEMPERATURE" == var) return idx.Temperature();
-  else if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
-  else if ("VELOCITY-X" == var) return idx.Velocity();
-  else if ("VELOCITY-Y" == var) return idx.Velocity() + 1;
-  else if ("VELOCITY-Z" == var) return idx.Velocity() + 2;
-  else if ("PRESSURE" == var) return idx.Pressure();
-  else if ("DENSITY" == var) return idx.Density();
-  else if ("ENTHALPY" == var) return idx.Enthalpy();
-  else if ("SOUND_SPEED" == var) return idx.SoundSpeed();
-  else if ("LAMINAR_VISCOSITY" == var) return idx.LaminarViscosity();
-  else if ("EDDY_VISCOSITY" == var) return idx.EddyViscosity();
-  else if ("THERMAL_CONDUCTIVITY" == var) return idx.ThermalConductivity();
-  else SU2_MPI::Error("The variable '" + var + "' is not available in custom outputs.", CURRENT_FUNCTION);
+  if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
+  if ("VELOCITY_X" == var) return idx.Velocity();
+  if ("VELOCITY_Y" == var) return idx.Velocity() + 1;
+  if ("VELOCITY_Z" == var) return idx.Velocity() + 2;
+  if ("PRESSURE" == var) return idx.Pressure();
+  if ("DENSITY" == var) return idx.Density();
+  if ("ENTHALPY" == var) return idx.Enthalpy();
+  if ("SOUND_SPEED" == var) return idx.SoundSpeed();
+  if ("LAMINAR_VISCOSITY" == var) return idx.LaminarViscosity();
+  if ("EDDY_VISCOSITY" == var) return idx.EddyViscosity();
+  if ("THERMAL_CONDUCTIVITY" == var) return idx.ThermalConductivity();
 
+  SU2_MPI::Error("The variable '" + var + "' is not available in custom outputs.", CURRENT_FUNCTION);
   return 0;
+}
+
+template <class FlowIndices, class SymbolVector, class IndexVector>
+void ConvertVariableSymbolToIndex(const FlowIndices& idx, const SymbolVector& symbols, IndexVector& indices) {
+  indices.clear();
+  indices.reserve(symbols.size());
+  for (const auto& var : symbols) indices.push_back(IndexOfVariable(idx, var));
 }
 
 void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config) {
 
+  const bool axisymmetric = config->GetAxisymmetric();
+  const auto* flow_nodes = solver->GetNodes();
+
   for (auto& output : customOutputs) {
-    /*--- Setup indices for the symbols in the expression, for now this only recognizes primitives. ---*/
     if (output.varIndices.empty()) {
+      /*--- Setup indices for the symbols in the expression, for now this only recognizes primitives. ---*/
+
       if (config->GetNEMOProblem()) {
-        const auto idx = CNEMOEulerVariable::template CIndices<unsigned long>(nDim, )
-      } else if (config->GetKind_Regime() == COMPRESSIBLE) {
-
+        ConvertVariableSymbolToIndex(CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()),
+                                     output.varSymbols, output.varIndices);
+      } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+        ConvertVariableSymbolToIndex(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output.varSymbols,
+                                     output.varIndices);
       } else {
+        ConvertVariableSymbolToIndex(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output.varSymbols,
+                                     output.varIndices);
+      }
+      /*--- Convert marker names to their index (if any) in this rank. ---*/
 
+      output.markerIndices.clear();
+      for (const auto& marker : output.markers) {
+        for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); ++iMarker) {
+          if (config->GetMarker_All_TagBound(iMarker) == marker) {
+            output.markerIndices.push_back(iMarker);
+            continue;
+          }
+        }
       }
     }
+
+    /*--- Surface integral of the expression. ---*/
+
+    std::array<su2double, 2> integral = {0.0, 0.0};
+
+    for (const auto iMarker : output.markerIndices) {
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+        const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+        su2double weight = 1.0;
+        if (output.type == OperationType::MASSFLOW_AVG || output.type == OperationType::MASSFLOW_INT) {
+          weight = flow_nodes->GetDensity(iPoint) * flow_nodes->GetProjVel(iPoint, Normal);
+        } else {
+          weight = GeometryToolbox::Norm(nDim, Normal);
+        }
+        weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
+        integral[1] += weight;
+
+        /*--- Prepare the functor that maps symbol indices to values. For now the only allowed symbols
+         * are the primitive variables, and thus the indices match the primitive indices. ---*/
+
+        auto Functor = [flow_nodes, iPoint](int i) {
+          return flow_nodes->GetPrimitive(iPoint, i);
+        };
+        integral[0] += weight * output.eval(Functor);
+      }
+    }
+
+    const auto local = integral;
+    SU2_MPI::Allreduce(local.data(), integral.data(), 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    if (output.type == OperationType::AREA_AVG || output.type == OperationType::MASSFLOW_AVG) {
+      integral[0] /= integral[1];
+    }
+    SetHistoryOutputValue(output.name, integral[0]);
   }
 }
 
@@ -2535,7 +2563,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         if (si_units) file << " Pa.\n";
         else file << " psf.\n";
         break;
-        
+
       case INC_IDEAL_GAS_POLY:
         file << "Fluid Model: INC_IDEAL_GAS_POLY \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
