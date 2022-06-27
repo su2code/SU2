@@ -162,22 +162,25 @@ jobs:
           name: ${{format('Forward{0}', matrix.tag)}}
       - name: Uncompress and Move Binaries
         run: |
+          ls -lah
           BIN_FOLDER="$PWD/install/bin"
           mkdir -p $BIN_FOLDER
           ls -laH $BIN_FOLDER
           for type in Base Reverse Forward; do
             TYPE_FOLDER="${type}${{matrix.tag}}"
-            echo "Processing '$TYPE_FOLDER' ..."
             if [ -d $TYPE_FOLDER ]; then
+              echo "Processing '$TYPE_FOLDER' ..."
               pushd $TYPE_FOLDER
               ls -lah
               tar -zxvf install_bin.tgz
               ls -laH install/bin/
               cp -r install/bin/* $BIN_FOLDER;
-              popd; 
+              popd;
+            else
+              echo "$TYPE_FOLDER does not exist!"
             fi
           done
-          chmod a+x $BIN_FOLDER/*
+          find $BIN_FOLDER -type f -exec chmod a+x '{}' \;
           ls -lahR $BIN_FOLDER
       - name: Run Unit Tests
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
