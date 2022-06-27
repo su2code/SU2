@@ -38,7 +38,7 @@ using namespace std;
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   CLookUpTable *look_up_table1;
-  look_up_table1 = new CLookUpTable("methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
 /*
   // string names of the controlling variables 
   string name_prog = "PROGVAR";

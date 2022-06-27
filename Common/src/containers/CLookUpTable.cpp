@@ -47,7 +47,8 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
 
   IdentifyUniqueEdges();
 
-  if (rank == MASTER_NODE) cout << " done." << endl;
+  if (rank == MASTER_NODE) 
+    cout << " done." << endl;
 
   PrintTableInfo();
 
@@ -58,21 +59,24 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, const string& name_p
 
   trap_map_prog_enth = CTrapezoidalMap(GetDataP(name_prog), GetDataP(name_enth), table_data.cols(), edges, edge_to_triangle);
 
-  if (rank == MASTER_NODE) cout << " done." << endl;
+  if (rank == MASTER_NODE) 
+    cout << " done." << endl;
 
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE) 
     cout << "Precomputing interpolation coefficients..." << endl;
-  }
+  
 
   ComputeInterpCoeffs(name_prog, name_enth);
 
-  if (rank == MASTER_NODE) cout << "LUT fluid model ready for use" << endl;
+  if (rank == MASTER_NODE) 
+    cout << "LUT fluid model ready for use" << endl;
 }
 
 void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   CFileReaderLUT file_reader;
 
-  if (rank == MASTER_NODE) cout << "Loading look-up-table-file " << var_file_name_lut << " ..." << endl;
+  if (rank == MASTER_NODE) 
+    cout << "Loading look-up-table-file " << var_file_name_lut << " ..." << endl;
 
   file_reader.ReadRawDRG(var_file_name_lut);
 
@@ -88,7 +92,8 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   triangles = file_reader.GetTriangles();
   hull = file_reader.GetHull();
 
-  if (rank == MASTER_NODE) cout << " done." << endl;
+  if (rank == MASTER_NODE) 
+    cout << " done." << endl;
 }
 
 void CLookUpTable::FindTableLimits(const string& name_prog, const string& name_enth) {
