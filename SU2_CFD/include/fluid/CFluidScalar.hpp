@@ -43,6 +43,7 @@ class CFluidScalar final : public CFluidModel {
   su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
   su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
 
+<<<<<<< HEAD
   bool wilke;
   bool davidson;
 
@@ -79,12 +80,16 @@ class CFluidScalar final : public CFluidModel {
    * \param[in] val_scalars - Scalar mass fraction.
    */
   su2double wilkeConductivity(const su2double* val_scalars); 
+=======
+  std::vector<su2double> molarMasses;  /*!< \brief Molar masses of all species. */
+>>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 
  public:
   /*!
    * \brief Constructor of the class.
    */
   CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig* config);
+<<<<<<< HEAD
   
   /*!
    * \brief Set viscosity model.
@@ -95,6 +100,8 @@ class CFluidScalar final : public CFluidModel {
    * \brief Set thermal conductivity model.
    */
   void SetThermalConductivityModel(const CConfig* config);
+=======
+>>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

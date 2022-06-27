@@ -802,8 +802,9 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  *Molecular_Weight,    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */  
-  Specific_Heat_Cp,           /*!< \brief Specific heat at constant pressure. */
+  *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */
+  su2double Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
@@ -830,8 +831,7 @@ private:
   Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   *Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
   Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
-  nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
+  unsigned nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
   nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
   nMu_Temperature_Ref,            /*!< \brief Number of species reference temperature for Sutherland model. */
   nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
