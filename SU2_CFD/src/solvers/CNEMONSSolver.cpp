@@ -891,15 +891,15 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         /*--- Get cataltyic reaction map ---*/
         const auto& RxnTable = FluidModel->GetCatalyticRecombination();
 
-        /*--- Catalytic scaling factor ---*/
-        const su2double Scale = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
+        /*--- Common catalytic flux factor ---*/
+        const su2double factor = gam*rho*sqrt(RuSI*Tw/2/PI_NUMBER)*Area;
 
         /*--- Compute catalytic recombination flux ---*/
         // Ref: 10.2514/6.2022-1636
-        // ws = gam_s*Ys*rho_wall*sqrt(Ru*Tw/(2*Pi*M_combine)
+        // ws = gam_s*Ys*rho_wall*sqrt(Ru*Tw/(2*Pi*M_combine)*Area
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           int Index = SU2_TYPE::Int(RxnTable(iSpecies,1));
-          Res_Visc[iSpecies] = RxnTable(iSpecies,0)*Scale*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
+          Res_Visc[iSpecies] = RxnTable(iSpecies,0)*factor*Vi[Index]/Vi[RHO_INDEX]*sqrt(1/Ms[Index]);
         }
       }
 

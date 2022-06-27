@@ -114,6 +114,29 @@ def main():
     #viscwedge_mpp.tol       = 0.00001
     #test_list.append(viscwedge_mpp)
 
+    # Viscous single wedge - super catalytic walls
+    super_cat           = TestCase('super_cat')
+    super_cat.cfg_dir   = "nonequilibrium/catalytic"
+    super_cat.cfg_file  = "super_cat.cfg"
+    super_cat.test_iter = 10
+    super_cat.test_vals = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374]
+    super_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
+    super_cat.timeout   = 1600
+    super_cat.new_output = True
+    super_cat.tol       = 0.00001
+    test_list.append(super_cat)
+
+    # Viscous single wedge - partially catalytic walls
+    partial_cat           = TestCase('partial_cat')
+    partial_cat.cfg_dir   = "nonequilibrium/catalytic"
+    partial_cat.cfg_file  = "partial_cat.cfg"
+    partial_cat.test_iter = 10
+    partial_cat.test_vals = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374]
+    partial_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
+    partial_cat.timeout   = 1600
+    partial_cat.new_output = True
+    partial_cat.tol       = 0.00001
+    test_list.append(partial_cat)
 
     ##########################
     ### Compressible Euler ###
