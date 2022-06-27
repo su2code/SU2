@@ -50,7 +50,6 @@ class CFluidScalar final : public CFluidModel {
   std::vector<su2double> moleFractions;              /*!< \brief Mole fractions of all species. */
   std::vector<su2double> molarMasses;                /*!< \brief Molar masses of all species. */
   std::vector<su2double> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
-  std::vector<su2double> specificHeat;               /*!< \brief Specific heat of all species. */
   std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
 
   static const int ARRAYSIZE = 100;
@@ -79,7 +78,7 @@ class CFluidScalar final : public CFluidModel {
    * \brief Wilke mixing law for mixture thermal conductivity.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  su2double wilkeConductivity(const su2double* val_scalars);
+  su2double wilkeConductivity(const su2double* val_scalars); 
 
  public:
   /*!
