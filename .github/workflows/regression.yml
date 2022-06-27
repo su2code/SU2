@@ -152,14 +152,17 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{format('Base{0}', matrix.tag)}}
+          path: ${{format('Base{0}', matrix.tag)}}
       - name: Download Reverse
         uses: actions/download-artifact@v3
         with:
           name: ${{format('Reverse{0}', matrix.tag)}}
+          path: ${{format('Reverse{0}', matrix.tag)}}
       - name: Download Forward
         uses: actions/download-artifact@v3
         with:
           name: ${{format('Forward{0}', matrix.tag)}}
+          path: ${{format('Forward{0}', matrix.tag)}}
       - name: Uncompress and Move Binaries
         run: |
           ls -lah
