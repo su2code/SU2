@@ -3744,7 +3744,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 /*--- Set default values for various fluid properties. ---*/
 
   const su2double Molecular_Weight_Default = 28.96;
-<<<<<<< HEAD
   const su2double Mu_Constant_Default = 1.716E-5;
   const su2double Mu_Ref_Default = Mu_Constant_Default;
   const su2double Mu_Temperature_Ref_Default = 273.15;
@@ -3752,8 +3751,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Thermal_Conductivity_Constant_Default = 2.57E-2;
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
-=======
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 
   if (Molecular_Weight == nullptr) {
     Molecular_Weight = new su2double[1];
@@ -3761,7 +3758,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nMolecular_Weight = 1;
   }
 
-<<<<<<< HEAD
   if (Mu_Constant == nullptr) {
     Mu_Constant = new su2double[1];
     Mu_Constant[0] = Mu_Constant_Default;
@@ -3797,9 +3793,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Prandtl_Turb[0] = Prandtl_Turb_Default;
     nPrandtl_Turb = 1;
   }
-  
-=======
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
   if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3808,11 +3801,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (nMolecular_Weight != nSpecies_Init + 1) {
       SU2_MPI::Error(
           "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
-<<<<<<< HEAD
           "to be equal to the number of entries of SPECIES_INIT + 1",
-=======
-          "to be equal to the number of entries of SCALAR_INIT + 1",
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
           CURRENT_FUNCTION);
     }
     /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
@@ -3821,7 +3810,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
       SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
     }
-<<<<<<< HEAD
 
     switch (Kind_ViscosityModel) {
       case VISCOSITYMODEL::CONSTANT:
@@ -3846,11 +3834,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
         break;
     }
-=======
-  }
-
-  /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 
     switch (Kind_ConductivityModel) {
       case CONDUCTIVITYMODEL::CONSTANT:

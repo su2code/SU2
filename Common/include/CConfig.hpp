@@ -831,7 +831,7 @@ private:
   Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   *Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
   Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  unsigned nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
+  unsigned short nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
   nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
   nMu_Temperature_Ref,            /*!< \brief Number of species reference temperature for Sutherland model. */
   nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */

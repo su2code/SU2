@@ -34,7 +34,6 @@
 #include <numeric>
 #include <vector>
 
-<<<<<<< HEAD
 #include "../../include/fluid/CConstantConductivity.hpp"
 #include "../../include/fluid/CConstantConductivityRANS.hpp"
 #include "../../include/fluid/CConstantPrandtl.hpp"
@@ -45,32 +44,24 @@
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
 
-=======
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const su2double value_pressure_operating,
                            CConfig* config)
     : CFluidModel() {
   n_species_mixture = config->GetnSpecies() + 1;
 
   molarMasses.resize(n_species_mixture);
-<<<<<<< HEAD
   massFractions.resize(n_species_mixture);
   moleFractions.resize(n_species_mixture);
   laminarViscosity.resize(n_species_mixture);
   laminarThermalConductivity.resize(n_species_mixture);
-=======
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
   }
 
-<<<<<<< HEAD
   wilke = false;
   davidson = true;
 
-=======
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
   Pressure_Thermodynamic = value_pressure_operating;
   Gas_Constant = val_gas_constant;
   Gamma = 1.0;
@@ -80,7 +71,6 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
   SetThermalConductivityModel(config);
 }
 
-<<<<<<< HEAD
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
@@ -276,9 +266,4 @@ void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_
   } else if (davidson) {
     Mu = davidsonViscosity(val_scalars);
   }
-=======
-void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
-  const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
-  Density = Pressure_Thermodynamic / ((val_temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
->>>>>>> 52160fc2bc932f64d1d547d4ec6989f2c2123217
 }
