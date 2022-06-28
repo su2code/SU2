@@ -1057,6 +1057,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Solve the system ---*/
 
+  /*--- Local variable to prevent all threads from writing to a shared location (this->Residual). ---*/
   ScalarType residual = 0.0;
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
