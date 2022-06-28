@@ -9,6 +9,13 @@ on:
     branches: 
       - 'develop'
       - 'master'
+  workflow_call:
+    inputs:
+      runner:
+        description: 'The github runner to use'
+        default: 'ubuntu-latest'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -36,7 +43,7 @@ jobs:
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ForwardOMP
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
         uses: actions/cache@v3
@@ -66,7 +73,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   regression_tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Regression Tests
     needs: build
     strategy:
@@ -128,7 +135,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   unit_tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Unit Tests
     needs: build
     strategy:
