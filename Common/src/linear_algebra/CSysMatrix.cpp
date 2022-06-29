@@ -641,7 +641,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
 
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
-  SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) )
+  SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]));
   END_SU2_OMP_FOR
