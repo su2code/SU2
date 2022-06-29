@@ -78,7 +78,7 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone           = TestCase('visc_cone')
-    visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
+    visc_cone.cfg_dir   = "nonequilibrium/viscous"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals = [-5.215236, -5.739371, -20.545048, -20.618700, -20.502532, -1.917617, -2.239664, 1.262783, -3.205463]
