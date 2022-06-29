@@ -866,12 +866,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     TapeActive = AD::getGlobalTape().isActive();
 
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       AD::StartExtFunc(false, false);
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     AD::StopRecording();
 #endif
@@ -982,11 +981,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
-    SU2_OMP_BARRIER
 
-    SU2_OMP_MASTER
-    AD::EndExtFunc();
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(AD::EndExtFunc();)
 #endif
   }
 

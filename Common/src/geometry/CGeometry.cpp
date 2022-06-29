@@ -357,8 +357,7 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
 
   if (countPerPoint <= maxCountPerPoint) return;
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Store the larger packet size to the class data. ---*/
 
@@ -379,8 +378,7 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
   bufS_P2PRecv = new unsigned short[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 }
 
@@ -763,10 +761,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
     /*--- For efficiency, recv the messages dynamically based on
      the order they arrive. ---*/
 
-    SU2_OMP_MASTER
-    SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);)
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -831,12 +826,8 @@ void CGeometry::CompleteComms(CGeometry *geometry,
    data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-  SU2_OMP_MASTER
-  SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
-  END_SU2_OMP_MASTER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);)
 #endif
-  SU2_OMP_BARRIER
-
 }
 
 void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
@@ -1186,8 +1177,7 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
 
   if (countPerPeriodicPoint <= maxCountPerPeriodicPoint) return;
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Store the larger packet size to the class data. ---*/
 
@@ -1213,8 +1203,7 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
   bufS_PeriodicRecv = new unsigned short[nRecv] ();
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
@@ -3136,7 +3125,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   END_SU2_OMP_FOR
 
   /*--- Share with all processors ---*/
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     su2double* dbl_buffer = new su2double [Global_nElemDomain*nDim];
     SU2_MPI::Allreduce(cg_elem,dbl_buffer,Global_nElemDomain*nDim,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
@@ -3150,8 +3139,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
     MPI_Allreduce(halo_detect.data(),char_buffer.data(),Global_nElemDomain,MPI_CHAR,MPI_SUM,SU2_MPI::GetComm());
     halo_detect.swap(char_buffer);
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   SU2_OMP_FOR_STAT(256)
   for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem) {
@@ -3190,14 +3178,13 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
 #ifdef HAVE_MPI
     /*--- Share with all processors ---*/
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       su2double *buffer = new su2double [Global_nElemDomain];
       SU2_MPI::Allreduce(work_values,buffer,Global_nElemDomain,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
       swap(buffer, work_values); delete [] buffer;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Account for duplication ---*/
     SU2_OMP_FOR_STAT(256)

@@ -92,10 +92,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
 
-    SU2_OMP_MASTER
-    config[iZone]->SubtractFinestMesh();
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SubtractFinestMesh();)
   }
 
   /*--- Set the current finest grid (full multigrid strategy) ---*/
@@ -686,7 +683,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       CNumerics ****numerics_container, CConfig *config,
                                                       unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                                       su2double *monitor) {
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   switch (RunTime_EqSystem) {
 
     case RUNTIME_FLOW_SYS:
@@ -716,9 +713,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                    numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       break;
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
-
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
@@ -736,15 +731,14 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
 
     /*--- Set the force coefficients ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Restrict solution and gradients to the coarse levels ---*/
 

@@ -173,12 +173,11 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   const bool wasActive = AD::BeginPassive();
 
   /*--- Initialize shared reduction variables. ---*/
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     MaxVolume = -1E22; MinVolume = 1E22;
     ElemCounter = 0;
   }
-  END_SU2_OMP_MASTER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Local min/max, final reduction outside loop. ---*/
   su2double maxVol = -1E22, minVol = 1E22;
@@ -264,7 +263,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   END_SU2_OMP_FOR
 
   /*--- Store the maximum and minimum volume. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
   if (updated) {
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
@@ -278,8 +277,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   AD::EndPassive(wasActive);
 

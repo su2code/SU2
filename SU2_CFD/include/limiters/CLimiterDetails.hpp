@@ -178,13 +178,12 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
     /*--- Allocate the static members (shared between threads) to
      * perform the reduction across all threads in the rank. ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       sharedMin.resize(varEnd) = largeNum;
       sharedMax.resize(varEnd) =-largeNum;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Per thread reduction. ---*/
 

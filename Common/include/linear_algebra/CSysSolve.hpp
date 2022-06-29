@@ -219,12 +219,11 @@ private:
   void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
 
     /*--- Set the pointers. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       LinSysRes_ptr = &LinSysRes;
       LinSysSol_ptr = &LinSysSol;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!
@@ -241,12 +240,11 @@ private:
     LinSysSol_tmp.PassiveCopy(LinSysSol);
 
     /*--- Set the pointers. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       LinSysRes_ptr = &LinSysRes_tmp;
       LinSysSol_ptr = &LinSysSol_tmp;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!
@@ -258,13 +256,11 @@ private:
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
 
     /*--- Reset the pointers. ---*/
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!
@@ -279,13 +275,11 @@ private:
     LinSysSol.PassiveCopy(LinSysSol_tmp);
 
     /*--- Reset the pointers. ---*/
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 public:

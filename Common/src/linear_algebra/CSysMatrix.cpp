@@ -378,10 +378,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
     /*--- For efficiency, recv the messages dynamically based on
      the order they arrive. ---*/
 
-    SU2_OMP_MASTER
-    SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);)
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -475,12 +472,8 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
    data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-  SU2_OMP_MASTER
-  SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
-  END_SU2_OMP_MASTER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);)
 #endif
-  SU2_OMP_BARRIER
-
 }
 
 template<class ScalarType>
@@ -1392,13 +1385,12 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, cons
                                                        unsigned short kind_fact) {
 #ifdef HAVE_PASTIX
   /*--- Pastix will launch nested threads. ---*/
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
     pastix_wrapper.Factorize(geometry, config, kind_fact);
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 #else
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
 #endif
@@ -1408,11 +1400,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
                                                          CGeometry *geometry, const CConfig *config) const {
 #ifdef HAVE_PASTIX
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER
-  pastix_wrapper.Solve(vec,prod);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(pastix_wrapper.Solve(vec,prod);)
 
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);

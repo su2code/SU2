@@ -901,10 +901,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   /*--- Compute properties needed for mass flow BCs. ---*/
 
   if (outlet) {
-    SU2_OMP_MASTER
-    GetOutlet_Properties(geometry, config, iMesh, Output);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(GetOutlet_Properties(geometry, config, iMesh, Output);)
   }
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy

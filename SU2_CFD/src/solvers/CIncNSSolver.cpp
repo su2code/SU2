@@ -107,12 +107,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    SU2_OMP_MASTER
-    SetTau_Wall_WF(geometry, solver_container, config);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTau_Wall_WF(geometry, solver_container, config);)
     // nijso: we have to set this as well??
     // seteddyviscfirstpoint
-    SU2_OMP_BARRIER
   }
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
@@ -273,10 +270,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   END_SU2_OMP_FOR
 
   /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-  SU2_OMP_MASTER
-  GetStreamwise_Periodic_Properties(geometry, config, iMesh);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(GetStreamwise_Periodic_Properties(geometry, config, iMesh);)
 }
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
@@ -843,8 +837,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
     SU2_OMP_ATOMIC
     globalCounter2 += smallYPlusCounter;
 
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
@@ -858,7 +851,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
                << " points, for which the wall model is not active." << endl;
       }
     }
-    END_SU2_OMP_MASTER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

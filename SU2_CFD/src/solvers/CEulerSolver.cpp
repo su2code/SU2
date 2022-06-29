@@ -5669,8 +5669,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
         }
       }
 
-      SU2_OMP_BARRIER
-      SU2_OMP_MASTER
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
 #ifdef HAVE_MPI
         su2double MyRe_inf = cktemp_inf.real(); su2double Re_inf = 0.0;
@@ -5713,7 +5712,7 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
             }
           }
         }
-      } END_SU2_OMP_MASTER
+      } END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
   }
 

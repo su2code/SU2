@@ -481,7 +481,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
        (config->GetInnerIter() == 1));
   if (!write_heads) return;
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   /*--- Check if there actually is an exact solution for this
         verification case, if computed at all. ---*/
@@ -524,8 +524,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
   }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 template <class V, ENUM_REGIME R>
@@ -581,12 +580,11 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   CompleteImplicitIteration(geometry, nullptr, config);
 }
@@ -788,7 +786,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
     if (nVar_Restart == 0) nVar_Restart = nVar;
 
@@ -893,8 +891,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
                      string("This can be caused by empty lines at the end of the file."), CURRENT_FUNCTION);
     }
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Update the geometry for flows on deforming meshes. ---*/
 
@@ -971,7 +968,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   }
 
   /*--- Go back to single threaded execution. ---*/
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
   /*--- Delete the class memory that is used to load the restart. ---*/
 
@@ -980,8 +977,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     delete [] Restart_Data;
     Restart_Data = nullptr;
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 template <class V, ENUM_REGIME R>
