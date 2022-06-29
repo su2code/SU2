@@ -61,11 +61,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   template<class... Ts>
   static void ompMasterAssignBarrier(Ts&&... lhsRhsPairs) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    recursiveAssign(lhsRhsPairs...);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(recursiveAssign(lhsRhsPairs...);)
   }
 
   su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
@@ -559,16 +555,15 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_OMP_CRITICAL
       Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
         SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
         Global_Delta_UnstTimeND = glbDtND;
 
         config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
 
     /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/

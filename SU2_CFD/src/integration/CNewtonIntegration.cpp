@@ -162,15 +162,13 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 
   atomicAdd(rmsSol_loc, rmsSol);
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
     su2double t = rmsSol;
     SU2_MPI::Allreduce(&t, &rmsSol, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     finDiffStep = finDiffStepND * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
-
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,

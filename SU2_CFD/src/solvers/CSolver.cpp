@@ -1927,9 +1927,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         Avg_CFL_Local += myCFLSum;
       }
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       { /* MPI reduction. */
         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
         SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
@@ -1937,8 +1936,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
 
   }

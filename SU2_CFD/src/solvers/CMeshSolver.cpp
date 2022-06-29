@@ -238,17 +238,15 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     ElemCounter += elCount;
   }
   END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     elCount = ElemCounter; maxVol = MaxVolume; minVol = MinVolume;
     SU2_MPI::Allreduce(&elCount, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Volume from 0 to 1 ---*/
 
@@ -375,17 +373,15 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
       MinDistance = min(MinDistance, MinDistance_Local);
     }
     END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       MaxDistance_Local = MaxDistance;
       MinDistance_Local = MinDistance;
       SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Normalize distance from 0 to 1 ---*/

@@ -343,8 +343,8 @@ CEulerSolver::~CEulerSolver(void) {
 
 void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
 
   if (config->Low_Mach_Correction())
     SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
@@ -359,8 +359,7 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
                    "support vectorization.", CURRENT_FUNCTION);
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
@@ -1499,9 +1498,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
-  SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
     if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
@@ -1528,8 +1527,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Artificial dissipation ---*/
 
@@ -1927,16 +1925,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Add counter results for all threads. ---*/
     SU2_OMP_ATOMIC
     ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

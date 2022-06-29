@@ -214,8 +214,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -227,8 +227,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
       cg_ready = true;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
@@ -358,8 +357,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*--- Allocate if not allocated yet ---*/
 
   if (W.size() <= m || (flexible && Z.size() <= m)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       W.resize(m+1);
       for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       if (flexible) {
@@ -367,8 +366,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
         for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       }
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Define various arrays. In parallel, each thread of each rank has and works
@@ -549,8 +547,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -564,8 +562,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       bcg_ready = true;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
@@ -715,8 +712,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -727,8 +724,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
       smooth_ready = true;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Compute the initial residual and check if the system is already solved (if in COMM_FULL mode). ---*/
@@ -972,9 +968,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     /*--- Start recording if it was stopped for the linear solver ---*/
 #ifdef CODI_REVERSE_TYPE
     AD::StartRecording();
-    SU2_OMP_BARRIER
 
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
       AD::FuncHelper->addUserData(&LinSysRes);
       AD::FuncHelper->addUserData(&LinSysSol);
@@ -983,8 +979,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       AD::FuncHelper->addUserData(config);
       AD::FuncHelper->addUserData(this);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
     SU2_OMP_BARRIER

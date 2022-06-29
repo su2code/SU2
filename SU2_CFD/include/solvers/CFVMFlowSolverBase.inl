@@ -665,16 +665,15 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     }
     END_SU2_OMP_CRITICAL
 
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       su2double MyOmega_Max = Omega_Max;
       su2double MyStrainMag_Max = StrainMag_Max;
 
       SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

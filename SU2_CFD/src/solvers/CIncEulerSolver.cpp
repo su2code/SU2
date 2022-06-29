@@ -875,15 +875,13 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Artificial dissipation ---*/
@@ -1314,16 +1312,15 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Add counter results for all threads. ---*/
     SU2_OMP_ATOMIC
     ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }
@@ -1904,16 +1901,14 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
     MaxVel2 = max(MaxVel2, maxVel2);
     END_SU2_OMP_CRITICAL
 
-    SU2_OMP_BARRIER
-
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       maxVel2 = MaxVel2;
       SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
       config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Allow an override if user supplies a large epsilon^2. ---*/

@@ -566,8 +566,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     }
   }
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
     auto local = Sens_Geo;
     SU2_MPI::Allreduce(local.data(), Sens_Geo.data(), Sens_Geo.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
@@ -577,9 +577,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
       Total_Sens_Geo += x;
     }
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
-
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
