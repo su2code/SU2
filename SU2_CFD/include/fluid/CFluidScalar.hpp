@@ -89,7 +89,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config);
+  void SetLaminarViscosityModel(const CConfig* config) override;
 
   /*!
    * \brief Set thermal conductivity model.
