@@ -60,25 +60,25 @@ class CFluidScalar final : public CFluidModel {
    * \brief Convert mass fractions to mole fractions.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  std::vector<su2double>& massToMoleFractions(const su2double* val_scalars);
+  std::vector<su2double>& MassToMoleFractions(const su2double* val_scalars);
 
   /*!
    * \brief Wilke mixing law for mixture viscosity.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  su2double wilkeViscosity(const su2double* val_scalars);
+  su2double WilkeViscosity(const su2double* val_scalars);
 
   /*!
    * \brief Davidson mixing law for mixture viscosity.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  su2double davidsonViscosity(const su2double* val_scalars);
+  su2double DavidsonViscosity(const su2double* val_scalars);
 
   /*!
    * \brief Wilke mixing law for mixture thermal conductivity.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  su2double wilkeConductivity(const su2double* val_scalars); 
+  su2double WilkeConductivity(const su2double* val_scalars); 
 
  public:
   /*!
@@ -89,7 +89,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config) override;
+  void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set thermal conductivity model.

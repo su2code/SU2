@@ -33,6 +33,7 @@
 #include <iostream>
 #include <numeric>
 #include <vector>
+#include <array>
 
 #include "../../include/fluid/CConstantConductivity.hpp"
 #include "../../include/fluid/CConstantConductivityRANS.hpp"
@@ -59,8 +60,8 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
   }
 
-  wilke = false;
-  davidson = true;
+  wilke = (config->GetKind_MixingViscosityModel()==MIXINGVISCOSITYMODEL::WILKE);
+  davidson = (config->GetKind_MixingViscosityModel()==MIXINGVISCOSITYMODEL::DAVIDSON);
 
   Pressure_Thermodynamic = value_pressure_operating;
   Gas_Constant = val_gas_constant;
@@ -139,7 +140,7 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
   }
 }
 
-std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double* val_scalars) {
+std::vector<su2double>& CFluidScalar::MassToMoleFractions(const su2double* val_scalars) {
   su2double mixtureMolarMass{0.0};
   su2double val_scalars_sum{0.0};
 
@@ -154,13 +155,13 @@ std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double* val_s
   }
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    moleFractions.at(iVar) = (massFractions[iVar] / molarMasses[iVar]) / mixtureMolarMass;
+    moleFractions[iVar] = (massFractions[iVar] / molarMasses[iVar]) / mixtureMolarMass;
   }
 
   return moleFractions;
 }
 
-su2double CFluidScalar::wilkeViscosity(const su2double* val_scalars) {
+su2double CFluidScalar::WilkeViscosity(const su2double* val_scalars) {
   std::vector<su2double> phi;
   std::vector<su2double> wilkeNumerator;
   std::vector<su2double> wilkeDenumeratorSum;
@@ -172,7 +173,7 @@ su2double CFluidScalar::wilkeViscosity(const su2double* val_scalars) {
   /* Fill laminarViscosity with n_species_mixture viscosity values. */
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
-    laminarViscosity.at(iVar) = LaminarViscosityPointers[iVar]->GetViscosity();
+    laminarViscosity[iVar] = LaminarViscosityPointers[iVar]->GetViscosity();
   }
 
   for (int i = 0; i < n_species_mixture; i++) {
@@ -191,7 +192,7 @@ su2double CFluidScalar::wilkeViscosity(const su2double* val_scalars) {
   return viscosityMixture;
 }
 
-su2double CFluidScalar::davidsonViscosity(const su2double* val_scalars) {
+su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
   su2double viscosityMixture = 0.0;
   su2double fluidity = 0.0;
   su2double E = 0.0;
@@ -202,7 +203,7 @@ su2double CFluidScalar::davidsonViscosity(const su2double* val_scalars) {
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
-    laminarViscosity.at(iVar) = LaminarViscosityPointers[iVar]->GetViscosity();
+    laminarViscosity[iVar] = LaminarViscosityPointers[iVar]->GetViscosity();
   }
 
   for (int i = 0; i < n_species_mixture; i++) {
@@ -224,7 +225,7 @@ su2double CFluidScalar::davidsonViscosity(const su2double* val_scalars) {
   return viscosityMixture = 1 / fluidity;
 }
 
-su2double CFluidScalar::wilkeConductivity(const su2double* val_scalars) {
+su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
   std::vector<su2double> phi;
   std::vector<su2double> wilkeNumerator;
   std::vector<su2double> wilkeDenumeratorSum;
@@ -235,7 +236,7 @@ su2double CFluidScalar::wilkeConductivity(const su2double* val_scalars) {
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
-    laminarThermalConductivity.at(iVar) = ThermalConductivityPointers[iVar]->GetConductivity();
+    laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
   }
 
   for (int i = 0; i < n_species_mixture; i++) {
@@ -254,16 +255,16 @@ su2double CFluidScalar::wilkeConductivity(const su2double* val_scalars) {
   return conductivityMixture;
 }
 
-void CFluidScalar::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
+void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
 
-  massToMoleFractions(val_scalars);
+  MassToMoleFractions(val_scalars);
 
   if (wilke) {
-    Mu = wilkeViscosity(val_scalars);
+    Mu = WilkeViscosity(val_scalars);
   } else if (davidson) {
-    Mu = davidsonViscosity(val_scalars);
+    Mu = DavidsonViscosity(val_scalars);
   }
 }

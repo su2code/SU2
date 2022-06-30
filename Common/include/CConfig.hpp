@@ -480,6 +480,7 @@ private:
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
+  MIXINGVISCOSITYMODEL Kind_MixingViscosityModel; /*!< \brief Kind of the mixing Viscosity Model*/
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
@@ -3815,6 +3816,12 @@ public:
    * \return Viscosity model.
    */
   VISCOSITYMODEL GetKind_ViscosityModel() const { return Kind_ViscosityModel; }
+
+  /*!
+   * \brief Get the value of the mixing model for viscosity.
+   * \return Mixing Viscosity model.
+   */
+  MIXINGVISCOSITYMODEL GetKind_MixingViscosityModel() const { return Kind_MixingViscosityModel; }
 
   /*!
    * \brief Get the value of the thermal conductivity model.

@@ -1217,6 +1217,10 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("MU_T_REF", nMu_Temperature_Ref, Mu_Temperature_Ref);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
   addDoubleListOption("SUTHERLAND_CONSTANT", nMu_S, Mu_S);
+  
+  /*--- Options related to Viscosity Model ---*/
+  /*!\brief MIXINGVISCOSITY_MODEL \n DESCRIPTION: Mixing model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: DAVIDSON \ingroup Config*/
+  addEnumOption("MIXING_MODEL_VISCOSITY", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -3752,12 +3756,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
 
-  if (Molecular_Weight == nullptr) {
-    Molecular_Weight = new su2double[1];
-    Molecular_Weight[0] = Molecular_Weight_Default;
-    nMolecular_Weight = 1;
-  }
-
   auto SetDefaultIfEmpty = [](su2double* array, unsigned short& size, const su2double& default_val) {
     if (array == nullptr) {
       array = new su2double[1];
@@ -3765,37 +3763,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       size = 1;
     }
   };
+
   SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
+  SetDefaultIfEmpty(Molecular_Weight, nMolecular_Weight, Molecular_Weight_Default);
+  SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
+  SetDefaultIfEmpty(Mu_Temperature_Ref, nMu_Temperature_Ref, Mu_Temperature_Ref_Default);
+  SetDefaultIfEmpty(Mu_S, nMu_S, Mu_S_Default);
+  SetDefaultIfEmpty(Thermal_Conductivity_Constant, nThermal_Conductivity_Constant,
+                    Thermal_Conductivity_Constant_Default);
+  SetDefaultIfEmpty(Prandtl_Lam, nPrandtl_Lam, Prandtl_Lam_Default);
+  SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
 
-  if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
-    Mu_Ref = new su2double[1];
-    Mu_Temperature_Ref = new su2double[1];
-    Mu_S = new su2double[1];
-    Mu_Ref[0] = Mu_Ref_Default;
-    Mu_Temperature_Ref[0] = Mu_Temperature_Ref_Default;
-    Mu_S[0] = Mu_S_Default;
-    nMu_Ref = 1;
-    nMu_Temperature_Ref = 1;
-    nMu_S = 1;
-  }
-
-  if (Thermal_Conductivity_Constant == nullptr) {
-    Thermal_Conductivity_Constant = new su2double[1];
-    Thermal_Conductivity_Constant[0] = Thermal_Conductivity_Constant_Default;
-    nThermal_Conductivity_Constant = 1;
-  }
-  
-  if (Prandtl_Lam == nullptr) {
-    Prandtl_Lam = new su2double[1];
-    Prandtl_Lam[0] = Prandtl_Lam_Default;
-    nPrandtl_Lam = 1;
-  }
-
-  if (Prandtl_Turb == nullptr) {
-    Prandtl_Turb = new su2double[1];
-    Prandtl_Turb[0] = Prandtl_Turb_Default;
-    nPrandtl_Turb = 1;
-  }
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
   if (Kind_FluidModel == FLUID_MIXTURE) {
