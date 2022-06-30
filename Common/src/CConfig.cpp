@@ -3756,7 +3756,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
 
-  auto SetDefaultIfEmpty = [](su2double* array, unsigned short& size, const su2double& default_val) {
+  auto SetDefaultIfEmpty = [](su2double*& array, unsigned short& size, const su2double& default_val) {
     if (array == nullptr) {
       array = new su2double[1];
       array[0] = default_val;
@@ -3764,11 +3764,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   };
 
-  SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
   SetDefaultIfEmpty(Molecular_Weight, nMolecular_Weight, Molecular_Weight_Default);
-  SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
-  SetDefaultIfEmpty(Mu_Temperature_Ref, nMu_Temperature_Ref, Mu_Temperature_Ref_Default);
-  SetDefaultIfEmpty(Mu_S, nMu_S, Mu_S_Default);
+  if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
+    SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
+    SetDefaultIfEmpty(Mu_Temperature_Ref, nMu_Temperature_Ref, Mu_Temperature_Ref_Default);
+    SetDefaultIfEmpty(Mu_S, nMu_S, Mu_S_Default);
+  }
   SetDefaultIfEmpty(Thermal_Conductivity_Constant, nThermal_Conductivity_Constant,
                     Thermal_Conductivity_Constant_Default);
   SetDefaultIfEmpty(Prandtl_Lam, nPrandtl_Lam, Prandtl_Lam_Default);
@@ -3776,184 +3777,196 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
-  if (Kind_FluidModel == FLUID_MIXTURE) {
-    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
-     equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
-    if (nMolecular_Weight != nSpecies_Init + 1) {
-      SU2_MPI::Error(
-          "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
-          "to be equal to the number of entries of SPECIES_INIT + 1",
-          CURRENT_FUNCTION);
-    }
-    /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
-     VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density and
-     it will remain constant through the complete domain. --- */
-    if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-      SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
-    }
-
-    switch (Kind_ViscosityModel) {
-      case VISCOSITYMODEL::CONSTANT:
-        if (nMu_Constant != nSpecies_Init + 1) {
-          SU2_MPI::Error(
-              "The use of FLUID_MIXTURE requires the number of entries for MU_CONSTANT,\n"
-              "to be equal to the number of entries of SPECIES_INIT + 1",
-              CURRENT_FUNCTION);
-        }
-        break;
-      case VISCOSITYMODEL::SUTHERLAND:
-        if ((nMu_Ref != nSpecies_Init + 1) || (nMu_Temperature_Ref != nSpecies_Init + 1) ||
-            (nMu_S != nSpecies_Init + 1)) {
-          SU2_MPI::Error(
-              "The use of FLUID_MIXTURE requires the number of entries for MU_REF, MU_T_REF and "
-              "SUTHERLAND_CONSTANT,\n"
-              "to be equal to the number of entries of SPECIES_INIT + 1",
-              CURRENT_FUNCTION);
-        }
-        break;
-      default:
-        if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
-        break;
-    }
-
-    switch (Kind_ConductivityModel) {
-      case CONDUCTIVITYMODEL::CONSTANT:
-        if ((Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) && (Kind_Turb_Model != TURB_MODEL::NONE)) {
-          if ((nThermal_Conductivity_Constant != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
-            SU2_MPI::Error(
-                "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and "
-                "PRANDTL_TURB,\n"
-                "to be equal to the number of entries of SPECIES_INIT + 1",
-                CURRENT_FUNCTION);
-          }
-        } else {
-          if (nThermal_Conductivity_Constant != nSpecies_Init + 1) {
-            SU2_MPI::Error(
-                "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
-                "to be equal to the number of entries of SPECIES_INIT + 1",
-                CURRENT_FUNCTION);
-          }
-        }
-        break;
-      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
-        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
-          if ((nPrandtl_Lam != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
-            SU2_MPI::Error(
-                "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
-                "to be equal to the number of entries of SPECIES_INIT + 1",
-                CURRENT_FUNCTION);
-          }
-        } else {
-          if (nPrandtl_Lam != nSpecies_Init + 1) {
-            SU2_MPI::Error(
-                "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM,\n"
-                "to be equal to the number of entries of SPECIES_INIT + 1",
-                CURRENT_FUNCTION);
-          }
-        }
-        break;
-      default:
-        if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
-        break;
-    }
-  }
-
-  /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
-
-  if (SystemMeasurements == US) {
     if (Kind_FluidModel == FLUID_MIXTURE) {
-      /* Correct the viscosities, if they contain the default SI values. */
-      for (unsigned short iVar = 0; iVar < nSpecies_Init + 1; iVar++) {
-        if (fabs(Mu_Constant[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
-        if (fabs(Mu_Ref[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Ref[iVar] /= 47.88025898;
+      /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
+       equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
+      if (nMolecular_Weight != nSpecies_Init + 1) {
+        SU2_MPI::Error(
+            "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+            "to be equal to the number of entries of SPECIES_INIT + 1",
+            CURRENT_FUNCTION);
+      }
+      /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
+       VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
+       and it will remain constant through the complete domain. --- */
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+        SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+
+      switch (Kind_ViscosityModel) {
+        case VISCOSITYMODEL::CONSTANT:
+          if (nMu_Constant != nSpecies_Init + 1) {
+            SU2_MPI::Error(
+                "The use of FLUID_MIXTURE requires the number of entries for MU_CONSTANT,\n"
+                "to be equal to the number of entries of SPECIES_INIT + 1",
+                CURRENT_FUNCTION);
+          }
+          break;
+        case VISCOSITYMODEL::SUTHERLAND:
+          if ((nMu_Ref != nSpecies_Init + 1) || (nMu_Temperature_Ref != nSpecies_Init + 1) ||
+              (nMu_S != nSpecies_Init + 1)) {
+            SU2_MPI::Error(
+                "The use of FLUID_MIXTURE requires the number of entries for MU_REF, MU_T_REF and "
+                "SUTHERLAND_CONSTANT,\n"
+                "to be equal to the number of entries of SPECIES_INIT + 1",
+                CURRENT_FUNCTION);
+          }
+          break;
+        default:
+          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+          break;
+      }
+
+      switch (Kind_ConductivityModel) {
+        case CONDUCTIVITYMODEL::CONSTANT:
+          if ((Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) &&
+              (Kind_Turb_Model != TURB_MODEL::NONE)) {
+            if ((nThermal_Conductivity_Constant != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
+              SU2_MPI::Error(
+                  "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and "
+                  "PRANDTL_TURB,\n"
+                  "to be equal to the number of entries of SPECIES_INIT + 1",
+                  CURRENT_FUNCTION);
+            }
+          } else {
+            if (nThermal_Conductivity_Constant != nSpecies_Init + 1) {
+              SU2_MPI::Error(
+                  "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
+                  "to be equal to the number of entries of SPECIES_INIT + 1",
+                  CURRENT_FUNCTION);
+            }
+          }
+          break;
+        case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+          if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+            if ((nPrandtl_Lam != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
+              SU2_MPI::Error(
+                  "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
+                  "to be equal to the number of entries of SPECIES_INIT + 1",
+                  CURRENT_FUNCTION);
+            }
+          } else {
+            if (nPrandtl_Lam != nSpecies_Init + 1) {
+              SU2_MPI::Error(
+                  "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM,\n"
+                  "to be equal to the number of entries of SPECIES_INIT + 1",
+                  CURRENT_FUNCTION);
+            }
+          }
+          break;
+        default:
+          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
+          break;
+      }
+    }
+
+    /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
+
+    if (SystemMeasurements == US) {
+      if (Kind_FluidModel == FLUID_MIXTURE) {
+        /* Correct the viscosities, if they contain the default SI values. */
+        for (unsigned short iVar = 0; iVar < nSpecies_Init + 1; iVar++) {
+          if (fabs(Mu_Constant[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
+          if (fabs(Mu_Ref[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Ref[iVar] /= 47.88025898;
+
+          /* Correct the values with temperature dimension, if they contain the default SI values. */
+          if (fabs(Mu_Temperature_Ref[iVar] - Mu_Temperature_Ref_Default) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
+          if (fabs(Mu_S[iVar] - Mu_S_Default) < 1.0E-8) Mu_S[iVar] *= 1.8;
+
+          /* Correct the thermal conductivity, if it contains the default SI value. */
+          if (fabs(Thermal_Conductivity_Constant[iVar] - Thermal_Conductivity_Constant_Default) < 1.0E-10)
+            Thermal_Conductivity_Constant[iVar] *= 0.577789317;
+        }
+      } else {
+        /* Correct the viscosities, if they contain the default SI values. */
+        if (fabs(*Mu_Constant - 1.716E-5) < 1.0E-15) *Mu_Constant /= 47.88025898;
+        if (fabs(*Mu_Ref - 1.716E-5) < 1.0E-15) *Mu_Ref /= 47.88025898;
 
         /* Correct the values with temperature dimension, if they contain the default SI values. */
-        if (fabs(Mu_Temperature_Ref[iVar] - Mu_Temperature_Ref_Default) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
-        if (fabs(Mu_S[iVar] - Mu_S_Default) < 1.0E-8) Mu_S[iVar] *= 1.8;
+        if (fabs(*Mu_Temperature_Ref - 273.15) < 1.0E-8) *Mu_Temperature_Ref *= 1.8;
+        if (fabs(*Mu_S - 110.4) < 1.0E-8) *Mu_S *= 1.8;
 
         /* Correct the thermal conductivity, if it contains the default SI value. */
-        if (fabs(Thermal_Conductivity_Constant[iVar] - Thermal_Conductivity_Constant_Default) < 1.0E-10)
-          Thermal_Conductivity_Constant[iVar] *= 0.577789317;
-      }
-    } else {
-      /* Correct the viscosities, if they contain the default SI values. */
-      if (fabs(*Mu_Constant - 1.716E-5) < 1.0E-15) *Mu_Constant /= 47.88025898;
-      if (fabs(*Mu_Ref - 1.716E-5) < 1.0E-15) *Mu_Ref /= 47.88025898;
-
-      /* Correct the values with temperature dimension, if they contain the default SI values. */
-      if (fabs(*Mu_Temperature_Ref - 273.15) < 1.0E-8) *Mu_Temperature_Ref *= 1.8;
-      if (fabs(*Mu_S - 110.4) < 1.0E-8) *Mu_S *= 1.8;
-      
-      /* Correct the thermal conductivity, if it contains the default SI value. */
-      if (fabs(*Thermal_Conductivity_Constant - 0.0257) < 1.0E-10) *Thermal_Conductivity_Constant *= 0.577789317;
-    } 
-  }
-
-  /*--- Check for Measurement System ---*/
-
-  if (SystemMeasurements == US && !standard_air) {
-    SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
-  }
-
-  if (Kind_FluidModel == SU2_NONEQ && Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE ) {
-    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
-  }
-
-  if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
-    SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.", CURRENT_FUNCTION);
-  }
-
-  if (!ideal_gas && !nemo) {
-    if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
-    }
-  }
-
-  if (nemo){
-    if (Kind_Upwind_Flow == AUSMPWPLUS)
-      SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
-  }
-
-  if(GetBoolTurbomachinery()){
-    nBlades = new su2double[nZone];
-    FreeStreamTurboNormal= new su2double[3];
-  }
-
-  /*--- Check if Giles are used with turbo markers ---*/
-
-  if (nMarker_Giles > 0 && !GetBoolTurbomachinery()){
-    SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
-  }
-
-  /*--- Check for Boundary condition available for NICFD ---*/
-
-  if ((!ideal_gas) && (!noneq_gas)) {
-    if (nMarker_Inlet != 0) {
-      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
-    }
-    if (nMarker_Outlet != 0) {
-      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
-    }
-
-    if (nMarker_FarField != 0) {
-      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
-    }
-
-  }
-
-  /*--- Check for Boundary condition available for NICF ---*/
-
-  if (ideal_gas && (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS)) {
-    if (SystemMeasurements == US && standard_air) {
-      if (Kind_ViscosityModel != VISCOSITYMODEL::SUTHERLAND) {
-        SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
+        if (fabs(*Thermal_Conductivity_Constant - 0.0257) < 1.0E-10) *Thermal_Conductivity_Constant *= 0.577789317;
       }
     }
-    if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL ) {
-      SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS", CURRENT_FUNCTION);
+
+    /*--- Check for Measurement System ---*/
+
+    if (SystemMeasurements == US && !standard_air) {
+      SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
     }
 
-  }
+    if (Kind_FluidModel == SU2_NONEQ && Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE) {
+      SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver using SU2TClib. Use Mutation++ instead.",
+                     CURRENT_FUNCTION);
+    }
+
+    if (Kind_FluidModel == MUTATIONPP &&
+        (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
+      SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.",
+                     CURRENT_FUNCTION);
+    }
+
+    if (!ideal_gas && !nemo) {
+      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
+        SU2_MPI::Error(
+            "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids",
+            CURRENT_FUNCTION);
+      }
+    }
+
+    if (nemo) {
+      if (Kind_Upwind_Flow == AUSMPWPLUS)
+        SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+    }
+
+    if (GetBoolTurbomachinery()) {
+      nBlades = new su2double[nZone];
+      FreeStreamTurboNormal = new su2double[3];
+    }
+
+    /*--- Check if Giles are used with turbo markers ---*/
+
+    if (nMarker_Giles > 0 && !GetBoolTurbomachinery()) {
+      SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
+    }
+
+    /*--- Check for Boundary condition available for NICFD ---*/
+
+    if ((!ideal_gas) && (!noneq_gas)) {
+      if (nMarker_Inlet != 0) {
+        SU2_MPI::Error(
+            "Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible "
+            "Fluids ",
+            CURRENT_FUNCTION);
+      }
+      if (nMarker_Outlet != 0) {
+        SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ",
+                       CURRENT_FUNCTION);
+      }
+
+      if (nMarker_FarField != 0) {
+        SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ",
+                       CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Check for Boundary condition available for NICF ---*/
+
+    if (ideal_gas && (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
+                      Kind_Solver != MAIN_SOLVER::INC_RANS)) {
+      if (SystemMeasurements == US && standard_air) {
+        if (Kind_ViscosityModel != VISCOSITYMODEL::SUTHERLAND) {
+          SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
+        }
+      }
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL) {
+        SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS",
+                       CURRENT_FUNCTION);
+      }
+    }
     /*--- Check for Boundary condition option agreement ---*/
   if (Kind_InitOption == REYNOLDS){
     if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::RANS) && Reynolds <=0){
@@ -5425,8 +5438,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
-
-}
+  }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
