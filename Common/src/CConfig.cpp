@@ -3758,11 +3758,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nMolecular_Weight = 1;
   }
 
-  if (Mu_Constant == nullptr) {
-    Mu_Constant = new su2double[1];
-    Mu_Constant[0] = Mu_Constant_Default;
-    nMu_Constant = 1;
-  }
+  auto SetDefaultIfEmpty = [](su2double* array, unsigned short& size, const su2double& default_val) {
+    if (array == nullptr) {
+      array = new su2double[1];
+      array[0] = default_val;
+      size = 1;
+    }
+  };
+  SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
 
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
     Mu_Ref = new su2double[1];
