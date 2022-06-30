@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
  * \version 7.3.1 "Blackbird"
