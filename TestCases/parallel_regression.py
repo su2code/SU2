@@ -119,7 +119,7 @@ def main():
     super_cat.cfg_dir   = "nonequilibrium/viscous"
     super_cat.cfg_file  = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406|, 0.250857, 3.2457e+04]
+    super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2457e+04]
     super_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
     super_cat.timeout   = 1600
     super_cat.new_output = True
@@ -131,7 +131,6 @@ def main():
     partial_cat.cfg_dir   = "nonequilibrium/viscous"
     partial_cat.cfg_file  = "partial_cat.cfg"
     partial_cat.test_iter = 10
-    partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, -1.742750, -2.171994, 1.806281, -2.813924, 0.0]
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
     partial_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
     partial_cat.timeout   = 1600
