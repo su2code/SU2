@@ -2615,11 +2615,28 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       } else {
 
+        const unsigned short nSpecies = config->GetnSpecies();
+
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
+        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+        const auto& PrimVar                 = nodes->GetPrimitive(iPoint);
+        const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
+        const auto& hs                      = nodes->GetEnthalpys(iPoint);
 
-        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn) * RefHeatFlux;
+        su2double rho                       = PrimVar[nSpecies+nDim+3];
+
+        /*--- Compute enthalpy transport to surface due to mass diffusion ---*/
+        su2double sumJhs = 0.0;
+        for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            su2double dYdn = 1.0/rho*(Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies]*Grad_PrimVar[nSpecies+nDim+3][iDim]/rho);
+            sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
+          }
+        }
+
+        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn + sumJhs) * RefHeatFlux;
       }
 
       /*--- Note that heat is computed at the
