@@ -52,7 +52,7 @@ class CFluidScalar final : public CFluidModel {
   std::vector<su2double> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
   std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
 
-  static const int ARRAYSIZE = 100;
+  static constexpr int ARRAYSIZE = 16;
   std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
   std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
 
