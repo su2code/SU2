@@ -22,7 +22,16 @@ if build_machine.system() != 'windows'
     default_warning_flags += ['-Wno-empty-body']
   endif
   default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-deprecated-declarations']
+                            '-Wno-deprecated-declarations',
+                            '-Wno-error=cast-function-type',
+                            '-Wno-cast-function-type',
+                            '-Wno-error=stringop-truncation',
+                            '-Wno-stringop-truncation',
+                            '-Wno-error=missing-field-initializers',
+                            '-Wno-missing-field-initializers',
+                            '-Wno-error=class-memaccess',
+                            '-Wno-class-memaccess'
+  ]
 
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
