@@ -471,7 +471,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-        fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);        
         break;
 
       case FLUID_MIXTURE:
@@ -490,7 +490,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
-
+ 
     }
 
     if (viscous) {

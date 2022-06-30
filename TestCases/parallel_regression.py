@@ -59,7 +59,8 @@ def main():
     ionized.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     ionized.cfg_file  = "weakly_ionized.cfg"
     ionized.test_iter = 10
-    ionized.test_vals = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.013626, -32.000000, -5.174887, 0.000000, 0.000000]
+    ionized.test_vals         = [-29.806157, -11.130797, -11.337264, -17.235059, -17.578729, -15.190274, -25.013626, -32.000000, -5.174887, 0.000000, 0.000000]  
+    ionized.test_vals_aarch64 = [-29.816386, -10.729986, -11.720016, -17.484469, -18.237891, -15.241605, -24.956918, -32.000000, -5.727244, 0.000000, 0.000000]
     ionized.su2_exec  = "mpirun -n 2 SU2_CFD"
     ionized.timeout   = 1600
     ionized.new_output = True
@@ -83,7 +84,8 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge.test_vals         = [-1.042842, -1.567605, -18.300680, -18.628055, -18.574084, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge.test_vals_aarch64 = [-1.042842, -1.567605, -18.300025, -18.627409, -18.573428, 2.275192, 1.879772, 5.319421, 0.873699]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -95,7 +97,8 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/viscous"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374]
+    visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374]
+    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, -1.928714, -2.247317, 1.255761, -3.208360]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -203,7 +206,8 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals = [-1.217981, 4.256386, 0.009084, 0.016823]
+    polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
+    polar_naca0012.test_vals_aarch64 = [-2.365216, 3.051488, 0.010353, 0.008594]
     polar_naca0012.su2_exec  = "compute_polar.py -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
@@ -295,7 +299,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.492859, -7.672756, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.492859, -7.672756, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.492934, -7.673424, -0.000000, 2.085796]
     poiseuille_profile.su2_exec  = "parallel_computation.py -f"
     poiseuille_profile.timeout   = 1600
     poiseuille_profile.tol       = 0.00001
@@ -732,7 +737,8 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [-1.094542, 3.161741, 2.333560, 2.864805, 1.494301, 0.530135]
+    turbmod_sa_neg_rae2822.test_vals         = [-1.355605, 1.464131, 1.314243, -1.997959, 1.135210, 0.398906]
+    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -933,7 +939,8 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.976246, 1.141479, 0.459999, -0.078853]
+    turb_naca0012_1c.test_vals         = [-4.976246, 1.141479, 0.459999, -0.078853]
+    turb_naca0012_1c.test_vals_aarch64 = [-4.983548, 1.138789, 0.456805, -0.079667]
     turb_naca0012_1c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_1c.timeout   = 1600
     turb_naca0012_1c.tol       = 0.00001
@@ -944,7 +951,8 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.483311, 0.968826, 0.303278, -0.113945]
+    turb_naca0012_2c.test_vals         = [-5.483311, 0.968826, 0.303278, -0.113945]
+    turb_naca0012_2c.test_vals_aarch64 = [-5.483337, 0.968818, 0.304518, -0.113538]
     turb_naca0012_2c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_2c.timeout   = 1600
     turb_naca0012_2c.tol       = 0.00001
@@ -966,7 +974,8 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.128788, 1.077306, 0.584228, -0.048152]
+    turb_naca0012_p1c1.test_vals         = [-5.128788, 1.077306, 0.584228, -0.048152]
+    turb_naca0012_p1c1.test_vals_aarch64 = [-5.129768, 1.077086, 0.585381, -0.047974]
     turb_naca0012_p1c1.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c1.timeout   = 1600
     turb_naca0012_p1c1.tol       = 0.00001
@@ -977,7 +986,8 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.554534, 0.943774, 0.400400, -0.095514]
+    turb_naca0012_p1c2.test_vals         = [-5.554534, 0.943774, 0.400400, -0.095514]
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554700, 0.943679, 0.399796, -0.095762]
     turb_naca0012_p1c2.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c2.timeout   = 1600
     turb_naca0012_p1c2.tol       = 0.00001
@@ -1236,7 +1246,8 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
+    channel_2D.test_vals         = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
+    channel_2D.test_vals_aarch64 = [2.000000, 0.000000, 0.398036, 0.352783, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1249,7 +1260,8 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
+    channel_3D.test_vals         = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
+    channel_3D.test_vals_aarch64 = [2.000000, 0.000000, 0.620182, 0.505302, 0.415257]
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -1341,7 +1353,8 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-8.396797, -8.162206, -8.156102, 64095.0] #last 4 columns
+    statbeam3d.test_vals         = [-8.396797, -8.162206, -8.156102, 64095.0] #last 4 columns
+    statbeam3d.test_vals_aarch64 = [-8.396793, -8.162255, -8.156118, 64095.0] #last 4 columns
     statbeam3d.su2_exec  = "parallel_computation_fsi.py -f"
     statbeam3d.timeout   = 1600
     statbeam3d.tol       = 0.00001
@@ -1435,7 +1448,8 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals         = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
     solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
     solid_periodic_pins.timeout   = 1600
     solid_periodic_pins.tol       = 0.00001
@@ -1486,7 +1500,8 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-13.374306, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-13.374306, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-13.400623, -7.476945, -7.025285, -0.009675, 99.879812, 419.200000]
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
@@ -1666,7 +1681,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.new_output = True
     species2_primitiveVenturi_mixingmodel.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel)
-
+ 
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1697,7 +1712,8 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.test_vals =         [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10.000000, -4.585464, 8.000000, -5.193350]
     species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
     species_passive_val.timeout   = 1600
     species_passive_val.new_output = True
@@ -1906,7 +1922,8 @@ def main():
     fd_sp_pinArray_cht_2d_dp_hf.test_iter      = 100
     fd_sp_pinArray_cht_2d_dp_hf.su2_exec       = "finite_differences.py -z 2 -n 2 -f"
     fd_sp_pinArray_cht_2d_dp_hf.timeout        = 1600
-    fd_sp_pinArray_cht_2d_dp_hf.reference_file = "of_grad_findiff.csv.ref"
+    fd_sp_pinArray_cht_2d_dp_hf.reference_file         = "of_grad_findiff.csv.ref"
+    fd_sp_pinArray_cht_2d_dp_hf.reference_file_aarch64 = "of_grad_findiff_aarch64.csv.ref"
     fd_sp_pinArray_cht_2d_dp_hf.test_file      = "FINDIFF/of_grad_findiff.csv"
     fd_sp_pinArray_cht_2d_dp_hf.multizone      = True
 
