@@ -2615,17 +2615,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       } else {
 
-        const unsigned short nSpecies = config->GetnSpecies();
+        const auto nSpecies = config->GetnSpecies();
 
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-        const auto& PrimVar                 = nodes->GetPrimitive(iPoint);
-        const auto& Ds                      = nodes->GetDiffusionCoeff(iPoint);
-        const auto& hs                      = nodes->GetEnthalpys(iPoint);
+        const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+        const auto& PrimVar = nodes->GetPrimitive(iPoint);
+        const auto& Ds = nodes->GetDiffusionCoeff(iPoint);
+        const auto& hs = nodes->GetEnthalpys(iPoint);
 
-        su2double rho                       = PrimVar[nSpecies+nDim+3];
+        const su2double rho = PrimVar[nSpecies+nDim+3];
 
         /*--- Compute enthalpy transport to surface due to mass diffusion ---*/
         su2double sumJhs = 0.0;

@@ -111,7 +111,6 @@ private:
   unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
-  Catalytic,                /*!< \brief Flag to know if the code is solving a catalytic problem.*/
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
@@ -1172,7 +1171,6 @@ private:
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
-  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
@@ -6275,7 +6273,7 @@ public:
    * \brief Determines if problem has catalytic walls.
    * \return true if catalytic walls are present.
    */
-  bool GetCatalytic(void) const { return Catalytic; }
+  bool GetCatalytic(void) const { return nWall_Catalytic > 0; }
 
   /*!
    * \brief Provides the index of the solution in the container.

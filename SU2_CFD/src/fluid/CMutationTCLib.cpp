@@ -38,7 +38,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
-  CatRecombTable.resize(nSpecies,2) = int(0);
+  CatRecombTable.resize(nSpecies,2) = 0;
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
