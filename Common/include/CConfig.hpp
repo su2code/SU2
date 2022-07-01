@@ -1171,6 +1171,7 @@ private:
   iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
   nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
