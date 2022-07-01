@@ -1220,7 +1220,7 @@ void CConfig::SetConfig_Options() {
   
   /*--- Options related to Viscosity Model ---*/
   /*!\brief MIXINGVISCOSITY_MODEL \n DESCRIPTION: Mixing model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: DAVIDSON \ingroup Config*/
-  //addEnumOption("MIXING_MODEL_VISCOSITY", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
+  addEnumOption("MIXING_VISCOSITY_MODEL", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 

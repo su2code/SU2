@@ -161,12 +161,10 @@ std::vector<su2double>& CFluidScalar::MassToMoleFractions(const su2double* val_s
 }
 
 su2double CFluidScalar::WilkeViscosity(const su2double* val_scalars) {
-  std::vector<su2double> phi;
-  std::vector<su2double> wilkeNumerator;
-  std::vector<su2double> wilkeDenumeratorSum;
+  std::array<su2double,ARRAYSIZE> phi;
+  std::array<su2double,ARRAYSIZE> wilkeNumerator;
+  std::array<su2double,ARRAYSIZE> wilkeDenumeratorSum;
   su2double wilkeDenumerator = 0.0;
-  wilkeDenumeratorSum.clear();
-  wilkeNumerator.clear();
   su2double viscosityMixture = 0.0;
 
   /* Fill laminarViscosity with n_species_mixture viscosity values. */
@@ -177,15 +175,14 @@ su2double CFluidScalar::WilkeViscosity(const su2double* val_scalars) {
 
   for (int i = 0; i < n_species_mixture; i++) {
     for (int j = 0; j < n_species_mixture; j++) {
-      phi.push_back(
+      phi[j]=
           pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
-          sqrt(8 * (1 + molarMasses[i] / molarMasses[j])));
+          sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
       wilkeDenumerator += moleFractions[j] * phi[j];
     }
-    wilkeDenumeratorSum.push_back(wilkeDenumerator);
+    wilkeDenumeratorSum[i]=wilkeDenumerator;
     wilkeDenumerator = 0.0;
-    phi.clear();
-    wilkeNumerator.push_back(moleFractions[i] * laminarViscosity[i]);
+    wilkeNumerator[i]=moleFractions[i] * laminarViscosity[i];
     viscosityMixture += wilkeNumerator[i] / wilkeDenumeratorSum[i];
   }
   return viscosityMixture;
@@ -197,8 +194,7 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
   su2double E = 0.0;
   su2double mixtureFractionDenumerator = 0.0;
   const su2double A = 0.375;
-  std::vector<su2double> mixtureFractions;
-  mixtureFractions.clear();
+  std::array<su2double,ARRAYSIZE> mixtureFractions;
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
@@ -210,7 +206,7 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
   }
 
   for (int j = 0; j < n_species_mixture; j++) {
-    mixtureFractions.push_back((moleFractions[j] * sqrt(molarMasses[j])) / mixtureFractionDenumerator);
+    mixtureFractions[j]=(moleFractions[j] * sqrt(molarMasses[j])) / mixtureFractionDenumerator;
   }
 
   for (int i = 0; i < n_species_mixture; i++) {
