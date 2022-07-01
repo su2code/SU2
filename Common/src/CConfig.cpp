@@ -1220,7 +1220,7 @@ void CConfig::SetConfig_Options() {
   
   /*--- Options related to Viscosity Model ---*/
   /*!\brief MIXINGVISCOSITY_MODEL \n DESCRIPTION: Mixing model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: DAVIDSON \ingroup Config*/
-  addEnumOption("MIXING_MODEL_VISCOSITY", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
+  //addEnumOption("MIXING_MODEL_VISCOSITY", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -3765,6 +3765,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   };
 
   SetDefaultIfEmpty(Molecular_Weight, nMolecular_Weight, Molecular_Weight_Default);
+  SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
     SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
     SetDefaultIfEmpty(Mu_Temperature_Ref, nMu_Temperature_Ref, Mu_Temperature_Ref_Default);

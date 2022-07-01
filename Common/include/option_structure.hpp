@@ -679,11 +679,11 @@ static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
  * \brief Types of Mixing viscosity model
  */
 enum class MIXINGVISCOSITYMODEL {
-  WILKE, /*!< \brief Wilke mixing viscosity model. */
+  WILKE,    /*!< \brief Wilke mixing viscosity model. */
   DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
 };
 static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
-  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE)
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
   MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 

@@ -33,7 +33,6 @@
 #include <iostream>
 #include <numeric>
 #include <vector>
-#include <array>
 
 #include "../../include/fluid/CConstantConductivity.hpp"
 #include "../../include/fluid/CConstantConductivityRANS.hpp"
