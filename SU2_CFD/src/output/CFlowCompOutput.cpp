@@ -226,6 +226,16 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
 
   SetVolumeOutputFields_ScalarSolution(config);
+  
+  // DMD Solution variables
+  if (config->GetSave_DMD()) {
+    AddVolumeOutput("DENSITY_DMD",    "Density_DMD",    "SOLUTION", "Density");
+    AddVolumeOutput("MOMENTUM_DMD-X", "Momentum_DMD_x", "SOLUTION", "x-component of the momentum   vector");
+    AddVolumeOutput("MOMENTUM_DMD-Y", "Momentum_DMD_y", "SOLUTION", "y-component of the momentum   vector");
+    if (nDim == 3)
+      AddVolumeOutput("MOMENTUM_DMD-Z", "Momentum_DMD_z", "SOLUTION", "z-component of the momentum   vector");
+    AddVolumeOutput("ENERGY_DMD",     "Energy_DMD",     "SOLUTION", "Energy");
+  }
 
   // Grid velocity
   if (gridMovement){
@@ -303,6 +313,18 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 4));
   } else {
     SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 3));
+  }
+  
+  if ((config->GetSave_DMD()) && (solver[FLOW_SOL]->SolutionDMD.GetNElmDomain() != 0)) {
+    SetVolumeOutputValue("DENSITY_DMD",    iPoint, solver[FLOW_SOL]->SolutionDMD(iPoint, 0));
+    SetVolumeOutputValue("MOMENTUM_DMD-X", iPoint, solver[FLOW_SOL]->SolutionDMD(iPoint, 1));
+    SetVolumeOutputValue("MOMENTUM_DMD-Y", iPoint, solver[FLOW_SOL]->SolutionDMD(iPoint, 2));
+    if (nDim == 3){
+      SetVolumeOutputValue("MOMENTUM_DMD-Z", iPoint, solver[FLOW_SOL]->SolutionDMD(iPoint, 3));
+      SetVolumeOutputValue("ENERGY_DMD",     iPoint, solver[FLOW_SOL]->SolutionDMD(iPoint, 4));
+    } else {
+      SetVolumeOutputValue("ENERGY_DMD",     iPoint, solver[FLOW_SOL]->SolutionDMD(iPoint, 3));
+    }
   }
 
   if (gridMovement){

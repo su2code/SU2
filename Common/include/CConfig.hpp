@@ -9553,7 +9553,7 @@ public:
    * \brief Get whether or not to send solutions for dynamic mode decomposition.
    * \return True or false.
    */
-  unsigned short GetSave_DMD(void) const { return saveDMD; }
+  bool GetSave_DMD(void) const { return saveDMD; }
 
   /*!
    * \brief Check if the gradient smoothing is active

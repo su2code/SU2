@@ -94,16 +94,6 @@ void CSinglezoneDriver::StartSolver() {
 
     Output(TimeIter);
 
-    /*--- Save iteration solution for libROM ---*/
-    if (config_container[MESH_0]->GetSave_libROM()) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                     config_container[ZONE_0], StopCalc);
-    }
-    if (config_container[MESH_0]->GetSave_DMD()){
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SaveDMD(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                     config_container[ZONE_0], StopCalc);
-    }
-
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
@@ -299,6 +289,16 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
       cout << "-------------------------------------------------------------------------" << endl;
     }
     StopCalc = FinalTimeReached || MaxIterationsReached|| TimeConvergence;
+  }
+  
+  /*--- Save iteration solution for libROM ---*/
+  if (config_container[MESH_0]->GetSave_libROM()) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                   config_container[ZONE_0], StopCalc);
+  }
+  if (config_container[MESH_0]->GetSave_DMD()){
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SaveDMD(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                   config_container[ZONE_0], StopCalc);
   }
 
   /*--- Reset the inner convergence --- */

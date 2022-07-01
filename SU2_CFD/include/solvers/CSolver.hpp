@@ -208,6 +208,7 @@ public:
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
   CAROM::DMD* dmd_u = NULL;
 #endif
+  CSysVector<su2double> SolutionDMD;        /*!< \brief Vector to store predicted solution of DMD algorithm. */
 
   /*!
    * \brief Constructor of the class.

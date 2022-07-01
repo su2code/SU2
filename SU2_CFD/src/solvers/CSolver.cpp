@@ -4281,7 +4281,7 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
 
-        for (unsigned long iDim; iDim < nDim; iDim++) {
+        for (unsigned long iDim = 0; iDim < nDim; iDim++) {
           f << Coord[iDim] << ", ";
         }
         f << globalPoint << "\n";
@@ -4331,9 +4331,6 @@ void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged) {
 #if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   
   const bool unsteady            = config->GetTime_Domain();
-  const unsigned long TimeIter   = config->GetTimeIter();
-  const unsigned long nTimeIter  = config->GetnTime_Iter();
-  const bool save_DMD            = config->GetSave_DMD();
   int dim = int(nPointDomain * nVar);
   
   if (!unsteady)
@@ -4343,7 +4340,7 @@ void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged) {
   su2double t =  config->GetCurrent_UnstTime();
 
   if (!dmd_u) {
-    dmd_u = new CAROM::DMD(nPointDomain, dt);
+    dmd_u = new CAROM::DMD(dim, dt);
   }
   
   dmd_u->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t);
@@ -4351,10 +4348,36 @@ void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged) {
   if (converged) {
     /*--- Calculate the DMD modes ---*/
     const unsigned short rdim = config->GetMax_BasisDim();
-    if (rank == MASTER_NODE) std::cout << "Calculating the " << rdim << " DMD modes." << std::endl;
+    if (rank == MASTER_NODE) {
+      std::cout << "Calculating the DMD modes with rank " << rdim << " truncation." << std::endl;
+    }
     
     dmd_u->train(rdim);
     dmd_u->save("DMD_modes_" + to_string(rdim) + "_dt_" + to_string(dt) + "_t_" + to_string(t));
+    
+    /*--- Predict the DMD solution (reproductive) ---*/
+    if (rank == MASTER_NODE) std::cout << "Predicting final state using DMD." << std::endl;
+    su2double* result_u = dmd_u->predict(t)->getData();
+    SolutionDMD.Initialize(nPoint, nPointDomain, nVar, result_u);
+    
+    /*--- Find the relative error ---*/
+    su2double norm_diff_u = 0;
+    su2double norm_true_u = 0;
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+        su2double diff_u = result_u[total_index] - base_nodes->GetSolution(iPoint, iVar);
+        norm_diff_u += diff_u * diff_u;
+        norm_true_u += base_nodes->GetSolution(iPoint, iVar) * base_nodes->GetSolution(iPoint, iVar);
+      }
+    }
+    norm_diff_u = sqrt(norm_diff_u);
+    norm_true_u = sqrt(norm_true_u);
+    
+    if (rank == MASTER_NODE) {
+      std::cout << "Relative error of DMD state at t_final: "
+                << t << " is " << norm_diff_u / norm_true_u << std::endl;
+    }
   }
   
 #else
