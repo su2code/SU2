@@ -8,7 +8,6 @@ if build_machine.system() != 'windows'
                                '-Wno-unused-parameter',
                                '-Wno-unused-variable',
                                '-Wno-unused-but-set-variable',
-                               '-Wno-macro-redefined',
                                '-Wno-unknown-pragmas',
                                '-Wno-sign-compare',
                                '-Wno-clobbered',
@@ -16,7 +15,10 @@ if build_machine.system() != 'windows'
                                '-Wno-unused-label',
                                '-Wno-misleading-indentation',
                                '-Wno-maybe-uninitialized',
-                               '-Wno-pedantic']
+                               '-Wno-pedantic',
+                               '-Wno-error=absolute-value',
+                               '-Wno-absolute-value'
+                               ]
   endif
 endif
 

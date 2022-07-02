@@ -1,7 +1,7 @@
 /*!
- * \file CConstantDensity.hpp
- * \brief Defines the incompressible constant density model.
- * \author T. Economon
+ * \file CFluidScalar.hpp
+ * \brief  Defines the multicomponent incompressible Ideal Gas model for mixtures.
+ * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
  * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,35 +26,34 @@
  */
 
 #pragma once
+#include <memory>
+#include <vector>
 
 #include "CFluidModel.hpp"
 
 /*!
- * \class CConstantDensity
- * \brief Child class for defining a constant density gas model (incompressible only).
+ * \class CFluidScalar
+ * \brief Child class for defining an incompressible ideal gas model.
  * \author: T. Economon
  */
-class CConstantDensity final : public CFluidModel {
+class CFluidScalar final : public CFluidModel {
+ private:
+  unsigned short n_species_mixture; /*!< \brief Number of species in mixture. */
+  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
+  su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
+
+  std::vector<su2double> molarMasses;  /*!< \brief Molar masses of all species. */
+
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CConstantDensity(su2double val_Density, su2double val_Cp) {
-    Density = val_Density;
-    Cp = val_Cp;
-    Cv = val_Cp;
-  }
+  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig* config);
 
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  void SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
-    /* Density is constant and thermodynamic pressure is
-       not required for incompressible, constant density flows,
-       but the energy equation can still be computed as a
-       decoupled equation. Hence, we update the value.
-       Note Cp = Cv, (gamma = 1).*/
-    Temperature = t;
-  }
+  void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
 };
