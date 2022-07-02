@@ -191,13 +191,13 @@ protected:
 
   /*! \brief Struct to hold a parsed custom output function. */
   struct CustomOutput {
-    // First level of parsing the syntax "name : type{func}[markers];".
+    /*--- First level of parsing the syntax "name : type{func}[markers];". ---*/
     std::string name;
     OperationType type;
     std::string func;
     std::vector<std::string> markers;
 
-    // Second level, func into expression, and acceleration structures.
+    /*--- Second level, func into expression, and acceleration structures. ---*/
     mel::ExpressionTree<passivedouble> expression;
     std::vector<std::string> varSymbols;
     std::vector<unsigned short> markerIndices;
@@ -205,15 +205,24 @@ protected:
     /*--- The symbols (strings) are associated with an integer index for efficiency. For evaluation this index
      is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"
      and needs to be generated on-the-fly for each point. The functor approach is more generic than a pointer, for
-     example it allows wrapping the access to multiple solvers. ---*/
+     example it allows wrapping the access to multiple solvers. The interpretation of these indices is dictated by
+     the functor used in eval, for example indices may be established as 1000 * solver_idx + variable_idx.
+     The parts of the code that assign and interpret indices need to be in sync. ---*/
     std::vector<unsigned long> varIndices;
 
-    /*--- For evaluation vars is a functor (i.e. has operator()) that returns the value of a variable at a given
+    /*--- Arbitrary number to indicate that a string did not match a variable. ---*/
+    static constexpr unsigned long NOT_A_VARIABLE = 1000;
+
+    /*--- Other outputs can be referenced in expressions, e.g. to compute variance.
+     We store pointers to the required outputs to speed-up access. ---*/
+    std::vector<const su2double*> otherOutputs;
+
+    /*--- For evaluation, "vars" is a functor (i.e. has operator()) that returns the value of a variable at a given
      point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
      with primitive indices. ---*/
     template <class Variables>
     su2double eval(const Variables& vars) const {
-      return mel::Eval<su2double>(expression, [&](int i) {return vars(varIndices[i]);});
+      return mel::Eval<su2double>(expression, [&](int iSymbol) {return vars(varIndices[iSymbol]);});
     }
   };
 
@@ -659,6 +668,29 @@ protected:
     } else {
       SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
+  }
+
+  /*!
+   * \brief Returns a pointer to the value of an history output.
+   * \note For per-surface outputs the marker index is specified as "name[index]".
+   */
+  inline const su2double* GetPtrToHistoryOutput(const string& name) const {
+    /*--- Decide if it should be per surface. ---*/
+    const auto pos = name.find('[');
+    const su2double* ptr = nullptr;
+    if (pos == std::string::npos) {
+      const auto it = historyOutput_Map.find(name);
+      if (it != historyOutput_Map.end()) {
+        ptr = &(it->second.value);
+      }
+    } else {
+      const auto idx = std::stoi(std::string(name.begin()+pos+1, name.end()-1));
+      const auto it = historyOutputPerSurface_Map.find(std::string(name, 0, pos));
+      if (it != historyOutputPerSurface_Map.end()) {
+        ptr = &(it->second[idx].value);
+      }
+    }
+    return ptr;
   }
 
   /*!

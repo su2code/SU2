@@ -208,6 +208,47 @@ protected:
   void SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
+   * \brief Helper for custom outputs, converts variable names to indices and pointers which are then used
+   * to evaluate the custom expressions.
+   */
+  template <class FlowIndices>
+  void ConvertVariableSymbolsToIndices(const FlowIndices& idx, CustomOutput& output) const {
+
+    auto IndexOfVariable = [&](const FlowIndices& idx, const std::string& var) {
+      if ("TEMPERATURE" == var) return idx.Temperature();
+      if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
+      if ("VELOCITY_X" == var) return idx.Velocity();
+      if ("VELOCITY_Y" == var) return idx.Velocity() + 1;
+      if ("VELOCITY_Z" == var) return idx.Velocity() + 2;
+      if ("PRESSURE" == var) return idx.Pressure();
+      if ("DENSITY" == var) return idx.Density();
+      if ("ENTHALPY" == var) return idx.Enthalpy();
+      if ("SOUND_SPEED" == var) return idx.SoundSpeed();
+      if ("LAMINAR_VISCOSITY" == var) return idx.LaminarViscosity();
+      if ("EDDY_VISCOSITY" == var) return idx.EddyViscosity();
+      if ("THERMAL_CONDUCTIVITY" == var) return idx.ThermalConductivity();
+      return CustomOutput::NOT_A_VARIABLE;
+    };
+
+    output.otherOutputs.clear();
+    output.varIndices.clear();
+    output.varIndices.reserve(output.varSymbols.size());
+
+    for (const auto& var : output.varSymbols) {
+      output.varIndices.push_back(IndexOfVariable(idx, var));
+      if (output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) continue;
+
+      /*--- An index above NOT_A_VARIABLE refers to an history output. ---*/
+      output.varIndices.back() += output.otherOutputs.size();
+      output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+      if (output.otherOutputs.back() == nullptr) {
+        SU2_MPI::Error("Invalid history output (" + var + ") used in function " + output.name + "\n",
+                       CURRENT_FUNCTION);
+      }
+    }
+  }
+
+  /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
    * \param[in] VelocityGradient - Velocity gradients
    * \return Value of the Q criteration at the node

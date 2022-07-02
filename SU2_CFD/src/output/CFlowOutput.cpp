@@ -742,33 +742,6 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
-template <class FlowIndices>
-unsigned long IndexOfVariable(const FlowIndices& idx, const std::string& var) {
-
-  if ("TEMPERATURE" == var) return idx.Temperature();
-  if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
-  if ("VELOCITY_X" == var) return idx.Velocity();
-  if ("VELOCITY_Y" == var) return idx.Velocity() + 1;
-  if ("VELOCITY_Z" == var) return idx.Velocity() + 2;
-  if ("PRESSURE" == var) return idx.Pressure();
-  if ("DENSITY" == var) return idx.Density();
-  if ("ENTHALPY" == var) return idx.Enthalpy();
-  if ("SOUND_SPEED" == var) return idx.SoundSpeed();
-  if ("LAMINAR_VISCOSITY" == var) return idx.LaminarViscosity();
-  if ("EDDY_VISCOSITY" == var) return idx.EddyViscosity();
-  if ("THERMAL_CONDUCTIVITY" == var) return idx.ThermalConductivity();
-
-  SU2_MPI::Error("The variable '" + var + "' is not available in custom outputs.", CURRENT_FUNCTION);
-  return 0;
-}
-
-template <class FlowIndices, class SymbolVector, class IndexVector>
-void ConvertVariableSymbolToIndex(const FlowIndices& idx, const SymbolVector& symbols, IndexVector& indices) {
-  indices.clear();
-  indices.reserve(symbols.size());
-  for (const auto& var : symbols) indices.push_back(IndexOfVariable(idx, var));
-}
-
 void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config) {
 
   const bool axisymmetric = config->GetAxisymmetric();
@@ -779,14 +752,12 @@ void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geome
       /*--- Setup indices for the symbols in the expression, for now this only recognizes primitives. ---*/
 
       if (config->GetNEMOProblem()) {
-        ConvertVariableSymbolToIndex(CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()),
-                                     output.varSymbols, output.varIndices);
+        ConvertVariableSymbolsToIndices(
+            CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
       } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
-        ConvertVariableSymbolToIndex(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output.varSymbols,
-                                     output.varIndices);
+        ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
       } else {
-        ConvertVariableSymbolToIndex(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output.varSymbols,
-                                     output.varIndices);
+        ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
       }
       /*--- Convert marker names to their index (if any) in this rank. ---*/
 
@@ -825,8 +796,12 @@ void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geome
         /*--- Prepare the functor that maps symbol indices to values. For now the only allowed symbols
          * are the primitive variables, and thus the indices match the primitive indices. ---*/
 
-        auto Functor = [flowNodes, iPoint](int i) {
-          return flowNodes->GetPrimitive(iPoint, i);
+        auto Functor = [&](unsigned long i) {
+          if (i < CustomOutput::NOT_A_VARIABLE) {
+            return flowNodes->GetPrimitive(iPoint, i);
+          } else {
+            return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+          }
         };
         integral[0] += weight * output.eval(Functor);
       }
