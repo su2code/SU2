@@ -149,6 +149,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Allocate(*config);
 
+  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -471,7 +473,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-        fluidModel->SetTDState_T(Temperature_FreeStreamND);        
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
       case FLUID_MIXTURE:
@@ -490,7 +492,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
- 
+
     }
 
     if (viscous) {
@@ -1254,36 +1256,27 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
       if (config->GetEnergy_Equation()) {
-        bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
-        bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
+        const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
+        const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
-        bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
-        bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
+        const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
+        const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
-        auto update_nonphysical = [&](){
-          nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
-          nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
+        bool bad_recon = neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+        if (bad_recon) {
+          /*--- Force 1st order for this edge for at least 20 iterations. ---*/
+          NonPhysicalEdgeCounter[iEdge] = 20;
+        } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
+          --NonPhysicalEdgeCounter[iEdge];
+          bad_recon = true;
+        }
+        counter_local += bad_recon;
 
-          /* Lastly, check for existing first-order points still active from previous iterations. */
-
-          if (nodes->GetNon_Physical(iPoint)) {
-            counter_local++;
-            for (iVar = 0; iVar < nPrimVar; iVar++)
-              Primitive_i[iVar] = V_i[iVar];
+        if (bad_recon) {
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            Primitive_i[iVar] = V_i[iVar];
+            Primitive_j[iVar] = V_j[iVar];
           }
-          if (nodes->GetNon_Physical(jPoint)) {
-            counter_local++;
-            for (iVar = 0; iVar < nPrimVar; iVar++)
-              Primitive_j[iVar] = V_j[iVar];
-          }
-        };
-
-        if(ReducerStrategy){
-          SU2_OMP_CRITICAL
-          update_nonphysical();
-          END_SU2_OMP_CRITICAL
-        } else {
-          update_nonphysical();
         }
       }
 
@@ -2235,7 +2228,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
     Flow_Dir_Mag = GeometryToolbox::Norm(nDim, Flow_Dir);
 
-    /*--- Store the unit flow direction vector. 
+    /*--- Store the unit flow direction vector.
      If requested, use the local boundary normal (negative),
      instead of the prescribed flow direction in the config. ---*/
 
@@ -2352,7 +2345,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
       /* pressure obtained from interior */
       V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
-    } 
+    }
 
     /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature

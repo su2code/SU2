@@ -148,6 +148,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
+  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -1829,32 +1831,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
-
-      bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-      bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-
-      auto update_nonphysical = [&](){
-        nodes->SetNon_Physical(iPoint, bad_i);
-        nodes->SetNon_Physical(jPoint, bad_j);
-
-        /*--- Get updated state, in case the point recovered after the set. ---*/
-        bad_i = nodes->GetNon_Physical(iPoint);
-        bad_j = nodes->GetNon_Physical(jPoint);
-      };
-
-      if(ReducerStrategy){
-        SU2_OMP_CRITICAL
-        update_nonphysical();
-        END_SU2_OMP_CRITICAL
-      } else {
-        update_nonphysical();
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
+      if (bad_recon) {
+        /*--- Force 1st order for this edge for at least 20 iterations. ---*/
+        NonPhysicalEdgeCounter[iEdge] = 20;
+      } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
+        --NonPhysicalEdgeCounter[iEdge];
+        bad_recon = true;
       }
+      counter_local += bad_recon;
 
-      counter_local += bad_i+bad_j;
-
-      numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
-      numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
+      numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
+      numerics->SetSecondary(bad_recon? S_i : Secondary_i,  bad_recon? S_j : Secondary_j);
 
     }
 
