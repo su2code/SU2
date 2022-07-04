@@ -207,7 +207,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+            Project_Grad_i = 0.0;
+            Project_Grad_j = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
               Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
@@ -253,7 +254,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Convective flux ---*/
-      su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+      EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
       numerics->SetMassFlux(EdgeMassFlux);
 
       /*--- Update convective residual value ---*/
