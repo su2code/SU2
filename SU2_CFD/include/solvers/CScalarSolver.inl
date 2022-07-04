@@ -120,8 +120,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
 
-  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j;
-
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -253,7 +251,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Convective flux ---*/
-      EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+      su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
       numerics->SetMassFlux(EdgeMassFlux);
 
       /*--- Update convective residual value ---*/
