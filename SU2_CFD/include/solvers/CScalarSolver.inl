@@ -259,7 +259,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       /*--- Update convective residual value ---*/
       auto residual = numerics->ComputeResidual(config);
 
-
       if (ReducerStrategy) {
         EdgeFluxes.SetBlock(iEdge, residual);
         if (implicit) Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
