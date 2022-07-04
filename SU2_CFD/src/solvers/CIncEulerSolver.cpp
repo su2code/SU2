@@ -1316,6 +1316,12 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
+    //if (rans && (iMesh == MESH_0)) EdgeMassFluxes[iEdge] = Res_Conv[0];
+    if (iMesh == MESH_0) {
+      EdgeMassFluxes[iEdge] = residual[0];
+    }
+
   }
   END_SU2_OMP_FOR
   } // end color loop

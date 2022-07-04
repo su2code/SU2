@@ -112,6 +112,9 @@ class CScalarSolver : public CSolver {
 
     numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
 
+    su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+    numerics->SetMassFlux(EdgeMassFlux);
+
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
     numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
@@ -122,7 +125,7 @@ class CScalarSolver : public CSolver {
     SolverSpecificNumerics(iPoint, jPoint);
 
     /*--- Compute residual, and Jacobians ---*/
-
+    cout << "computing viscous residual" << endl;
     auto residual = numerics->ComputeResidual(config);
 
     if (ReducerStrategy) {

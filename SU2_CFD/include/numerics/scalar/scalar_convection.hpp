@@ -133,6 +133,10 @@ class CUpwScalar : public CNumerics {
 
     a0 = 0.5 * (q_ij + fabs(q_ij));
     a1 = 0.5 * (q_ij - fabs(q_ij));
+    cout << "a0 massflux = " << max(0.0,MassFlux) << " " << 0.5 * (q_ij + fabs(q_ij)) << endl;
+    cout << "a1 massflux = " << min(0.0,MassFlux) << " " << 0.5 * (q_ij - fabs(q_ij)) << endl;
+    //a0 = max(0.0, MassFlux);
+    //a1 = min(0.0, MassFlux);
 
     FinishResidualCalc(config);
 

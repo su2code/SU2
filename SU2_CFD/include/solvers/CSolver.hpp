@@ -127,6 +127,8 @@ protected:
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 
+  su2double *EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of passive scalars. */
+
   /*--- End variables that need to go. ---*/
 
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
@@ -4311,8 +4313,15 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
-  */
+   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
+
+  /*!
+   * \brief Get the mass flux across an edge (computed and stored during the discretization of convective fluxes).
+   * \param[in] iEdge - Index of the edge.
+   * \return The mass flux across the edge.
+   */
+  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const {return EdgeMassFluxes[iEdge];}
 
 protected:
   /*!
