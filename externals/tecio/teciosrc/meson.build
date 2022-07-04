@@ -17,7 +17,8 @@ if build_machine.system() != 'windows'
     tecio_cpp_flags += ['-Wno-misleading-indentation',
                         '-Wno-uninitialized',
                         '-Wno-placement-new',
-                        '-Wno-pedantic']
+                        '-Wno-pedantic',
+                        '-Wno-error=deprecated-copy']
   endif
 endif
 
