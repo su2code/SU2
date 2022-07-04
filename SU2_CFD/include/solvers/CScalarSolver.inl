@@ -120,7 +120,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
 
-  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j;
+  su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
 
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
@@ -268,6 +268,14 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
 
+      /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
+      for(iVar=0; iVar<nVar; iVar++){
+        FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
+        FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
+
+        LinSysRes(iPoint, iVar) -= FluxCorrection_i;
+        LinSysRes(jPoint, iVar) += FluxCorrection_j;
+      }
       /*--- Viscous contribution. ---*/
 
       Viscous_Residual(iEdge, geometry, solver_container,
