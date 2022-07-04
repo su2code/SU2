@@ -252,10 +252,9 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         }
       }
 
-    /*--- Convective flux ---*/
+      /*--- Convective flux ---*/
       EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
       numerics->SetMassFlux(EdgeMassFlux);
-      cout << "massflux=" <<EdgeMassFlux << endl;
 
       /*--- Update convective residual value ---*/
       auto residual = numerics->ComputeResidual(config);

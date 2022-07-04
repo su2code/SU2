@@ -125,7 +125,6 @@ class CScalarSolver : public CSolver {
     SolverSpecificNumerics(iPoint, jPoint);
 
     /*--- Compute residual, and Jacobians ---*/
-    cout << "computing viscous residual" << endl;
     auto residual = numerics->ComputeResidual(config);
 
     if (ReducerStrategy) {

@@ -1318,6 +1318,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
 
     //if (rans && (iMesh == MESH_0)) EdgeMassFluxes[iEdge] = Res_Conv[0];
+    /* only when we solve additional scalars? So turbulence and species? */
     if (iMesh == MESH_0) {
       EdgeMassFluxes[iEdge] = residual[0];
     }

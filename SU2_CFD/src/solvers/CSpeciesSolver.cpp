@@ -384,13 +384,12 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
- 
+
+      /* nijso: TODO we have to compute mass flux here as well */ 
       //su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
       //conv_numerics->SetMassFlux(EdgeMassFlux);
-      //cout << "massflux=" <<EdgeMassFlux << endl;
 
       /*--- Compute the residual using an upwind scheme ---*/
-      cout << "computing inlet residual" << endl;
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
@@ -534,8 +533,11 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
+      /* nijso: TODO we have to compute mass flux here as well */ 
+      //su2double EdgeMassFlux = solver_container[FLOW_SOL]->GetEdgeMassFlux(iEdge);
+      //conv_numerics->SetMassFlux(EdgeMassFlux);
+
       /*--- Compute the residual using an upwind scheme ---*/
-      cout << "computing outlet residual" << endl;
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 

@@ -44,6 +44,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Tke_Inf         = config->GetTke_FreeStreamND();
 
   //if (rans && (iMesh == MESH_0)) {
+  // only when we solve additional scalars?    
   if (iMesh == MESH_0) {
     EdgeMassFluxes = new su2double [geometry->GetnEdge()];
 
