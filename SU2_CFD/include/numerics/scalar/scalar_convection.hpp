@@ -132,6 +132,7 @@ class CUpwScalar : public CNumerics {
       }
     }
     */
+   
     //a0 = 0.5 * (q_ij + fabs(q_ij));
     //a1 = 0.5 * (q_ij - fabs(q_ij));
     a0 = max(0.0, MassFlux);
