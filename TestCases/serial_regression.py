@@ -82,8 +82,8 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals         = [-5.215236, -5.739371, -20.545048, -20.618700, -20.502532, -1.917617, -2.239664, 1.262783, -3.205463]
-    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.545048, -20.618697, -20.501528, -1.917617, -2.239664, 1.262783, -3.205463]
+    visc_cone.test_vals         = [-5.215236, -5.739371, -20.545048, -20.618700, -20.502532, -1.917617, -2.239664, 1.262783, -3.205463, 0.0]
+    visc_cone.test_vals_aarch64 = [-5.215236, -5.739371, -20.545048, -20.618697, -20.501528, -1.917617, -2.239664, 1.262783, -3.205463, 0.0]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -217,7 +217,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-6.765430, -1.297426, 0.019508, 0.310015] #last 4 columns
+    cylinder.test_vals = [-6.765430, -1.297426, 0.019508, 0.310015, 0.0] #last 4 columns
     cylinder.su2_exec  = "SU2_CFD"
     cylinder.new_output = True
     cylinder.timeout   = 1600
@@ -241,7 +241,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-5.050732, 0.648355, 0.012273, 13.643219] #last 4 columns
+    poiseuille.test_vals = [-5.050732, 0.648355, 0.012273, 13.643219, 0.0] #last 4 columns
     poiseuille.su2_exec  = "SU2_CFD"
     poiseuille.new_output = True
     poiseuille.timeout   = 1600
@@ -278,7 +278,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499]
+    rae2822_sa.test_vals = [-2.020123, -5.269330, 0.807147, 0.060499, 0.0]
     rae2822_sa.su2_exec  = "SU2_CFD"
     rae2822_sa.timeout   = 1600
     rae2822_sa.new_output = True
@@ -290,7 +290,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.510639, 4.872266, 0.812659, 0.061095]
+    rae2822_sst.test_vals = [-0.510639, 4.872266, 0.812659, 0.061095, 0.0]
     rae2822_sst.su2_exec  = "SU2_CFD"
     rae2822_sst.new_output = True
     rae2822_sst.timeout   = 1600
@@ -347,7 +347,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.388841, -6.689414, 0.230321, 0.157640]#last 4 columns
+    turb_oneram6.test_vals = [-2.388841, -6.689414, 0.230321, 0.157640, 0.0]#last 4 columns
     turb_oneram6.su2_exec  = "SU2_CFD"
     turb_oneram6.new_output = True
     turb_oneram6.timeout   = 3200
@@ -384,7 +384,7 @@ def main():
     turb_naca0012_sst_2003m.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_2003m.cfg_file  = "turb_NACA0012_sst_2003m.cfg"
     turb_naca0012_sst_2003m.test_iter = 10
-    turb_naca0012_sst_2003m.test_vals = [-7.698435, -10.060146, -3.421602, 1.049412, 0.019691, -2.193389]
+    turb_naca0012_sst_2003m.test_vals = [-7.698435, -10.060146, -3.421602, 1.049412, 0.019691, -2.193389, 0.0]
     turb_naca0012_sst_2003m.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_2003m.new_output  = True
     turb_naca0012_sst_2003m.timeout   = 3200
@@ -434,7 +434,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [ -12.092891, -6.630495, -8.784840, -2.399099]
+    axi_rans_air_nozzle.test_vals = [ -12.092891, -6.630495, -8.784840, -2.399099, 0.0]
     axi_rans_air_nozzle.su2_exec  = "SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
@@ -510,7 +510,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-4.004277, -3.227956, 0.003852, 7.626578] #last 4 columns
+    inc_lam_cylinder.test_vals = [-4.004277, -3.227956, 0.003852, 7.626578, 0.0] #last 4 columns
     inc_lam_cylinder.new_output  = True
     inc_lam_cylinder.su2_exec  = "SU2_CFD"
     inc_lam_cylinder.timeout   = 1600
@@ -534,7 +534,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.106741, -2.160042, 0.019225, 1.902421] #last 4 columns
+    inc_poly_cylinder.test_vals = [-8.106741, -2.160042, 0.019225, 1.902421, 0.0] #last 4 columns
     inc_poly_cylinder.new_output  = True
     inc_poly_cylinder.su2_exec  = "SU2_CFD"
     inc_poly_cylinder.timeout   = 1600
@@ -569,7 +569,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788495, -11.040511, 0.000023, 0.309503] #last 4 columns
+    inc_turb_naca0012.test_vals = [-4.788495, -11.040511, 0.000023, 0.309503, 0.0] #last 4 columns
     inc_turb_naca0012.new_output  = True
     inc_turb_naca0012.su2_exec  = "SU2_CFD"
     inc_turb_naca0012.timeout   = 1600
@@ -592,7 +592,7 @@ def main():
     inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
     inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sst.test_iter = 10
-    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.561293, -5.730190, -6.305916, -4.230297, -7.164083, -2.047256, 10, -2.941818, 0.000974, 0.003195] #last 10 columns
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.561293, -5.730190, -6.305916, -4.230297, -7.164083, -2.047256, 10, -2.941818, 0.000974, 0.003195, 0.0] #last 10 columns
     inc_turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
     inc_turb_wallfunction_flatplate_sst.timeout   = 1600
     inc_turb_wallfunction_flatplate_sst.tol       = 0.00001

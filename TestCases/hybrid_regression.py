@@ -254,8 +254,8 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals         = [-12.093575, -6.630426, -8.798725, -2.399130]
-    axi_rans_air_nozzle.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130]
+    axi_rans_air_nozzle.test_vals         = [-12.093575, -6.630426, -8.798725, -2.399130, 0.0]
+    axi_rans_air_nozzle.test_vals_aarch64 = [-12.093539, -6.630357, -8.798732, -2.399130, 0.0]
     test_list.append(axi_rans_air_nozzle)
 
     #################################
@@ -392,8 +392,8 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals         = [-7.851512, -2.093420, 0.029974, 1.921595]
-    inc_poly_cylinder.test_vals_aarch64 = [-7.851510, -2.093419, 0.029974, 1.921595]
+    inc_poly_cylinder.test_vals         = [-7.851512, -2.093420, 0.029974, 1.921595, 0.0]
+    inc_poly_cylinder.test_vals_aarch64 = [-7.851510, -2.093419, 0.029974, 1.921595, 0.0]
     inc_poly_cylinder.new_output  = True
     test_list.append(inc_poly_cylinder)
 
@@ -424,7 +424,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.276424, 0.145860, 0.000003, 0.312011]
+    inc_turb_naca0012_sst_sust.test_vals = [-7.276424, 0.145860, 0.000003, 0.312011, 0.0]
     test_list.append(inc_turb_naca0012_sst_sust)
 
     ######################################
@@ -486,7 +486,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783]
+    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783, 0.0]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
