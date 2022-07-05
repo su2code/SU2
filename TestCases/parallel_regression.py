@@ -97,8 +97,8 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374, 0.0]
-    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, -1.928714, -2.247317, 1.255761, -3.208360, 0.0]
+    visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, -1.928717, -2.247306, 1.255759, -3.208374, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.569408, -20.633783, -20.546393, -1.928714, -2.247317, 1.255761, -3.208360, 32633.000000]
     visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -1425,8 +1425,8 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals         = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714, 0.0] #last 7 lines
-    solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630, 0.0] #last 7 lines
+    solid_periodic_pins.test_vals         = [-15.878958, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672714] #last 7 lines
+    solid_periodic_pins.test_vals_aarch64 = [-15.879010, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672630] #last 7 lines
     solid_periodic_pins.su2_exec  = "mpirun -n 2 SU2_CFD"
     solid_periodic_pins.timeout   = 1600
     solid_periodic_pins.tol       = 0.00001
@@ -1441,7 +1441,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813, 0.0] #last 4 columns
+    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
@@ -1453,7 +1453,7 @@ def main():
     cht_compressible.cfg_dir   = "coupled_cht/comp_2d"
     cht_compressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_compressible.test_iter = 10
-    cht_compressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728]
+    cht_compressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728, 0.0]
     cht_compressible.su2_exec  = "SU2_CFD"
     cht_compressible.timeout   = 1600
     cht_compressible.multizone = True

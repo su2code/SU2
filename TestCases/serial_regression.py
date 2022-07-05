@@ -1457,7 +1457,7 @@ def main():
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.new_output= True
     p1rad.test_iter = 100
-    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733] #last 4 columns
+    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733, 0.0] #last 4 columns
     p1rad.su2_exec  = "SU2_CFD"
     p1rad.timeout   = 1600
     p1rad.tol       = 0.00001
@@ -1480,7 +1480,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
+    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813, 0.0] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
@@ -1492,7 +1492,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/comp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728]
+    cht_incompressible.test_vals = [-4.256032, -0.532728, -0.532729, -0.532728, 0.0]
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
