@@ -2256,6 +2256,7 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
   su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
   su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
+  su2double Streamwise_Periodic_LambdaL;            /*!< \brief Temperature Gradient in iso-thermal BCs. */
 };
 
 /*!

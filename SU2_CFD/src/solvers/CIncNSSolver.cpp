@@ -202,6 +202,33 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     /*---------------------------------------------------------------------------------------------*/
 
     su2double HeatFlow_Local = 0.0, HeatFlow_Global = 0.0;
+    su2double dTdn_Local = 0.0, dTdn_Global = 0.0;
+    su2double Volume_Temp_Local = 0.0, Volume_Temp_Global = 0.0;
+    su2double Volume_TempS_Local = 0.0, Volume_TempS_Global = 0.0;
+    su2double Volume_Local = 0.0, Volume_Global = 0.0;
+    su2double Volume_VTemp_Local = 0.0, Volume_VTemp_Global = 0.0;
+
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      // if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      su2double volume = geometry->nodes->GetVolume(iPoint);
+
+      su2double Temp = nodes->GetTemperature(iPoint);
+
+      Volume_Local += volume;
+
+      Volume_TempS_Local += Temp * volume;
+    }
+
+    SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+    auto theta_scaling = Volume_TempS_Global/Volume_Global;
+    cout<<"======== Theta_scaling :: "<<theta_scaling<<endl;
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/theta_scaling);
+    }
 
     /*--- Loop over all heatflux Markers ---*/
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -225,13 +252,75 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
           HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
         } // loop Vertices
       } // loop Heatflux marker
+
+      if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+        /*--- Identify the boundary by string name and retrive heatflux from config ---*/
+        su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
+        
+        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+
+          /*Compute wall heat flux (normal to the wall) based on computed temperature gradient*/
+          for(auto iDim=0; iDim < nDim; iDim++) {
+            GradT[iDim] = nodes->GetGradient_Primitive(iPoint, 3, iDim);
+            dTdn_Local += GradT[iDim]*AreaNormal[iDim]*nodes->GetThermalConductivity(iPoint);
+          }
+        }
+      }
     } // loop AllMarker
+
+
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      su2double volume = geometry->nodes->GetVolume(iPoint);
+
+      su2double Temp = nodes->GetTemperature(iPoint);
+
+      Volume_Local += volume;
+
+      Volume_TempS_Local += volume * Temp;
+
+      Volume_Temp_Local += volume * Temp * nodes->GetThermalConductivity(iPoint);
+
+      Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 0) * nodes->GetDensity(iPoint);
+
+    }// points
 
     /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
     SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    // SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    // SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+
 
     /*--- Set the solver variable Integrated Heatflux ---*/
     SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
+    /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
+    auto b0_coeff =  Volume_Temp_Global; 
+    auto b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp();
+    auto b2_coeff = -dTdn_Global;
+    auto pred_lambda_1 = (- b1_coeff - sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
+    auto pred_lambda_2 = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
+    auto pred_lambda = pred_lambda_2;
+    if (!isnan(pred_lambda)) {
+      SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL - 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
+      cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff<<endl;
+      cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;
+    }
+    else
+      SPvals.Streamwise_Periodic_LambdaL = 0.0146;
   } // if energy
 }
 
