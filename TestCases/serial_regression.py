@@ -1906,7 +1906,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
-    pywrapper_square_cylinder.test_vals = [-1.406729, 0.036316, 1.399116, 2.199756, 1.399116, 2.199756, -0.399760]
+    pywrapper_square_cylinder.test_vals = [-2.557893, -1.162560, 0.066414, 1.399788, 2.220411, 1.399743, 2.218612, -0.453170]
     pywrapper_square_cylinder.su2_exec  = "SU2_CFD.py -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
