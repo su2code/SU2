@@ -62,7 +62,7 @@ def main():
 
     # prepare config
     config.NUMBER_PART = options.partitions
-    config.USING_UQ = 'YES'
+    config.SST_OPTIONS = 'UQ'
     config.UQ_DELTA_B = options.beta_delta
     config.UQ_URLX = options.urlx
     config.UQ_PERMUTE = 'NO'

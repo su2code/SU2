@@ -977,7 +977,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
-  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+  if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
@@ -1047,7 +1047,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
-  if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::BC) {
+  if (config->GetSAParsedOptions().bc) {
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
   }
 
@@ -2082,26 +2082,16 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       switch (Kind_Turb_Model) {
         case TURB_MODEL::NONE: break;
         case TURB_MODEL::SA:
+          /// TODO: add the submodels here
           file << "Spalart Allmaras\n";
           break;
-        case TURB_MODEL::SA_NEG:
-          file << "Negative Spalart Allmaras\n";
-          break;
-        case TURB_MODEL::SA_E:
-          file << "Edwards Spalart Allmaras\n";
-          break;
-        case TURB_MODEL::SA_COMP:
-          file << "Compressibility Correction Spalart Allmaras\n";
-          break;
-        case TURB_MODEL::SA_E_COMP:
-          file << "Compressibility Correction Edwards Spalart Allmaras\n";
-          break;
         case TURB_MODEL::SST:
-          file << "Menter's SST\n";
-          break;
-        case TURB_MODEL::SST_SUST:
-          file << "Menter's SST with sustaining terms\n";
-          break;
+          /// TODO: add the submodels here
+          if (config->GetSSTParsedOptions().sust)
+            file << "Menter's SST with sustaining terms\n";
+          else
+            file << "Menter's SST\n";
+         break;
       }
       break;
     default:
@@ -2495,6 +2485,18 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         else file << " psf.\n";
         break;
 
+      case FLUID_MIXTURE:
+        file << "Fluid Model: FLUID_MIXTURE \n";
+        file << "Variable density incompressible flow using ideal gas law.\n";
+        file << "Density is a function of temperature (constant thermodynamic pressure).\n";
+        file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K.\n";
+        file << "Molecular weight : " << config->GetMolecular_Weight() << " g/mol\n";
+        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
+        file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
+        if (si_units) file << " Pa.\n";
+        else file << " psf.\n";
+        break;
+        
       case INC_IDEAL_GAS_POLY:
         file << "Fluid Model: INC_IDEAL_GAS_POLY \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
@@ -3278,7 +3280,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 }
 
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
-  
+
   bool writeRestart = false;
   auto FileFormat = config->GetVolumeOutputFiles();
 
@@ -3288,9 +3290,9 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
       return true;
     }
 
-    /* check if we want to write a restart file*/ 
+    /* check if we want to write a restart file*/
     if (FileFormat[iFile] == OUTPUT_TYPE::RESTART_ASCII || FileFormat[iFile] == OUTPUT_TYPE::RESTART_BINARY || FileFormat[iFile] == OUTPUT_TYPE::CSV) {
-      writeRestart = true;  
+      writeRestart = true;
     }
 
     /* only write 'double' files for the restart files */
