@@ -208,28 +208,6 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     su2double Volume_Local = 0.0, Volume_Global = 0.0;
     su2double Volume_VTemp_Local = 0.0, Volume_VTemp_Global = 0.0;
 
-    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      
-      // if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-      su2double volume = geometry->nodes->GetVolume(iPoint);
-
-      su2double Temp = nodes->GetTemperature(iPoint);
-
-      Volume_Local += volume;
-
-      Volume_TempS_Local += Temp * volume;
-    }
-
-    SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-    auto theta_scaling = Volume_TempS_Global/Volume_Global;
-    cout<<"======== Theta_scaling :: "<<theta_scaling<<endl;
-    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/theta_scaling);
-    }
-
     /*--- Loop over all heatflux Markers ---*/
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -300,10 +278,14 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    // SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    // SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-
+    auto theta_scaling = Volume_TempS_Global/Volume_Global;
+    cout<<"======== Theta_scaling :: "<<theta_scaling<<endl;
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/theta_scaling);
+    }
 
     /*--- Set the solver variable Integrated Heatflux ---*/
     SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
