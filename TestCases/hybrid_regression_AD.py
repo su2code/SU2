@@ -108,7 +108,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals         = [20.000000, -2.705927, -2.837772, 0.000000]
+    discadj_incomp_cylinder.test_vals         = [20.000000, -2.705921, -2.837904, 0.000000]
     discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.705918, -2.837766, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
@@ -206,7 +206,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849829, -3.238711, -0.000364, -8.708700]
+    discadj_fea.test_vals         = [1.774569, 1.928023, -0.000364, -8.690300]
     discadj_fea.test_vals_aarch64 = [2.216938, 2.129429, -0.000365, -8.782500]
     test_list.append(discadj_fea) 
 
