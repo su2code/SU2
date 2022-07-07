@@ -25,17 +25,13 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import numpy as np
 
 import su2gmf
 import pyamg
 
-"""
-Adapt mesh using pyamg module
-"""
 def call_pyamg(mesh, config):
-
+    """Adapt mesh using pyamg module"""
     remesh_options = {}
 
     if 'hgrad' in config: remesh_options['gradation'] = config['hgrad']
@@ -50,13 +46,6 @@ def call_pyamg(mesh, config):
         mesh['xy'] = np.stack((Ver[:,0],Ver[:,1]), axis=1)
         
         del mesh['xyz']
-    
-    ''' 
-      TO ADD: 
-     {'adap_back' 'hmax' 'hmin'
-      'sol_in': 'current_sensor.solb', 'sol_itp_in': 'current.solb', 'metric_in': '', 'adap_source': '', 
-     'mesh_in': 'current.meshb', 'mesh_out': 'current.new.meshb'}
-    ''' 
     
     if 'xy' in mesh:  mesh['xy']  = mesh['xy'].tolist()
     if 'xyz' in mesh: mesh['xyz'] = mesh['xyz'].tolist()
@@ -79,17 +68,12 @@ def call_pyamg(mesh, config):
     try:
         mesh_new = pyamg.adapt_mesh(mesh, remesh_options)        
     except:
-        sys.stderr("## ERROR : pyamg failed.\n")
-        raise
+        raise RuntimeError("pyamg failed.")
     
     return mesh_new
     
-    
-"""
-Read mesh and solution using su2gmf module
-"""
 def read_mesh_and_sol(mesh_name, solution_name):
-    
+    """Read mesh and solution using su2gmf module"""
     Ver = []
     Tri = []
     Tet = []
@@ -149,11 +133,8 @@ def read_mesh_and_sol(mesh_name, solution_name):
     
     return mesh
 
-"""
-Read mesh using su2gmf module
-"""
 def read_mesh(mesh_name):
-    
+    """Read mesh using su2gmf module"""
     Ver = []
     Tri = []
     Tet = []
@@ -201,11 +182,8 @@ def read_mesh(mesh_name):
     
     return mesh
 
-"""
-Read mesh using su2gmf module
-"""
 def read_sol(solution_name, mesh):
-    
+    """Read solution using su2gmf module"""
     NbrVer = len(mesh['xyz'])
     Dim    = mesh['dimension']
 
@@ -228,11 +206,8 @@ def read_sol(solution_name, mesh):
     
     return sol
     
-"""
-Write mesh and solution using su2gmf module
-"""
 def write_mesh_and_sol(mesh_name, solution_name, mesh):
-    
+    """Write mesh and solution using su2gmf module"""
     Tri     = []
     Tet     = []
     Edg     = []
@@ -277,11 +252,8 @@ def write_mesh_and_sol(mesh_name, solution_name, mesh):
     
     su2gmf.WriteMeshAndSol(mesh_name, solution_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Sol, SolTag, Markers, Dim)
 
-"""
-Write mesh and solution using su2gmf module
-"""
 def write_mesh(mesh_name, mesh):
-    
+    """Write mesh using su2gmf module"""
     Tri     = []
     Tet     = []
     Edg     = []
@@ -316,11 +288,8 @@ def write_mesh(mesh_name, mesh):
     
     su2gmf.WriteMesh(mesh_name, Ver, Cor, Tri, Tet, Edg, Hex, Qua, Pyr, Pri, Markers, Dim)
     
-"""
-Write solution using su2gmf module
-"""
 def write_sol(sol_name, sol):
-    
+    """Write solution using su2gmf module"""
     Dim = sol['dimension']
     Sol = sol['solution']
     
@@ -341,8 +310,7 @@ def write_sol(sol_name, sol):
         SolSiz = len(Sol[1])
         Sol = np.array(Sol).reshape(SolSiz*len(Sol)).tolist()
     else:
-        sys.stderr.write("## ERROR write_sol : No solution.\n")
-        sys.exit(1)
+        raise RuntimeError("Empty solution given to write_sol.")
         
     su2gmf.WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
 
