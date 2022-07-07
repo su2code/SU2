@@ -232,8 +232,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       } // loop Heatflux marker
 
       if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        /*--- Identify the boundary by string name and retrive heatflux from config ---*/
-        su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
+        /*--- Identify the boundary by string name and retrive ISOTHERMAL from config ---*/
+        su2double GradT[3] = {0.0,0.0,0.0};
         
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -243,18 +243,16 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
-
           /*Compute wall heat flux (normal to the wall) based on computed temperature gradient*/
           for(auto iDim=0; iDim < nDim; iDim++) {
             GradT[iDim] = nodes->GetGradient_Primitive(iPoint, 3, iDim);
             dTdn_Local += GradT[iDim]*AreaNormal[iDim]*nodes->GetThermalConductivity(iPoint);
-          }
-        }
-      }
+          } // loop dim
+        } // loop Vertices
+      } // loop Isothermal Marker
     } // loop AllMarker
 
-
+    /*--- Loop over all heatflux Markers ---*/
     for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       
       if (!geometry->nodes->GetDomain(iPoint)) continue;
@@ -271,38 +269,46 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 0) * nodes->GetDensity(iPoint);
 
-    }// points
+    } // points
 
-    /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
-    SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    if (config->GetnMarker_HeatFlux() > 0) {
+      /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
+      SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-    auto theta_scaling = Volume_TempS_Global/Volume_Global;
-    cout<<"======== Theta_scaling :: "<<theta_scaling<<endl;
-    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/theta_scaling);
-    }
+      /*--- Set the solver variable Integrated Heatflux ---*/
+      SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
+    } // if heat flux
 
-    /*--- Set the solver variable Integrated Heatflux ---*/
-    SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
-    /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
-    auto b0_coeff =  Volume_Temp_Global; 
-    auto b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp();
-    auto b2_coeff = -dTdn_Global;
-    auto pred_lambda_1 = (- b1_coeff - sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
-    auto pred_lambda_2 = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
-    auto pred_lambda = pred_lambda_2;
-    if (!isnan(pred_lambda)) {
-      SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL - 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
-      cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff<<endl;
-      cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;
-    }
-    else
-      SPvals.Streamwise_Periodic_LambdaL = 0.0146;
+    if (config->GetnMarker_Isothermal() > 0) {
+      SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+      auto theta_scaling = Volume_TempS_Global/Volume_Global;
+      
+      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/theta_scaling);
+      } // points
+
+      /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
+      auto b0_coeff =  Volume_Temp_Global; 
+      auto b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp();
+      auto b2_coeff = -dTdn_Global;
+
+      /*--- Find the value of Lambda L by solving the quadratic equation ---*/
+      auto pred_lambda_2 = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
+      auto pred_lambda = pred_lambda_2;
+      if (!isnan(pred_lambda)) {
+        SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL - 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
+        // FOR Debugging, will be removed later on
+        // cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff<<endl;
+        // cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;
+      }
+      else
+        SPvals.Streamwise_Periodic_LambdaL = 0.0146;
+    } // if isothermal
   } // if energy
 }
 

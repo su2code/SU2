@@ -343,7 +343,8 @@ private:
   bool turbulent; /*!< \brief Turbulence model used. */
   bool energy;    /*!< \brief Energy equation on. */
   bool streamwisePeriodic_temperature; /*!< \brief Periodicity in energy equation */
-  bool heat_flux_bc; /*!< \brief HEAT Flux BC is active. */
+  bool bool_heat_flux_bc; /*!< \brief HEAT Flux BC boolean. */
+  bool bool_isotherml_bc; /*!< \brief ISO THERMAL BC boolean. */
   su2double Streamwise_Coord_Vector[MAXNDIM] = {0.0}; /*!< \brief Translation vector between streamwise periodic surfaces. */
 
   su2double norm2_translation, /*!< \brief Square of distance between the 2 periodic surfaces. */

@@ -703,8 +703,8 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
   turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   energy    = config->GetEnergy_Equation();
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  // nMarker   = config->GetnMarker_HeatFlux
-  heat_flux_bc = (config->GetnMarker_HeatFlux() > 0);
+  bool_heat_flux_bc = (config->GetnMarker_HeatFlux() > 0);
+  bool_isotherml_bc = (config->GetnMarker_Isothermal() > 0);
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Streamwise_Coord_Vector[iDim] = config->GetPeriodic_Translation(0)[iDim];
@@ -731,22 +731,29 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
   /*--- Compute the periodic temperature contribution to the energy equation, if energy equation is considered ---*/
   if (energy && streamwisePeriodic_temperature) {
 
-    if (heat_flux_bc)
+    /*--- Compute scalar factors, if there is a HEAT FLUX BC ---*/
+    if (bool_heat_flux_bc) {
       scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow * DensityInc_i / (SPvals.Streamwise_Periodic_MassFlow * norm2_translation);
-    else {
-      su2double temp_grad = 0.0;
+
+      /*--- Compute scalar-product dot_prod(v*t) ---*/
+      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, &V_i[1]);
+    }
+
+    /*--- Compute scalar factors, if there is an ISOTHERMAL BC ---*/
+    if (bool_isotherml_bc) {
+
+      /*--- Compute three terms associated with the source terms for iso-thermal BCs ---*/
+      // Reference Eq(20) Stalio et. al, doi:10.1115/1.2717235
+
       dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, PrimVar_Grad_i[3]);
       su2double term1 = 2 * Thermal_Conductivity_i * dot_product;
       su2double term2 = - SPvals.Streamwise_Periodic_LambdaL * Thermal_Conductivity_i * V_i[3];
-      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, &V_i[1]);
       su2double term3 = - V_i[3] * V_i[1] * DensityInc_i *  config->GetSpecific_Heat_Cp();
-
       scalar_factor = SPvals.Streamwise_Periodic_LambdaL * (term1 + term2 + term3);
+      dot_product = 1.0;
     }
-    /*--- Compute scalar-product dot_prod(v*t) ---*/
-    // dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, &V_i[1]);
 
-    residual[nDim+1] = Volume * scalar_factor;// * dot_product;
+    residual[nDim+1] = Volume * scalar_factor * dot_product;
 
     /*--- If a RANS turbulence model is used, an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {

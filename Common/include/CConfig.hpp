@@ -3030,6 +3030,12 @@ public:
   unsigned short GetnMarker_HeatFlux(void) const { return nMarker_HeatFlux; }
 
   /*!
+   * \brief Get the total (local) number of isothermal markers.
+   * \return Total number of isothermal markers.
+   */
+  unsigned short GetnMarker_Isothermal(void) const { return nMarker_Isothermal; }
+
+  /*!
    * \brief Get the total number of rough markers.
    * \return Total number of heat flux markers.
    */

@@ -1692,7 +1692,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Load the aux variable gradient that we already computed. ---*/
       if(streamwise_periodic_temperature && turbulent)
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
-        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
+
+      /*--- Load the Prim variable gradient that we already computed. ---*/
+      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
 
       /*--- Compute the streamwise periodic source residual and add to the total ---*/
       auto residual = numerics->ComputeResidual(config);
