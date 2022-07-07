@@ -64,6 +64,12 @@ private:
   phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
   A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
 
+  vector<su2double>
+  mu_ref,                         /*!< \brief Vector containing reference viscosity for Sutherland's law */
+  k_ref,                          /*!< \brief Vector containing reference thermal conducivities for Sutherland's law */
+  Sm_ref,                         /*!< \brief Vector containing Sutherland's constant for viscosity */
+  Sk_ref;                         /*!< \brief Vector containing Sutherland's constant for thermal conductivities */
+
   su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
   RxnConstantTable,              /*!< \brief Table of chemical equiibrium reaction constants */
@@ -231,6 +237,16 @@ public:
    * \brief Get T-R and V-E thermal conductivities vector with Gupta-Yos transport model.
    */
   void ThermalConductivitiesGY();
+
+  /*!
+   * \brief Get viscosity with Sutherland's transport model.
+   */
+  void ViscositySuth();
+
+  /*!
+   * \brief Get T-R and V-E thermal conductivities vector with Sutherland's transport model.
+   */
+  void ThermalConductivitiesSuth();
 
   /*!
    * \brief Get reference temperature.

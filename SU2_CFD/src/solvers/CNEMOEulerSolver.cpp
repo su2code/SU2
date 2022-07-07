@@ -1312,6 +1312,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     if (viscous) {
 
       switch(config->GetKind_TransCoeffModel()){
+      case TRANSCOEFFMODEL::SUTHERLAND:
+        ModelTable << "Sutherland + WBE";
+        NonDimTable.PrintFooter();
+        break;
+
       case TRANSCOEFFMODEL::WILKE:
         ModelTable << "Wilke-Blottner-Eucken";
         NonDimTable.PrintFooter();
