@@ -1398,6 +1398,7 @@ void CGeometry::SetEdges(void) {
       }
     }
   }
+  edges->SetPaddingNodes();
 }
 
 void CGeometry::SetFaces(void) {
