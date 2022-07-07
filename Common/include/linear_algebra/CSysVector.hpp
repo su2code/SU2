@@ -316,6 +316,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
+#else
+    /*--- Make view of result consistent across threads. ---*/
+    SU2_OMP_BARRIER
 #endif
 
     return dotRes;
