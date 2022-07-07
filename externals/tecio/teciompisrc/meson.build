@@ -17,7 +17,14 @@ if build_machine.system() != 'windows'
     tec_cxx_flags += ['-Wno-misleading-indentation',
                       '-Wno-uninitialized',
                       '-Wno-placement-new',
-                      '-Wno-pedantic']
+                      '-Wno-pedantic',
+                      '-Wno-error=class-memaccess',
+                      '-Wno-class-memaccess',
+                      '-Wno-error=deprecated-copy',
+                      '-Wno-deprecated-copy',
+                      '-Wno-error=cast-function-type',
+                      '-Wno-cast-function-type',
+                     ]
   endif
 endif
 
