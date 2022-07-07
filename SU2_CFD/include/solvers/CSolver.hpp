@@ -127,7 +127,7 @@ protected:
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 
-  su2double *EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of passive scalars. */
+  su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of passive scalars. */
 
   /*--- End variables that need to go. ---*/
 
