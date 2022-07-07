@@ -27,7 +27,7 @@
 
 import os, shutil, copy, time
 
-from .. import io   as su2io
+from .. import io as su2io
 from .. import amginria as su2amg
 from .interface import CFD as SU2_CFD
 
@@ -43,11 +43,11 @@ def amg(config):
         
     #--- Check config options related to mesh adaptation
     
-    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_BACK', \
-                       'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', \
-                       'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_INV_BACK', 'ADAP_ORTHO', \
+    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_BACK', 
+                       'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER',
+                       'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_INV_BACK', 'ADAP_ORTHO',
                        'ADAP_RDG' ]
-    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_HMAX', \
+    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_HMAX',
                          'ADAP_HMIN', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME' ]
     
     if not all (opt in config for opt in required_options):
@@ -61,16 +61,16 @@ def amg(config):
 
     print(su2amg.print_adap_options(config))
     
-    #--- How many iterative loops? Using what prescribed mesh sizes? 
+    #--- Target mesh sizes and subiterations at each size
     
-    mesh_sizes   = su2amg.get_mesh_sizes(config)
-    sub_iter     = su2amg.get_sub_iterations(config)
+    mesh_sizes = su2amg.get_mesh_sizes(config)
+    sub_iter   = su2amg.get_sub_iterations(config)
     
     #--- Solver iterations/ residual reduction param for each size level
 
-    adap_flow_iter = su2amg.get_flow_iter(config)
-    adap_adj_iter  = su2amg.get_adj_iter(config)
-    adap_flow_cfl  = su2amg.get_flow_cfl(config)
+    flow_iter = su2amg.get_flow_iter(config)
+    adj_iter  = su2amg.get_adj_iter(config)
+    flow_cfl  = su2amg.get_flow_cfl(config)
 
     adap_sensor = config.ADAP_SENSOR
     sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
@@ -84,8 +84,8 @@ def amg(config):
     #--- Change current directory
     
     warn = True
+    base_dir = os.getcwd()
     adap_dir = './adap'
-    cwd = os.getcwd()
         
     if os.path.exists(adap_dir):
         print('./adap exists. Removing old mesh adaptation in 10s.')
@@ -93,27 +93,24 @@ def amg(config):
         shutil.rmtree(adap_dir)
         print(f'The {adap_dir} folder was deleted.')
     
-    os.makedirs(adap_dir)
-    os.chdir(adap_dir)
-    
-    cur_dir = './ite0'
-    os.makedirs(cur_dir)
-    os.chdir(cur_dir)
-    os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
+    dir = f'{adap_dir}/ite0'
+    os.makedirs(dir)
+    os.chdir(dir)
+    os.symlink(os.path.join(base_dir, config.MESH_FILENAME), config.MESH_FILENAME)
         
-    cur_meshfil = config['MESH_FILENAME']
+    meshfil = config['MESH_FILENAME']
 
     #--- Format of history file
 
     history_format = config.TABULAR_FORMAT
     if (history_format == 'TECPLOT'):
-        history_filename = os.path.join(cwd,'history_adap.dat')
+        history_filename = os.path.join(base_dir, 'history_adap.dat')
     else:
-        history_filename = os.path.join(cwd,'history_adap.csv')
+        history_filename = os.path.join(base_dir, 'history_adap.csv')
 
     #--- Get mesh dimension
 
-    dim = su2amg.get_su2_dim(cur_meshfil)
+    dim = su2amg.get_su2_dim(meshfil)
     if ( dim != 2 and dim != 3 ):
         raise ValueError('Wrong dimension number.')
     
@@ -131,7 +128,7 @@ def amg(config):
 
     #--- Check config for filenames if restarting
     if config['RESTART_SOL'] == 'YES':
-        required_options=['SOLUTION_FILENAME','SOLUTION_ADJ_FILENAME']
+        required_options=['SOLUTION_FILENAME', 'SOLUTION_ADJ_FILENAME']
         if not all (opt in config for opt in required_options):
             err = 'RESTART_SOL is set to YES, but the solution is missing:\n'
             for opt in required_options:
@@ -139,7 +136,7 @@ def amg(config):
                     err += opt + '\n'
             raise ValueError(err)
 
-        os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), config.SOLUTION_FILENAME)
+        os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), config.SOLUTION_FILENAME)
 
         print('Initial CFD solution is provided.')
 
@@ -149,9 +146,9 @@ def amg(config):
     #--- Only allow binary restarts since WRT_BINARY_RESTART is deprecated
     sol_ext = '.dat'
 
-    cur_meshfil = config['MESH_FILENAME']
-    cur_solfil  = f'restart_flow{sol_ext}'
-    su2amg.set_flow_config_ini(config_cfd, cur_solfil)
+    meshfil = config['MESH_FILENAME']
+    solfil  = f'restart_flow{sol_ext}'
+    su2amg.set_flow_config_ini(config_cfd, solfil)
 
     try: # run with redirected outputs
         #--- Run a single iteration of the flow if restarting to get history info
@@ -162,26 +159,26 @@ def amg(config):
         with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
 
         if config['RESTART_SOL'] == 'YES':
-            os.remove(cur_solfil)
-            os.symlink(os.path.join(cwd, config.SOLUTION_FILENAME), cur_solfil)
+            os.remove(solfil)
+            os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
         config_cfd.RESTART_SOL = 'YES'
         config_cfd.RESTART_CFL = 'YES'
 
         if adap_sensor == 'GOAL':
-            cur_solfil_adj = f'restart_adj{sol_ext}'
-            su2amg.set_adj_config_ini(config_cfd_ad, cur_solfil, cur_solfil_adj, mesh_sizes[0])
+            adjsolfil = f'restart_adj{sol_ext}'
+            su2amg.set_adj_config_ini(config_cfd_ad, solfil, adjsolfil, mesh_sizes[0])
 
             #--- If restarting, check for the existence of an adjoint restart
             if config['RESTART_SOL'] == 'YES':
-                cur_solfil_adj_ini = config_cfd_ad.SOLUTION_ADJ_FILENAME    
+                adjsolfil_ini = config_cfd_ad.SOLUTION_ADJ_FILENAME    
                 func_name          = config.OBJECTIVE_FUNCTION
                 suffix             = su2io.get_adjointSuffix(func_name)
-                cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
+                adjsolfil_ini = su2io.add_suffix(adjsolfil_ini, suffix)
 
                 #--- Run an adjoint if the solution file doesn't exist
-                if not (os.path.exists(os.path.join(cwd, cur_solfil_adj_ini))):
+                if not (os.path.exists(os.path.join(base_dir, adjsolfil_ini))):
                     config_cfd_ad.ITER        = config.ITER
                     config_cfd_ad.RESTART_SOL = 'NO'
 
@@ -189,7 +186,7 @@ def amg(config):
 
                 #--- Otherwise just compute the metric
                 else:
-                    os.symlink(os.path.join(cwd, cur_solfil_adj_ini), cur_solfil_adj_ini)
+                    os.symlink(os.path.join(base_dir, adjsolfil_ini), adjsolfil_ini)
                     config_cfd_ad.ITER = 0
 
                     print('Initial adjoint CFD solution is provided.')
@@ -201,7 +198,7 @@ def amg(config):
 
             func_name      = config.OBJECTIVE_FUNCTION
             suffix         = su2io.get_adjointSuffix(func_name)
-            cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
+            adjsolfil = su2io.add_suffix(adjsolfil, suffix)
 
             #--- Set RESTART_SOL=YES for runs after adaptation
             config_cfd_ad.RESTART_SOL = 'YES'
@@ -211,7 +208,7 @@ def amg(config):
         
     #--- Check existence of initial mesh, solution
     
-    required_files = [cur_meshfil,cur_solfil]
+    required_files = [meshfil, solfil]
     
     if not all (os.path.exists(fil) for fil in required_files):
         err = "Can't find the following files:\n"
@@ -226,7 +223,7 @@ def amg(config):
 
     #--- Print convergence history
 
-    npoin = su2amg.get_su2_npoin(cur_meshfil)
+    npoin = su2amg.get_su2_npoin(meshfil)
     su2amg.plot_results(history_format, history_filename, global_iter, npoin)
     
     print('\nStarting mesh adaptation process.')
@@ -248,7 +245,7 @@ def amg(config):
             
             #--- Load su2 mesh 
             
-            mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
+            mesh = su2amg.read_mesh_and_sol(meshfil, solfil)
 
             #--- Write solution
             su2amg.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
@@ -266,7 +263,7 @@ def amg(config):
 
                 #--- Read and merge adjoint solution to be interpolated
 
-                sol_adj = su2amg.read_sol(cur_solfil_adj, mesh)
+                sol_adj = su2amg.read_sol(adjsolfil, mesh)
                 su2amg.merge_sol(mesh, sol_adj)
 
                 del sol_adj
@@ -303,30 +300,29 @@ def amg(config):
 
             del mesh
 
-            old_dir = cur_dir
-            cur_dir = f'./ite{global_iter}'
-            os.makedirs(os.path.join('..',cur_dir))
-            os.chdir(os.path.join('..',cur_dir))
+            dir = f'./ite{global_iter}'
+            os.makedirs(os.path.join('..',dir))
+            os.chdir(os.path.join('..',dir))
             
-            cur_meshfil = 'adap.su2'
-            cur_solfil  = f'flo{sol_ext}'
+            meshfil = 'adap.su2'
+            solfil  = f'flo{sol_ext}'
                             
-            su2amg.write_mesh_and_sol(cur_meshfil, cur_solfil, mesh_new)
+            su2amg.write_mesh_and_sol(meshfil, solfil, mesh_new)
 
             if adap_sensor == 'GOAL':
-                cur_solfil_adj = f'adj{sol_ext}'
+                adjsolfil = f'adj{sol_ext}'
                 sol_adj = su2amg.split_adj_sol(mesh_new)
-                su2amg.write_sol(cur_solfil_adj, sol_adj)
+                su2amg.write_sol(adjsolfil, sol_adj)
 
-            cur_meshfil_gmf    = 'flo_itp.meshb'
-            cur_solfil_gmf     = 'flo_itp.solb'
-            su2amg.write_mesh_and_sol(cur_meshfil_gmf, cur_solfil_gmf, mesh_new)
+            meshfil_gmf    = 'flo_itp.meshb'
+            solfil_gmf     = 'flo_itp.solb'
+            su2amg.write_mesh_and_sol(meshfil_gmf, solfil_gmf, mesh_new)
 
             del mesh_new
 
             if adap_sensor == 'GOAL':
-                cur_solfil_gmf_adj = 'adj_itp.solb'
-                su2amg.write_sol(cur_solfil_gmf_adj, sol_adj)
+                solfil_gmf_adj = 'adj_itp.solb'
+                su2amg.write_sol(solfil_gmf_adj, sol_adj)
                 del sol_adj
                 
             #--- Run su2
@@ -335,37 +331,37 @@ def amg(config):
         
             try: # run with redirected outputs
                 
-                cur_solfil_ini = f'flo_ini{sol_ext}'
-                os.rename(cur_solfil, cur_solfil_ini)
+                solfil_ini = f'flo_ini{sol_ext}'
+                os.rename(solfil, solfil_ini)
                 
-                su2amg.update_flow_config(config_cfd, cur_meshfil, cur_solfil, cur_solfil_ini, \
-                                          adap_flow_iter[iSiz], adap_flow_cfl[iSiz])
+                su2amg.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
+                                          flow_iter[iSiz], flow_cfl[iSiz])
                 
                 with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
                 
-                if not os.path.exists(cur_solfil) :
+                if not os.path.exists(solfil) :
                     raise RuntimeError('SU2_CFD failed.\n')
 
                 #--- Print convergence history
 
-                npoin = su2amg.get_su2_npoin(cur_meshfil)
+                npoin = su2amg.get_su2_npoin(meshfil)
                 su2amg.plot_results(history_format, history_filename, global_iter, npoin)
                     
                 if adap_sensor == 'GOAL':
 
-                    cur_solfil_adj_ini = f'adj_ini{sol_ext}'
-                    cur_solfil_adj_ini = su2io.add_suffix(cur_solfil_adj_ini,suffix)
-                    os.rename(cur_solfil_adj, cur_solfil_adj_ini)
-                    cur_solfil_adj_ini = f'adj_ini{sol_ext}'
+                    adjsolfil_ini = f'adj_ini{sol_ext}'
+                    adjsolfil_ini = su2io.add_suffix(adjsolfil_ini, suffix)
+                    os.rename(adjsolfil, adjsolfil_ini)
+                    adjsolfil_ini = f'adj_ini{sol_ext}'
 
-                    su2amg.update_adj_config(config_cfd_ad, cur_meshfil, cur_solfil, cur_solfil_adj, \
-                                             cur_solfil_adj_ini, adap_adj_iter[iSiz], mesh_sizes[iSiz])
+                    su2amg.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
+                                             adjsolfil_ini, adj_iter[iSiz], mesh_sizes[iSiz])
 
                     with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
 
-                    cur_solfil_adj = su2io.add_suffix(cur_solfil_adj,suffix)
+                    adjsolfil = su2io.add_suffix(adjsolfil, suffix)
 
-                    if not os.path.exists(cur_solfil_adj) :
+                    if not os.path.exists(adjsolfil) :
                         raise RuntimeError('SU2_CFD_AD failed.\n')
             
             except:
@@ -373,12 +369,12 @@ def amg(config):
 
     #--- Write final files
 
-    mesh = su2amg.read_mesh_and_sol(cur_meshfil, cur_solfil)
+    mesh = su2amg.read_mesh_and_sol(meshfil, solfil)
     su2amg.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
     
-    os.rename(cur_solfil,os.path.join(cwd,config.RESTART_FILENAME))
-    os.rename(cur_meshfil,os.path.join(cwd,config.MESH_OUT_FILENAME))
+    os.rename(solfil, os.path.join(base_dir, config.RESTART_FILENAME))
+    os.rename(meshfil, os.path.join(base_dir, config.MESH_OUT_FILENAME))
     
     print('\nMesh adaptation successfully ended. Results files:')
-    print(f'{config.MESH_OUT_FILENAME}\n{config.RESTART_FILENAME}\n\n')
+    print(f'{config.MESH_OUT_FILENAME}\n{config.RESTART_FILENAME}\n')
     
