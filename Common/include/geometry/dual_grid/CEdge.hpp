@@ -73,12 +73,8 @@ public:
    * \brief SIMD version of GetNode, iNode returned for multiple iEdges.
    */
   template<class T, size_t N>
-  FORCEINLINE simd::Array<T,N> GetNode(simd::Array<T,N> iEdge, unsigned long iNode) const {
-    simd::Array<T,N> result;
-    for (size_t j = 0; j < N; ++j) {
-      result[j] = Nodes(iEdge[j], iNode);
-    }
-    return result;
+  FORCEINLINE simd::Array<T,N> GetNode(simd::Array<T,N> iEdges, unsigned long iNode) const {
+    return simd::Array<T,N>(Nodes[iNode], iEdges);
   }
 
   /*!
