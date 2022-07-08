@@ -3748,11 +3748,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 /*--- Set default values for various fluid properties. ---*/
 
   const su2double Molecular_Weight_Default = 28.96;
-  const su2double Mu_Constant_Default = 1.716E-5;
+  const su2double Mu_Constant_Default = SI ? 1.716E-5 : (1.716E-5 / 47.88025898);
   const su2double Mu_Ref_Default = Mu_Constant_Default;
   const su2double Mu_Temperature_Ref_Default = SI ? 273.15 : (273.15 * 1.8);
-  const su2double Mu_S_Default = 110.4;
-  const su2double Thermal_Conductivity_Constant_Default = 2.57E-2;
+  const su2double Mu_S_Default = SI ? 110.4 : (110.4 * 1.8);
+  const su2double Thermal_Conductivity_Constant_Default = SI ? 2.57E-2 : (2.57E-2 * 0.577789317);
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
 
@@ -3859,37 +3859,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         default:
           if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
           break;
-      }
-    }
-
-    /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
-
-    if (SystemMeasurements == US) {
-      if (Kind_FluidModel == FLUID_MIXTURE) {
-        /* Correct the viscosities, if they contain the default SI values. */
-        for (unsigned short iVar = 0; iVar < nSpecies_Init + 1; iVar++) {
-          if (fabs(Mu_Constant[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
-          if (fabs(Mu_Ref[iVar] - Mu_Constant_Default) < 1.0E-15) Mu_Ref[iVar] /= 47.88025898;
-
-          /* Correct the values with temperature dimension, if they contain the default SI values. */
-          if (fabs(Mu_Temperature_Ref[iVar] - Mu_Temperature_Ref_Default) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
-          if (fabs(Mu_S[iVar] - Mu_S_Default) < 1.0E-8) Mu_S[iVar] *= 1.8;
-
-          /* Correct the thermal conductivity, if it contains the default SI value. */
-          if (fabs(Thermal_Conductivity_Constant[iVar] - Thermal_Conductivity_Constant_Default) < 1.0E-10)
-            Thermal_Conductivity_Constant[iVar] *= 0.577789317;
-        }
-      } else {
-        /* Correct the viscosities, if they contain the default SI values. */
-        if (fabs(*Mu_Constant - 1.716E-5) < 1.0E-15) *Mu_Constant /= 47.88025898;
-        if (fabs(*Mu_Ref - 1.716E-5) < 1.0E-15) *Mu_Ref /= 47.88025898;
-
-        /* Correct the values with temperature dimension, if they contain the default SI values. */
-        if (fabs(*Mu_Temperature_Ref - 273.15) < 1.0E-8) *Mu_Temperature_Ref *= 1.8;
-        if (fabs(*Mu_S - 110.4) < 1.0E-8) *Mu_S *= 1.8;
-
-        /* Correct the thermal conductivity, if it contains the default SI value. */
-        if (fabs(*Thermal_Conductivity_Constant - 0.0257) < 1.0E-10) *Thermal_Conductivity_Constant *= 0.577789317;
       }
     }
 
