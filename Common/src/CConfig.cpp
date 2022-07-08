@@ -3748,11 +3748,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 /*--- Set default values for various fluid properties. ---*/
 
   const su2double Molecular_Weight_Default = 28.96;
-  const su2double Mu_Constant_Default = SI ? 1.716E-5 : (1.716E-5 / 47.88025898);
+  const su2double Mu_Constant_Default = (SystemMeasurements == SI) ? 1.716E-5 : (1.716E-5 / 47.88025898);
   const su2double Mu_Ref_Default = Mu_Constant_Default;
-  const su2double Mu_Temperature_Ref_Default = SI ? 273.15 : (273.15 * 1.8);
-  const su2double Mu_S_Default = SI ? 110.4 : (110.4 * 1.8);
-  const su2double Thermal_Conductivity_Constant_Default = SI ? 2.57E-2 : (2.57E-2 * 0.577789317);
+  const su2double Mu_Temperature_Ref_Default = (SystemMeasurements == SI) ? 273.15 : (273.15 * 1.8);
+  const su2double Mu_S_Default = (SystemMeasurements == SI) ? 110.4 : (110.4 * 1.8);
+  const su2double Thermal_Conductivity_Constant_Default = (SystemMeasurements == SI) ? 2.57E-2 : (2.57E-2 * 0.577789317);
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
 
