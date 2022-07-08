@@ -5408,7 +5408,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
-  }
+}
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
