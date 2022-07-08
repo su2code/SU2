@@ -3750,7 +3750,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Molecular_Weight_Default = 28.96;
   const su2double Mu_Constant_Default = 1.716E-5;
   const su2double Mu_Ref_Default = Mu_Constant_Default;
-  const su2double Mu_Temperature_Ref_Default = 273.15;
+  const su2double Mu_Temperature_Ref_Default = SI ? 273.15 : (273.15 * 1.8);
   const su2double Mu_S_Default = 110.4;
   const su2double Thermal_Conductivity_Constant_Default = 2.57E-2;
   const su2double Prandtl_Lam_Default = 0.72;
