@@ -884,9 +884,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
         // Vib.-El. Temperature
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+            for (jSpecies = 0; jSpecies < nSpecies; jSpecies++){
             Jacobian_j[nSpecies+nDim+1][iSpecies] += Jacobian_j[jSpecies][iSpecies]*eves[iSpecies];
             Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += Res_Visc[iSpecies]/Area*Cvve[iSpecies];
+            }
         }
 
         /*--- Multiply by the transformation matrix and store in Jac. ii ---*/
