@@ -860,7 +860,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     su2double Res_Conv = 0.0;
     su2double Res_Visc = thermal_conductivity * dTdn * Area;
-      
+
     /*--- Calculate Jacobian for implicit time stepping ---*/
 
     if (implicit) {
