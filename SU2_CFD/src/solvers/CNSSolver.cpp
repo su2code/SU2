@@ -2,14 +2,14 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -74,8 +74,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
@@ -133,7 +133,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   AD::StartNoSharedReading();
 
@@ -421,9 +421,8 @@ void CNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *c
   BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
 
-void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfig *config,
-                                         unsigned short val_marker, unsigned short kind_boundary) {
-
+void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfig* config, unsigned short val_marker,
+                                         unsigned short kind_boundary) {
   /*--- Identify the boundary by string name and get the specified wall
    heat flux from config as well as the wall function treatment. ---*/
 
@@ -435,12 +434,15 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
   su2double Wall_HeatFlux = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
 
   if (kind_boundary == HEAT_FLUX) {
-    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-  }
-  else if (kind_boundary == HEAT_TRANSFER) {
+    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+    if (config->GetIntegrated_HeatFlux()) {
+      Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+    }
+  } else if (kind_boundary == HEAT_TRANSFER) {
     /*--- The required heatflux will be computed for each iPoint individually based on local Temperature. ---*/
-    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-    Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
+                           config->GetHeat_Flux_Ref();
+    Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
   }
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
@@ -611,34 +613,142 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
   return Twall;
 }
 
-su2double CNSSolver::GetRadiativeWallTemperature(su2double thermal_conductivity,
-                                           su2double dist_ij, su2double There, su2double Twall) const {
-
-  su2double Ti = Twall;
-  su2double Tj = There;
-
-  su2double q = (Tj - Ti)/dist_ij * thermal_conductivity;
-
-  unsigned short N = 0, Nmax = 1e3;
-  su2double a = 0, b = 1e3, tol = 1e-6, e = 1, sigma = STEFAN_BOLTZMANN; // e = surface emissivity, set to 1 for blackbody radiation
-
-  while (N < Nmax) {
-          
-    Twall = (a + b) / 2;
-
-    if (q - e*sigma*pow(Twall,4) == 0 || (b - a) / 2 < tol) {
-      break;
+void CNSSolver::BC_RadiativeEquilibrium_Wall(CGeometry *geometry,
+                                             CSolver **solver_container,
+                                             CNumerics *conv_numerics,
+                                             CNumerics *visc_numerics,
+                                             CConfig *config,
+                                             unsigned short val_marker){
+    
+    const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+    const su2double emissivity = config->Get_Emissivity(Marker_Tag);
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+    const su2double Prandtl_Turb = config->GetPrandtl_Turb();
+    const su2double Gas_Constant = config->GetGas_ConstantND();
+    const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+    
+    su2double **Jacobian_i = nullptr;
+    if (implicit) {
+      Jacobian_i = new su2double* [nVar];
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        Jacobian_i[iVar] = new su2double [nVar] ();
     }
 
-    N++;
+    /*--- Loop over boundary points ---*/
 
-    if ((q - e*sigma*pow(Twall,4) > 0 && q - e*sigma*pow(a,4) > 0) || (q - e*sigma*pow(Twall,4) < 0 && q - e*sigma*pow(a,4) < 0)) {
-      a = Twall;
-    } else {
-      b = Twall;
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+      const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      /*--- Compute dual-grid area and boundary normal ---*/
+
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+
+      /*--- Compute closest normal neighbor ---*/
+
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+
+      su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+
+      /*--- Store the corrected velocity at the wall which will
+       be zero (v = 0), unless there is grid motion (v = u_wall)---*/
+
+      if (dynamic_grid) {
+        nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+      }
+      else {
+        su2double zero[MAXNDIM] = {0.0};
+        nodes->SetVelocity_Old(iPoint, zero);
+      }
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        LinSysRes(iPoint, iDim+1) = 0.0;
+      nodes->SetVel_ResTruncError_Zero(iPoint);
+
+      /*--- Get transport coefficients ---*/
+
+      su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+      su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
+      su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+
+      const su2double There = nodes->GetTemperature(Point_Normal);
+      su2double Twall = nodes->GetTemperature(iPoint);
+
+      /*--- Compute the normal gradient in temperature using Twall ---*/
+
+      su2double dTdn = -(There - Twall)/dist_ij;
+
+      /*--- Apply a weak boundary condition for the energy equation.
+       Compute the residual due to the prescribed heat flux. ---*/
+
+      su2double Res_Conv = 0.0;
+      su2double Res_Visc = Area * (thermal_conductivity * dTdn - emissivity*STEFAN_BOLTZMANN*pow(Twall,4));
+        
+      /*--- Calculate Jacobian for implicit time stepping ---*/
+
+      if (implicit) {
+
+        /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
+
+        su2double Density = nodes->GetDensity(iPoint);
+        su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
+        su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+
+        Jacobian_i[nDim+1][0] = thermal_conductivity/dist_ij * dTdrho * Area;
+
+        for (auto jDim = 0u; jDim < nDim; jDim++)
+          Jacobian_i[nDim+1][jDim+1] = 0.0;
+
+        Jacobian_i[nDim+1][nDim+1] = thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+      }
+
+      /*--- If the wall is moving, there are additional residual contributions
+       due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+
+      if (dynamic_grid) {
+        AddDynamicGridResidualContribution(iPoint, Point_Normal, geometry, UnitNormal,
+                                           Area, geometry->nodes->GetGridVel(iPoint),
+                                           Jacobian_i, Res_Conv, Res_Visc);
+      }
+
+      /*--- Convective and viscous contributions to the residual at the wall ---*/
+
+      LinSysRes(iPoint, nDim+1) += Res_Conv - Res_Visc;
+
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal).
+       And add the contributions to the Jacobian due to energy. ---*/
+
+      if (implicit) {
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+
+        for (auto iVar = 1u; iVar <= nDim; iVar++) {
+          auto total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }
     }
-  }
-    return Twall;
+    END_SU2_OMP_FOR
+
+    if (Jacobian_i)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        delete [] Jacobian_i[iVar];
+    delete [] Jacobian_i;
 }
 
 void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver_container,
@@ -741,12 +851,6 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
     }
 
-    // TODO: temporary fix for now, will add config option
-    bool rad_wall = true;
-    if (rad_wall) {
-      Twall = GetRadiativeWallTemperature(thermal_conductivity, dist_ij, There, Twall);
-    }
-
     /*--- Compute the normal gradient in temperature using Twall ---*/
 
     su2double dTdn = -(There - Twall)/dist_ij;
@@ -755,9 +859,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
      Compute the residual due to the prescribed heat flux. ---*/
 
     su2double Res_Conv = 0.0;
-    //su2double Res_Visc = thermal_conductivity * dTdn * Area;
-    su2double Res_Visc = (thermal_conductivity * dTdn) * Area;
-
+    su2double Res_Visc = thermal_conductivity * dTdn * Area;
+      
     /*--- Calculate Jacobian for implicit time stepping ---*/
 
     if (implicit) {

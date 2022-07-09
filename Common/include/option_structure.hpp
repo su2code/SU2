@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,9 +77,9 @@ const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of peri
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4;    /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -92,8 +92,8 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -514,6 +514,7 @@ const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+const int GRAD_TERM = 6;           /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
 
 const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */
@@ -523,16 +524,20 @@ const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 /*!
- * \brief Types of finite elements (in 2D or 3D)
+ * \brief Types of finite elements (in 1D or 2D or 3D)
  */
+const int EL_LINE = 6;    /*!< \brief Elements of two nodes, with second order gauss quadrature (1D). */
+
 const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;   /*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;   /*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;   /*!< \brief Elements of eight nodes (3D). */
 const int EL_PYRAM = 2;   /*!< \brief Elements of five nodes (3D). */
 const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
-
+const int EL_TETRA2 = 4;  /*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;  /*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
 
 /*!
  * \brief Types of spatial discretizations
@@ -882,23 +887,23 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 /*!
  * \brief Types of slope limiters
  */
-enum ENUM_LIMITER {
-  NO_LIMITER           = 0, /*!< \brief No limiter. */
-  VENKATAKRISHNAN      = 1, /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
-  VENKATAKRISHNAN_WANG = 2, /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
-  BARTH_JESPERSEN      = 3, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
-  VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
-  SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
-  WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
+enum class LIMITER {
+  NONE                 , /*!< \brief No limiter. */
+  VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
+  BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
+  VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
+  SHARP_EDGES          , /*!< \brief Slope limiter using sharp edges. */
+  WALL_DISTANCE          /*!< \brief Slope limiter using wall distance. */
 };
-static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
-  MakePair("NONE", NO_LIMITER)
-  MakePair("VENKATAKRISHNAN", VENKATAKRISHNAN)
-  MakePair("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
-  MakePair("BARTH_JESPERSEN", BARTH_JESPERSEN)
-  MakePair("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
-  MakePair("SHARP_EDGES", SHARP_EDGES)
-  MakePair("WALL_DISTANCE", WALL_DISTANCE)
+static const MapType<std::string, LIMITER> Limiter_Map = {
+  MakePair("NONE", LIMITER::NONE)
+  MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
+  MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
+  MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
+  MakePair("SHARP_EDGES", LIMITER::SHARP_EDGES)
+  MakePair("WALL_DISTANCE", LIMITER::WALL_DISTANCE)
 };
 
 /*!
@@ -907,22 +912,12 @@ static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
 enum class TURB_MODEL {
   NONE,      /*!< \brief No turbulence model. */
   SA,        /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_NEG,    /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-  SA_E,      /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP,   /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
   SST,       /*!< \brief Kind of Turbulence model (Menter SST). */
-  SST_SUST   /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
 static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", TURB_MODEL::NONE)
   MakePair("SA", TURB_MODEL::SA)
-  MakePair("SA_NEG", TURB_MODEL::SA_NEG)
-  MakePair("SA_E", TURB_MODEL::SA_E)
-  MakePair("SA_COMP", TURB_MODEL::SA_COMP)
-  MakePair("SA_E_COMP", TURB_MODEL::SA_E_COMP)
   MakePair("SST", TURB_MODEL::SST)
-  MakePair("SST_SUST", TURB_MODEL::SST_SUST)
 };
 
 /*!
@@ -941,16 +936,212 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
     case TURB_MODEL::NONE:
       return TURB_FAMILY::NONE;
     case TURB_MODEL::SA:
-    case TURB_MODEL::SA_NEG:
-    case TURB_MODEL::SA_E:
-    case TURB_MODEL::SA_COMP:
-    case TURB_MODEL::SA_E_COMP:
       return TURB_FAMILY::SA;
     case TURB_MODEL::SST:
-    case TURB_MODEL::SST_SUST:
       return TURB_FAMILY::KW;
   }
   return TURB_FAMILY::NONE;
+}
+
+/*!
+ * \brief SST Options
+ */
+enum class SST_OPTIONS {
+  NONE,        /*!< \brief No SST Turb model. */
+  V1994,       /*!< \brief 1994 Menter k-w SST model. */
+  V2003,       /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,      /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,      /*!< \brief 2003m Menter k-w SST model. */
+  SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
+  V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+};
+static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
+  MakePair("NONE", SST_OPTIONS::NONE)
+  MakePair("V1994m", SST_OPTIONS::V1994m)
+  MakePair("V2003m", SST_OPTIONS::V2003m)
+  /// TODO: For now we do not support "unmodified" versions of SST.
+  //MakePair("V1994", SST_OPTIONS::V1994)
+  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("SUSTAINING", SST_OPTIONS::SUST)
+  MakePair("VORTICITY", SST_OPTIONS::V)
+  MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
+  MakePair("UQ", SST_OPTIONS::UQ)
+};
+
+/*!
+ * \brief Structure containing parsed SST options.
+ */
+struct SST_ParsedOptions {
+  SST_OPTIONS version = SST_OPTIONS::V1994;   /*!< \brief Enum SST base model. */
+  SST_OPTIONS production = SST_OPTIONS::NONE; /*!< \brief Enum for production corrections/modifiers for SST model. */
+  bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
+  bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
+  bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+};
+
+/*!
+ * \brief Function to parse SST options.
+ * \param[in] SST_Options - Selected SST option from config.
+ * \param[in] nSST_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SST options.
+ */
+inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigned short nSST_Options, int rank) {
+  SST_ParsedOptions SSTParsedOptions;
+
+  auto IsPresent = [&](SST_OPTIONS option) {
+    const auto sst_options_end = SST_Options + nSST_Options;
+    return std::find(SST_Options, sst_options_end, option) != sst_options_end;
+  };
+
+  const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
+  const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
+  const bool found_1994m = IsPresent(SST_OPTIONS::V1994m);
+  const bool found_2003m = IsPresent(SST_OPTIONS::V2003m);
+
+  const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
+
+  const bool sst_1994 = found_1994 || found_1994m || default_version;
+  const bool sst_2003 = found_2003 || found_2003m;
+
+  /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
+  const bool sst_m = found_1994m || found_2003m || default_version;
+
+  const bool sst_sust = IsPresent(SST_OPTIONS::SUST);
+  const bool sst_v = IsPresent(SST_OPTIONS::V);
+  const bool sst_kl = IsPresent(SST_OPTIONS::KL);
+  const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+
+  if (sst_1994 && sst_2003) {
+    SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  } else if (sst_2003) {
+    SSTParsedOptions.version = SST_OPTIONS::V2003;
+  } else {
+    SSTParsedOptions.version = SST_OPTIONS::V1994;
+
+    if (rank==MASTER_NODE) {
+      std::cout <<
+        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
+        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
+    }
+  }
+
+  // Parse production modifications
+  if ((int(sst_v) + int(sst_kl) + int(sst_uq)) > 1) {
+    SU2_MPI::Error("Please select only one SST production term modifier (VORTICITY, KATO-LAUNDER, or UQ).", CURRENT_FUNCTION);
+  } else if (sst_v) {
+    SSTParsedOptions.production = SST_OPTIONS::V;
+  } else if (sst_kl) {
+    SSTParsedOptions.production = SST_OPTIONS::KL;
+  } else if (sst_uq) {
+    SSTParsedOptions.production = SST_OPTIONS::UQ;
+  }
+
+  SSTParsedOptions.sust = sst_sust;
+  SSTParsedOptions.modified = sst_m;
+  SSTParsedOptions.uq = sst_uq;
+  return SSTParsedOptions;
+}
+
+/*!
+ * \brief SA Options
+ */
+enum class SA_OPTIONS {
+  NONE,     /*!< \brief No option / default. */
+  NEG,      /*!< \brief Negative SA. */
+  EDW,      /*!< \brief Edwards version. */
+  FT2,      /*!< \brief Use FT2 term. */
+  QCR2000,  /*!< \brief Quadratic constitutive relation. */
+  COMP,     /*!< \brief Compressibility correction. */
+  ROT,      /*!< \brief Rotation correction. */
+  BC,       /*!< \brief Bas-Cakmakcioclu transition. */
+  EXP,      /*!< \brief Allow experimental combinations of options (according to TMR). */
+};
+static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
+  MakePair("NONE", SA_OPTIONS::NONE)
+  MakePair("NEGATIVE", SA_OPTIONS::NEG)
+  MakePair("EDWARDS", SA_OPTIONS::EDW)
+  MakePair("WITHFT2", SA_OPTIONS::FT2)
+  MakePair("QCR2000", SA_OPTIONS::QCR2000)
+  MakePair("COMPRESSIBILITY", SA_OPTIONS::COMP)
+  MakePair("ROTATION", SA_OPTIONS::ROT)
+  MakePair("BCM", SA_OPTIONS::BC)
+  MakePair("EXPERIMENTAL", SA_OPTIONS::EXP)
+};
+
+/*!
+ * \brief Structure containing parsed SA options.
+ */
+struct SA_ParsedOptions {
+  SA_OPTIONS version = SA_OPTIONS::NONE;  /*!< \brief SA base model. */
+  bool ft2 = false;                       /*!< \brief Use ft2 term. */
+  bool qcr2000 = false;                   /*!< \brief Use QCR-2000. */
+  bool comp = false;                      /*!< \brief Use compressibility correction. */
+  bool rot = false;                       /*!< \brief Use rotation correction. */
+  bool bc = false;                        /*!< \brief BC transition. */
+};
+
+/*!
+ * \brief Function to parse SA options.
+ * \param[in] SA_Options - Selected SA option from config.
+ * \param[in] nSA_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned short nSA_Options, int rank) {
+  SA_ParsedOptions SAParsedOptions;
+
+  auto IsPresent = [&](SA_OPTIONS option) {
+    const auto sa_options_end = SA_Options + nSA_Options;
+    return std::find(SA_Options, sa_options_end, option) != sa_options_end;
+  };
+
+  const bool found_neg = IsPresent(SA_OPTIONS::NEG);
+  const bool found_edw = IsPresent(SA_OPTIONS::EDW);
+  const bool found_bsl = !found_neg && !found_edw;
+
+  if (found_neg && found_edw) {
+    SU2_MPI::Error("Two versions (Negative and Edwards) selected for SA_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  if (found_bsl) {
+    SAParsedOptions.version = SA_OPTIONS::NONE;
+  } else if (found_neg) {
+    SAParsedOptions.version = SA_OPTIONS::NEG;
+  } else {
+    SAParsedOptions.version = SA_OPTIONS::EDW;
+  }
+  SAParsedOptions.ft2 = IsPresent(SA_OPTIONS::FT2);
+  SAParsedOptions.qcr2000 = IsPresent(SA_OPTIONS::QCR2000);
+  SAParsedOptions.comp = IsPresent(SA_OPTIONS::COMP);
+  SAParsedOptions.rot = IsPresent(SA_OPTIONS::ROT);
+  SAParsedOptions.bc = IsPresent(SA_OPTIONS::BC);
+
+  /*--- Validate user settings when not in experimental mode. ---*/
+  if (!IsPresent(SA_OPTIONS::EXP)) {
+    const bool any_but_bc = SAParsedOptions.ft2 || SAParsedOptions.qcr2000 || SAParsedOptions.comp || SAParsedOptions.rot;
+
+    switch (SAParsedOptions.version) {
+      case SA_OPTIONS::NEG:
+        if (!SAParsedOptions.ft2 || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-neg was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      case SA_OPTIONS::EDW:
+        if (any_but_bc || SAParsedOptions.bc)
+          SU2_MPI::Error("A non-standard version of SA-noft2-Edwards was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+      default:
+        if (SAParsedOptions.bc && any_but_bc)
+          SU2_MPI::Error("A non-standard version of SA-BCM was requested (see https://turbmodels.larc.nasa.gov/spalart.html).\n"
+                         "If you want to continue, add EXPERIMENTAL to SA_OPTIONS.", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  return SAParsedOptions;
 }
 
 /*!
@@ -959,12 +1150,10 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
-  BC    /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
-  MakePair("BC", TURB_TRANS_MODEL::BC)
 };
 
 /*!
@@ -996,7 +1185,6 @@ static const MapType<std::string, TURB_SGS_MODEL> SGS_Model_Map = {
   MakePair("WALE",         TURB_SGS_MODEL::WALE)
   MakePair("VREMAN",       TURB_SGS_MODEL::VREMAN)
 };
-
 
 /*!
  * \brief Types of window (weight) functions for cost functional
@@ -1215,6 +1403,7 @@ enum BC_TYPE {
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
+  RADIATIVE_EQUILIBRIUM = 56, /*!< \brief Radiative equilibrium wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
 };
 
@@ -2249,6 +2438,8 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
+  su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
 };
 
 /*!
@@ -2261,6 +2452,31 @@ enum class POD_KIND {
 static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("STATIC_POD",      POD_KIND::STATIC)
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
+};
+
+/*!
+ * \brief Type of operation for the linear system solver, changes the source of solver options.
+ */
+enum class LINEAR_SOLVER_MODE {
+  STANDARD,        /*!< \brief Operate in standard mode. */
+  MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
+  GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+};
+
+/*!
+ * \brief mode of operation for the sobolev smoothing solver.
+ */
+enum class ENUM_SOBOLEV_MODUS {
+  NONE,                 /*!< \brief Default option if none is choosen. */
+  PARAM_LEVEL_COMPLETE, /*!< \brief Operate on parameter level. */
+  MESH_LEVEL,           /*!< \brief Operate on mesh level. */
+  ONLY_GRAD,            /*!< \brief Flag to only compute the original gradient. */
+};
+static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
+  MakePair("NONE",                 ENUM_SOBOLEV_MODUS::NONE)
+  MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
+  MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
+  MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
 };
 
 #undef MakePair

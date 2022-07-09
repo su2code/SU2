@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@
 #include <string>
 
 #include "CSysVector.hpp"
+#include "../option_structure.hpp"
 
 class CConfig;
 class CGeometry;
@@ -75,9 +76,10 @@ public:
 
 private:
   const ScalarType eps;      /*!< \brief Machine epsilon used in this class. */
-  bool mesh_deform;          /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
   ScalarType Residual=1e-20; /*!< \brief Residual at the end of a call to Solve or Solve_b. */
   unsigned long Iterations=0;/*!< \brief Iterations done in Solve or Solve_b. */
+
+  LINEAR_SOLVER_MODE lin_sol_mode;  /*!< \brief Type of operation for the linear system solver, changes the source of solver options. */
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
@@ -290,9 +292,9 @@ public:
 
   /*!
    * \brief default constructor of the class.
-   * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
+   * \param[in] linear_solver_mode - enum, to let CSysSolve know in what context it is
    */
-  CSysSolve(const bool mesh_deform_mode = false);
+  CSysSolve(LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector

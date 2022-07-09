@@ -2,14 +2,14 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,21 +56,22 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  unsigned long InnerIter, TimeIter;
 
   const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                         (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
-  TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
 
-  InnerIter = config[val_iZone]->GetInnerIter();
+  const auto InnerIter = config[val_iZone]->GetInnerIter();
+  const auto TimeIter = config[val_iZone]->GetTimeIter();
 
   /*--- Update global parameters ---*/
+
+  MAIN_SOLVER main_solver = MAIN_SOLVER::NONE;
 
   switch (config[val_iZone]->GetKind_Solver()) {
     case MAIN_SOLVER::EULER:
@@ -78,7 +79,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case MAIN_SOLVER::INC_EULER:
     case MAIN_SOLVER::DISC_ADJ_INC_EULER:
     case MAIN_SOLVER::NEMO_EULER:
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::EULER, RUNTIME_FLOW_SYS);
+      main_solver = MAIN_SOLVER::EULER;
       break;
 
     case MAIN_SOLVER::NAVIER_STOKES:
@@ -86,19 +87,20 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case MAIN_SOLVER::INC_NAVIER_STOKES:
     case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
     case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::NAVIER_STOKES, RUNTIME_FLOW_SYS);
+      main_solver = MAIN_SOLVER::NAVIER_STOKES;
       break;
 
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
     case MAIN_SOLVER::INC_RANS:
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_FLOW_SYS);
+      main_solver = MAIN_SOLVER::RANS;
       break;
 
     default:
       break;
   }
+  config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_FLOW_SYS);
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 
@@ -107,26 +109,24 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
-  if ((config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS ||
-       config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config[val_iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS) &&
-      !frozen_visc) {
+  if ((main_solver == MAIN_SOLVER::RANS) && !frozen_visc) {
     /*--- Solve the turbulence model ---*/
 
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_TURB_SYS);
+    config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
     integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
 
     /*--- Solve transition model ---*/
 
     if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
-      config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_TRANS_SYS);
+      config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
     }
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE){
-    config[val_iZone]->SetGlobalParam(config[val_iZone]->GetKind_Solver(), RUNTIME_SPECIES_SYS);
+    config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
 
@@ -142,14 +142,14 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   }
 
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_HEAT_SYS);
+    config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_HEAT_SYS, val_iZone, val_iInst);
   }
 
   /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
   if (config[val_iZone]->AddRadiation()) {
-    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_RADIATION_SYS);
+    config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_RADIATION_SYS);
     integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }

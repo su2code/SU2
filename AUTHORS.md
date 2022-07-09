@@ -54,6 +54,7 @@ Andrew Wendorff
 Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
+Arne Voß
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brendan Tracey
@@ -61,6 +62,7 @@ Brian Munguía
 Carsten Othmer
 Catarina Garbacz
 Charanya Venkatesan-Crome
+Christian Bauer
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
@@ -75,6 +77,7 @@ Giulio Gori
 Guillaume Bâty
 Harichand M V
 HL Kline
+HL Zhi
 IndianaStokes
 J. Sinsay
 JSmith36
@@ -90,6 +93,7 @@ JonathanSmith1936
 Kedar Naik
 LaSerpe
 Lennaert Tol
+Lisa Kusch
 Matteo Pini
 Max Aehle
 Max Le

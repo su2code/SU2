@@ -2,14 +2,14 @@
  * \file CFreeFormDefBox.hpp
  * \brief Headers of the CFreeFormDefBox class.
  * \author F. Palacios & A. Galdran.
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,10 +41,10 @@ public:
   unsigned short nCornerPoints,         /*!< \brief Number of corner points of the FFDBox. */
   nControlPoints, nControlPoints_Copy;  /*!< \brief Number of control points of the FFDBox. */
   su2double **Coord_Corner_Points,    /*!< \brief Coordinates of the corner points. */
-  ****Coord_Control_Points,       /*!< \brief Coordinates of the control points. */
+  ****Coord_Control_Points,           /*!< \brief Coordinates of the control points. */
   ****ParCoord_Control_Points,        /*!< \brief Coordinates of the control points. */
   ****Coord_Control_Points_Copy,      /*!< \brief Coordinates of the control points (copy). */
-  ****Coord_SupportCP;          /*!< \brief Coordinates of the support control points. */
+  ****Coord_SupportCP{nullptr};       /*!< \brief Coordinates of the support control points. */
   unsigned short lOrder, lOrder_Copy, /*!< \brief Order of the FFDBox in the i direction. */
   mOrder, mOrder_Copy,        /*!< \brief Order of the FFDBox in the j direction. */
   nOrder, nOrder_Copy;          /*!< \brief Order of the FFDBox in the k direction. */
@@ -625,6 +625,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iFFDBox - Index of the FFDBox.
    */
+  // this routine is not used. We should consider deleting it.
   void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox) const;
 
   /*!

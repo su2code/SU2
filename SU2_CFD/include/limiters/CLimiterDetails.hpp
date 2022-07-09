@@ -3,14 +3,14 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
  * \note There is no default implementation (the code will compile but not
  *       link) specialization is mandatory.
  */
-template<ENUM_LIMITER LimiterKind>
+template<LIMITER LimiterKind>
 struct CLimiterDetails
 {
   /*!
@@ -92,7 +92,7 @@ struct LimiterHelpers
  * \brief Barth-Jespersen specialization.
  */
 template<>
-struct CLimiterDetails<BARTH_JESPERSEN>
+struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
 {
   su2double eps2;
 
@@ -122,7 +122,7 @@ struct CLimiterDetails<BARTH_JESPERSEN>
  * \brief Venkatakrishnan specialization.
  */
 template<>
-struct CLimiterDetails<VENKATAKRISHNAN>
+struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
 {
   su2double eps2;
 
@@ -159,7 +159,7 @@ struct CLimiterDetails<VENKATAKRISHNAN>
  * \brief Venkatakrishnan-Wang specialization.
  */
 template<>
-struct CLimiterDetails<VENKATAKRISHNAN_WANG>
+struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
 {
   static su2activevector sharedMin, sharedMax;
   su2activevector eps2;
@@ -260,7 +260,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
  * \brief Venkatakrishnan with sharp edge modification.
  */
 template<>
-struct CLimiterDetails<SHARP_EDGES>
+struct CLimiterDetails<LIMITER::SHARP_EDGES>
 {
   su2double eps1, eps2, sharpCoeff;
 
@@ -301,7 +301,7 @@ struct CLimiterDetails<SHARP_EDGES>
  * \brief Venkatakrishnan with wall distance modification.
  */
 template<>
-struct CLimiterDetails<WALL_DISTANCE>
+struct CLimiterDetails<LIMITER::WALL_DISTANCE>
 {
   su2double eps1, eps2, sharpCoeff;
 

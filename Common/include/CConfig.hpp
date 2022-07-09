@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -148,7 +148,6 @@ private:
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
-  unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;              /*!< \brief Previous value of the design variable. */
   su2double Venkat_LimiterCoeff;     /*!< \brief Limiter coefficient */
@@ -203,6 +202,7 @@ private:
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_RadiativeEquilibrium,   /*!< \brief Number of radiative equilibrium wall boundaries. */
   nMarker_HeatTransfer,           /*!< \brief Number of heat-transfer/convection wall boundaries. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,           /*!< \brief Number of nacelle inflow flow markers. */
@@ -252,6 +252,7 @@ private:
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
   *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
+  *Marker_RadiativeEquilibrium,   /*!< \brief Radiative equilibrium wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatTransfer,           /*!< \brief Heat-transfer/convection markers. */
   *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
@@ -314,6 +315,7 @@ private:
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
   su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
+  su2double *Emissivity;                     /*!< \brief Specified radiative equilibrium walll emissivity. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
   su2double *Load_Value;                     /*!< \brief Specified force for load boundaries. */
@@ -388,10 +390,6 @@ private:
   su2double **Periodic_RotCenter;            /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;            /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;          /*!< \brief Translation vector for each periodic boundary. */
-  unsigned short nPeriodic_Index;            /*!< \brief Number of SEND_RECEIVE periodic transformations. */
-  su2double **Periodic_Center;               /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Rotation;             /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
-  su2double **Periodic_Translate;            /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
   string *Marker_CfgFile_TagBound;           /*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,         /*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
@@ -433,6 +431,20 @@ private:
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
+
+  /* Gradient smoothing options */
+  su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
+  su2double SmoothingEps2;          /*!< \brief Parameter for the Laplace part in gradient smoothing. */
+  bool SmoothGradient;              /*!< \brief Flag for enabling gradient smoothing. */
+  bool SmoothSepDim;                /*!< \brief Flag for enabling separated calculation for every dimension. */
+  bool SmoothOnSurface;             /*!< \brief Flag for assembling the system only on the surface. */
+  bool SmoothDirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
+  ENUM_SOBOLEV_MODUS SmoothNumMode; /*!< \brief The mode in which the Sobolev smoothing solver is applied. */
+
+  unsigned short  Kind_Grad_Linear_Solver,  /*!< Numerical method to smooth the gradient */
+  Kind_Grad_Linear_Solver_Prec;             /*!< \brief Preconditioner of the linear solver. */
+  su2double Grad_Linear_Solver_Error;       /*!< \brief Min error of the linear solver for the gradient smoothing. */
+  unsigned long Grad_Linear_Solver_Iter; /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
@@ -476,6 +488,12 @@ private:
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
+  LIMITER Kind_SlopeLimit,    /*!< \brief Global slope limiter. */
+  Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
+  Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
+  Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
+  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
+  Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -491,12 +509,6 @@ private:
   Kind_AdjTurb_Linear_Prec,              /*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
-  Kind_SlopeLimit,              /*!< \brief Global slope limiter. */
-  Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
-  Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
-  Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
-  Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
-  Kind_SlopeLimit_Species,      /*!< \brief Slope limiter for the species equation.*/
   Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,      /*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,  /*!< \brief Time integration for the flow equations. */
@@ -676,7 +688,8 @@ private:
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
-  nMarker_WallFunctions;              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
   string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
   *Marker_Designing,                  /*!< \brief Markers to design. */
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
@@ -686,10 +699,15 @@ private:
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
-  *Marker_WallFunctions;              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
-  unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
-  string *Config_Filenames;               /*!< \brief List of names for configuration files. */
+  unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
+  string *Config_Filenames;           /*!< \brief List of names for configuration files. */
+  SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
+  SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
+  unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -708,6 +726,7 @@ private:
   *Marker_All_Fluid_Load,            /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,              /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,             /*!< \brief Global index for moving using the grid information. */
+  *Marker_All_SobolevBC,             /*!< \brief Global index for boundary condition applied to gradient smoothing. */
   *Marker_CfgFile_Monitoring,            /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,             /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,               /*!< \brief Global index for monitoring using the config information. */
@@ -723,7 +742,8 @@ private:
   *Marker_CfgFile_Fluid_Load,         /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,           /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,                 /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_CfgFile_PerBound;           /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PerBound,           /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_SobolevBC;          /*!< \brief Global index for boundary condition applied to gradient smoothing using the config information. */
   string *PlaneTag;                   /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
@@ -767,7 +787,8 @@ private:
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -999,7 +1020,6 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
-  bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -1105,9 +1125,10 @@ private:
 
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
-  unsigned long VolumeWrtFreq;        /*!< \brief Writing frequency for solution files. */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
-  unsigned short nVolumeOutputFiles;  /*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFiles=0;/*!< \brief Number of File formats to output */
+  unsigned short nVolumeOutputFrequencies; /*!< \brief Number of frequencies for the volume outputs */
+  unsigned long *VolumeOutputFrequencies; /*!< \brief list containing the writing frequencies */
 
   bool Multizone_Mesh;            /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;          /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
@@ -1120,8 +1141,8 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-
-  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
+  SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -1241,6 +1262,8 @@ private:
   void addShortListOption(const string name, unsigned short & size, short * & option_field);
 
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field);
+
+  void addULongListOption(const string name, unsigned short & size, unsigned long * & option_field);
 
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field);
 
@@ -1639,31 +1662,31 @@ public:
   su2double GetHeat_Flux_Ref(void) const { return Heat_Flux_Ref; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
+   * \brief Get the value of the freestream temperature.
    * \return Freestream temperature.
    */
   su2double GetTemperature_FreeStream(void) const { return Temperature_FreeStream; }
   /*!
-   * \brief Get the value of the frestream vibrational-electronic temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream vibrational-electronic temperature.
+   * \return Freestream vibe-el temperature.
    */
   su2double GetTemperature_ve_FreeStream(void) const { return Temperature_ve_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream energy.
+   * \return Freestream energy.
    */
   su2double GetEnergy_FreeStream(void) const { return Energy_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream viscosity.
+   * \return Freestream viscosity.
    */
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the value of the freestream density.
+   * \return Freestream density.
    */
   su2double GetDensity_FreeStream(void) const { return Density_FreeStream; }
 
@@ -1741,8 +1764,8 @@ public:
   su2double GetPressure_Ref(void) const { return Pressure_Ref; }
 
   /*!
-   * \brief Get the value of the reference pressure for non-dimensionalization.
-   * \return Reference pressure for non-dimensionalization.
+   * \brief Get the value of the reference energy for non-dimensionalization.
+   * \return Reference energy for non-dimensionalization.
    */
   su2double GetEnergy_Ref(void) const { return Energy_Ref; }
 
@@ -1957,12 +1980,6 @@ public:
    * \return Reynolds length.
    */
   su2double GetLength_Reynolds(void) const { return Length_Reynolds; }
-
-  /*!
-   * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
-   * \return Start up iterations using the fine grid.
-   */
-  unsigned short GetnStartUpIter(void) const { return nStartUpIter; }
 
   /*!
    * \brief Get the reference area for non dimensional coefficient computation. If the value from the
@@ -2283,7 +2300,7 @@ public:
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind,        unsigned short val_kind_slopelimit,
+                             unsigned short val_kind_upwind,        LIMITER val_kind_slopelimit,
                              bool val_muscl,                        unsigned short val_kind_fem);
 
   /*!
@@ -2683,7 +2700,12 @@ public:
    * \brief Set the number of multigrid levels.
    * \param[in] val_nMGLevels - Index of the mesh were the CFL is applied
    */
-  void SetMGLevels(unsigned short val_nMGLevels) { nMGLevels = val_nMGLevels; }
+  void SetMGLevels(unsigned short val_nMGLevels) {
+    nMGLevels = val_nMGLevels;
+    if (MGCycle == FULLMG_CYCLE) {
+      SetFinestMesh(val_nMGLevels);
+    }
+  }
 
   /*!
    * \brief Get the index of the finest grid.
@@ -2786,6 +2808,18 @@ public:
    * \return Number of the design variables.
    */
   unsigned short GetnDV_Value(unsigned short iDV) const { return nDV_Value[iDV]; }
+
+  /*!
+   * \brief Get the total number of design variables.
+   */
+  unsigned short GetnDV_Total(void) const {
+    if (!nDV_Value) return 0;
+    unsigned short sum = 0;
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      sum += nDV_Value[iDV];
+    }
+    return sum;
+  }
 
   /*!
    * \brief Get the number of FFD boxes.
@@ -2966,6 +3000,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Moving(void) const { return nMarker_Moving; }
+
+  /*!
+   * \brief Get the total number of markers for gradient treatment.
+   * \return Total number of markers for gradient treatment.
+   */
+  unsigned short GetnMarker_SobolevBC(void) const { return nMarker_SobolevBC; }
 
   /*!
    * \brief Get the total number of Python customizable markers.
@@ -3330,6 +3370,13 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
   /*!
+   * \brief Set if a marker how <i>val_marker</i> is going to be applied in gradient treatment.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_sobolev - 0 or 1 depending if the marker is selected.
+   */
+  void SetMarker_All_SobolevBC(unsigned short val_marker, unsigned short val_sobolev) { Marker_All_SobolevBC[val_marker] = val_sobolev; }
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH marker.
@@ -3472,6 +3519,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker) const { return Marker_All_Moving[val_marker]; }
+
+  /*!
+   * \brief Get the information if gradient treatment uses a marker <i>val_marker</i>.
+   * \param[in] val_marker
+   * \return 0 or 1 depending if the marker is going to be selected.
+   */
+  unsigned short GetMarker_All_SobolevBC(unsigned short val_marker) const { return Marker_All_SobolevBC[val_marker]; }
 
   /*!
    * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH marker
@@ -4008,18 +4062,6 @@ public:
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
 
   /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
    * \brief Get min error of the linear solver for the implicit formulation.
    * \return Min error of the linear solver for the implicit formulation.
    */
@@ -4532,37 +4574,37 @@ public:
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients.
    */
-  unsigned short GetKind_SlopeLimit(void) const { return Kind_SlopeLimit; }
+  LIMITER GetKind_SlopeLimit(void) const { return Kind_SlopeLimit; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the flow equations.
    */
-  unsigned short GetKind_SlopeLimit_Flow(void) const { return Kind_SlopeLimit_Flow; }
+  LIMITER GetKind_SlopeLimit_Flow(void) const { return Kind_SlopeLimit_Flow; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the turbulent equation.
    */
-  unsigned short GetKind_SlopeLimit_Turb(void) const { return Kind_SlopeLimit_Turb; }
+  LIMITER GetKind_SlopeLimit_Turb(void) const { return Kind_SlopeLimit_Turb; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the species equation.
    */
-  unsigned short GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
+  LIMITER GetKind_SlopeLimit_Species() const { return Kind_SlopeLimit_Species; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint turbulent equation.
    */
-  unsigned short GetKind_SlopeLimit_AdjTurb(void) const { return Kind_SlopeLimit_AdjTurb; }
+  LIMITER GetKind_SlopeLimit_AdjTurb(void) const { return Kind_SlopeLimit_AdjTurb; }
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint flow equation.
    */
-  unsigned short GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
+  LIMITER GetKind_SlopeLimit_AdjFlow(void) const { return Kind_SlopeLimit_AdjFlow; }
 
   /*!
    * \brief Value of the calibrated constant for the Lax method (center scheme).
@@ -5951,6 +5993,11 @@ public:
   su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
 
   /*!
+   * \brief Set the value of the pressure delta from which body force vector is computed. Necessary for Restart metadata.
+   */
+  void SetStreamwise_Periodic_PressureDrop(su2double Streamwise_Periodic_PressureDrop_) { Streamwise_Periodic_PressureDrop = Streamwise_Periodic_PressureDrop_; }
+
+  /*!
    * \brief Get the value of the massflow from which body force vector is computed.
    * \return Massflow for body force computation.
    */
@@ -6130,6 +6177,12 @@ public:
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_Moving(string val_marker) const;
+
+  /*!
+   * \brief Get the gradient boundary information from the config definition for the marker <i>val_marker</i>.
+   * \return Gradient boundary information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_SobolevBC(string val_marker) const;
 
   /*!
    * \brief Get the DEFORM_MESH information from the config definition for the marker <i>val_marker</i>.
@@ -6471,6 +6524,12 @@ public:
   unsigned short GetMarker_Fluid_Load(string val_marker) const;
 
   /*!
+   * \brief Get the internal index for a gradient boundary condition <i>val_marker</i>.
+   * \return Internal index for a gradient boundary  condition <i>val_marker</i>.
+   */
+  unsigned short GetMarker_SobolevBC(string val_marker) const;
+
+  /*!
    * \brief Get the name of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
    * \return Name that is in the geometry file for the surface that
@@ -6554,13 +6613,6 @@ public:
   const su2double* GetInlet_Velocity(string val_index) const;
 
   /*!
-   * \brief Get the mass fraction vector at a supersonic inlet boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet mass fraction vector - NEMO only.
-   */
-  const su2double* GetInlet_MassFrac(string val_index) const;
-
-  /*!
    * \brief Get the total pressure at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
@@ -6589,8 +6641,8 @@ public:
   su2double GetExhaust_Pressure_Target(string val_index) const;
 
   /*!
-   * \brief Value of the CFL reduction in LevelSet problems.
-   * \return Value of the CFL reduction in LevelSet problems.
+   * \brief Value of the CFL reduction in turbulence problems.
+   * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
 
@@ -6782,6 +6834,13 @@ public:
    * \return The heat flux.
    */
   su2double GetWall_HeatFlux(string val_index) const;
+
+  /*!
+   * \brief Get the emissivity of radiative equilibrium wall boundary.
+   * \param[in] val_index - Index corresponding to the radiative equilibrium wall boundary.
+   * \return The emissivity.
+   */
+  su2double Get_Emissivity(string val_index) const;
 
   /*!
    * \brief Get the heat transfer coefficient on a heat transfer boundary.
@@ -8089,11 +8148,6 @@ public:
   void SetConfig_Options();
 
   /*!
-   * \brief Set the config options.
-   */
-  void SetRunTime_Options(void);
-
-  /*!
    * \brief Set the config file parsing.
    */
   void SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]);
@@ -8940,12 +8994,6 @@ public:
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
-   * \brief Get information about using UQ methodology
-   * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
-   */
-  bool GetUsing_UQ(void) const { return using_uq; }
-
-  /*!
    * \brief Get the amount of eigenvalue perturbation to be done
    * \return Value of the uq_delta_b parameter
    */
@@ -9023,11 +9071,6 @@ public:
   su2double GetConst_DES(void) const { return Const_DES; }
 
   /*!
-   * \brief Get QCR (SA-QCR2000).
-   */
-  bool GetQCR(void) const { return QCR;}
-
-  /*!
    * \brief Get if AD preaccumulation should be performed.
    */
   bool GetAD_Preaccumulation(void) const { return AD_Preaccumulation;}
@@ -9048,7 +9091,7 @@ public:
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
-  bool GetIntegrated_HeatFlux(void) const { return Integrated_HeatFlux; }
+  bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
    * \brief Get Compute Average.
@@ -9406,11 +9449,6 @@ public:
   void SetScreen_Wrt_Freq(unsigned short iter, unsigned long nIter) { ScreenWrtFreq[iter] = nIter; }
 
   /*!
-   * \brief GetScreen_Wrt_Freq_Inner
-   */
-  unsigned long GetVolume_Wrt_Freq() const { return VolumeWrtFreq; }
-
-  /*!
    * \brief GetVolumeOutputFiles
    */
   const OUTPUT_TYPE* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
@@ -9419,6 +9457,12 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetVolumeOutputFrequency
+   * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
+   */
+  unsigned long GetVolumeOutputFrequency(unsigned short iFile) const { return VolumeOutputFrequencies[iFile]; }
 
   /*!
    * \brief Get the desired factorization frequency for PaStiX
@@ -9513,4 +9557,89 @@ public:
    * \return Save frequency for unsteady time steps.
    */
   unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
+
+  /*!
+   * \brief Check if the gradient smoothing is active
+   * \return true means that smoothing is applied to the sensitivities
+   */
+  bool GetSmoothGradient(void) const {return SmoothGradient; }
+
+  /*!
+   * \brief Gets the factor epsilon in front of the Laplace term
+   * \return epsilon
+   */
+  su2double GetSmoothingEps1(void) const { return SmoothingEps1; }
+
+  /*!
+   * \brief Gets the factor zeta in front of the identity term
+   * \return zeta
+   */
+  su2double GetSmoothingEps2(void) const { return SmoothingEps2; }
+
+  /*!
+   * \brief Check if we split in the dimensions
+   * \return true means that smoothing is for each dimension separate
+   */
+  bool GetSmoothSepDim(void) const { return SmoothSepDim; }
+
+  /*!
+   * \brief Check if we assemble the operator on the surface
+   * \return true means that smoothing is done on the surface level
+   */
+  bool GetSmoothOnSurface(void) const { return SmoothOnSurface; }
+
+  /*!
+   * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
+   * \return true means that we use zero Dirichlet boundary
+   */
+  bool GetDirichletSurfaceBound(void) const { return SmoothDirichletSurfaceBound; }
+
+  /*!
+   * \brief The modus of operation for the Sobolev solver
+   * \return returns on what level we operate
+   */
+  ENUM_SOBOLEV_MODUS GetSobMode(void) const { return SmoothNumMode; }
+
+  /*!
+   * \brief Get the name of the file with the hessian of the objective function.
+   * \return Name of the file with the hessian of the objective function.
+   */
+  string GetObjFunc_Hess_FileName(void) const { return ObjFunc_Hess_FileName; }
+
+  /*!
+   * \brief Get min error of the linear solver for the gradient smoothing.
+   * \return Min error of the linear solver for the gradient smoothing.
+   */
+  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
+
+  /*!
+   * \brief Get the kind of solver for the gradient smoothing.
+   * \return Numerical solver for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
+
+  /*!
+   * \brief Get the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
+
+  /*!
+   * \brief Get max number of iterations of the for the gradient smoothing.
+   * \return Max number of iterations of the linear solver for the gradient smoothing.
+   */
+  unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
+  /*!
+   * \brief Get parsed SST option data structure.
+   * \return SST option data structure.
+   */
+  SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
+
+  /*!
+   * \brief Get parsed SA option data structure.
+   * \return SA option data structure.
+   */
+  SA_ParsedOptions GetSAParsedOptions() const { return saParsedOptions; }
+
 };

@@ -2,14 +2,14 @@
  * \file output_structure_legacy.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -476,19 +476,19 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    case TURB_MODEL::SA:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
-    case TURB_MODEL::SST:case TURB_MODEL::SST_SUST:
+    case TURB_MODEL::SST:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\"");
       break;
     default: break;
   }
   switch (config->GetKind_Turb_Model()) {
-    case TURB_MODEL::SA:case TURB_MODEL::SA_NEG:case TURB_MODEL::SA_E: case TURB_MODEL::SA_COMP: case TURB_MODEL::SA_E_COMP:
+    case TURB_MODEL::SA:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
-    case TURB_MODEL::SST:case TURB_MODEL::SST_SUST:
+    case TURB_MODEL::SST:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\"");
       break;
     default: break;
@@ -632,7 +632,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
 
-    if (((iExtIter % (config[val_iZone]->GetVolume_Wrt_Freq())) == 0) ||
+    if (((iExtIter % (config[val_iZone]->GetVolumeOutputFrequency(0) )) == 0) ||
         (!fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
         (fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2) ||
@@ -862,8 +862,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP: nVar_Turb = 1; break;
-        case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: nVar_Turb = 2; break;
+        case TURB_MODEL::SA: nVar_Turb = 1; break;
+        case TURB_MODEL::SST: nVar_Turb = 2; break;
         default: break;
       }
     }
@@ -884,8 +884,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP: nVar_AdjTurb = 1; break;
-        case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: nVar_AdjTurb = 2; break;
+        case TURB_MODEL::SA: nVar_AdjTurb = 1; break;
+        case TURB_MODEL::SST: nVar_AdjTurb = 2; break;
         default: break;
       }
     }
@@ -1642,7 +1642,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
                 cout << endl;
                 cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
-                cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetVolume_Wrt_Freq() << " iterations): ";
+                cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetVolumeOutputFrequency(0) << " iterations): ";
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
                 cout << Total_Sens_Geo;
@@ -1782,8 +1782,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case TURB_MODEL::SA: case TURB_MODEL::SA_NEG: case TURB_MODEL::SA_E: case TURB_MODEL::SA_E_COMP: case TURB_MODEL::SA_COMP:        cout << "       Res[nu]"; break;
-              case TURB_MODEL::SST: case TURB_MODEL::SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
+              case TURB_MODEL::SA: cout << "       Res[nu]"; break;
+              case TURB_MODEL::SST: cout << "     Res[kine]" << "    Res[omega]"; break;
               default: break;
             }
 
@@ -2775,27 +2775,17 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 7.0.8  \"Blackbird\"                        |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 7.3.0  \"Blackbird\"                        |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The current SU2 release has been coordinated by the                   |" << "\n";
-    Breakdown_file << "| SU2 International Developers Society <www.su2devsociety.org>          |" << "\n";
-    Breakdown_file << "| with selected contributions from the open-source community            |" << "\n";
+    Breakdown_file << "| SU2 Project Website: https://su2code.github.io                        |" << "\n";
+    Breakdown_file << "|                                                                       |" << "\n";
+    Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
+    Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| The main research teams contributing to the current release are:      |" << "\n";
-    Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << "\n";
-    Breakdown_file << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << "\n";
-    Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << "\n";
-    Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << "\n";
-    Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << "\n";
-    Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
-    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
-    Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
-    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
-    Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
+    Breakdown_file << "| Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)                |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
@@ -2830,12 +2820,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         Breakdown_file << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case TURB_MODEL::SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
-          case TURB_MODEL::SST:       Breakdown_file << "Menter's TURB_MODEL::SST"     << "\n"; break;
-          case TURB_MODEL::SST_SUST:  Breakdown_file << "Menter's TURB_MODEL::SST with sustaining terms" << "\n"; break;
+          case TURB_MODEL::SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
           default: break;
         }
         break;
@@ -6094,7 +6079,7 @@ void COutputLegacy::WriteTurboPerfConvHistory(CConfig *config){
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config->GetnZone();
   bool turbulent = ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS));
-  bool menter_sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  bool menter_sst = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   unsigned short nBladesRow, nStages;
   unsigned short iStage;

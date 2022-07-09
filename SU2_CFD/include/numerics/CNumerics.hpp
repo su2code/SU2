@@ -1,16 +1,16 @@
 ﻿/*!
  * \file CNumerics.hpp
- * \brief Delaration of the base numerics class, the
+ * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -180,9 +180,8 @@ protected:
   su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
-  su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
-  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
-  su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
+  su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
+  SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
@@ -689,17 +688,15 @@ public:
 
   /*!
    * \brief Set the value of the second blending function.
-   * \param[in] val_F1_i - Value of the second Menter blending function at point i.
-   * \param[in] val_F1_j - Value of the second Menter blending function at point j.
+   * \param[in] val_F2_i - Value of the second Menter blending function at point i.
    */
-  virtual void SetF2blending(su2double val_F1_i, su2double val_F1_j) {/* empty */};
+  virtual void SetF2blending(su2double val_F2_i) {/* empty */};
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
-   * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
-  virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
+  virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1190,11 +1187,11 @@ public:
   void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) const;
 
   /*!
-   * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
+   * \brief Computation of the flow Residual Jacobian Matrix for Non Reflecting BC.
    * \param[in] val_soundspeed - value of the sound speed.
    * \param[in] val_density - value of the density.
    * \param[out] R_c - Residual Jacoboan Matrix
-   * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
+   * \param[out] R_c_inv- inverse of the Residual Jacobian Matrix .
    */
   void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, const su2double *turboVel,
                                su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
@@ -1424,47 +1421,6 @@ public:
     }
     return ERR;
   }
-
-  /*!
-   * \brief Set intermittency for numerics (used in SA with LM transition model)
-   */
-  inline virtual void SetIntermittency(su2double intermittency_in) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline virtual void SetProduction(su2double val_production) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline virtual void SetDestruction(su2double val_destruction) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline virtual void SetCrossProduction(su2double val_crossproduction) { }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_production - Value of the Production.
-   */
-  inline virtual su2double GetProduction(void) const { return 0; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_destruction - Value of the Destruction.
-   */
-  inline virtual su2double GetDestruction(void) const { return 0; }
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[in] val_crossproduction - Value of the CrossProduction.
-   */
-  inline virtual su2double GetCrossProduction(void) const { return 0; }
 
   /*!
    * \brief A virtual member.

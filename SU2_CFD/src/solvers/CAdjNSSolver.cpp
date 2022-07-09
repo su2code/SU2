@@ -2,14 +2,14 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -322,7 +322,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
    adjoint equations (note that the flow problem may use different methods). ---*/
 
   bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != LIMITER::NONE);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();
@@ -773,8 +773,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
 
             /*--- Turbulent kinetic energy ---*/
-
-            if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+            /// TODO: This does not seem to be consistent with the primal treatment.
+            if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
               val_turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
             else
               val_turb_ke = 0.0;
