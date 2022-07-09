@@ -270,6 +270,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
+      
       for(iVar=0; iVar<nVar; iVar++){
         FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
         FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
@@ -277,6 +278,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         LinSysRes(iPoint, iVar) -= FluxCorrection_i;
         LinSysRes(jPoint, iVar) += FluxCorrection_j;
       }
+           
       /*--- Viscous contribution. ---*/
 
       Viscous_Residual(iEdge, geometry, solver_container,

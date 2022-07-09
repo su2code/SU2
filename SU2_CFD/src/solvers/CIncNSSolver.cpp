@@ -46,10 +46,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   //if (rans && (iMesh == MESH_0)) {
   // only when we solve additional scalars?    
   if (iMesh == MESH_0) {
-    EdgeMassFluxes = new su2double [geometry->GetnEdge()];
-
-    for(unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); ++iEdge)
-      EdgeMassFluxes[iEdge] = 0.0;
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
   }
 
 
