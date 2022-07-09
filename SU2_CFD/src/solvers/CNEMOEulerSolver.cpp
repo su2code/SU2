@@ -255,9 +255,9 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   ompMasterAssignBarrier(ErrorCounter,0);
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
-  SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
     if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
@@ -268,8 +268,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
         cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
     }
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Artificial dissipation ---*/
 
@@ -634,17 +633,15 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     /*--- Add counter results for all threads. ---*/
     SU2_OMP_ATOMIC
     ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 }
 
