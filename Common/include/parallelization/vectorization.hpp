@@ -56,6 +56,7 @@ constexpr size_t PREFERRED_SIZE = 8;
  */
 template<class T>
 constexpr size_t preferredLen() { return PREFERRED_SIZE / sizeof(T); }
+
 template<>
 constexpr size_t preferredLen<su2double>() { return PREFERRED_SIZE / sizeof(passivedouble); }
 
