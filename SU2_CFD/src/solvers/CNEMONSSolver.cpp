@@ -893,9 +893,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             for (kVar = 0; kVar < nVar; kVar++)
-                //Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar];
-                Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
-                
+              Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
+
         /*--- Apply to the linear system ---*/
         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
