@@ -7,7 +7,12 @@ else
                            '-Wno-unused-but-set-variable',
                            '-Wno-sign-compare',
                            '-Wno-error=unused-function',
-                           '-Wno-pedantic']
+                           '-Wno-pedantic',
+                           '-Wno-error=stringop-truncation',
+                           '-Wno-stringop-truncation',
+                           '-Wno-error=absolute-value',
+                           '-Wno-error=class-memaccess'
+                           ]
 endif
 
 subdir('hdf5')

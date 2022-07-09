@@ -2485,6 +2485,18 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         else file << " psf.\n";
         break;
 
+      case FLUID_MIXTURE:
+        file << "Fluid Model: FLUID_MIXTURE \n";
+        file << "Variable density incompressible flow using ideal gas law.\n";
+        file << "Density is a function of temperature (constant thermodynamic pressure).\n";
+        file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K.\n";
+        file << "Molecular weight : " << config->GetMolecular_Weight() << " g/mol\n";
+        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
+        file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
+        if (si_units) file << " Pa.\n";
+        else file << " psf.\n";
+        break;
+        
       case INC_IDEAL_GAS_POLY:
         file << "Fluid Model: INC_IDEAL_GAS_POLY \n";
         file << "Variable density incompressible flow using ideal gas law.\n";
