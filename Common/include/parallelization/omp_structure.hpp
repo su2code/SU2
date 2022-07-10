@@ -185,6 +185,25 @@ void omp_finalize();
 
 #endif
 
+/* The SU2_OMP_SAFE_GLOBAL_ACCESS constructs are used to safeguard code that should only be executed by the master
+ * thread, with all threads and memory views synchronized both beforehand and afterwards.
+ */
+
+#define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
+  SU2_OMP_BARRIER \
+  SU2_OMP_MASTER
+
+#define END_SU2_OMP_SAFE_GLOBAL_ACCESS \
+  END_SU2_OMP_MASTER \
+  SU2_OMP_BARRIER
+
+#define SU2_OMP_SAFE_GLOBAL_ACCESS(...) \
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
+  { \
+    __VA_ARGS__ \
+  } \
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 
 /*!

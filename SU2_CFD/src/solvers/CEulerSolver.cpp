@@ -148,6 +148,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
+  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -343,8 +345,8 @@ CEulerSolver::~CEulerSolver(void) {
 
 void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER {
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
 
   if (config->Low_Mach_Correction())
     SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
@@ -359,8 +361,7 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
                    "support vectorization.", CURRENT_FUNCTION);
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
@@ -1499,9 +1500,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
-  SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
     if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
@@ -1528,8 +1529,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     }
 
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Artificial dissipation ---*/
 
@@ -1831,22 +1831,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+      bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
+      if (bad_recon) {
+        /*--- Force 1st order for this edge for at least 20 iterations. ---*/
+        NonPhysicalEdgeCounter[iEdge] = 20;
+      } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
+        --NonPhysicalEdgeCounter[iEdge];
+        bad_recon = true;
+      }
+      counter_local += bad_recon;
 
-      bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
-      bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-
-      nodes->SetNon_Physical(iPoint, bad_i);
-      nodes->SetNon_Physical(jPoint, bad_j);
-
-      /*--- Get updated state, in case the point recovered after the set. ---*/
-      bad_i = nodes->GetNon_Physical(iPoint);
-      bad_j = nodes->GetNon_Physical(jPoint);
-
-      counter_local += bad_i+bad_j;
-
-      numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
-      numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
+      numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
+      numerics->SetSecondary(bad_recon? S_i : Secondary_i,  bad_recon? S_j : Secondary_j);
 
     }
 
@@ -1917,16 +1914,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Add counter results for all threads. ---*/
     SU2_OMP_ATOMIC
     ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }
@@ -5566,24 +5562,26 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
   Velocity_i    = new su2double[nDim];
   deltaprim     = new su2double[nVar];
   cj            = new su2double[nVar];
-  complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, expArg;
+  complex<su2double> I, expArg;
+  static complex<su2double> cktemp_inf, cktemp_out1, cktemp_out2;
   I = complex<su2double>(0.0,1.0);
-
-#ifdef HAVE_MPI
-  su2double MyIm_inf, MyRe_inf, Im_inf, Re_inf, MyIm_out1, MyRe_out1, Im_out1, Re_out1, MyIm_out2, MyRe_out2, Im_out2, Re_out2;
-#endif
 
   kend_max = geometry->GetnFreqSpanMax(marker_flag);
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     for(k=0; k < 2*kend_max+1; k++){
       freq = k - kend_max;
-      cktemp_inf = complex<su2double>(0.0,0.0);
-      cktemp_out1 = complex<su2double>(0.0,0.0);
-      cktemp_out2 = complex<su2double>(0.0,0.0);
+      SU2_OMP_MASTER
+      {
+        cktemp_inf = complex<su2double>(0.0,0.0);
+        cktemp_out1 = complex<su2double>(0.0,0.0);
+        cktemp_out2 = complex<su2double>(0.0,0.0);
+      } END_SU2_OMP_MASTER
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
           if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
             if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+              complex<su2double> cktemp_inf_local{0.,0.},cktemp_out1_local{0.,0.}, cktemp_out2_local{0.,0.};
+              SU2_OMP_FOR_DYN(roundUpDiv(geometry->GetnVertexSpan(iMarker,iSpan), 2*omp_get_max_threads()))
               for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
 
                 /*--- find the node related to the vertex ---*/
@@ -5638,64 +5636,72 @@ void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNum
 
                 expArg = complex<su2double>(cos(TwoPiThetaFreq_Pitch)) - I*complex<su2double>(sin(TwoPiThetaFreq_Pitch));
                 if (freq != 0){
-                  cktemp_out1 +=  cj_out1*expArg*deltaTheta/pitch;
-                  cktemp_out2 +=  cj_out2*expArg*deltaTheta/pitch;
-                  cktemp_inf  +=  cj_inf*expArg*deltaTheta/pitch;
+                  cktemp_out1_local +=  cj_out1*expArg*deltaTheta/pitch;
+                  cktemp_out2_local +=  cj_out2*expArg*deltaTheta/pitch;
+                  cktemp_inf_local  +=  cj_inf*expArg*deltaTheta/pitch;
                 }
                 else{
-                  cktemp_inf += complex<su2double>(0.0,0.0);
-                  cktemp_out1 += complex<su2double>(0.0,0.0);
-                  cktemp_out2 += complex<su2double>(0.0,0.0);
+                  cktemp_inf_local += complex<su2double>(0.0,0.0);
+                  cktemp_out1_local += complex<su2double>(0.0,0.0);
+                  cktemp_out2_local += complex<su2double>(0.0,0.0);
                 }
               }
-
+              END_SU2_OMP_FOR
+              SU2_OMP_CRITICAL
+              {
+                cktemp_inf += cktemp_inf_local;
+                cktemp_out1 += cktemp_out1_local;
+                cktemp_out2 += cktemp_out2_local;
+              } END_SU2_OMP_CRITICAL
             }
           }
         }
       }
 
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
 #ifdef HAVE_MPI
-      MyRe_inf = cktemp_inf.real(); Re_inf = 0.0;
-      MyIm_inf = cktemp_inf.imag(); Im_inf = 0.0;
-      cktemp_inf = complex<su2double>(0.0,0.0);
+        su2double MyRe_inf = cktemp_inf.real(); su2double Re_inf = 0.0;
+        su2double MyIm_inf = cktemp_inf.imag(); su2double Im_inf = 0.0;
+        cktemp_inf = complex<su2double>(0.0,0.0);
 
-      MyRe_out1 = cktemp_out1.real(); Re_out1 = 0.0;
-      MyIm_out1 = cktemp_out1.imag(); Im_out1 = 0.0;
-      cktemp_out1 = complex<su2double>(0.0,0.0);
+        su2double MyRe_out1 = cktemp_out1.real(); su2double Re_out1 = 0.0;
+        su2double MyIm_out1 = cktemp_out1.imag(); su2double Im_out1 = 0.0;
+        cktemp_out1 = complex<su2double>(0.0,0.0);
 
-      MyRe_out2 = cktemp_out2.real(); Re_out2 = 0.0;
-      MyIm_out2 = cktemp_out2.imag(); Im_out2 = 0.0;
-      cktemp_out2 = complex<su2double>(0.0,0.0);
+        su2double MyRe_out2 = cktemp_out2.real(); su2double Re_out2 = 0.0;
+        su2double MyIm_out2 = cktemp_out2.imag(); su2double Im_out2 = 0.0;
+        cktemp_out2 = complex<su2double>(0.0,0.0);
 
 
-      SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      cktemp_inf = complex<su2double>(Re_inf,Im_inf);
-      cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
-      cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
-
+        cktemp_inf = complex<su2double>(Re_inf,Im_inf);
+        cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
+        cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
 #endif
 
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              /*-----this is only valid 2D ----*/
-              if (marker_flag == INFLOW){
-                CkInflow[iMarker][iSpan][k]= cktemp_inf;
-              }else{
-                CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
-                CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+          for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+            if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+              if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+                /*-----this is only valid 2D ----*/
+                if (marker_flag == INFLOW){
+                  CkInflow[iMarker][iSpan][k]= cktemp_inf;
+                }else{
+                  CkOutflow1[iMarker][iSpan][k]=cktemp_out1;
+                  CkOutflow2[iMarker][iSpan][k]=cktemp_out2;
+                }
               }
             }
           }
         }
-      }
+      } END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
   }
 
