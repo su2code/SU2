@@ -56,13 +56,6 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
-
-    /*--- Reference values for Sutherland's law viscosity ---*/
-    //Note: Can be extended with better coefficients of individual species,.
-    k_ref.resize(1,0.0);
-    mu_ref.resize(1,0.0);
-    Sm_ref.resize(1,0.0);
-    Sk_ref.resize(1,0.0);
   }
 
   if (gas_model =="ARGON"){
@@ -1843,8 +1836,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
     //}
 
     /*--- Assign species diffusion coefficient ---*/
-    if (denom == 0) { DiffusionCoeff[iSpecies] = 0.0; }
-    else { DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom; }
+    DiffusionCoeff[iSpecies] = (denom > EPS) ? (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom) : su2double(0.0);
   }
   // if (ionization) {
   //TODO: Update correct iElectron....
@@ -2013,13 +2005,13 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     }
 
     /*--- Translational contribution to thermal conductivity ---*/
-    if (denom_t != 0) ThermalCond_tr += (15.0/4.0)*kb*gam_i/denom_t;
+    ThermalCond_tr += (denom_t > EPS) ? ((15.0/4.0)*kb*gam_i/denom_t) : su2double(0.0);
 
     /*--- Translational contribution to thermal conductivity ---*/
-    if (RotationModes[iSpecies] != 0.0 && denom_r != 0) ThermalCond_tr  += kb*gam_i/denom_r;
+    if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (denom_r > EPS) ? (kb*gam_i/denom_r) : su2double(0.0);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    if (denom_r != 0) ThermalCond_ve += kb*Cvve/R*gam_i / denom_r;
+    ThermalCond_ve += (denom_r > EPS) ? (kb*Cvve/R*gam_i / denom_r) : su2double(0.0);
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
@@ -2028,11 +2020,10 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 
 void CSU2TCLib::ViscositySuth(){
 
-  su2double T_ref = 273.15;
-  su2double T_nd = T / T_ref;
+  su2double T_nd = T / T_ref_suth;
 
   /*--- Calculate mixture laminar viscosity ---*/
-  Mu = mu_ref[0] * T_nd * sqrt(T_nd) * ((T_ref + Sm_ref[0]) / (T + Sm_ref[0]));
+  Mu = mu_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sm_ref[0]) / (T + Sm_ref[0]));
 
 }
 
@@ -2050,9 +2041,8 @@ void CSU2TCLib::ThermalConductivitiesSuth(){
   su2double scl  = Cvve/Cvtr;
 
   /*--- Compute k's using Sutherland's law ---*/
-  su2double T_ref = 273.15;
-  su2double T_nd = T / T_ref;
-  su2double k = k_ref[0] * T_nd * sqrt(T_nd) * ((T_ref + Sk_ref[0]) / (T + Sk_ref[0]));
+  su2double T_nd = T / T_ref_suth;
+  su2double k = k_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sk_ref[0]) / (T + Sk_ref[0]));
   su2double kve = scl*k;
 
   ThermalConductivities[0] = k;

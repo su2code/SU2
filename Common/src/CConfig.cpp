@@ -3793,7 +3793,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND) ) {
-   SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
+    SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
   }
 
   if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
