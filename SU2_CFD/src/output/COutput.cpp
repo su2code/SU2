@@ -2180,6 +2180,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
   DebugPrint(inputString);
 
   const std::map<std::string, OperationType> opMap = {
+    {"Macro", OperationType::MACRO},
     {"AreaAvg", OperationType::AREA_AVG},
     {"AreaInt", OperationType::AREA_INT},
     {"MassFlowAvg", OperationType::MASSFLOW_AVG},
@@ -2188,6 +2189,9 @@ void COutput::SetCustomOutputs(const CConfig* config) {
   std::stringstream knownOps;
   for (const auto& item : opMap) knownOps << item.first << ", ";
 
+  /*--- Split the input string into functions delimited by ";". ---*/
+  std::vector<std::string> functions;
+
   const auto last = inputString.end();
   for (auto it = inputString.begin(); it != last;) {
 
@@ -2195,54 +2199,86 @@ void COutput::SetCustomOutputs(const CConfig* config) {
     while (it != last && (*it == ' ' || *it == ';')) ++it;
     if (it == last) break;
 
-    customOutputs.push_back(CustomOutput());
-    auto& output = customOutputs.back();
+    /*--- Find the end of the function. ---*/
+    const auto start = it;
+    while (it != last && *it != ';') ++it;
 
-    /*--- Find the end of the function name. ---*/
-    auto start = it;
-    while (it != last && *it != ' ' && *it != ':') ++it;
-    output.name = std::string(start, it);
-    DebugPrint(output.name);
+    functions.emplace_back(start, it);
+  }
 
-    /*--- Find the start and end of the operation type. ---*/
-    while (it != last && (*it == ' ' || *it == ':')) ++it;
-    start = it;
-    while (it != last && *it != ' ' && *it != '{') ++it;
-    const auto opType = std::string(start, it);
-    DebugPrint(opType);
+  /*--- Process each function. ---*/
+  size_t iFunc = 0;
+  for (const auto& functionString : functions) {
+    ++iFunc;
+    DebugPrint(functionString);
+    const auto last = functionString.end();
+    for (auto it = functionString.begin(); it != last;) {
 
-    auto item = opMap.find(opType);
-    if (item == opMap.end()) {
-      SU2_MPI::Error("Invalid operation type '" + opType + "', must be one of: " + knownOps.str(), CURRENT_FUNCTION);
-    }
-    output.type = item->second;
+      /*--- Find the end of the function name. ---*/
+      auto start = it;
+      while (it != last && *it != ' ' && *it != ':') ++it;
+      auto name = std::string(start, it);
+      DebugPrint(name);
 
-    /*--- Find and parse the user expression. ---*/
-    while (it != last && (*it == ' ' || *it == '{')) ++it;
-    start = it;
-    while (it != last && *it != '}') ++it;
-    output.func = std::string(start, it);
-    DebugPrint(output.func);
-
-    output.expression = mel::Parse<passivedouble>(output.func, output.varSymbols);
-#ifndef NDEBUG
-    mel::Print(output.expression, output.varSymbols, std::cout);
-#endif
-
-    /*--- Find the marker names. ---*/
-    while (it != last && (*it == ' ' || *it == '}' || *it == '[')) ++it;
-    while (it != last && *it != ']') {
+      /*--- Find the start and end of the operation type. ---*/
+      while (it != last && (*it == ' ' || *it == ':')) ++it;
       start = it;
-      while (it != last && *it != ' ' && *it != ',' && *it != ']') ++it;
-      output.markers.emplace_back(start, it);
-      DebugPrint(output.markers.back());
+      while (it != last && *it != ' ' && *it != '{') ++it;
+      const auto opType = std::string(start, it);
+      DebugPrint(opType);
 
-      while (it != last && (*it == ' ' || *it == ',')) ++it;
+      auto item = opMap.find(opType);
+      if (item == opMap.end()) {
+        SU2_MPI::Error("Invalid operation type '" + opType + "', must be one of: " + knownOps.str(), CURRENT_FUNCTION);
+      }
+      const auto type = item->second;
+
+      /*--- Find the user expression. ---*/
+      while (it != last && (*it == ' ' || *it == '{')) ++it;
+      start = it;
+      while (it != last && *it != '}') ++it;
+      auto func = std::string(start, it);
+      DebugPrint(func);
+
+      if (type == OperationType::MACRO) {
+        /*--- Replace the expression in downstream functions, do not create a custom output for it. ---*/
+        const auto key = '$' + name;
+        for (auto i = iFunc; i < functions.size(); ++i) {
+          size_t pos = 0;
+          while ((pos = functions[i].find(key)) != std::string::npos) {
+            functions[i].replace(pos, key.length(), func);
+            DebugPrint(functions[i]);
+          }
+        }
+        break;
+      }
+
+      customOutputs.push_back(CustomOutput());
+      auto& output = customOutputs.back();
+
+      output.name = std::move(name);
+      output.type = type;
+      output.func = std::move(func);
+      output.expression = mel::Parse<passivedouble>(output.func, output.varSymbols);
+  #ifndef NDEBUG
+      mel::Print(output.expression, output.varSymbols, std::cout);
+  #endif
+
+      /*--- Find the marker names. ---*/
+      while (it != last && (*it == ' ' || *it == '}' || *it == '[')) ++it;
+      while (it != last && *it != ']') {
+        start = it;
+        while (it != last && *it != ' ' && *it != ',' && *it != ']') ++it;
+        output.markers.emplace_back(start, it);
+        DebugPrint(output.markers.back());
+
+        while (it != last && (*it == ' ' || *it == ',')) ++it;
+      }
+      /*--- Skip the terminating "]". ---*/
+      if (it != last) ++it;
+
+      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
     }
-    /*--- Skip the terminating "]". ---*/
-    if (it != last) ++it;
-
-    AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
   }
 
 }

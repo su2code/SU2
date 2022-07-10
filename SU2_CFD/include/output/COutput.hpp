@@ -187,7 +187,7 @@ protected:
   CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
   /*! \brief Type of operation for custom outputs. */
-  enum class OperationType { AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
+  enum class OperationType { MACRO, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
 
   /*! \brief Struct to hold a parsed custom output function. */
   struct CustomOutput {
