@@ -559,21 +559,13 @@ namespace AD{
   FORCEINLINE bool PausePreaccumulation() {
     const auto current = PreaccEnabled;
     if (!current) return false;
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    PreaccEnabled = false;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
     return true;
   }
 
   FORCEINLINE void ResumePreaccumulation(bool wasActive) {
     if (!wasActive) return;
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    PreaccEnabled = true;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
   }
 
   FORCEINLINE void StartNoSharedReading() {
