@@ -8971,7 +8971,7 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   return Heat_Flux[0];
 }
 
-su2double CConfig::Get_Emissivity(string val_marker) const {
+su2double CConfig::Get_Emissivity(const string& val_marker) const {
 
   for (unsigned short iMarker_RadiativeEquilibrium = 0; iMarker_RadiativeEquilibrium < nMarker_RadiativeEquilibrium; iMarker_RadiativeEquilibrium++)
     if (Marker_RadiativeEquilibrium[iMarker_RadiativeEquilibrium] == val_marker)
