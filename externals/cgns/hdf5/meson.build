@@ -7,7 +7,7 @@ if target_machine.system() != 'windows' and meson.get_compiler('c').get_id() != 
                       '-Wno-unused-but-set-variable',
                       '-Wno-sign-compare',
                       '-Wno-stringop-overflow',
-                      '-Wno-discarded-qualifiers',
+                      '-Wno-error=discarded-qualifiers',
                       '-Wno-error=maybe-uninitialized',
                       '-Wno-error=unused-function',
                       '-Wno-error=unused-label',
