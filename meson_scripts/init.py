@@ -7,8 +7,8 @@
 #  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
@@ -17,7 +17,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -59,7 +59,7 @@ def init_submodules(method = 'auto'):
   github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
   sha_version_mel = '2484cd3258ef800a10e361016cb341834ee7930b'
   github_repo_mel = 'https://github.com/pcarruscag/MEL'
-  sha_version_amg = 'ce5a75116884a516451b47b78e033da3041ee17d'
+  sha_version_amg = 'c2caf5db9a0a8cce8fdb826a54c361ed64650e85'
   github_repo_amg = 'https://github.com/bmunguia/amgio'
 
   medi_name = 'MeDiPack'
@@ -70,7 +70,7 @@ def init_submodules(method = 'auto'):
   mpp_name= 'Mutationpp'
   mel_name = 'MEL'
   amg_name = 'amgio'
-  base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
+  base_path = cur_dir + os.path.sep + 'externals' + os.path.sep
   alt_name_medi = base_path + 'medi'
   alt_name_codi = base_path + 'codi'
   alt_name_opdi = base_path + 'opdi'
@@ -90,7 +90,7 @@ def init_submodules(method = 'auto'):
     print('Invalid method')
     sys.exit(1)
 
-  # If directory was cloned using git, use submodule feature 
+  # If directory was cloned using git, use submodule feature
   # to check and initialize submodules if necessary
   if is_git:
     submodule_status(alt_name_codi, sha_version_codi)
@@ -165,7 +165,7 @@ def submodule_status(path, sha_commit):
                         + path + ' does not match the SHA-1 found in the index.\n')
       sys.stderr.write('Use \'git submodule update --init '+ path + '\' to reset the module if necessary.\n')
     elif status_indicator == '-':
-      # Initialize the submodule if necessary 
+      # Initialize the submodule if necessary
       print('Initialize submodule ' + path + ' using git ... ')
       subprocess.run(['git', 'submodule', 'update', '--init', '--recursive', path], check = True, cwd = sys.path[0])
 
@@ -177,7 +177,7 @@ def submodule_status(path, sha_commit):
 
 def download_module(name, alt_name, git_repo, commit_sha):
 
-  # ZipFile does not preserve file permissions. 
+  # ZipFile does not preserve file permissions.
   # This is a workaround for that problem:
   # https://stackoverflow.com/questions/39296101/python-zipfile-removes-execute-permissions-from-binaries
   class MyZipFile(zipfile.ZipFile):
@@ -200,10 +200,10 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
   if not os.path.exists(module_identifier):
 
-    if os.path.exists(alt_name) and os.listdir(alt_name): 
+    if os.path.exists(alt_name) and os.listdir(alt_name):
       print('Directory ' + alt_name + ' is not empty')
       print('Maybe submodules are already cloned with git?')
-      sys.exit(1) 
+      sys.exit(1)
 
     else:
       print('Downloading ' + name + ' \'' + commit_sha + '\'')
@@ -270,9 +270,8 @@ def install_pyamg(log, err):
 if __name__ == '__main__':
   if sys.version_info[0] < 3:
     raise Exception("Script must be run using Python 3")
-   
+
   # Set up the build environment, i.e. clone or download all submodules
   init_submodules(sys.argv[1])
 
   sys.exit(0)
-
