@@ -37,7 +37,7 @@ using namespace std;
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
-  CLookUpTable *look_up_table1;
+  //CLookUpTable *look_up_table1;
 
   /* 2D lookup table with progress variable and enthalpy as variables */
 
