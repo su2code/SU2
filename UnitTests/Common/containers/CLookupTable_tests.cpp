@@ -41,7 +41,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /* 2D lookup table with progress variable and enthalpy as variables */
 
-  look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  //look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
 
   /* string names of the controlling variables */
 /*
@@ -90,7 +90,8 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   look_up_table1->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_prog, name_enth); 
   CHECK(look_up_dat == Approx(0.6516888435));
  */
-  delete look_up_table1; 
+  
+  //delete look_up_table1; 
 
 
   /* new, much smaller and trivial lookup table */
