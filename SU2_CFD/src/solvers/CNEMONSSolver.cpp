@@ -1110,7 +1110,7 @@ void CNEMONSSolver::BC_RadiativeEquilibrium_Wall(CGeometry *geometry,
     su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Initialize the convective & viscous residuals to zero ---*/
-    for (auto iVar = 0u; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
+    su2double Res_Visc[MAXNVAR] = {0.0};
 
     /*--- Set the residual on the boundary with the specified heat flux ---*/
     // TODO: Look into this!
