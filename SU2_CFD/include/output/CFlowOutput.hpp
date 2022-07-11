@@ -214,6 +214,10 @@ protected:
   template <class FlowIndices>
   void ConvertVariableSymbolsToIndices(const FlowIndices& idx, CustomOutput& output) const {
 
+    static const auto knownVariables =
+        "TEMPERATURE, TEMPERATURE_VE, VELOCITY_X, VELOCITY_Y, VELOCITY_Z, PRESSURE,\n"
+        "DENSITY, ENTHALPY, SOUND_SPEED, LAMINAR_VISCOSITY, EDDY_VISCOSITY, THERMAL_CONDUCTIVITY";
+
     auto IndexOfVariable = [&](const FlowIndices& idx, const std::string& var) {
       if ("TEMPERATURE" == var) return idx.Temperature();
       if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
@@ -238,12 +242,18 @@ protected:
       output.varIndices.push_back(IndexOfVariable(idx, var));
       if (output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) continue;
 
-      /*--- An index above NOT_A_VARIABLE refers to an history output. ---*/
+      /*--- An index above NOT_A_VARIABLE is not valid with current solver settings. ---*/
+      if (output.varIndices.back() > CustomOutput::NOT_A_VARIABLE) {
+        SU2_MPI::Error("Inactive solver variable (" + var + ") used in function " + output.name + "\n"
+                       "E.g. this may only be a variable of the compressible solver.", CURRENT_FUNCTION);
+      }
+
+      /*--- An index equal to NOT_A_VARIABLE may refer to an history output. ---*/
       output.varIndices.back() += output.otherOutputs.size();
       output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
       if (output.otherOutputs.back() == nullptr) {
-        SU2_MPI::Error("Invalid history output (" + var + ") used in function " + output.name + "\n",
-                       CURRENT_FUNCTION);
+        SU2_MPI::Error("Invalid history output or solver variable (" + var + ") used in function " + output.name +
+                       "\nValid solvers variables: " + knownVariables, CURRENT_FUNCTION);
       }
     }
   }
