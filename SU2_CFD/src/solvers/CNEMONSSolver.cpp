@@ -1146,8 +1146,8 @@ void CNEMONSSolver::BC_RadiativeEquilibrium_Wall(CGeometry *geometry,
     //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
     su2double Twall = V[T_INDEX];
     /*--- Compute residual ---*/
-      Res_Visc[nSpecies+nDim]   += (ktr*dTdn + kve*dTvedn - emissivity*STEFAN_BOLTZMANN*pow(Twall,4))*Area;
-      Res_Visc[nSpecies+nDim+1] += (kve*dTvedn)*Area; //TODO: check addition of radiation for Tve?
+    Res_Visc[nSpecies+nDim]   += (ktr*dTdn + kve*dTvedn - emissivity*STEFAN_BOLTZMANN*pow(Twall,4))*Area;
+    Res_Visc[nSpecies+nDim+1] += (kve*dTvedn)*Area; //TODO: check addition of radiation for Tve?
 
     /*--- Impose the value of the velocity as a strong boundary
     condition (Dirichlet). Fix the velocity and remove any
