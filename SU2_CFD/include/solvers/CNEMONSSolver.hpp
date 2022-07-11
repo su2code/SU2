@@ -224,7 +224,7 @@ public:
     * \param[in] visc_numerics - Description of the numerical method for viscous terms.
     * \param[in] config - Definition of the particular problem.
     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
+    */
     void BC_RadiativeEquilibrium_Wall(CGeometry *geometry,
                                  CSolver **solver_container,
                                  CNumerics *conv_numerics,
