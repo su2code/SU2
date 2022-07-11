@@ -1093,7 +1093,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     }
     
     GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
-    cout << Pressure_FreeStreamND << " " << Density_FreeStreamND << " " << GetFluidModel()->GetStaticEnergy() << endl;
+
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
@@ -1816,7 +1816,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
-      if (!ideal_gas || low_mach_corr || !mlp_gas) {
+      if (!ideal_gas || low_mach_corr) {
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
         ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
       }
@@ -4843,13 +4843,16 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       }
       Energy_b = u_b[nVar-1]/Density_b;
       StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+
+      if(config->GetKind_FluidModel() == DATADRIVEN_FLUID)
+        GetNodes()->SetNewtonSolverIterations(iPoint, GetFluidModel()->GetnIter_NewtonSolver());
+      
       GetFluidModel()->SetTDState_rhoe(Density_b, StaticEnergy_b);
       Pressure_b = GetFluidModel()->GetPressure();
       Temperature_b = GetFluidModel()->GetTemperature();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
       Kappa_b = GetFluidModel()->GetdPde_rho() / Density_b;
       Chi_b = GetFluidModel()->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-
       /*--- Compute the residuals ---*/
       conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
 

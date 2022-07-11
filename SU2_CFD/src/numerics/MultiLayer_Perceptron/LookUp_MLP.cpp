@@ -29,7 +29,6 @@
 #include <string>
 #include <cmath>
 #include <fstream>
-// #include "/home/evert/PhD/cppflow/include/cppflow/ops.h"
 // #include "/home/evert/PhD/cppflow/include/cppflow/model.h"
 
 using namespace std;
@@ -42,7 +41,7 @@ LookUp_MLP::LookUp_MLP(string inputFileName)
     // cout << "Provide the directory to the model: ";
     // cin >> model_dir;
 
-    //cppflow::model model(model_dir);
+    //cppflow::model model("a");
 
     #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -75,13 +74,13 @@ size_t LookUp_MLP::SelectANN(vector<string> input_names, vector<string> output_n
         for(size_t iInput=0; iInput<NeuralNetworks[i_ANN]->GetnInputs(); iInput++){
             if(input_names.at(iInput).compare(NeuralNetworks[i_ANN]->GetInputName(iInput)) != 0){
                 input_match = false;
-                cout << "Input error" << endl;
+                //cout << "Input error" << endl;
             }
         }
         for(size_t iOutput=0; iOutput<NeuralNetworks[i_ANN]->GetnOutputs(); iOutput++){
             if(output_names.at(iOutput).compare(NeuralNetworks[i_ANN]->GetOutputName(iOutput)) != 0){
                 output_match = false;
-                cout << "Output error" << endl;
+                //cout << "Output error" << endl;
             }
         }
         
@@ -194,4 +193,28 @@ string LookUp_MLP::SkipToFlag(ifstream *file_stream, string flag) {
     SU2_MPI::Error("Flag not found in file", CURRENT_FUNCTION);
 
   return line;
+}
+
+pair<su2double, su2double> LookUp_MLP::GetOutputNorm(string outputName){
+    for(size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++){
+        for(size_t iOutput=0; iOutput<NeuralNetworks[i_ANN]->GetnOutputs(); iOutput++){
+            if(outputName.compare(NeuralNetworks.at(i_ANN)->GetOutputName(iOutput)) == 0){
+                return NeuralNetworks.at(i_ANN)->GetOutputNorm(iOutput);
+            }
+        }
+    }
+    SU2_MPI::Error("No MLP with output "+outputName, CURRENT_FUNCTION);
+    return make_pair(0, 1);
+}
+
+pair<su2double, su2double> LookUp_MLP::GetInputNorm(string inputName){
+    for(size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++){
+        for(size_t iInput=0; iInput<NeuralNetworks[i_ANN]->GetnInputs(); iInput++){
+            if(inputName.compare(NeuralNetworks.at(i_ANN)->GetInputName(iInput)) == 0){
+                return NeuralNetworks.at(i_ANN)->GetInputNorm(iInput);
+            }
+        }
+    }
+    SU2_MPI::Error("No MLP with input "+inputName, CURRENT_FUNCTION);
+    return make_pair(0, 1);
 }

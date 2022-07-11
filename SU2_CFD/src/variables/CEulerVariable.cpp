@@ -72,6 +72,11 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     WindGust.resize(nPoint,nDim);
     WindGustDer.resize(nPoint,nDim+1);
   }
+
+  if (config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+    DataBoundsViolation.resize(nPoint);
+    nIter_Newtonsolver.resize(nPoint);
+  }
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
@@ -85,6 +90,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
   /*--- Check will be moved inside fluid model plus error description strings ---*/
 
   FluidModel->SetTDState_rhoe(density, staticEnergy);
+  //SetBoundsViolation(iPoint, FluidModel->GetClipping());
 
   bool check_dens  = SetDensity(iPoint);
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());

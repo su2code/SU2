@@ -100,6 +100,9 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
+  vector<unsigned short> DataBoundsViolation; /*!< \brief Stores solution bounds violation for data-driven fluid model simulations. */
+  vector<unsigned long> nIter_Newtonsolver; /*!< \brief Stores iteration counts of the fluid model Newton solver(s). */
+
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
@@ -2273,5 +2276,33 @@ public:
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
+    * \brief Set indication of solution bounds violation for data-driven fluid models.
+    * \param[in] iPoint - Node index
+    * \param[in] violation - bounds violoation identifier (0 for inclusion, 1 for bounds violoation)
+    */
+  virtual void SetBoundsViolation(unsigned long iPoint, unsigned short violation) {DataBoundsViolation.at(iPoint) = violation;}
+
+  /*!
+    * \brief Get indication of solution bounds violation for data-driven fluid models.
+    * \param[in] iPoint - Node index
+    * \return bounds violoation identifier (0 for inclusion, 1 for bounds violoation)
+    */
+  virtual unsigned short GetBoundsViolation(unsigned long iPoint) const {return DataBoundsViolation.at(iPoint);}
+
+  /*!
+    * \brief Set the number of iterations required by a Newton solver used by the fluid model.
+    * \param[in] iPoint - Node index
+    * \param[in] nIter - Number of iterations evaluated by the Newton solver
+    */
+  virtual void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) {nIter_Newtonsolver.at(iPoint) = nIter;}
+
+  /*!
+    * \brief Get the number of iterations required by a Newton solver used by the fluid model.
+    * \param[in] iPoint - Node index
+    * \return Number of iterations evaluated by the Newton solver
+    */
+  virtual unsigned long GetNewtonSolverIterations(unsigned long iPoint) const {return nIter_Newtonsolver.at(iPoint);}
 
 };

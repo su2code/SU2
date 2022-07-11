@@ -948,10 +948,32 @@ class CFVMFlowSolverBase : public CSolver {
     if (compute_ur) ComputeUnderRelaxationFactor(config);
 
     /*--- Update solution with under-relaxation and communicate it. ---*/
-
+//     unsigned long inlet_points[] = {134506,
+// 134604,
+// 134700,
+// 134795,
+// 134888,
+// 134980,
+// 135071,
+// 135159,
+// 135246,
+// 135330,
+// 135413,
+// 135494,
+// 135573,
+// 135651,
+// 135727,
+// 135802,
+// 135875,
+// 135946
+// };
+//     for (unsigned short i=0; i<18; i++){
+//       cout << inlet_points[i] << " " << LinSysRes(inlet_points[i], 0) << " " << LinSysSol[inlet_points[i] * nVar + 0] << " " << Jacobian.GetBlock(inlet_points[i], inlet_points[i])[0] << endl;
+//     }
     if (!config->GetContinuous_Adjoint()) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        //cout << LinSysSol[iPoint*nVar + 0] << endl;
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         }

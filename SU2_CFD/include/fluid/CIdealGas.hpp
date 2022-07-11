@@ -40,7 +40,6 @@ class CIdealGas : public CFluidModel {
   su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
   bool ComputeEntropy{true};      /*!< \brief Whether or not to compute entropy. */
-  LookUp_MLP *ANN;
  public:
   /*!
    * \brief Constructor of the class.

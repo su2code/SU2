@@ -119,6 +119,9 @@ class LookUp_MLP
     */
     void Predict_MLP(vector<string> input_names, vector<su2double> input, vector<string> output_names, vector<su2double*> output, su2double**doutputs_dinputs=nullptr);
 
+    pair<su2double, su2double> GetInputNorm(string input_name);
+    pair<su2double, su2double> GetOutputNorm(string output_name);
+    
     /*!
     *\brief Class destructor
     */

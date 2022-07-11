@@ -298,4 +298,7 @@ class CFluidModel {
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
 
+  virtual unsigned short GetClipping() {return 0;}
+  virtual unsigned long GetnIter_NewtonSolver() {return 0;}
+
 };

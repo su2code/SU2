@@ -36,11 +36,26 @@
  */
 class CDataDrivenFluid : public CFluidModel {
  protected:
+  size_t idx_rho, 
+        idx_e;
   su2double Gamma{0.0};           /*!< \brief Ratio of Specific Heats. */
   su2double Gamma_Minus_One{0.0}; /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};    /*!< \brief Gas Constant. */
-  bool ComputeEntropy{true};      /*!< \brief Whether or not to compute entropy. */
+  bool ComputeEntropy{true},      /*!< \brief Whether or not to compute entropy. */
+        failedNewtonSolver{false};
   LookUp_MLP *ANN;
+  vector<string> input_names;
+  vector<su2double> inputs;
+  vector<string> output_names;
+  vector<string> output_names_lower;
+  
+  vector<su2double*> outputs;
+  su2double S, ds_de, ds_drho, d2s_dedrho, d2s_de2, d2s_drho2;
+  su2double **dOutputs_dInputs;
+
+  unsigned short boundsviolation;
+  unsigned long nIter_NewtonSolver{0};
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -106,4 +121,9 @@ class CDataDrivenFluid : public CFluidModel {
    *
    */
   void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
+
+  unsigned short GetClipping() {return boundsviolation;}
+  unsigned long GetnIter_NewtonSolver() {return nIter_NewtonSolver;}
+
+  void Predict_MLP(vector<su2double> inputs);
 };

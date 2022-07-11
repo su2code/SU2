@@ -373,6 +373,13 @@ public:
     void SetInputNorm(unsigned long iInput, su2double input_min, su2double input_max){input_norm.at(iInput) = make_pair(input_min, input_max);}
    
     /*!
+     *\brief Get the input normalization values
+     *\param[in] iInput - Input index.
+     *\param[out] input_norm - Pair with input normalization values (minimum first, maximum second)
+    */
+    pair<su2double, su2double> GetInputNorm(unsigned long iInput){return input_norm.at(iInput);}
+    
+    /*!
      *\brief Set the output normalization values
      *\param[in] iOutput - Output index.
      *\param[in] output_min - Minimum output value.
@@ -380,6 +387,13 @@ public:
     */
     void SetOutputNorm(unsigned long iOutput, su2double output_min, su2double output_max){output_norm.at(iOutput) = make_pair(output_min, output_max);}
     
+    /*!
+     *\brief Get the output normalization values
+     *\param[in] iOutput - Output index.
+     *\param[out] output_norm - Pair with output normalization values (minimum first, maximum second)
+    */
+    pair<su2double, su2double> GetOutputNorm(unsigned long iOutput){return output_norm.at(iOutput);}
+
     /*!
      *\brief Append an output variable name.
      *\param[in] name - Output variable name

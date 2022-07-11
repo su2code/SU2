@@ -248,6 +248,16 @@ su2double Neuron::activation_function(su2double x)
 {
     x += bias;
     /* TODO: make this a switch-case */
+    if(activation_type.compare("swish") == 0){
+        su2double sigmoid = 1.0/(1 + exp(-x));
+        su2double dsigmoid_dx = -(1/pow(1 + exp(-x), 2))*(-exp(-x));
+        dy_dx = 1.0*sigmoid + x*dsigmoid_dx;
+        return x * sigmoid;
+    }
+    if(activation_type.compare("sigmoid") == 0){
+        dy_dx = -(1/pow(1 + exp(-x), 2))*(-exp(-x));
+        return 1.0/(1 + exp(-x));
+    }
     if(activation_type.compare("smoothSlope") == 0){
         su2double tanx = tanh(x);
         if(tanx > x){
