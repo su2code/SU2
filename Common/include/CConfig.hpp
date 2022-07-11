@@ -6841,7 +6841,7 @@ public:
    * \param[in] val_index - Index corresponding to the radiative equilibrium wall boundary.
    * \return The emissivity.
    */
-  su2double Get_Emissivity(string val_index) const;
+  su2double Get_Emissivity(const string& val_index) const;
 
   /*!
    * \brief Get the heat transfer coefficient on a heat transfer boundary.
