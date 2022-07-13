@@ -207,6 +207,7 @@ public:
 #ifdef HAVE_LIBROM
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
   CAROM::DMD* dmd_u = NULL;
+  vector<CAROM::DMD*> dmd_u_vec;
 #endif
   CSysVector<su2double> SolutionDMD;        /*!< \brief Vector to store predicted solution of DMD algorithm. */
 
@@ -4317,12 +4318,27 @@ public:
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
   /*!
-   * \brief Send snapshot data for dynamic mode decomposition
+   * \brief Capture snapshot data for dynamic mode decomposition
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] converged - Whether or not solution has converged.
+  */
+  void SaveDMD_TW(CGeometry *geometry, CConfig *config, bool converged, unsigned long TimeIter);
+  
+  /*!
+   * \brief Capture snapshot data for dynamic mode decomposition
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
   */
   void SaveDMD(CGeometry *geometry, CConfig *config, bool converged);
+  void SaveDMD(CGeometry *geometry, CConfig *config, bool converged, unsigned long TimeIter);
+  
+  /*!
+   * \brief Train the DMD.
+   * \param[in] config - Definition of the particular problem.
+  */
+  void TrainDMD(CConfig *config);
   
 protected:
   /*!

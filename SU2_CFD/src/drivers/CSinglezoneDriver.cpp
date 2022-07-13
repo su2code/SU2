@@ -298,7 +298,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   }
   if (config_container[MESH_0]->GetSave_DMD()){
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SaveDMD(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                   config_container[ZONE_0], StopCalc);
+                                                                   config_container[ZONE_0], StopCalc, TimeIter);
   }
 
   /*--- Reset the inner convergence --- */

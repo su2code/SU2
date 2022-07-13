@@ -4326,18 +4326,51 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
   
 }
 
+void CSolver::TrainDMD(CConfig *config) {
+  
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  
+  /*--- Calculate the DMD modes ---*/
+  su2double dt              = config->GetDelta_UnstTime();
+  su2double t               = config->GetCurrent_UnstTime();
+  const unsigned short rdim = config->GetMax_BasisDim();
+  
+  if (rank == MASTER_NODE) {
+    std::cout << "Calculating the DMD modes with rank " << rdim << " truncation." << std::endl;
+  }
+  
+  //dmd_u_vec.back()->train(rdim);
+  //dmd_u_vec.back()->save("DMD_modes_" + to_string(rdim) + "_dt_" + to_string(dt) + "_t_" + to_string(t));
+  dmd_u->train(rdim);
+  dmd_u->save("DMD_modes_" + to_string(rdim) + "_dt_" + to_string(dt) + "_t_" + to_string(t));
+#endif
+}
+
+
+void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged, unsigned long TimeIter) {
+  /*--- Route to requested DMD implementation ---*/
+  
+  if (config->GetTime_Domain()) {
+    SaveDMD_TW(geometry, config, converged, TimeIter);
+  }
+  else {
+    SaveDMD(geometry, config, converged);
+  }
+}
+
+
 void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged) {
 
 #if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   
-  const bool unsteady            = config->GetTime_Domain();
+  const bool unsteady = config->GetTime_Domain();
   int dim = int(nPointDomain * nVar);
   
   if (!unsteady)
     SU2_MPI::Error("DMD can only be used for unsteady simulations.", CURRENT_FUNCTION);
   
   su2double dt = config->GetDelta_UnstTime();
-  su2double t =  config->GetCurrent_UnstTime();
+  su2double t  = config->GetCurrent_UnstTime();
 
   if (!dmd_u) {
     dmd_u = new CAROM::DMD(dim, dt);
@@ -4347,17 +4380,77 @@ void CSolver::SaveDMD(CGeometry *geometry, CConfig *config, bool converged) {
   
   if (converged) {
     /*--- Calculate the DMD modes ---*/
-    const unsigned short rdim = config->GetMax_BasisDim();
-    if (rank == MASTER_NODE) {
-      std::cout << "Calculating the DMD modes with rank " << rdim << " truncation." << std::endl;
-    }
-    
-    dmd_u->train(rdim);
-    dmd_u->save("DMD_modes_" + to_string(rdim) + "_dt_" + to_string(dt) + "_t_" + to_string(t));
+    TrainDMD(config);
     
     /*--- Predict the DMD solution (reproductive) ---*/
     if (rank == MASTER_NODE) std::cout << "Predicting final state using DMD." << std::endl;
     su2double* result_u = dmd_u->predict(t)->getData();
+    SolutionDMD.Initialize(nPoint, nPointDomain, nVar, result_u);
+    
+    /*--- Find the relative error ---*/
+    su2double norm_diff_u = 0;
+    su2double norm_true_u = 0;
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+        su2double diff_u = result_u[total_index] - base_nodes->GetSolution(iPoint, iVar);
+        norm_diff_u += diff_u * diff_u;
+        norm_true_u += base_nodes->GetSolution(iPoint, iVar) * base_nodes->GetSolution(iPoint, iVar);
+      }
+    }
+    norm_diff_u = sqrt(norm_diff_u);
+    norm_true_u = sqrt(norm_true_u);
+    
+    if (rank == MASTER_NODE) {
+      std::cout << "Relative error of DMD state at t_final: "
+                << t << " is " << norm_diff_u / norm_true_u << std::endl;
+    }
+  }
+  
+#else
+  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
+#endif
+}
+
+void CSolver::SaveDMD_TW(CGeometry *geometry, CConfig *config, bool converged, unsigned long TimeIter) {
+
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+  
+  const bool unsteady             = config->GetTime_Domain();
+  unsigned short windowNumSamples = config->GetDMD_Window();
+  int dim = int(nPointDomain * nVar);
+  
+  if (windowNumSamples == 0)
+    SU2_MPI::Error("Number of samples per window cannot be zero. Change DMD_WINDOW option.", CURRENT_FUNCTION);
+  if (!unsteady)
+    SU2_MPI::Error("DMD can only be used for unsteady simulations.", CURRENT_FUNCTION);
+  
+  su2double dt = config->GetDelta_UnstTime();
+  su2double t  = config->GetCurrent_UnstTime();
+  //unsigned long currWindow = floor(TimeIter / windowNumSamples);
+
+  if (!dmd_u) {
+    dmd_u = new CAROM::DMD(dim, dt);
+    dmd_u_vec.push_back(new CAROM::DMD(dim, dt));
+  }
+  
+  dmd_u_vec.back()->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t);
+  
+  if (((TimeIter % windowNumSamples) == 0) && !converged && (TimeIter > 0)) {
+    /*--- Calculate the DMD modes and setup new DMD object ---*/
+    TrainDMD(config);
+    
+    // TODO: do not create new object if its the last window
+    dmd_u_vec.push_back(new CAROM::DMD(dim, dt));
+  }
+  
+  if (converged) {
+    /*--- Calculate the DMD modes ---*/
+    TrainDMD(config);
+    
+    /*--- Predict the DMD solution (reproductive) ---*/
+    if (rank == MASTER_NODE) std::cout << "Predicting final state using DMD." << std::endl;
+    su2double* result_u = dmd_u_vec.back()->predict(t)->getData();
     SolutionDMD.Initialize(nPoint, nPointDomain, nVar, result_u);
     
     /*--- Find the relative error ---*/

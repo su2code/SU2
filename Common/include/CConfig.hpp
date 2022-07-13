@@ -1162,8 +1162,10 @@ private:
   string libROMbase_FileName;               /*!< \brief Base filename for libROM file saving. */
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
-  rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
-  bool saveDMD;                             /*!< \brief Toggle capturing of solutions for dynamic mode decomposition. */
+  rom_save_freq,                            /*!< \brief Frequency of unsteady time steps to save. */
+  windowNumSamples;                         /*!< \brief How many samples per window for time-windowing DMD. */
+  bool saveDMD,                             /*!< \brief Toggle capturing of solutions for dynamic mode decomposition. */
+  DMD_TW;                                   /*!< \brief Toggle time-windowing algorithm for DMD. */
 
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -9554,6 +9556,18 @@ public:
    * \return True or false.
    */
   bool GetSave_DMD(void) const { return saveDMD; }
+  
+  /*!
+   * \brief Get whether or not to use time-windowing algorithm for DMD.
+   * \return True or false.
+   */
+  bool GetDMD_TW(void) const { return DMD_TW; }
+  
+  /*!
+   * \brief Get the number of samples per window for DMD.
+   * \return True or false.
+   */
+  unsigned short GetDMD_Window(void) const { return windowNumSamples; }
 
   /*!
    * \brief Check if the gradient smoothing is active
