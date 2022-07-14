@@ -271,43 +271,46 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
     } // points
 
-    if (config->GetnMarker_HeatFlux() > 0) {
       /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
       SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-      /*--- Set the solver variable Integrated Heatflux ---*/
-      SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
-    } // if heat flux
-
-    if (config->GetnMarker_Isothermal() > 0) {
       SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      auto theta_scaling = Volume_TempS_Global/Volume_Global;
+    if (config->GetnMarker_HeatFlux() > 0) {
+      /*--- Set the solver variable Integrated Heatflux ---*/
+      SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
+    } // if heat flux
+
+    if (config->GetnMarker_Isothermal() > 0) {
+      SPvals.Streamwise_Periodic_ThetaScaling = Volume_TempS_Global/Volume_Global;
       
-      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/theta_scaling);
-      } // points
+      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+        nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
 
       /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
-      auto b0_coeff =  Volume_Temp_Global; 
-      auto b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp();
-      auto b2_coeff = -dTdn_Global;
-
+      su2double b0_coeff =  Volume_Temp_Global; 
+      su2double b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp();
+      su2double b2_coeff = -dTdn_Global;
+    //   cout<<Volume_VTemp_Global <<" "<<config->GetSpecific_Heat_Cp()<<" "<<b1_coeff<<" "<<endl;
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
-      auto pred_lambda_2 = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
-      auto pred_lambda = pred_lambda_2;
-      if (!isnan(pred_lambda)) {
-        SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL - 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
+      su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
+    //   auto pred_lambda = pred_lambda_2;
+    //   if (!isnan(pred_lambda)) {
+        if (!config->GetDiscrete_Adjoint())
+        SPvals.Streamwise_Periodic_LambdaL_update -= 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
+       else
+        SPvals.Streamwise_Periodic_LambdaL_update = pred_lambda;
+        SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL_update;
+      cout<<"Values of Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
         // FOR Debugging, will be removed later on
-        // cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff<<endl;
+        // cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff << " :: lamda :: "<< pred_lambda<<endl;
         // cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;
-      }
-      else
-        SPvals.Streamwise_Periodic_LambdaL = 0.0146;
+    //   }
+    //   else
+    //     SPvals.Streamwise_Periodic_LambdaL = 0.0146;
     } // if isothermal
   } // if energy
 }
