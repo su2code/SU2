@@ -37,42 +37,43 @@ using namespace std;
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
-  //CLookUpTable *look_up_table1;
+  CLookUpTable *look_up_table1;
 
   /* 2D lookup table with progress variable and enthalpy as variables */
-
-  //look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  cout << "loading lookup table" << endl;
+  look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  cout << "finished loading lookup table" << endl;
 
   /* string names of the controlling variables */
-/*
+
   string name_prog = "PROGVAR";
   string name_enth = "ENTHALPY";
-*/  
+  
   /* values at which we perform the lookup */
-/*
+
   su2double prog = 0.90;
   su2double enth = -220000.0;
-*/
+
   /* values to lookup based on column keys */
- /* 
+  
   vector<string> look_up_tags={"ViscosityDyn", "Density"};
   vector<su2double> look_up_data={0.0, 0.0}; 
   
   look_up_table1->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
   CHECK(look_up_data[0] == Approx(1.19152e-5));
   CHECK(look_up_data[1] == Approx(0.682905));
-*/
+
 
   /* value lookup based on string */
-/*  
+  
   string look_up_tag = "Density";
   su2double look_up_dat;
   look_up_table1->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
   CHECK(look_up_dat == Approx(0.682905));
-*/
+
 
   /* find the table limits */
-/*  
+  
   auto limitsEnth = look_up_table1->GetTableLimitsEnth();
   CHECK(limitsEnth.first == Approx(-1.0));
   CHECK(limitsEnth.second == Approx(1.0));
@@ -80,18 +81,18 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   auto limitsProgvar = look_up_table1->GetTableLimitsProg();
   CHECK(limitsProgvar.first == Approx(0.0));
   CHECK(limitsProgvar.second == Approx(1.0));
-*/
+
 
   /* lookup value outside of lookup table */
-/*
+
   prog = 1.10;
   enth = -220000.0;
   look_up_tag = "Density";
   look_up_table1->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_prog, name_enth); 
   CHECK(look_up_dat == Approx(0.6516888435));
- */
+ 
   
-  //delete look_up_table1; 
+  delete look_up_table1; 
 
 
   /* new, much smaller and trivial lookup table */
