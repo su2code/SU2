@@ -64,6 +64,13 @@ private:
   phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
   A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
 
+  std::array<su2double,1> mu_ref; /*!< \brief Vector containing reference viscosity for Sutherland's law */
+  std::array<su2double,1> k_ref;  /*!< \brief Vector containing reference thermal conducivities for Sutherland's law */
+  std::array<su2double,1> Sm_ref; /*!< \brief Vector containing Sutherland's constant for viscosity */
+  std::array<su2double,1> Sk_ref; /*!< \brief Vector containing Sutherland's constant for thermal conductivities */
+
+  const su2double T_ref_suth = 273.15; /*!<\brief Reference temperature for Sutherland's model [K] */
+
   su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
   RxnConstantTable,              /*!< \brief Table of chemical equiibrium reaction constants */
@@ -203,34 +210,44 @@ public:
   void ComputeKeqConstants(unsigned short val_Reaction);
 
   /*!
-   * \brief Get species diffusion coefficients with Wilke/Blottner/Eucken transport model.
+   * \brief Calculate species diffusion coefficients with Wilke/Blottner/Eucken transport model.
    */
   void DiffusionCoeffWBE();
 
   /*!
-   * \brief Get viscosity with Wilke/Blottner/Eucken transport model.
+   * \brief Calculate viscosity with Wilke/Blottner/Eucken transport model.
    */
   void ViscosityWBE();
 
   /*!
-   * \brief Get T-R and V-E thermal conductivities vector with Wilke/Blottner/Eucken transport model.
+   * \brief Calculate T-R and V-E thermal conductivities vector with Wilke/Blottner/Eucken transport model.
    */
   void ThermalConductivitiesWBE();
 
   /*!
-   * \brief Get species diffusion coefficients with Gupta-Yos transport model.
+   * \brief Calculate species diffusion coefficients with Gupta-Yos transport model.
    */
   void DiffusionCoeffGY();
 
   /*!
-   * \brief Get viscosity with Gupta-Yos transport model.
+   * \brief Calculate viscosity with Gupta-Yos transport model.
    */
   void ViscosityGY();
 
   /*!
-   * \brief Get T-R and V-E thermal conductivities vector with Gupta-Yos transport model.
+   * \brief Calculate T-R and V-E thermal conductivities vector with Gupta-Yos transport model.
    */
   void ThermalConductivitiesGY();
+
+  /*!
+   * \brief Calculate viscosity with Sutherland's transport model.
+   */
+  void ViscositySuth();
+
+  /*!
+   * \brief Calculate T-R and V-E thermal conductivities vector with Sutherland's transport model.
+   */
+  void ThermalConductivitiesSuth();
 
   /*!
    * \brief Get reference temperature.
