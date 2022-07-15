@@ -41,8 +41,10 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   //CLookUpTable *look_up_table1;
 
   char tmp[256];
-  getcwd(tmp, 256);
-  CHECK(strcmp(tmp,"/home"));
+  auto test = getcwd(tmp,256);
+  cout << "test="<<test<<endl;
+
+  CHECK(strcmp(tmp,"/home")!=0);
   
 
   /* 2D lookup table with progress variable and enthalpy as variables */
