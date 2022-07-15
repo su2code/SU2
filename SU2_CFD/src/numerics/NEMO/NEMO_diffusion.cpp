@@ -128,14 +128,10 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
     PrimVar_j[iSpecies] = V_j[iSpecies]/V_j[RHO_INDEX];
     Mean_PrimVar[iSpecies] = 0.5*(PrimVar_i[iSpecies] + PrimVar_j[iSpecies]);
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] *
-                                              (PrimVar_Grad_i[iSpecies][iDim] -
-                                               PrimVar_i[iSpecies] *
-                                               PrimVar_Grad_i[RHO_INDEX][iDim]) +
-                                              1.0/V_j[RHO_INDEX] *
-                                              (PrimVar_Grad_j[iSpecies][iDim] -
-                                               PrimVar_j[iSpecies] *
-                                               PrimVar_Grad_j[RHO_INDEX][iDim]));
+      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] * (PrimVar_Grad_i[iSpecies][iDim] -
+                                              PrimVar_i[iSpecies] * PrimVar_Grad_i[RHO_INDEX][iDim]) +
+                                              1.0/V_j[RHO_INDEX] * (PrimVar_Grad_j[iSpecies][iDim] -
+                                              PrimVar_j[iSpecies] * PrimVar_Grad_j[RHO_INDEX][iDim]));
     }
   }
 
