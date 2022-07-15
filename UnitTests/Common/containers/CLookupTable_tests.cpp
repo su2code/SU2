@@ -43,7 +43,7 @@ using namespace std;
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 std::string folderstring="";
   //CLookUpTable *look_up_table1;
-const char* PATH = ".";
+const char* PATH = "BaseMPI/";
 
     DIR *dir = opendir(PATH);
 

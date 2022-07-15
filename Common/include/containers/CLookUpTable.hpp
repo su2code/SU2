@@ -69,7 +69,6 @@ class CLookUpTable {
   /* we do not know this size in advance until we go through the entire lookup table */
   std::vector<std::vector<unsigned long> > edges;
   std::vector<std::vector<unsigned long> > edge_to_triangle;
-  //su2matrix<unsigned long> edge_to_triangle;
 
   std::vector<unsigned long> hull;
 

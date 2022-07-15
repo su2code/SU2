@@ -39,7 +39,6 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   version_reader = "1.0.0";
 
   /*--- Store MPI rank. ---*/
-
   rank = SU2_MPI::GetRank();
 
   string line;
@@ -139,7 +138,6 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
 
   if (rank == MASTER_NODE) cout << "allocating memory for the triangles" << endl;
-  //triangles.resize(GetNTriangles(), vector<unsigned long>(3));
   triangles.resize(GetNTriangles(), 3);
 
   if (rank == MASTER_NODE) cout << "allocating memory for the hull points" << endl;
