@@ -43,8 +43,10 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   char tmp[256];
   auto test = getcwd(tmp,256);
   cout << "test="<<test<<endl;
+  std::string s(test);
+  cout << "string = "<<s << endl;
 
-  CHECK(strcmp(tmp,"/home")!=0);
+  CHECK(s=="bla");
   
 
   /* 2D lookup table with progress variable and enthalpy as variables */
