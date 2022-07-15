@@ -111,6 +111,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     ElDegeneracy(0,6) = 15;
 
     if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       mu_ref[0] = 2.125E-5;
       k_ref[0] = 0.0163;
       Sm_ref[0] = 114.0;
@@ -260,6 +261,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
 
     if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       k_ref[0] = 0.0242;
       mu_ref[0] = 1.663E-5;
       Sm_ref[0] = 107.0;
@@ -613,6 +615,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
 
     if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       k_ref[0] = 0.0241;
       mu_ref[0] = 1.716E-5;
       Sm_ref[0] = 111.0;
@@ -1050,6 +1053,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
 
     if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       k_ref[0] = 0.0241;
       mu_ref[0] = 1.716E-5;
       Sm_ref[0] = 111.0;
