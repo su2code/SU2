@@ -42,7 +42,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   char tmp[256];
   getcwd(tmp, 256);
-  CHECK(tmp == "/home");
+  CHECK(strcmp(tmp,"/home"));
   
 
   /* 2D lookup table with progress variable and enthalpy as variables */
