@@ -29,6 +29,9 @@
 #include <sstream>
 #include <filesystem>
 
+#include <dirent.h>
+#include <stdio.h>
+
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/containers/CTrapezoidalMap.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
@@ -36,17 +39,41 @@
 
 using namespace std;
 
-TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
+TEST_CASE("LUTreader", "[tabulated chemistry]") {
+std::string folderstring="";
   //CLookUpTable *look_up_table1;
+const char* PATH = ".";
+
+    DIR *dir = opendir(PATH);
+
+    struct dirent *entry = readdir(dir);
+
+    while (entry != NULL)
+    {
+        if (entry->d_type == DT_DIR){
+            //printf("%s\n", entry->d_name);
+            folderstring.append(entry->d_name);
+            folderstring.append(" , ");
+        }
+        
+
+        entry = readdir(dir);
+
+    }
+
+    closedir(dir);
+
+  //cout << "folders="<<folderstring<<endl;
+
 
   char tmp[256];
   auto test = getcwd(tmp,256);
-  cout << "test="<<test<<endl;
+  //cout << "test="<<test<<endl;
   std::string s(test);
-  cout << "string = "<<s << endl;
+  //cout << "string = "<<s << endl;
 
-  CHECK(s=="bla");
+  CHECK(s==folderstring);
   
 
   /* 2D lookup table with progress variable and enthalpy as variables */
