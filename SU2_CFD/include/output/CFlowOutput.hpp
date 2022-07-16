@@ -240,7 +240,12 @@ protected:
 
     for (const auto& var : output.varSymbols) {
       output.varIndices.push_back(IndexOfVariable(idx, var));
-      if (output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) continue;
+
+      if (output.type == OperationType::FUNCTION && output.varIndices.back() != CustomOutput::NOT_A_VARIABLE) {
+        SU2_MPI::Error("Custom outputs of type 'Function' cannot reference solver variables.", CURRENT_FUNCTION);
+      }
+      /*--- Symbol is a valid solver variable. ---*/
+      if (output.varIndices.back() < CustomOutput::NOT_A_VARIABLE) continue;
 
       /*--- An index above NOT_A_VARIABLE is not valid with current solver settings. ---*/
       if (output.varIndices.back() > CustomOutput::NOT_A_VARIABLE) {

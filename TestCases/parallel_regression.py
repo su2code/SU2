@@ -232,7 +232,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.653802, -1.18143, -0.794887, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 1.7147]
+    flatplate_udobj.test_vals = [-6.653803, -1.181430, -0.794886, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 2.1492e+01, 5.6399e-01, 2.2787]
     flatplate_udobj.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate_udobj.timeout   = 1600
     flatplate_udobj.tol       = 0.00001

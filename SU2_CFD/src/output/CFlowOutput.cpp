@@ -772,6 +772,15 @@ void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geome
       }
     }
 
+    if (output.type == OperationType::FUNCTION) {
+      auto Functor = [&](unsigned long i) {
+        /*--- Functions only reference other history outputs. ---*/
+        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+      };
+      SetHistoryOutputValue(output.name, output.eval(Functor));
+      continue;
+    }
+
     /*--- Surface integral of the expression. ---*/
 
     std::array<su2double, 2> integral = {0.0, 0.0};

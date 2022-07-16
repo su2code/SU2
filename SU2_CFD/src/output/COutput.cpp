@@ -2181,6 +2181,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
 
   const std::map<std::string, OperationType> opMap = {
     {"Macro", OperationType::MACRO},
+    {"Function", OperationType::FUNCTION},
     {"AreaAvg", OperationType::AREA_AVG},
     {"AreaInt", OperationType::AREA_INT},
     {"MassFlowAvg", OperationType::MASSFLOW_AVG},
@@ -2260,9 +2261,14 @@ void COutput::SetCustomOutputs(const CConfig* config) {
       output.type = type;
       output.func = std::move(func);
       output.expression = mel::Parse<passivedouble>(output.func, output.varSymbols);
-  #ifndef NDEBUG
+#ifndef NDEBUG
       mel::Print(output.expression, output.varSymbols, std::cout);
-  #endif
+#endif
+
+      if (type == OperationType::FUNCTION) {
+        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+        break;
+      }
 
       /*--- Find the marker names. ---*/
       while (it != last && (*it == ' ' || *it == '}' || *it == '[')) ++it;

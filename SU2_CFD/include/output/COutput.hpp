@@ -187,7 +187,7 @@ protected:
   CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
   /*! \brief Type of operation for custom outputs. */
-  enum class OperationType { MACRO, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
+  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
 
   /*! \brief Struct to hold a parsed custom output function. */
   struct CustomOutput {
@@ -228,17 +228,17 @@ protected:
 
   std::vector<CustomOutput> customOutputs;  /*!< \brief User-defined outputs. */
 
-   /*----------------------------- Volume output ----------------------------*/
+  /*----------------------------- Volume output ----------------------------*/
 
-   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
 
-   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-   unsigned short nVolumeFields;        //!< \brief Number of fields in the volume output */
+  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
+  unsigned short nVolumeFields;        //!< Number of fields in the volume output
 
-   string volumeFilename,               //!< Volume output filename
-   surfaceFilename,                     //!< Surface output filename
-   restartFilename;                     //!< Restart output filename
+  string volumeFilename,               //!< Volume output filename
+  surfaceFilename,                     //!< Surface output filename
+  restartFilename;                     //!< Restart output filename
 
   /** \brief Structure to store information for a volume output field.
    *
