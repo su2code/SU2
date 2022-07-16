@@ -27,10 +27,6 @@
 
 #include "catch.hpp"
 #include <sstream>
-#include <filesystem>
-
-#include <dirent.h>
-#include <stdio.h>
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/containers/CTrapezoidalMap.hpp"
@@ -39,52 +35,19 @@
 
 using namespace std;
 
-
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
-std::string folderstring="";
-  //CLookUpTable *look_up_table1;
-const char* PATH = "BaseMPI/install/";
-
-    DIR *dir = opendir(PATH);
-
-    struct dirent *entry = readdir(dir);
-
-    while (entry != NULL)
-    {
-        if (entry->d_type == DT_DIR){
-            //printf("%s\n", entry->d_name);
-            folderstring.append(entry->d_name);
-            folderstring.append(" , ");
-        }
-        
-
-        entry = readdir(dir);
-
-    }
-
-    closedir(dir);
-
-  //cout << "folders="<<folderstring<<endl;
-
-
-  char tmp[256];
-  auto test = getcwd(tmp,256);
-  //cout << "test="<<test<<endl;
-  std::string s(test);
-  //cout << "string = "<<s << endl;
-
-  CHECK(s==folderstring);
   
+  CLookUpTable *look_up_table1;
 
   /* 2D lookup table with progress variable and enthalpy as variables */
-  //cout << "loading lookup table" << endl;
-  //look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
-  //cout << "finished loading lookup table" << endl;
+  cout << "loading lookup table" << endl;
+  look_up_table1 = new CLookUpTable("install/bin/methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  cout << "finished loading lookup table" << endl;
 
   /* string names of the controlling variables */
 
-  //string name_prog = "PROGVAR";
-  //string name_enth = "ENTHALPY";
+  string name_prog = "PROGVAR";
+  string name_enth = "ENTHALPY";
   
   /* values at which we perform the lookup */
 
@@ -93,12 +56,12 @@ const char* PATH = "BaseMPI/install/";
 
   /* values to lookup based on column keys */
   
-  //vector<string> look_up_tags={"ViscosityDyn", "Density"};
-  //vector<su2double> look_up_data={0.0, 0.0}; 
+  vector<string> look_up_tags={"ViscosityDyn", "Density"};
+  vector<su2double> look_up_data={0.0, 0.0}; 
   
   //look_up_table1->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
-  //CHECK(look_up_data[0] == Approx(1.19152e-5));
-  //CHECK(look_up_data[1] == Approx(0.682905));
+  CHECK(look_up_data[0] == Approx(1.19152e-5));
+  CHECK(look_up_data[1] == Approx(0.682905));
 
 
   /* value lookup based on string */
@@ -129,7 +92,7 @@ const char* PATH = "BaseMPI/install/";
   //CHECK(look_up_dat == Approx(0.6516888435));
  
   
-  //delete look_up_table1; 
+  delete look_up_table1; 
 
 
   /* new, much smaller and trivial lookup table */
