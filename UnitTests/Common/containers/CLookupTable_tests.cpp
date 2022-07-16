@@ -73,6 +73,8 @@ const char* PATH = "./";
   //cout << "string = "<<s << endl;
 
   CHECK(s==folderstring);
+  CHECK(0==0);
+  CHECK(0==1);
   
   //CLookUpTable *look_up_table1;
 
