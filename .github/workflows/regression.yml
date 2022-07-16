@@ -129,7 +129,7 @@ jobs:
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
-      - name: Cleanup 
+      - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
           entrypoint: /bin/rm
@@ -198,7 +198,7 @@ jobs:
           entrypoint: install/bin/${{matrix.testdriver}}
           # -t <Tutorials-branch> -c <Testcases-branch>
         args: -v UnitTests:/github/workdir/UnitTests
-      - name: Post Cleanup 
+      - name: Post Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
           entrypoint: /bin/rm
