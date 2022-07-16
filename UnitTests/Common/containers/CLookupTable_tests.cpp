@@ -53,7 +53,6 @@ const char* PATH = "./";
     while (entry != NULL)
     {
         if (entry->d_type == DT_DIR){
-            //printf("%s\n", entry->d_name);
             folderstring.append(entry->d_name);
             folderstring.append(" , ");
         }
@@ -65,7 +64,6 @@ const char* PATH = "./";
 
     closedir(dir);
 
-  //cout << "folders="<<folderstring<<endl;
 
 
   char tmp[256];
@@ -76,7 +74,7 @@ const char* PATH = "./";
 
   CHECK(s==folderstring);
   
-  CLookUpTable *look_up_table1;
+  //CLookUpTable *look_up_table1;
 
   /* 2D lookup table with progress variable and enthalpy as variables */
   //cout << "loading lookup table" << endl;
