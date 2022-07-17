@@ -172,6 +172,19 @@ jobs:
           path: ${{format('Forward{0}', matrix.tag)}}
       - name: Uncompress and Move Binaries
         run: |
+          branch="refs/pull/1637/merge"
+          name="SU2_$(echo $branch | sed 's/\//_/g')"
+          SRC_FOLDER="$PWD/src"
+          mkdir -p $SRC_FOLDER 
+          cd $SRC_FOLDER 
+          git clone --recursive --depth=1 --shallow-submodules https://github.com/su2code/SU2 $name
+          cd $name
+          git config --add remote.origin.fetch '+refs/pull/*/merge:refs/remotes/origin/refs/pull/*/merge'
+          git config --add remote.origin.fetch '+refs/heads/*:refs/remotes/origin/refs/heads/*'
+          git fetch origin --depth=1 $branch:$branch
+          git checkout $branch
+          git submodule update
+          cd ..
           ls -lah
           BIN_FOLDER="$PWD/install/bin"
           mkdir -p $BIN_FOLDER
@@ -195,7 +208,6 @@ jobs:
       - name: Run Unit Tests
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
-          args: -b ${{github.ref}} 
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
