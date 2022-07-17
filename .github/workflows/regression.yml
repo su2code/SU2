@@ -195,7 +195,7 @@ jobs:
       - name: Run Unit Tests
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testdriver}}
+          args: -b ${{github.ref}} 
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
