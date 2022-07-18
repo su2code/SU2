@@ -20,13 +20,13 @@ prog var = 1*Y-CH4
 0.0 | 1.0
 
 [enthalpy range]
-0.0 | 1.0
+-1.0 | 1.0
 
 [number of variables]
 4
 
 [variable names]
-1:PROGVAR 2:ENTHALPY 3:Density 4: Viscosity
+1:PROGVAR 2:ENTHALPY 3:Density 4:Viscosity
 </header>
 
 <data>
