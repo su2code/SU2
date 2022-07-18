@@ -102,10 +102,10 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
 
   /* new, much smaller and trivial lookup table */
-/*
+
   CLookUpTable *look_up_table2;
 
-  look_up_table2 = new CLookUpTable("../UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
+  look_up_table2 = new CLookUpTable("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
 
   prog = 0.55;
   enth = 0.25; 
@@ -120,7 +120,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   CHECK(look_up_dat == Approx(1.20));
 
   delete look_up_table2; 
-*/
+
 
 }
 
