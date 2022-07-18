@@ -269,11 +269,11 @@ void CLookUpTable::ComputeInterpCoeffs(const string& name_prog, const string& na
 
 void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_y,
                                    std::array<unsigned long,3>& point_ids, su2activematrix& interp_mat_inv) {
-  unsigned int M = 3;
-  CSquareMatrixCM global_M(M);
+  const unsigned int M = 3;
+  CSquareMatrixCM global_M(3);
 
   /* setup LHM matrix for the interpolation */
-  for (int i_point = 0; i_point < 3; i_point++) {
+  for (int i_point = 0; i_point < M; i_point++) {
     su2double x = vec_x[point_ids[i_point]];
     su2double y = vec_y[point_ids[i_point]];
 
@@ -285,7 +285,6 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
   global_M.Invert();
   global_M.Transpose();
  
-  /* convert back into vector<vector>> for now */
   for (unsigned int i=0; i<M; i++){
     for (unsigned int j=0; j<M; j++){
       interp_mat_inv[i][j] = global_M(i,j);
@@ -371,7 +370,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
     id_triangle = trap_map_prog_enth.GetTriangle(val_prog, val_enth);
 
     /* check if point is inside a triangle (if table domain is non-rectangular,
-     * the previous range check might be true but the point is still outside of the domain) */
+     * the previous range check might be true but the point could still be outside of the domain) */
     if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
       /* if so, get interpolation coefficients for point in  the triangle */
       GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
@@ -380,16 +379,13 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
       exit_code = 0;
 
     } else {
-      // cout << "lookup_progenth: outside table range, c,h = "<< val_prog<< " "<<val_enth<<endl;
       /* if point is not inside a triangle (outside table domain) search nearest neighbor */
       nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
       exit_code = 1;
     }
 
   } else {
-    // if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<<
-
-    /* if point is outside of table range, search nearest neighbor */
+    /* if point is outside of table ranges, find nearest neighbor */
     nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth, name_prog, name_enth);
     exit_code = 1;
   }
@@ -475,12 +471,15 @@ bool CLookUpTable::IsInTriangle(su2double val_prog, su2double val_enth, unsigned
                                 const string& name_enth) {
   su2double tri_prog_0 = GetDataP(name_prog)[triangles[val_id_triangle][0]];
   su2double tri_enth_0 = GetDataP(name_enth)[triangles[val_id_triangle][0]];
+
   su2double tri_prog_1 = GetDataP(name_prog)[triangles[val_id_triangle][1]];
   su2double tri_enth_1 = GetDataP(name_enth)[triangles[val_id_triangle][1]];
+  
   su2double tri_prog_2 = GetDataP(name_prog)[triangles[val_id_triangle][2]];
   su2double tri_enth_2 = GetDataP(name_enth)[triangles[val_id_triangle][2]];
 
   su2double area_tri = TriArea(tri_prog_0, tri_enth_0, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
+
   su2double area_0 = TriArea(val_prog, val_enth, tri_prog_1, tri_enth_1, tri_prog_2, tri_enth_2);
   su2double area_1 = TriArea(tri_prog_0, tri_enth_0, val_prog, val_enth, tri_prog_2, tri_enth_2);
   su2double area_2 = TriArea(tri_prog_0, tri_enth_0, tri_prog_1, tri_enth_1, val_prog, val_enth);
