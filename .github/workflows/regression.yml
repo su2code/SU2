@@ -193,8 +193,8 @@ jobs:
           find $BIN_FOLDER -type f -exec chmod a+x '{}' \;
           ls -lahR $BIN_FOLDER
           echo "cloning branch"
-          branch="refs/pull/1637/merge"
-          name="SU2_$(echo $branch | sed 's/\//_/g')"
+          branch="${{github.ref}}"
+          name="SU2"
           SRC_FOLDER="$PWD/src"
           mkdir -p $SRC_FOLDER 
           cd $SRC_FOLDER 
