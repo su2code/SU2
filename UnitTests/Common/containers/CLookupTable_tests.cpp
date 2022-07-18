@@ -47,7 +47,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /* 2D lookup table with progress variable and enthalpy as variables */
   cout << "loading lookup table" << endl;
-  look_up_table1 = new CLookUpTable("UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
+  look_up_table1 = new CLookUpTable("src/SU2/UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
   cout << "finished loading lookup table" << endl;
 
   /* string names of the controlling variables */
