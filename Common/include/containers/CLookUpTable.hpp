@@ -50,6 +50,9 @@ class CLookUpTable {
   unsigned long n_variables;
   unsigned long n_hull_points;
 
+  /*! 
+   * \brief the lower and upper limits of the enthalpy and progress variable 
+   */
   su2double limits_table_enth[2];
   su2double limits_table_prog[2];
 
@@ -70,6 +73,9 @@ class CLookUpTable {
   std::vector<std::vector<unsigned long> > edges;
   std::vector<std::vector<unsigned long> > edge_to_triangle;
 
+  /*! \brief 
+   * The hull contains the boundary of the lookup table 
+   */
   std::vector<unsigned long> hull;
 
   CTrapezoidalMap trap_map_prog_enth;
