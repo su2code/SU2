@@ -1210,7 +1210,7 @@ void CFlowOutput::DC60Distortion(CSolver *solver, CGeometry *geometry, CConfig *
       /*--- Compute the location of the critical points of the distortion measure, and center of gravity ---*/
 
       TotalArea = 0.0; xCoord_CG = 0.0; yCoord_CG = 0.0; zCoord_CG = 0.0; PT_Mean = 0.0; Mach_Mean = 0.0;  q_Mean = 0.0;
-      unsigned short AT = 0, AM =0, A1 = 0, A2 = 0, A3 = 0, A4 =0, A5 = 0, A6=0;
+      su2double AT = 0, AM =0, A1 = 0, A2 = 0, A3 = 0, A4 =0, A5 = 0, A6=0;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
 
