@@ -23,7 +23,7 @@ prog var = 1*Y-CH4
 0.0 | 1.0
 
 [number of variables]
-3
+4
 
 [variable names]
 1:PROGVAR 2:ENTHALPY 3:Density 4: Viscosity
