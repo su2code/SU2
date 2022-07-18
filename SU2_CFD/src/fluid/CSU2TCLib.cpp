@@ -53,7 +53,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
 
-  if(viscous){
+  if (viscous) {
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
@@ -115,6 +115,15 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Creation/Destruction (+1/-1), Index of monoatomic reactants.
     // Argon not used.
     CatRecombTable(0,0) = 0; CatRecombTable(0,1) = 0;
+
+    /*--- Values used in the Sutherland's formula. ---*/
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      mu_ref[0] = 2.125E-5;
+      k_ref[0] = 0.0163;
+      Sm_ref[0] = 114.0;
+      Sk_ref[0] = 170;
+    }
 
   } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
@@ -263,6 +272,15 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
     CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1;
     CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
+
+    /*--- Values used in the Sutherland's formula. ---*/
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      k_ref[0] = 0.0242;
+      mu_ref[0] = 1.663E-5;
+      Sm_ref[0] = 107.0;
+      Sk_ref[0] = 150.0;
+    }
 
   } else if (gas_model == "AIR-5"){
 
@@ -617,6 +635,15 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 0;
     CatRecombTable(3,0) = -1; CatRecombTable(3,1) = 3;
     CatRecombTable(4,0) = -1; CatRecombTable(4,1) = 4;
+
+    /*--- Values used in the Sutherland's formula. ---*/
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      k_ref[0] = 0.0241;
+      mu_ref[0] = 1.716E-5;
+      Sm_ref[0] = 111.0;
+      Sk_ref[0] = 194.0;
+    }
 
   } else if (gas_model == "AIR-7"){
 
@@ -1057,6 +1084,15 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     CatRecombTable(4,0) = -1; CatRecombTable(4,1) = 4;
     CatRecombTable(5,0) = -1; CatRecombTable(5,1) = 5;
     CatRecombTable(6,0) =  0; CatRecombTable(6,1) = 1;
+
+    /*--- Values for Sutherland's formula. ---*/
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      k_ref[0] = 0.0241;
+      mu_ref[0] = 1.716E-5;
+      Sm_ref[0] = 111.0;
+      Sk_ref[0] = 194.0;
+    }
   }
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -1628,6 +1664,8 @@ vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
    DiffusionCoeffWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
    DiffusionCoeffGY();
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
+   DiffusionCoeffWBE();
 
   return DiffusionCoeff;
 
@@ -1639,6 +1677,8 @@ su2double CSU2TCLib::GetViscosity(){
     ViscosityWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ViscosityGY();
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
+    ViscositySuth();
 
   return Mu;
 
@@ -1650,6 +1690,8 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
     ThermalConductivitiesWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ThermalConductivitiesGY();
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
+    ThermalConductivitiesSuth();
 
   return ThermalConductivities;
 
@@ -1832,7 +1874,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
     //}
 
     /*--- Assign species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
+    DiffusionCoeff[iSpecies] = (denom > EPS) ? (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom) : su2double(0.0);
   }
   // if (ionization) {
   //TODO: Update correct iElectron....
@@ -2001,18 +2043,48 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     }
 
     /*--- Translational contribution to thermal conductivity ---*/
-    ThermalCond_tr    += (15.0/4.0)*kb*gam_i/denom_t;
+    ThermalCond_tr += (denom_t > EPS) ? ((15.0/4.0)*kb*gam_i/denom_t) : su2double(0.0);
 
     /*--- Translational contribution to thermal conductivity ---*/
-    if (RotationModes[iSpecies] != 0.0)
-      ThermalCond_tr  += kb*gam_i/denom_r;
+    if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (denom_r > EPS) ? (kb*gam_i/denom_r) : su2double(0.0);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    ThermalCond_ve += kb*Cvve/R*gam_i / denom_r;
+    ThermalCond_ve += (denom_r > EPS) ? (kb*Cvve/R*gam_i / denom_r) : su2double(0.0);
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
   ThermalConductivities[1] = ThermalCond_ve;
+}
+
+void CSU2TCLib::ViscositySuth(){
+
+  su2double T_nd = T / T_ref_suth;
+
+  /*--- Calculate mixture laminar viscosity ---*/
+  Mu = mu_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sm_ref[0]) / (T + Sm_ref[0]));
+
+}
+
+void CSU2TCLib::ThermalConductivitiesSuth(){
+
+  /*--- Compute mixture quantities ---*/
+  su2double mass = 0.0, rho = 0.0;
+  for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
+  for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
+
+  su2double Cvtr = ComputerhoCvtr()/rho;
+  su2double Cvve = ComputerhoCvve()/rho;
+
+  /*--- Compute simple Kve scaling factor ---*/
+  su2double scl  = Cvve/Cvtr;
+
+  /*--- Compute k's using Sutherland's law ---*/
+  su2double T_nd = T / T_ref_suth;
+  su2double k = k_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sk_ref[0]) / (T + Sk_ref[0]));
+  su2double kve = scl*k;
+
+  ThermalConductivities[0] = k;
+  ThermalConductivities[1] = kve;
 
 }
 
