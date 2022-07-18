@@ -44,7 +44,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 std::string folderstring="";
 
 
-const char* PATH = "./";
+const char* PATH = "src/";
 
     DIR *dir = opendir(PATH);
 
