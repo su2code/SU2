@@ -180,7 +180,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [-10.391857, -15.524696, -7.715907, -17.350541]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.524674, 5.022532, 9.430247, 2.549328, 0.0, -2.4614e+23]
     discadj_axisymmetric_rans_nozzle.su2_exec   = "mpirun -n 2 SU2_CFD_AD"
     discadj_axisymmetric_rans_nozzle.timeout    = 1600
     discadj_axisymmetric_rans_nozzle.tol        = 0.00001
