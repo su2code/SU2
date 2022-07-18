@@ -42,49 +42,47 @@ using namespace std;
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
-  
-  CLookUpTable *look_up_table1;
+  /*--- smaller and trivial lookup table ---*/
 
-  /* 2D lookup table with progress variable and enthalpy as variables */
-  cout << "loading lookup table" << endl;
-  look_up_table1 = new CLookUpTable("src/SU2/UnitTests/Common/containers/methane_air_mixing.drg","PROGVAR","ENTHALPY");
-  cout << "finished loading lookup table" << endl;
-
-  /* string names of the controlling variables */
-
-  string name_prog = "PROGVAR";
-  string name_enth = "ENTHALPY";
-  
-  /* values at which we perform the lookup */
-
-  su2double prog = 0.90;
-  su2double enth = -220000.0;
-
-  /* values to lookup based on column keys */
-  
-  vector<string> look_up_tags={"ViscosityDyn", "Density"};
-  vector<su2double> look_up_data={0.0, 0.0}; 
-  
-  look_up_table1->LookUp_ProgEnth(look_up_tags, look_up_data, prog,enth, name_prog, name_enth); 
-  CHECK(look_up_data[0] == Approx(1.19152e-5));
-  CHECK(look_up_data[1] == Approx(0.682905));
+  CLookUpTable *look_up_table;
 
 
-  /* value lookup based on string */
-  
+  /*--- 2D lookup table with progress variable and enthalpy as variables ---*/
+
+  look_up_table = new CLookUpTable("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
+
+
+  /*--- string names of the controlling variables ---*/
+
+  string name_CV1 = "PROGVAR";
+  string name_CV2 = "ENTHALPY";
+
+
+ /*--- look up a single value for density ---*/
+
+  su2double prog = 0.55;
+  su2double enth = -0.5; 
   string look_up_tag = "Density";
   su2double look_up_dat;
-  look_up_table1->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
-  CHECK(look_up_dat == Approx(0.682905));
+  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
+  CHECK(look_up_dat == Approx(1.05));
+
+  /*--- look up a single value for viscosity ---*/
+
+  prog = 0.65;
+  enth = 0.95; 
+  look_up_tag = "Viscosity";
+  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
+  CHECK(look_up_dat == Approx(1.19));
 
 
   /* find the table limits */
   
-  auto limitsEnth = look_up_table1->GetTableLimitsEnth();
+  auto limitsEnth = look_up_table->GetTableLimitsEnth();
   CHECK(limitsEnth.first == Approx(-1.0));
   CHECK(limitsEnth.second == Approx(1.0));
 
-  auto limitsProgvar = look_up_table1->GetTableLimitsProg();
+  auto limitsProgvar = look_up_table->GetTableLimitsProg();
   CHECK(limitsProgvar.first == Approx(0.0));
   CHECK(limitsProgvar.second == Approx(1.0));
 
@@ -92,35 +90,12 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   /* lookup value outside of lookup table */
 
   prog = 1.10;
-  enth = -220000.0;
+  enth = 1.1;
   look_up_tag = "Density";
-  look_up_table1->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_prog, name_enth); 
+  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
   CHECK(look_up_dat == Approx(0.6516888435));
  
-  
-  delete look_up_table1; 
-
-
-  /* new, much smaller and trivial lookup table */
-
-  CLookUpTable *look_up_table2;
-
-  look_up_table2 = new CLookUpTable("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
-
-  prog = 0.55;
-  enth = 0.25; 
-  look_up_tag = "Density";
-  look_up_table2->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
-  CHECK(look_up_dat == Approx(1.00));
-
-  prog = 0.65;
-  enth = 0.95; 
-  look_up_tag = "Density";
-  look_up_table2->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog,enth, name_prog, name_enth); 
-  CHECK(look_up_dat == Approx(1.20));
-
-  delete look_up_table2; 
-
+  delete look_up_table; 
 
 }
 
