@@ -65,7 +65,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   string look_up_tag = "Density";
   su2double look_up_dat;
   look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
-  CHECK(look_up_dat == Approx(1.05));
+  CHECK(look_up_dat == Approx(1.00));
 
   /*--- look up a single value for viscosity ---*/
 
@@ -73,7 +73,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   enth = 0.95; 
   look_up_tag = "Viscosity";
   look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
-  CHECK(look_up_dat == Approx(1.19));
+  CHECK(look_up_dat == Approx(0.00008));
 
 
   /* find the table limits */
@@ -93,7 +93,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   enth = 1.1;
   look_up_tag = "Density";
   look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
-  CHECK(look_up_dat == Approx(0.6516888435));
+  CHECK(look_up_dat == Approx(1.2));
  
   delete look_up_table; 
 
