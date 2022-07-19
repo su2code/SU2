@@ -273,7 +273,7 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
   CSquareMatrixCM global_M(3);
 
   /* setup LHM matrix for the interpolation */
-  for (int i_point = 0; i_point < M; i_point++) {
+  for (unsigned int i_point = 0; i_point < M; i_point++) {
     su2double x = vec_x[point_ids[i_point]];
     su2double y = vec_y[point_ids[i_point]];
 
