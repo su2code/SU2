@@ -125,10 +125,10 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
     case CONDUCTIVITYMODEL::POLYNOMIAL:
       for (int iVar = 0; iVar < n_species_mixture; iVar++) {
         if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
-          ThermalConductivity = std::unique_ptr<CPolynomialConductivityRANS<N_POLY_COEFFS>>(
+          ThermalConductivityPointers[iVar] = std::unique_ptr<CPolynomialConductivityRANS<N_POLY_COEFFS>>(
               new CPolynomialConductivityRANS<N_POLY_COEFFS>(config->GetKt_PolyCoeffND(), config->GetPrandtl_Turb()));
         } else {
-          ThermalConductivity = std::unique_ptr<CPolynomialConductivity<N_POLY_COEFFS>>(
+          ThermalConductivityPointers[iVar] = std::unique_ptr<CPolynomialConductivity<N_POLY_COEFFS>>(
               new CPolynomialConductivity<N_POLY_COEFFS>(config->GetKt_PolyCoeffND()));
         }
       }
@@ -256,7 +256,7 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
 
   MassToMoleFractions(val_scalars);
-
+  Kt = WilkeConductivity(val_scalars);
   if (wilke) {
     Mu = WilkeViscosity(val_scalars);
   } else if (davidson) {

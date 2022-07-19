@@ -138,7 +138,7 @@ class CFluidModel {
   /*!
    * \brief Get fluid dynamic viscosity.
    */
-  inline su2double GetLaminarViscosity() {
+  inline virtual su2double GetLaminarViscosity() {
     LaminarViscosity->SetViscosity(Temperature, Density);
     Mu = LaminarViscosity->GetViscosity();
     LaminarViscosity->SetDerViscosity(Temperature, Density);
@@ -151,7 +151,7 @@ class CFluidModel {
    * \brief Get fluid thermal conductivity.
    */
 
-  inline su2double GetThermalConductivity() {
+  inline virtual su2double GetThermalConductivity() {
     ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
     Kt = ThermalConductivity->GetConductivity();
     ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
@@ -228,12 +228,12 @@ class CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config);
+  virtual void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set thermal conductivity model.
    */
-  void SetThermalConductivityModel(const CConfig* config);
+  virtual void SetThermalConductivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented

@@ -89,13 +89,24 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config);
+  void SetLaminarViscosityModel(const CConfig* config) override;
 
   /*!
    * \brief Set thermal conductivity model.
    */
-  void SetThermalConductivityModel(const CConfig* config);
+  void SetThermalConductivityModel(const CConfig* config) override;
 
+  /*!
+   * \brief Get fluid laminar viscosity.
+   */
+
+  inline su2double GetLaminarViscosity() override { return Mu; }
+
+  /*!
+   * \brief Get fluid thermal conductivity.
+   */
+
+  inline su2double GetThermalConductivity() override { return Kt; }
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
