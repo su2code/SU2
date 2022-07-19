@@ -123,7 +123,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
                                                      CConfig *config,
                                                      const unsigned short iMesh) {
-
+    bool turbulent = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   /*---------------------------------------------------------------------------------------------*/
   // 1. Evaluate massflow, area avg density & Temperature and Area at streamwise periodic outlet.
   // 2. Update delta_p is target massflow is chosen.
@@ -207,6 +207,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     su2double Volume_TempS_Local = 0.0, Volume_TempS_Global = 0.0;
     su2double Volume_Local = 0.0, Volume_Global = 0.0;
     su2double Volume_VTemp_Local = 0.0, Volume_VTemp_Global = 0.0;
+    su2double turb_b1_coeff_Local = 0.0, turb_b1_coeff_Global = 0.0;
+    su2double turb_b2_coeff_Local = 0.0, turb_b2_coeff_Global = 0.0;
 
     /*--- Loop over all heatflux Markers ---*/
     for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -267,6 +269,18 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       Volume_Temp_Local += volume * Temp * nodes->GetThermalConductivity(iPoint);
 
+      if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
+
+        // To be added to coeff_b1
+        turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 0) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
+        
+        // To be added to coeff_b2
+        su2double dot_product = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            dot_product += nodes->GetGradient_Primitive(iPoint, 3, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+        turb_b2_coeff_Local += dot_product * volume * config->GetSpecific_Heat_Cp() / config->GetPrandtl_Turb();
+      }
+
       Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, 0) * nodes->GetDensity(iPoint);
 
     } // points
@@ -278,6 +292,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&turb_b2_coeff_Local, &turb_b2_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     if (config->GetnMarker_HeatFlux() > 0) {
       /*--- Set the solver variable Integrated Heatflux ---*/
@@ -287,13 +303,17 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     if (config->GetnMarker_Isothermal() > 0) {
       SPvals.Streamwise_Periodic_ThetaScaling = Volume_TempS_Global/Volume_Global;
       
-      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-        nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
+    //   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    //     nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
 
       /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
       su2double b0_coeff =  Volume_Temp_Global; 
-      su2double b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp();
-      su2double b2_coeff = -dTdn_Global;
+      su2double b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp() + turb_b1_coeff_Global;
+      su2double b2_coeff = -dTdn_Global + turb_b2_coeff_Global;
+
+    //   if(turbulent) {
+
+    //   }
     //   cout<<Volume_VTemp_Global <<" "<<config->GetSpecific_Heat_Cp()<<" "<<b1_coeff<<" "<<endl;
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
       su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
@@ -304,7 +324,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
        else
         SPvals.Streamwise_Periodic_LambdaL_update = pred_lambda;
         SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL_update;
-      cout<<"Values of Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
+    //   cout<<"Values of Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
         // FOR Debugging, will be removed later on
         // cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff << " :: lamda :: "<< pred_lambda<<endl;
         // cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;
