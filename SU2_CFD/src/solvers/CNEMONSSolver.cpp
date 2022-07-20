@@ -894,8 +894,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         const auto gas_model = config->GetGasModel();
 
         if (gas_model == string("N2")) {
-          Res_Visc[0] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
-          Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+          Res_Visc[0] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(Ru*Tw/2/Ms[1]/PI_NUMBER)*Area;
+          Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(Ru*Tw/2/Ms[1]/PI_NUMBER)*Area;
         } else if (gas_model == string("AIR-5")) {
           Res_Visc[0] = gam*Vi[RHOS_INDEX]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
           Res_Visc[1] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
