@@ -1345,25 +1345,25 @@ static const MapType<string, INLET_TYPE> Inlet_Map = {
 /*!
  * \brief Types outlet boundary treatments for incompressible flow
  */
-enum class INC_OUTLET_TYPE {
-    PRESSURE_OUTLET,    /*!< \brief Gauge pressure outlet for incompressible flow */
-    MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for incompressible flow. */
+enum INC_OUTLET_TYPE {
+    PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
+    MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for incompressible flow. */
 };
-static const MapType<std::string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
-    MakePair("PRESSURE_OUTLET",  INC_OUTLET_TYPE::PRESSURE_OUTLET)
-    MakePair("MASS_FLOW_OUTLET", INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
+static const MapType<string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
+    MakePair("PRESSURE_OUTLET",  PRESSURE_OUTLET)
+    MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 /*!
  * \brief Types outlet boundary treatments for compressible flow
  */
-enum class COMP_OUTLET_TYPE {
-    PRESSURE_OUTLET,    /*!< \brief Static pressure outlet for compressible flow */
-    MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for compressible flow. */
+enum COMP_OUTLET_TYPE {
+    COMP_PRESSURE_OUTLET = 1,    /*!< \brief Static pressure outlet for compressible flow */
+    COMP_MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for compressible flow. */
 };
-static const MapType<std::string, COMP_OUTLET_TYPE> Comp_Outlet_Map = {
-    MakePair("PRESSURE_OUTLET",  COMP_OUTLET_TYPE::PRESSURE_OUTLET)
-    MakePair("MASS_FLOW_OUTLET", COMP_OUTLET_TYPE::MASS_FLOW_OUTLET)
+static const MapType<string, COMP_OUTLET_TYPE> Comp_Outlet_Map = {
+    MakePair("PRESSURE_OUTLET",  COMP_PRESSURE_OUTLET)
+    MakePair("MASS_FLOW_OUTLET", COMP_MASS_FLOW_OUTLET)
 };
 
 /*!
