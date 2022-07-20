@@ -554,6 +554,7 @@ private:
   Kind_ActDisk, Kind_Engine_Inflow,
   Kind_Inlet, *Kind_Inc_Inlet,
   *Kind_Inc_Outlet,
+  *Kind_Comp_Outlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
@@ -561,6 +562,7 @@ private:
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  unsigned short nComp_Outlet;      /*!< \brief Number of compressible outlet boundary treatment types listed. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
@@ -4742,6 +4744,12 @@ public:
    * \return Kind of the incompressible outlet.
    */
   unsigned short GetKind_Inc_Outlet(string val_marker) const;
+
+  /*!
+   * \brief Get the type of compressible outlet from the list.
+   * \return Kind of the compressible outlet.
+   */
+  unsigned short GetKind_Comp_Outlet(string val_marker) const;
 
   /*!
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -1343,15 +1343,27 @@ static const MapType<string, INLET_TYPE> Inlet_Map = {
 };
 
 /*!
- * \brief Types outlet boundary treatments
+ * \brief Types outlet boundary treatments for incompressible flow
  */
-enum OUTLET_TYPE {
-  PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
-  MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for incompressible flow. */
+enum class INC_OUTLET_TYPE {
+    PRESSURE_OUTLET,    /*!< \brief Gauge pressure outlet for incompressible flow */
+    MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for incompressible flow. */
 };
-static const MapType<string, OUTLET_TYPE> Outlet_Map = {
-  MakePair("PRESSURE_OUTLET", PRESSURE_OUTLET)
-  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
+static const MapType<std::string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
+    MakePair("PRESSURE_OUTLET",  INC_OUTLET_TYPE::PRESSURE_OUTLET)
+    MakePair("MASS_FLOW_OUTLET", INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
+};
+
+/*!
+ * \brief Types outlet boundary treatments for compressible flow
+ */
+enum class COMP_OUTLET_TYPE {
+    PRESSURE_OUTLET,    /*!< \brief Static pressure outlet for compressible flow */
+    MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for compressible flow. */
+};
+static const MapType<std::string, COMP_OUTLET_TYPE> Comp_Outlet_Map = {
+    MakePair("PRESSURE_OUTLET",  COMP_OUTLET_TYPE::PRESSURE_OUTLET)
+    MakePair("MASS_FLOW_OUTLET", COMP_OUTLET_TYPE::MASS_FLOW_OUTLET)
 };
 
 /*!

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -938,6 +938,7 @@ void CConfig::SetPointersNull(void) {
 
   Kind_Inc_Inlet = NULL;
   Kind_Inc_Outlet = NULL;
+  Kind_Comp_Outlet = NULL;
 
   Kind_ObjFunc   = NULL;
 
@@ -1511,8 +1512,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
-  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
-  addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Outlet_Map);
+  /*!\brief INC_OUTLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET. \ingroup Config*/
+  addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Inc_Outlet_Map);
+  /*!\brief COMP_OUTLET_TYPE \n DESCRIPTION: List of outlet types for compressible flows. List length must match number of outlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET. \ingroup Config*/
+  addEnumListOption("COMP_OUTLET_TYPE", nComp_Outlet, Kind_Comp_Outlet, Comp_Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
@@ -7389,6 +7392,7 @@ CConfig::~CConfig(void) {
 
   if (Kind_Inc_Inlet != NULL)      delete[] Kind_Inc_Inlet;
   if (Kind_Inc_Outlet != NULL)      delete[] Kind_Inc_Outlet;
+  if (Kind_Comp_Outlet != NULL)      delete[] Kind_Comp_Outlet;
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
@@ -8363,6 +8367,13 @@ unsigned short CConfig::GetKind_Inc_Outlet(string val_marker) const {
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
   return Kind_Inc_Outlet[iMarker_Outlet];
+}
+
+unsigned short CConfig::GetKind_Comp_Outlet(string val_marker) const {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+    if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
+  return Kind_Comp_Outlet[iMarker_Outlet];
 }
 
 su2double CConfig::GetInlet_Ttotal(string val_marker) const {
