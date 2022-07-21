@@ -1751,6 +1751,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
 
   const double dist = SU2_TYPE::GetValue(geometry->nodes->GetWall_Distance(iPoint));
 
+  if (dist < 1.0e-10 || nutilde < 0.0) return;
+
   //--- Store gradients and stress tensor
   double gradu[3][3] = {0.0}, gradnutilde[3] = {0.0}, gradr[3] = {0.0}, gradWij[3][3] = {0.0}, gradS[3] = {0.0}, gradadjnutilde[3] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -1774,8 +1776,6 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
     hessnutilde[iHess] = SU2_TYPE::GetValue(varTur->GetHessian(iPoint, 0, iHess));
   }
 
-  if (dist < 1.0e-10) return;
-
   //----------------------//
   //--- Diffusion term ---//
   //----------------------//
@@ -1785,9 +1785,6 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
     weights[0][nVarFlo] += 2.0*cb2_sigma * hessnutilde[ind_ii] * adjnutilde;
     weights[1][nVarFlo] += 2.0*cb2_sigma * gradnutilde[iDim] * gradadjnutilde[iDim];
   }
-
-  //--- The rest of the terms involve 1/WallDist, so return if small
-  // if (dist < 1.0e-10) return;
 
   //-----------------------//
   //--- Production term ---//
@@ -1799,7 +1796,8 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const double Chi_3 = Chi_2*Chi;
   const double fv1 = Chi_3/(Chi_3+cv1_3);
   const double fv2 = 1.0 - Chi/(1.0+Chi*fv1);
-  const double ft2 = ct3*exp(-ct4*Chi_2);
+  // const double ft2 = ct3*exp(-ct4*Chi_2);
+  const double ft2 = 0.0;
   const double inv_k2_d2 = 1.0/(k2*dist2);
 
   double S = pow(gradu[1][0] - gradu[0][1], 2.0);
