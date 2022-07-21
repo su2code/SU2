@@ -1826,11 +1826,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check whether we achieved the requested reduction in the linear
      solver residual within the specified number of linear iterations. */
 
-    su2double linResTurb = 0.0;
-    if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
+    // su2double linResTurb = 0.0;
+    // if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
 
     /* Max linear residual between flow and turbulence. */
-    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+    // const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+    const su2double linRes = GetResLinSolver();
 
     /* Tolerance limited to an acceptable value. */
     const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
@@ -1845,7 +1846,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
     resetCFL = linRes > 0.99;
     reduceCFL = linRes > 1.2*linTol;
-    canIncrease = linRes < linTol;
+    canIncrease = linRes < linTol;// &&
+                  // ((config->GetInnerIter() > config->GetStartConv_Iter()) || config->GetRestart());
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
@@ -1854,13 +1856,16 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Sum the RMS residuals for all equations. */
 
       New_Func = 0.0;
-      for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-        New_Func += log10(solverFlow->GetRes_RMS(iVar));
-      }
-      if ((iMesh == MESH_0) && solverTurb) {
-        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-          New_Func += log10(solverTurb->GetRes_RMS(iVar));
-        }
+      // for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+      //   New_Func += log10(solverFlow->GetRes_RMS(iVar));
+      // }
+      // if ((iMesh == MESH_0) && solverTurb) {
+      //   for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+      //     New_Func += log10(solverTurb->GetRes_RMS(iVar));
+      //   }
+      // }
+      for (unsigned short iVar = 0; iVar < GetnVar(); iVar++) {
+        New_Func += log10(GetRes_RMS(iVar));
       }
 
       /* Compute the difference in the nonlinear residuals between the
@@ -1880,27 +1885,75 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Detect flip-flop convergence to reduce CFL and large increases
        to reset to minimum value, in that case clear the history. */
 
-      if (config->GetInnerIter() >= Res_Count) {
-        unsigned long signChanges = 0;
-        su2double totalChange = 0.0;
-        auto prev = NonLinRes_Series.front();
-        for (auto val : NonLinRes_Series) {
-          totalChange += val;
-          signChanges += (prev > 0) ^ (val > 0);
-          prev = val;
-        }
-        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+      // if (config->GetInnerIter() >= Res_Count) {
+      //   unsigned long signChanges = 0;
+      //   su2double totalChange = 0.0;
+      //   auto prev = NonLinRes_Series.front();
+      //   for (auto val : NonLinRes_Series) {
+      //     totalChange += val;
+      //     signChanges += (prev > 0) ^ (val > 0);
+      //     prev = val;
+      //   }
+      //   reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
 
-        if (totalChange > 2.0) { // orders of magnitude
-          resetCFL = true;
-          NonLinRes_Counter = 0;
-          for (auto& val : NonLinRes_Series) val = 0.0;
-        }
-      }
+      //   if (totalChange > 2.0) { // orders of magnitude
+      //     resetCFL = true;
+      //     NonLinRes_Counter = 0;
+      //     for (auto& val : NonLinRes_Series) val = 0.0;
+      //   }
+      // }
     }
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
+
+    /* Check for decrease in nonlinear residual. */
+
+    const auto nVar = GetnVar();
+    const su2double nonLinTol = (1.0+linTol);
+    su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+
+      const su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
+      const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
+
+      if (config->GetInnerIter() == 0) {
+        GetNodes()->SetNonLinRes_Old(iPoint, &LinSysRes[iPoint*nVar]);
+        GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], vol);
+        normNonLinRes = 0.0; normNonLinRes_Upd = 0.0; normNonLinRes_Old = 1.0;
+      }
+      else {
+        GetNodes()->SetNonLinRes(iPoint, &LinSysRes[iPoint*nVar]);
+
+        normNonLinRes += GetNodes()->GetNonLinResNorm(iPoint);
+        normNonLinRes_Upd += GetNodes()->GetNonLinResNorm_Update(iPoint);
+        normNonLinRes_Old += GetNodes()->GetNonLinResNorm_Old(iPoint);
+
+        GetNodes()->SetNonLinRes_Old(iPoint, &LinSysRes[iPoint*nVar]);
+        GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], vol);
+      }
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_MASTER
+    { /* MPI reduction. */
+      su2double myNormNonLinRes = normNonLinRes;
+      su2double myNormNonLinRes_Upd = normNonLinRes_Upd;
+      su2double myNormNonLinRes_Old = normNonLinRes_Old;
+      SU2_MPI::Allreduce(&myNormNonLinRes,     &normNonLinRes,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&myNormNonLinRes_Upd, &normNonLinRes_Upd, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+
+    normNonLinRes = sqrt(normNonLinRes);
+    normNonLinRes_Upd = sqrt(normNonLinRes_Upd);
+    normNonLinRes_Old = sqrt(normNonLinRes_Old);
+
+    bool decNonLinRes = (normNonLinRes <= nonLinTol*normNonLinRes_Old);
+    bool incNonLinRes = (normNonLinRes_Upd > normNonLinRes_Old);
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -1919,61 +1972,20 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Get the current local flow CFL number at this point. */
 
-      su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
+      // su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
+      su2double CFL = GetNodes()->GetLocalCFL(iPoint);
 
       /* Get the current under-relaxation parameters that were computed
        during the previous nonlinear update. If we have a turbulence model,
        take the minimum under-relaxation parameter between the mean flow
        and turbulence systems. */
 
-      su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
-      su2double underRelaxationTurb = 1.0;
-      if ((iMesh == MESH_0) && solverTurb)
-        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
-      
-      /* Check for decrease in nonlinear residual. */
-
-      const su2double nonLinTol = 0.5*(1.0+linTol);
-      su2double normNonLinRes = 1.0, normNonLinRes_Old = 1.0;
-
-      const auto nVar = solverFlow->GetnVar();
-      const auto nVarTurb = ((iMesh == MESH_0) && solverTurb)? solverTurb->GetnVar() : 0;
-      
-      const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
-      
-      if (config->GetInnerIter() == 0) {
-        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]));
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol);
-        if ((iMesh == MESH_0) && solverTurb) {
-          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol);
-        }
-      }
-      else {
-        solverFlow->GetNodes()->SetNonLinRes(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]));
-        
-        normNonLinRes = solverFlow->GetNodes()->GetNonLinResNorm(iPoint);
-        normNonLinRes_Old = solverFlow->GetNodes()->GetNonLinResNorm_Old(iPoint);
-
-        solverFlow->GetNodes()->SetNonLinRes_Old(iPoint, &(solverFlow->LinSysRes[iPoint*nVar]));
-        solverFlow->GetNodes()->SetNonLinSol_Old(iPoint, &(solverFlow->LinSysSol[iPoint*nVar]), vol);
-
-        if ((iMesh == MESH_0) && solverTurb) {
-          solverTurb->GetNodes()->SetNonLinRes(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
-
-          normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint);
-          normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint);
-
-          solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
-          solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol);
-        }
-        normNonLinRes = sqrt(normNonLinRes);
-        normNonLinRes_Old = sqrt(normNonLinRes_Old);
-      }
-
-      bool decNonLinRes = (normNonLinRes <= nonLinTol*normNonLinRes_Old);
-      bool incNonLinRes = (normNonLinRes > normNonLinRes_Old);
+      // su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
+      // su2double underRelaxationTurb = 1.0;
+      // if ((iMesh == MESH_0) && solverTurb)
+      //   underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+      // const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+      const su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -1987,7 +1999,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         CFLFactor = CFLFactorIncrease;
       } else {
         CFLFactor = 1.0;
-      } 
+      }
 
       /* Check if we are hitting the min or max and adjust. */
 
@@ -2010,10 +2022,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Apply the adjustment to the CFL and store local values. */
 
       CFL *= CFLFactor;
-      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
-      }
+      // solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      // if ((iMesh == MESH_0) && solverTurb) {
+      //   solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+      // }
+      GetNodes()->SetLocalCFL(iPoint, CFL);
 
       /* Store min and max CFL for reporting on the fine grid. */
 
@@ -2275,7 +2288,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
 }
 
 void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-  
+
   //--- communicate the solution values via MPI
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
@@ -2285,21 +2298,21 @@ void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const un
 
   computeGradientsGreenGauss(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, nVar, gradient);
-  
+
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
   // CorrectWallGradient(geometry, config, Kind_Solver);
-  
+
   auto& hessian = base_nodes->GetHessian();
-  
+
   computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                             *config, gradient, 0, nVar, hessian);
 
   // CorrectBoundHessian(geometry, config, Kind_Solver);
-    
+
 }
 
 void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-  
+
   //--- communicate the solution values via MPI
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
@@ -2309,14 +2322,14 @@ void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, con
 
   computeGradientsL2Projection(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
                                *config, solution, 0, nVar, gradient);
-  
+
   CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
-  
+
   auto& hessian = base_nodes->GetHessian();
-  
+
   computeHessiansL2Projection(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
                               *config, gradient, 0, nVar, hessian);
-    
+
 }
 
 void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
@@ -2326,7 +2339,7 @@ void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *co
 
   computeGradientsGreenGauss(this, AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, nAuxGradAdap, gradient);
-    
+
 }
 
 void CSolver::SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
@@ -2336,14 +2349,14 @@ void CSolver::SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfi
 
   computeGradientsL2Projection(this, AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
                                *config, solution, 0, nAuxGradAdap, gradient);
-    
+
 }
 
 void CSolver::SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-  
+
   if (rank == MASTER_NODE)
     cout << "Least squares Hessian computation not currently supported.\nUsing Green-Gauss instead.\n" <<endl;
-  
+
   SetHessian_GG(geometry, config, Kind_Solver);
 }
 
@@ -4509,9 +4522,9 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 }
 
 void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-  
+
   su2double Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
-  
+
   su2double **GradSymm = new su2double*[nVar];
   for (auto iVar = 0u; iVar < nVar; iVar++)
     GradSymm[iVar] = new su2double[nDim];
@@ -4521,7 +4534,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *confi
       for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->nodes->GetDomain(iPoint)) {
-          
+
           const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           su2double Area = GeometryToolbox::Norm(nDim, Normal);
@@ -4529,7 +4542,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *confi
           su2double UnitNormal[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             UnitNormal[iDim] = -Normal[iDim]/Area;
-          
+
           //--- Compute unit tangent.
           switch( nDim ) {
             case 2: {
@@ -4558,12 +4571,12 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *confi
               break;
             }
           }// switch
-          
+
           //--- Get gradients of the solution of boundary cell.
           for (auto iVar = 0u; iVar < nVar; iVar++)
             for (auto iDim = 0u; iDim < nDim; iDim++)
               GradSymm[iVar][iDim] = base_nodes->GetGradient_Adapt(iPoint, iVar, iDim);
-          
+
           //--- Reflect the gradients for all scalars including the momentum components.
           //--- The gradients of the primal and adjoint momentum components are set later with the
           //--- correct values: grad(V)_s = grad(V) - [grad(V)*n]n, V being any conservative.
@@ -4573,14 +4586,14 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *confi
               su2double ProjGradient = 0.0;
               for (auto iDim = 0u; iDim < nDim; iDim++)
                 ProjGradient += GradSymm[iVar][iDim]*UnitNormal[iDim];
-              
+
               //--- Set normal part of the gradient to zero.
               for (auto iDim = 0u; iDim < nDim; iDim++)
                 GradSymm[iVar][iDim] = GradSymm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
-              
+
             }// if density, energy, or turbulent
           }// iVar
-          
+
           if ((Kind_Solver == RUNTIME_FLOW_SYS) || (Kind_Solver == RUNTIME_ADJFLOW_SYS)) {
             //--- Compute gradients of normal and tangential momentum:
             //--- grad(rv*n) = grad(rv_x) n_x + grad(rv_y) n_y (+ grad(rv_z) n_z)
@@ -4617,41 +4630,41 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *confi
             for (auto iVar = 0u; iVar < nDim; iVar++) // loops over the momentum component gradients
               for (auto iDim = 0u; iDim < nDim; iDim++) // loops over the entries of the above
                 GradSymm[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
-            
+
           }// if flow
-          
+
           //--- Set gradients of the solution of boundary cell.
           base_nodes->SetGradient_Adapt(iPoint, GradSymm);
-          
+
         }// if domain
       }// iVertex
     }// if KindBC
   }// iMarker
-  
+
   //--- communicate the gradient values via MPI
   InitiateComms(geometry, config, GRADIENT_ADAPT);
   CompleteComms(geometry, config, GRADIENT_ADAPT);
-  
+
   //--- Free locally allocated memory
-  
+
   for (auto iVar = 0u; iVar < nVar; iVar++)
     delete [] GradSymm[iVar];
   delete [] GradSymm;
 }
 
 void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-  
+
   unsigned short nMarker_iPoint = 0;
 
   su2double **GradDotn = new su2double*[nVar];
   for (auto iVar = 0u; iVar < nVar; iVar++)
     GradDotn[iVar] = new su2double[nDim];
-  
+
   if ((Kind_Solver == RUNTIME_FLOW_SYS) || (Kind_Solver == RUNTIME_TURB_SYS)) {
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       if (geometry->nodes->GetSolidBoundary(iPoint)) {
         nMarker_iPoint = 0;
-        
+
         //--- Reset sum(grad_dot_n)
         su2double SumNormal[MAXNDIM] = {0.0};
         for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -4667,7 +4680,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
             }// if iVertex
           }// if Heat_Flux
         }// iMarker
-        
+
         if (nMarker_iPoint == 1) {
           //--- Compute unit normal.
           su2double Area = GeometryToolbox::Norm(nDim, SumNormal);
@@ -4675,7 +4688,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
           su2double UnitNormal[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             UnitNormal[iDim] = SumNormal[iDim]/Area;
-          
+
           //--- Dot gradient with normal.
           if (Kind_Solver == RUNTIME_FLOW_SYS) {
             for (auto iVar = 1; iVar < nDim+1; iVar++) {
@@ -4696,7 +4709,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, co
       }// if SolidBoundary
     }// iPoint
   }// if primal
-  
+
   //--- communicate the gradient values via MPI
   InitiateComms(geometry, config, GRADIENT_ADAPT);
   CompleteComms(geometry, config, GRADIENT_ADAPT);
@@ -4715,7 +4728,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {// || 
+    if (config->GetSolid_Wall(iMarker)) {// ||
         // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
         //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
         //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
@@ -4744,7 +4757,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
               counter++;
             }// if boundary
           }// iNeigh
-          
+
           if(counter > 0) {
             //--- Compute unit normal.
             const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -4753,7 +4766,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, co
 
             for (auto iDim = 0u; iDim < nDim; iDim++)
               Basis[iDim][0] = -Normal[iDim]/Area;
-            
+
             //--- Compute unit tangent.
             switch( nDim ) {
               case 2: {
@@ -4841,7 +4854,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {// || 
+    if (config->GetSolid_Wall(iMarker)) {// ||
         // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
         //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
         //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
@@ -4867,7 +4880,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
               counter++;
             }// if boundary
           }// iNeigh
-          
+
           if(counter > 0) {
             //--- Compute unit normal.
             const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -4876,7 +4889,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
 
             for (auto iDim = 0u; iDim < nDim; iDim++)
               Basis[iDim][0] = SU2_TYPE::GetValue(-Normal[iDim]/Area);
-            
+
             //--- Compute unit tangent.
             switch( nDim ) {
               case 2: {
@@ -4951,7 +4964,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
 }
 
 void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfig *config, unsigned long iPoint) {
-  
+
   su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
 
   for(auto iVar = 0; iVar < nVar; iVar++){
@@ -4960,7 +4973,7 @@ void CSolver::SetPositiveDefiniteHessian(const CGeometry *geometry, const CConfi
 
     //--- Compute eigenvalues and eigenvectors
     CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
-    
+
     //--- If NaN detected, set values to zero.
     //--- Otherwise, store recombined matrix.
     bool check_hess = true;
@@ -5022,7 +5035,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
       solver[TURB_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
       solver[TURB_SOL]->TurbulentError(solver, geometry, config, iPoint, weights);
     }
-    
+
     //--- Make Hessians positive definite
     SetPositiveDefiniteHessian(geometry, config, iPoint);
     if (turb) solver[TURB_SOL]->SetPositiveDefiniteHessian(geometry, config, iPoint);
@@ -5030,7 +5043,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
     //--- Add Hessians
     SumWeightedHessians(solver, geometry, config, iPoint, weights);
   }
-  
+
   //--- Apply correction to wall boundary
   // CorrectBoundMetric(geometry, config);
 
@@ -5069,14 +5082,14 @@ void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const 
 
 void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, const CConfig *config,
                                   unsigned long iPoint, vector<vector<double> > &weights) {
-  
+
   auto varFlo = solver[FLOW_SOL]->GetNodes();
 
   const unsigned short nMet = 3*(nDim-1);
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
 
   const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
-  
+
   //--- Mean flow variables
   for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
     const double weight = fabs( weights[0][iVar] + weights[1][iVar] + weights[2][iVar] );
@@ -5101,7 +5114,7 @@ void CSolver::SumWeightedHessians(CSolver **solver, const CGeometry*geometry, co
 }
 
 void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) {
-  
+
   const unsigned long nPointDomain = geometry->GetnPointDomain();
 
   double localScale = 0.;
@@ -5109,7 +5122,7 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
 
   double localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
   double globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
-  
+
   const double p = SU2_TYPE::GetValue(config->GetAdap_Norm());
   const double eigmax = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmin()),2.));
   const double eigmin = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmax()),2.));
@@ -5144,7 +5157,7 @@ void CSolver::NormalizeMetric(const CGeometry *geometry, const CConfig *config) 
     const double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
     for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
-    
+
     unsigned short iMax = 0;
     for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
     for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);

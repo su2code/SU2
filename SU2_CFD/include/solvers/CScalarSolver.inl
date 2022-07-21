@@ -216,7 +216,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
-      
+
       /*--- Points in edge and normal vectors ---*/
 
       auto iPoint = geometry->edges->GetNode(iEdge, 0);

@@ -259,8 +259,9 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
 
         if (restart_cfl) {
-          // index += nVar + nDim*(dynamic_grid) + 1;
-          nodes->SetLocalCFL(iPoint_Local, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint_Local));
+          index += nVar + nDim*(dynamic_grid) + 1;
+          // nodes->SetLocalCFL(iPoint_Local, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint_Local));
+          nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
         }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/

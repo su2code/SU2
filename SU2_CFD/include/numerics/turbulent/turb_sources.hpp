@@ -292,12 +292,12 @@ struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
     var.Shat = var.S + Sbar;
-    // if (var.Shat <= std::numeric_limits<su2double>::min()) {
-    //   var.d_Shat = 0.0;
-    // } else {
+    if (var.Shat <= std::numeric_limits<su2double>::min()) {
+      var.d_Shat = 0.0;
+    } else {
       var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
-    // }
-    // var.Shat = max(var.Shat, std::numeric_limits<su2double>::min());
+    }
+    var.Shat = max(var.Shat, std::numeric_limits<su2double>::min());
   }
 };
 
@@ -548,7 +548,7 @@ using CSourcePieceWise_TurbSA_E_COMP = detail::CCompressibilityCorrection<CSourc
  * \brief Class for integrating the source terms of the negative Spalart-Allmaras model.
  */
 template <class FlowIndices>
-using CSourcePieceWise_TurbSA_Neg = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Nonzero,
+using CSourcePieceWise_TurbSA_Neg = CSourceBase_TurbSA<FlowIndices, detail::Omega::Bsl, detail::ft2::Zero,
                                                        detail::ModVort::Neg, detail::r::Bsl, detail::SourceTerms::Neg>;
 
 /*!

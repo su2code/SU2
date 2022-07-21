@@ -1801,9 +1801,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         su2double lim_j = 1.0;
 
         if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
-          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, Delta, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, Delta, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
@@ -1830,9 +1829,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         su2double lim_j = 1.0;
 
         if (van_albada) {
-          su2double T_ij = T_j - T_i;
-          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, T_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, T_ij, EPS);
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, Delta, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, Delta, EPS);
         }
         else if (limiter) {
           lim_i = turbNodes->GetLimiter_Primitive(iPoint, 0);
@@ -9510,12 +9508,12 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   }
 }
 
-void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, const CConfig *config, 
+void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, const CConfig *config,
                                    unsigned long iPoint, vector<vector<double> > &weights) {
 
   auto varFlo    = solver[FLOW_SOL]->GetNodes();
   auto varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
-            
+
   const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool sst  = config->GetBool_Turb_Model_SST();
 
@@ -9570,24 +9568,24 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
     C[3][0] = 1.; C[3][1] = u; C[3][2] = v; C[3][3] = (3.-g)*w; C[3][4] = g*e-(g-1.)/2.*(v2+2*w*w);
     C[4][3] = (g-1.); C[4][4] = g*w;
   }
-  
+
   //--- Contribution of k to dp/dr and dp/d(re)
   if (sst) {
     const double k = SU2_TYPE::GetValue(varTur->GetPrimitive(iPoint,0));
     if (nDim == 2) {
       A[0][3] += (g-1.)*k*u;
       A[1][3] += -(g-1.)*k;
-      
+
       B[0][3] += (g-1.)*k*v;
       B[2][3] += -(g-1.)*k;
     }
     else {
       A[0][4] += (g-1.)*k*u;
       A[1][4] += -(g-1.)*k;
-      
+
       B[0][4] += (g-1.)*k*v;
       B[2][4] += -(g-1.)*k;
-      
+
       C[0][4] += (g-1.)*k*w;
       C[3][4] += -(g-1.)*k;
     }
@@ -9624,7 +9622,7 @@ void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, c
           weights[1][3]            += - val*adjz;
         }
       }
-      
+
       //--- Contribution of k to dp/d(rk)
       //--- Momentum equation
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -9657,7 +9655,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
   if (turb) varTur = solver[TURB_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-    
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
   double u[3] = {0.0};
@@ -9695,7 +9693,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     gradnu[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+1, iDim));
     gradnut[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+2, iDim));
   }
-  
+
   //--- Account for wall functions
   // double wf = varFlo->GetTauWallFactor(iPoint);
   double wf = 1.0;
@@ -9705,7 +9703,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       tau[iDim][jDim]  = wf*r*((nu+nut)*( gradu[jDim][iDim] + gradu[iDim][jDim] )
                        - TWO3*((nu+nut)*divu+k)*(iDim == jDim));
-                       
+
     }
   }
 
@@ -9719,7 +9717,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     const size_t iVar = iDim+1;
 
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
+      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
       const size_t jVar = jDim+1;
@@ -9752,7 +9750,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     const double gradnu_ui_i = (gradnu[iDim]+gradnut[iDim]) * u[iDim] + (nu+nut) * gradu[iDim][iDim];
 
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
+      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
       const size_t jVar = jDim+1;
@@ -9791,7 +9789,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     const double gradnu_ui_i = (gradnu[iDim]+gradnut[iDim]) * u[iDim] + (nu+nut) * gradu[iDim][iDim];
 
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
+      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
 
@@ -9828,7 +9826,7 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
     const double gradi_nu_uiui = (gradnu[iDim]+gradnut[iDim]) * u[iDim]*u[iDim] + 2.0 * (nu+nut) * gradu[iDim][iDim] * u[iDim];
 
     for (auto jDim = 0; jDim < nDim; ++jDim) {
-      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim 
+      const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
       const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
 
@@ -9879,17 +9877,17 @@ void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, cons
       const double gradadje_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, jDim));
 
       weights[2][iVar] += g * (nu/Pr + nut/Prt) * u[iDim] * hessadje_jj;
-      weights[1][iVar] += g * ( (gradnu[jDim]/Pr + gradnut[jDim]/Prt) * u[iDim] 
+      weights[1][iVar] += g * ( (gradnu[jDim]/Pr + gradnut[jDim]/Prt) * u[iDim]
                             +   (nu + nut) * gradu[iDim][jDim] ) * gradadje_j;
     }
   }
-  
+
   //--- Errors in heat flux wrt density
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     double ujduj = 0;
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       ujduj += u[jDim]*gradu[jDim][iDim];
-      
+
     }
     const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
 
@@ -9916,7 +9914,7 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-    
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
   double u[3] = {0.0};
@@ -9957,7 +9955,7 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       tauomu[iDim][jDim] = wf * ( ( gradu[jDim][iDim] + gradu[iDim][jDim] )
                               -     TWO3*divu*(iDim == jDim) );
-                       
+
     }
   }
 

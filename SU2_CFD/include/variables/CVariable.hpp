@@ -521,6 +521,15 @@ public:
   }
 
   /*!
+   * \brief Set the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_residual - Pointer to the nonlinear residual vector.
+   */
+  inline void SetNonLinRes(unsigned long iPoint, unsigned long iVar, const su2double val_residual) {
+    NonLinRes(iPoint,iVar) = val_residual;
+  }
+
+  /*!
    * \brief Get the nonlinear residual of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the nonlinear residual vector.
@@ -538,6 +547,15 @@ public:
   }
 
   /*!
+   * \brief Set the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_residual - Pointer to the nonlinear residual vector.
+   */
+  inline void SetNonLinRes_Old(unsigned long iPoint, unsigned long iVar, const su2double val_residual) {
+    NonLinRes_Old(iPoint,iVar) = val_residual;
+  }
+
+  /*!
    * \brief Get the nonlinear residual of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the nonlinear residual vector.
@@ -552,7 +570,29 @@ public:
    */
   inline void SetNonLinSol_Old(unsigned long iPoint, const su2double *val_solution, const su2double vol) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      NonLinSol_Old(iPoint,iVar) = val_solution[iVar]*vol/Delta_Time(iPoint);
+      NonLinSol_Old(iPoint,iVar) = val_solution[iVar]*LocalCFL(iPoint)*vol/Delta_Time(iPoint);
+  }
+
+  /*!
+   * \brief Set the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_residual - Pointer to the nonlinear residual vector.
+   * \param[in] vol - Dual-cell volume.
+   */
+  inline void SetNonLinSol_Old(unsigned long iPoint, unsigned long iVar, const su2double val_solution, const su2double vol) {
+    NonLinSol_Old(iPoint,iVar) = val_solution*LocalCFL(iPoint)*vol/Delta_Time(iPoint);
+  }
+
+  /*!
+   * \brief Get the norm of the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the nonlinear residual vector.
+   */
+  inline su2double GetNonLinResNorm_Update(unsigned long iPoint) {
+    su2double norm = 0.0;
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      norm += pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
+    return norm;
   }
 
   /*!
@@ -563,7 +603,17 @@ public:
   inline su2double GetNonLinResNorm(unsigned long iPoint) {
     su2double norm = 0.0;
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      norm += pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
+      norm += pow(NonLinSol_Old(iPoint,iVar), 2.0);
+    return norm;
+  }
+
+  /*!
+   * \brief Get the norm of the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the nonlinear residual vector.
+   */
+  inline su2double GetNonLinResNorm(unsigned long iPoint, unsigned long iVar) {
+    su2double norm = pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
     return norm;
   }
 
@@ -576,6 +626,16 @@ public:
     su2double norm = 0.0;
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       norm += pow(NonLinRes_Old(iPoint,iVar), 2.0);
+    return norm;
+  }
+
+  /*!
+   * \brief Get the norm of the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the nonlinear residual vector.
+   */
+  inline su2double GetNonLinResNorm_Old(unsigned long iPoint, unsigned long iVar) {
+    su2double norm = pow(NonLinRes_Old(iPoint,iVar), 2.0);
     return norm;
   }
 
@@ -2592,11 +2652,11 @@ public:
     }
   }
 
-  /*!  
-   * \brief Set the value of the metric.  
+  /*!
+   * \brief Set the value of the metric.
    * \param[in] iMetr - Index value.
-   * \param[in] metric - Metric value. 
-   */ 
+   * \param[in] metric - Metric value.
+   */
   inline void SetMetric(unsigned long iPoint, unsigned short iMetr, double metric) { Metric(iPoint,iMetr) = metric; }
 
   /*!
@@ -2625,17 +2685,17 @@ public:
     }
   }
 
-  /*!  
-   * \brief Add the value of the metric.  
+  /*!
+   * \brief Add the value of the metric.
    * \param[in] iMetr - Index value.
-   * \param[in] metric - Metric value. 
-   */ 
+   * \param[in] metric - Metric value.
+   */
   inline void AddMetric(unsigned long iPoint, unsigned short iMetr, double metric) { Metric(iPoint,iMetr) += metric; }
 
-  /*!  
-   * \brief Get the value of the metric.  
+  /*!
+   * \brief Get the value of the metric.
    * \param[in] iMetr  - Index value.
-   */ 
+   */
   inline double GetMetric(unsigned long iPoint, unsigned short iMetr) const { return Metric(iPoint,iMetr); }
 
   /*!

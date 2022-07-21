@@ -174,6 +174,12 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
   AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
 
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    AddHistoryOutput("MIN_CFL_TURB", "Min CFL Turb", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
+    AddHistoryOutput("MAX_CFL_TURB", "Max CFL Turb", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
+    AddHistoryOutput("AVG_CFL_TURB", "Avg CFL Turb", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
+  }
+
   /// BEGIN_GROUP: FIXED_CL, DESCRIPTION: Relevant outputs for the Fixed CL mode
   if (config->GetFixed_CL_Mode()){
     /// DESCRIPTION: Difference between current and target CL
@@ -237,8 +243,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   // CFL number
   AddVolumeOutput("CFL_NUMBER", "CFL_Number", "CFL_NUMBER", "Current local flow CFL number");
-  // if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
-  //   AddVolumeOutput("CFL_NUMBER_TURB", "CFL_Number_Turb", "CFL_NUMBER", "Current local turbulent CFL number");
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+    AddVolumeOutput("CFL_NUMBER_TURB", "CFL_Number_Turb", "CFL_NUMBER", "Current local turbulent CFL number");
 
   // Primitive variables
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");

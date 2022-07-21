@@ -889,6 +889,10 @@ void CFlowOutput::LoadHistoryData_Scalar(const CConfig* config, const CSolver* c
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    SetHistoryOutputValue("MIN_CFL_TURB", solver[TURB_SOL]->GetMin_CFL_Local());
+    SetHistoryOutputValue("MAX_CFL_TURB", solver[TURB_SOL]->GetMax_CFL_Local());
+    SetHistoryOutputValue("AVG_CFL_TURB", solver[TURB_SOL]->GetAvg_CFL_Local());
+
     SetHistoryOutputValue("LINSOL_ITER_TURB", solver[TURB_SOL]->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_TURB", log10(solver[TURB_SOL]->GetResLinSolver()));
   }
@@ -1026,7 +1030,7 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       if (limiter) {
         SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
       }
-      // SetVolumeOutputValue("CFL_NUMBER_TURB", iPoint, Node_Turb->GetLocalCFL(iPoint));
+      SetVolumeOutputValue("CFL_NUMBER_TURB", iPoint, Node_Turb->GetLocalCFL(iPoint));
       break;
 
     case TURB_FAMILY::KW:
