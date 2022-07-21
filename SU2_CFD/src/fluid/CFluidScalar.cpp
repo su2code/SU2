@@ -256,10 +256,12 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
 
   MassToMoleFractions(val_scalars);
-  Kt = WilkeConductivity(val_scalars);
+
   if (wilke) {
     Mu = WilkeViscosity(val_scalars);
   } else if (davidson) {
     Mu = DavidsonViscosity(val_scalars);
   }
+
+  Kt = WilkeConductivity(val_scalars);
 }
