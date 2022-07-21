@@ -31,14 +31,18 @@
 
 #include "../../include/fluid/CConstantConductivity.hpp"
 #include "../../include/fluid/CConstantConductivityRANS.hpp"
+#include "../../include/fluid/CConstantDiffusivity.hpp"
 #include "../../include/fluid/CConstantPrandtl.hpp"
 #include "../../include/fluid/CConstantPrandtlRANS.hpp"
+#include "../../include/fluid/CConstantSchmidt.hpp"
+#include "../../include/fluid/CConstantSchmidtRANS.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
+#include "../../include/fluid/CUnityLewisDiffusivity.hpp"
 
 void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
@@ -86,6 +90,28 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
       break;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
+      break;
+  }
+}
+
+void CFluidModel::SetMassDiffusivityModel(const CConfig* config) {
+  switch (config->GetKind_Diffusivity_Model()) {
+    case DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY:
+      MassDiffusivity = unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
+      break;
+    case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
+      if ((config->GetKind_Solver() == MAIN_SOLVER::RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS)) {
+        MassDiffusivity = unique_ptr<CConstantSchmidtRANS>(
+            new CConstantSchmidtRANS(config->GetSchmidt_Number_Laminar(), config->GetSchmidt_Number_Turbulent()));
+      } else {
+        MassDiffusivity = unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Number_Laminar()));
+      }
+      break;
+    case DIFFUSIVITYMODEL::UNITY_LEWIS:
+      MassDiffusivity = unique_ptr<CUnityLewisDiffusivity>(new CUnityLewisDiffusivity());
+      break;
+    default:
+      SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);
       break;
   }
 }

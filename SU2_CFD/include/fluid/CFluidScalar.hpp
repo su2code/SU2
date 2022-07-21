@@ -49,6 +49,7 @@ class CFluidScalar final : public CFluidModel {
   std::vector<su2double> massFractions;              /*!< \brief Mass fractions of all species. */
   std::vector<su2double> moleFractions;              /*!< \brief Mole fractions of all species. */
   std::vector<su2double> molarMasses;                /*!< \brief Molar masses of all species. */
+  std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
   std::vector<su2double> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
   std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
 
@@ -103,10 +104,23 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetLaminarViscosity() override { return Mu; }
 
   /*!
+   * \brief Get specific heat capacity at constant pressure.
+   */
+
+  inline su2double GetCp() const override{ return Cp; }
+
+  /*!
+   * \brief Get specific heat capacity at constant volume.
+   */
+
+  inline su2double GetCv() const override{ return Cv; }
+  
+  /*!
    * \brief Get fluid thermal conductivity.
    */
 
   inline su2double GetThermalConductivity() override { return Kt; }
+  
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.

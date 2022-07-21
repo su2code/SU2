@@ -1161,8 +1161,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
-  /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
+  addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
+  /*!\brief CV_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cv (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
@@ -3752,6 +3752,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   const su2double Mu_Ref_Default = Mu_Constant_Default;
   const su2double Mu_Temperature_Ref_Default = (SystemMeasurements == SI) ? 273.15 : (273.15 * 1.8);
   const su2double Mu_S_Default = (SystemMeasurements == SI) ? 110.4 : (110.4 * 1.8);
+  const su2double Specific_Heat_Cp_Default = 1004.703;
   const su2double Thermal_Conductivity_Constant_Default = (SystemMeasurements == SI) ? 2.57E-2 : (2.57E-2 * 0.577789317);
   const su2double Prandtl_Lam_Default = 0.72;
   const su2double Prandtl_Turb_Default = 0.9;
@@ -3765,6 +3766,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   };
 
   SetDefaultIfEmpty(Molecular_Weight, nMolecular_Weight, Molecular_Weight_Default);
+  SetDefaultIfEmpty(Specific_Heat_Cp, nSpecific_Heat_Cp, Specific_Heat_Cp_Default);
   SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
     SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
@@ -3780,10 +3782,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
       /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
-       equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
-      if (nMolecular_Weight != nSpecies_Init + 1) {
+       equations solved + 1. nMolecular_Weight and nSpecific_Heat_Cp are used because it is required for the fluid mixing models. 
+       * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active.--- */
+      if (nMolecular_Weight != nSpecies_Init + 1||nSpecific_Heat_Cp != nSpecies_Init + 1) {
         SU2_MPI::Error(
-            "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+            "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
             "to be equal to the number of entries of SPECIES_INIT + 1",
             CURRENT_FUNCTION);
       }

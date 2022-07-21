@@ -49,6 +49,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
     : CFluidModel() {
   n_species_mixture = config->GetnSpecies() + 1;
 
+  specificHeat.resize(n_species_mixture);
   molarMasses.resize(n_species_mixture);
   massFractions.resize(n_species_mixture);
   moleFractions.resize(n_species_mixture);
@@ -57,16 +58,15 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
+    specificHeat[iVar] = config->GetSpecific_Heat_Cp(iVar);
   }
 
   wilke = (config->GetKind_MixingViscosityModel()==MIXINGVISCOSITYMODEL::WILKE);
   davidson = (config->GetKind_MixingViscosityModel()==MIXINGVISCOSITYMODEL::DAVIDSON);
 
   Pressure_Thermodynamic = value_pressure_operating;
-  Gas_Constant = val_gas_constant;
-  Gamma = 1.0;
-  Cp = val_Cp;
-  Cv = Cp;
+  Gas_Constant = config->GetGas_Constant();
+  Gamma = config->GetGamma();
   SetLaminarViscosityModel(config);
   SetThermalConductivityModel(config);
 }
@@ -254,12 +254,13 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / ((Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight));
-
+  Cp = ComputeMeanSpecificHeatCp(specificHeat, val_scalars);
+  Cv = ComputeMeanSpecificHeatCv(specificHeat, val_scalars, molarMasses);
   MassToMoleFractions(val_scalars);
-  Kt = WilkeConductivity(val_scalars);
   if (wilke) {
     Mu = WilkeViscosity(val_scalars);
   } else if (davidson) {
     Mu = DavidsonViscosity(val_scalars);
   }
+  Kt = WilkeConductivity(val_scalars);
 }
