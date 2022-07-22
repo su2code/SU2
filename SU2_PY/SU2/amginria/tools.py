@@ -6,8 +6,8 @@
 #  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -40,20 +40,20 @@ def get_mesh_sizes(config):
 
 def get_mesh_size(mesh):
     """Get mesh size info from a python mesh structure"""
-    elts = {'xy':'vertices', 'xyz':'vertices',  'Triangles':'triangles', 'Edges':'edges', 'Tetrahedra':'tetrahedra'}
-    tab_out = [] 
+    elts = {'xy':'vertices', 'xyz':'vertices', 'Tetrahedra':'tetrahedra', 'Triangles':'triangles', 'Edges':'edges'}
+    nelts = {}
     for k,v in elts.items():
         if k not in mesh: continue
-        
-        nbe = len(mesh[k])        
-        if nbe > 0: tab_out.append(f'{nbe} {v}')
-    
-    return ', '.join(map(str, tab_out))
+
+        nbe = len(mesh[k])
+        if nbe > 0: nelts.update({f'{v}': nbe})
+
+    return nelts
 
 def get_amg_config(config_su2):
     """Load parameters from the SU2 config file into the AMG config dict"""
     config_amg = dict()
-    
+
     if 'ADAP_HGRAD' in config_su2: config_amg['hgrad'] = float(config_su2['ADAP_HGRAD'])
 
     config_amg['hmax']        = float(config_su2['ADAP_HMAX'])
@@ -71,12 +71,12 @@ def get_amg_config(config_su2):
             os.symlink(os.path.join(cwd, config_su2.ADAP_BACK), config_su2.ADAP_BACK)
     else:
         config_amg['adap_back'] = config_su2['MESH_FILENAME']
-    
+
     _, back_extension = os.path.splitext(config_amg['adap_back'])
-    
+
     if not os.path.exists(config_amg['adap_back']):
         raise ValueError(f"Can't find background surface mesh: {config_amg['adap_back']}.")
-    
+
     if back_extension == '.su2':
         print('\nGenerating GMF background surface mesh.')
         su2gmf.SU2toGMF(config_amg['adap_back'], '', 'amg_back', '')
@@ -117,9 +117,9 @@ def get_residual_reduction(config):
         nRes = len(config['ADAP_SIZES'].strip('()').split(','))
         res = []
         for i in range(nRes):
-            res.append(config['RESIDUAL_REDUCTION'])      
-        return res 
-        
+            res.append(config['RESIDUAL_REDUCTION'])
+        return res
+
 def get_adj_iter(config):
     """Get number of adjoint solver iterations for each mesh complexity"""
     if 'ADAP_ADJ_ITER' in config:
@@ -128,7 +128,7 @@ def get_adj_iter(config):
         nExt_iter = len(config['ADAP_SIZES'].strip('()').split(','))
         ext_iter = []
         for i in range(nExt_iter):
-            ext_iter.append(config['ITER'])        
+            ext_iter.append(config['ITER'])
         return ext_iter
 
 def get_flow_iter(config):
@@ -139,7 +139,7 @@ def get_flow_iter(config):
         nExt_iter = len(config['ADAP_SIZES'].strip('()').split(','))
         flow_iter = []
         for i in range(nExt_iter):
-            flow_iter.append(config['ITER'])        
+            flow_iter.append(config['ITER'])
         return flow_iter
 
 def get_flow_cfl(config):
@@ -150,7 +150,7 @@ def get_flow_cfl(config):
         ncfl = len(config['ADAP_SIZES'].strip('()').split(','))
         cfl = []
         for i in range(ncfl):
-            cfl.append(config['CFL_NUMBER'])        
+            cfl.append(config['CFL_NUMBER'])
         return cfl
 
 def get_adj_cfl(config):
@@ -161,7 +161,7 @@ def get_adj_cfl(config):
         ncfl = len(config['ADAP_SIZES'].strip('()').split(','))
         cfl = []
         for i in range(ncfl):
-            cfl.append(config['CFL_NUMBER'])        
+            cfl.append(config['CFL_NUMBER'])
         return cfl
 
 def set_cfl(config, cfl_iSiz):
@@ -218,86 +218,90 @@ def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfi
     config.RESTART_FILENAME      = cur_solfil
     config.ITER                  = int(adj_iter)
     config.ADAP_COMPLEXITY       = int(mesh_size)
-   
+
 def print_adap_options(config):
     """Print options used for mesh adaptation"""
+    pad = 0
+    for key, value in config.items():
+        if 'ADAP_' in key:
+            pad = max(len(key), pad)
+
     prt = '\nMesh adaptation options:\n'
     for key, value in config.items():
         if 'ADAP_' in key:
-            prt += f'{key} : {value}\n'
-    prt += '\n'
+            prt += f'{key:<{pad}} : {value}\n'
     return prt
-    
+
 def get_su2_dim(filename):
     """Get dimension from su2 mesh"""
     meshfile = open(filename,'r')
-    
+
     def mesh_readlines(n_lines=1):
         fileslice = islice(meshfile,n_lines)
         return list(fileslice)
-    
+
     dim = -1
-    
+
     keepon = True
     while keepon:
-        
+
         line = mesh_readlines()
-        
-        if not line: 
+
+        if not line:
             keepon = False
             break
-        
+
         # fix white space
         line = line[0]
         line = line.replace('\t',' ')
         line = line.replace('\n',' ')
-    
+
         # skip comments
         if line[0] == '%':
             pass
-    
+
         # number of dimensions
         elif 'NDIME=' in line:
             # save to SU2_MESH data
             dim = int( line.split('=')[1].strip() )
             keepon = False
-        
+
     return dim
 
 def get_su2_npoin(filename):
     """Get number of points from su2 mesh"""
     meshfile = open(filename,'r')
-    
+
     def mesh_readlines(n_lines=1):
         fileslice = islice(meshfile,n_lines)
         return list(fileslice)
-    
+
     npoin = -1
-    
+
     keepon = True
     while keepon:
-        
+
         line = mesh_readlines()
-        
-        if not line: 
+
+        if not line:
             keepon = False
             break
-        
+
         # fix white space
         line = line[0]
         line = line.replace('\t',' ')
         line = line.replace('\n',' ')
-    
+
         # skip comments
         if line[0] == '%':
             pass
-    
+
         # number of dimensions
         elif 'NPOIN=' in line:
             # save to SU2_MESH data
             npoin = int( line.split('=')[1].strip() )
             keepon = False
-        
+
     return npoin
 
 def merge_sol(mesh0, mesh1):
@@ -341,28 +345,27 @@ def create_sensor(solution, sensor):
     Returns array of scalars for MACH/PRES, or array of tensors
     for GOAL
     """
-    
     Dim = solution['dimension']
     Sol = np.array(solution['solution'])
-    
-    if sensor == 'MACH':  
+
+    if sensor == 'MACH':
         iMach = solution['id_solution_tag']['Mach']
         sensor = Sol[:,iMach]
         sensor = np.array(sensor).reshape((len(sensor),1))
         sensor_header = ['Mach']
-        
-    elif sensor == 'PRES':  
+
+    elif sensor == 'PRES':
         iPres = solution['id_solution_tag']['Pressure']
         sensor = Sol[:,iPres]
-        sensor = np.array(sensor).reshape((len(sensor),1))        
+        sensor = np.array(sensor).reshape((len(sensor),1))
         sensor_header = ['Pres']
-        
+
     elif sensor == 'MACH_PRES':
         iPres  = solution['id_solution_tag']['Pressure']
         iMach  = solution['id_solution_tag']['Mach']
         mach   = np.array(Sol[:,iMach])
         pres   = np.array(Sol[:,iPres])
-        sensor = np.stack((mach, pres), axis=1)    
+        sensor = np.stack((mach, pres), axis=1)
         sensor_header = ['Mach', 'Pres']
 
     elif sensor == 'GOAL':
@@ -370,19 +373,58 @@ def create_sensor(solution, sensor):
         sensor = Sol[:,-nMet:]
         sensor = np.array(sensor).reshape((len(sensor),nMet))
         sensor_header = ['Goal']
-                
+
     else:
         raise ValueError(f'Unknown sensor: {sensor}.')
-    
+
     sensor_wrap = dict()
-    
+
     sensor_wrap['solution_tag'] = sensor_header
     sensor_wrap['xyz'] = solution['xyz']
-    
+
     sensor_wrap['dimension']    = solution['dimension']
     sensor_wrap['solution']     = sensor
-    
+
     return sensor_wrap
+
+def print_adap_table(iter, sizes, subiter, nsubiter, mesh):
+    """Print adapted mesh sizes to a table"""
+    dim = mesh['dimension']
+
+    #--- Header
+    if iter == 0 and subiter == 0:
+        print('+=================================================================+')
+        if dim == 2:
+            print('|   Iter   |   Size   | Sub-iter |   Vert   |   Tria   |   Edge   |')
+        else:
+            print('|   Iter   |   Size   | Sub-iter |   Vert   |   Tetr   |   Tria   |')
+        print('+=================================================================+')
+
+    #--- Data
+    line = None
+    if subiter == 0:
+        size = int(sizes[iter])
+        line = f'|    {iter:<2}    | {size:<8} '
+    else:
+        pad_nul = ' '*10
+        line = f'|{pad_nul}|{pad_nul}'
+
+    nelts = get_mesh_size(mesh)
+    nvert = nelts['vertices']
+    ntria = nelts['triangles']
+    if dim == 2:
+        nedge = nelts['edges']
+        line = f'{line}|    {subiter:<2}    | {nvert:<8} | {ntria:<8} | {nedge:<8} |'
+    else:
+        ntetr = nelts['tetrahedra']
+        line = f'{line}|    {subiter:<2}    | {nvert:<8} | {ntetr:<8} | {ntria:<8} |'
+    print(line)
+
+    if subiter == nsubiter-1:
+        if iter != len(sizes)-1:
+            print('+-----------------------------------------------------------------+')
+        else:
+            print('+=================================================================+')
 
 def plot_results(history_format, filename, iter, npoin):
     """Write primal results to a Tecplot or CSV file"""
@@ -396,7 +438,7 @@ def plot_results(history_format, filename, iter, npoin):
     else:
         solname  = 'history.csv'
     indent_spacing = ' '*indent_spacing
-        
+
     #--- Write header on first adaptive iteration
     if iter == 0:
         #--- Get header from solution history
@@ -426,9 +468,8 @@ def plot_results(history_format, filename, iter, npoin):
     with open(solname, 'rb') as f:
         f.seek(-2, os.SEEK_END)
         while f.read(1) != b'\n':
-            f.seek(-2, os.SEEK_CUR) 
+            f.seek(-2, os.SEEK_CUR)
         last_line = f.readline().decode('ascii')
 
     plotfile.write(f'{indent_spacing}{iter}, {npoin}, {last_line}')
     plotfile.close()
-        

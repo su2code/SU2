@@ -228,20 +228,12 @@ def amg(config):
 
     print('\nStarting mesh adaptation process.')
 
-    for iSiz in range(len(mesh_sizes)):
-
-        mesh_size = int(mesh_sizes[iSiz])
-        nSub      = int(sub_iter[iSiz])
-
-        print(f'\nIteration {iSiz} - Mesh size coefficient {mesh_size}')
-
+    nSiz = len(mesh_sizes)
+    for iSiz in range(nSiz):
+        nSub = int(sub_iter[iSiz])
         for iSub in range(nSub):
 
             global_iter += 1
-
-            # Prints
-            pad_cpt = f'({iSub+1}/{nSub})'.ljust(9)
-            pad_nul = ''.ljust(9)
 
             #--- Load su2 mesh
 
@@ -250,6 +242,8 @@ def amg(config):
             #--- Write solution
             su2amg.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
 
+            mesh_size = int(mesh_sizes[iSiz])
+            if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
             config_amg['size'] = mesh_size
 
             #--- Use pyAmg interface
@@ -275,9 +269,7 @@ def amg(config):
                 sensor_wrap = su2amg.create_sensor(mesh, adap_sensor)
                 mesh['sensor'] = sensor_wrap['solution']
 
-            #--- Call pyAMG
-
-            print(f' {pad_cpt} Generating adapted mesh using AMG')
+            #--- Adapt mesh with AMG
 
             mesh_new = su2amg.call_pyamg(mesh, config_amg)
 
@@ -290,15 +282,14 @@ def amg(config):
                 except OSError:
                     pass
 
-            #--- print mesh size
-
-            print(f' {pad_nul} AMG done: {su2amg.get_mesh_size(mesh_new)}')
-
             mesh_new['markers'] = mesh['markers']
             mesh_new['dimension'] = mesh['dimension']
             mesh_new['solution_tag'] = mesh['solution_tag']
 
             del mesh
+
+            #--- Print mesh sizes
+            su2amg.print_adap_table(iSiz, mesh_sizes, iSub, nSub, mesh_new)
 
             dir = f'./ite{global_iter}'
             os.makedirs(os.path.join('..',dir))
@@ -327,8 +318,6 @@ def amg(config):
 
             #--- Run su2
 
-            print(f' {pad_nul} Running CFD')
-
             try: # run with redirected outputs
 
                 solfil_ini = f'flo_ini{sol_ext}'
@@ -355,7 +344,7 @@ def amg(config):
                     adjsolfil_ini = f'adj_ini{sol_ext}'
 
                     su2amg.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
-                                             adjsolfil_ini, adj_iter[iSiz], mesh_sizes[iSiz])
+                                             adjsolfil_ini, adj_iter[iSiz], mesh_size)
 
                     with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
 
@@ -375,5 +364,6 @@ def amg(config):
     os.rename(solfil, os.path.join(base_dir, config.RESTART_FILENAME))
     os.rename(meshfil, os.path.join(base_dir, config.MESH_OUT_FILENAME))
 
-    print('\nMesh adaptation successfully ended. Results files:')
-    print(f'{config.MESH_OUT_FILENAME}\n{config.RESTART_FILENAME}\n')
+    pad_nul = ' '*15
+    print('\nMesh adaptation successfully ended.')
+    print(f'Results files: {config.MESH_OUT_FILENAME}\n{pad_nul}{config.RESTART_FILENAME}')
