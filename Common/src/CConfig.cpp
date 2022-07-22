@@ -1057,9 +1057,6 @@ void CConfig::SetPointersNull(void) {
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
-  Gas_Composition = nullptr;
-  Supercatalytic_Wall_Composition = nullptr;
-
 }
 
 void CConfig::SetConfig_Options() {
