@@ -742,7 +742,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Assign booleans ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool supercat = config->GetSupercatalytic_Wall();
+  const bool Supercatalytic_Wall = config->GetSupercatalytic_Wall();
 
   /*--- Get universal information ---*/
   const su2double RuSI = UNIVERSAL_GAS_CONSTANT;
@@ -793,10 +793,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       const auto& eves = nodes->GetEve(iPoint);
       const auto& hs = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
       const su2double rho = Vi[RHO_INDEX];
-      const auto dTdU   = nodes->GetdTdU(iPoint);
-      const auto dTvedU = nodes->GetdTvedU(iPoint);
+      const auto& dTdU = nodes->GetdTdU(iPoint);
+      const auto& dTvedU = nodes->GetdTvedU(iPoint);
 
-      if (supercat) {
+      if (Supercatalytic_Wall) {
 
         const auto& Yst = config->GetSupercatalytic_Wall_Composition();
 
@@ -836,7 +836,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
           /*--- Calculate supplementary quantities ---*/
           const auto& Cvtrs = FluidModel->GetSpeciesCvTraRot();
-          const auto Cvve = nodes->GetCvve(iPoint);
+          const auto& Cvve = nodes->GetCvve(iPoint);
 
           /*--- Take the primitive var. Jacobian & store in Jac. jj ---*/
           // Species mass fraction
