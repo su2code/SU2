@@ -77,10 +77,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   solvers_fine[Solver_Position]->Postprocessing(geometry_fine, solvers_fine, config[iZone], FinestMesh);
 
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
-    SU2_OMP_MASTER
-    solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(solvers_fine[HEAT_SOL]->Heat_Fluxes(geometry_fine, solvers_fine, config[iZone]);)
   }
 
   /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
