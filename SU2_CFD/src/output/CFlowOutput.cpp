@@ -25,8 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/CFlowOutput.hpp"
 #include <string>
+
+#include "../../include/output/CFlowOutput.hpp"
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
@@ -785,7 +787,12 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 
     std::array<su2double, 2> integral = {0.0, 0.0};
 
+    SU2_OMP_PARALLEL {
+    std::array<su2double, 2> local_integral = {0.0, 0.0};
+
     for (const auto iMarker : output.markerIndices) {
+
+      SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
       for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
         const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -800,7 +807,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           weight = GeometryToolbox::Norm(nDim, normal);
         }
         weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
-        integral[1] += weight;
+        local_integral[1] += weight;
 
         /*--- Prepare the functor that maps symbol indices to values. For now the only allowed symbols
          * are the primitive variables, and thus the indices match the primitive indices. ---*/
@@ -818,9 +825,15 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
             return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
           }
         };
-        integral[0] += weight * output.eval(Functor);
+        local_integral[0] += weight * output.eval(Functor);
       }
+      END_SU2_OMP_FOR
     }
+    SU2_OMP_SAFE_GLOBAL_ACCESS(
+      integral[0] += local_integral[0];
+      integral[1] += local_integral[1];
+    )
+    } END_SU2_OMP_PARALLEL
 
     const auto local = integral;
     SU2_MPI::Allreduce(local.data(), integral.data(), 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
