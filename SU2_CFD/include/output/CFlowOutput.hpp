@@ -237,8 +237,9 @@ protected:
       if ("THERMAL_CONDUCTIVITY" == var) return flow_offset + idx.ThermalConductivity();
 
       /*--- Index-based (no name) access to variables of other solvers. ---*/
-      auto GetIndex = [](const std::string& s, int offset) {
-        return std::stoi(std::string(s.begin() + offset + 1, s.end() - 1));
+      auto GetIndex = [](const std::string& s, int nameLen) {
+        /*--- Extract an int from "name[int]", nameLen is the length of "name". ---*/
+        return std::stoi(std::string(s.begin() + nameLen + 1, s.end() - 1));
       };
       if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
       if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);

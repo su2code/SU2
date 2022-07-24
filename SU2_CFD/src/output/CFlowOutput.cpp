@@ -751,7 +751,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 
   for (auto& output : customOutputs) {
     if (output.varIndices.empty()) {
-      /*--- Setup indices for the symbols in the expression, for now this only recognizes primitives. ---*/
+      /*--- Setup indices for the symbols in the expression. ---*/
 
       if (config->GetNEMOProblem()) {
         ConvertVariableSymbolsToIndices(
@@ -788,52 +788,54 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
     std::array<su2double, 2> integral = {0.0, 0.0};
 
     SU2_OMP_PARALLEL {
-    std::array<su2double, 2> local_integral = {0.0, 0.0};
+      std::array<su2double, 2> local_integral = {0.0, 0.0};
 
-    for (const auto iMarker : output.markerIndices) {
+      for (const auto iMarker : output.markerIndices) {
 
-      SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
-      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
-        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
+        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (!geometry->nodes->GetDomain(iPoint)) continue;
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        const auto* normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const auto* normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        su2double weight = 1.0;
-        if (output.type == OperationType::MASSFLOW_AVG || output.type == OperationType::MASSFLOW_INT) {
-          weight = flowNodes->GetDensity(iPoint) * flowNodes->GetProjVel(iPoint, normal);
-        } else {
-          weight = GeometryToolbox::Norm(nDim, normal);
-        }
-        weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
-        local_integral[1] += weight;
-
-        /*--- Prepare the functor that maps symbol indices to values. For now the only allowed symbols
-         * are the primitive variables, and thus the indices match the primitive indices. ---*/
-
-        auto Functor = [&](unsigned long i) {
-          if (i < CustomOutput::NOT_A_VARIABLE) {
-            const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
-            const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-            if (solIdx == FLOW_SOL) {
-              return flowNodes->GetPrimitive(iPoint, varIdx);
-            } else {
-              return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-            }
+          su2double weight = 1.0;
+          if (output.type == OperationType::MASSFLOW_AVG || output.type == OperationType::MASSFLOW_INT) {
+            weight = flowNodes->GetDensity(iPoint) * flowNodes->GetProjVel(iPoint, normal);
           } else {
-            return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+            weight = GeometryToolbox::Norm(nDim, normal);
           }
-        };
-        local_integral[0] += weight * output.eval(Functor);
+          weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
+          local_integral[1] += weight;
+
+          /*--- Prepare the functor that maps symbol indices to values (see ConvertVariableSymbolsToIndices). ---*/
+
+          auto Functor = [&](unsigned long i) {
+            if (i < CustomOutput::NOT_A_VARIABLE) {
+              const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+              const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+              if (solIdx == FLOW_SOL) {
+                return flowNodes->GetPrimitive(iPoint, varIdx);
+              } else {
+                return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+              }
+            } else {
+              return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+            }
+          };
+          local_integral[0] += weight * output.eval(Functor);
+        }
+        END_SU2_OMP_FOR
       }
-      END_SU2_OMP_FOR
+
+      SU2_OMP_CRITICAL {
+        integral[0] += local_integral[0];
+        integral[1] += local_integral[1];
+      }
+      END_SU2_OMP_CRITICAL
     }
-    SU2_OMP_SAFE_GLOBAL_ACCESS(
-      integral[0] += local_integral[0];
-      integral[1] += local_integral[1];
-    )
-    } END_SU2_OMP_PARALLEL
+    END_SU2_OMP_PARALLEL
 
     const auto local = integral;
     SU2_MPI::Allreduce(local.data(), integral.data(), 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
