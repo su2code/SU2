@@ -33,6 +33,7 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
+
 class CFileReaderLUT {
  protected:
   int rank;
