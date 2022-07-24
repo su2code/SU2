@@ -67,7 +67,7 @@
    * \param[in]  val_y  - y-coordinate or second independent variable
    * \param[out] val_index - index to the triangle 
    */
-  unsigned long GetTriangle(su2double val_x, su2double val_y);
+  unsigned long GetTriangle(su2double val_x, su2double val_y) const;
 
 
   /*!
