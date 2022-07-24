@@ -206,12 +206,15 @@ protected:
      is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"
      and needs to be generated on-the-fly for each point. The functor approach is more generic than a pointer, for
      example it allows wrapping the access to multiple solvers. The interpretation of these indices is dictated by
-     the functor used in eval, for example indices may be established as 1000 * solver_idx + variable_idx.
+     the functor used in eval, for example indices may be established as 32 * solver_idx + variable_idx.
      The parts of the code that assign and interpret indices need to be in sync. ---*/
     std::vector<unsigned long> varIndices;
 
+    /*--- Offset between varIndices of different solvers (see above). Power of 2 to make decoding faster. ---*/
+    static constexpr unsigned long MAX_VARS_PER_SOLVER = 32;
+
     /*--- Arbitrary number to indicate that a string did not match a variable. ---*/
-    static constexpr unsigned long NOT_A_VARIABLE = 1000;
+    static constexpr unsigned long NOT_A_VARIABLE = MAX_SOLS * MAX_VARS_PER_SOLVER;
 
     /*--- Other outputs can be referenced in expressions, e.g. to compute variance.
      We store pointers to the required outputs to speed-up access. ---*/

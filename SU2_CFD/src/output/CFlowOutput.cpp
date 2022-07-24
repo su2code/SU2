@@ -742,10 +742,10 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
 }
 
-void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config) {
+void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
 
   const bool axisymmetric = config->GetAxisymmetric();
-  const auto* flowNodes = solver->GetNodes();
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
   for (auto& output : customOutputs) {
     if (output.varIndices.empty()) {
@@ -807,7 +807,13 @@ void CFlowOutput::SetCustomOutputs(const CSolver *solver, const CGeometry *geome
 
         auto Functor = [&](unsigned long i) {
           if (i < CustomOutput::NOT_A_VARIABLE) {
-            return flowNodes->GetPrimitive(iPoint, i);
+            const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+            const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+            if (solIdx == FLOW_SOL) {
+              return flowNodes->GetPrimitive(iPoint, varIdx);
+            } else {
+              return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+            }
           } else {
             return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
           }

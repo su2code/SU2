@@ -205,7 +205,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetCustomOutputs(const CSolver *solver, const CGeometry *geometry, const CConfig *config);
+  void SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Helper for custom outputs, converts variable names to indices and pointers which are then used
@@ -216,21 +216,34 @@ protected:
 
     static const auto knownVariables =
         "TEMPERATURE, TEMPERATURE_VE, VELOCITY_X, VELOCITY_Y, VELOCITY_Z, PRESSURE,\n"
-        "DENSITY, ENTHALPY, SOUND_SPEED, LAMINAR_VISCOSITY, EDDY_VISCOSITY, THERMAL_CONDUCTIVITY";
+        "DENSITY, ENTHALPY, SOUND_SPEED, LAMINAR_VISCOSITY, EDDY_VISCOSITY, THERMAL_CONDUCTIVITY\n"
+        "TURB[0,1,...], RAD[0,1,...], SPECIES[0,1,...]";
 
     auto IndexOfVariable = [&](const FlowIndices& idx, const std::string& var) {
-      if ("TEMPERATURE" == var) return idx.Temperature();
-      if ("TEMPERATURE_VE" == var) return idx.Temperature_ve();
-      if ("VELOCITY_X" == var) return idx.Velocity();
-      if ("VELOCITY_Y" == var) return idx.Velocity() + 1;
-      if ("VELOCITY_Z" == var) return idx.Velocity() + 2;
-      if ("PRESSURE" == var) return idx.Pressure();
-      if ("DENSITY" == var) return idx.Density();
-      if ("ENTHALPY" == var) return idx.Enthalpy();
-      if ("SOUND_SPEED" == var) return idx.SoundSpeed();
-      if ("LAMINAR_VISCOSITY" == var) return idx.LaminarViscosity();
-      if ("EDDY_VISCOSITY" == var) return idx.EddyViscosity();
-      if ("THERMAL_CONDUCTIVITY" == var) return idx.ThermalConductivity();
+      /*--- Primitives of the flow solver. ---*/
+      const auto flow_offset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
+
+      if ("TEMPERATURE" == var) return flow_offset + idx.Temperature();
+      if ("TEMPERATURE_VE" == var) return flow_offset + idx.Temperature_ve();
+      if ("VELOCITY_X" == var) return flow_offset + idx.Velocity();
+      if ("VELOCITY_Y" == var) return flow_offset + idx.Velocity() + 1;
+      if ("VELOCITY_Z" == var) return flow_offset + idx.Velocity() + 2;
+      if ("PRESSURE" == var) return flow_offset + idx.Pressure();
+      if ("DENSITY" == var) return flow_offset + idx.Density();
+      if ("ENTHALPY" == var) return flow_offset + idx.Enthalpy();
+      if ("SOUND_SPEED" == var) return flow_offset + idx.SoundSpeed();
+      if ("LAMINAR_VISCOSITY" == var) return flow_offset + idx.LaminarViscosity();
+      if ("EDDY_VISCOSITY" == var) return flow_offset + idx.EddyViscosity();
+      if ("THERMAL_CONDUCTIVITY" == var) return flow_offset + idx.ThermalConductivity();
+
+      /*--- Index-based (no name) access to variables of other solvers. ---*/
+      auto GetIndex = [](const std::string& s, int offset) {
+        return std::stoi(std::string(s.begin() + offset + 1, s.end() - 1));
+      };
+      if (var.rfind("SPECIES", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 7);
+      if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
+      if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+
       return CustomOutput::NOT_A_VARIABLE;
     };
 

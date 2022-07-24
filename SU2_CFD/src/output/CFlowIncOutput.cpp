@@ -278,7 +278,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
-  SetCustomOutputs(flow_solver, geometry, config);
+  SetCustomOutputs(solver, geometry, config);
 
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
 
