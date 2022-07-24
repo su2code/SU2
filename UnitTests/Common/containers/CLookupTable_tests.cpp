@@ -37,7 +37,7 @@
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #include "../../../Common/include/containers/CFileReaderLUT.hpp"
 
-using namespace std;
+//using namespace std;
 
 
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
