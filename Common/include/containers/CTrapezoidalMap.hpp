@@ -55,15 +55,11 @@
   std::vector<std::vector<std::pair<su2double, unsigned long> > > y_edge_at_band_mid;
 
  public:
-  CTrapezoidalMap(){};
-
   CTrapezoidalMap(const su2double* samples_x,
                   const su2double* samples_y,
                   const unsigned long size,
                   const std::vector<std::vector<unsigned long> >& edges,
                   const std::vector<std::vector<unsigned long> >& edge_to_triangle);
-
-  ~CTrapezoidalMap(void){};
 
   /*!
    * \brief return the index to the triangle that contains the coordinates (val_x,val_y) 
