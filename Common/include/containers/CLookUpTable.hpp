@@ -98,11 +98,7 @@ class CLookUpTable {
    * \brief Get the pointer to the column data of the table (density, temperature, source terms, ...)
    */
   inline const su2double* GetDataP(const std::string& name_var) const {
-    int ix_var = GetIndexOfVar(name_var);
-
-    su2double* tableDataRow(table_data[ix_var]); 
-
-    return tableDataRow;
+    return table_data[GetIndexOfVar(name_var)];
   }
 
   /*!
