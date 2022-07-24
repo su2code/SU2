@@ -44,12 +44,8 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- smaller and trivial lookup table ---*/
 
-  CLookUpTable *look_up_table;
-
-
-  /*--- 2D lookup table with progress variable and enthalpy as variables ---*/
-
-  look_up_table = new CLookUpTable("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
+  
+  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
 
 
   /*--- string names of the controlling variables ---*/
