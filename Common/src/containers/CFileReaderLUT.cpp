@@ -33,7 +33,6 @@
 
 using namespace std;
 
-CFileReaderLUT::CFileReaderLUT() {}
 
 void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   version_reader = "1.0.0";
