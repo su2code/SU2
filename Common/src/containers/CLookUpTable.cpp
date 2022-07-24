@@ -76,7 +76,7 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   CFileReaderLUT file_reader;
 
   if (rank == MASTER_NODE) 
-    cout << "Loading look-up-table-file " << var_file_name_lut << " ..." << endl;
+    cout << "Loading lookup table, filename = " << var_file_name_lut << " ..." << endl;
 
   file_reader.ReadRawDRG(var_file_name_lut);
 
@@ -143,8 +143,8 @@ void CLookUpTable::PrintTableInfo() {
 
 void CLookUpTable::IdentifyUniqueEdges() {
 
-  /* loop through elements and store the element ID as
-     a neighbor for each point in the element */
+  /* loop through elements and store the vector of element IDs (neighbors)
+     for each of the points in the table */
 
   vector<vector<unsigned long> > neighborElemsOfPoint;
   
@@ -224,14 +224,14 @@ void CLookUpTable::IdentifyUniqueEdges() {
 
   /* Loop over our edges data structure. For the first point in each
    pair, loop through the neighboring elements and store the two
-   elements that contain the second point in the edge. */
+   elements that contain the second point in the edge ('left' and 'right' of the edge). */
   edge_to_triangle.resize(edges.size());
   for (unsigned long iEdge = 0; iEdge < edges.size(); iEdge++) {
     /* Store the two points of the edge more clearly. */
     const unsigned long iPoint = edges[iEdge][0];
     const unsigned long jPoint = edges[iEdge][1];
 
-    /* Loop over all neighobring elements to iPoint. */
+    /* Loop over all neighboring elements to iPoint. */
     for (unsigned long iElem = 0; iElem < neighborElemsOfPoint[iPoint].size(); iElem++) {
       /* loop over 3 points per triangle */
       for (unsigned long kPoint = 0; kPoint < N_POINTS_TRIANGLE; kPoint++) {
@@ -304,9 +304,8 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
   }
 
   /* check if progress variable and enthalpy value is in table range */
-  if (val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1]) {
-    //&&
-    // val_enth >= limits_table_enth[0] && val_enth <= limits_table_enth[1] ){
+  if ((val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1]) &&
+      (val_enth >= limits_table_enth[0] && val_enth <= limits_table_enth[1])){
 
     /* find the triangle that holds the (prog, enth) point */
     unsigned long id_triangle = trap_map_prog_enth.GetTriangle(val_prog, val_enth);
@@ -321,7 +320,6 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
       for (int p = 0; p < 3; p++) 
         triangle[p] = triangles[id_triangle][p]; 
 
-      //*val_var = Interpolate(GetData(val_name_var), triangles[id_triangle], interp_coeffs);
       *val_var = Interpolate(GetDataP(val_name_var), triangle, interp_coeffs);
       exit_code = 0;
     } else {

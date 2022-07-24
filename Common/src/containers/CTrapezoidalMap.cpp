@@ -38,7 +38,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
                                  vector<vector<unsigned long> > const& edges,
                                  vector<vector<unsigned long> > const& val_edge_to_triangle) {
   int rank = SU2_MPI::GetRank();
-  clock_t build_start = clock();
+  su2double startTime = SU2_MPI::Wtime();
 
   edge_to_triangle = vector<vector<unsigned long> >(val_edge_to_triangle);
 
@@ -126,13 +126,14 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
     i_band++;
   }
 
-  su2double duration = ((su2double)clock() - (su2double)build_start) / ((su2double)CLOCKS_PER_SEC);
+  su2double stopTime = SU2_MPI::Wtime();
 
-  if (rank == MASTER_NODE) cout << "Construction of trapezoidal map took " << duration << " seconds\n" << endl;
+  if (rank == MASTER_NODE) cout << "Construction of trapezoidal map took " << stopTime-startTime << " seconds\n" << endl;
 }
 
 
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
+//unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) const {
   /* find x band in which val_x sits */
   pair<unsigned long, unsigned long> band = GetBand(val_x);
 
@@ -178,7 +179,7 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long, unsigned long> val_band,
-                                                             su2double val_x, su2double val_y) {
+                                                             su2double val_x, su2double val_y) const{
   su2double next_y;
   su2double y_edge_low;
   su2double y_edge_up;

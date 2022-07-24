@@ -43,16 +43,13 @@ using namespace std;
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- smaller and trivial lookup table ---*/
-
   
   CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg","PROGVAR","ENTHALPY");
-
 
   /*--- string names of the controlling variables ---*/
 
   string name_CV1 = "PROGVAR";
   string name_CV2 = "ENTHALPY";
-
 
  /*--- look up a single value for density ---*/
 
@@ -60,7 +57,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   su2double enth = -0.5; 
   string look_up_tag = "Density";
   su2double look_up_dat;
-  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
+  look_up_table.LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
   CHECK(look_up_dat == Approx(1.02));
 
   /*--- look up a single value for viscosity ---*/
@@ -68,30 +65,26 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   prog = 0.65;
   enth = 0.95; 
   look_up_tag = "Viscosity";
-  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
+  look_up_table.LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
   CHECK(look_up_dat == Approx(0.0000715714));
-
 
   /* find the table limits */
   
-  auto limitsEnth = look_up_table->GetTableLimitsEnth();
+  auto limitsEnth = look_up_table.GetTableLimitsEnth();
   CHECK(limitsEnth.first == Approx(-1.0));
   CHECK(limitsEnth.second == Approx(1.0));
 
-  auto limitsProgvar = look_up_table->GetTableLimitsProg();
+  auto limitsProgvar = look_up_table.GetTableLimitsProg();
   CHECK(limitsProgvar.first == Approx(0.0));
   CHECK(limitsProgvar.second == Approx(1.0));
-
 
   /* lookup value outside of lookup table */
 
   prog = 1.10;
   enth = 1.1;
   look_up_tag = "Density";
-  look_up_table->LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
+  look_up_table.LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
   CHECK(look_up_dat == Approx(1.2));
  
-  delete look_up_table; 
-
 }
 
