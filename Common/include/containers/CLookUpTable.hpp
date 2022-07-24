@@ -148,11 +148,11 @@ class CLookUpTable {
   unsigned long LookUp_ProgEnth(std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars, su2double val_prog,
                                 su2double val_enth, const std::string& name_prog, const std::string& name_enth);
 
-  inline std::pair<su2double, su2double> GetTableLimitsEnth() {
+  inline std::pair<su2double, su2double> GetTableLimitsEnth() const {
     return std::make_pair(limits_table_enth[0], limits_table_enth[1]);
   }
 
-  inline std::pair<su2double, su2double> GetTableLimitsProg() {
+  inline std::pair<su2double, su2double> GetTableLimitsProg() const {
     return std::make_pair(limits_table_prog[0], limits_table_prog[1]);
   }
 };
