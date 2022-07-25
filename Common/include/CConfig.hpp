@@ -823,21 +823,16 @@ private:
   Density_Critical,      /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
   *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
-  Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
-  *Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
-  Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  *Thermal_Conductivity_Constant,  /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
   *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
-  Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
   *Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
-  Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
-  *Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
-  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  unsigned short nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
-  nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
-  nMu_Temperature_Ref,            /*!< \brief Number of species reference temperature for Sutherland model. */
+  *Mu_S;                  /*!< \brief Reference S for Sutherland model.  */
+  unsigned short nMu_Constant,   /*!< \brief Number of species constant viscosities. */
+  nMu_Ref,                       /*!< \brief Number of species reference constants for Sutherland model. */
+  nMu_Temperature_Ref,           /*!< \brief Number of species reference temperature for Sutherland model. */
   nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
-  nThermal_Conductivity_Constant,  /*!< \brief Number of species constant thermal conductivity. */
-  nPrandtl_Lam,                   /*!< \brief Number of species laminar Prandtl number. */
+  nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
+  nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
   nPrandtl_Turb;                 /*!< \brief Number of species turbulent Prandtl number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
@@ -3845,19 +3840,23 @@ public:
    * \brief Get the value of the non-dimensional constant viscosity.
    * \return Non-dimensional constant viscosity.
    */
-  su2double GetMu_ConstantND(void) const { return Mu_ConstantND; }
+  su2double GetMu_ConstantND(unsigned short val_index = 0) const { return Mu_Constant[val_index] / Viscosity_Ref; }
 
   /*!
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const { return Thermal_Conductivity_Constant[val_index]; }
+  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const {
+    return Thermal_Conductivity_Constant[val_index];
+  }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
+  su2double GetThermal_Conductivity_ConstantND(unsigned short val_index = 0) const {
+    return Thermal_Conductivity_Constant[val_index] / Thermal_Conductivity_Ref;
+  }
 
   /*!
    * \brief Get the value of the constant mass diffusivity for scalar transport.
@@ -3893,7 +3892,7 @@ public:
    * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
    * \return The non-dimensional reference viscosity.
    */
-  su2double GetMu_RefND(void) const { return Mu_RefND; }
+  su2double GetMu_RefND(unsigned short val_index = 0) const { return Mu_Ref[val_index] / Viscosity_Ref; }
 
   /*!
    * \brief Get the value of the reference temperature for Sutherland model.
@@ -3905,7 +3904,9 @@ public:
    * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
    * \return The non-dimensional reference temperature.
    */
-  su2double GetMu_Temperature_RefND(void) const { return Mu_Temperature_RefND; }
+  su2double GetMu_Temperature_RefND(unsigned short val_index = 0) const {
+    return Mu_Temperature_Ref[val_index] / Temperature_Ref;
+  }
 
   /*!
    * \brief Get the value of the reference S for Sutherland model.
@@ -3917,7 +3918,7 @@ public:
    * \brief Get the value of the non-dimensional reference S for Sutherland model.
    * \return The non-dimensional reference S.
    */
-  su2double GetMu_SND(void) const { return Mu_SND; }
+  su2double GetMu_SND(unsigned short val_index = 0) const { return Mu_S[val_index] / Temperature_Ref; }
 
   /*!
    * \brief Get the number of coefficients in the temperature polynomial models.
@@ -3978,31 +3979,6 @@ public:
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
   const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
-
-  /*!
-   * \brief Set the value of the non-dimensional constant viscosity.
-   */
-  void SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional thermal conductivity.
-   */
-  void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
-
-  /*!
-   * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
-   */
-  void SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
-
-  /*!
-   * \brief Set the value of the non-dimensional reference temperature for Sutherland model.
-   */
-  void SetMu_Temperature_RefND(su2double mu_Tref) { Mu_Temperature_RefND = mu_Tref; }
-
-  /*!
-   * \brief Set the value of the non-dimensional S for Sutherland model.
-   */
-  void SetMu_SND(su2double mu_s) { Mu_SND = mu_s; }
 
   /*!
    * \brief Set the temperature polynomial coefficient for specific heat Cp.

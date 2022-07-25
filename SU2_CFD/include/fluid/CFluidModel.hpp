@@ -71,6 +71,16 @@ class CFluidModel {
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
 
+  /*!
+   * \brief Instantiate the right type of viscosity model based on config.
+   */
+  static unique_ptr<CViscosityModel> MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies);
+
+  /*!
+   * \brief Instantiate the right type of conductivity model based on config.
+   */
+  static unique_ptr<CConductivityModel> MakeThermalConductivityModel(const CConfig* config, unsigned short iSpecies);
+
  public:
   virtual ~CFluidModel() {}
 
@@ -150,7 +160,6 @@ class CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-
   inline virtual su2double GetThermalConductivity() {
     ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
     Kt = ThermalConductivity->GetConductivity();
@@ -299,7 +308,6 @@ class CFluidModel {
    * \param[in] InputSpec - Input pair for FLP calls ("Pv").
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (v).
-   *
    */
   virtual void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {}
 
