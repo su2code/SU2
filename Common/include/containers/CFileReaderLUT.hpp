@@ -38,7 +38,6 @@ class CFileReaderLUT {
  protected:
   int rank;
 
-  std::string type_lut;
   std::string version_lut;
   std::string version_reader;
   unsigned long n_points;
@@ -63,9 +62,8 @@ class CFileReaderLUT {
   std::string SkipToFlag(std::ifstream* file_stream, const std::string& flag);
 
  public:
-  CFileReaderLUT();
-
-  inline const std::string& GetTypeLUT() const { return type_lut; }
+  CFileReaderLUT(){};
+  
   inline const std::string& GetVersionLUT() const { return version_lut; }
   inline const std::string& GetVersionReader() const { return version_reader; }
   inline unsigned long GetNPoints() const { return n_points; }

@@ -56,7 +56,7 @@
 
  public:
 
-  CTrapezoidalMap(){};
+  CTrapezoidalMap() = default;
 
   CTrapezoidalMap(const su2double* samples_x,
                   const su2double* samples_y,
@@ -70,7 +70,6 @@
    * \param[in]  val_y  - y-coordinate or second independent variable
    * \param[out] val_index - index to the triangle 
    */
-  //unsigned long GetTriangle(su2double val_x, su2double val_y) const;
   unsigned long GetTriangle(su2double val_x, su2double val_y);
 
 
@@ -81,7 +80,7 @@
    * \param[out] val_band - a pair(i_low,i_up) , the lower index and upper index between which the value val_x 
    * can be found 
    */
-  std::pair<unsigned long, unsigned long> GetBand(su2double val_x) ;
+  std::pair<unsigned long, unsigned long> GetBand(su2double val_x);
 
 
  /*!

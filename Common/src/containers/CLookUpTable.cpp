@@ -84,7 +84,6 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
   n_triangles = file_reader.GetNTriangles();
   n_variables = file_reader.GetNVariables();
   n_hull_points = file_reader.GetNHullPoints();
-  type_lut = file_reader.GetTypeLUT();
   version_lut = file_reader.GetVersionLUT();
   version_reader = file_reader.GetVersionReader();
   names_var = file_reader.GetNamesVar();
@@ -116,7 +115,6 @@ void CLookUpTable::PrintTableInfo() {
     cout << "|                     Look-Up-Table (LUT) info                     |\n";
     cout << "+------------------------------------------------------------------+" << endl;
     cout << "| File name:" << setw(54) << right << file_name_lut << " |" << endl;
-    cout << "| Table type:" << setw(53) << right << type_lut << " |" << endl;
     cout << "| Table version:" << setw(50) << right << version_lut << " |" << endl;
     cout << "| Table reader version:" << setw(43) << right << version_reader << " |" << endl;
     cout << "| Number of variables:" << setw(44) << right << n_variables << " |" << endl;

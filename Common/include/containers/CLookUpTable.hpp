@@ -40,7 +40,6 @@ class CLookUpTable {
   int rank; /*!< \brief MPI Rank. */
 
   std::string file_name_lut;
-  std::string type_lut;
   std::string version_lut;
   std::string version_reader;
   unsigned long n_points;
