@@ -233,7 +233,7 @@ class CLookUpTable {
    * \param[in] name_enth - string name of controlling variable 2 (enthalpy).
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
-  unsigned long LookUp_ProgEnth(std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_prog,
+  unsigned long LookUp_ProgEnth(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars, su2double val_prog,
                                 su2double val_enth, const std::string& name_prog, const std::string& name_enth);
 
   /*!
