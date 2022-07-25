@@ -161,9 +161,8 @@ class CFluidModel {
    * \brief Get fluid thermal conductivity.
    */
   inline virtual su2double GetThermalConductivity() {
-    ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
+    ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp, dmudrho_T, dmudT_rho);
     Kt = ThermalConductivity->GetConductivity();
-    ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
     dktdrho_T = ThermalConductivity->Getdktdrho_T();
     dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return Kt;

@@ -42,21 +42,6 @@ class CSutherland final : public CViscosityModel {
   CSutherland(su2double mu_ref, su2double t_ref, su2double s) : mu_ref_(mu_ref), t_ref_(t_ref), s_(s) {}
 
   /*!
-   * \brief return viscosity value.
-   */
-  su2double GetViscosity() const override { return mu_; }
-
-  /*!
-   * \brief return viscosity partial derivative value.
-   */
-  su2double Getdmudrho_T() const override { return dmudrho_t_; }
-
-  /*!
-   * \brief return viscosity partial derivative value.
-   */
-  su2double GetdmudT_rho() const override { return dmudt_rho_; }
-
-  /*!
    * \brief Set Viscosity.
    */
   void SetViscosity(su2double t, su2double rho) override {
@@ -71,10 +56,7 @@ class CSutherland final : public CViscosityModel {
   }
 
  private:
-  su2double mu_{0.0};        /*!< \brief Dynamic viscosity. */
-  su2double dmudrho_t_{0.0}; /*!< \brief DmuDrho_T. */
-  su2double dmudt_rho_{0.0}; /*!< \brief DmuDT_rho. */
-  su2double mu_ref_{0.0};    /*!< \brief Internal Energy. */
-  su2double t_ref_{0.0};     /*!< \brief DpDd_e. */
-  su2double s_{0.0};         /*!< \brief DpDe_d. */
+  const su2double mu_ref_{0.0};    /*!< \brief Internal Energy. */
+  const su2double t_ref_{0.0};     /*!< \brief DpDd_e. */
+  const su2double s_{0.0};         /*!< \brief DpDe_d. */
 };
