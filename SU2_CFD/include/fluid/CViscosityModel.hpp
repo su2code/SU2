@@ -62,9 +62,4 @@ class CViscosityModel {
    * \brief Set Viscosity.
    */
   virtual void SetViscosity(su2double t, su2double rho) = 0;
-
-  /*!
-   * \brief Set Viscosity Derivatives.
-   */
-  virtual void SetDerViscosity(su2double t, su2double rho) = 0;
 };

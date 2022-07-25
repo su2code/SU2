@@ -46,17 +46,17 @@ class CConductivityModel {
   /*!
    * \brief return conductivity value.
    */
-  virtual su2double GetConductivity(void) const = 0;
+  virtual su2double GetConductivity() const = 0;
 
   /*!
    * \brief return conductivity partial derivative value.
    */
-  virtual su2double Getdktdrho_T(void) const = 0;
+  virtual su2double Getdktdrho_T() const = 0;
 
   /*!
    * \brief return viscosity partial derivative value.
    */
-  virtual su2double GetdktdT_rho(void) const = 0;
+  virtual su2double GetdktdT_rho() const = 0;
 
   /*!
    * \brief Set thermal conductivity.

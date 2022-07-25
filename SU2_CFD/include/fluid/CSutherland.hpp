@@ -60,16 +60,11 @@ class CSutherland final : public CViscosityModel {
    * \brief Set Viscosity.
    */
   void SetViscosity(su2double t, su2double rho) override {
-    const su2double t_nondim = t / t_ref_;
-    mu_ = mu_ref_ * t_nondim * sqrt(t_nondim) * ((t_ref_ + s_) / (t + s_));
-  }
-
-  /*!
-   * \brief Set Viscosity Derivatives.
-   */
-  void SetDerViscosity(su2double t, su2double rho) override {
     const su2double t_ref_inv = 1.0 / t_ref_;
     const su2double t_nondim = t_ref_inv * t;
+    mu_ = mu_ref_ * t_nondim * sqrt(t_nondim) * ((t_ref_ + s_) / (t + s_));
+
+    /*--- Set Viscosity Derivatives. ---*/
     const su2double ts_inv = 1.0 / (t + s_);
     dmudrho_t_ = 0.0;
     dmudt_rho_ = mu_ref_ * (t_ref_ + s_) * ts_inv * sqrt(t_nondim) * (1.5 * t_ref_inv - t_nondim * ts_inv);

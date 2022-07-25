@@ -267,6 +267,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Temperature_FreeStream = config->GetInc_Temperature_Init(); config->SetTemperature_FreeStream(Temperature_FreeStream);
   Pressure_FreeStream    = 0.0; config->SetPressure_FreeStream(Pressure_FreeStream);
 
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+    To accomplish this, simply set the non-dimensional coefficients to the
+    dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
+
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ModVel_FreeStream += config->GetInc_Velocity_Init()[iDim]*config->GetInc_Velocity_Init()[iDim];
@@ -326,13 +333,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   }
 
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-      To accomplish this, simply set the non-dimensional coefficients to the
-      dimensional ones. This will be overruled later.---*/
-
-    config->SetTemperature_Ref(1.0);
-    config->SetViscosity_Ref(1.0);
 
     for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
       config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar), iVar);

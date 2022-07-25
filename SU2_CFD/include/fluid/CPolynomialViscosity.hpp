@@ -76,11 +76,6 @@ class CPolynomialViscosity final : public CViscosityModel {
     }
   }
 
-  /*!
-   * \brief Set Viscosity Derivatives.
-   */
-  void SetDerViscosity(su2double t, su2double rho) override {}
-
  private:
   su2double mu_{0.0};          /*!< \brief Dynamic viscosity. */
   su2double dmudrho_t_{0.0};   /*!< \brief DmuDrho_T. */

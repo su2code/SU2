@@ -804,6 +804,13 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
 
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+        To accomplish this, simply set the non-dimensional coefficients to the
+        dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
+
   switch (config->GetKind_FluidModel()) {
 
     case STANDARD_AIR:
@@ -897,13 +904,6 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   /*--- Viscous initialization ---*/
 
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-          To accomplish this, simply set the non-dimensional coefficients to the
-          dimensional ones. This will be overruled later.---*/
-
-    config->SetTemperature_Ref(1.0);
-    config->SetViscosity_Ref(1.0);
 
     /*--- Reynolds based initialization ---*/
 
