@@ -335,7 +335,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vector<su2double>& val_vars,
+unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var, vector<su2double>& val_vars,
                                             su2double val_prog, su2double val_enth, const string& name_prog,
                                             const string& name_enth) {
   vector<su2double*> look_up_data;
@@ -349,7 +349,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vecto
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>& val_names_var, vector<su2double*>& val_vars,
+unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var, vector<su2double*>& val_vars,
                                             su2double val_prog, su2double val_enth, const string& name_prog,
                                             const string& name_enth) {
   unsigned long exit_code = 0;
