@@ -241,10 +241,7 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
 
-  SU2_OMP_MASTER
-  solver->ResetCFLAdapt();
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(solver->ResetCFLAdapt();)
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {

@@ -35,7 +35,7 @@ jobs:
           key: ${{ matrix.os_bin }}-${{ github.sha }}
           restore-keys: ${{ matrix.os_bin }}
       - name: Build
-        uses: docker://su2code/build-su2-cross:latest
+        uses: docker://ghcr.io/su2code/su2/build-su2-cross:220716-1459
         with:
           args: -b ${{ github.sha }} -f "${{matrix.flags}}"
       - name: Create Archive
