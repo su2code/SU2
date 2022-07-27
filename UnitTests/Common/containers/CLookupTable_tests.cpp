@@ -62,11 +62,11 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 
   /*--- look up a single value for viscosity ---*/
 
-  prog = 0.65;
-  enth = 0.95; 
+  prog = 0.6;
+  enth = 0.9; 
   look_up_tag = "Viscosity";
   look_up_table.LookUp_ProgEnth(look_up_tag, &look_up_dat, prog, enth, name_CV1, name_CV2); 
-  CHECK(look_up_dat == Approx(0.00008));
+  CHECK(look_up_dat == Approx(0.0000715714));
 
   /* find the table limits */
   
