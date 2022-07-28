@@ -127,8 +127,6 @@ protected:
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 
-  su2double *EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of passive scalars. */
-
   /*--- End variables that need to go. ---*/
 
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
@@ -3002,6 +3000,13 @@ public:
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief A virtual member 
+   * \param[in] iEdge - Index of the edge.
+   * \return The mass flux across the edge.
+   */
+  inline virtual su2double GetEdgeMassFlux(const unsigned long iEdge) const {return 0;}
+
+  /*!
    * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
@@ -4316,13 +4321,6 @@ public:
    */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
-  /*!
-   * \brief Get the mass flux across an edge (computed and stored during the discretization of convective fluxes).
-   * \param[in] iEdge - Index of the edge.
-   * \return The mass flux across the edge.
-   */
-  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const {return EdgeMassFluxes[iEdge];}
-
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4376,13 +4374,12 @@ protected:
    * \brief Set the RMS and MAX residual to zero.
    */
   inline void SetResToZero() {
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       for (auto& r : Residual_RMS) r = 0;
       for (auto& r : Residual_Max) r = 0;
       for (auto& p : Point_Max) p = 0;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!

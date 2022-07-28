@@ -149,6 +149,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Allocate(*config);
 
+  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -471,7 +473,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-        fluidModel->SetTDState_T(Temperature_FreeStreamND);        
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
       case FLUID_MIXTURE:
@@ -490,7 +492,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
- 
+
     }
 
     if (viscous) {
@@ -907,15 +909,13 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Artificial dissipation ---*/
@@ -935,10 +935,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   /*--- Compute properties needed for mass flow BCs. ---*/
 
   if (outlet) {
-    SU2_OMP_MASTER
-    GetOutlet_Properties(geometry, config, iMesh, Output);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(GetOutlet_Properties(geometry, config, iMesh, Output);)
   }
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
@@ -1259,26 +1256,27 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
       if (config->GetEnergy_Equation()) {
-        bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
-        bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
+        const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
+        const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
-        bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
-        bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
+        const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
+        const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
-        nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
-        nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
-
-        /* Lastly, check for existing first-order points still active from previous iterations. */
-
-        if (nodes->GetNon_Physical(iPoint)) {
-          counter_local++;
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Primitive_i[iVar] = V_i[iVar];
+        bool bad_recon = neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+        if (bad_recon) {
+          /*--- Force 1st order for this edge for at least 20 iterations. ---*/
+          NonPhysicalEdgeCounter[iEdge] = 20;
+        } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
+          --NonPhysicalEdgeCounter[iEdge];
+          bad_recon = true;
         }
-        if (nodes->GetNon_Physical(jPoint)) {
-          counter_local++;
-          for (iVar = 0; iVar < nPrimVar; iVar++)
+        counter_local += bad_recon;
+
+        if (bad_recon) {
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            Primitive_i[iVar] = V_i[iVar];
             Primitive_j[iVar] = V_j[iVar];
+          }
         }
       }
 
@@ -1343,16 +1341,15 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Add counter results for all threads. ---*/
     SU2_OMP_ATOMIC
     ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }
@@ -1919,7 +1916,9 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
 
   if (iMesh == MESH_0) {
+    SU2_OMP_MASTER
     MaxVel2 = 0.0;
+    END_SU2_OMP_MASTER
     su2double maxVel2 = 0.0;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1931,16 +1930,14 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
     MaxVel2 = max(MaxVel2, maxVel2);
     END_SU2_OMP_CRITICAL
 
-    SU2_OMP_BARRIER
-
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       maxVel2 = MaxVel2;
       SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
       config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Allow an override if user supplies a large epsilon^2. ---*/
@@ -2238,7 +2235,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
     Flow_Dir_Mag = GeometryToolbox::Norm(nDim, Flow_Dir);
 
-    /*--- Store the unit flow direction vector. 
+    /*--- Store the unit flow direction vector.
      If requested, use the local boundary normal (negative),
      instead of the prescribed flow direction in the config. ---*/
 
@@ -2355,7 +2352,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
       /* pressure obtained from interior */
       V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
-    } 
+    }
 
     /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature

@@ -125,7 +125,7 @@ class CScalarSolver : public CSolver {
     SolverSpecificNumerics(iPoint, jPoint);
 
     /*--- Compute residual, and Jacobians ---*/
-    
+
     auto residual = numerics->ComputeResidual(config);
 
     if (ReducerStrategy) {

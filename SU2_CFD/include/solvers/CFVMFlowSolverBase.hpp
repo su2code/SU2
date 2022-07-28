@@ -55,16 +55,16 @@ class CFVMFlowSolverBase : public CSolver {
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
+  su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
+
+
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
    * \param[in] lhsRhsPairs - Pairs of destination and source e.g. a,0,b,-1.
    */
   template<class... Ts>
   static void ompMasterAssignBarrier(Ts&&... lhsRhsPairs) {
-    SU2_OMP_MASTER
-    recursiveAssign(lhsRhsPairs...);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(recursiveAssign(lhsRhsPairs...);)
   }
 
   su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
@@ -493,22 +493,20 @@ class CFVMFlowSolverBase : public CSolver {
         Global_Delta_Time = Min_Delta_Time;
       }
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
     }
 
     /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
 
-    SU2_OMP_MASTER
-    if (config->GetComm_Level() == COMM_FULL) {
-      su2double rbuf_time;
-      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-      Min_Delta_Time = rbuf_time;
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      if (config->GetComm_Level() == COMM_FULL) {
+        su2double rbuf_time;
+        SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        Min_Delta_Time = rbuf_time;
 
-      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-      Max_Delta_Time = rbuf_time;
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+        SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        Max_Delta_Time = rbuf_time;
+      }
+    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
     if (time_stepping) {
@@ -516,7 +514,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
        *    otherwise it computes the time step based on the unsteady CFL. ---*/
 
-      SU2_OMP_MASTER
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
         if (config->GetUnst_CFL() == 0.0) {
           Global_Delta_Time = config->GetDelta_UnstTime();
@@ -528,8 +526,7 @@ class CFVMFlowSolverBase : public CSolver {
 
         config->SetDelta_UnstTimeND(Global_Delta_Time);
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
 
@@ -558,16 +555,15 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_OMP_CRITICAL
       Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
         SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
         Global_Delta_UnstTimeND = glbDtND;
 
         config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
 
     /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
@@ -2371,4 +2367,12 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
     return EddyViscWall[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Get the mass flux across an edge (computed and stored during the discretization of convective fluxes).
+   * \param[in] iEdge - Index of the edge.
+   * \return The mass flux across the edge.
+   */
+  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const {return EdgeMassFluxes[iEdge];}
+
 };

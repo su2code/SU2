@@ -178,13 +178,12 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
     /*--- Allocate the static members (shared between threads) to
      * perform the reduction across all threads in the rank. ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       sharedMin.resize(varEnd) = largeNum;
       sharedMax.resize(varEnd) =-largeNum;
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Per thread reduction. ---*/
 
@@ -212,11 +211,10 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
       sharedMax(iVar) = max(sharedMax(iVar), localMax(iVar));
     }
     END_SU2_OMP_CRITICAL
-    SU2_OMP_BARRIER
 
     /*--- Global reduction. ---*/
 
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       localMin = sharedMin;
       SU2_MPI::Allreduce(localMin.data(), sharedMin.data(), varEnd, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
@@ -224,8 +222,7 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
       localMax = sharedMax;
       SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- Compute eps^2 (each thread has its own copy of it). ---*/
 
