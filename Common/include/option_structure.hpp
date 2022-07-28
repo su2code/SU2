@@ -826,7 +826,8 @@ enum ENUM_UPWIND {
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2 = 17,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS = 18            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPWPLUS = 18,            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  SCALAR_ADVECTION = 19
 };
 static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
   MakePair("NONE", NO_UPWIND)
@@ -842,6 +843,7 @@ static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
   MakePair("MSW", MSW)
   MakePair("CUSP", CUSP)
   MakePair("SCALAR_UPWIND", SCALAR_UPWIND)
+  MakePair("SCALAR_ADVECTION", SCALAR_ADVECTION)
   MakePair("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
   MakePair("L2ROE", L2ROE)
   MakePair("LMROE", LMROE)

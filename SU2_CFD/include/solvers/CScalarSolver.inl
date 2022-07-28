@@ -122,6 +122,17 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
   su2double EdgeMassFlux, Project_Grad_i, Project_Grad_j, FluxCorrection_i, FluxCorrection_j;
 
+  su2double **Jacobian_i_correction, **Jacobian_j_correction;
+  Jacobian_i_correction = new su2double*[nVar];
+  Jacobian_j_correction = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; iVar++){
+    Jacobian_i_correction[iVar] = new su2double[nVar];
+    Jacobian_j_correction[iVar] = new su2double[nVar];
+    for(unsigned short jVar=0; jVar<nVar; jVar++){
+      Jacobian_i_correction[iVar][jVar] = 0.0;
+      Jacobian_j_correction[iVar][jVar] = 0.0;
+    }
+  }
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -151,6 +162,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     pausePreacc = AD::PausePreaccumulation();
   else
     AD::StartNoSharedReading();
+
+  bool advection{false};
+  
+  if(config->GetKind_Upwind_Species() == SCALAR_ADVECTION) advection = true;
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
@@ -270,13 +285,17 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       }
 
       /*--- Applying convective flux correction to negate the effects of flow divergence ---*/
-      for(iVar=0; iVar<nVar; iVar++){
-        FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
-        FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
+      if(advection){
+        for(iVar=0; iVar<nVar; iVar++){
+          FluxCorrection_i = GetNodes()->GetSolution(iPoint, iVar) * EdgeMassFlux;
+          FluxCorrection_j = GetNodes()->GetSolution(jPoint, iVar) * EdgeMassFlux;
 
-        LinSysRes(iPoint, iVar) -= FluxCorrection_i;
-        LinSysRes(jPoint, iVar) += FluxCorrection_j;
-      }
+          LinSysRes(iPoint, iVar) -= FluxCorrection_i;
+          LinSysRes(jPoint, iVar) += FluxCorrection_j;
+          Jacobian_i_correction[iVar][iVar] = max(0.0, EdgeMassFlux);;
+          Jacobian_j_correction[iVar][iVar] = min(0.0, EdgeMassFlux);
+        }
+      }if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, Jacobian_i_correction, Jacobian_j_correction);
       /*--- Viscous contribution. ---*/
 
       Viscous_Residual(iEdge, geometry, solver_container,
@@ -293,6 +312,13 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     SumEdgeFluxes(geometry);
     if (implicit) Jacobian.SetDiagonalAsColumnSum();
   }
+
+  for(unsigned short iVar=0; iVar<nVar; iVar++){
+    delete [] Jacobian_i_correction[iVar];
+    delete [] Jacobian_j_correction[iVar];
+  }
+  delete [] Jacobian_i_correction;
+  delete [] Jacobian_j_correction;
 }
 
 template <class VariableType>

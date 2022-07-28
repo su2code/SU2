@@ -66,7 +66,7 @@ class CUpwSca_Species final : public CUpwScalar<FlowIndices> {
    */
   void FinishResidualCalc(const CConfig* config) override {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      Flux[iVar] = a0 * V_i[idx.Density()] * ScalarVar_i[iVar] + a1 * V_j[idx.Density()] * ScalarVar_j[iVar];
+      Flux[iVar] = a0 * ScalarVar_i[iVar] + a1 * ScalarVar_j[iVar];
 
       /*--- Jacobians are taken wrt rho*Y not Y alone in the species solver. ---*/
       /*--- Off-diagonal entries are zero. ---*/
