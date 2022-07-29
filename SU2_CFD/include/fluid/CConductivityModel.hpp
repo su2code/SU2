@@ -46,26 +46,26 @@ class CConductivityModel {
   /*!
    * \brief return conductivity value.
    */
-  virtual su2double GetConductivity(void) const = 0;
+  inline su2double GetConductivity() const { return kt_; }
 
   /*!
    * \brief return conductivity partial derivative value.
    */
-  virtual su2double Getdktdrho_T(void) const = 0;
+  inline su2double Getdktdrho_T() const { return dktdrho_t_; }
 
   /*!
-   * \brief return viscosity partial derivative value.
+   * \brief return conductivity partial derivative value.
    */
-  virtual su2double GetdktdT_rho(void) const = 0;
+  inline su2double GetdktdT_rho() const { return dktdt_rho_; }
 
   /*!
    * \brief Set thermal conductivity.
    */
-  virtual void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) = 0;
+  virtual void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                               su2double dmudrho_t, su2double dmudt_rho) = 0;
 
-  /*!
-   * \brief Set thermal conductivity derivatives.
-   */
-  virtual void SetDerConductivity(su2double t, su2double rho, su2double dmudrho_t, su2double dmudt_rho,
-                                  su2double cp) = 0;
+ protected:
+  su2double kt_{0.0};        /*!< \brief Thermal conductivity. */
+  su2double dktdrho_t_{0.0}; /*!< \brief DktDrho_T. */
+  su2double dktdt_rho_{0.0}; /*!< \brief DktDT_rho. */
 };

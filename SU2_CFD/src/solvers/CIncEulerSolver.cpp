@@ -267,6 +267,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Temperature_FreeStream = config->GetInc_Temperature_Init(); config->SetTemperature_FreeStream(Temperature_FreeStream);
   Pressure_FreeStream    = 0.0; config->SetPressure_FreeStream(Pressure_FreeStream);
 
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+    To accomplish this, simply set the non-dimensional coefficients to the
+    dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
+
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ModVel_FreeStream += config->GetInc_Velocity_Init()[iDim]*config->GetInc_Velocity_Init()[iDim];
@@ -326,15 +333,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   }
 
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-      To accomplish this, simply set the non-dimensional coefficients to the
-      dimensional ones. This will be overruled later.---*/
-
-    config->SetMu_RefND(config->GetMu_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
-    config->SetMu_SND(config->GetMu_S());
-    config->SetMu_ConstantND(config->GetMu_Constant());
 
     for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
       config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar), iVar);
@@ -497,25 +495,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     if (viscous) {
 
-      /*--- Constant viscosity model ---*/
-
-      config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-
-      /*--- Sutherland's model ---*/
-
-      config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
-      config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
-      config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
-
       /*--- Viscosity model via polynomial. ---*/
 
       config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(0)/Viscosity_Ref, 0);
       for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
         config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Viscosity_Ref, iVar);
-
-      /*--- Constant thermal conductivity model ---*/
-
-      config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
 
       /*--- Conductivity model via polynomial. ---*/
 

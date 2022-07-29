@@ -714,8 +714,8 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals         = [-1.355605, 1.464131, 1.314243, -1.997959, 1.135210, 0.398906, -87762.000000]
-    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572, -87762.000000]
+    turbmod_sa_neg_rae2822.test_vals         = [-1.374695, 1.976506, 1.898195, 4.831133, 1.187310, 0.426019, -86764]
+    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572, -87762]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -1652,7 +1652,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [-5.484300, -4.583931, -4.581775, -5.695135, -0.089602, -5.629851, 5.000000, -1.654640, 5.000000, -4.842236, 5.000000, -1.175120, 0.000429, 0.000409, 0.000020, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [-5.484286, -4.583959, -4.581872, -5.696027, -0.069058, -5.629894, 5.000000, -1.654603, 5.000000, -4.863218, 5.000000, -1.175041, 0.000429, 0.000409, 0.000020, 0.000000]
     species2_primitiveVenturi_mixingmodel.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel.timeout   = 1600
     species2_primitiveVenturi_mixingmodel.new_output = True

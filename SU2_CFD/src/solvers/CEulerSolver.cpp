@@ -812,6 +812,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream = config->GetTemperature_FreeStream();
 
+  /*--- The dimensional viscosity is needed to determine the free-stream conditions.
+        To accomplish this, simply set the non-dimensional coefficients to the
+        dimensional ones. This will be overruled later.---*/
+
+  config->SetTemperature_Ref(1.0);
+  config->SetViscosity_Ref(1.0);
+
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -888,15 +895,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   /*--- Viscous initialization ---*/
 
   if (viscous) {
-
-    /*--- The dimensional viscosity is needed to determine the free-stream conditions.
-          To accomplish this, simply set the non-dimensional coefficients to the
-          dimensional ones. This will be overruled later.---*/
-    config->SetMu_RefND(config->GetMu_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
-    config->SetMu_SND(config->GetMu_S());
-
-    config->SetMu_ConstantND(config->GetMu_Constant());
 
     /*--- Check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
@@ -1036,21 +1034,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
   delete auxFluidModel;
-
-  /*--- Set viscosity ND constants before defining the visc. model of the fluid models. ---*/
-
-  if (viscous) {
-    /*--- Constant viscosity model. ---*/
-    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-
-    /*--- Sutherland's model. ---*/
-    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
-
-    /*--- Constant thermal conductivity model. ---*/
-    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
-  }
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/

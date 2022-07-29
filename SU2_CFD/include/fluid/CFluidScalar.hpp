@@ -26,8 +26,9 @@
  */
 
 #pragma once
+
 #include <memory>
-#include <vector>
+#include <array>
 
 #include "CFluidModel.hpp"
 
@@ -38,30 +39,32 @@
  */
 class CFluidScalar final : public CFluidModel {
  private:
-  unsigned short n_species_mixture; /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
-  su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
-  su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
+  const int n_species_mixture; /*!< \brief Number of species in mixture. */
+  const su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  const su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
+  const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
 
-  bool wilke;
-  bool davidson;
-
-  std::vector<su2double> massFractions;              /*!< \brief Mass fractions of all species. */
-  std::vector<su2double> moleFractions;              /*!< \brief Mole fractions of all species. */
-  std::vector<su2double> molarMasses;                /*!< \brief Molar masses of all species. */
-  std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
-  std::vector<su2double> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
-  std::vector<su2double> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
+  const bool wilke;
+  const bool davidson;
 
   static constexpr int ARRAYSIZE = 16;
+
+  std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
+  std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
+  std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
+  std::array<su2double, ARRAYSIZE> specificHeat;               /*!< \brief Specific Heat capacities of all species. */
+  std::array<su2double, ARRAYSIZE> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
+  std::array<su2double, ARRAYSIZE> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
+
   std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
   std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
+  std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
   /*!
    * \brief Convert mass fractions to mole fractions.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  std::vector<su2double>& MassToMoleFractions(const su2double* val_scalars);
+  void MassToMoleFractions(const su2double* val_scalars);
 
   /*!
    * \brief Wilke mixing law for mixture viscosity.
@@ -79,14 +82,14 @@ class CFluidScalar final : public CFluidModel {
    * \brief Wilke mixing law for mixture thermal conductivity.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  su2double WilkeConductivity(const su2double* val_scalars); 
+  su2double WilkeConductivity(const su2double* val_scalars);
 
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, CConfig* config);
-  
+  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, const CConfig* config);
+
   /*!
    * \brief Set viscosity model.
    */
@@ -100,7 +103,6 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid laminar viscosity.
    */
-
   inline su2double GetLaminarViscosity() override { return Mu; }
 
   /*!
@@ -118,9 +120,8 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-
   inline su2double GetThermalConductivity() override { return Kt; }
-  
+
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
