@@ -1932,6 +1932,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
   addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
+  /*!\brief CUSTOM_OUTPUTS \n DESCRIPTION: User-provided definitions for custom output. \ingroup Config*/
   addStringOption("CUSTOM_OUTPUTS", CustomOutputs, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */

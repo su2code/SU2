@@ -267,7 +267,7 @@ protected:
                        "E.g. this may only be a variable of the compressible solver.", CURRENT_FUNCTION);
       }
 
-      /*--- An index equal to NOT_A_VARIABLE may refer to an history output. ---*/
+      /*--- An index equal to NOT_A_VARIABLE may refer to a history output. ---*/
       output.varIndices.back() += output.otherOutputs.size();
       output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
       if (output.otherOutputs.back() == nullptr) {

@@ -758,8 +758,10 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
             CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
       } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
         ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
-      } else {
+      } else if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
         ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
+      } else {
+        SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
       }
       /*--- Convert marker names to their index (if any) in this rank. ---*/
 
