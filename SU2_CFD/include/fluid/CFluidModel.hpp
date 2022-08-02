@@ -68,7 +68,7 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity Model */
+  su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
@@ -209,7 +209,7 @@ class CFluidModel {
 /*!
    * \brief Get fluid mass diffusivity.
    */
-  inline virtual su2double GetMassDiffusivity() {
+  inline virtual su2double GetMassDiffusivity(int iVar) {
     MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;

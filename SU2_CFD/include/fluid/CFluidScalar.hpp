@@ -55,6 +55,7 @@ class CFluidScalar final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> specificHeat;               /*!< \brief Specific Heat capacities of all species. */
   std::array<su2double, ARRAYSIZE> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
   std::array<su2double, ARRAYSIZE> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
+  std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
 
   std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
   std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
@@ -99,6 +100,11 @@ class CFluidScalar final : public CFluidModel {
    * \brief Set thermal conductivity model.
    */
   void SetThermalConductivityModel(const CConfig* config) override;
+  
+  /*!
+   * \brief Set mass diffusivity model.
+   */
+  void SetMassDiffusivityModel(const CConfig* config) override;
 
   /*!
    * \brief Get fluid laminar viscosity.
@@ -121,6 +127,16 @@ class CFluidScalar final : public CFluidModel {
    * \brief Get fluid thermal conductivity.
    */
   inline su2double GetThermalConductivity() override { return Kt; }
+  
+  /*!
+   * \brief Get fluid mass diffusivity.
+   */
+  inline su2double GetMassDiffusivity(int ivar) override;
+
+  /*!
+   * \brief Set fluid mass diffusivity.
+   */
+  //void SetMassDiffusivity(const int n_species_mixture);
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

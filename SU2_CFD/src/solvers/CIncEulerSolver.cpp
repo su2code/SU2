@@ -273,7 +273,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
-  config->SetConductivity_Ref(1.0);
+  //config->SetConductivity_Ref(1.0);
 
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {

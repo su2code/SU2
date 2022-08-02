@@ -76,6 +76,17 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
   }
 }
 
+void CFluidScalar::SetMassDiffusivityModel(const CConfig* config) {
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    MassDiffusivityPointers[iVar] = MakeMassDiffusivityModel(config, iVar);
+  }
+}
+
+su2double CFluidScalar::GetMassDiffusivity(int iVar) {
+  MassDiffusivityPointers[iVar]->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+  return MassDiffusivityPointers[iVar]->GetDiffusivity();
+}
+
 void CFluidScalar::MassToMoleFractions(const su2double* val_scalars) {
 
   su2double val_scalars_sum{0.0};

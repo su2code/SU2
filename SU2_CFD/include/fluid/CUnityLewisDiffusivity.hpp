@@ -53,5 +53,5 @@ public:
   private:
     su2double diff_{0.0}; 
     su2double kt_{0.0}; 
-    su2double Lewis{1};  
+    su2double Lewis{1.0};  
 };
