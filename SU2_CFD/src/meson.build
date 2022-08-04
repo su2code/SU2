@@ -8,6 +8,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CFluidScalar.cpp',
                       'fluid/CPengRobinson.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
+                      'fluid/CCoolProp.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
                       'fluid/CSU2TCLib.cpp'])

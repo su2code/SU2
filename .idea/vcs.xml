@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/Catch2" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/Eigen" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/ExcelAddinInstaller" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/FindMathematica" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/IF97" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/REFPROP-headers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/fmtlib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/msgpack-c" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/msgpack-c/external/boost/predef" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/msgpack-c/external/boost/preprocessor" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/pybind11" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/pybind11/tools/clang" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/rapidjson" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/CoolProp/externals/rapidjson/thirdparty/gtest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/codi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/medi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/mel" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/meson" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/ninja" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/externals/opdi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/subprojects/Mutationpp" vcs="Git" />
+  </component>
+</project>

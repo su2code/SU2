@@ -29,6 +29,7 @@
 
 #include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
+#include "../fluid/CCoolProp.hpp"
 
 class CFlowOutput : public CFVMOutput{
 protected:

@@ -31,6 +31,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/fluid/CCoolProp.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -871,6 +872,21 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
+    case COOLPROP:
+
+      FluidModel = new CCoolProp(config->GetFluid_Name());
+      if (free_stream_temp) {
+              FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+              Density_FreeStream = FluidModel->GetDensity();
+              config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+              FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+              Temperature_FreeStream = FluidModel->GetTemperature();
+              config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+      break;
+
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -1064,6 +1080,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
 
+    case COOLPROP:
+      FluidModel = new CCoolProp(config->GetFluid_Name());
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1218,6 +1238,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     case PR_GAS:
       ModelTable << "PR_GAS";
       break;
+    case COOLPROP:
+      ModelTable << "CoolProp library";
+      break;
     }
 
     if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
@@ -1226,6 +1249,16 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         Unit << "K";
         NonDimTable << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
         Unit.str("");
+    }
+    if(config->GetKind_FluidModel() == COOLPROP){
+          CCoolProp* auxFluidModel = nullptr;
+          auxFluidModel = new CCoolProp(config->GetFluid_Name());
+          NonDimTable << "Critical Pressure" << auxFluidModel->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << auxFluidModel->GetPressure_Critical() /config->GetPressure_Ref();
+          Unit.str("");
+          Unit << "K";
+          NonDimTable << "Critical Temperature" << auxFluidModel->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << auxFluidModel->GetTemperature_Critical() /config->GetTemperature_Ref();
+          Unit.str("");
+          delete auxFluidModel;
     }
     NonDimTable.PrintFooter();
 

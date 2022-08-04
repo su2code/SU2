@@ -16,6 +16,9 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
+coolprop_dep = declare_dependency(include_directories: 'externals/CoolProp/include')
+su2_deps += coolprop_dep
+
 default_warning_flags = []
 if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'

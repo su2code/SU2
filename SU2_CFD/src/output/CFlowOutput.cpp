@@ -2197,6 +2197,22 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         file << "Critical Temperature (non-dim) :  "
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
         break;
+
+      case COOLPROP:
+         CCoolProp* auxFluidModel = nullptr;
+         auxFluidModel = new CCoolProp(config->GetFluid_Name());
+         file << "Fluid Model: CoolProp library \n";
+         file << "Specific gas constant: " << auxFluidModel->GetGas_Constant()<< " N.m/kg.K.\n";
+         file << "Specific gas constant(non-dim): " << config->GetGas_ConstantND() << "\n";
+         file << "Specific Heat Ratio: "<< auxFluidModel->GetGamma() << "\n";
+         file << "Critical Pressure:   " << auxFluidModel->GetPressure_Critical() << " Pa.\n";
+         file << "Critical Temperature:  " << auxFluidModel->GetTemperature_Critical()<< " K.\n";
+         file << "Critical Pressure (non-dim):   " << auxFluidModel->GetPressure_Critical()/ config->GetPressure_Ref()
+              << "\n";
+         file << "Critical Temperature (non-dim) :  "
+              << auxFluidModel->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
+         delete auxFluidModel;
+         break;
     }
 
     if (viscous) {
