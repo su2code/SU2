@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*--- This marco tells Catch2 that we are defining a custom main (see
+/*--- This macro tells Catch2 that we are defining a custom main (see
  * below) This should only be done in one file.  It should not be done
  * in any unit test files. ---*/
 #define CATCH_CONFIG_RUNNER

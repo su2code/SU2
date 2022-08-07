@@ -25,11 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/output/CFlowOutput.hpp"
 #include <string>
+
+#include "../../include/output/CFlowOutput.hpp"
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../include/variables/CEulerVariable.hpp"
+#include "../../include/variables/CIncEulerVariable.hpp"
+#include "../../include/variables/CNEMOEulerVariable.hpp"
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
   CFVMOutput(config, nDim, fem_output),
@@ -132,7 +137,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
   Enthalpy, Velocity[3] = {0.0}, TangVel[3], Vector[3], Velocity2, MassFlow, Density, Area,
-  AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
+  SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
   const su2double Gas_Constant      = config->GetGas_ConstantND();
   const su2double Gamma             = config->GetGamma();
@@ -198,24 +203,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-          if (axisymmetric) {
-            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-            else {
-              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
-              AxiFactor = 0.0;
-              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
-                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
-                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
-                  break;
-                }
-              }
-            }
-          } else {
-            AxiFactor = 1.0;
-          }
+          const su2double AxiFactor = GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
 
           Density = flow_nodes->GetDensity(iPoint);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
@@ -680,25 +668,7 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
 
         if (geometry->nodes->GetDomain(iPoint)) {
 
-          su2double AxiFactor = 0.0;
-          if (axisymmetric) {
-            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-            else {
-              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
-              AxiFactor = 0.0;
-              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
-                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
-                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
-                  break;
-                }
-              }
-            }
-          } else {
-            AxiFactor = 1.0;
-          }
+          const su2double AxiFactor = GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
 
           su2double Vector[3];
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
@@ -772,6 +742,110 @@ void CFlowOutput::SetAnalyzeSurface_SpeciesVariance(const CSolver* const*solver,
     config->SetSurface_Species_Variance(iMarker_Analyze, Tot_Surface_SpeciesVariance);
   }
   SetHistoryOutputValue("SURFACE_SPECIES_VARIANCE", Tot_Surface_SpeciesVariance);
+}
+
+void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry *geometry, const CConfig *config) {
+
+  const bool axisymmetric = config->GetAxisymmetric();
+  const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+
+  for (auto& output : customOutputs) {
+    if (output.varIndices.empty()) {
+      /*--- Setup indices for the symbols in the expression. ---*/
+
+      if (config->GetNEMOProblem()) {
+        ConvertVariableSymbolsToIndices(
+            CNEMOEulerVariable::template CIndices<unsigned long>(nDim, config->GetnSpecies()), output);
+      } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+        ConvertVariableSymbolsToIndices(CEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
+      } else if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+        ConvertVariableSymbolsToIndices(CIncEulerVariable::template CIndices<unsigned long>(nDim, 0), output);
+      } else {
+        SU2_MPI::Error("Unknown flow solver type.", CURRENT_FUNCTION);
+      }
+      /*--- Convert marker names to their index (if any) in this rank. ---*/
+
+      output.markerIndices.clear();
+      for (const auto& marker : output.markers) {
+        for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); ++iMarker) {
+          if (config->GetMarker_All_TagBound(iMarker) == marker) {
+            output.markerIndices.push_back(iMarker);
+            continue;
+          }
+        }
+      }
+    }
+
+    if (output.type == OperationType::FUNCTION) {
+      auto Functor = [&](unsigned long i) {
+        /*--- Functions only reference other history outputs. ---*/
+        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+      };
+      SetHistoryOutputValue(output.name, output.eval(Functor));
+      continue;
+    }
+
+    /*--- Surface integral of the expression. ---*/
+
+    std::array<su2double, 2> integral = {0.0, 0.0};
+
+    SU2_OMP_PARALLEL {
+      std::array<su2double, 2> local_integral = {0.0, 0.0};
+
+      for (const auto iMarker : output.markerIndices) {
+
+        SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
+        for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          const auto* normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          su2double weight = 1.0;
+          if (output.type == OperationType::MASSFLOW_AVG || output.type == OperationType::MASSFLOW_INT) {
+            weight = flowNodes->GetDensity(iPoint) * flowNodes->GetProjVel(iPoint, normal);
+          } else {
+            weight = GeometryToolbox::Norm(nDim, normal);
+          }
+          weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
+          local_integral[1] += weight;
+
+          /*--- Prepare the functor that maps symbol indices to values (see ConvertVariableSymbolsToIndices). ---*/
+
+          auto Functor = [&](unsigned long i) {
+            if (i < CustomOutput::NOT_A_VARIABLE) {
+              const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+              const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+              if (solIdx == FLOW_SOL) {
+                return flowNodes->GetPrimitive(iPoint, varIdx);
+              } else {
+                return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+              }
+            } else {
+              return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+            }
+          };
+          local_integral[0] += weight * output.eval(Functor);
+        }
+        END_SU2_OMP_FOR
+      }
+
+      SU2_OMP_CRITICAL {
+        integral[0] += local_integral[0];
+        integral[1] += local_integral[1];
+      }
+      END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
+
+    const auto local = integral;
+    SU2_MPI::Allreduce(local.data(), integral.data(), 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    if (output.type == OperationType::AREA_AVG || output.type == OperationType::MASSFLOW_AVG) {
+      integral[0] /= integral[1];
+    }
+    SetHistoryOutputValue(output.name, integral[0]);
+  }
 }
 
 // The "AddHistoryOutput(" must not be split over multiple lines to ensure proper python parsing
