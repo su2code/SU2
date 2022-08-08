@@ -51,6 +51,7 @@ public:
     inline IndexType Temperature() const { return nDim+1; }
     inline IndexType Density() const { return nDim+2; }
     inline IndexType Beta() const { return nDim+3; }
+    inline IndexType SoundSpeed() const { return Beta(); }
     inline IndexType LaminarViscosity() const { return nDim+4; }
     inline IndexType EddyViscosity() const { return nDim+5; }
     inline IndexType ThermalConductivity() const { return nDim+6; }
@@ -59,6 +60,7 @@ public:
 
     /*--- For compatible interface with NEMO. ---*/
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
+    inline IndexType Enthalpy() const { return std::numeric_limits<IndexType>::max(); }
   };
 
  protected:
