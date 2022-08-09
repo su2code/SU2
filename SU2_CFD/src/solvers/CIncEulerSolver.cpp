@@ -273,7 +273,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
-  //config->SetConductivity_Ref(1.0);
 
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -2324,11 +2323,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     }
 
     /*--- check if the inlet node is shared with a viscous wall ---*/
+
     if (geometry->nodes->GetViscousBoundary(iPoint)) {
+
       /*--- match the velocity and pressure for the viscous wall---*/
+
       for (iDim = 0; iDim < nDim; iDim++)
         V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
-      /* pressure obtained from interior */
+
+      /*--- pressure obtained from interior ---*/
+
       V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
     }
 

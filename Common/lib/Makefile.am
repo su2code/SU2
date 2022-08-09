@@ -132,7 +132,10 @@ lib_sources = \
   ../src/linear_algebra/CSysMatrix.cpp \
   ../src/linear_algebra/CSysSolve.cpp \
   ../src/linear_algebra/CSysSolve_b.cpp \
-  ../src/linear_algebra/CPastixWrapper.cpp
+  ../src/linear_algebra/CPastixWrapper.cpp \
+  ../src/containers/CLookUpTable.cpp \
+  ../src/containers/CTrapezoidalMap.cpp \
+  ../src/containers/CFileReaderLUT.cpp
 
 lib_cxxflags = -fPIC -std=c++11
 lib_ldadd =

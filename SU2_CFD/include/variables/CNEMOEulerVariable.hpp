@@ -58,6 +58,8 @@ class CNEMOEulerVariable : public CFlowVariable {
     inline IndexType RhoCvve() const {return nSpecies+nDim+7;}
     inline IndexType LaminarViscosity() const {return nSpecies+nDim+8;}
     inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
+
+    inline IndexType ThermalConductivity() const {return std::numeric_limits<IndexType>::max();}
   };
 
  protected:
