@@ -30,6 +30,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <array>
 
 #include "../../Common/include/option_structure.hpp"
 #include "CFileReaderLUT.hpp"
