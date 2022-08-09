@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <array>
+
 #include "../../Common/include/option_structure.hpp"
 #include "../../Common/include/containers/CTrapezoidalMap.hpp"
 
