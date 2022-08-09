@@ -50,17 +50,28 @@ class CDataDrivenFluid : public CFluidModel {
   vector<string> output_names_lower;
   
   vector<su2double*> outputs;
-  su2double S, ds_de, ds_drho, d2s_dedrho, d2s_de2, d2s_drho2;
+  su2double rho_start, e_start, S, ds_de, ds_drho, d2s_dedrho, d2s_de2, d2s_drho2;
   su2double **dOutputs_dInputs;
+  
+  pair<su2double, su2double> rho_maxmin, e_maxmin;
 
   unsigned short boundsviolation;
   unsigned long nIter_NewtonSolver{0};
+  bool Reevaluate_MLP{true};
 
  public:
   /*!
    * \brief Constructor of the class.
    */
   CDataDrivenFluid(su2double gamma, su2double R, bool CompEntropy = true);
+
+  ~CDataDrivenFluid(){
+      delete ANN;
+      for(size_t i=0; i<6; i++){
+            delete [] dOutputs_dInputs[i];
+      }
+      delete [] dOutputs_dInputs;
+  };
 
   /*!
    * \brief Set the Dimensionless State using Density and Internal Energy
@@ -125,5 +136,5 @@ class CDataDrivenFluid : public CFluidModel {
   unsigned short GetClipping() {return boundsviolation;}
   unsigned long GetnIter_NewtonSolver() {return nIter_NewtonSolver;}
 
-  void Predict_MLP(vector<su2double> inputs);
+  void Predict_MLP(su2double rho, su2double e);
 };

@@ -68,6 +68,13 @@ CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntrop
   output_names_lower.push_back("d2s_de2_l");
   output_names_lower.push_back("d2s_drho2_l");
 
+  // rho_maxmin = ANN->GetInputNorm(input_names.at(idx_rho));
+  // e_maxmin = ANN->GetInputNorm(input_names.at(idx_e));
+  rho_maxmin = make_pair(0.80523, 295.251);
+  e_maxmin = make_pair(350604.24, 479774.22);
+  rho_start = 0.5*(rho_maxmin.first + rho_maxmin.second);
+  e_start = 0.5*(e_maxmin.first + e_maxmin.second);
+
   // ifstream infile("/home/evert/NICFD/testcase/roedata_ws.csv");
   // ofstream outfile("refdata_prediction_newMLP.csv");
   // string line;
@@ -115,37 +122,16 @@ CDataDrivenFluid::CDataDrivenFluid(su2double gamma, su2double R, bool CompEntrop
 
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
-  // string name_e{"e"}, name_rho{"rho"};
-  // pair<su2double, su2double> e_maxmin = ANN->GetInputNorm(name_e);
-  // pair<su2double, su2double> rho_maxmin = ANN->GetInputNorm(name_rho);
 
-  // if((e < e_maxmin.first) || (e > e_maxmin.second) || (rho < rho_maxmin.first) || (rho > rho_maxmin.second)){
-  //   boundsviolation = 1;
-  // }else{
-  //   boundsviolation = 0;
-  // }
   boundsviolation = 0;
-  // rho = max(min(rho, rho_maxmin.second), rho_maxmin.first);
-  // e = max(min(e, e_maxmin.second), e_maxmin.first);
 
-  inputs.at(idx_rho) = rho;
-  inputs.at(idx_e) = e;
-  Predict_MLP(inputs);
-  // ANN->Predict_MLP(input_names, inputs, output_names, outputs);
-  // //ds_drho = dOutputs_dInputs[0][idx_rho];
-  // d2s_drho2 = exp(d2s_drho2);
-  // //cout << dOutputs_dInputs[0][idx_rho] << " " << -exp(ds_drho) << endl;
-  // ds_drho = -exp(ds_drho);
-
-  // ds_drho = dOutputs_dInputs[0][0];
-  // ds_de = dOutputs_dInputs[0][1];
+  Predict_MLP(rho, e);
 
   su2double blue_term = (ds_drho * (2 - rho * pow(ds_de, -1) * d2s_dedrho) + rho * d2s_drho2);
   su2double green_term = (- pow(ds_de, -1) * d2s_de2 * ds_drho + d2s_dedrho);
   
   SoundSpeed2 = - rho * pow(ds_de, -1) * (blue_term - rho * green_term * (ds_drho / ds_de));
 
-  //SoundSpeed2 = 95.4*95.4;
   Temperature = 1.0 / ds_de;
   Pressure = -pow(rho, 2) * Temperature * ds_drho;
   Density = rho;
@@ -161,16 +147,13 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   //cout << "Start SetTDState_PT" << endl;
-  string name_e{"e"}, name_rho{"rho"};
-  pair<su2double, su2double> e_maxmin = ANN->GetInputNorm(name_e);
-  su2double e = 0.5*(e_maxmin.first + e_maxmin.second);
-  pair<su2double, su2double> rho_maxmin = ANN->GetInputNorm(name_rho);
-  su2double rho = 0.5*(rho_maxmin.first + rho_maxmin.second);
+  su2double rho = rho_start;
+  su2double e = e_start;
 
   bool converged{false};
   su2double tolerance_P = 10,
             tolerance_T = 1,
-            relaxation = 0.5;
+            relaxation = 0.1;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, delta_P, delta_T, delta_rho, delta_e;
@@ -180,13 +163,11 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   vector<su2double> determinant_trend, dP_de_trend, dP_drho_trend, dT_de_trend, dT_drho_trend, delta_rho_trend, delta_e_trend;
 
   while(!converged && (Iter < iter_max)){
-    inputs.at(idx_rho) = rho;
-    inputs.at(idx_e) = e;
     // ANN->Predict_MLP(input_names, inputs, output_names, outputs);
 
     // ds_drho = -exp(ds_drho);
     // d2s_drho2 = exp(d2s_drho2);
-    Predict_MLP(inputs);
+    Predict_MLP(rho, e);
     //ds_drho = dOutputs_dInputs[0][idx_rho];
     //ds_de = dOutputs_dInputs[0][idx_e];
 
@@ -259,7 +240,9 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   
 
   //cout << "End: " << rho << " " << e << " " << P_current << " " << P << " " << T_current << " " << T << endl;
+  Reevaluate_MLP = false;
   SetTDState_rhoe(rho, e);
+  Reevaluate_MLP = true;
   failedNewtonSolver = converged;
   nIter_NewtonSolver = Iter;
   //cout << "End SetTDState_PT" << endl;
@@ -277,24 +260,20 @@ void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
 
 void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho){
   //cout << "Calling SetEnergy_Prho"<<endl;
-  string name_e{"e"};
-  pair<su2double, su2double> e_maxmin = ANN->GetInputNorm(name_e);
-  su2double e_current = 0.5*(e_maxmin.first + e_maxmin.second);
+  su2double e = e_start;
 
   su2double tolerance = 10;
-  su2double relaxation = 0.2;
+  su2double relaxation = 0.1;
   bool converged{false};
   unsigned long maxIter = 1000, Iter{0};
   
   su2double T_current, P_current, dP_de, delta_P, delta_e;
   while(!converged && (Iter < maxIter)){
-      inputs.at(idx_rho) = rho;
-      inputs.at(idx_e) = e_current;
       
       // ANN->Predict_MLP(input_names, inputs, output_names, outputs);
       // ds_drho = -exp(ds_drho);
       // d2s_drho2 = exp(d2s_drho2);
-      Predict_MLP(inputs);
+      Predict_MLP(rho, e);
       //ds_drho = dOutputs_dInputs[0][idx_rho];
       //ds_de = dOutputs_dInputs[0][idx_e];
 
@@ -306,38 +285,33 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho){
       }else{
         dP_de = pow(rho, 2)*pow(ds_de, -2)*d2s_de2*ds_drho;
         delta_e = delta_P / dP_de;
-        e_current -= relaxation * delta_e;
-        e_current = max(min(e_current, e_maxmin.second), e_maxmin.first);
+        e -= relaxation * delta_e;
+        //e = max(min(e, e_maxmin.second), e_maxmin.first);
       }
       Iter ++;
   }
-  StaticEnergy = e_current;
+  StaticEnergy = e;
   failedNewtonSolver = converged;
   nIter_NewtonSolver = Iter;
 }
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   //cout << "Start SetTDState_hs" << endl;
-  string name_e{"e"}, name_rho{"rho"};
-  pair<su2double, su2double> e_maxmin = ANN->GetInputNorm(name_e);
-  su2double e = 0.5*(e_maxmin.first + e_maxmin.second);
-  pair<su2double, su2double> rho_maxmin = ANN->GetInputNorm(name_rho);
-  su2double rho = 0.5*(rho_maxmin.first + rho_maxmin.second);
+  su2double e = e_start;
+  su2double rho = rho_start;
 
   bool converged{false};
   su2double tolerance_h = 10,
             tolerance_s = 1,
-            relaxation = 0.5;
+            relaxation = 0.1;
   unsigned long iter_max = 1000, Iter{0};
 
   su2double T_current, P_current, h_current, s_current;
   su2double delta_h, delta_s, delta_rho, delta_e, dP_de, dP_drho, dT_de, dT_drho, dh_drho, dh_de, determinant;
   while(!converged && (Iter < iter_max)){
-    inputs.at(idx_rho) = rho;
-    inputs.at(idx_e) = e;
     //ANN->Predict_MLP(input_names, inputs, output_names, outputs);
     //ds_drho = -exp(ds_drho);
     //d2s_drho2 = exp(d2s_drho2);
-    Predict_MLP(inputs);
+    Predict_MLP(rho, e);
     
     //ds_drho = dOutputs_dInputs[0][idx_rho];
     //ds_de = dOutputs_dInputs[0][idx_e];
@@ -374,18 +348,72 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
     
   }
 
+  Reevaluate_MLP = false;
   SetTDState_rhoe(rho, e);
+  Reevaluate_MLP = true;
   failedNewtonSolver = converged;
   nIter_NewtonSolver = Iter;
   //cout << "End SetTDState_hs" << endl;
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
-  cout << "Calling TDState_Ps" << endl;
-  su2double T = exp(Gamma_Minus_One / Gamma * (s / Gas_Constant + log(P) - log(Gas_Constant)));
-  su2double rho = P / (T * Gas_Constant);
 
-  SetTDState_Prho(P, rho);
+
+  su2double e = e_start;
+  su2double rho = rho_start;
+
+  bool converged{false};
+  su2double tolerance_P = 10,
+            tolerance_s = 1,
+            relaxation = 0.1;
+  unsigned long iter_max = 1000, Iter{0};
+
+  su2double T_current, P_current, h_current, s_current;
+  su2double delta_P, delta_s, delta_rho, delta_e, dP_de, dP_drho, dT_de, dT_drho, dh_drho, dh_de, determinant;
+
+  while(!converged && (Iter < iter_max)){
+    //ANN->Predict_MLP(input_names, inputs, output_names, outputs);
+    //ds_drho = -exp(ds_drho);
+    //d2s_drho2 = exp(d2s_drho2);
+    Predict_MLP(rho, e);
+    
+    //ds_drho = dOutputs_dInputs[0][idx_rho];
+    //ds_de = dOutputs_dInputs[0][idx_e];
+
+    T_current = pow(ds_de, -1);
+    P_current = -pow(rho, 2)*T_current*ds_drho;
+    h_current = e + P_current / rho;
+
+    s_current = Entropy;
+    // if(Iter == 0){
+    //   cout << "Start: " << rho << " " << e << " " << h_current << " " << h << " " << s_current << " " << s << endl;
+    // }
+    delta_P = P_current - P;
+    delta_s = s_current - s;
+    if((abs(delta_P) < tolerance_P) && (abs(delta_s) < tolerance_s)){
+      converged = true;
+    }else{
+      dP_de = pow(rho, 2)*pow(ds_de, -2)*d2s_de2*ds_drho;
+      dP_drho = -2*rho*T_current*ds_drho - pow(rho, 2)*T_current*d2s_drho2;
+
+      determinant = dP_drho * ds_de - dP_de * ds_drho;
+      delta_rho = (ds_de * delta_P - dP_de * delta_s) / determinant;
+      delta_e = (-ds_drho * delta_P + dP_drho * delta_s) / determinant;
+
+      rho -= relaxation * delta_rho;
+      e -= relaxation * delta_e;
+      // rho = max(min(rho, rho_maxmin.second), rho_maxmin.first);
+      // e = max(min(e, e_maxmin.second), e_maxmin.first);
+    }
+    Iter ++;
+    
+  }
+
+  Reevaluate_MLP = false;
+  SetTDState_rhoe(rho, e);
+  Reevaluate_MLP = true;
+  failedNewtonSolver = converged;
+  nIter_NewtonSolver = Iter;
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
@@ -409,9 +437,10 @@ void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
   dsdrho_P = -SoundSpeed2 / dPds_rho;
 }
 
-void CDataDrivenFluid::Predict_MLP(vector<su2double> inputs){
-  su2double rho = inputs.at(idx_rho);
-  su2double e = inputs.at(idx_e);
+void CDataDrivenFluid::Predict_MLP(su2double rho, su2double e){
+  
+  inputs.at(idx_rho) = rho;
+  inputs.at(idx_e) = e;
   vector<string> these_outputs;
   if(rho < 10.011693){
     these_outputs = output_names_lower;

@@ -243,6 +243,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
     AddVolumeOutput("FLUIDMODEL_CLIPPING", "DataBoundsVioloation", "PRIMITIVE", "Outside training data set");
     AddVolumeOutput("FLUIDMODEL_NEWTONITER", "nIter_Newton", "PRIMITIVE", "Number of iterations evaluated by the Newton solver");
+    AddVolumeOutput("ENTROPY", "Entropy", "PRIMITIVE", "Fluid entropy value");
   }
   if (config->GetViscous()) {
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
@@ -325,6 +326,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
     SetVolumeOutputValue("FLUIDMODEL_CLIPPING", iPoint, Node_Flow->GetBoundsViolation(iPoint));
     SetVolumeOutputValue("FLUIDMODEL_NEWTONITER", iPoint, Node_Flow->GetNewtonSolverIterations(iPoint));
+    SetVolumeOutputValue("ENTROPY", iPoint, 0);
   }
 
   if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES){

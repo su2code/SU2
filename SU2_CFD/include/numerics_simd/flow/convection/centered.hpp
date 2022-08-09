@@ -207,7 +207,7 @@ public:
   template<class... Ts>
   CJSTScheme(const CConfig& config, Ts&... args) : Base(config, args...),
     kappa2(config.GetKappa_2nd_Flow()),
-    kappa4(config.GetKappa_4th_Flow()) {
+    kappa4(config.GetKappa_4th_Flow()) { cout << "Selecting JST scheme" << endl;
   }
 
   /*!
