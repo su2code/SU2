@@ -26,10 +26,8 @@
  */
 
 #include "catch.hpp"
-#include <sstream>
-#include <filesystem>
 
-#include <dirent.h>
+#include <sstream>
 #include <stdio.h>
 
 #include "../../../Common/include/CConfig.hpp"
