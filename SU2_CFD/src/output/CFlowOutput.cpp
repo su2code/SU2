@@ -1311,7 +1311,7 @@ void CFlowOutput::SetRotatingFrameCoefficients(const CSolver* flow_solver) {
 
 void CFlowOutput::Add_CpInverseDesignOutput(){
 
-  AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
+  AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
