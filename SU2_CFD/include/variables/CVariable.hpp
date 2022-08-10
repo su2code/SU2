@@ -214,15 +214,16 @@ public:
    * \param[in] value - identification of the non-physical point.
    */
   inline void SetNon_Physical(unsigned long iPoint, bool val_value) {
-    if (val_value) {
-      Non_Physical(iPoint) = val_value;
-      Non_Physical_Counter(iPoint) = 0;
-    } else {
-      Non_Physical_Counter(iPoint)++;
-      if (Non_Physical_Counter(iPoint) > 20) {
-        Non_Physical(iPoint) = false;
-      }
-    }
+    // if (val_value) {
+    //   Non_Physical(iPoint) = val_value;
+    //   Non_Physical_Counter(iPoint) = 0;
+    // } else {
+    //   Non_Physical_Counter(iPoint)++;
+    //   if (Non_Physical_Counter(iPoint) > 20) {
+    //     Non_Physical(iPoint) = false;
+    //   }
+    // }
+    Non_Physical(iPoint) = Non_Physical(iPoint) || val_value;
   }
 
   /*!
@@ -231,6 +232,14 @@ public:
    * \return Value of the Non-physical point.
    */
   inline bool GetNon_Physical(unsigned long iPoint) { return Non_Physical(iPoint); }
+
+  /*!
+   * \brief Reet the value of the non-physical point.
+   * \param[in] iPoint - Point index.
+   */
+  inline void ResetNon_Physical(unsigned long iPoint) {
+    Non_Physical(iPoint) = false;
+  }
 
   /*!
    * \brief Get the solution.
@@ -525,22 +534,6 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] val_residual - Pointer to the nonlinear residual vector.
    */
-  inline void SetNonLinRes(unsigned long iPoint, unsigned long iVar, const su2double val_residual) {
-    NonLinRes(iPoint,iVar) = val_residual;
-  }
-
-  /*!
-   * \brief Get the nonlinear residual of the problem.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the nonlinear residual vector.
-   */
-  inline su2double *GetNonLinRes_Old(unsigned long iPoint) { return NonLinRes_Old[iPoint]; }
-
-  /*!
-   * \brief Set the nonlinear residual of the problem.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_residual - Pointer to the nonlinear residual vector.
-   */
   inline void SetNonLinRes_Old(unsigned long iPoint, const su2double *val_residual) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       NonLinRes_Old(iPoint,iVar) = val_residual[iVar];
@@ -550,37 +543,13 @@ public:
    * \brief Set the nonlinear residual of the problem.
    * \param[in] iPoint - Point index.
    * \param[in] val_residual - Pointer to the nonlinear residual vector.
-   */
-  inline void SetNonLinRes_Old(unsigned long iPoint, unsigned long iVar, const su2double val_residual) {
-    NonLinRes_Old(iPoint,iVar) = val_residual;
-  }
-
-  /*!
-   * \brief Get the nonlinear residual of the problem.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the nonlinear residual vector.
-   */
-  inline su2double *GetNonLinSol_Old(unsigned long iPoint) { return NonLinSol_Old[iPoint]; }
-
-  /*!
-   * \brief Set the nonlinear residual of the problem.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_residual - Pointer to the nonlinear residual vector.
    * \param[in] vol - Dual-cell volume.
    */
-  inline void SetNonLinSol_Old(unsigned long iPoint, const su2double *val_solution, const su2double vol) {
+  inline void SetNonLinSol_Old(unsigned long iPoint, const su2double *val_solution, const su2double scale) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      NonLinSol_Old(iPoint,iVar) = val_solution[iVar]*LocalCFL(iPoint)*vol/Delta_Time(iPoint);
-  }
-
-  /*!
-   * \brief Set the nonlinear residual of the problem.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_residual - Pointer to the nonlinear residual vector.
-   * \param[in] vol - Dual-cell volume.
-   */
-  inline void SetNonLinSol_Old(unsigned long iPoint, unsigned long iVar, const su2double val_solution, const su2double vol) {
-    NonLinSol_Old(iPoint,iVar) = val_solution*LocalCFL(iPoint)*vol/Delta_Time(iPoint);
+      // NonLinSol_Old(iPoint,iVar) = (Solution(iPoint,iVar)-Solution_Old(iPoint,iVar))*scale/Delta_Time(iPoint);
+      NonLinSol_Old(iPoint,iVar) = val_solution[iVar]*scale/Delta_Time(iPoint);
+      // NonLinSol_Old(iPoint,iVar) = val_solution[iVar]*LocalCFL(iPoint)*scale/Delta_Time(iPoint);
   }
 
   /*!
@@ -592,6 +561,16 @@ public:
     su2double norm = 0.0;
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       norm += pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
+    return norm;
+  }
+
+  /*!
+   * \brief Get the norm of the nonlinear residual of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the nonlinear residual vector.
+   */
+  inline su2double GetNonLinResNorm_Update(unsigned long iPoint, unsigned long iVar) {
+    su2double norm = pow(NonLinSol_Old(iPoint,iVar)-NonLinRes(iPoint,iVar), 2.0);
     return norm;
   }
 

@@ -1559,6 +1559,14 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
+  /*--- Set all points as physical before iteration. ---*/
+
+  if (!Output) {
+    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+      nodes->ResetNon_Physical(iPoint);
+    }
+  }
+
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -1812,8 +1820,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Primitive_i[iVar] = V_i[iVar] + lim_i * 0.5*((1.0-kappa)*Project_Grad_i + (1.0+kappa)*Delta);
         Primitive_j[iVar] = V_j[iVar] - lim_j * 0.5*((1.0-kappa)*Project_Grad_j + (1.0+kappa)*Delta);
 
-        bad_i = bad_i || (Project_Grad_i*Delta<0);
-        bad_j = bad_j || (Project_Grad_j*Delta<0);
+        // bad_i = bad_i || (Project_Grad_i*Delta<0);
+        // bad_j = bad_j || (Project_Grad_j*Delta<0);
       }
 
       if (tkeNeeded && musclTurb) {
@@ -1840,8 +1848,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Turbulent_i = T_i + lim_i * 0.5*((1.0-kappa_turb)*Project_Grad_i + (1.0+kappa_turb)*Delta);
         Turbulent_j = T_j - lim_j * 0.5*((1.0-kappa_turb)*Project_Grad_j + (1.0+kappa_turb)*Delta);
 
-        bad_i = bad_i || (Project_Grad_i*Delta<0);
-        bad_j = bad_j || (Project_Grad_j*Delta<0);
+        // bad_i = bad_i || (Project_Grad_i*Delta<0);
+        // bad_j = bad_j || (Project_Grad_j*Delta<0);
       }
       else {
         Turbulent_i = T_i; Turbulent_j = T_j;

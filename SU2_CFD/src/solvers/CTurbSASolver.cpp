@@ -508,9 +508,9 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
-      
+
       /*--- Set primitive state based on flow direction ---*/
-      
+
       const su2double Vn_Infty = GeometryToolbox::DotProduct(nDim,V_infty+1,Normal);
       if (Vn_Infty > 0.0) {
         /*--- Outflow conditions ---*/
@@ -533,6 +533,33 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
       LinSysRes.AddBlock(iPoint, residual);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                              geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      visc_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), T_infty);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+
+      /*--- Compute residual, and Jacobians ---*/
+
+      auto visc_residual = visc_numerics->ComputeResidual(config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+
+      LinSysRes.SubtractBlock(iPoint, visc_residual);
+      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
   }
@@ -1630,7 +1657,7 @@ void CTurbSASolver::ConvectiveError(CSolver **solver, const CGeometry *geometry,
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-    
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
   double u[3] = {0.0};
@@ -1677,7 +1704,7 @@ void CTurbSASolver::ViscousError(CSolver **solver, const CGeometry *geometry, co
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-    
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
 
@@ -1722,7 +1749,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-    
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
   double u[3] = {0.0};
@@ -1761,7 +1788,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
     }
     gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
     gradr[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_Adapt(iPoint, 0, iDim));
-    
+
     gradWij[0][iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 0, iDim));
     gradWij[1][iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 1, iDim));
     gradWij[2][iDim] = SU2_TYPE::GetValue(varTur->GetGradient_AuxVar_Adapt(iPoint, 2, iDim));
@@ -1837,7 +1864,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
                                      +   u[iDim] * ( Wij/(r*S) * gradnutilde[jDim] - Wij*nutilde/(r*r*S) * gradr[jDim]
                                                  -   Wij*nutilde/(r*S*S) * gradS[jDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][jDim] )
                                      -   u[jDim] * ( Wij/(r*S) * gradnutilde[iDim] - Wij*nutilde/(r*r*S) * gradr[iDim]
-                                                 -   Wij*nutilde/(r*S*S) * gradS[iDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][iDim] ) ) 
+                                                 -   Wij*nutilde/(r*S*S) * gradS[iDim] + sign*nutilde/(r*S)*gradWij[ind_Wij][iDim] ) )
                                      * adjnutilde;
     }
   }
@@ -1855,7 +1882,7 @@ void CTurbSASolver::TurbulentError(CSolver **solver, const CGeometry *geometry, 
   const double fw = g*glim;
 
   weights[0][nVarFlo] += 2.0 * (cw1*fw - cb1*ft2/k2) / dist2 * nutilde * adjnutilde;
-  
+
 }
 
 void CTurbSASolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
@@ -1917,7 +1944,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
             *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-    
+
   //--- Store primitive variables and coefficients
   const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
   double u[3] = {0.0};
@@ -1957,7 +1984,7 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
     gradT[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim));
     gradnutilde[iDim] = SU2_TYPE::GetValue(varTur->GetGradient_Adapt(iPoint, 0, iDim));
   }
-  
+
   //--- Account for wall functions
   // double wf = varFlo->GetTauWallFactor(iPoint);
   double wf = 1.0;
@@ -1967,14 +1994,14 @@ void CTurbSASolver::EddyViscosityError(CSolver **solver, const CGeometry *geomet
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       tauomut[iDim][jDim]  = wf * ( ( gradu[jDim][iDim] + gradu[iDim][jDim] )
                                 -     2.0/3.0*divu*(iDim == jDim) );
-                       
+
     }
   }
 
   //-------------------------//
   //--- Momentum equation ---//
   //-------------------------//
-  
+
   for (auto iDim = 0; iDim < nDim; ++iDim) {
     for (auto jDim = 0; jDim < nDim; ++jDim) {
       const double gradadjui_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim));

@@ -1826,12 +1826,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check whether we achieved the requested reduction in the linear
      solver residual within the specified number of linear iterations. */
 
-    // su2double linResTurb = 0.0;
-    // if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
+    su2double linResTurb = 0.0;
+    if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
 
     /* Max linear residual between flow and turbulence. */
-    // const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
-    const su2double linRes = GetResLinSolver();
+    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+    // const su2double linRes = GetResLinSolver();
 
     /* Tolerance limited to an acceptable value. */
     const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
@@ -1846,8 +1846,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
     resetCFL = linRes > 0.99;
     reduceCFL = linRes > 1.2*linTol;
-    canIncrease = linRes < linTol;// &&
-                  // ((config->GetInnerIter() > config->GetStartConv_Iter()) || config->GetRestart());
+    canIncrease = linRes < linTol;
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
@@ -1856,17 +1855,17 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Sum the RMS residuals for all equations. */
 
       New_Func = 0.0;
-      // for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-      //   New_Func += log10(solverFlow->GetRes_RMS(iVar));
-      // }
-      // if ((iMesh == MESH_0) && solverTurb) {
-      //   for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-      //     New_Func += log10(solverTurb->GetRes_RMS(iVar));
-      //   }
-      // }
-      for (unsigned short iVar = 0; iVar < GetnVar(); iVar++) {
-        New_Func += log10(GetRes_RMS(iVar));
+      for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+        New_Func += log10(solverFlow->GetRes_RMS(iVar));
       }
+      if ((iMesh == MESH_0) && solverTurb) {
+        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+          New_Func += log10(solverTurb->GetRes_RMS(iVar));
+        }
+      }
+      // for (unsigned short iVar = 0; iVar < GetnVar(); iVar++) {
+      //   New_Func += log10(GetRes_RMS(iVar));
+      // }
 
       /* Compute the difference in the nonlinear residuals between the
        current and previous iterations, taking care with very low initial
@@ -1896,64 +1895,102 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       //   }
       //   reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
 
-      //   if (totalChange > 2.0) { // orders of magnitude
-      //     resetCFL = true;
-      //     NonLinRes_Counter = 0;
-      //     for (auto& val : NonLinRes_Series) val = 0.0;
-      //   }
+      //   // if (totalChange > 2.0) { // orders of magnitude
+      //   //   resetCFL = true;
+      //   //   NonLinRes_Counter = 0;
+      //   //   for (auto& val : NonLinRes_Series) val = 0.0;
+      //   // }
       // }
     }
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
-    /* Check for decrease in nonlinear residual. */
+    /* Set new nonlinear residual */
 
     const auto nVar = GetnVar();
-    const su2double nonLinTol = (1.0+linTol);
-    su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+    const auto nVarTurb = (iMesh == MESH_0 && solverTurb)? solverTurb->GetnVar() : 0;
+    const su2double nonLinInc = 1.0+linTol;
+    const su2double nonLinTol = 0.5*nonLinInc;//(nVar+nVarTurb);
+
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-
-      const su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
-      const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
-
-      if (config->GetInnerIter() == 0) {
-        GetNodes()->SetNonLinRes_Old(iPoint, &LinSysRes[iPoint*nVar]);
-        GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], vol);
-        normNonLinRes = 0.0; normNonLinRes_Upd = 0.0; normNonLinRes_Old = 1.0;
-      }
-      else {
-        GetNodes()->SetNonLinRes(iPoint, &LinSysRes[iPoint*nVar]);
-
-        normNonLinRes += GetNodes()->GetNonLinResNorm(iPoint);
-        normNonLinRes_Upd += GetNodes()->GetNonLinResNorm_Update(iPoint);
-        normNonLinRes_Old += GetNodes()->GetNonLinResNorm_Old(iPoint);
-
-        GetNodes()->SetNonLinRes_Old(iPoint, &LinSysRes[iPoint*nVar]);
-        GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], vol);
+      GetNodes()->SetNonLinRes(iPoint, &LinSysRes[iPoint*nVar]);
+      if (iMesh == MESH_0 && solverTurb) {
+        solverTurb->GetNodes()->SetNonLinRes(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
       }
     }
-    END_SU2_OMP_FOR
 
-    SU2_OMP_MASTER
-    { /* MPI reduction. */
-      su2double myNormNonLinRes = normNonLinRes;
-      su2double myNormNonLinRes_Upd = normNonLinRes_Upd;
-      su2double myNormNonLinRes_Old = normNonLinRes_Old;
-      SU2_MPI::Allreduce(&myNormNonLinRes,     &normNonLinRes,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&myNormNonLinRes_Upd, &normNonLinRes_Upd, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    /* Check for decrease in nonlinear residual. */
+
+    bool decNonLinRes = true;
+    bool incNonLinRes = false;
+
+    if (config->GetInnerIter() != 0) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
+        SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+        for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+          normNonLinRes += GetNodes()->GetNonLinResNorm(iPoint, iVar);
+          normNonLinRes_Upd += GetNodes()->GetNonLinResNorm_Update(iPoint, iVar);
+          normNonLinRes_Old += GetNodes()->GetNonLinResNorm_Old(iPoint, iVar);
+        }
+        END_SU2_OMP_FOR
+
+        SU2_OMP_MASTER
+        { /* MPI reduction. */
+          su2double myNormNonLinRes = normNonLinRes;
+          su2double myNormNonLinRes_Upd = normNonLinRes_Upd;
+          su2double myNormNonLinRes_Old = normNonLinRes_Old;
+          SU2_MPI::Allreduce(&myNormNonLinRes,     &normNonLinRes,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+          SU2_MPI::Allreduce(&myNormNonLinRes_Upd, &normNonLinRes_Upd, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+          SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        }
+        END_SU2_OMP_MASTER
+        SU2_OMP_BARRIER
+
+        normNonLinRes = sqrt(normNonLinRes);
+        normNonLinRes_Upd = sqrt(normNonLinRes_Upd);
+        normNonLinRes_Old = sqrt(normNonLinRes_Old);
+
+        decNonLinRes = decNonLinRes && (normNonLinRes_Upd <= nonLinTol*normNonLinRes_Old);
+        incNonLinRes = incNonLinRes || (normNonLinRes_Upd  > nonLinInc*normNonLinRes_Old);
+      }
+
+      if (iMesh == MESH_0 && solverTurb) {
+        for (auto iVar = 0; iVar < nVarTurb; iVar++) {
+          su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
+          SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+          for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+            normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint);
+            normNonLinRes_Upd += solverTurb->GetNodes()->GetNonLinResNorm_Update(iPoint);
+            normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint);
+          }
+          END_SU2_OMP_FOR
+
+          SU2_OMP_MASTER
+          { /* MPI reduction. */
+            su2double myNormNonLinRes = normNonLinRes;
+            su2double myNormNonLinRes_Upd = normNonLinRes_Upd;
+            su2double myNormNonLinRes_Old = normNonLinRes_Old;
+            SU2_MPI::Allreduce(&myNormNonLinRes,     &normNonLinRes,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+            SU2_MPI::Allreduce(&myNormNonLinRes_Upd, &normNonLinRes_Upd, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+            SU2_MPI::Allreduce(&myNormNonLinRes_Old, &normNonLinRes_Old, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+          }
+          END_SU2_OMP_MASTER
+          SU2_OMP_BARRIER
+
+          normNonLinRes = sqrt(normNonLinRes);
+          normNonLinRes_Upd = sqrt(normNonLinRes_Upd);
+          normNonLinRes_Old = sqrt(normNonLinRes_Old);
+
+          decNonLinRes = decNonLinRes && (normNonLinRes_Upd <= nonLinTol*normNonLinRes_Old);
+          incNonLinRes = incNonLinRes || (normNonLinRes_Upd  > nonLinInc*normNonLinRes_Old);
+        }
+      }
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-
-    normNonLinRes = sqrt(normNonLinRes);
-    normNonLinRes_Upd = sqrt(normNonLinRes_Upd);
-    normNonLinRes_Old = sqrt(normNonLinRes_Old);
-
-    bool decNonLinRes = (normNonLinRes <= nonLinTol*normNonLinRes_Old);
-    bool incNonLinRes = (normNonLinRes_Upd > normNonLinRes_Old);
+    else {
+      decNonLinRes = false;
+    }
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -1972,20 +2009,24 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Get the current local flow CFL number at this point. */
 
-      // su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
-      su2double CFL = GetNodes()->GetLocalCFL(iPoint);
+      su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
+      // su2double CFL = GetNodes()->GetLocalCFL(iPoint);
 
       /* Get the current under-relaxation parameters that were computed
        during the previous nonlinear update. If we have a turbulence model,
        take the minimum under-relaxation parameter between the mean flow
        and turbulence systems. */
 
-      // su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
-      // su2double underRelaxationTurb = 1.0;
-      // if ((iMesh == MESH_0) && solverTurb)
-      //   underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-      // const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
-      const su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
+      su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
+      su2double underRelaxationTurb = 1.0;
+      if ((iMesh == MESH_0) && solverTurb)
+        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+      // const su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
+
+      bool nonPhysical = solverFlow->GetNodes()->GetNon_Physical(iPoint);
+      if ((iMesh == MESH_0) && solverTurb) nonPhysical = nonPhysical || solverTurb->GetNodes()->GetNon_Physical(iPoint);
+      // bool nonPhysical = GetNodes()->GetNon_Physical(iPoint);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -1993,7 +2034,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if (underRelaxation < 0.1 || reduceCFL || incNonLinRes) {
+      if (underRelaxation < 1.0 || reduceCFL || incNonLinRes || nonPhysical) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation == 1.0 && canIncrease && decNonLinRes) {
         CFLFactor = CFLFactorIncrease;
@@ -2022,11 +2063,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Apply the adjustment to the CFL and store local values. */
 
       CFL *= CFLFactor;
-      // solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      // if ((iMesh == MESH_0) && solverTurb) {
-      //   solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
-      // }
-      GetNodes()->SetLocalCFL(iPoint, CFL);
+      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      if ((iMesh == MESH_0) && solverTurb) {
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+      }
+      // GetNodes()->SetLocalCFL(iPoint, CFL);
 
       /* Store min and max CFL for reporting on the fine grid. */
 
@@ -2061,6 +2102,20 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       }
       END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
+    }
+
+    /* Set old nonlinear residual */
+
+    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+      const su2double vol = geometry[iMesh]->nodes->GetVolume(iPoint);
+      const su2double ur = GetNodes()->GetUnderRelaxation(iPoint);
+      GetNodes()->SetNonLinRes_Old(iPoint, &LinSysRes[iPoint*nVar]);
+      GetNodes()->SetNonLinSol_Old(iPoint, &LinSysSol[iPoint*nVar], vol);
+      if (iMesh == MESH_0 && solverTurb) {
+        const su2double urt = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+        solverTurb->GetNodes()->SetNonLinRes_Old(iPoint, &(solverTurb->LinSysRes[iPoint*nVarTurb]));
+        solverTurb->GetNodes()->SetNonLinSol_Old(iPoint, &(solverTurb->LinSysSol[iPoint*nVarTurb]), vol);
+      }
     }
 
   }
@@ -4854,11 +4909,13 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetSolid_Wall(iMarker)) {// ||
-        // (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        //  config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        //  config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-        //  config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+    const bool solid_wall = config->GetSolid_Wall(iMarker);
+    const bool physical = config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+                          config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+                          config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+                          config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY;
+
+    if (solid_wall || physical) {
 
       for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
@@ -4871,7 +4928,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
           double met[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
             const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-            if(!nodes->GetSolidBoundary(jPoint)) {// && !nodes->GetPhysicalBoundary(jPoint)) {
+            if(!nodes->GetSolidBoundary(jPoint) && !nodes->GetPhysicalBoundary(jPoint)) {
               const auto dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
               suminvdist += 1./SU2_TYPE::GetValue(dist);
               for(auto iMet = 0; iMet < nMet; iMet++) {

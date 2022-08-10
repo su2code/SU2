@@ -50,7 +50,7 @@ def get_mesh_size(mesh):
 
     return nelts
 
-def get_amg_config(config_su2):
+def get_amg_config(config_su2, dim):
     """Load parameters from the SU2 config file into the AMG config dict"""
     config_amg = dict()
 
@@ -77,10 +77,18 @@ def get_amg_config(config_su2):
     if not os.path.exists(config_amg['adap_back']):
         raise ValueError(f"Can't find background surface mesh: {config_amg['adap_back']}.")
 
+    print('Preprocessing background surface mesh.')
     if back_extension == '.su2':
-        print('\nGenerating GMF background surface mesh.')
-        su2gmf.SU2toGMF(config_amg['adap_back'], '', 'amg_back', '')
-        config_amg['adap_back'] = os.path.join(cwd, 'adap/ite0/amg_back.meshb')
+        su2gmf.SU2toGMF(config_amg['adap_back'], '', 'mesh_back', '')
+    elif back_extension == '.meshb':
+        su2gmf.PreprocessMesh(config_amg['adap_back'], 'mesh_back.meshb', dim)
+    else:
+        raise ValueError(f'Unknown background mesh format: {back_extension}.')
+    config_amg['adap_back'] = os.path.join(cwd, 'adap/ite0/mesh_back.meshb')
+
+    #--- Preprocess su2 mesh
+    print('Preprocessing initial mesh.')
+    su2gmf.PreprocessMesh(config_su2['MESH_FILENAME'], config_su2['MESH_FILENAME'], 0)
 
     #--- Add AMG command flags
     #--- Background surface mesh
@@ -382,8 +390,8 @@ def create_sensor(solution, sensor):
     sensor_wrap['solution_tag'] = sensor_header
     sensor_wrap['xyz'] = solution['xyz']
 
-    sensor_wrap['dimension']    = solution['dimension']
-    sensor_wrap['solution']     = sensor
+    sensor_wrap['dimension'] = solution['dimension']
+    sensor_wrap['solution']  = sensor
 
     return sensor_wrap
 

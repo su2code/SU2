@@ -116,7 +116,7 @@ def amg(config):
 
     #--- AMG parameters
 
-    config_amg = su2amg.get_amg_config(config)
+    config_amg = su2amg.get_amg_config(config, dim)
 
     #--- Compute initial solution if needed, else link current files
 
@@ -138,10 +138,10 @@ def amg(config):
 
         os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), config.SOLUTION_FILENAME)
 
-        print('Initial CFD solution is provided.')
+        print('\nInitial CFD solution is provided.')
 
     else:
-        print('Running initial CFD solution.')
+        print('\nRunning initial CFD solution.')
 
     #--- Only allow binary restarts since WRT_BINARY_RESTART is deprecated
     sol_ext = '.dat'
@@ -226,7 +226,7 @@ def amg(config):
     npoin = su2amg.get_su2_npoin(meshfil)
     su2amg.plot_results(history_format, history_filename, global_iter, npoin)
 
-    print('\nStarting mesh adaptation process.')
+    print('\nStarting mesh adaptation process.\n')
 
     nSiz = len(mesh_sizes)
     for iSiz in range(nSiz):
@@ -295,7 +295,7 @@ def amg(config):
             os.makedirs(os.path.join('..',dir))
             os.chdir(os.path.join('..',dir))
 
-            meshfil = 'adap.su2'
+            meshfil = 'mesh_adap.su2'
             solfil  = f'flo{sol_ext}'
 
             su2amg.write_mesh_and_sol(meshfil, solfil, mesh_new)

@@ -100,6 +100,13 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
     }
   }
 
+  /*--- Set all points as physical before iteration. ---*/
+  if (!Output) {
+    for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+      nodes->ResetNon_Physical(iPoint);
+    }
+  }
+
   /*--- Upwind second order reconstruction and gradients ---*/
 
   if (config->GetReconstructionGradientRequired()) {
@@ -276,8 +283,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             flowPrimVar_i[iVar] = V_i[iVar] + 0.5*((1.0-kappa_flow)*Project_Grad_i + (1.0+kappa_flow)*Delta);
             flowPrimVar_j[iVar] = V_j[iVar] - 0.5*((1.0-kappa_flow)*Project_Grad_j + (1.0+kappa_flow)*Delta);
 
-            bad_i = bad_i || (Project_Grad_i*Delta<0);
-            bad_j = bad_j || (Project_Grad_j*Delta<0);
+            // bad_i = bad_i || (Project_Grad_i*Delta<0);
+            // bad_j = bad_j || (Project_Grad_j*Delta<0);
           }
         }
         else {
@@ -311,8 +318,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             solution_i[iVar] = Scalar_i[iVar] + 0.5*((1.0-kappa)*Project_Grad_i + (1.0+kappa)*Delta);
             solution_j[iVar] = Scalar_j[iVar] - 0.5*((1.0-kappa)*Project_Grad_j + (1.0+kappa)*Delta);
 
-            bad_i = bad_i || (Project_Grad_i*Delta<0);
-            bad_j = bad_j || (Project_Grad_j*Delta<0);
+            // bad_i = bad_i || (Project_Grad_i*Delta<0);
+            // bad_j = bad_j || (Project_Grad_j*Delta<0);
           }
         }
         else {
@@ -333,8 +340,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           bad_j = bad_j || ((solution_j[iVar] < 0.0) && (!sa_neg));
         }
 
-        // nodes->SetNon_Physical(iPoint, bad_i);
-        // nodes->SetNon_Physical(jPoint, bad_j);
+        nodes->SetNon_Physical(iPoint, bad_i);
+        nodes->SetNon_Physical(jPoint, bad_j);
 
         // /*--- Get updated state, in case the point recovered after the set. ---*/
         // bad_i = nodes->GetNon_Physical(iPoint) || flowNodes->GetNon_Physical(iPoint);
