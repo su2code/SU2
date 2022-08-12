@@ -247,13 +247,20 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           /*Compute wall heat flux (normal to the wall) based on computed temperature gradient*/
           for(auto iDim=0; iDim < nDim; iDim++) {
+
             GradT[iDim] = nodes->GetGradient_Primitive(iPoint, 3, iDim);
+
             dTdn_Local += GradT[iDim]*AreaNormal[iDim]*nodes->GetThermalConductivity(iPoint);
+
           } // loop dim
         } // loop Vertices
       } // loop Isothermal Marker
     } // loop AllMarker
 
+    /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
+    SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    
     /*--- Loop over all heatflux Markers ---*/
     for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       
@@ -271,10 +278,10 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
 
-        // To be added to coeff_b1
+        // coeff_b1 for turbulence
         turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, 0) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
         
-        // To be added to coeff_b2
+        // coeff_b2 for turbulence
         su2double dot_product = 0.0;
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
             dot_product += nodes->GetGradient_Primitive(iPoint, 3, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
@@ -285,20 +292,17 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
     } // points
 
-      /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
-      SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&dTdn_Local, &dTdn_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&turb_b2_coeff_Local, &turb_b2_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    /*--- MPI Communication sum up integrated Heatflux from all processes ---*/
+    SU2_MPI::Allreduce(&Volume_Temp_Local, &Volume_Temp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&turb_b2_coeff_Local, &turb_b2_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-    if (config->GetnMarker_HeatFlux() > 0) {
-      /*--- Set the solver variable Integrated Heatflux ---*/
+    /*--- Set the solver variable Integrated Heatflux ---*/
+    if (config->GetnMarker_HeatFlux() > 0)
       SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
-    } // if heat flux
 
     if (config->GetnMarker_Isothermal() > 0) {
       SPvals.Streamwise_Periodic_ThetaScaling = Volume_TempS_Global/Volume_Global;
@@ -311,27 +315,13 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       su2double b1_coeff = Volume_VTemp_Global * config->GetSpecific_Heat_Cp() + turb_b1_coeff_Global;
       su2double b2_coeff = -dTdn_Global + turb_b2_coeff_Global;
 
-    //   if(turbulent) {
-
-    //   }
-    //   cout<<Volume_VTemp_Global <<" "<<config->GetSpecific_Heat_Cp()<<" "<<b1_coeff<<" "<<endl;
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
       su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
-    //   auto pred_lambda = pred_lambda_2;
-    //   if (!isnan(pred_lambda)) {
         if (!config->GetDiscrete_Adjoint())
-        SPvals.Streamwise_Periodic_LambdaL_update -= 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
+        SPvals.Streamwise_Periodic_LambdaL -= 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
        else
-        SPvals.Streamwise_Periodic_LambdaL_update = pred_lambda;
-        SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL_update;
+        SPvals.Streamwise_Periodic_LambdaL = pred_lambda;
         config->SetStreamwise_Periodic_LamdaL(SPvals.Streamwise_Periodic_LambdaL);
-        // cout<<"Values of Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
-        // FOR Debugging, will be removed later on
-        // cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff << " :: lamda :: "<< pred_lambda<<endl;
-        // cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;
-    //   }
-    //   else
-    //     SPvals.Streamwise_Periodic_LambdaL = 0.0146;
     } // if isothermal
   } // if energy
 }

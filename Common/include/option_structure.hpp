@@ -2444,8 +2444,7 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_BoundaryArea;       /*!< \brief Global Surface area of the streamwise periodic interface. */
   su2double Streamwise_Periodic_AvgDensity;         /*!< \brief Area avg density on the periodic interface. */
   su2double Streamwise_Periodic_LambdaL;            /*!< \brief Temperature Gradient in iso-thermal BCs. */
-  su2double Streamwise_Periodic_LambdaL_update;     /*!< \brief Temperature Gradient in iso-thermal BCs. */
-  su2double Streamwise_Periodic_ThetaScaling;       /*!< \brief Temperature Gradient in iso-thermal BCs. */
+  su2double Streamwise_Periodic_ThetaScaling;       /*!< \brief Scaled Temperature for iso-thermal BCs. */
 };
 
 /*!
