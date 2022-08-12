@@ -1040,6 +1040,7 @@ private:
   su2double Streamwise_Periodic_PressureDrop;        /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
   su2double Streamwise_Periodic_TargetMassFlow;      /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_OutletHeat;          /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
+  su2double Streamwise_Periodic_LambdaL;            /*!< /brief Exp coefficient for iso-thermal BCs Streamwise Periodic. */
 
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
@@ -9638,5 +9639,17 @@ public:
    * \return SA option data structure.
    */
   SA_ParsedOptions GetSAParsedOptions() const { return saParsedOptions; }
+
+  /*!
+   * \brief Set Lambda L for Streamwise Periodic
+   * \return bool
+   */
+  void SetStreamwise_Periodic_LamdaL(su2double value) { Streamwise_Periodic_LambdaL = value; }
+
+  /*!
+   * \brief Set Lambda L for Streamwise Periodic
+   * \return bool
+   */
+  su2double GetStreamwise_Periodic_LamdaL(void) const { return Streamwise_Periodic_LambdaL; }
 
 };

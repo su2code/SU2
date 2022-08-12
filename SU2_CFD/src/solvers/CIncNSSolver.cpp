@@ -324,7 +324,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
        else
         SPvals.Streamwise_Periodic_LambdaL_update = pred_lambda;
         SPvals.Streamwise_Periodic_LambdaL = SPvals.Streamwise_Periodic_LambdaL_update;
-    //   cout<<"Values of Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
+        config->SetStreamwise_Periodic_LamdaL(SPvals.Streamwise_Periodic_LambdaL);
+        // cout<<"Values of Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
         // FOR Debugging, will be removed later on
         // cout<<"b0_coeff :: "<<b0_coeff<<":: b1_coeff ::"<<b1_coeff<<":: b2_coeff ::"<<b2_coeff << " :: lamda :: "<< pred_lambda<<endl;
         // cout<<"Lambda_1 :: "<<pred_lambda_1<<":: Lambda_2 ::"<<pred_lambda_2<<":: LambdaL ::"<<SPvals.Streamwise_Periodic_LambdaL<<endl;

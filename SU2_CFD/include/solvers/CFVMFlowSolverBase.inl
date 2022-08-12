@@ -2985,6 +2985,8 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
     case SURFACE_SPECIES_VARIANCE:
       objFun += weight * config.GetSurface_Species_Variance(0);
       break;
+    case STREAMWISE_PERIODIC_LAMBDAL:
+    objFun += weight * config.GetStreamwise_Periodic_LamdaL();
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;
       break;
