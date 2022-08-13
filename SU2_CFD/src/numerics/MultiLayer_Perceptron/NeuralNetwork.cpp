@@ -107,11 +107,11 @@ void NeuralNetwork::predict(vector<su2double> &inputs, vector<su2double*>&output
 
                     for(size_t jNeuron=0; jNeuron<total_layers.at(iLayer-1)->getNNeurons(); jNeuron++){
                         for(size_t jInput=0; jInput<inputLayer->getNNeurons(); jInput++){
-                            dy_dx_new[iNeuron][jInput] += total_layers.at(iLayer)->getdYdX(iNeuron) * weights_mat[iLayer-1][iNeuron][jNeuron] * dy_dx_old[jNeuron][jInput]; 
+                            dy_dx_new[iNeuron][jInput] += total_layers.at(iLayer)->getdYdX(iNeuron) * weights_mat[iLayer-1][iNeuron][jNeuron] * dy_dx_old[jNeuron][jInput];
                         }
                     }
                 }
-                
+
             }
             // Resetting pointer to previous layer outputs
             delete y_values_old;
@@ -134,7 +134,7 @@ void NeuralNetwork::predict(vector<su2double> &inputs, vector<su2double*>&output
         // Dimensionalize the outputs
         y_norm = outputLayer->getValue(iOutput);
         y = y_norm*(output_norm.at(iOutput).second - output_norm.at(iOutput).first) + output_norm.at(iOutput).first;
-        
+
         // Setting output value
         *outputs.at(iOutput) = y;
 
@@ -258,10 +258,15 @@ su2double Neuron::activation_function(su2double x)
         dy_dx = -(1/pow(1 + exp(-x), 2))*(-exp(-x));
         return 1.0/(1 + exp(-x));
     }
+    if(activation_type.compare("tanh") == 0){
+        su2double tanx = tanh(x);
+        dy_dx = 4.0 / pow((exp(-x) + exp(x)), 2);
+        return tanx;
+    }
     if(activation_type.compare("smoothSlope") == 0){
         su2double tanx = tanh(x);
         if(tanx > x){
-            dy_dx = 4.0 / pow((exp(-x) + exp(x)), 2); 
+            dy_dx = 4.0 / pow((exp(-x) + exp(x)), 2);
             return tanx;
         }else{
             dy_dx = 1.0;
@@ -278,12 +283,33 @@ su2double Neuron::activation_function(su2double x)
             return zero;
         }
     }
+    if(activation_type.compare("selu") == 0){
+        su2double zero{0.0};
+        su2double alpha=1.67326324;
+        su2double lambda=1.05070098;
+        if(x > zero){
+            dy_dx = lambda;
+            return lambda * x;
+        }else{
+            dy_dx = lambda * alpha * exp(x);
+            return lambda * alpha * (exp(x) - 1);
+        }
+    }
+    if(activation_type.compare("gelu") == 0){
+        /* Implementation of the approximate gelu to reduce computational cost */
+        su2double pi = 3.14159265358979323846;
+        su2double c1 = 0.5 * tanh(0.0356774 * pow(x, 3) + 0.797885 * x);
+        su2double c2 = (0.0535161 * pow(x, 3) + 0.398942 * x);
+        su2double c3 = pow(1 / cosh(0.0356774 * pow(x, 3) + 0.797885 * x), 2);
+        dy_dx = c1 + c2 * c3 + 0.5;
+        return 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * pow(x, 3))));
+    }
     if(activation_type.compare("linear") == 0){
         dy_dx = 1.0;
         return x;
     }
     SU2_MPI::Error(string("Unknown activation function type: ")+activation_type,
-                   CURRENT_FUNCTION);   
-    
+                   CURRENT_FUNCTION);
+
     return x;
 }
