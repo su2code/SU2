@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <limits>
+
 #include "CFlowVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
