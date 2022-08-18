@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.hpp
  * \brief Headers of the CDiscAdjFEASolver class
  * \author R. Sanchez
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
