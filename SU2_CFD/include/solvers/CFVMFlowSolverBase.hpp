@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -61,10 +61,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   template<class... Ts>
   static void ompMasterAssignBarrier(Ts&&... lhsRhsPairs) {
-    SU2_OMP_MASTER
-    recursiveAssign(lhsRhsPairs...);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(recursiveAssign(lhsRhsPairs...);)
   }
 
   su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
@@ -493,22 +490,20 @@ class CFVMFlowSolverBase : public CSolver {
         Global_Delta_Time = Min_Delta_Time;
       }
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
     }
 
     /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
 
-    SU2_OMP_MASTER
-    if (config->GetComm_Level() == COMM_FULL) {
-      su2double rbuf_time;
-      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-      Min_Delta_Time = rbuf_time;
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      if (config->GetComm_Level() == COMM_FULL) {
+        su2double rbuf_time;
+        SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        Min_Delta_Time = rbuf_time;
 
-      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-      Max_Delta_Time = rbuf_time;
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+        SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        Max_Delta_Time = rbuf_time;
+      }
+    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
     if (time_stepping) {
@@ -516,7 +511,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
        *    otherwise it computes the time step based on the unsteady CFL. ---*/
 
-      SU2_OMP_MASTER
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
         if (config->GetUnst_CFL() == 0.0) {
           Global_Delta_Time = config->GetDelta_UnstTime();
@@ -528,8 +523,7 @@ class CFVMFlowSolverBase : public CSolver {
 
         config->SetDelta_UnstTimeND(Global_Delta_Time);
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
 
@@ -558,16 +552,15 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_OMP_CRITICAL
       Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
       END_SU2_OMP_CRITICAL
-      SU2_OMP_BARRIER
 
-      SU2_OMP_MASTER {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
         SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
         Global_Delta_UnstTimeND = glbDtND;
 
         config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
       }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
 
     /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
@@ -1166,15 +1159,6 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetTemperature_Inf(void) const { return Temperature_Inf; }
 
   /*!
-   * \brief Compute the density multiply by velocity at the infinity.
-   * \param[in] val_dim - Index of the velocity vector.
-   * \return Value of the density multiply by the velocity at the infinity.
-   */
-  inline su2double GetDensity_Velocity_Inf(unsigned short val_dim) const final {
-    return Density_Inf * Velocity_Inf[val_dim];
-  }
-
-  /*!
    * \brief Get the velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
@@ -1502,6 +1486,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Get the reference force used to compute CL, CD, etc.
    */
   inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
+
+  /*!
+   * \brief Get the reference dynamic pressure, for Cp, Cf, etc.
+   */
+  inline su2double GetReferenceDynamicPressure() const final { return DynamicPressureRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.

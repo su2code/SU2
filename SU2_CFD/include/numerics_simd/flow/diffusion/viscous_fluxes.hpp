@@ -2,7 +2,7 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -99,9 +99,9 @@ protected:
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
     correct(iMesh == MESH_0),
-    useSA_QCR(config.GetQCR()),
+    useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
-    uq(config.GetUsing_UQ()),
+    uq(config.GetSSTParsedOptions().uq),
     uq_permute(config.GetUQ_Permute()),
     uq_eigval_comp(config.GetEig_Val_Comp()),
     uq_delta_b(config.GetUQ_Delta_B()),

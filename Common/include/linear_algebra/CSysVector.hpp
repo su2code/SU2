@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -186,10 +186,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     /*--- check if self-assignment, otherwise perform deep copy ---*/
     if ((const void*)this == (const void*)&other) return;
 
-    SU2_OMP_MASTER
-    Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);)
 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
@@ -297,11 +294,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
     static ScalarType dotRes;
     /*--- All threads get the same "view" of the vectors and shared variable. ---*/
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    dotRes = 0.0;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(dotRes = 0.0;)
 
     /*--- Local dot product for each thread. ---*/
     ScalarType sum = 0.0;
@@ -317,16 +310,16 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
 #ifdef HAVE_MPI
     /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       sum = dotRes;
       const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
       SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
     }
-    END_SU2_OMP_MASTER
-#endif
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+#else
     /*--- Make view of result consistent across threads. ---*/
     SU2_OMP_BARRIER
+#endif
 
     return dotRes;
   }

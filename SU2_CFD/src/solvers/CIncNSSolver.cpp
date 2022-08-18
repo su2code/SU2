@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,12 +107,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    SU2_OMP_MASTER
-    SetTau_Wall_WF(geometry, solver_container, config);
-    END_SU2_OMP_MASTER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(SetTau_Wall_WF(geometry, solver_container, config);)
     // nijso: we have to set this as well??
     // seteddyviscfirstpoint
-    SU2_OMP_BARRIER
   }
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
@@ -273,10 +270,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   END_SU2_OMP_FOR
 
   /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-  SU2_OMP_MASTER
-  GetStreamwise_Periodic_Properties(geometry, config, iMesh);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  SU2_OMP_SAFE_GLOBAL_ACCESS(GetStreamwise_Periodic_Properties(geometry, config, iMesh);)
 }
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
@@ -289,9 +283,11 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  const su2double* scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
+  const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
-  bool tkeNeeded = ((turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST));
+  bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   AD::StartNoSharedReading();
 
@@ -309,9 +305,14 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
       }
     }
 
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+  
     /*--- Incompressible flow, primitive variables --- */
 
-    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
 
@@ -843,8 +844,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
     SU2_OMP_ATOMIC
     globalCounter2 += smallYPlusCounter;
 
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
@@ -858,7 +858,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
                << " points, for which the wall model is not active." << endl;
       }
     }
-    END_SU2_OMP_MASTER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

@@ -2,7 +2,7 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -97,8 +97,8 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
     case MAIN_SOLVER::INC_RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
@@ -290,12 +290,6 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
-    case SUB_SOLVER_TYPE::TURB:
-    case SUB_SOLVER_TYPE::TURB_SA:
-    case SUB_SOLVER_TYPE::TURB_SST:
-      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
-      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
-      break;
     case SUB_SOLVER_TYPE::SPECIES:
       genericSolver = CreateSpeciesSolver(solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
@@ -303,6 +297,12 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
     case SUB_SOLVER_TYPE::DISC_ADJ_SPECIES:
       genericSolver = CreateSpeciesSolver(solver, geometry, config, iMGLevel, true);
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
+      break;
+    case SUB_SOLVER_TYPE::TURB:
+    case SUB_SOLVER_TYPE::TURB_SA:
+    case SUB_SOLVER_TYPE::TURB_SST:
+      genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::TEMPLATE:
       genericSolver = new CTemplateSolver(geometry, config);

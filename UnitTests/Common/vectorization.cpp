@@ -2,7 +2,7 @@
  * \file vectorization.cpp
  * \brief Unit tests for the SIMD type and associated expression templates.
  * \author P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,9 @@ TEST_CASE("SIMD INT", "[Vectorization]") {
   computeAndCheck<logicFun>(A, B, C, D, x ,y);
 
   Int t = sign(A)+sign(B+C);
-  CHECK(t[0] == 2);
+  for (size_t k=0; k<Int::Size; ++k) {
+    CHECK(t[k] == 2);
+  }
 }
 
 TEST_CASE("SIMD DOUBLE", "[Vectorization]") {
@@ -79,6 +81,8 @@ TEST_CASE("SIMD DOUBLE", "[Vectorization]") {
   computeAndCheck<logicFun>(A, B, C, D, x ,y);
 
   Double t = sqrt(pow(B,2)*C + D*y + A+x);
-  CHECK(t[1] == 7);
+  for (size_t k=0; k<Double::Size; ++k) {
+    CHECK(t[k] == 7);
+  }
 }
 

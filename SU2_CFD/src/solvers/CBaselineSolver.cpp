@@ -2,7 +2,7 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -421,7 +421,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
 
-        if (turb_model == TURB_MODEL::SA || turb_model == TURB_MODEL::SA_NEG) {
+        if (turb_model == TURB_MODEL::SA) {
           index++;
         } else if (turb_model == TURB_MODEL::SST) {
           index+=2;

@@ -23,7 +23,7 @@ jobs:
           - os_bin: macos64-mpi
             flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
           - os_bin: linux64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_linux'
+            flags: '-Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
             flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
     runs-on: ubuntu-latest
@@ -35,7 +35,7 @@ jobs:
           key: ${{ matrix.os_bin }}-${{ github.sha }}
           restore-keys: ${{ matrix.os_bin }}
       - name: Build
-        uses: docker://su2code/build-su2-cross:latest
+        uses: docker://ghcr.io/su2code/su2/build-su2-cross:220716-1459
         with:
           args: -b ${{ github.sha }} -f "${{matrix.flags}}"
       - name: Create Archive

@@ -2,7 +2,7 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -267,29 +267,9 @@ void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHist
   std::vector<std::string> symbols;
   output.expression = mel::Parse<passivedouble>(expression, symbols);
 
-  auto ptrToSymbolValue = [&](const std::string& symbol) {
-    /*--- Decide if it should be per surface. ---*/
-    const auto pos = symbol.find('[');
-    const su2double* ptr = nullptr;
-    if (pos == std::string::npos) {
-      const auto it = historyOutput_Map.find(symbol);
-      if (it != historyOutput_Map.end()) {
-        ptr = &(it->second.value);
-      }
-    } else {
-      const auto name = std::string(symbol, 0, pos);
-      const auto idx = std::stoi(std::string(symbol.begin()+pos+1, symbol.end()-1));
-      const auto it = historyOutputPerSurface_Map.find(name);
-      if (it != historyOutputPerSurface_Map.end()) {
-        ptr = &(it->second[idx].value);
-      }
-    }
-    return ptr;
-  };
-
   output.symbolValues.reserve(symbols.size());
   for (const auto& symbol : symbols) {
-    const auto* ptr = ptrToSymbolValue(symbol);
+    const auto* ptr = GetPtrToHistoryOutput(symbol);
     if (ptr == nullptr) {
       SU2_MPI::Error(std::string("Invalid history output (") + symbol + std::string(") used in expression:\n") +
                      expression, CURRENT_FUNCTION);
@@ -924,30 +904,33 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
 }
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
-                              unsigned long iter, bool force_writing){
+                              unsigned long iter, bool force_writing) {
 
-  bool isFileWrite=false;
-  unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-  auto VolumeFiles = config->GetVolumeOutputFiles();
+  bool isFileWrite = false, dataIsLoaded = false;
+  const auto nVolumeFiles = config->GetnVolumeOutputFiles();
+  const auto* VolumeFiles = config->GetVolumeOutputFiles();
 
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */
   AllocateDataSorters(config, geometry);
 
-  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++){
+  for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++) {
 
     /*--- Collect the volume data from the solvers.
      *  If time-domain is enabled, we also load the data although we don't output it,
      *  since we might want to do time-averaging. ---*/
-    if (WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile) || config->GetTime_Domain())
-      LoadDataIntoSorter(config, geometry, solver_container);
+    const bool write_file = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile);
 
-    if (!(WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged, iFile))) continue;
+    if ((write_file || config->GetTime_Domain()) && !dataIsLoaded) {
+      LoadDataIntoSorter(config, geometry, solver_container);
+      dataIsLoaded = true;
+    }
+    if (!write_file) continue;
 
     /*--- Partition and sort the data --- */
 
     volumeDataSorter->SortOutputData();
 
-    if (rank == MASTER_NODE && !isFileWrite){
+    if (rank == MASTER_NODE && !isFileWrite) {
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
       fileWritingTable->PrintHeader();
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
@@ -958,16 +941,16 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
 
     WriteToFile(config, geometry, VolumeFiles[iFile]);
 
-    if (rank == MASTER_NODE && !isFileWrite){
-      fileWritingTable->PrintFooter();
-      headerNeeded = true;
-    }
-
     /*--- Write any additonal files defined in the child class ----*/
 
     WriteAdditionalFiles(config, geometry, solver_container);
 
     isFileWrite = true;
+  }
+
+  if (rank == MASTER_NODE && isFileWrite) {
+    fileWritingTable->PrintFooter();
+    headerNeeded = true;
   }
 
   return isFileWrite;
@@ -1006,29 +989,32 @@ void COutput::PrintConvergenceSummary(){
 
 bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
-  unsigned short iCounter;
-
   convergence = true;
 
-  for (unsigned short iField_Conv = 0; iField_Conv < convFields.size(); iField_Conv++){
+  for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
+
+    const auto& convField = convFields[iField_Conv];
+    const auto it = historyOutput_Map.find(convField);
+
+    if (it == historyOutput_Map.end()) continue;
+
+    const auto& field = it->second;
+    const su2double monitor = field.value;
+
+    /*--- Stop the simulation in case a nan appears, do not save the solution. ---*/
+    if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+    }
 
     bool fieldConverged = false;
 
-    const string &convField = convFields[iField_Conv];
-    if (historyOutput_Map.count(convField) > 0){
-      su2double monitor = historyOutput_Map.at(convField).value;
-
-      /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-      if (std::isnan(SU2_TYPE::GetValue(monitor))) {
-        SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
-      }
+    switch (field.fieldType) {
 
       /*--- Cauchy based convergence criteria ---*/
+      case HistoryFieldType::COEFFICIENT: {
 
-      if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::COEFFICIENT) {
-
-        if (Iteration == 0){
-          for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++){
+        if (Iteration == 0) {
+          for (auto iCounter = 0ul; iCounter < nCauchy_Elems; iCounter++) {
             cauchySerie[iField_Conv][iCounter] = 0.0;
           }
           newFunc[iField_Conv] = monitor;
@@ -1036,60 +1022,50 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
         oldFunc[iField_Conv] = newFunc[iField_Conv];
         newFunc[iField_Conv] = monitor;
-        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv])/fabs(monitor);
+        /*--- Automatically modify the scaling factor of relative Cauchy convergence for
+        * coefficients that are close to zero. Example: For the clean aircraft, the rolling
+        * moment coefficient MOMENT_X is close to zero and thus will never reach a relative
+        * cauchy convergence ->> dividing tiny numbers is not a good idea. Using absolute
+        * cauchy convergence is more robust in this case. ---*/
+        cauchyFunc = fabs(newFunc[iField_Conv] - oldFunc[iField_Conv]) / fmax(fabs(monitor), 0.1);
 
         cauchySerie[iField_Conv][Iteration % nCauchy_Elems] = cauchyFunc;
         cauchyValue = 0.0;
-        for (iCounter = 0; iCounter < nCauchy_Elems; iCounter++)
+        for (auto iCounter = 0ul; iCounter < nCauchy_Elems; iCounter++)
           cauchyValue += cauchySerie[iField_Conv][iCounter];
 
         cauchyValue /= nCauchy_Elems;
 
-        if (cauchyValue >= cauchyEps) { fieldConverged = false;}
-        else { fieldConverged = true;}
-
         /*--- Start monitoring only if the current iteration
-         *  is larger than the number of cauchy elements and
-         * the number of start-up iterations --- */
+         *    is larger than the number of cauchy elements. --- */
+        fieldConverged = (cauchyValue < cauchyEps) && (Iteration >= nCauchy_Elems);
 
-        if (Iteration < max(config->GetStartConv_Iter(), nCauchy_Elems)){
-          fieldConverged = false;
-        }
-
+        if (Iteration == 0) cauchyValue = 1.0;
         SetHistoryOutputValue("CAUCHY_" + convField, cauchyValue);
 
-        if(Iteration == 0){
-          SetHistoryOutputValue("CAUCHY_" + convField, 1.0);
-        }
-      }
+      } break;
 
 
       /*--- Residual based convergence criteria ---*/
+      case HistoryFieldType::RESIDUAL:
+      case HistoryFieldType::AUTO_RESIDUAL:
 
-      if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::RESIDUAL ||
-          historyOutput_Map.at(convField).fieldType == HistoryFieldType::AUTO_RESIDUAL) {
+        fieldConverged = (Iteration != 0) && (monitor <= minLogResidual);
+        break;
 
-        /*--- Check the convergence ---*/
-
-        if (Iteration != 0 && (monitor <= minLogResidual)) { fieldConverged = true;  }
-        else { fieldConverged = false; }
-
-      }
-
-      /*--- Do not apply any convergence criteria of the number
-     of iterations is less than a particular value ---*/
-
-      if (Iteration < config->GetStartConv_Iter()) {
-        fieldConverged = false;
-      }
-
-      convergence = fieldConverged && convergence;
+      default:
+        break;
     }
+
+    convergence = fieldConverged && convergence;
   }
 
-  if (convFields.empty()) convergence = false;
+  /*--- Do not apply any convergence criteria if the number
+   *    of iterations is less than a particular value. ---*/
 
-  /*--- Apply the same convergence criteria to all the processors ---*/
+  if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
+
+  /*--- Apply the same convergence criteria to all processors. ---*/
 
   unsigned short local = convergence, global = 0;
   SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
@@ -1304,6 +1280,10 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
   /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
   SetHistoryOutputFields(config);
+
+  /*--- Detect user-defined outputs ---*/
+
+  SetCustomOutputs(config);
 
   /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
@@ -2182,6 +2162,130 @@ void COutput::SetCommonHistoryFields() {
   AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
+
+}
+
+void COutput::SetCustomOutputs(const CConfig* config) {
+
+  const auto& inputString = config->GetCustomOutputs();
+  if (inputString.empty()) return;
+
+  /*--- Split the different functions. ---*/
+
+  auto DebugPrint = [](const std::string& str) {
+#ifndef NDEBUG
+    std::cout << str << std::endl;
+#endif
+  };
+  DebugPrint(inputString);
+
+  const std::map<std::string, OperationType> opMap = {
+    {"Macro", OperationType::MACRO},
+    {"Function", OperationType::FUNCTION},
+    {"AreaAvg", OperationType::AREA_AVG},
+    {"AreaInt", OperationType::AREA_INT},
+    {"MassFlowAvg", OperationType::MASSFLOW_AVG},
+    {"MassFlowInt", OperationType::MASSFLOW_INT},
+  };
+  std::stringstream knownOps;
+  for (const auto& item : opMap) knownOps << item.first << ", ";
+
+  /*--- Split the input string into functions delimited by ";". ---*/
+  std::vector<std::string> functions;
+
+  const auto last = inputString.end();
+  for (auto it = inputString.begin(); it != last;) {
+
+    /*--- Find the start of the function name. ---*/
+    while (it != last && (*it == ' ' || *it == ';')) ++it;
+    if (it == last) break;
+
+    /*--- Find the end of the function. ---*/
+    const auto start = it;
+    while (it != last && *it != ';') ++it;
+
+    functions.emplace_back(start, it);
+  }
+
+  /*--- Process each function. ---*/
+  size_t iFunc = 0;
+  for (const auto& functionString : functions) {
+    ++iFunc;
+    DebugPrint(functionString);
+    const auto last = functionString.end();
+    for (auto it = functionString.begin(); it != last;) {
+
+      /*--- Find the end of the function name. ---*/
+      auto start = it;
+      while (it != last && *it != ' ' && *it != ':') ++it;
+      auto name = std::string(start, it);
+      DebugPrint(name);
+
+      /*--- Find the start and end of the operation type. ---*/
+      while (it != last && (*it == ' ' || *it == ':')) ++it;
+      start = it;
+      while (it != last && *it != ' ' && *it != '{') ++it;
+      const auto opType = std::string(start, it);
+      DebugPrint(opType);
+
+      auto item = opMap.find(opType);
+      if (item == opMap.end()) {
+        SU2_MPI::Error("Invalid operation type '" + opType + "', must be one of: " + knownOps.str(), CURRENT_FUNCTION);
+      }
+      const auto type = item->second;
+
+      /*--- Find the user expression. ---*/
+      while (it != last && (*it == ' ' || *it == '{')) ++it;
+      start = it;
+      while (it != last && *it != '}') ++it;
+      auto func = std::string(start, it);
+      DebugPrint(func);
+
+      if (type == OperationType::MACRO) {
+        /*--- Replace the expression in downstream functions, do not create a custom output for it. ---*/
+        const auto key = '$' + name;
+        for (auto i = iFunc; i < functions.size(); ++i) {
+          size_t pos = 0;
+          while ((pos = functions[i].find(key)) != std::string::npos) {
+            functions[i].replace(pos, key.length(), func);
+            DebugPrint(functions[i]);
+          }
+        }
+        break;
+      }
+
+      customOutputs.push_back(CustomOutput());
+      auto& output = customOutputs.back();
+
+      output.name = std::move(name);
+      output.type = type;
+      output.func = std::move(func);
+      output.expression = mel::Parse<passivedouble>(output.func, output.varSymbols);
+#ifndef NDEBUG
+      mel::Print(output.expression, output.varSymbols, std::cout);
+#endif
+
+      if (type == OperationType::FUNCTION) {
+        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+        break;
+      }
+
+      /*--- Find the marker names. ---*/
+      while (it != last && (*it == ' ' || *it == '}' || *it == '[')) ++it;
+      while (it != last && *it != ']') {
+        start = it;
+        while (it != last && *it != ' ' && *it != ',' && *it != ']') ++it;
+        output.markers.emplace_back(start, it);
+        DebugPrint(output.markers.back());
+
+        while (it != last && (*it == ' ' || *it == ',')) ++it;
+      }
+      /*--- Skip the terminating "]". ---*/
+      if (it != last) ++it;
+
+      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+    }
+  }
 
 }
 

@@ -2,7 +2,7 @@
  * \file vectorization.hpp
  * \brief Implementation of a portable SIMD type.
  * \author P. Gomes
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,6 +56,7 @@ constexpr size_t PREFERRED_SIZE = 8;
  */
 template<class T>
 constexpr size_t preferredLen() { return PREFERRED_SIZE / sizeof(T); }
+
 template<>
 constexpr size_t preferredLen<su2double>() { return PREFERRED_SIZE / sizeof(passivedouble); }
 

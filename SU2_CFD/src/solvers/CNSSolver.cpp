@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -133,7 +133,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == TURB_MODEL::SST) || (turb_model == TURB_MODEL::SST_SUST);
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
 
   AD::StartNoSharedReading();
 
@@ -955,7 +955,11 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
             nodes->SetTemperature(iPoint,T_Wall);
           }
           else {
-            cout << "Warning: T_Wall < 0 " << endl;
+            SU2_OMP_CRITICAL
+            {
+              cout << "Warning: T_Wall < 0 " << endl;
+            }
+            END_SU2_OMP_CRITICAL
           }
         }
 
@@ -1033,8 +1037,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
     SU2_OMP_ATOMIC
     globalCounter2 += smallYPlusCounter;
 
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
@@ -1048,7 +1051,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
                << " points, for which the wall model is not active." << endl;
       }
     }
-    END_SU2_OMP_MASTER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

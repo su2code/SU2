@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,8 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidModel.hpp"
 
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
@@ -147,6 +149,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Allocate(*config);
 
+  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -253,7 +257,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool viscous       = config->GetViscous();
   bool turbulent     = ((config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
                         (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS));
-  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST)));
+  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == TURB_MODEL::SST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
@@ -269,8 +273,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     config->SetVelocity_FreeStream(config->GetInc_Velocity_Init()[iDim],iDim);
   }
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
-
-  /*--- Depending on the density model chosen, select a fluid model. ---*/
 
   CFluidModel* auxFluidModel = nullptr;
 
@@ -305,6 +307,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
+
+    case FLUID_MIXTURE:
+
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
+      Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
+      auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
@@ -462,6 +473,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        break;
+
+      case FLUID_MIXTURE:
+        fluidModel = new CFluidScalar(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
       case INC_IDEAL_GAS_POLY:
@@ -473,9 +490,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
           fluidModel->SetCpModel(config);
         }
-        break;
-        /// TODO: Why is this outside?
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        break;
+
     }
 
     if (viscous) {
@@ -725,6 +742,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       NonDimTable.PrintFooter();
       break;
 
+    case FLUID_MIXTURE:
+      ModelTable << "FLUID_MIXTURE";
+      Unit << "N.m/kg.K";
+      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp() / config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << config->GetMolecular_Weight() << 1.0 << Unit.str() << config->GetMolecular_Weight();
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+
     case INC_IDEAL_GAS_POLY:
       ModelTable << "INC_IDEAL_GAS_POLY";
       Unit.str("");
@@ -875,15 +909,13 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Artificial dissipation ---*/
@@ -903,10 +935,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   /*--- Compute properties needed for mass flow BCs. ---*/
 
   if (outlet) {
-    SU2_OMP_MASTER
-    GetOutlet_Properties(geometry, config, iMesh, Output);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    SU2_OMP_SAFE_GLOBAL_ACCESS(GetOutlet_Properties(geometry, config, iMesh, Output);)
   }
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
@@ -1227,26 +1256,27 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
       if (config->GetEnergy_Equation()) {
-        bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
-        bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
+        const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
+        const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
-        bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
-        bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
+        const bool neg_density_i  = (Primitive_i[prim_idx.Density()] < 0.0);
+        const bool neg_density_j  = (Primitive_j[prim_idx.Density()] < 0.0);
 
-        nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
-        nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
-
-        /* Lastly, check for existing first-order points still active from previous iterations. */
-
-        if (nodes->GetNon_Physical(iPoint)) {
-          counter_local++;
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Primitive_i[iVar] = V_i[iVar];
+        bool bad_recon = neg_temperature_i || neg_temperature_j || neg_density_i || neg_density_j;
+        if (bad_recon) {
+          /*--- Force 1st order for this edge for at least 20 iterations. ---*/
+          NonPhysicalEdgeCounter[iEdge] = 20;
+        } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
+          --NonPhysicalEdgeCounter[iEdge];
+          bad_recon = true;
         }
-        if (nodes->GetNon_Physical(jPoint)) {
-          counter_local++;
-          for (iVar = 0; iVar < nPrimVar; iVar++)
+        counter_local += bad_recon;
+
+        if (bad_recon) {
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            Primitive_i[iVar] = V_i[iVar];
             Primitive_j[iVar] = V_j[iVar];
+          }
         }
       }
 
@@ -1304,16 +1334,15 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Add counter results for all threads. ---*/
     SU2_OMP_ATOMIC
     ErrorCounter += counter_local;
-    SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }
@@ -1880,7 +1909,9 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
 
   if (iMesh == MESH_0) {
+    SU2_OMP_MASTER
     MaxVel2 = 0.0;
+    END_SU2_OMP_MASTER
     su2double maxVel2 = 0.0;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1892,16 +1923,14 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
     MaxVel2 = max(MaxVel2, maxVel2);
     END_SU2_OMP_CRITICAL
 
-    SU2_OMP_BARRIER
-
-    SU2_OMP_MASTER {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       maxVel2 = MaxVel2;
       SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
       config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Allow an override if user supplies a large epsilon^2. ---*/
@@ -2129,7 +2158,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2199,10 +2228,17 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
     Flow_Dir_Mag = GeometryToolbox::Norm(nDim, Flow_Dir);
 
-    /*--- Store the unit flow direction vector. ---*/
+    /*--- Store the unit flow direction vector.
+     If requested, use the local boundary normal (negative),
+     instead of the prescribed flow direction in the config. ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+    if (config->GetInc_Inlet_UseNormal()) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = -Normal[iDim]/Area;
+    } else {
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+    }
 
     /*--- Retrieve solution at this boundary node. ---*/
 
@@ -2278,14 +2314,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           Vel_Mag = sqrt((P_total - P_domain)/(0.5*nodes->GetDensity(iPoint)));
 
-          /*--- If requested, use the local boundary normal (negative),
-           instead of the prescribed flow direction in the config. ---*/
-
-          if (config->GetInc_Inlet_UseNormal()) {
-            for (iDim = 0; iDim < nDim; iDim++)
-              UnitFlowDir[iDim] = -Normal[iDim]/Area;
-          }
-
           /*--- Compute the delta change in velocity in each direction. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
@@ -2308,6 +2336,20 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       default:
         SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
         break;
+    }
+
+    /*--- check if the inlet node is shared with a viscous wall ---*/
+
+    if (geometry->nodes->GetViscousBoundary(iPoint)) {
+
+      /*--- match the velocity and pressure for the viscous wall---*/
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
+
+      /*--- pressure obtained from interior ---*/
+
+      V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
     }
 
     /*--- Access density at the node. This is either constant by
@@ -2371,7 +2413,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -2569,7 +2611,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if ((config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST))
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
