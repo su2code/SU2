@@ -62,7 +62,7 @@ def merge( config ):
     
     # check if needed
     partitions = konfig['NUMBER_PART']
-    if partitions <= 1:
+    if partitions > 1:
         return su2io.State()
     
     # special cases
