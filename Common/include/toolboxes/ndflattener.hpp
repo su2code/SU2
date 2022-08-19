@@ -2,7 +2,7 @@
  * \file ndflattener.hpp
  * \brief Flatten pointer-to-pointer-... arrays for MPI communication
  * \author M. Aehle
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
