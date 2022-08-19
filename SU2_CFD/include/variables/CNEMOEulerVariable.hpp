@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
