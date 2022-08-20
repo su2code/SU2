@@ -297,8 +297,10 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&turb_b2_coeff_Local, &turb_b2_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
+      SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&turb_b2_coeff_Local, &turb_b2_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    }
 
     /*--- Set the solver variable Integrated Heatflux ---*/
     if (config->GetnMarker_HeatFlux() > 0)
@@ -307,8 +309,8 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     if (config->GetnMarker_Isothermal() > 0) {
       SPvals.Streamwise_Periodic_ThetaScaling = Volume_TempS_Global/Volume_Global;
       
-    //   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    //     nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
+      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+        nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
 
       /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
       su2double b0_coeff =  Volume_Temp_Global; 
@@ -317,11 +319,12 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
       su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
-        if (!config->GetDiscrete_Adjoint())
-        SPvals.Streamwise_Periodic_LambdaL -= 0.1 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
-       else
+      if (!config->GetDiscrete_Adjoint())
+        SPvals.Streamwise_Periodic_LambdaL -= 0.01 * (SPvals.Streamwise_Periodic_LambdaL - pred_lambda);
+      else
         SPvals.Streamwise_Periodic_LambdaL = pred_lambda;
-        config->SetStreamwise_Periodic_LamdaL(SPvals.Streamwise_Periodic_LambdaL);
+      cout<<"Lambda :: "<<SPvals.Streamwise_Periodic_LambdaL<<endl;
+      config->SetStreamwise_Periodic_LamdaL(SPvals.Streamwise_Periodic_LambdaL);
     } // if isothermal
   } // if energy
 }
