@@ -6,8 +6,8 @@
 #  \version 7.3.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -65,7 +65,7 @@ def main():
 
     # run flow and adjoint if requested
     if compute:
-        print "\n\n =================== Computing Flow Solution =================== \n\n"
+        print("\n\n =================== Computing Flow Solution =================== \n\n")
 
         # make copies
         konfig = copy.deepcopy(config)
@@ -85,16 +85,16 @@ def main():
             log = 'PRIMAL/log_primal.out'
         else:
             log = None
-        with redirect_output(log):   
+        with redirect_output(log):
             info = SU2.run.CFD(konfig)
             ztate.update(info)
-    
+
             # Solution merging
             konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
             info = SU2.run.merge(konfig)
             ztate.update(info)
 
-        print "\n\n =================== Computing Adjoint Solution =================== \n\n"
+        print("\n\n =================== Computing Adjoint Solution =================== \n\n")
 
         # make copies
         konfig = copy.deepcopy(config)
@@ -115,10 +115,10 @@ def main():
             log = 'ADJOINT/log_adjoint.out'
         else:
             log = None
-        with redirect_output(log):   
+        with redirect_output(log):
             info = SU2.run.CFD(konfig)
             ztate.update(info)
-    
+
             # Solution merging
             konfig.SOLUTION_ADJ_FILENAME = konfig.RESTART_ADJ_FILENAME
             info = SU2.run.merge(konfig)
@@ -139,7 +139,7 @@ def main():
         os.system('cp ' + konfig.SOLUTION_ADJ_FILENAME + ' ' + folderName)
 
     # compute metric field
-    print "\n\n =================== Computing Metric Field =================== \n\n"
+    print("\n\n =================== Computing Metric Field =================== \n\n")
 
     # make copies
     konfig = copy.deepcopy(config)
@@ -161,11 +161,11 @@ def main():
         log = 'METRIC/log_metric.out'
     else:
         log = None
-    with redirect_output(log):   
+    with redirect_output(log):
         info = SU2.run.MET(konfig)
 
 def sendOutputFiles( config, folderName = ''):
-    
+
     config.CONV_FILENAME = folderName + config.CONV_FILENAME
     config.BREAKDOWN_FILENAME = folderName + config.BREAKDOWN_FILENAME
 
