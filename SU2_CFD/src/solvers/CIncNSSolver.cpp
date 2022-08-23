@@ -695,7 +695,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
-       /*--- Incompressible formulation ---*/
+      /*--- Incompressible formulation ---*/
 
       su2double Density_Wall = nodes->GetDensity(iPoint);
 
