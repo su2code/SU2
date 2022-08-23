@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -445,6 +445,7 @@ private:
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
+  string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -5223,6 +5224,11 @@ public:
    * \brief Get the user expression for the custom objective function.
    */
   const string& GetCustomObjFunc() const { return CustomObjFunc; }
+
+  /*!
+   * \brief Get the user expressions for custom outputs.
+   */
+  const string& GetCustomOutputs() const { return CustomOutputs; }
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.

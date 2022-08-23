@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2346,11 +2346,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     }
 
     /*--- check if the inlet node is shared with a viscous wall ---*/
+
     if (geometry->nodes->GetViscousBoundary(iPoint)) {
+
       /*--- match the velocity and pressure for the viscous wall---*/
+
       for (iDim = 0; iDim < nDim; iDim++)
         V_inlet[iDim+prim_idx.Velocity()] = nodes->GetVelocity(iPoint,iDim);
-      /* pressure obtained from interior */
+
+      /*--- pressure obtained from interior ---*/
+
       V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
     }
 

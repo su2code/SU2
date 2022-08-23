@@ -1,7 +1,7 @@
 /*!
  * \file scalar_sources.cpp
  * \brief Implementation of numerics classes for integration of scalar source-terms.
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
