@@ -841,6 +841,7 @@ private:
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
+  EddyViscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,  /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
@@ -881,6 +882,7 @@ private:
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
   Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
+  EddyViscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
@@ -1697,6 +1699,12 @@ public:
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream viscosity.
+   * \return Freestream viscosity.
+   */
+  su2double GetEddyViscosity_FreeStream(void) const { return EddyViscosity_FreeStream; }
+
+  /*!
    * \brief Get the value of the freestream density.
    * \return Freestream density.
    */
@@ -1914,6 +1922,12 @@ public:
    * \return Non-dimensionalized freestream viscosity.
    */
   su2double GetViscosity_FreeStreamND(void) const { return Viscosity_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream viscosity.
+   * \return Non-dimensionalized freestream viscosity.
+   */
+  su2double GetEddyViscosity_FreeStreamND(void) const { return EddyViscosity_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -2522,6 +2536,12 @@ public:
   void SetViscosity_FreeStream(su2double val_viscosity_freestream) { Viscosity_FreeStream = val_viscosity_freestream; }
 
   /*!
+   * \brief Set the freestream viscosity.
+   * \param[in] val_viscosity_freestream - Value of the freestream viscosity.
+   */
+  void SetEddyViscosity_FreeStream(su2double val_eddyviscosity_freestream) { EddyViscosity_FreeStream = val_eddyviscosity_freestream; }
+
+  /*!
    * \brief Set the magnitude of the free-stream velocity.
    * \param[in] val_modvel_freestream - Magnitude of the free-stream velocity.
    */
@@ -2582,6 +2602,12 @@ public:
    * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
    */
   void SetViscosity_FreeStreamND(su2double val_viscosity_freestreamnd) { Viscosity_FreeStreamND = val_viscosity_freestreamnd; }
+
+  /*!
+   * \brief Set the non-dimensional free-stream viscosity.
+   * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
+   */
+  void SetEddyViscosity_FreeStreamND(su2double val_eddyviscosity_freestreamnd) { EddyViscosity_FreeStreamND = val_eddyviscosity_freestreamnd; }
 
   /*!
    * \brief Set the non-dimensional freestream turbulent kinetic energy.
@@ -4053,8 +4079,8 @@ public:
    * \brief Get flag for whether a least-squares gradient method is being applied to upwind reconstruction.
    * \return <code>TRUE</code> means that a least-squares gradient method is being applied to upwind reconstruction.
    */
-  bool GetLeastSquaresReconstructionRequired(void) const { return ReconstructionGradientRequired && 
-                                                                 (Kind_Gradient_Method_Recon == LEAST_SQUARES || 
+  bool GetLeastSquaresReconstructionRequired(void) const { return ReconstructionGradientRequired &&
+                                                                 (Kind_Gradient_Method_Recon == LEAST_SQUARES ||
                                                                   Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES); }
 
   /*!
@@ -9695,7 +9721,7 @@ public:
    * \brief Get the kind of the turbulence model.
    * \return Kind of the turbulence model.
    */
-  bool GetBool_Turb_Model_SST(void) const { return ((Kind_Turb_Model == TURB_MODEL::SST) || 
+  bool GetBool_Turb_Model_SST(void) const { return ((Kind_Turb_Model == TURB_MODEL::SST) ||
                                                     (Kind_Turb_Model == TURB_MODEL::SST_SUST)); }
 
   /*!
@@ -9703,7 +9729,7 @@ public:
    * \return <code>TRUE<\code> if error estimation is taking place
   */
   bool GetBool_Compute_Metric(void) const { return Bool_Compute_Metric; }
-  
+
   /*!
    * \brief Get the kind of method for computation of Hessians used for anisotropy.
    * \return Numerical method for computation of Hessians used for anisotropy.
@@ -9726,7 +9752,7 @@ public:
    * \return Minimum cell size
    */
   su2double GetAdap_Hmin(void) const { return Adap_Hmin; }
-  
+
   /*!
    * \brief Get maximum cell aspect ratio
    * \return Maximum cell aspect ratio

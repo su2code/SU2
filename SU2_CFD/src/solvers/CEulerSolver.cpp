@@ -4568,8 +4568,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        if (Qn_Infty > 0.0)   {
+          /*--- Outflow conditions ---*/
+          V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+          V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        }
+        else {
+          /*--- Inflow conditions ---*/
+          V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
+          V_infty[nDim+6] = config->GetEddyViscosity_FreeStreamND();
+        }
 
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -4577,6 +4585,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         su2double Coord_Reflected[MAXNDIM];
         GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
                                                  geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+        // visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
         visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
         /*--- Primitive variables, and gradient ---*/

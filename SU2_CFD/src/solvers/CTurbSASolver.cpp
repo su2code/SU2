@@ -135,6 +135,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Ji_3 = Ji*Ji*Ji;
   fv1 = Ji_3/(Ji_3+cv1_3);
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
+  config->SetEddyViscosity_FreeStreamND(muT_Inf);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -541,6 +542,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
       visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      // visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
       visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/

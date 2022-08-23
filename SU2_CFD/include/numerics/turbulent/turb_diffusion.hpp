@@ -111,6 +111,7 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
+  using Base::correct_gradient;
   using Base::implicit;
   using Base::Flux;
   using Base::Jacobian_i;
@@ -154,15 +155,20 @@ private:
 
     if (implicit) {
       if (nu_tilde_ij > 0.0) {
-        Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
-        Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
+        Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0])/sigma;
+        Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0])/sigma;
       }
       else  {
         const su2double Xi = nu_tilde_ij/nu_ij;
         const su2double fn = (cn1 + Xi*Xi*Xi)/(cn1 - Xi*Xi*Xi);
         const su2double dfn = 6.0*cn1*Xi*Xi/(nu_ij*pow(cn1 - Xi*Xi*Xi, 2.0));
-        Jacobian_i[0][0] = (0.5*(fn+dfn*nu_tilde_ij)*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
-        Jacobian_j[0][0] = (0.5*(fn+dfn*nu_tilde_ij)*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
+        Jacobian_i[0][0] = (0.5*(fn+dfn*nu_tilde_ij)*Proj_Mean_GradScalarVar[0])/sigma;
+        Jacobian_j[0][0] = (0.5*(fn+dfn*nu_tilde_ij)*Proj_Mean_GradScalarVar[0])/sigma;
+      }
+
+      if (correct_gradient) {
+        Jacobian_i[0][0] -= nu_e*proj_vector_ij/sigma;
+        Jacobian_j[0][0] += nu_e*proj_vector_ij/sigma;
       }
     }
   }
