@@ -2,7 +2,7 @@
  * \file CADTPointsOnlyClass.hpp
  * \brief Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
