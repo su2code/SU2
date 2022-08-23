@@ -619,7 +619,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
   unsigned long notConvergedCounter = 0;  /*--- Counts the number of wall cells that are not converged ---*/
   unsigned long smallYPlusCounter = 0;    /*--- Counts the number of wall cells where y+ < 5 ---*/
 
-  const su2double Gas_Constant = config->GetGas_ConstantND();
   const auto max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
@@ -692,8 +691,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
-
-      const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
        /*--- Incompressible formulation ---*/
 
