@@ -620,13 +620,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
   unsigned long smallYPlusCounter = 0;    /*--- Counts the number of wall cells where y+ < 5 ---*/
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const auto max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
-
-  /*--- Compute the recovery factor use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
-
-  const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -702,28 +697,9 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
-      /*--- If a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
-
-      su2double q_w = 0.0;
-
-      if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        const su2double T_n = nodes->GetTemperature(Point_Normal);
-        q_w = Conductivity_Wall * (T_Wall - T_n) / (WallDistMod);
-      }
-      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-        q_w = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
-      }
-      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_TRANSFER) {
-        const su2double Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) *
-                                               config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-        const su2double Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-        q_w = Transfer_Coefficient * (Tinfinity - T_Wall);
-      }
-
-      /*--- Incompressible formulation ---*/
+       /*--- Incompressible formulation ---*/
 
       su2double Density_Wall = nodes->GetDensity(iPoint);
-      const su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
 
       /*--- Compute the shear stress at the wall in the regular fashion
        *    by using the stress tensor on the surface ---*/
