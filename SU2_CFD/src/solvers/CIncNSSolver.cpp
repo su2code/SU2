@@ -702,6 +702,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
        * In incompressible flows, we can assume that there is no velocity-related
        * temperature change Prandtl: T+ = Pr*y+ ---*/
       su2double T_Wall = nodes->GetTemperature(iPoint);
+
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
       /*--- If a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
@@ -768,39 +769,32 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
         const su2double U_Plus = VelTangMod/U_Tau;
 
-        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
-
-        const su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-        const su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau);
-        const su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-        const su2double Phi  = asin(-1.0*Beta/Q);
-
-        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
-
-        const su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+        /*--- Y+ defined by White & Christoph ---*/
+ 
+        // incompressible adiabatic result
+        const su2double Y_Plus_White = exp(kappa*U_Plus)*exp(-1.0*kappa*B);
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
         const su2double kUp = kappa*U_Plus;
-        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
-        const su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+        Y_Plus = U_Plus + Y_Plus_White - (exp(-kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
-        Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                         - Lam_Visc_Normal/Lam_Visc_Wall);
+        /*--- incompressible formulation ---*/
+        Eddy_Visc_Wall = Lam_Visc_Wall* kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp*kUp/2.0);
+
         Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
         /* --- Define function for Newton method to zero --- */
 
         diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-        /* --- Gradient of function defined above --- */
+        /* --- Gradient of function defined above wrt U_Tau --- */
 
-        const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
-                  kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
-                  exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                  pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+        const su2double dyp_dup = 1.0 + exp(-kappa*B)*(exp(kUp) - kappa - kUp - 0.5*kUp*kUp);
+        const su2double dup_dutau = - U_Plus / U_Tau;
+        const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall - dyp_dup * dup_dutau;
+                                    ; 
 
         /* --- Newton Step --- */
 
