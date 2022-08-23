@@ -794,7 +794,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         const su2double dyp_dup = 1.0 + exp(-kappa*B)*(exp(kUp) - kappa - kUp - 0.5*kUp*kUp);
         const su2double dup_dutau = - U_Plus / U_Tau;
         const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall - dyp_dup * dup_dutau;
-                                    ; 
 
         /* --- Newton Step --- */
 
