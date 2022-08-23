@@ -692,8 +692,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-       /*--- Incompressible formulation ---*/
-
       su2double Density_Wall = nodes->GetDensity(iPoint);
 
       /*--- Compute the shear stress at the wall in the regular fashion
