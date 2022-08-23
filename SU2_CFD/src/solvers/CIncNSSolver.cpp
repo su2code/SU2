@@ -693,8 +693,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      su2double T_Wall = nodes->GetTemperature(iPoint);
-
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
        /*--- Incompressible formulation ---*/
@@ -740,21 +738,21 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
         /*--- Friction velocity and u+ ---*/
 
-        const su2double U_Plus = VelTangMod/U_Tau;
+        const su2double U_Plus = VelTangMod / U_Tau;
 
         /*--- Y+ defined by White & Christoph ---*/
  
+        const su2double kUp = kappa * U_Plus;
+
         // incompressible adiabatic result
-        const su2double Y_Plus_White = exp(kappa*U_Plus)*exp(-1.0*kappa*B);
+        const su2double Y_Plus_White = exp(kUp) * exp(-kappa * B);
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
-        const su2double kUp = kappa*U_Plus;
-
-        Y_Plus = U_Plus + Y_Plus_White - (exp(-kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+        Y_Plus = U_Plus + Y_Plus_White + (exp(-kappa * B)* (1.0 - kUp - 0.5 * kUp * kUp - kUp * kUp * kUp / 6.0));
 
         /*--- incompressible formulation ---*/
-        Eddy_Visc_Wall = Lam_Visc_Wall* kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp*kUp/2.0);
+        Eddy_Visc_Wall = Lam_Visc_Wall * kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp * kUp / 2.0);
 
         Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
@@ -764,7 +762,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
         /* --- Gradient of function defined above wrt U_Tau --- */
 
-        const su2double dyp_dup = 1.0 + exp(-kappa*B)*(exp(kUp) - kappa - kUp - 0.5*kUp*kUp);
+        const su2double dyp_dup = 1.0 + exp(-kappa * B) * (kappa * exp(kUp) - kappa - kUp - 0.5 * kUp * kUp);
         const su2double dup_dutau = - U_Plus / U_Tau;
         const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall - dyp_dup * dup_dutau;
 
