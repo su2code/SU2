@@ -698,9 +698,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Compute the wall temperature using the Crocco-Buseman equation.
-       * In incompressible flows, we can assume that there is no velocity-related
-       * temperature change Prandtl: T+ = Pr*y+ ---*/
       su2double T_Wall = nodes->GetTemperature(iPoint);
 
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
