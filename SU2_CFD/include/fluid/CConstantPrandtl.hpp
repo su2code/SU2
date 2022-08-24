@@ -42,38 +42,15 @@ class CConstantPrandtl final : public CConductivityModel {
   CConstantPrandtl(su2double pr_lam) : pr_lam_(pr_lam) {}
 
   /*!
-   * \brief return conductivity value.
-   */
-  su2double GetConductivity() const override { return kt_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double Getdktdrho_T() const override { return dktdrho_t_; }
-
-  /*!
-   * \brief return conductivity partial derivative value.
-   */
-  su2double GetdktdT_rho() const override { return dktdt_rho_; }
-
-  /*!
    * \brief Set thermal conductivity.
    */
-  void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override {
+  void SetConductivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
+                       su2double dmudrho_t, su2double dmudt_rho) override {
     kt_ = mu_lam * cp / pr_lam_;
-  }
-
-  /*!
-   * \brief Set thermal conductivity derivatives.
-   */
-  void SetDerConductivity(su2double t, su2double rho, su2double dmudrho_t, su2double dmudt_rho, su2double cp) override {
     dktdrho_t_ = dmudrho_t * cp / pr_lam_;
     dktdt_rho_ = dmudt_rho * cp / pr_lam_;
   }
 
  private:
-  su2double kt_{0.0};        /*!< \brief Thermal conductivity. */
-  su2double dktdrho_t_{0.0}; /*!< \brief DktDrho_T. */
-  su2double dktdt_rho_{0.0}; /*!< \brief DktDT_rho. */
-  su2double pr_lam_{0.0};    /*!< \brief Laminar Prandtl number. */
+  const su2double pr_lam_{0.0};    /*!< \brief Laminar Prandtl number. */
 };
