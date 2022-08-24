@@ -41,7 +41,7 @@ template<class ViscousDecorator>
 CNumericsSIMD* createUpwindIdealNumerics(const CConfig& config, int iMesh, const CVariable* turbVars) {
   CNumericsSIMD* obj = nullptr;
   switch (config.GetKind_Upwind_Flow()) {
-    case ROE:
+    case UPWIND::ROE:
       obj = new CRoeScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
   }
@@ -62,19 +62,19 @@ CNumericsSIMD* createUpwindGeneralNumerics(const CConfig& config, int iMesh, con
 template<class ViscousDecorator>
 CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CVariable* turbVars) {
   CNumericsSIMD* obj = nullptr;
-  switch ((iMesh==MESH_0)? config.GetKind_Centered_Flow() : LAX) {
-    case NO_CENTERED:
+  switch ((iMesh==MESH_0)? config.GetKind_Centered_Flow() : CENTERED::LAX) {
+    case CENTERED::NO_CENTERED:
       break;
-    case LAX:
+    case CENTERED::LAX:
       obj = new CLaxScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
-    case JST:
+    case CENTERED::JST:
       obj = new CJSTScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
-    case JST_KE:
+    case CENTERED::JST_KE:
       obj = new CJSTkeScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
-    case JST_MAT:
+    case CENTERED::JST_MAT:
       obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
   }

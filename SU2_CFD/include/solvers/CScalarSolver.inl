@@ -165,7 +165,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
   bool advection{false};
   
-  if(config->GetKind_Upwind_Species() == SCALAR_ADVECTION) advection = true;
+  if(config->GetKind_Upwind_Species() == UPWIND::SCALAR_ADVECTION) advection = true;
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
