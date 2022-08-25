@@ -6638,6 +6638,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case UPWIND::LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
           case UPWIND::AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
           case UPWIND::HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+          default: break;
         }
 
         if(Kind_Solver != MAIN_SOLVER::FEM_EULER && Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM_EULER) {
