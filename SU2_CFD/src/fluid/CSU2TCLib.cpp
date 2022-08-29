@@ -2,7 +2,7 @@
  * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,7 +52,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
 
-  if(viscous){
+  if (viscous) {
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
@@ -109,6 +109,14 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     ElDegeneracy(0,4) = 3;
     ElDegeneracy(0,5) = 5;
     ElDegeneracy(0,6) = 15;
+
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      mu_ref[0] = 2.125E-5;
+      k_ref[0] = 0.0163;
+      Sm_ref[0] = 114.0;
+      Sk_ref[0] = 170;
+    }
 
   } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
@@ -251,6 +259,14 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(0,1,0) = -8.3493693E-03;  Omega11(0,1,1) = 1.7808911E-01;   Omega11(0,1,2) = -1.4466155E+00;  Omega11(0,1,3) = 1.9324210E+03;
     Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
+
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      k_ref[0] = 0.0242;
+      mu_ref[0] = 1.663E-5;
+      Sm_ref[0] = 107.0;
+      Sk_ref[0] = 150.0;
+    }
 
   } else if (gas_model == "AIR-5"){
 
@@ -597,6 +613,14 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,2,0) = -1.0066279E-03;  Omega11(4,2,1) = 1.1029264E-02;   Omega11(4,2,2) = -2.0671266E-01;  Omega11(4,2,3) = 8.2644384E+01;
     Omega11(4,3,0) = -5.0478143E-03;  Omega11(4,3,1) = 1.0236186E-01;   Omega11(4,3,2) = -9.0058935E-01;  Omega11(4,3,3) = 4.4472565E+02;
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
+
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      k_ref[0] = 0.0241;
+      mu_ref[0] = 1.716E-5;
+      Sm_ref[0] = 111.0;
+      Sk_ref[0] = 194.0;
+    }
 
   } else if (gas_model == "AIR-7"){
 
@@ -1027,6 +1051,14 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,2,0) = -1.0066279E-03;  Omega11(4,2,1) = 1.1029264E-02;   Omega11(4,2,2) = -2.0671266E-01;  Omega11(4,2,3) = 8.2644384E+01;
     Omega11(4,3,0) = -5.0478143E-03;  Omega11(4,3,1) = 1.0236186E-01;   Omega11(4,3,2) = -9.0058935E-01;  Omega11(4,3,3) = 4.4472565E+02;
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
+
+    if (viscous) {
+      //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
+      k_ref[0] = 0.0241;
+      mu_ref[0] = 1.716E-5;
+      Sm_ref[0] = 111.0;
+      Sk_ref[0] = 194.0;
+    }
   }
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -1598,8 +1630,8 @@ vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
    DiffusionCoeffWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
    DiffusionCoeffGY();
-  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::DEBUG)
-    DiffusionCoeffD();
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
+   DiffusionCoeffWBE();
 
   return DiffusionCoeff;
 
@@ -1611,8 +1643,9 @@ su2double CSU2TCLib::GetViscosity(){
     ViscosityWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ViscosityGY();
-  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::DEBUG)
-    ViscosityD();
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
+    ViscositySuth();
+
   return Mu;
 
 }
@@ -1623,8 +1656,8 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
     ThermalConductivitiesWBE();
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ThermalConductivitiesGY();
-  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::DEBUG)
-    ThermalConductivitiesD();
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
+    ThermalConductivitiesSuth();
 
   return ThermalConductivities;
 
@@ -1750,112 +1783,6 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
   ThermalConductivities[1] = ThermalCond_ve;
 }
 
-void CSU2TCLib::DiffusionCoeffD(){
-
-  su2double conc, Mi, Mj, M, Omega_ij, denom;
-  su2activematrix Dij;
-
-  Dij.resize(nSpecies, nSpecies) = su2double(0.0);
-
-  /*--- Calculate species mole fraction ---*/
-  conc = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
-    conc               += MolarFracWBE[iSpecies];
-  }
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
-  /*--- Calculate mixture molar mass (kg/mol) ---*/
-  // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
-  M = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
-  M = M*1E-3;
-  /*---+++                  +++---*/
-  /*--- Diffusion coefficients ---*/
-  /*---+++                  +++---*/
-  /*--- Solve for binary diffusion coefficients ---*/
-  // Note: Dij = Dji, so only loop through req'd indices
-  // Note: Correlation requires kg/mol, hence 1E-3 conversion from kg/kmol
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Mi = MolarMass[iSpecies]*1E-3;
-    for (jSpecies = iSpecies; jSpecies < nSpecies; jSpecies++) {
-      Mj = MolarMass[jSpecies]*1E-3;
-      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-      Omega_ij = 1E-20/PI_NUMBER * Omega00(iSpecies,jSpecies,3)
-          * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
-          +  Omega00(iSpecies,jSpecies,1)*log(T)
-          +  Omega00(iSpecies,jSpecies,2));
-      Dij(iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
-      Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
-    }
-  }
-  /*--- Calculate species-mixture diffusion coefficient --*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    DiffusionCoeff[iSpecies] = 0.0;
-    denom = 0.0;
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      if (jSpecies != iSpecies) {
-        denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
-      }
-    }
-
-    if (nSpecies==1) DiffusionCoeff[0] = 0;
-    else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
-  }    
-
-}
-
-void CSU2TCLib::ViscosityD(){
-  
-  //AIR-5
-  //su2double Mu_ref = 1.716E-5;
-  //su2double T_ref  = 273.15;
-  //su2double S_ref  = 111;
-  
-  //N2
-  //su2double Mu_ref = 1.663E-5;
-  //su2double T_ref  = 273.15;
-  //su2double S_ref  = 107;
-
-  //ARGON
-  su2double Mu_ref = 2.125E-5;
-  su2double T_ref  = 273.15;
-  su2double S_ref  = 114;
-
-  su2double T_nd = T / T_ref;
-
-  /*--- Calculate mixture laminar viscosity ---*/
-  Mu = Mu_ref * T_nd * sqrt(T_nd) * ((T_ref + S_ref) / (T + S_ref));
-}
-
-void CSU2TCLib::ThermalConductivitiesD(){
-
-  su2double Pr_lam  = 0.72;
-  su2double Ru      = 1000.0*UNIVERSAL_GAS_CONSTANT;
-
-  su2double mass = 0.0;
-  su2double rho = 0.0;
-  for (unsigned short ii=0; ii<nSpecies; ii++)
-  {
-    rho  += rhos[ii];
-  } 
-  for (unsigned short ii=0; ii<nSpecies; ii++)
-  {
-    mass += rhos[ii]/rho*MolarMass[ii];
-  }
-
-  su2double Cvtr = ComputerhoCvtr()/rho;
-  su2double Cvve = ComputerhoCvve()/rho;
-  su2double scl  = Cvve/Cvtr;
-  su2double Cptr = Cvtr + Ru/mass;
-  su2double Cpve = scl*Cptr;
-  
-  ThermalConductivities[0] = Mu*Cptr/Pr_lam;
-  ThermalConductivities[1] = 0; //  todo check me Mu*Cpve/Pr_lam;
-}
-
-
 void CSU2TCLib::DiffusionCoeffGY(){
 
   su2double pi = PI_NUMBER;
@@ -1913,7 +1840,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
     //}
 
     /*--- Assign species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
+    DiffusionCoeff[iSpecies] = (denom > EPS) ? (gam_t*gam_t*Mi*(1-Mi*gam_i) / denom) : su2double(0.0);
   }
   // if (ionization) {
   //TODO: Update correct iElectron....
@@ -2082,24 +2009,53 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     }
 
     /*--- Translational contribution to thermal conductivity ---*/
-    ThermalCond_tr    += (15.0/4.0)*kb*gam_i/denom_t;
+    ThermalCond_tr += (denom_t > EPS) ? ((15.0/4.0)*kb*gam_i/denom_t) : su2double(0.0);
 
     /*--- Translational contribution to thermal conductivity ---*/
-    if (RotationModes[iSpecies] != 0.0)
-      ThermalCond_tr  += kb*gam_i/denom_r;
+    if (RotationModes[iSpecies] != 0.0) ThermalCond_tr += (denom_r > EPS) ? (kb*gam_i/denom_r) : su2double(0.0);
 
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
-    ThermalCond_ve += kb*Cvve/R*gam_i / denom_r;
+    ThermalCond_ve += (denom_r > EPS) ? (kb*Cvve/R*gam_i / denom_r) : su2double(0.0);
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
   ThermalConductivities[1] = ThermalCond_ve;
+}
+
+void CSU2TCLib::ViscositySuth(){
+
+  su2double T_nd = T / T_ref_suth;
+
+  /*--- Calculate mixture laminar viscosity ---*/
+  Mu = mu_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sm_ref[0]) / (T + Sm_ref[0]));
 
 }
 
-vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+void CSU2TCLib::ThermalConductivitiesSuth(){
 
-  vector<su2double> val_eves;
+  /*--- Compute mixture quantities ---*/
+  su2double mass = 0.0, rho = 0.0;
+  for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
+  for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
+
+  su2double Cvtr = ComputerhoCvtr()/rho;
+  su2double Cvve = ComputerhoCvve()/rho;
+
+  /*--- Compute simple Kve scaling factor ---*/
+  su2double scl  = Cvve/Cvtr;
+
+  /*--- Compute k's using Sutherland's law ---*/
+  su2double T_nd = T / T_ref_suth;
+  su2double k = k_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sk_ref[0]) / (T + Sk_ref[0]));
+  su2double kve = scl*k;
+
+  ThermalConductivities[0] = k;
+  ThermalConductivities[1] = kve;
+
+}
+
+vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel, su2double Tve_old) {
+
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
@@ -2115,39 +2071,77 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  su2double Tmin  = 50.0; su2double Tmax = 8E4;
-  su2double Tve_o = 50.0; su2double Tve2 = 8E4;
+  const su2double Tmin   = 50.0; const su2double Tmax   = 8E4;
+  const su2double Tvemin = 50.0; const su2double Tvemax = 8E4;
+  su2double Tve_o  = 50.0; su2double Tve2  = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
-  if      (T < Tmin) T = Tmin;
-  else if (T > Tmax) T = Tmax;
+  if (Tve_old < 1) Tve_old = T;                           //For first fluid iteration
+  if (T < Tmin) T = Tmin;  else if (T > Tmax) T = Tmax;
+  if (Tve_old<Tvemin) Tve_old = Tvemin; else if (Tve_old>Tvemax) Tve_old = Tvemax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
-  su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
-  unsigned short maxBIter = 50;        // Maximum Bisection method iterations
+  const su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
+  const su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
+  const unsigned short maxBIter = 50;        // Maximum Bisection method iterations
+  const unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  const su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
+  /*--- Execute a Newton-Raphson root-finding method for Tve ---*/
   //Initialize solution
-  Tve = T;
+  Tve = Tve_old;
 
-  // Execute the root-finding method
   bool Bconvg = false;
-  su2double rhoEve_t = 0.0;
+  bool NRconvg = false;
+  su2double rhoEve_t = 0.0, rhoCvve = 0.0;
 
-  for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
-    Tve      = (Tve_o+Tve2)/2.0;
-    val_eves = ComputeSpeciesEve(Tve);
-    rhoEve_t = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
-    if (fabs(rhoEve_t - rhoEve) < Btol) {
-      Bconvg = true;
-      break;
+  /*--- Newton-Raphson Method --*/
+  for (unsigned short iIter = 0; iIter < maxNIter; iIter++) {
+    rhoEve_t = rhoCvve = 0.0;
+    const auto& val_eves  = ComputeSpeciesEve(Tve);
+    const auto& val_cvves = ComputeSpeciesCvVibEle(Tve);
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+      rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
+      rhoCvve += rhos[iSpecies] * val_cvves[iSpecies];
+    } 
+
+    /*--- Find the roots ---*/
+    su2double f  = rhoEve - rhoEve_t;
+    su2double df = -rhoCvve;
+    Tve2 = Tve - (f/df)*scale; 
+
+    /*--- Check for convergence ---*/
+    if ((fabs(Tve2-Tve) < NRtol) && (Tve > Tvemin) && (Tve < Tvemax)) {
+      NRconvg = true;
+      Tve = Tve2;
+      break; 
     } else {
-      if (rhoEve_t > rhoEve) Tve2 = Tve;
-      else                  Tve_o = Tve;
+      Tve = Tve2;  
     }
   }
+
+  // If the Newton-Raphson method has converged, assign the value of Tve.
+  // Otherwise, execute a bisection root-finding method
+  Tve_o = Tvemin; Tve2 = Tvemax;
+  if (!NRconvg) {
+    for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
+      Tve      = (Tve_o+Tve2)/2.0;
+      const auto& val_eves = ComputeSpeciesEve(Tve);
+      rhoEve_t = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
+      if (fabs(rhoEve_t - rhoEve) < Btol) {
+        Bconvg = true;
+        break;
+      } else {
+        if (rhoEve_t > rhoEve) Tve2 = Tve;
+        else                  Tve_o = Tve;
+      }
+    }
+  }
+
   // If absolutely no convergence, then assign to the TR temperature
-  if (!Bconvg) {
+  if (!NRconvg && !Bconvg ) {
     Tve = T;
     cout <<"Warning: temperatures did not converge, error= "<< fabs(rhoEve_t-rhoEve)<<endl;
   }

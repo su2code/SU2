@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,8 @@
  */
 
 #pragma once
+
+#include <limits>
 
 #include "CFlowVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
@@ -58,6 +60,8 @@ class CNEMOEulerVariable : public CFlowVariable {
     inline IndexType RhoCvve() const {return nSpecies+nDim+7;}
     inline IndexType LaminarViscosity() const {return nSpecies+nDim+8;}
     inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
+
+    inline IndexType ThermalConductivity() const {return std::numeric_limits<IndexType>::max();}
   };
 
  protected:

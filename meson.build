@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.3.1 "Blackbird"',
+        version: '7.4.0 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -21,8 +21,21 @@ if build_machine.system() != 'windows'
   if meson.get_compiler('cpp').get_id() != 'intel'
     default_warning_flags += ['-Wno-empty-body']
   endif
-  default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-deprecated-declarations']
+  desired_warnings = ['-Wno-unused-parameter',
+                      '-Wno-deprecated-declarations',
+                      '-Wno-error=cast-function-type',
+                      '-Wno-cast-function-type',
+                      '-Wno-error=stringop-truncation',
+                      '-Wno-stringop-truncation',
+                      '-Wno-error=missing-field-initializers',
+                      '-Wno-missing-field-initializers',
+                      '-Wno-error=class-memaccess',
+                      '-Wno-class-memaccess']
+  foreach flag : desired_warnings
+    if meson.get_compiler('cpp').has_argument(flag)
+      default_warning_flags += flag
+    endif
+  endforeach
 
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
@@ -253,7 +266,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.3.1 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.4.0 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

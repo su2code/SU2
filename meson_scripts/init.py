@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.3.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -44,11 +44,11 @@ def init_submodules(method = 'auto'):
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
+  sha_version_codi = 'b576224d5ea686fb8385b7ba6b5df0743d2be8aa'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_opdi = '6fb2691b8e4a8f00f47d2a27740fa890df0b5405'
+  sha_version_opdi = '1aabf5bd1ed77611742eb655002f2ac7a3dddef9'
   github_repo_opdi = 'https://github.com/SciCompKL/OpDiLib'
   sha_version_meson = '41c650a040d50e0912d268af7a903a9ce1456dfa'
   github_repo_meson = 'https://github.com/mesonbuild/meson'

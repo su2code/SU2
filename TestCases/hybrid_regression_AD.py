@@ -3,7 +3,7 @@
 ## \file hybrid_regression_AD.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -75,7 +75,8 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230631, 0.644953, 0.177890, -0.000016, 5.000000, -3.007652, 5.000000, -7.631910]
+    discadj_rans_naca0012_sa.test_vals         = [-2.230631, 0.644953, 0.177890, -0.000016, 5.000000, -3.007652, 5.000000, -7.631910]
+    discadj_rans_naca0012_sa.test_vals_aarch64 = [-2.230631, 0.644954, 0.177890, -0.000016, 5.000000, -3.007651, 5.000000, -7.631909]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -107,7 +108,8 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.705921, -2.837904, 0.000000]
+    discadj_incomp_cylinder.test_vals         = [20.000000, -2.705921, -2.837904, 0.000000]
+    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.705918, -2.837766, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
@@ -191,7 +193,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -1.938806, -1.995540]
+    discadj_trans_stator.test_vals         = [79.000000, -1.938806, -1.995540]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, -1.938809, -1.995540]
     test_list.append(discadj_trans_stator)
     
     ###################################
@@ -203,7 +206,8 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals = [1.774569, 1.928023, -0.000364, -8.690300]
+    discadj_fea.test_vals         = [1.774569, 1.928023, -0.000364, -8.690300]
+    discadj_fea.test_vals_aarch64 = [2.216938, 2.129429, -0.000365, -8.782500]
     test_list.append(discadj_fea) 
 
     ######################################

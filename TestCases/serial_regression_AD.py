@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.3.1 "Blackbird"
+#  \version 7.4.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -226,7 +226,8 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals = [-2.849531, -3.238474, -3.6413e-04, -8.7087] #last 4 columns
+    discadj_fea.test_vals         = [-2.849531, -3.238474, -3.6413e-04, -8.7087] #last 4 columns
+    discadj_fea.test_vals_aarch64 = [-2.849570, -3.238519, -3.6413e-04, -8.7087] #last 4 columns
     discadj_fea.su2_exec  = "SU2_CFD_AD"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -295,6 +296,7 @@ def main():
     discadj_rht.su2_exec       = "discrete_adjoint.py -f"
     discadj_rht.timeout        = 1600
     discadj_rht.reference_file = "of_grad_cd.csv.ref"
+    discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
     discadj_rht.test_file      = "of_grad_cd.csv"
     pass_list.append(discadj_rht.run_filediff())
     test_list.append(discadj_rht)
@@ -311,6 +313,7 @@ def main():
     discadj_euler_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_euler_py.timeout   = 1600
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
+    discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
     pass_list.append(discadj_euler_py.run_filediff())
     test_list.append(discadj_euler_py)
@@ -323,6 +326,7 @@ def main():
     discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py -f"
     discadj_multiple_ffd_py.timeout   = 1600
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
+    discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
     pass_list.append(discadj_multiple_ffd_py.run_filediff())
     test_list.append(discadj_multiple_ffd_py)
@@ -335,6 +339,7 @@ def main():
     directdiff_euler_py.su2_exec  = "direct_differentiation.py -f"
     directdiff_euler_py.timeout   = 1600
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
+    directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     pass_list.append(directdiff_euler_py.run_filediff())
     test_list.append(directdiff_euler_py)
@@ -347,6 +352,7 @@ def main():
     directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py -f"
     directdiff_multiple_ffd_py.timeout   = 1600
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
+    directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     pass_list.append(directdiff_multiple_ffd_py.run_filediff())
     test_list.append(directdiff_multiple_ffd_py)
@@ -402,6 +408,7 @@ def main():
     grad_smooth_naca0012.timeout   = 1600
     grad_smooth_naca0012.tol       = 0.00001
     grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
+    grad_smooth_naca0012.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_naca0012.test_file = "of_hess.dat"
     pass_list.append(grad_smooth_naca0012.run_filediff())
     test_list.append(grad_smooth_naca0012)

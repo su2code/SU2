@@ -2,7 +2,7 @@
  * \file CTETRA4.cpp
  * \brief Definition of 4-node tetrahedral element with 4 Gauss point.
  * \author T. Dick
- * \version 7.3.1 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
