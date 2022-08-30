@@ -801,6 +801,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
   /*--- Compute the recovery factor
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
+  // NB: The Prandtl number does not have to be constant, we might need to compute it locally!
 
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
@@ -881,7 +882,10 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       su2double q_w = 0.0;
 
-      if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+      if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+        T_Wall = config->GetIsothermal_Temperature(Marker_Tag);
+      } 
+      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         q_w = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
       }
 
@@ -938,6 +942,10 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
         const su2double U_Plus = VelTangMod/U_Tau;
 
+        /*--- Y+ defined by White & Christoph ---*/
+
+        const su2double kUp = kappa*U_Plus;
+
         /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1108 ---*/
 
         const su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
@@ -948,7 +956,14 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
         /*--- Crocco-Busemann equation for wall temperature (eq. 11 of Nichols and Nelson) ---*/
         /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal      ---*/
 
-        if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
+        if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+          // for now, we set the wall temperature to the boundary condition and keep the heat flux at q_w=0
+          // later, we introduce the correction for heat transfer
+          T_Wall = config->GetIsothermal_Temperature(Marker_Tag);
+          nodes->SetTemperature(iPoint,T_Wall); // NB: not sure if this is necessary 
+        } else
+        if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+          // use the Crocco-Busemann equation to solve the temperature, taking into account frictional heating
           const su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus);
           if (denum > EPS){
             T_Wall = T_Normal / denum;
@@ -963,6 +978,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
           }
         }
 
+
         /*--- update of wall density using the wall temperature ---*/
         Density_Wall = P_Wall/(Gas_Constant*T_Wall);
 
@@ -972,26 +988,28 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
-        const su2double kUp = kappa*U_Plus;
-        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+        Y_Plus = U_Plus + Y_Plus_White - (exp(-kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
         const su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+        Eddy_Visc_Wall = Lam_Visc_Wall * (1.0 + dypw_dyp 
+                       - kappa*exp(-1.0*kappa*B)*(1.0 + kUp + kUp*kUp/2.0)
+                       - Lam_Visc_Normal/Lam_Visc_Wall);
 
-        Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                         - Lam_Visc_Normal/Lam_Visc_Wall);
         Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
         /* --- Define function for Newton method to zero --- */
 
         diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-        /* --- Gradient of function defined above --- */
+        /* --- Gradient of function defined above, ignoring the compressible contribution in the search gradient --- */
+        const su2double dyp_dup = 1.0 + exp(-kappa * B) * (kappa * exp(kUp) - kappa - kUp - 0.5 * kUp * kUp);
+        const su2double dup_dutau = - U_Plus / U_Tau;
+        const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall - dyp_dup * dup_dutau;
 
-        const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
-                  kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
-                  exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                  pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+        //const su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall 
+        //          + U_Plus / U_Tau +
+        //          kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+        //          exp(-1.0 * B * kappa) * (0.5 * pow(kUp, 3) + pow(kUp, 2) + kUp) / U_Tau;
 
         /* --- Newton Step --- */
 

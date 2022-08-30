@@ -476,14 +476,13 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     su2double k = nodes->GetSolution(iPoint_Neighbor,0);
     su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
     su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double Density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint_Neighbor);
     su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
     su2double y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
-
     su2double omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19
     su2double omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20
     su2double omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
-    su2double k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson
-                                           // (is this the correct density? paper says rho and not rho_w)
+    su2double k_new = omega_new * Eddy_Visc/Density;                // eq. 22 Nichols & Nelson
 
     /*--- put some relaxation factor on the k-omega values ---*/
     k += relax*(k_new - k);

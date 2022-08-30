@@ -371,14 +371,6 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       break;
   }
 
-  /*--- Get wall function treatment from config. ---*/
-
-  //const auto Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-  // nijso: we do not have a special treatment yet for heated walls
-  // the wall function model is written for heat flux, we have to implement isothermal wall conditions
-  //if (Wall_Function != WALL_FUNCTIONS::NONE)
-  //  SU2_MPI::Error("Wall function treatment not implemented yet.", CURRENT_FUNCTION);
-
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -480,10 +472,41 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
-      /*--- Apply a weak boundary condition for the energy equation.
-      Compute the residual due to the prescribed heat flux. ---*/
+      if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
-      LinSysRes(iPoint, nDim+1) -= thermal_conductivity*dTdn*Area;
+        const su2double T_Wall = config->GetIsothermal_Temperature(Marker_Tag);
+        const su2double kappa = config->GetwallModel_Kappa();
+        const su2double Prt=config->GetPrandtl_Turb();
+      
+        const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+        const su2double rho = nodes->GetDensity(iPoint);
+        const su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
+
+        const su2double T = nodes->GetTemperature(Point_Normal);
+
+        const su2double alpha=1.0/kappa;
+        const su2double Pr=Lam_Visc_Wall * Cp / thermal_conductivity;
+        const su2double Y_Plus = YPlus[val_marker][iVertex];
+        const su2double U_Tau = UTau[val_marker][iVertex];
+
+
+        /*--- Petukhov formula for thermal law of the wall ---*/
+        const su2double B=12.7*pow(Pr,0.667) - 6.7 ; 
+        const su2double G = (0.01*pow(Pr*Y_Plus,4.0)) / (1.0+5.0*Y_Plus*pow(Pr,3.0));
+        const su2double Tplus = Pr*Y_Plus*exp(-G) + (alpha*log(Y_Plus) + B) * exp(-1.0/G);
+
+        const su2double qw = ((T_Wall-T)*Cp*rho*U_Tau)/Tplus; 
+
+        LinSysRes(iPoint, nDim+1) -= qw*Area;
+
+      } else { 
+
+        /*--- Apply a weak boundary condition for the energy equation.
+        Compute the residual due to the prescribed heat flux. ---*/
+
+        LinSysRes(iPoint, nDim+1) -= thermal_conductivity*dTdn*Area;
+
+      }
 
       /*--- Jacobian contribution for temperature equation. ---*/
 
@@ -727,6 +750,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         continue;
       }
 
+
+
       /*--- Convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
       const su2double tol = 1e-12;
       while (fabs(diff) > tol) {
@@ -744,10 +769,11 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
-        Y_Plus = U_Plus + Y_Plus_White + (exp(-kappa * B)* (1.0 - kUp - 0.5 * kUp * kUp - kUp * kUp * kUp / 6.0));
+        Y_Plus = U_Plus + Y_Plus_White - (exp(-kappa * B)* (1.0 + kUp + 0.5 * kUp * kUp + kUp * kUp * kUp / 6.0));
 
-        /*--- incompressible formulation ---*/
-        Eddy_Visc_Wall = Lam_Visc_Wall * kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp * kUp / 2.0);
+        /*--- incompressible formulation, find the eddy viscosity at the first point off the wall ---*/
+
+        Eddy_Visc_Wall = Lam_Visc_Wall * (kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp * kUp / 2.0));
 
         Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
@@ -775,6 +801,28 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
           break;
         }
       }
+
+      /* *** TEST for thermal wall function *** */
+      /*
+      su2double Tplus;
+      const su2double Pr=0.70;
+      const su2double Prt=0.90;
+      su2double B=12.7*pow(Pr,0.667) - 6.7 ; // Petukhov
+      su2double G = (0.01*pow(Pr*Y_Plus,4.0)) / (1.0+5.0*Y_Plus*pow(Pr,3.0));
+      const su2double alpha=1.0/kappa;
+      Tplus = Pr*Y_Plus*exp(-G) + (alpha*log(Y_Plus) + B) * exp(-1.0/G);
+      cout << "T+ = " << Tplus << endl;
+
+      // T+ = (Tw -T)*rho*cp*ut/qw;
+      const su2double Gas_Constant = config->GetGas_ConstantND();
+      const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+      su2double rho=nodes->GetDensity(Point_Normal);
+      su2double T = nodes->GetTemperature(Point_Normal);
+      su2double T_Wall = config->GetIsothermal_Temperature(Marker_Tag);
+
+      su2double qw = ((T_Wall-T)*Cp*rho*U_Tau)/Tplus; 
+      cout << "heat-flux = "<<qw << endl;
+      */  
 
       /*--- Calculate an updated value for the wall shear stress
        *    using the y+ value, the definition of y+, and the definition of
