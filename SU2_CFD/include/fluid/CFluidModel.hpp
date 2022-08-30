@@ -32,6 +32,7 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/basic_types/datatype_structure.hpp"
+#include "../../../Common/include/containers/CLookUpTable.hpp"
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
 
@@ -67,6 +68,8 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
+ 
+  CLookUpTable* look_up_table; /*!< \brief the lookup table for the flamelet combustion model*/
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
@@ -128,6 +131,44 @@ class CFluidModel {
    * \brief Get fluid specific heat at constant volume.
    */
   su2double GetCv() const { return Cv; }
+
+  /*!
+   * \brief flamelet LUT - Get the source term of the transported scalar
+   */
+  virtual inline su2double* GetScalarSources(){ return nullptr; }
+
+    /*!
+   * \brief flamelet LUT - Get the source term of the transported scalar
+   * \param[in] val_ix - Index of the scalar.
+   */
+  virtual inline su2double GetScalarSources(int val_ix){ return 37; }
+  
+  /*!
+  * \brief flamelet LUT - Get the number of transported scalars
+  */
+  virtual inline unsigned short GetNScalars() {return 73; }
+
+  /*!
+   * \brief flamelet LUT - Get the looked up scalar field for combustion
+   */
+  virtual inline su2double GetScalarLookups(int){ return 37; }
+
+  /*!
+   * \brief flamelet LUT - Get the actual lookup table 
+   */
+  virtual CLookUpTable* GetLookUpTable() {return look_up_table; }
+
+  /*!
+   * \brief flamelet LUT - Get the total enthalpy from the temperature (reverse lookup)
+   */
+  virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy, 
+                                               su2double  val_prog, 
+                                               su2double  val_temp) { return 73; }
+
+  virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(73,37); }
+  virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(73,37); }
+
+
 
   /*!
    * \brief Compute and return fluid mean molecular weight in kg/mol.

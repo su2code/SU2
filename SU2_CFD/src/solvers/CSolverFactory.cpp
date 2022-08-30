@@ -52,6 +52,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/solvers/CSpeciesSolver.hpp"
+#include "../../include/solvers/CSpeciesFlameletSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -371,13 +372,26 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
 
   CSolver *speciesSolver = nullptr;
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    if (adjoint){
-      speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
-    } else {
-      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
-    }
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::PASSIVE_SCALAR:
+      if (adjoint){
+        speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
+      } else {
+        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      }
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      if (adjoint){
+        speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
+      } else {
+        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
+      }
+      break;
+    case SPECIES_MODEL::NONE:
+      SU2_MPI::Error("Trying to create SpeciesSolver container but SPECIES_MODEL=NONE.", CURRENT_FUNCTION);
+      break;  
   }
+
   return speciesSolver;
 }
 

@@ -1178,10 +1178,28 @@ static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
   PASSIVE_SCALAR,    /*!< \brief Passive scalar transport model. */
+  FLAMELET,          /*!< \brief flamelet model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
   MakePair("PASSIVE_SCALAR", SPECIES_MODEL::PASSIVE_SCALAR)
+  MakePair("FLAMELET", SPECIES_MODEL::FLAMELET)
+};
+
+/* the order matters: */
+/*! 
+* \brief progress variable and enthalpy are the first and second entry in the lookup table 
+*/
+enum FLAMELET_SCALAR_VARIABLES {
+  I_PROGVAR,
+  I_ENTH,
+};
+
+/*! 
+ * \brief the source terms for the flamelet method
+ */
+enum FLAMELET_SCALAR_SOURCES {
+  I_SRC_TOT_PROGVAR,
 };
 
 /*!

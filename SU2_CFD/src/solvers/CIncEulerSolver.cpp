@@ -34,6 +34,7 @@
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
 

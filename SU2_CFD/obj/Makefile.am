@@ -52,6 +52,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CFluidModel.cpp \
   ../src/fluid/CIdealGas.cpp \
   ../src/fluid/CFluidScalar.cpp \
+  ../src/fluid/CFluidFlamelet.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/fluid/CNEMOGas.cpp \
@@ -182,6 +183,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTemplateSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \
   ../src/solvers/CSpeciesSolver.cpp \
+  ../src/solvers/CSpeciesFlameletSolver.cpp \
   ../src/solvers/CTurbSolver.cpp \
   ../src/solvers/CTurbSASolver.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \

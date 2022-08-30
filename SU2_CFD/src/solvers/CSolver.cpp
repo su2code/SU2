@@ -3659,6 +3659,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
         }
         break;
+      case SPECIES_MODEL::FLAMELET:
+        /*--- 2-equation flamelet model ---*/
+        columnName << "PROGVAR    " << setw(24) << "ENTHALPY   " << setw(24);
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
+        break; 
     }
 
     columnNames.push_back(columnName.str());

@@ -996,9 +996,15 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
       break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::PASSIVE_SCALAR:
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
+      AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
+      break;
   }
 }
 
@@ -1017,9 +1023,17 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
       break;
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-      AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+  switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::PASSIVE_SCALAR:
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+      break;
+    case SPECIES_MODEL::FLAMELET:
+      AddVolumeOutput("RES_PROGVAR", "Residual_Progress_Variable", "SOLUTION", "Residual of progress variable");
+      AddVolumeOutput("RES_ENTHALPY", "Residual_Total_Enthalpy", "SOLUTION", "Residual of total enthalpy");
+      break;
+    case SPECIES_MODEL::NONE:
+      break;
   }
 }
 
@@ -1040,10 +1054,18 @@ void CFlowOutput::SetVolumeOutputFields_ScalarLimiter(const CConfig* config) {
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+  if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
+    switch (config->GetKind_Species_Model()) {
+      case SPECIES_MODEL::PASSIVE_SCALAR:
+        for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
+          AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
+      break;
+      case SPECIES_MODEL::FLAMELET:
+        AddVolumeOutput("LIMITER_PROGVAR", "Limiter_Progress_Variable", "SOLUTION", "Limiter of progress variable");
+        AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Total_Enthalpy", "SOLUTION", "Limiter of total enthalpy");
+      break;
+      case SPECIES_MODEL::NONE:
+        break;
     }
   }
 
@@ -1130,15 +1152,33 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-    const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+  switch (config->GetKind_Species_Model()){
+    case SPECIES_MODEL::PASSIVE_SCALAR:{
+      const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
 
-    for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-      SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
-        SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
+        SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+        if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
+          SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+      }
+      break;
     }
+    case SPECIES_MODEL::FLAMELET:{
+      const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+      SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, 0));
+      SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, 1));
+
+      SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
+      SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 1));
+
+      if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE){
+        SetVolumeOutputValue("LIMITER_PROGVAR", iPoint, Node_Species->GetLimiter(iPoint, 0));
+        SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Species->GetLimiter(iPoint, 1));
+      }
+      break;
+    }
+    case SPECIES_MODEL::NONE: break;
   }
 }
 

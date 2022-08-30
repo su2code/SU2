@@ -1192,7 +1192,23 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
+  
+  /*--- flamelet subsolver ---*/
+  su2double flame_thickness;
+  su2double flame_burnt_thickness;
+  su2double flame_offset[3]; 
+  su2double flame_normal[3]; 
 
+  /*--- lookup table ---*/
+  unsigned short n_scalars;             /* number of transported scalars for the flamelet LUT approach*/
+  unsigned short n_lookups;             /* number of lookud up variables */
+  unsigned short n_table_sources;       /* the number of transported scalar source terms for the LUT */
+
+  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
+  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
+  string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
+  string file_name_lut;                 /*!< \brief file name of the look up table. */
+ 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -2081,6 +2097,83 @@ public:
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
 
+  /*!
+   * \brief Get the flame offset for flamelet model initialization
+   * \return flame offset for flamelet model initialization
+   */
+  su2double *GetFlameOffset(void) { return flame_offset; }
+
+  /*!
+   * \brief Get the flame normal for flamelet model initialization
+   * \return flame offset for flamelet model initialization
+   */
+  su2double *GetFlameNormal(void) { return flame_normal; }
+
+    /*!
+   * \brief Get the flame thickness for flamelet model initialization
+   * \return flame thickness for flamelet model initialization
+   */
+  su2double GetFlameThickness(void) { return flame_thickness; }
+
+    /*!
+   * \brief Get the burnt region thickness for flamelet mdoel initialization
+   * \return flame thickness for flamelet model initialization
+   */
+  su2double GetFlameBurntThickness(void) { return flame_burnt_thickness; }
+
+
+  void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
+
+  /*!
+   * \brief Get the number of transported scalars for combustion   
+   */
+  unsigned short GetNScalars(void) const { return n_scalars; }
+
+  /*!
+   * \brief Get the number of transported scalars for combustion   
+   */
+  unsigned short GetNLookups(void) const { return n_lookups; }
+
+  void SetNLUTSources(unsigned short n_table_sources) { this->n_table_sources = n_table_sources; }
+
+  /*!
+   * \brief Get the number of transported scalars source terms for combustion   
+   */
+  unsigned short GetNLUTSources(void) const { return n_table_sources; }
+
+  /*!
+   * \brief Store the names of scalar variables that are being solved
+   * \param[out] stores the names in vector table_scalar_names
+   */
+  inline void SetLUTScalarNames(vector<string> &table_scalar_names) {this->table_scalar_names = table_scalar_names;}
+
+  /*!
+   * \brief Get the name of the independent variable from the lookup table
+   */
+  string GetLUTScalarName(unsigned short i_scalar) const { return table_scalar_names.at(i_scalar); }
+
+  /*!
+   * \brief Get the name of the variable that we want to retrieve from the lookup table
+   */
+  string GetLUTLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
+
+  /*!
+   * \brief Store the names of scalar source term variables
+   * \param[out] stores the names in vector table_source_names
+   */
+  inline void SetLUTSourceNames(vector<string> &table_source_names) {this->table_source_names = table_source_names;}
+
+  /*!
+   * \brief Get the scalar source term name i_source
+   */
+  string GetLUTSourceName(unsigned short i_source) const { return table_source_names.at(i_source); }
+
+  /*!
+   * \brief Get the file name of the look up table
+   * \return File name of the look up table 
+   */
+  string GetFileNameLUT(void){ return file_name_lut; };
+  
   /*!
    * \brief Get the Young's modulus of elasticity.
    * \return Value of the Young's modulus of elasticity.

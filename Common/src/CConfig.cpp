@@ -1326,6 +1326,24 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Use strong inlet and outlet BC in the species solver \n DEFAULT: false \ingroup Config*/
   addBoolOption("SPECIES_USE_STRONG_BC", Species_StrongBC, false);
 
+  /*!\brief FLAME_OFFSET \n DESCRIPTION: Offset for flame initialization using the flamelet model \ingroup Config*/
+  flame_offset[0] = 0.0;
+  flame_offset[1] = 0.0;
+  flame_offset[2] = 0.0;
+  addDoubleArrayOption("FLAME_OFFSET", 3,flame_offset);
+
+  /*!\brief FLAME_THICKNESS \n DESCRIPTION: Thickness for flame initialization using the flamelet model \ingroup Config*/
+  addDoubleOption("FLAME_THICKNESS", flame_thickness, 0.5e-3);
+  
+  /*!\brief FLAME_NORMAL \n DESCRIPTION: Normal for flame initialization using the flamelet model \ingroup Config*/
+  flame_normal[0] = 1.0;
+  flame_normal[1] = 0.0;
+  flame_normal[2] = 0.0;
+  addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
+  
+  /*!\brief FLAME_BURNT_THICKNESS \n DESCRIPTION: burnt thickness for flame initialization using the flamelet model \ingroup Config*/
+  addDoubleOption("FLAME_BURNT_THICKNESS", flame_burnt_thickness, 1);
+
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
@@ -2050,6 +2068,12 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
+
+  /*!\brief File name of the flamelet look up table.*/
+  addStringOption("FILENAME_LUT", file_name_lut, string("LUT"));
+ 
+  /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
+  addStringListOption("LOOKUP_NAMES", n_lookups, table_lookup_names);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -5329,7 +5353,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Checks for additional species transport. ---*/
-  if (Kind_Species_Model != SPECIES_MODEL::NONE) {
+  if (Kind_Species_Model == SPECIES_MODEL::PASSIVE_SCALAR) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
