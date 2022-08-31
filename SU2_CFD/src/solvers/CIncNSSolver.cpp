@@ -306,9 +306,8 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     }
 
     /*--- Retrieve scalar values (if needed) ---*/
-    //species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr
     if (species_model != SPECIES_MODEL::NONE) {
-      scalar = config->GetSpecies_Init(); // solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+      scalar = config->GetSpecies_Init();
     }
   
     /*--- Incompressible flow, primitive variables --- */
