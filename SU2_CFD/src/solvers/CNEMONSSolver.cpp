@@ -262,8 +262,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Get the locations of the primitive variables ---*/
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();
-  const unsigned short RHO_INDEX     = nodes->GetRhoIndex();
-  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -285,7 +283,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     // TODO: Look into this!
     // Note: Contributions from qtr and qve are used for proportional control
     //       to drive the solution toward the specified heatflux more quickly.
-    const auto V      = nodes->GetPrimitive(iPoint);
     const auto GradV  = nodes->GetGradient_Primitive(iPoint);
     su2double dTdn   = 0.0;
     su2double dTvedn = 0.0;
@@ -567,17 +564,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
   su2double UnitNormal[MAXNDIM] = {0.0};
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
   }
-
-  /*--- Extract required indices ---*/
-  const unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  const unsigned short RHO_INDEX = nodes->GetRhoIndex();
 
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 5;
@@ -953,7 +945,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Retrieve Flow Data ---*/
     su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
-    su2double Eddy_Visc = nodes->GetEddyViscosity(iPoint);
     su2double Density   = nodes->GetDensity(iPoint);
     su2double Gamma     = nodes->GetGamma(iPoint);
 
