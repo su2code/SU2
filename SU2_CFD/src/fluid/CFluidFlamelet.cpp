@@ -102,7 +102,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   return exit_code;
 }
 
-unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double *val_scalars){
+unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars){
 
   su2double val_enth = val_scalars[I_ENTH];
   su2double val_prog = val_scalars[I_PROGVAR];
@@ -137,8 +137,6 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);
-
-  cout << "lookup data = " << Temperature << " " << Mu << endl;
 
   // nijso: is Cv used somewhere?
   // we could check for the existence of molar_weight_mix in the lookup table, and else we just use gamma
