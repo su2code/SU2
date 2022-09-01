@@ -247,6 +247,12 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                               solver_container[iZone][INST_0],
                                                                               config_container[iZone], TimeIter);
     }
+    if (config_container[iZone]->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+      solver_container[iZone][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
+
+
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());

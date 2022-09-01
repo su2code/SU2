@@ -72,7 +72,13 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
 
       /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
-      const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+      /*--- nijso TODO: do we really want it like this? ---*/
+      //if (flame)
+      //  /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D--- */
+      //  Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+      //else 
+        const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+
       su2double Diffusivity_Turb = 0.0;
 
       if (turbulence) {

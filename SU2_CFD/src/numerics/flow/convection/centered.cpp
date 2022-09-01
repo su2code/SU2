@@ -36,6 +36,7 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
   dynamic_grid = config->GetDynamic_Grid();
   fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
   energy           = config->GetEnergy_Equation();
+  flamelet    = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
   /*--- Artificial dissipation part ---*/
 
@@ -230,7 +231,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Remove energy contributions if we aren't solving the energy equation. ---*/
 
-  if (!energy) {
+  if (!energy || flamelet) {
     ProjFlux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -253,6 +254,8 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   energy           = config->GetEnergy_Equation();
+  flamelet    = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
+ 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
@@ -459,7 +462,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Remove energy contributions if not solving the energy equation. ---*/
 
-  if (!energy) {
+  if (!energy || flamelet) {
     ProjFlux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

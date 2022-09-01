@@ -215,6 +215,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CScalarVariable.cpp \
   ../src/variables/CSpeciesVariable.cpp \
+  ../src/variables/CSpeciesFlameletVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CNEMOEulerVariable.cpp \

@@ -112,5 +112,5 @@ class CFluidScalar final : public CFluidModel {
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+  unsigned long SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
 };

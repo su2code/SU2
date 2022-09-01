@@ -264,7 +264,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     }
   }
 
-  if (!energy) {
+  if (!energy || flamelet) {
     Flux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

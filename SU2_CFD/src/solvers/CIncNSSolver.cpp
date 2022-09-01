@@ -336,6 +336,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
+  const bool flamelet  = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -418,7 +419,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
         Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
     }
 
-    if (!energy) continue;
+    if (!energy || flamelet) continue;
 
     switch(kind_boundary) {
     case HEAT_FLUX:

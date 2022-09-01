@@ -160,22 +160,86 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   vector<unsigned long> triangle(1);
   set_intersection(triangles_edge_up.begin(), triangles_edge_up.end(), triangles_edge_low.begin(),
                    triangles_edge_low.end(), triangle.begin());
-
+  //cout << "triangle = " << triangle[0] << endl;
   return triangle[0];
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
-  unsigned long i_low = 0;
-  unsigned long i_up = 0;
+//  unsigned long i_low = 0;
+//  unsigned long i_up = 0;
+//
+//  /* check if val_x is in x-bounds of the table, if not then project val_x to either x-min or x-max */
+//  if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
+//  if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
+//
+//  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
+//  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
+//
+//
+// i_up =  bounds.first - unique_bands_x.begin();
+//  i_low = i_up-1;
+//
+//  cout << "val_band = " << " " << i_low << " " << i_up << endl;
+    su2double x_low;
+    su2double x_mid;
+    su2double x_up;
 
-  /* check if val_x is in x-bounds of the table, if not then project val_x to either x-min or x-max */
-  if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
-  if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
+    unsigned long i_low = 0;
+    unsigned long i_mid = 0;
+    unsigned long i_up = 0;
 
-  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
-  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
-  i_up =  bounds.first - unique_bands_x.begin();
-  i_low = i_up-1;
+    /* start search at table limits */
+    i_up = unique_bands_x.size() - 1;
+    i_low = 0;
+
+    /* check if val_x is in bounds of the table */
+    // if (val_x < unique_bands_x.front() or val_x > unique_bands_x.back())
+    //   SU2_MPI::Error("Table-look-up is out of bounds.", CURRENT_FUNCTION);
+
+  if ( val_x < unique_bands_x.front() ) val_x = unique_bands_x.front();
+  if ( val_x > unique_bands_x.back()  ) val_x = unique_bands_x.back();
+
+  /* the next loop implements a binary search and computes i_low and i_up 
+   * which are the band indices that include val_x */
+  do {
+
+    i_mid = (i_up + i_low) / 2;
+
+    x_mid = unique_bands_x.at(i_mid);
+    x_low = unique_bands_x.at(i_low);
+    x_up  = unique_bands_x.at(i_up);
+
+    /* check and restart the search on the low end */
+    if ( (val_x < x_low) and (i_low > 0) ) {
+
+      i_up  = i_low;
+      i_low = i_low / 2;
+
+    /* check and restart the search on the upper end */
+    } else if ( (val_x > x_up) and (i_up < (unique_bands_x.size() - 1)) ) {
+      
+      i_low = i_up;
+      i_up  = (i_up + (unique_bands_x.size() - 1)) / 2;
+
+    /*  continue with regular binary search */
+    } else if (val_x < x_mid) {
+      i_up = i_mid;
+
+    } else if (val_x > x_mid) {
+      i_low = i_mid;
+
+    } else if (x_mid == val_x) {
+      i_low = i_mid;
+      i_up  = i_low + 1;
+      break;
+    }
+
+  } while (i_up - i_low > 1);
+
+
+
+
+
 
   return make_pair(i_low, i_up);
 }
@@ -188,6 +252,7 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long,
   su2double x_edge_low;
   su2double x_edge_up;
 
+  //cout << "val_band = " << val_band.first << " " << val_band.second << endl;
   unsigned long i_band_low = val_band.first;
 
   unsigned long next_edge;

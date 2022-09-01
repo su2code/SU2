@@ -52,7 +52,10 @@ unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig
     case VISCOSITYMODEL::POLYNOMIAL:
       return unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
-    default:
+    case VISCOSITYMODEL::FLAMELET:
+      /*--- Viscosity is obtained from the LUT ---*/
+      break;
+    default:  
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       return nullptr;
   }
@@ -91,6 +94,9 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
         return unique_ptr<CPolynomialConductivity<N_POLY_COEFFS>>(
             new CPolynomialConductivity<N_POLY_COEFFS>(config->GetKt_PolyCoeffND()));
       }
+      break;
+    case CONDUCTIVITYMODEL::FLAMELET:
+      /*--- conductivity is obtained from the LUT ---*/
       break;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);

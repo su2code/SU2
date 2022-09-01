@@ -103,6 +103,7 @@ class CLookUpTable {
    * \returns pointer to the column data.
    */
   inline const su2double* GetDataP(const std::string& name_var) const {
+    
     return table_data[GetIndexOfVar(name_var)];
   }
 

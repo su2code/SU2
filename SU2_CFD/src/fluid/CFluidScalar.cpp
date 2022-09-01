@@ -173,7 +173,7 @@ su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
   return conductivityMixture;
 }
 
-void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
+unsigned long CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(n_species_mixture, molarMasses, val_scalars);
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / (Temperature * UNIVERSAL_GAS_CONSTANT / MeanMolecularWeight);
@@ -187,4 +187,5 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   }
 
   Kt = WilkeConductivity(val_scalars);
+  return 0;
 }

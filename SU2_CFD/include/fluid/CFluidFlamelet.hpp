@@ -19,7 +19,7 @@ protected:
   vector<string> table_lookup_names;    /*!< \brief vector to store names of look up variables.   */
 
   su2double mass_diffusivity;
-  su2double source_energy;
+  //su2double source_energy;
   su2double dDensitydPV;
   su2double dSourcePVdPV;
   su2double dDensitydEnth;
@@ -46,7 +46,7 @@ protected:
 
   inline CLookUpTable* GetLookUpTable() {return look_up_table; }
 
-  inline su2double GetSourceEnergy() { return source_energy; }
+  //inline su2double GetSourceEnergy() { return source_energy; }
 
   inline su2double GetMassDiffusivity() { return mass_diffusivity; }
 

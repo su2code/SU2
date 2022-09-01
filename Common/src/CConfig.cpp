@@ -3338,12 +3338,26 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == FLUID_MIXTURE) ||
+                    (Kind_FluidModel == FLUID_FLAMELET) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   bool nemo = GetNEMOProblem();
+
+  // nijso todo 
+  if (Kind_FluidModel == FLUID_FLAMELET){
+    cout << "************************************************" << endl;
+    cout << "***** setting all fluid models to FLAMELET *****" << endl;
+    cout << "************************************************" << endl;
+
+    Kind_Species_Model     = SPECIES_MODEL::FLAMELET;
+    Kind_ViscosityModel    = VISCOSITYMODEL::FLAMELET;
+    Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
+    Kind_Diffusivity_Model  = DIFFUSIVITYMODEL::FLAMELET;
+  }
+
 
   if (nZone > 1){
     Multizone_Problem = YES;
@@ -3841,7 +3855,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           }
           break;
         default:
-          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Fluid mixture: viscosity model not available.", CURRENT_FUNCTION);
           break;
       }
 
@@ -3887,6 +3901,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           break;
       }
     }
+    
+    // nijso TODO: add LUT flamelet model here
+    cout << "******************************************************" << endl; 
+    cout << "*** check the input for the flamelet model !!!! ******" << endl; 
+    cout << "******************************************************" << endl; 
 
     /*--- Check for Measurement System ---*/
 
@@ -4865,7 +4884,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }

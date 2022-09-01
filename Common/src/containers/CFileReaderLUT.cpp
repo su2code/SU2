@@ -30,11 +30,14 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/CSquareMatrixCM.hpp"
+#include <string>
+#include <fstream>
+#include <iomanip>
 
 using namespace std;
 
 void CFileReaderLUT::ReadRawDRG(const string& file_name) {
-  version_reader = "1.0.0";
+  version_reader = "2";
 
   /*--- Store MPI rank. ---*/
   rank = SU2_MPI::GetRank();
@@ -63,39 +66,80 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   line = SkipToFlag(&file_stream, "<header>");
 
   while (getline(file_stream, line) && !eoHeader) {
+
+    /*--- first strip any possible carriage returns ---*/
+    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+      line.erase(line.length()-1);
+    }
+
+    
     /* number of points in LUT */
     if (line.compare("[version]") == 0) {
       getline(file_stream, line);
+
+      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+        line.erase(line.length()-1);
+      }
+      
+      //SetVersionLUT(line);
       version_lut = line;
     }
 
     /* number of points in LUT */
-    if (line.compare("[number of points]") == 0) {
+    if (line.compare("[Number of Points]") == 0) {
       getline(file_stream, line);
+      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+        line.erase(line.length()-1);
+      }
+      //SetNPoints(stoi(line));
       n_points = stoi(line);
     }
 
     /* number of triangles in LUT */
-    if (line.compare("[number of triangles]") == 0) {
+    if (line.compare("[Number of Triangles]") == 0) {
       getline(file_stream, line);
+      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+        line.erase(line.length()-1);
+      }
+      //SetNTriangles(stoi(line));
       n_triangles = stoi(line);
     }
 
     /* number of points on the hull */
-    if (line.compare("[number of hull points]") == 0) {
+    if (line.compare("[Number of Hull Points]") == 0) {
       getline(file_stream, line);
+      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+        line.erase(line.length()-1);
+      }
+      //SetNHullPoints(stoi(line));
       n_hull_points = stoi(line);
     }
 
     /* number of variables in LUT */
-    if (line.compare("[number of variables]") == 0) {
+    if (line.compare("[Number of Variables]") == 0) {
       getline(file_stream, line);
+      if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+        line.erase(line.length()-1);
+      }
+      //SetNVariables(stoi(line));
       n_variables = stoi(line);
     }
 
     /* variable names */
-    if (line.compare("[variable names]") == 0) {
-      getline(file_stream, line);
+    if (line.compare("[Variable Names]") == 0) {
+      
+      for (auto i=0;i<n_variables;i++){
+
+        /*--- grab a single line ---*/
+        getline(file_stream, line);
+        if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+          line.erase(line.length()-1);
+        }
+        names_var.push_back(line.substr(line.find(":")+1)); 
+      }
+    }
+
+/*
       stream_names_var.str(line);
       while (stream_names_var) {
         stream_names_var >> word;
@@ -105,7 +149,7 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
       }
       names_var.pop_back();  // removes last redundant element
     }
-
+*/
     // check if end of header is reached
     if (line.compare("</header>") == 0) eoHeader = true;
   }
@@ -150,7 +194,10 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
   line = SkipToFlag(&file_stream, "<data>");
 
   unsigned long pointCounter = 0;
-  while (getline(file_stream, line) && !eoData) {
+    while (getline(file_stream, line) && !eoData) {
+    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+      line.erase(line.length()-1);
+    }
     // check if end of data is reached
     if (line.compare("</data>") == 0) eoData = true;
 
@@ -181,6 +228,9 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   unsigned long triCounter = 0;
   while (getline(file_stream, line) && !eoConnectivity) {
+    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+      line.erase(line.length()-1);
+    }
     // check if end of data is reached
     if (line.compare("</connectivity>") == 0) eoConnectivity = true;
 
@@ -212,6 +262,9 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   unsigned long hullCounter = 0;
   while (getline(file_stream, line) && !eoHull) {
+    if (!line.empty() && (line[line.length()-1] == '\n' || line[line.length()-1] == '\r' )) {
+      line.erase(line.length()-1);
+    }
     // check if end of data is reached
     if (line.compare("</hull>") == 0) eoHull = true;
 
@@ -236,13 +289,15 @@ void CFileReaderLUT::ReadRawDRG(const string& file_name) {
 
   file_stream.close();
 
+  //type_lut = "DRG";
+
 }
 
 string CFileReaderLUT::SkipToFlag(ifstream* file_stream, const string& flag) {
   string line;
   getline(*file_stream, line);
 
-  while (line.compare(flag) != 0 && !(*file_stream).eof()) {
+  while (line.find(flag) == std::string::npos && !(*file_stream).eof()) {
     getline(*file_stream, line);
   }
 

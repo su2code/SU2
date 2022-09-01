@@ -353,6 +353,15 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
   /*!
+   * \brief Set the value of one variable to zero for one block.
+   * \param[in] iPoint - Index of the block being set to zero.
+   * \param[in] iVar - Index of the variable being set to zero.
+   */
+  inline void SetBlock_Zero(unsigned long iPoint, unsigned long iVar) {
+    vec_val[iPoint * nVar + iVar] = 0.0;
+  }
+  
+  /*!
    * \brief Set "block" to the vector.
    * \note Template param Overwrite can be set to false to update existing values.
    * \param[in] iPoint - index of the point where set the residual.

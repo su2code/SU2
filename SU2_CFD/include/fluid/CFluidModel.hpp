@@ -355,7 +355,15 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+  virtual unsigned long SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {return 0;}
+
+
+  /*!
+   * \brief Virtual member. nijso: todo: is this really necessary?
+   */
+  virtual unsigned long SetScalarSources(su2double *val_scalars) {return 0;}
+
+  virtual unsigned long SetScalarLookups(su2double *val_scalars) {return 0;}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

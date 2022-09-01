@@ -8,13 +8,18 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-    // this is already done
-    //n_scalars = 2;
-    //config->SetnSpecies(n_scalars);
+    cout << "n_scalars="<<n_scalars<<endl;
+    // this is already done?
+    n_scalars = 2;
+    config->SetNScalars(n_scalars);
+
+    cout << "*************************************************" << endl;
+    cout << "***** initializing the lookup table         *****" << endl;
+    cout << "*************************************************" << endl;
 
     table_scalar_names.resize(n_scalars);
-    table_scalar_names.at(I_ENTH) = "Enthalpy";
-    table_scalar_names.at(I_PROGVAR) = "ProgVar";
+    table_scalar_names.at(I_ENTH) = "EnthalpyTot";
+    table_scalar_names.at(I_PROGVAR) = "Progress Variable";
 
     config->SetLUTScalarNames(table_scalar_names);
 
@@ -81,7 +86,8 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   unsigned long exit_code = look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, prog, enth, name_prog, name_enth);
 
   source_scalar.at(I_ENTH) = 0;
-  source_scalar.at(I_PROGVAR) = table_sources[I_SRC_TOT_PROGVAR];
+  source_scalar.at(I_PROGVAR) = 0.0; // nijso todo switched sourcepv off 
+  //source_scalar.at(I_PROGVAR) = table_sources[I_SRC_TOT_PROGVAR];
 
   /*--- we clip at a small positive value --- */
   if (source_scalar.at(I_PROGVAR)<EPS){
@@ -111,6 +117,8 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
 
   /* add all quantities and their address to the look up vectors */
   // nijso TODO: check if these exist in the lookup table
+
+  
   look_up_tags.push_back("Temperature");
   look_up_data.push_back(&Temperature);
   look_up_tags.push_back("Density");
@@ -123,11 +131,14 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
   look_up_data.push_back(&Kt);
   look_up_tags.push_back("Diffusivity");
   look_up_data.push_back(&mass_diffusivity);
-  look_up_tags.push_back("HeatRelease");
-  look_up_data.push_back(&source_energy);
+  //look_up_tags.push_back("HeatRelease");
+  //look_up_data.push_back(&source_energy);
+  
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);
+
+  cout << "lookup data = " << Temperature << " " << Mu << endl;
 
   // nijso: is Cv used somewhere?
   // we could check for the existence of molar_weight_mix in the lookup table, and else we just use gamma

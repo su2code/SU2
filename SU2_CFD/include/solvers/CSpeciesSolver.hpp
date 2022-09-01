@@ -75,8 +75,10 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) final;
+  //void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
+  //                   unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) final;
+  virtual void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -100,7 +102,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                CConfig* config, unsigned short val_marker) final;
+                CConfig* config, unsigned short val_marker);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -143,7 +145,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                 CConfig* config, unsigned short val_marker) final;
+                 CConfig* config, unsigned short val_marker);
 
    /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
     * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.

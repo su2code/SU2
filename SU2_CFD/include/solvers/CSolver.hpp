@@ -4413,4 +4413,16 @@ protected:
     }
   }
 
+  /*! 
+   * \brief LUT premixed flamelet: Set the number of table look up misses.
+   * \param[in] val_n_table_miss - Number of table look up misses.
+   */
+  inline virtual void SetNTableMisses(unsigned short val_n_table_miss) { }
+
+  /*! 
+   * \brief LUT premixed flamelet: Get the number of table look up misses.
+   * \return Number of table look up misses.
+   */
+  inline virtual unsigned long GetNTableMisses() { return 0; }
+
 };
