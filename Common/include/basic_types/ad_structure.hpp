@@ -538,7 +538,7 @@ namespace AD{
       }
     }
   }
-  
+
   FORCEINLINE void delete_handler(void *handler) {
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
     checkpoint->clear();
