@@ -657,7 +657,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
       //LinSysRes(iPoint, I_ENTHALPY) = 0.0;
       LinSysRes.SetBlock_Zero(iPoint, I_ENTH);
 
-      nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
+      //nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
 
       if (implicit) {
         total_index = iPoint * nVar + I_ENTH;

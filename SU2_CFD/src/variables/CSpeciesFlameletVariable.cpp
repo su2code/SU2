@@ -41,6 +41,10 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(su2double     *val_scalar_inf
   }
 
   Solution_Old = Solution;
+
+  /*--- Allocate residual structures ---*/
+  // nijso asks: should we move this up to CScalarVariable.cpp?
+  Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
   
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
