@@ -1369,10 +1369,14 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     if (config->GetAxisymmetric() == YES) {
+      // nijso TODO BUG: I do not know yet how to use axisymmetry and other source terms.
+      // put axisymmetry in source_second term?
+      SU2_MPI::Error("nijso has broken axisymmetry for the species transport.", CURRENT_FUNCTION);
       numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceAxisymmetric_Species<Indices>(nDim, nVar_Species, config);
     }
     else {
-      numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
+        numerics[iMGlevel][SPECIES_SOL][source_first_term]  = new CSourcePieceWise_transportedScalar_general(nDim, nVar_Species, config);
+        //numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
     numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
   }

@@ -139,6 +139,7 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2d
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);
 
   // nijso: is Cv used somewhere?
+  // according to cristopher, yes!
   // we could check for the existence of molar_weight_mix in the lookup table, and else we just use gamma
   // default value is 1.4
   Cv = Cp/1.4;

@@ -355,11 +355,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual unsigned long SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {
-    cout <<"nijso: virtual" << endl;
-    return 0;
-    }
-
+  virtual unsigned long SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { return 0; }
 
   /*!
    * \brief Virtual member. nijso: todo: is this really necessary?

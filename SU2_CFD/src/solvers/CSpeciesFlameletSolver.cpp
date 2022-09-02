@@ -487,7 +487,9 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry *geometry,
   bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool axisymmetric        = config->GetAxisymmetric();
 
-  CNumerics *first_numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  auto* first_numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
 
   CFluidModel *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   
@@ -496,7 +498,7 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Set primitive variables w/o reconstruction ---*/
 
-    first_numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(i_point), nullptr);
+    first_numerics->SetPrimitive(flowNodes->GetPrimitive(i_point), nullptr);
 
     /*--- Set scalar variables w/o reconstruction ---*/
 
