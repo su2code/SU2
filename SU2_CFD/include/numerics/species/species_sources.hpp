@@ -155,7 +155,7 @@ private:
         if (inc_rans)
           Mass_Diffusivity_Tur = Eddy_Viscosity_i/Sc_t;
 
-      // In case of flamelet, diffusion_coeff is actually rho*D
+      // nijso TODO In case of flamelet, diffusion_coeff is actually rho*D
       // remember (rho*cp*D) = k when Le=1
       // and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
         for (auto iVar=0u; iVar < nVar; iVar++){

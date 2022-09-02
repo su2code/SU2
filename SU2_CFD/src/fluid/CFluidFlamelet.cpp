@@ -131,9 +131,15 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2d
   look_up_data.push_back(&Kt);
   look_up_tags.push_back("Diffusivity");
   look_up_data.push_back(&mass_diffusivity);
+
   //look_up_tags.push_back("HeatRelease");
   //look_up_data.push_back(&source_energy);
-  
+  //Temperature = 500.0;
+  //Density = 1.2;
+  //Cp = 1000.0;
+  //Mu = 1.5e-5;
+  //Kt = 0.025;
+  //mass_diffusivity = 2e-5;
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);
@@ -169,6 +175,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double *val_enth, su2double val
   look_up_tags.push_back("Cp");
   look_up_data.push_back(&cp_iter);
 
+  
   int counter = 0;
   while ( (abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit) ){
 
@@ -183,6 +190,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double *val_enth, su2double val
 
     /* update enthalpy */
     enth_iter      += delta_enth;
+
   }
 
   /* set enthalpy value */

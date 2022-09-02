@@ -545,9 +545,11 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   // nijso: remember that we now have progress variable and enthalpy as inlet values, but we want temperature as inlet
   // (could be an additional keyword)
-  //string      Marker_Tag    = config->GetMarker_All_TagBound(val_marker);
-  //su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
-  //su2double  *inlet_scalar  = config->GetInlet_SpeciesVal    (Marker_Tag);
+  //su2double enth_inlet;
+  //su2double   temp_inlet    = config->GetInlet_Ttotal(Marker_Tag);
+  //const su2double  *inlet_scalar_original  = config->GetInlet_SpeciesVal(Marker_Tag);
+  //su2double  *inlet_scalar  = const_cast<su2double*>(inlet_scalar_original);
+  //cout << "inlet_scalar = " << inlet_scalar[0] << " " << inlet_scalar[1] << endl;
   //CFluidModel  *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   //fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet);
   //inlet_scalar[I_ENTH] = enth_inlet;
@@ -565,8 +567,13 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
     if (config->GetSpecies_StrongBC()) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
+      //nodes->SetSolution_Old(iPoint, inlet_scalar);
 
       LinSysRes.SetBlock_Zero(iPoint);
+
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
+      }
 
       /*--- Includes 1 in the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -595,6 +602,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
       /*--- Set the species variable state at the inlet. ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
+      //conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), inlet_scalar);
 
       /*--- Set various other quantities in the solver class ---*/
 
@@ -610,7 +618,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
       const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-      // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
     }
   }
   END_SU2_OMP_FOR
@@ -654,10 +661,9 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
       nodes->SetSolution(iPoint, I_ENTH, enth_wall);
       nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
 
-      //LinSysRes(iPoint, I_ENTHALPY) = 0.0;
       LinSysRes.SetBlock_Zero(iPoint, I_ENTH);
 
-      //nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
+      nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
 
       if (implicit) {
         total_index = iPoint * nVar + I_ENTH;
