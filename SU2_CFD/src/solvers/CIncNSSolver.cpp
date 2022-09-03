@@ -564,6 +564,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
         Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+
+      // nijso: and when we have flamelets?  
       if (energy) Jacobian.DeleteValsRowi(iPoint*nVar+nDim+1);
     }
 

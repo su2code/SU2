@@ -3925,6 +3925,12 @@ public:
   CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
 
   /*!
+   * \brief Get the value of the mass diffusivity model.
+   * \return Mass diffusivity model.
+   */
+  DIFFUSIVITYMODEL GetKind_DiffusivityModel(void) const { return Kind_Diffusivity_Model; }
+ 
+  /*!
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */

@@ -533,7 +533,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       fluidModel->SetLaminarViscosityModel(config);
       fluidModel->SetThermalConductivityModel(config);
-
+      fluidModel->SetMassDiffusivityModel(config);
     }
 
   }

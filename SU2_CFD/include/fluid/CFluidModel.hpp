@@ -35,6 +35,8 @@
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
+#include "CDiffusivityModel.hpp"
+
 
 using namespace std;
 
@@ -68,11 +70,15 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
- 
+  // flamelet variables 
+  su2double mass_diffusivity{0.0};
+
+
   CLookUpTable* look_up_table; /*!< \brief the lookup table for the flamelet combustion model*/
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
+  unique_ptr<CDiffusivityModel> MassDiffusivity;       /*!< \brief Mass Diffusivity Model */
 
   /*!
    * \brief Instantiate the right type of viscosity model based on config.
@@ -168,7 +174,7 @@ class CFluidModel {
   virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(73,37); }
   virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(73,37); }
 
-
+ 
 
   /*!
    * \brief Compute and return fluid mean molecular weight in kg/mol.
@@ -207,6 +213,17 @@ class CFluidModel {
     dktdrho_T = ThermalConductivity->Getdktdrho_T();
     dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return Kt;
+  }
+
+  /*!
+   * \brief Get fluid mass diffusivity.
+   */
+  virtual inline su2double GetMassDiffusivity() {
+    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp);
+    mass_diffusivity = MassDiffusivity->GetDiffusivity();
+    // dDiffdrho_T nijso TODO
+    // dDiffdT_rho
+    return mass_diffusivity;
   }
 
   /*!
@@ -283,6 +300,11 @@ class CFluidModel {
    * \brief Set thermal conductivity model.
    */
   virtual void SetThermalConductivityModel(const CConfig* config);
+
+  /*!
+   * \brief Set mass diffusivity model.
+   */
+  virtual void SetMassDiffusivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented

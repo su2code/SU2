@@ -1073,6 +1073,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
+      GetFluidModel()->SetMassDiffusivityModel(config);
     }
 
   }

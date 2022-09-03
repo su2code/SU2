@@ -1004,6 +1004,7 @@ void CFlowOutput::SetVolumeOutputFields_ScalarSolution(const CConfig* config){
     case SPECIES_MODEL::FLAMELET:
       AddVolumeOutput("PROGVAR", "Progress_Variable", "SOLUTION", "Progress variable");
       AddVolumeOutput("ENTHALPY", "Total_Enthalpy", "SOLUTION", "Total enthalpy");
+      AddVolumeOutput("SOURCE_PROGRESS_VARIABLE", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
       break;
   }
 }
@@ -1166,8 +1167,23 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
     }
     case SPECIES_MODEL::FLAMELET:{
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
+
+      unsigned long n_sources = config->GetNLUTSources();
+      su2double scalars[n_sources];
+      for (unsigned short isource = 0; isource < n_sources; isource++) {
+        scalars[isource] = Node_Species->GetSolution(iPoint,isource);
+      }
+
+      // don't know why this does not work
+      //su2double *scalars = Node_Species->GetSolution(iPoint);
+      //su2double scalar = Node_Species->GetSolution(iPoint,0);
+
+
+      unsigned long table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarSources(scalars);
       SetVolumeOutputValue("PROGVAR", iPoint, Node_Species->GetSolution(iPoint, 0));
       SetVolumeOutputValue("ENTHALPY", iPoint, Node_Species->GetSolution(iPoint, 1));
+
+      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_PROGVAR));
 
       SetVolumeOutputValue("RES_PROGVAR", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, 1));

@@ -143,6 +143,11 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     }
   }
 
+
+  //nijso: we probably do not need this for cflamelet
+  //FluidModel = new CFluidModel();
+  //FluidModel->SetMassDiffusivityModel(config);
+
   /*--- Scalar variable state at the far-field. ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
@@ -222,10 +227,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver
 
     n_not_in_domain += fluid_model_local->SetTDState_T(0.0,scalars); /*--- first argument (temperature) is not used ---*/
 
-    // nijso: I do not think we need to set the diffusivity since we get it form the lookup table
-    //for(auto i_scalar = 0u; i_scalar < config->GetNScalars(); ++i_scalar){
-    //  nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(), i_scalar);
-    //}
+    /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/  
+    for(auto i_scalar = 0u; i_scalar < config->GetNScalars(); ++i_scalar){
+      nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(), i_scalar);
+    }
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
 

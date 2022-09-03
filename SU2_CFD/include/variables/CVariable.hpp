@@ -2277,7 +2277,7 @@ public:
   /*!
    * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT 
    */ 
-  inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
+  //inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
   inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
 
   inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }

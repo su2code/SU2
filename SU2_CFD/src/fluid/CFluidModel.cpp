@@ -108,3 +108,26 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
 void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
   ThermalConductivity = MakeThermalConductivityModel(config, 0);
 }
+
+
+void CFluidModel::SetMassDiffusivityModel (const CConfig* config) {
+  switch (config->GetKind_DiffusivityModel()) {
+    // nijso TODO 
+    //case DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY:
+    //  MassDiffusivity = unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
+    //  break;
+    //case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
+    //  if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
+    //    MassDiffusivity = unique_ptr<CConstantSchmidtRANS>(new CConstantSchmidtRANS(config->GetSchmidt_Lam(),config->GetSchmidt_Turb()));
+    //  } else {
+    //    MassDiffusivity = unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Lam()));
+    //  }
+    //  break;
+    case DIFFUSIVITYMODEL::FLAMELET:
+      /* do nothing. Diffusivity is obtained from the table and set in setTDState_T */
+      break;
+    default:
+      SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);
+      break;
+  }
+}

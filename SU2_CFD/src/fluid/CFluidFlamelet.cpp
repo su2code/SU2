@@ -43,6 +43,9 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
     source_scalar.resize(n_scalars);
     lookup_scalar.resize(n_lookups);
 
+    cout << "nr of scalar sources = "<< n_scalars << endl;
+    cout << "nr of lookup variables = "<< n_lookups << endl;
+
     Pressure = value_pressure_operating;
 }
 
@@ -71,6 +74,10 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   vector<string>     look_up_tags;
   vector<su2double*> look_up_data;
 
+  table_sources[0] = 0.0;
+
+
+
   su2double enth   = val_scalars[I_ENTH];
   su2double prog   = val_scalars[I_PROGVAR];
 
@@ -81,17 +88,15 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
     look_up_tags.push_back(table_source_names.at(i_source));
     look_up_data.push_back(&table_sources[i_source]);
   }
-
+ 
   /* perform table look ups */
   unsigned long exit_code = look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, prog, enth, name_prog, name_enth);
 
   source_scalar.at(I_ENTH) = 0;
-  source_scalar.at(I_PROGVAR) = 0.0; // nijso todo switched sourcepv off 
-  //source_scalar.at(I_PROGVAR) = table_sources[I_SRC_TOT_PROGVAR];
+  source_scalar.at(I_PROGVAR) = table_sources[I_SRC_TOT_PROGVAR];
 
   /*--- we clip at a small positive value --- */
   if (source_scalar.at(I_PROGVAR)<EPS){
-  // cout << "source term < 0!! (c,h)= "<<prog<<", "<<enth << endl;
   /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
     source_scalar.at(I_PROGVAR) = 0.0;
   }
@@ -139,7 +144,7 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2d
   //Cp = 1000.0;
   //Mu = 1.5e-5;
   //Kt = 0.025;
-  //mass_diffusivity = 2e-5;
+  //mass_diffusivity = 1e-6;
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);

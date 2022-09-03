@@ -53,8 +53,8 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
-
   const bool turbulence;
+  const bool flame; 
 
   /*!
    * \brief Adds any extra variables to AD
@@ -69,15 +69,17 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+    su2double Diffusivity_Lam=0.0;
+
     for (auto iVar = 0u; iVar < nVar; iVar++) {
 
       /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
       /*--- nijso TODO: do we really want it like this? ---*/
-      //if (flame)
-      //  /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D--- */
-      //  Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
-      //else 
-        const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+      if (flame)
+        /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D--- */
+        Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+      else 
+        Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
       su2double Diffusivity_Turb = 0.0;
 
@@ -112,5 +114,6 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    */
   CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
-      turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE) {}
+      turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE),
+      flame(config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {}
 };
