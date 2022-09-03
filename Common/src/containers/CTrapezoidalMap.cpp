@@ -1,5 +1,5 @@
 /*!
- * \file TrapezoidalMap.cpp
+ * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon
  * \version 7.4.0 "Blackbird"
@@ -152,7 +152,6 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   for (int i=0;i<2;i++)
    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
-
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
 
@@ -161,6 +160,7 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   vector<unsigned long> triangle(1);
   set_intersection(triangles_edge_up.begin(), triangles_edge_up.end(), triangles_edge_low.begin(),
                    triangles_edge_low.end(), triangle.begin());
+
   return triangle[0];
 }
 
@@ -252,7 +252,6 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long,
   su2double x_edge_low;
   su2double x_edge_up;
 
-  //cout << "val_band = " << val_band.first << " " << val_band.second << endl;
   unsigned long i_band_low = val_band.first;
 
   unsigned long next_edge;

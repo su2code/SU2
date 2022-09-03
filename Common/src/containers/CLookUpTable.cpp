@@ -303,8 +303,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
 
   /* check if progress variable and enthalpy value is in table range */
   if ((val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1]) && 
-      (val_enth >= limits_table_enth[0] && val_enth <= limits_table_enth[1]) ) {
-     
+      (val_enth >= limits_table_enth[0] && val_enth <= limits_table_enth[1])){
 
     /* find the triangle that holds the (prog, enth) point */
     unsigned long id_triangle = trap_map_prog_enth.GetTriangle(val_prog, val_enth);
@@ -369,7 +368,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const vector<string>& val_names_var,
     /* check if point is inside a triangle (if table domain is non-rectangular,
      * the previous range check might be true but the point could still be outside of the domain) */
     if (IsInTriangle(val_prog, val_enth, id_triangle, name_prog, name_enth)) {
-     /* if so, get interpolation coefficients for point in  the triangle */
+      /* if so, get interpolation coefficients for point in  the triangle */
       GetInterpCoeffs(val_prog, val_enth, interp_mat_inv_prog_enth[id_triangle], interp_coeffs);
 
       /* exit_code 0 means point was in triangle */
