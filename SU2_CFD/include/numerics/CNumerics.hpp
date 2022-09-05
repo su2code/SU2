@@ -82,6 +82,11 @@ protected:
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
+  intermittency_sep_i,  /*!< \brief separation intermittency at point i. */
+  intermittency_sep_j,  /*!< \brief separation intermittency at point j. */
+  intermittency_eff_i,  /*!< \brief effective intermittency at point i. */
+  intermittency_eff_j;  /*!< \brief effective intermittency at point j. */ 
+  su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
   su2double
@@ -697,6 +702,28 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+  * \brief Get the final separation intermittency for the LM model.
+  */
+  inline su2double GetIntermittencySep() const { return intermittency_sep_i; }
+
+  /*!
+   * \brief Set the value of the effective intermittency for the LM model.
+   * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
+   * \param[in] intermittency_eff_j - Value of the effective intermittency at point j.
+   */
+  virtual void SetIntermittencyEff(su2double val_intermittency_eff_i, su2double val_intermittency_eff_j) {
+    intermittency_eff_i = val_intermittency_eff_i;
+    intermittency_eff_j = val_intermittency_eff_j;
+  };
+
+  /*!
+   * \brief Set the value of the separation intermittency for the LM model.
+   * \param[in] intermittency_eff_i - Value of the separation intermittency at point i.
+   * \param[in] intermittency_eff_i - Value of the separation intermittency at point j.
+   */
+  virtual void SetIntermittencySep(su2double intermittency_sep_i, su2double intermittency_sep_j) {/* empty */};
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1421,6 +1448,11 @@ public:
     }
     return ERR;
   }
+
+  /*!
+   * \brief Set intermittency for numerics (used in SA with LM transition model)
+   */
+  inline virtual void SetIntermittency(su2double intermittency_in) { }
 
   /*!
    * \brief A virtual member.
