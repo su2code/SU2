@@ -71,6 +71,16 @@ class CFluidModel {
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
 
+  /*!
+   * \brief Instantiate the right type of viscosity model based on config.
+   */
+  static unique_ptr<CViscosityModel> MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies);
+
+  /*!
+   * \brief Instantiate the right type of conductivity model based on config.
+   */
+  static unique_ptr<CConductivityModel> MakeThermalConductivityModel(const CConfig* config, unsigned short iSpecies);
+
  public:
   virtual ~CFluidModel() {}
 
@@ -123,25 +133,25 @@ class CFluidModel {
    * \brief Compute and return fluid mean molecular weight in kg/mol.
    */
   template <class Vector_t>
-  static su2double ComputeMeanMolecularWeight(const Vector_t& molar_masses, const su2double* val_scalars) {
+  static su2double ComputeMeanMolecularWeight(int n_species, const Vector_t& molar_masses,
+                                              const su2double* val_scalars) {
     su2double OneOverMeanMolecularWeight = 0.0;
     su2double val_scalars_sum = 0.0;
 
-    for (size_t i_scalar = 0; i_scalar < molar_masses.size() - 1; i_scalar++) {
+    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++) {
       OneOverMeanMolecularWeight += val_scalars[i_scalar] / (molar_masses[i_scalar] / 1000);
       val_scalars_sum += val_scalars[i_scalar];
     }
-    OneOverMeanMolecularWeight += (1 - val_scalars_sum) / (molar_masses[molar_masses.size() - 1] / 1000);
+    OneOverMeanMolecularWeight += (1 - val_scalars_sum) / (molar_masses[n_species - 1] / 1000);
     return 1 / OneOverMeanMolecularWeight;
   }
 
   /*!
    * \brief Get fluid dynamic viscosity.
    */
-  inline su2double GetLaminarViscosity() {
+  inline virtual su2double GetLaminarViscosity() {
     LaminarViscosity->SetViscosity(Temperature, Density);
     Mu = LaminarViscosity->GetViscosity();
-    LaminarViscosity->SetDerViscosity(Temperature, Density);
     dmudrho_T = LaminarViscosity->Getdmudrho_T();
     dmudT_rho = LaminarViscosity->GetdmudT_rho();
     return Mu;
@@ -150,11 +160,9 @@ class CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-
-  inline su2double GetThermalConductivity() {
-    ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
+  inline virtual su2double GetThermalConductivity() {
+    ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp, dmudrho_T, dmudT_rho);
     Kt = ThermalConductivity->GetConductivity();
-    ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
     dktdrho_T = ThermalConductivity->Getdktdrho_T();
     dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return Kt;
@@ -228,12 +236,12 @@ class CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config);
+  virtual void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set thermal conductivity model.
    */
-  void SetThermalConductivityModel(const CConfig* config);
+  virtual void SetThermalConductivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -299,7 +307,6 @@ class CFluidModel {
    * \param[in] InputSpec - Input pair for FLP calls ("Pv").
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (v).
-   *
    */
   virtual void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {}
 
