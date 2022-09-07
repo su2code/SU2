@@ -214,11 +214,11 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     /*--- Corr_RetT correlation*/
     su2double Corr_Ret_lim = 20.0;
     su2double f_lambda = 1.0;
-    su2double Tu = max(Tu,0.027);
+    
     su2double Retheta_Error = 200.0 , Retheta_old = 0.0;
     su2double lambda = 0.0;
-    su2double Corr_Ret = 20.0; 
-      
+    Corr_Ret = 20.0; 
+    Tu = max(Tu,0.027);  
 
     for (int iter=0; iter<100 ; iter++) {
       
