@@ -201,7 +201,7 @@ public:
                  CNumerics *conv_numerics,
                  CNumerics *visc_numerics,
                  CConfig *config,
-                 unsigned short val_marker) override;  
+                 unsigned short val_marker) override;
 
   /*!
    * \brief Get the value of the intermittency.
