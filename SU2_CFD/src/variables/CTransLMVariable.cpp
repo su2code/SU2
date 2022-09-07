@@ -43,7 +43,6 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
   Intermittency_Eff.resize(nPoint) = gammaEff;
   Intermittency_Sep.resize(nPoint) = gammaSep;
   
-  
 }
 
 void CTransLMVariable::SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) {
