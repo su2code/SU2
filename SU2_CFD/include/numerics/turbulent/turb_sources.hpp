@@ -726,8 +726,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     su2double eff_intermittency = 1.0;
 
     if(TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
-    AD::SetPreaccIn(intermittency_eff_i);
-    eff_intermittency = intermittency_eff_i;
+      AD::SetPreaccIn(intermittency_eff_i);
+      eff_intermittency = intermittency_eff_i;
     }
     else {
      eff_intermittency = 1.0;
