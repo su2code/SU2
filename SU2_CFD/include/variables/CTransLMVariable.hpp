@@ -42,7 +42,7 @@ protected:
   VectorType Intermittency_Sep;
 
 public:
-   /*!
+  /*!
    * \brief Constructor of the class.
    * \param[in] Intermittency - intermittency(gamma) (initialization value).
    * \param[in] ReThetaT - momentum thickness Reynolds number(ReThetaT)(initialization value).
