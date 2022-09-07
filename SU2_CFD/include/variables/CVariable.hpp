@@ -1721,7 +1721,7 @@ public:
 
   /*!
    * \brief Set the effective intermittency(gamma).   
-   * \param[in] val_dist - Value of the effective intermittency(gamma).
+   * \param[in] Value of the effective intermittency(gamma).
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
