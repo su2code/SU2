@@ -808,7 +808,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
-      if(TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
+      if (TURB_TRANS_MODEL::LM == config->GetKind_Trans_Model()) {
         pk = pk*eff_intermittency;
         dk = min(max(eff_intermittency,0.1),1.0) *dk;
       }
