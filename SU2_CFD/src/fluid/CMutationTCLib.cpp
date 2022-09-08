@@ -178,7 +178,7 @@ su2double CMutationTCLib::GetViscosity(){
   return Mu;
 }
 
-vector<su2double>& CMutationTCLib::GetThermalConductivities(){
+vector<su2double>& CMutationTCLib::GetThermalConductivities(su2double eddy_visc){
 
   mix->frozenThermalConductivityVector(ThermalConductivities.data());
 

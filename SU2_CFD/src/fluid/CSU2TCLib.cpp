@@ -1650,14 +1650,14 @@ su2double CSU2TCLib::GetViscosity(){
 
 }
 
-vector<su2double>& CSU2TCLib::GetThermalConductivities(){
+vector<su2double>& CSU2TCLib::GetThermalConductivities(su2double eddy_visc){
 
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
-    ThermalConductivitiesWBE();
+    ThermalConductivitiesWBE(eddy_visc);
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
-    ThermalConductivitiesGY();
+    ThermalConductivitiesGY(eddy_visc);
   if(Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)
-    ThermalConductivitiesSuth();
+    ThermalConductivitiesSuth(eddy_visc);
 
   return ThermalConductivities;
 
@@ -1757,7 +1757,7 @@ void CSU2TCLib::ViscosityWBE(){
   }
 }
 
-void CSU2TCLib::ThermalConductivitiesWBE(){
+void CSU2TCLib::ThermalConductivitiesWBE(su2double eddy_visc){
 
   vector<su2double> ks, kves;
 
@@ -1945,7 +1945,7 @@ void CSU2TCLib::ViscosityGY(){
   // }
 }
 
-void CSU2TCLib::ThermalConductivitiesGY(){
+void CSU2TCLib::ThermalConductivitiesGY(su2double eddy_visc){
 
   su2double Mi, Mj, mi, mj, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij;
 
@@ -2031,7 +2031,7 @@ void CSU2TCLib::ViscositySuth(){
 
 }
 
-void CSU2TCLib::ThermalConductivitiesSuth(){
+void CSU2TCLib::ThermalConductivitiesSuth(su2double eddy_visc){
 
   /*--- Compute mixture quantities ---*/
   su2double mass = 0.0, rho = 0.0;

@@ -109,7 +109,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2d
 
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
-  const auto& thermalconductivities = fluidmodel->GetThermalConductivities();
+  const auto& thermalconductivities = fluidmodel->GetThermalConductivities(eddy_visc);
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
