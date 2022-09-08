@@ -1909,8 +1909,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
 
-      bad_i = neg_sound_speed || neg_pres_or_rho_i;
-      bad_j = neg_sound_speed || neg_pres_or_rho_j;
+      bad_i = bad_i || neg_sound_speed || neg_pres_or_rho_i;
+      bad_j = bad_j || neg_sound_speed || neg_pres_or_rho_j;
       if (tkeNeeded) {
         bad_i = bad_i || (Turbulent_i < 0.0);
         bad_j = bad_j || (Turbulent_j < 0.0);
@@ -4585,8 +4585,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         su2double Coord_Reflected[MAXNDIM];
         GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
                                                  geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-        // visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
         visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+        // visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
 
         /*--- Primitive variables, and gradient ---*/
 

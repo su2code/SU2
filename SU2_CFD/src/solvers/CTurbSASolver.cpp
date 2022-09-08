@@ -419,7 +419,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    // if (geometry->nodes->GetDomain(iPoint)) {
       if (!rough_wall) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           nodes->SetSolution_Old(iPoint,iVar,0.0);
@@ -460,7 +460,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
          Jacobian_i += 2.0*RoughWallBC*Area/sigma;
          if (implicit) Jacobian.AddVal2Diag(iPoint, -Jacobian_i);
       }
-    }
+    // }
   }
   END_SU2_OMP_FOR
 }

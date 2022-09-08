@@ -30,7 +30,6 @@
 CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CVariable(npoint, ndim, nvar, config),
       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient),
-      Smatrix_Reconstruction(config->GetLeastSquaresReconstructionRequired() ? Smatrix_Aux : Smatrix),
       Primitive(config->GetBool_Turb_Model_SST() ? Primitive_Aux : Solution) {
   /*--- Gradient related fields ---*/
 
@@ -42,9 +41,6 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
 
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint, nDim, nDim, 0.0);
-    Smatrix.resize(nPoint,nDim,nDim,0.0);
-    if (config->GetLeastSquaresReconstructionRequired())
-      Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
   }
 
   /*--- Always allocate the slope limiter, and the auxiliary

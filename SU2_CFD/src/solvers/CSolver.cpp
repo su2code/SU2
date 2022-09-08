@@ -1884,23 +1884,23 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Detect flip-flop convergence to reduce CFL and large increases
        to reset to minimum value, in that case clear the history. */
 
-      // if (config->GetInnerIter() >= Res_Count) {
-      //   unsigned long signChanges = 0;
-      //   su2double totalChange = 0.0;
-      //   auto prev = NonLinRes_Series.front();
-      //   for (auto val : NonLinRes_Series) {
-      //     totalChange += val;
-      //     signChanges += (prev > 0) ^ (val > 0);
-      //     prev = val;
-      //   }
-      //   reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+      if (config->GetInnerIter() >= Res_Count) {
+        unsigned long signChanges = 0;
+        su2double totalChange = 0.0;
+        auto prev = NonLinRes_Series.front();
+        for (auto val : NonLinRes_Series) {
+          totalChange += val;
+          signChanges += (prev > 0) ^ (val > 0);
+          prev = val;
+        }
+        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
 
-      //   // if (totalChange > 2.0) { // orders of magnitude
-      //   //   resetCFL = true;
-      //   //   NonLinRes_Counter = 0;
-      //   //   for (auto& val : NonLinRes_Series) val = 0.0;
-      //   // }
-      // }
+        if (totalChange > 2.0) { // orders of magnitude
+          resetCFL = true;
+          NonLinRes_Counter = 0;
+          for (auto& val : NonLinRes_Series) val = 0.0;
+        }
+      }
     }
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     END_SU2_OMP_MASTER
@@ -2034,7 +2034,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if (underRelaxation < 1.0 || reduceCFL || incNonLinRes || nonPhysical) {
+      if (underRelaxation < 1.0 || reduceCFL || incNonLinRes) {
         CFLFactor = CFLFactorDecrease;
       } else if (underRelaxation == 1.0 && canIncrease && decNonLinRes) {
         CFLFactor = CFLFactorIncrease;

@@ -70,7 +70,6 @@ protected:
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
-  C3DDoubleMatrix Smatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType LimiterDerivativeDelta;  /*!< \brief Derivative of the limiter wrt the difference. */
@@ -874,54 +873,6 @@ public:
    * \return Reference to the Rmatrix.
    */
   inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
-
-  /*!
-   * \brief Add <i>value</i> to the Smatrix for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] jDim - Index of the dimension.
-   * \param[in] value - Value of the Smatrix entry.
-   */
-  inline void AddSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix(iPoint,iDim,jDim) += value; }
-
-  /*!
-   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] jDim - Index of the dimension.
-   * \return Value of the Smatrix entry.
-   */
-  inline su2double GetSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix(iPoint,iDim,jDim); }
-
-  /*!
-   * \brief Get the value Smatrix for the entire domain.
-   * \return Reference to the Smatrix.
-   */
-  inline C3DDoubleMatrix& GetSmatrix(void) { return Smatrix; }
-
-  /*!
-   * \brief Add <i>value</i> to the Smatrix for reconstruction least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] jDim - Index of the dimension.
-   * \param[in] value - Value of the Smatrix_Reconstruction entry.
-   */
-  inline virtual void AddSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { }
-
-  /*!
-   * \brief Get the value of the Smatrix entry for reconstruction least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] jDim - Index of the dimension.
-   * \return Value of the Smatrix_Reconstruction entry.
-   */
-  inline virtual su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return 0.0; }
-
-  /*!
-   * \brief Get the value Smatrix_Reconstruction for the entire domain.
-   * \return Reference to the Smatrix_Reconstruction.
-   */
-  inline virtual C3DDoubleMatrix& GetSmatrix_Reconstruction(void) { return Smatrix; }
 
   /*!
    * \brief Get the slope limiter.

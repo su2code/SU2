@@ -30,8 +30,7 @@
 CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, unsigned long nprimvar,
                              unsigned long nprimvargrad, const CConfig* config)
     : CVariable(npoint, ndim, nvar, config),
-      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive),
-      Smatrix_Reconstruction(config->GetLeastSquaresReconstructionRequired() ? Smatrix_Aux : Smatrix) {
+      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
   nPrimVar = nprimvar;
   nPrimVarGrad = nprimvargrad;
 
@@ -61,9 +60,6 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint, nDim, nDim, 0.0);
-    Smatrix.resize(nPoint,nDim,nDim,0.0);
-    if (config->GetLeastSquaresReconstructionRequired())
-      Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
   }
 
   /*--- Allocate undivided laplacian (centered) ---*/

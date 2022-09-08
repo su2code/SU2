@@ -467,7 +467,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
+    // if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
