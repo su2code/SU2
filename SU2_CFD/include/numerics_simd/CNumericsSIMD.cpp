@@ -44,6 +44,8 @@ CNumericsSIMD* createUpwindIdealNumerics(const CConfig& config, int iMesh, const
     case UPWIND::ROE:
       obj = new CRoeScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
+    default:
+      break;
   }
   return obj;
 }
@@ -117,6 +119,8 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh, const CVariable*
         obj = createCenteredNumerics<CNoViscousFlux<nDim> >(config, iMesh, turbVars);
       }
       break;
+    default:
+    break;
   }
 
   return obj;
