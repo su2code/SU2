@@ -1764,6 +1764,7 @@ void CSU2TCLib::ThermalConductivitiesWBE(su2double eddy_visc){
   ks.resize(nSpecies,0.0);
   kves.resize(nSpecies,0.0);
 
+
   Cvves = ComputeSpeciesCvVibEle(Tve);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1777,6 +1778,28 @@ void CSU2TCLib::ThermalConductivitiesWBE(su2double eddy_visc){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ThermalCond_tr += MolarFracWBE[iSpecies]*ks[iSpecies]/phis[iSpecies];
     ThermalCond_ve += MolarFracWBE[iSpecies]*kves[iSpecies]/phis[iSpecies];
+  }
+
+  if (eddy_visc != 0.0){
+    /*--- Compute mixture quantities ---*/
+    su2double mass = 0.0, rho = 0.0;
+    for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
+    for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
+
+    su2double Cvtr = ComputerhoCvtr()/rho;
+    su2double Cvve = ComputerhoCvve()/rho;
+
+    /*--- Compute simple Kve scaling factor ---*/
+    su2double scl  = Cvve/Cvtr;
+    su2double Pr_lam  = 0.72; //TODO
+    su2double Pr_turb = 0.90; //TODO
+
+    su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
+    su2double Cptr = Cvtr + Ru/mass;
+    su2double Cpve = scl * Cvve;
+
+    ThermalCond_tr += Cptr*eddy_visc/Pr_turb;
+    ThermalCond_ve += Cpve*eddy_visc/Pr_turb;
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
@@ -2043,14 +2066,26 @@ void CSU2TCLib::ThermalConductivitiesSuth(su2double eddy_visc){
 
   /*--- Compute simple Kve scaling factor ---*/
   su2double scl  = Cvve/Cvtr;
+  su2double Pr_lam  = 0.72; //TODO
+  su2double Pr_turb = 0.90; //TODO
 
   /*--- Compute k's using Sutherland's law ---*/
   su2double T_nd = T / T_ref_suth;
-  su2double k = k_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sk_ref[0]) / (T + Sk_ref[0]));
-  su2double kve = scl*k;
 
-  ThermalConductivities[0] = k;
-  ThermalConductivities[1] = kve;
+  su2double Mu_e = eddy_visc;
+  su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
+  su2double Cptr = Cvtr + Ru/mass;
+  su2double Cpve = scl * Cvve;
+
+  //su2double T_nd = T / T_ref_suth;
+  //su2double k = k_ref[0] * T_nd * sqrt(T_nd) * ((T_ref_suth + Sk_ref[0]) / (T + Sk_ref[0]));
+  //su2double kve = scl*k;
+
+  //ThermalConductivities[0] = k;
+  //ThermalConductivities[1] = kve;
+
+  ThermalConductivities[0] = Cptr * (Mu/Pr_lam+Mu_e/Pr_turb);
+  ThermalConductivities[1] = Cpve * (Mu/Pr_lam+Mu_e/Pr_turb);
 
 }
 

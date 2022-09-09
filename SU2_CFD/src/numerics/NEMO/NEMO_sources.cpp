@@ -300,7 +300,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
     su2double heat_capacity_cp_i   = V_i[RHOCVTR_INDEX]/rho + Ru/Mass;
     su2double total_viscosity_i    = Laminar_Viscosity_i + Eddy_Viscosity_i;
-    su2double total_conductivity_i = ktr + kve + heat_capacity_cp_i*Eddy_Viscosity_i/Prandtl_Turb;
+    su2double total_conductivity_i = ktr + kve; // + heat_capacity_cp_i*Eddy_Viscosity_i/Prandtl_Turb;
     su2double u                    = V_i[VEL_INDEX];
     su2double v                    = V_i[VEL_INDEX+1];
     su2double qy_t                 = -total_conductivity_i*GV[T_INDEX][1];
