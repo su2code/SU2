@@ -2373,6 +2373,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] iEdge - Index of the edge.
    * \return The mass flux across the edge.
    */
-  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const {return EdgeMassFluxes[iEdge];}
+  inline su2double GetEdgeMassFlux(const unsigned long iEdge) const final { return EdgeMassFluxes[iEdge]; }
 
 };

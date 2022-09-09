@@ -3884,6 +3884,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_Upwind_Flow != UPWIND::ROE && Kind_Upwind_Flow != UPWIND::HLLC && Kind_Centered_Flow != CENTERED::JST) {
       SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
     }
+  }
 
   if (nemo){
     if (Kind_Upwind_Flow == UPWIND::AUSMPWPLUS)
@@ -5406,7 +5407,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
-}
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
