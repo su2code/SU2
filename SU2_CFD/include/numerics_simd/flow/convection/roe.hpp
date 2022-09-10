@@ -116,7 +116,7 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-                  iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
+                 iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 

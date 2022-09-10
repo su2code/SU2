@@ -148,7 +148,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
-  NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  if (iMesh == MESH_0) {
+    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  }
 
   /*--- MPI + OpenMP initialization. ---*/
 
@@ -1816,13 +1818,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
-      if (bad_recon) {
-        /*--- Force 1st order for this edge for at least 20 iterations. ---*/
-        NonPhysicalEdgeCounter[iEdge] = 20;
-      } else if (NonPhysicalEdgeCounter[iEdge] > 0) {
-        --NonPhysicalEdgeCounter[iEdge];
-        bad_recon = true;
-      }
+      bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
 
       numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
@@ -1881,33 +1877,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
   } // end color loop
 
-  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
-  AD::ResumePreaccumulation(pausePreacc);
-  if (!ReducerStrategy) AD::EndNoSharedReading();
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (implicit)
-      Jacobian.SetDiagonalAsColumnSum();
-  }
-
-  /*--- Warning message about non-physical reconstructions. ---*/
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
-
-    /*--- Add counter results for all ranks. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-      config->SetNonphysical_Reconstr(ErrorCounter);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
-
+  FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
