@@ -182,7 +182,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
       numerics->SetNormal(geometry->edges->GetNormal(iEdge));
- 
       /*--- Primitive variables w/o reconstruction ---*/
 
       const auto V_i = flowNodes->GetPrimitive(iPoint);
