@@ -325,12 +325,6 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 #endif
            << endl;
     }
-
-    if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
-        (config.GetEdgeColoringGroupSize() % Double::Size != 0)) {
-      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
-                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
-    }
   }
 
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
@@ -1577,6 +1571,11 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                                                 const CSolver* const* solvers,
                                                 CConfig *config) {
   if (!edgeNumerics) {
+    if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
+        (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
+    }
     InstantiateEdgeNumerics(solvers, config);
   }
 

@@ -1665,17 +1665,19 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  if (config->GetUseVectorization()) {
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool low_mach_corr = config->Low_Mach_Correction();
+
+  /*--- Use vectorization if the scheme supports it. ---*/
+  if (config->GetKind_Upwind_Flow() == ROE && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                                (config->GetKind_FluidModel() == IDEAL_GAS);
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
-  const bool low_mach_corr    = config->Low_Mach_Correction();
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
