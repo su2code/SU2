@@ -132,8 +132,8 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
       break;
     }
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
-    const Double neg_p_or_rho = VecExpr::max(VecExpr::min(V.i.pressure(), V.j.pressure()) < 0.0,
-                                             VecExpr::min(V.i.density(), V.j.density()) < 0.0);
+    const Double neg_p_or_rho = fmax(fmin(V.i.pressure(), V.j.pressure()) < 0.0,
+                                     fmin(V.i.density(), V.j.density()) < 0.0);
     /*--- Test the sign of the Roe-averaged speed of sound. ---*/
     const Double R = sqrt(V.j.density() / V.i.density());
     /*--- Delay dividing by R+1 until comparing enthalpy and velocity magnitude. ---*/
@@ -147,7 +147,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
     const Double neg_sound_speed = enthalpy * (R+1) < 0.5 * v_squared;
 
     /*--- Revert to first order if the state is non-physical. ---*/
-    Double bad_recon = VecExpr::max(neg_p_or_rho, neg_sound_speed);
+    Double bad_recon = fmax(neg_p_or_rho, neg_sound_speed);
     /*--- Handle SIMD dimensions 1 by 1. ---*/
     for (size_t k = 0; k < Double::Size; ++k) {
       bad_recon[k] = solution.UpdateNonPhysicalEdgeCounter(iEdge[k], bad_recon[k]);
@@ -371,21 +371,21 @@ FORCEINLINE Double roeDissipation(Int iPoint,
   switch (type) {
     case FD:
     case FD_DUCROS: {
-      Double d = max(minDissip, 1.0 - avgDissip);
+      Double d = fmax(minDissip, 1.0 - avgDissip);
 
       if (type == FD_DUCROS) {
         /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
-        d = max(d, 0.05 + 0.95*(avgSensor > 0.65));
+        d = fmax(d, 0.05 + 0.95*(avgSensor > 0.65));
       }
       return d;
     }
     case NTS:
-      return max(minDissip, avgDissip);
+      return fmax(minDissip, avgDissip);
 
     case NTS_DUCROS:
       /*--- See Xiao et al. INT J HEAT FLUID FL 51 (2015) pag. 141
        * https://doi.org/10.1016/j.ijheatfluidflow.2014.10.007 ---*/
-      return max(minDissip, avgSensor+avgDissip - avgSensor*avgDissip);
+      return fmax(minDissip, avgSensor+avgDissip - avgSensor*avgDissip);
 
     default:
       assert(false);

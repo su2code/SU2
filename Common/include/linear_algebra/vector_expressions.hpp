@@ -167,8 +167,8 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
 #define max_impl(a,b) a<b? Scalar(b) : Scalar(a)
 #define min_impl(a,b) b<a? Scalar(b) : Scalar(a)
 #endif
-MAKE_BINARY_FUN(max, max_, max_impl)
-MAKE_BINARY_FUN(min, min_, min_impl)
+MAKE_BINARY_FUN(fmax, max_, max_impl)
+MAKE_BINARY_FUN(fmin, min_, min_impl)
 MAKE_BINARY_FUN(pow, pow_, math::pow)
 #undef max_impl
 #undef min_impl

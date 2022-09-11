@@ -130,7 +130,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
     for (size_t jDim = 0; jDim < nDim; ++jDim)
       denom += grad(iDim+1,jDim) * grad(iDim+1,jDim);
 
-  const Double factor = 1 / sqrt(max(denom,1e-10));
+  const Double factor = 1 / sqrt(fmax(denom,1e-10));
 
   /*--- Compute the QCR term, and update the stress tensor. ---*/
   MatrixDbl<nDim> qcr;
@@ -159,8 +159,8 @@ FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
                             const VectorDbl<nDim>& unitNormal,
                             MatrixDbl<nDim>& tau) {
 
-  Double tauWall_i = max(gatherVariables(iPoint, tauWall), 0.0);
-  Double tauWall_j = max(gatherVariables(jPoint, tauWall), 0.0);
+  Double tauWall_i = fmax(gatherVariables(iPoint, tauWall), 0.0);
+  Double tauWall_j = fmax(gatherVariables(jPoint, tauWall), 0.0);
 
   Double isWall_i = tauWall_i > 0.0;
   Double isWall_j = tauWall_j > 0.0;

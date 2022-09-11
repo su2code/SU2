@@ -158,7 +158,7 @@ public:
     Double maxLambda = abs(projVel) + roeAvg.speedSound;
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = fmax(abs(lambda(iVar)), entropyFix*maxLambda);
     }
 
     /*--- Inviscid fluxes and Jacobians. ---*/
