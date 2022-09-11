@@ -73,7 +73,7 @@
  */
 
 /*!
- * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes' equations
+ * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes equations
  * \brief Group of classes which define the system of Navier-Stokes equations in 
  *		  three formulations: direct, adjoint, and linearized.
  */

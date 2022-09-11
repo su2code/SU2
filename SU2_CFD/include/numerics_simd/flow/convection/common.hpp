@@ -132,8 +132,8 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
       break;
     }
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
-    const Double neg_p_or_rho = max(min(V.i.pressure(), V.j.pressure()) < 0.0,
-                                    min(V.i.density(), V.j.density()) < 0.0);
+    const Double neg_p_or_rho = VecExpr::max(VecExpr::min(V.i.pressure(), V.j.pressure()) < 0.0,
+                                             VecExpr::min(V.i.density(), V.j.density()) < 0.0);
     /*--- Test the sign of the Roe-averaged speed of sound. ---*/
     const Double R = sqrt(V.j.density() / V.i.density());
     /*--- Delay dividing by R+1 until comparing enthalpy and velocity magnitude. ---*/
@@ -147,7 +147,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
     const Double neg_sound_speed = enthalpy * (R+1) < 0.5 * v_squared;
 
     /*--- Revert to first order if the state is non-physical. ---*/
-    Double bad_recon = max(neg_p_or_rho, neg_sound_speed);
+    Double bad_recon = VecExpr::max(neg_p_or_rho, neg_sound_speed);
     /*--- Handle SIMD dimensions 1 by 1. ---*/
     for (size_t k = 0; k < Double::Size; ++k) {
       bad_recon[k] = solution.UpdateNonPhysicalEdgeCounter(iEdge[k], bad_recon[k]);
