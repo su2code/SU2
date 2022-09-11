@@ -36,7 +36,7 @@ CNumerics::CNumerics(void) {
   Proj_Flux_Tensor  = nullptr;
 
   tau = nullptr;
-  
+
   nemo = false;
 
 }
