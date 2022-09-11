@@ -1609,8 +1609,9 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       } else {
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
-      for (auto j = 0ul; j < Double::Size; ++j) {
-        counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
+      if (MGLevel == MESH_0) {
+        for (auto j = 0ul; j < Double::Size; ++j)
+          counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
       }
     }
     END_SU2_OMP_FOR
