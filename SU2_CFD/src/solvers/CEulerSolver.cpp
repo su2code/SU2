@@ -148,10 +148,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
-  if (iMesh == MESH_0) {
-    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
-  }
-
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -283,6 +279,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     nodes = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
+
+  if (iMesh == MESH_0) {
+    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 

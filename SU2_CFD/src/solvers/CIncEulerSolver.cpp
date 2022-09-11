@@ -149,10 +149,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Allocate(*config);
 
-  if (iMesh == MESH_0) {
-    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
-  }
-
   /*--- MPI + OpenMP initialization. ---*/
 
   HybridParallelInitialization(*config, *geometry);
@@ -217,6 +213,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
+
+  if (iMesh == MESH_0) {
+    nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
+  }
 
   /*--- Initial comms. ---*/
 
