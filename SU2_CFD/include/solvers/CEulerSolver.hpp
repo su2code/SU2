@@ -32,6 +32,7 @@
 
 /*!
  * \class CEulerSolver
+ * \ingroup Euler_Equations
  * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */

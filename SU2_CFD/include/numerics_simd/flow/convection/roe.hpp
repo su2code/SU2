@@ -36,6 +36,7 @@
 
 /*!
  * \class CRoeBase
+ * \ingroup ConvDiscr
  * \brief Base class for Roe schemes, derived classes implement
  * the dissipation term in a const "finalizeFlux" method.
  * A base class implementing "viscousTerms" is accepted as template parameter.
@@ -215,6 +216,7 @@ public:
 
 /*!
  * \class CRoeScheme
+ * \ingroup ConvDiscr
  * \brief Classical Roe scheme.
  */
 template<class Decorator>

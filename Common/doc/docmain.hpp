@@ -28,7 +28,7 @@
 /*! 
  * \mainpage SU2 version 7.4.0 "Blackbird"
  * SU2 suite is an open-source collection of C++ based software tools
- * to perform PDE analysis and PDE constrained optimization problems.  The toolset is designed with 
+ * to perform PDE analysis and PDE constrained optimization.  The toolset is designed with 
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to
  * include other families of governing equations such as potential flow, electrodynamics, chemically reacting
  * flows, and many others.  SU2 is released under an
@@ -38,12 +38,12 @@
  */
 
 /*!
- * \defgroup Config Descriptions of Configuration Options.
+ * \defgroup Config Description of the Configuration Options
  * \brief Group of variables that can be set using the configuration file.
  */
 
 /*!
- * \defgroup ConvDiscr Discretization of the convective terms.
+ * \defgroup ConvDiscr Discretization of the convective terms
  * \brief Group of classes which define the numerical methods for 
  *		  discretizing the convective terms of a Partial Differential Equation. 
  *		  There are methods for solving the direct, adjoint and linearized 
@@ -51,7 +51,7 @@
  */
 
 /*!
- * \defgroup ViscDiscr Discretization of the viscous terms.
+ * \defgroup ViscDiscr Discretization of the viscous terms
  * \brief Group of classes which define the numerical methods for 
  *		  discretizing the viscous terms of a Partial Differential Equation. 
  *		  There are methods for solving the direct, adjoint and linearized 
@@ -59,7 +59,7 @@
  */
 
 /*!
- * \defgroup SourceDiscr Discretization of the source terms.
+ * \defgroup SourceDiscr Discretization of the source terms
  * \brief Group of classes which define the numerical methods for 
  *		  discretizing the source terms of a Partial Differential Equation. 
  *		  There are methods for solving the direct, adjoint and linearized 
@@ -67,25 +67,24 @@
  */
 
 /*!
- * \defgroup Potential_Flow_Equation Solving the potential flow equation.
- * \brief Group of classes which define the system of Potential flow equation in 
- *		  three formulations: direct, adjoint, and linearized.
- */
-
-/*!
- * \defgroup Euler_Equations Solving the Euler's equations.
+ * \defgroup Euler_Equations Solving the Euler equations
  * \brief Group of classes which define the system of Euler equations in 
  *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
- * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes' equations.
+ * \defgroup Navier_Stokes_Equations Solving the Navier-Stokes' equations
  * \brief Group of classes which define the system of Navier-Stokes equations in 
  *		  three formulations: direct, adjoint, and linearized.
  */
 
 /*!
- * \defgroup Turbulence_Model Solving the turbulence models.
+ * \defgroup Turbulence_Model Solving the turbulence model equations
  * \brief Group of classes which define the turbulence model in 
  *		  three formulations: direct, adjoint, and linearized.
+ */
+
+/*!
+ * \defgroup Elasticity_Equations Solving the elasticity equations
+ * \brief Group of classes to solve solid deformation problems.
  */

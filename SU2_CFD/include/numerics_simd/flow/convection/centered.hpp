@@ -36,6 +36,7 @@
 
 /*!
  * \class CCenteredBase
+ * \ingroup ConvDiscr
  * \brief Base class for Centered schemes, derived classes implement
  * the dissipation term in a const "finalizeFlux" method.
  * \note See CRoeBase for the role of Base.
@@ -186,6 +187,7 @@ public:
 
 /*!
  * \class CJSTScheme
+ * \ingroup ConvDiscr
  * \brief Classical JST scheme with scalar dissipation.
  */
 template<class Decorator>
@@ -265,6 +267,7 @@ public:
 
 /*!
  * \class CJSTmatScheme
+ * \ingroup ConvDiscr
  * \brief JST scheme with matrix dissipation.
  */
 template<class Decorator>
@@ -391,6 +394,7 @@ public:
 
 /*!
  * \class CJSTkeScheme
+ * \ingroup ConvDiscr
  * \brief JST scheme without 4th order dissipation.
  */
 template<class Decorator>
@@ -461,6 +465,7 @@ public:
 
 /*!
  * \class CLaxScheme
+ * \ingroup ConvDiscr
  * \brief Lax–Friedrichs 1st order scheme.
  */
 template<class Decorator>

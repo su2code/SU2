@@ -75,7 +75,7 @@ class CFlowVariable : public CVariable {
    */
   template <class T>
   inline T UpdateNonPhysicalEdgeCounter(unsigned long iEdge, const T& isNonPhys) const {
-    if (isNonPhys) {
+    if (isNonPhys > 0) {
       /*--- Force 1st order for this edge for at least 20 iterations. ---*/
       NonPhysicalEdgeCounter[iEdge] = 21;
     }
