@@ -171,7 +171,8 @@ FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
   Double tauWall_ij = (tauWall_i+tauWall_j) * isNormalEdge;
 
   /*--- Scale is 1 for those edges, i.e. tau is not changed. ---*/
-  Double scale = tauWall_ij / norm(tangentProjection(tau,unitNormal)) + (1.0-isNormalEdge);
+  Double scale =
+      tauWall_ij / fmax(norm(tangentProjection(tau,unitNormal)), EPS) + (1.0-isNormalEdge);
 
   for (size_t iDim = 0; iDim < nDim; ++iDim)
     for (size_t jDim = 0; jDim < nDim; ++jDim)
