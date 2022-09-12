@@ -306,10 +306,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     }
 
     /*--- Retrieve scalar values (if needed) ---*/
-    if (species_model != SPECIES_MODEL::NONE) {
-      scalar = config->GetSpecies_Init();
+    if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     }
-  
+
     /*--- Incompressible flow, primitive variables --- */
 
     bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);

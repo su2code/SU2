@@ -108,7 +108,6 @@ void CFluidScalar::MassToMoleFractions(const su2double* val_scalars) {
 }
 
 su2double CFluidScalar::WilkeViscosity(const su2double* val_scalars) {
-
   /* Fill laminarViscosity with n_species_mixture viscosity values. */
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
@@ -120,10 +119,14 @@ su2double CFluidScalar::WilkeViscosity(const su2double* val_scalars) {
   for (int i = 0; i < n_species_mixture; i++) {
     su2double wilkeDenumerator = 0.0;
     for (int j = 0; j < n_species_mixture; j++) {
-      const su2double phi =
-          pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
-          sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
-      wilkeDenumerator += moleFractions[j] * phi;
+      if (j != i) {
+        const su2double phi =
+            pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
+            sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
+        wilkeDenumerator += moleFractions[j] * phi;
+      } else {
+        wilkeDenumerator += moleFractions[j];
+      }
     }
     const su2double wilkeNumerator = moleFractions[i] * laminarViscosity[i];
     viscosityMixture += wilkeNumerator / wilkeDenumerator;
@@ -162,7 +165,6 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
 }
 
 su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
-
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp, 0.0, 0.0);
     laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
@@ -173,10 +175,14 @@ su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
   for (int i = 0; i < n_species_mixture; i++) {
     su2double wilkeDenumerator = 0.0;
     for (int j = 0; j < n_species_mixture; j++) {
-      const su2double phi =
-          pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
-          sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
-      wilkeDenumerator += moleFractions[j] * phi;
+      if (j != i) {
+        const su2double phi =
+            pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
+            sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
+        wilkeDenumerator += moleFractions[j] * phi;
+      } else {
+        wilkeDenumerator += moleFractions[j];
+      }
     }
     const su2double wilkeNumerator = moleFractions[i] * laminarThermalConductivity[i];
     conductivityMixture += wilkeNumerator / wilkeDenumerator;
