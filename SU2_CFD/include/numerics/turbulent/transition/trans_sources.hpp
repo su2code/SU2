@@ -100,7 +100,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
   unsigned short iDim;
   
-  su2double Corr_Rec = 0.0, Corr_F_length = 0.0, Corr_Ret = 0.0;      
   su2double dU_dx, dU_dy, dU_dz = 0.0;  
   
 
@@ -130,8 +129,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
   Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
 
-  su2double Tu = 100.0*sqrt( 2.0 * ScalarVar_i[0] / 3.0 ) / Velocity_Mag;
-
   Residual[0] = 0.0;       Residual[1] = 0.0;
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
   Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
@@ -139,7 +136,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   if (dist_i > 1e-10) {
 
     /*--- Corr_RetC correlation*/
-
+    su2double Corr_Rec = 0.0;
     if(TransVar_i[1] <= 1870){
      Corr_Rec = TransVar_i[1] - (396.035e-02 + (-120.656e-04)*TransVar_i[1] + (868.230e-06)*pow(TransVar_i[1], 2.) 
                                 +(-696.506e-09)*pow(TransVar_i[1], 3.) + (174.105e-12)*pow(TransVar_i[1], 4.));
@@ -148,7 +145,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     }
 
     /*--- F_length correlation*/
-
+    su2double Corr_F_length = 0.0;
     if(TransVar_i[1] < 400){
       Corr_F_length = 398.189e-01 + (-119.270e-04)*TransVar_i[1] + (-132.567e-06) * pow(TransVar_i[1], 2.);
     } 
@@ -217,9 +214,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     
     su2double Retheta_Error = 200.0 , Retheta_old = 0.0;
     su2double lambda = 0.0;
-    Corr_Ret = 20.0; 
-    Tu = max(Tu,0.027);  
-
+    su2double Corr_Ret = 20.0;
+    su2double Tu = max(100.0*sqrt( 2.0 * ScalarVar_i[0] / 3.0 ) / Velocity_Mag,0.027);
+    
     for (int iter=0; iter<100 ; iter++) {
       
       su2double theta  = Corr_Ret * Laminar_Viscosity_i / Density_i/ Velocity_Mag;
