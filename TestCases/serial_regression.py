@@ -253,7 +253,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494715, -7.711824, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals         = [-12.494757, -7.713330, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.test_vals_aarch64 = [-12.494695, -7.711914, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.su2_exec  = "SU2_CFD"
     poiseuille_profile.new_output = True
@@ -325,7 +325,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-4.229955, -1.930560, -1.998477, 1.250383, -1.635663, 1.462396, 10.000000, -2.151959, 0.072873, 0.002514] #last 10 columns
+    turb_wallfunction_flatplate_sst.test_vals = [-4.229955, -1.930560, -1.998477, 1.250383, -1.635663, 1.462396, 10, -2.151959, 0.072873, 0.002514] #last 10 columns
     turb_wallfunction_flatplate_sst.su2_exec  = "SU2_CFD"
     turb_wallfunction_flatplate_sst.timeout   = 1600
     turb_wallfunction_flatplate_sst.tol       = 0.00001
@@ -336,7 +336,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-4.436048, -2.044706, -2.114644, 0.979771, -5.393729, 10, -1.589465, 0.069744, 0.002686] #last 9 columns
+    turb_wallfunction_flatplate_sa.test_vals = [-4.684321, -2.249602, -2.229407, 0.779062, -5.306220, 10, -1.984965, 0.069232, 0.002496] #last 9 columns
     turb_wallfunction_flatplate_sa.su2_exec  = "SU2_CFD"
     turb_wallfunction_flatplate_sa.timeout   = 1600
     turb_wallfunction_flatplate_sa.tol       = 0.00001
@@ -906,7 +906,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals         = [-5.483374, 0.968842, 0.255857, -0.109404] #last 4 columns
+    turb_naca0012_2c.test_vals         = [-5.483297, 0.968867, 0.255779, -0.109417] #last 4 columns
     turb_naca0012_2c.test_vals_aarch64 = [-5.483375, 0.968843, 0.255870, -0.109398] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.new_output = True
@@ -931,7 +931,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals         = [-5.127531, 1.077321, 0.543822, -0.018663] #last 4 columns
+    turb_naca0012_p1c1.test_vals         = [-5.127470, 1.077450, 0.544081, -0.018573] #last 4 columns
     turb_naca0012_p1c1.test_vals_aarch64 = [-5.127470, 1.077487, 0.543977, -0.018609] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
@@ -944,7 +944,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.554491, 0.943648, 0.320568, -0.091089] #last 4 columns
+    turb_naca0012_p1c2.test_vals         = [-5.554427, 0.943668, 0.320426, -0.091140] #last 4 columns
     turb_naca0012_p1c2.test_vals_aarch64 = [-5.554486, 0.943644, 0.320343, -0.091167] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
@@ -1173,7 +1173,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933153, 5.379657, 73.357940, 0.925870] #last 4 columns
+    axial_stage2D.test_vals = [-1.933127, 5.364763, 73.354550, 0.925896] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -1222,7 +1222,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals         = [2.000000, 0.000000, -0.205134, -13.250406] #last 4 columns
+    uniform_flow.test_vals         = [2.000000, 0.000000, -0.205134, -13.251542] #last 4 columns
     uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.205134, -13.253776] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
@@ -1236,7 +1236,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals         = [2.000000, 0.000000, 0.398005, 0.352783, 0.405475] #last 5 columns
+    channel_2D.test_vals         = [2.000000, 0.000000, 0.397995, 0.352789, 0.405474] #last 5 columns
     channel_2D.test_vals_aarch64 = [2.000000, 0.000000, 0.397977, 0.352782, 0.405474] #last 5 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
@@ -1426,7 +1426,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals         = [-4.355809, -4.060588, 0.000000, 85.000000] #last 4 columns
+    dyn_fsi.test_vals         = [-4.355809, -4.060588, 0.000000, 87.000000] #last 4 columns
     dyn_fsi.test_vals_aarch64 = [-4.355809, -4.060588, 0.000000, 86.000000] #last 4 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
