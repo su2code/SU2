@@ -237,15 +237,9 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     re_omega = rho*omega*dist*dist/mu;
     f_wake = exp(-pow(re_omega/(1.0e+05),2));
 
-    if(nDim ==2){
-      vel_u = flowNodes->GetVelocity(iPoint, 0);
-      vel_v = flowNodes->GetVelocity(iPoint, 1);
-    }
-    else if(nDim ==3){
-      vel_u = flowNodes->GetVelocity(iPoint, 0);
-      vel_v = flowNodes->GetVelocity(iPoint, 1);
-      vel_w = flowNodes->GetVelocity(iPoint, 2);
-    }
+    vel_u = flowNodes->GetVelocity(iPoint, 0);
+    vel_v = flowNodes->GetVelocity(iPoint, 1);
+    vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
 
     VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
 
