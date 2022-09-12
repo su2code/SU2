@@ -105,7 +105,7 @@ private:
   
   /*!
    * \brief Create a transition solver
-   * \param[in] kindTurbModel - Kind of transition solver
+   * \param[in] kindTransModel - Kind of transition solver
    * \param[in] solver        - The solver container (used to call preprocessing of the flow solver)
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
