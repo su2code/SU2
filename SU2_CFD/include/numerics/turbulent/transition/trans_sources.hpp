@@ -63,9 +63,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] constants - SST model constants.
-   * \param[in] val_kine_Inf - Freestream k, for SST with sustaining terms.
-   * \param[in] val_omega_Inf - Freestream w, for SST with sustaining terms.
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) 
