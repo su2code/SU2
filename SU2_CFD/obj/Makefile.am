@@ -116,6 +116,12 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
   ../src/numerics/elasticity/nonlinear_models.cpp \
+  ../src/numerics/multilayer_perceptron/LookUp_ANN.cpp \
+  ../src/numerics/multilayer_perceptron/IOMap.cpp \
+  ../src/numerics/multilayer_perceptron/NeuralNetwork.cpp \
+  ../src/numerics/multilayer_perceptron/Neuron.cpp \
+  ../src/numerics/multilayer_perceptron/Layer.cpp \
+  ../src/numerics/multilayer_perceptron/ReadNeuralNetwork.cpp \
   ../include/numerics_simd/CNumericsSIMD.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
   ../src/output/filewriter/CSTLFileWriter.cpp \

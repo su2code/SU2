@@ -147,7 +147,13 @@ su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
                       'numerics/elasticity/nonlinear_models.cpp',
-                      'numerics/CGradSmoothing.cpp'])
+                      'numerics/CGradSmoothing.cpp',
+                      'numerics/multilayer_perceptron/LookUp_ANN.cpp',
+                      'numerics/multilayer_perceptron/IOMap.cpp',
+                      'numerics/multilayer_perceptron/NeuralNetwork.cpp',
+                      'numerics/multilayer_perceptron/Layer.cpp',
+                      'numerics/multilayer_perceptron/Neuron.cpp',
+                      'numerics/multilayer_perceptron/ReadNeuralNetwork.cpp'])
 
 su2_cfd_src += files(['../include/numerics_simd/CNumericsSIMD.cpp'])
 
