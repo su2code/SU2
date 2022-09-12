@@ -108,6 +108,7 @@ void CFluidScalar::MassToMoleFractions(const su2double* val_scalars) {
 }
 
 su2double CFluidScalar::WilkeViscosity(const su2double* val_scalars) {
+
   /* Fill laminarViscosity with n_species_mixture viscosity values. */
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
@@ -165,6 +166,7 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
 }
 
 su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
+
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp, 0.0, 0.0);
     laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
