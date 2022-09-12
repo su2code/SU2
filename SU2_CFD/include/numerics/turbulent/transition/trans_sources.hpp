@@ -98,7 +98,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   AD::SetPreaccIn(Vorticity_i, 3);
   
 
-  unsigned short iDim;
   
   su2double dU_dx, dU_dy, dU_dz = 0.0;  
   
