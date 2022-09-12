@@ -195,8 +195,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
   AD::StartNoSharedReading();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  //auto* turbNodes = su2staticcast_p<CFlowVariable*>(solver_container[TURB_SOL]->GetNodes());
-
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
