@@ -106,16 +106,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
                                 Vorticity_i[1]*Vorticity_i[1] +
                                 Vorticity_i[2]*Vorticity_i[2]);
   
-  su2double vel_u = 0.0, vel_v = 0.0, vel_w = 0.0;
-  if(nDim ==2){
-      vel_u = V_i[idx.Velocity()];
-      vel_v = V_i[1+idx.Velocity()];
-  }
-  else if(nDim ==3){
-      vel_u = V_i[idx.Velocity()];
-      vel_v = V_i[1+idx.Velocity()];
-      vel_w = V_i[2+idx.Velocity()];
-  }
+  const su2double vel_u = V_i[idx.Velocity()];
+  const su2double vel_v = V_i[1+idx.Velocity()];
+  const su2double vel_w = (nDim ==3) ? V_i[2+idx.Velocity()] : 0.0;
 
   su2double Velocity_Mag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
 
