@@ -82,7 +82,6 @@ public:
                       CSolver **solver_container,
                       CConfig *config,
                       unsigned short iMesh) override;
-    
   /*!
    * \brief Compute the viscous flux for the LM equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
