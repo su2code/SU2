@@ -1087,7 +1087,8 @@ void CFlowOutput::SetVolumeOutputFields_ScalarResidual(const CConfig* config) {
   switch (config->GetKind_Trans_Model()) {    
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
-      AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");      break;
+      AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");
+      break;
 
     case TURB_TRANS_MODEL::NONE:
       break;
