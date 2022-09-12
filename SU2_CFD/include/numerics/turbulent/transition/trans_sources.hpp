@@ -107,9 +107,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
                                 Vorticity_i[1]*Vorticity_i[1] +
                                 Vorticity_i[2]*Vorticity_i[2]);
   
-  su2double diverg = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) diverg += PrimVar_Grad_i[iDim+idx.Velocity()][iDim];
-
   su2double vel_u = 0.0, vel_v = 0.0, vel_w = 0.0;
   if(nDim ==2){
       vel_u = V_i[idx.Velocity()];
