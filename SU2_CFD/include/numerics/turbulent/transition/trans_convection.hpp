@@ -1,8 +1,8 @@
 /*!
- * \file turb_convection.hpp
+ * \file trans_convection.hpp
  * \brief Delarations of numerics classes for discretization of
- *        convective fluxes in turbulence problems.
- * \author F. Palacios, T. Economon
+ *        convective fluxes in transition problems.
+ * \author S. Kang
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
