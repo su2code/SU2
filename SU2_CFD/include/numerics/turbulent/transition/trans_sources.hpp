@@ -162,16 +162,17 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
     /*-- Gradient of velocity magnitude ---*/
 
-    dU_dx = 0.5/Velocity_Mag*( 2.*vel_u*PrimVar_Grad_i[1][0]
+    su2double dU_dx = 0.5/Velocity_Mag*( 2.*vel_u*PrimVar_Grad_i[1][0]
                               +2.*vel_v*PrimVar_Grad_i[2][0]);
     if (nDim==3)
       dU_dx += 0.5/Velocity_Mag*( 2.*vel_w*PrimVar_Grad_i[3][0]);
 
-    dU_dy = 0.5/Velocity_Mag*( 2.*vel_u*PrimVar_Grad_i[1][1]
+    su2double dU_dy = 0.5/Velocity_Mag*( 2.*vel_u*PrimVar_Grad_i[1][1]
                               +2.*vel_v*PrimVar_Grad_i[2][1]);
     if (nDim==3)
       dU_dy += 0.5/Velocity_Mag*( 2.*vel_w*PrimVar_Grad_i[3][1]);
 
+    su2double dU_dz = 0.0;
     if (nDim==3)
       dU_dz = 0.5/Velocity_Mag*( 2.*vel_u*PrimVar_Grad_i[1][2]
                                 +2.*vel_v*PrimVar_Grad_i[2][2]
