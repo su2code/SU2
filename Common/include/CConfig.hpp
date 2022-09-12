@@ -1940,7 +1940,7 @@ public:
    * \brief Get the value of the freestream momentum thickness Reynolds number.
    * \return Freestream momentum thickness Reynolds number.
    */
-  su2double GetReThetaT_FreeStream(void) const { return ReThetaT_FreeStream; }
+  su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
