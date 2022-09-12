@@ -1,6 +1,6 @@
 /*!
- * \file turb_sources.hpp
- * \brief Numerics classes for integration of source terms in turbulence problems.
+ * \file trans_sources.hpp
+ * \brief Numerics classes for integration of source terms in transition problems.
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
