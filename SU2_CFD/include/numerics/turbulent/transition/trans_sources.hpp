@@ -31,7 +31,7 @@
 
 /*!
  * \class CSourcePieceWise_TranLM
- * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
+ * \brief Class for integrating the source terms of the LM transition model equations.
  * \ingroup SourceDiscr
  * \author S. Kang.
  */
@@ -57,18 +57,18 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   su2double Vorticity;
   su2double Residual[2];
   su2double* Jacobian_i[2];
-  su2double Jacobian_Buffer[4]; /// Static storage for the Jacobian (which needs to be pointer for return type).
+  su2double Jacobian_Buffer[4];// Static storage for the Jacobian (which needs to be pointer for return type).
 
  public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) 
       : CNumerics(val_nDim, 2, config),
         idx(val_nDim, config->GetnSpecies()) {
-
     
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
@@ -93,10 +93,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+idx.Velocity(), nDim);
   AD::SetPreaccIn(Vorticity_i, 3);
-  
-
-  
-  
 
   su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
                                 Vorticity_i[1]*Vorticity_i[1] +
@@ -106,7 +102,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   const su2double vel_v = V_i[1+idx.Velocity()];
   const su2double vel_w = (nDim ==3) ? V_i[2+idx.Velocity()] : 0.0;
 
-  su2double Velocity_Mag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+  const su2double Velocity_Mag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
 
   AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
 
@@ -138,24 +134,24 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       Corr_F_length = 263.404 + (-123.939e-02) * TransVar_i[1] + (194.548e-5) * pow(TransVar_i[1], 2.) + (-101.695e-08) * pow(TransVar_i[1], 3.);
     } 
     else if(TransVar_i[1] >= 596 && TransVar_i[1] < 1200) {
-      Corr_F_length = 0.5 - (TransVar_i[1] - 596.0) * 3.0e-04; 
+      Corr_F_length = 0.5 - (TransVar_i[1] - 596.0) * 3.0e-04;
     } 
     else {
       Corr_F_length = 0.3188;
     }    
 
     /*--- F_length ---*/
-    su2double r_omega = Density_i*dist_i*dist_i*ScalarVar_i[1]/Laminar_Viscosity_i;
-    su2double f_sub = exp(-pow(r_omega/200.0, 2));
-    su2double F_length = Corr_F_length *(1.-f_sub) + 40.0*f_sub;
+    const su2double r_omega = Density_i*dist_i*dist_i*ScalarVar_i[1]/Laminar_Viscosity_i;
+    const su2double f_sub = exp(-pow(r_omega/200.0, 2));
+    const su2double F_length = Corr_F_length *(1.-f_sub) + 40.0*f_sub;
 
     /*--- F_onset ---*/
-    su2double R_t = Density_i*ScalarVar_i[0]/ Laminar_Viscosity_i/ ScalarVar_i[1];
-    su2double Re_v = Density_i*dist_i*dist_i*StrainMag_i/Laminar_Viscosity_i;
-    su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
-    su2double F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 2.0);
-    su2double F_onset3 = max(1.0 - pow(R_t/2.5, 3.0), 0.0);
-    su2double F_onset  = max(F_onset2 - F_onset3, 0.0);
+    const su2double R_t = Density_i*ScalarVar_i[0]/ Laminar_Viscosity_i/ ScalarVar_i[1];
+    const su2double Re_v = Density_i*dist_i*dist_i*StrainMag_i/Laminar_Viscosity_i;
+    const su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
+    const su2double F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 2.0);
+    const su2double F_onset3 = max(1.0 - pow(R_t/2.5, 3.0), 0.0);
+    const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
 
     /*-- Gradient of velocity magnitude ---*/
 
@@ -181,18 +177,18 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     
     /*-- Calculate blending function f_theta --*/
 
-    su2double time_scale = 500.0*Laminar_Viscosity_i/Density_i/ Velocity_Mag /Velocity_Mag;
-    su2double theta_bl   = TransVar_i[1]*Laminar_Viscosity_i / Density_i /Velocity_Mag;
-    su2double delta_bl   = 7.5*theta_bl;
-    su2double delta      = 50.0*VorticityMag*dist_i/Velocity_Mag*delta_bl + 1e-20;
+    const su2double time_scale = 500.0*Laminar_Viscosity_i/Density_i/ Velocity_Mag /Velocity_Mag;
+    const su2double theta_bl = TransVar_i[1]*Laminar_Viscosity_i / Density_i /Velocity_Mag;
+    const su2double delta_bl = 7.5*theta_bl;
+    const su2double delta = 50.0*VorticityMag*dist_i/Velocity_Mag*delta_bl + 1e-20;
     
-    su2double re_omega = Density_i*ScalarVar_i[1]*dist_i*dist_i/Laminar_Viscosity_i;
-    su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    const su2double re_omega = Density_i*ScalarVar_i[1]*dist_i*dist_i/Laminar_Viscosity_i;
+    const su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
     
-    su2double var1 = (TransVar_i[0]-1.0/c_e2)/(1.0-1.0/c_e2);
-    su2double var2 = 1.0 - pow(var1,2.0);
-    su2double f_theta = min(max(f_wake*exp(-pow(dist_i/delta, 4)), var2), 1.0); 
-    su2double f_turb = exp(-pow(R_t/4, 4));
+    const su2double var1 = (TransVar_i[0]-1.0/c_e2)/(1.0-1.0/c_e2);
+    const su2double var2 = 1.0 - pow(var1,2.0);
+    const su2double f_theta = min(max(f_wake*exp(-pow(dist_i/delta, 4)), var2), 1.0);
+    const su2double f_turb = exp(-pow(R_t/4, 4));
 
     /*--- Corr_RetT correlation*/
     su2double Corr_Ret_lim = 20.0;
@@ -201,11 +197,11 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     su2double Retheta_Error = 200.0 , Retheta_old = 0.0;
     su2double lambda = 0.0;
     su2double Corr_Ret = 20.0;
-    su2double Tu = max(100.0*sqrt( 2.0 * ScalarVar_i[0] / 3.0 ) / Velocity_Mag,0.027);
+    const su2double Tu = max(100.0*sqrt( 2.0 * ScalarVar_i[0] / 3.0 ) / Velocity_Mag,0.027);
     
     for (int iter=0; iter<100 ; iter++) {
       
-      su2double theta  = Corr_Ret * Laminar_Viscosity_i / Density_i/ Velocity_Mag;
+      su2double theta = Corr_Ret * Laminar_Viscosity_i / Density_i/ Velocity_Mag;
       lambda = Density_i*theta*theta/ Laminar_Viscosity_i*du_ds;
       lambda = min(max(-0.1, lambda), 0.1);
 
@@ -233,27 +229,27 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     }
     
     /*-- production term of Intermeittency(Gamma) --*/
-    su2double Pg = F_length*c_a1*Density_i*StrainMag_i*sqrt(F_onset*TransVar_i[0])*(1.0 - c_e1 * TransVar_i[0]);
+    const su2double Pg = F_length*c_a1*Density_i*StrainMag_i*sqrt(F_onset*TransVar_i[0])*(1.0 - c_e1 * TransVar_i[0]);
 
     /*-- destruction term of Intermeittency(Gamma) --*/
-    su2double Dg = c_a2*Density_i*VorticityMag*TransVar_i[0]*f_turb*(c_e2*TransVar_i[0] - 1.0);
+    const su2double Dg = c_a2*Density_i*VorticityMag*TransVar_i[0]*f_turb*(c_e2*TransVar_i[0] - 1.0);
 
     /*-- production term of ReThetaT --*/
-    su2double Pthetat = c_theta*Density_i/time_scale * (Corr_Ret-TransVar_i[1])  * (1.0-f_theta);
+    const su2double Pthetat = c_theta*Density_i/time_scale * (Corr_Ret-TransVar_i[1])  * (1.0-f_theta);
 
     /*--- Source ---*/
     Residual[0] += (Pg - Dg)*Volume;
-    Residual[1] += Pthetat*Volume; 
+    Residual[1] += Pthetat*Volume;
 
     /*--- Implicit part ---*/   
     Jacobian_i[0][0] = (F_length*c_a1*StrainMag_i*sqrt(F_onset)*(0.5*pow(TransVar_i[0], -0.5) -1.5*c_e1*pow(TransVar_i[0], 0.5))
                        - c_a2 * VorticityMag*f_turb*(2.0*c_e2*TransVar_i[0]-1.0) )*Volume;
     Jacobian_i[0][1] = 0.0;
     Jacobian_i[1][0] = 0.0;
-    Jacobian_i[1][1] = -c_theta/time_scale*(1.0-f_theta)*Volume;    
+    Jacobian_i[1][1] = -c_theta/time_scale*(1.0-f_theta)*Volume;
   }  
   
-  AD::SetPreaccOut(Residual, nVar);  
+  AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Residual, Jacobian_i, nullptr);

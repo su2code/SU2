@@ -41,8 +41,8 @@
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config, true) {
   unsigned short nLineLets;
-  unsigned long iPoint;  
-  ifstream restart_file;  
+  unsigned long iPoint;
+  ifstream restart_file;
   string text_line;
 
   bool multizone = config->GetMultizone_Problem();
@@ -107,9 +107,9 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
-  su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
+  const su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
 
-  su2double Intermittency_Inf  = 1.0;
+  const su2double Intermittency_Inf  = 1.0;
   su2double ReThetaT_Inf = 100.0;
 
   /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
@@ -199,62 +199,44 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    su2double rho = flowNodes->GetDensity(iPoint);
-    su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
-    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
+    const su2double rho = flowNodes->GetDensity(iPoint);
+    const su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
+    const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    su2double StrainMag =flowNodes->GetStrainMag(iPoint);
-    su2double VelocityMag = 0.0;
-    su2double vel_u = 0.0, vel_v = 0.0, vel_w = 0.0;
+    su2double StrainMag =flowNodes->GetStrainMag(iPoint);        
     VorticityMag = max(VorticityMag, 1e-12);
     StrainMag = max(StrainMag, 1e-12); // safety against division by zero
+    const su2double Intermittecy = nodes->GetSolution(iPoint,0);
+    const su2double Re_t = nodes->GetSolution(iPoint,1);
+    const su2double Re_v = rho*dist*dist*StrainMag/mu;    
+    const su2double omega = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
+    const su2double k = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
-    su2double Intermittecy = nodes->GetSolution(iPoint,0);
-    su2double Re_t = nodes->GetSolution(iPoint,1);
-    su2double Intermittency_Sep;
-    su2double Re_v = rho*dist*dist*StrainMag/mu;
     su2double Corr_Rec = 0.0;
-    su2double f_reattach;
-    su2double R_t;
-    su2double re_omega;
-    su2double f_wake;
-    su2double theta_bl, delta_bl, delta;
-    su2double var1, var2;
-    su2double f_theta;
-    su2double omega = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
-    su2double k = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-
     if(Re_t <= 1870){
      Corr_Rec = Re_t - (396.035e-02 + (-120.656e-04)*Re_t + (868.230e-06)*pow(Re_t, 2.) 
-                                +(-696.506e-09)*pow(Re_t, 3.) + (174.105e-12)*pow(Re_t, 4.));
+                                +( -696.506e-09)*pow(Re_t, 3.) + (174.105e-12)*pow(Re_t, 4.));
     } else {
-     Corr_Rec = Re_t - (  593.11 + (Re_t - 1870.0) * 0.482);
+     Corr_Rec = Re_t - ( 593.11 + (Re_t - 1870.0) * 0.482);
     }
-    
-    R_t = rho*k/ mu/ omega;
-    f_reattach = exp(-pow(R_t/20,4));
 
-    re_omega = rho*omega*dist*dist/mu;
-    f_wake = exp(-pow(re_omega/(1.0e+05),2));
-
-    vel_u = flowNodes->GetVelocity(iPoint, 0);
-    vel_v = flowNodes->GetVelocity(iPoint, 1);
-    vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
-
-    VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
-
-    theta_bl   = Re_t*mu / rho /VelocityMag;
-    delta_bl   = 7.5*theta_bl;
-    delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;    
-
-    var1 = (Intermittecy-1.0/50.0)/(1.0-1.0/50.0);
-    var2 = 1.0 - pow(var1,2.0);
-    f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0); 
-
-    Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
+    const su2double R_t = rho*k/ mu/ omega;
+    const su2double f_reattach = exp(-pow(R_t/20,4));
+    const su2double re_omega = rho*omega*dist*dist/mu;
+    const su2double f_wake = exp(-pow(re_omega/(1.0e+05),2));
+    const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
+    const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
+    const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
+    const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+    const su2double theta_bl   = Re_t*mu / rho /VelocityMag;
+    const su2double delta_bl   = 7.5*theta_bl;
+    const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
+    const su2double var1 = (Intermittecy-1.0/50.0)/(1.0-1.0/50.0);
+    const su2double var2 = 1.0 - pow(var1,2.0);
+    const su2double f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
+    su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
     Intermittency_Sep = min(Intermittency_Sep,2.0)*f_theta;
-    
-    Intermittency_Sep = min(max(0.0, Intermittency_Sep), 2.0);    
+    Intermittency_Sep = min(max(0.0, Intermittency_Sep), 2.0);
     nodes -> SetIntermittencySep(iPoint, Intermittency_Sep);
     nodes -> SetIntermittencyEff(iPoint, Intermittency_Sep);
 

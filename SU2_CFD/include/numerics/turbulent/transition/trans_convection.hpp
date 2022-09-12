@@ -62,7 +62,7 @@ private:
   }
 
   /*!
-   * \brief SST specific steps in the ComputeResidual method
+   * \brief LM specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {

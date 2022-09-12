@@ -82,11 +82,11 @@ private:
     if (implicit) {
       const su2double proj_on_rho_i = proj_vector_ij/Density_i;
       Jacobian_i[0][0] = -diff_gamma*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = 0.0;                       Jacobian_i[1][1] = -diff_ReThetaT*proj_on_rho_i;
+      Jacobian_i[1][0] = 0.0;                        Jacobian_i[1][1] = -diff_ReThetaT*proj_on_rho_i;
 
       const su2double proj_on_rho_j = proj_vector_ij/Density_j;
       Jacobian_j[0][0] = diff_gamma*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.0;                       Jacobian_j[1][1] = diff_ReThetaT*proj_on_rho_j;
+      Jacobian_j[1][0] = 0.0;                        Jacobian_j[1][1] = diff_ReThetaT*proj_on_rho_j;
     }
   }
 
@@ -95,7 +95,6 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] constants - Constants of the model.
    * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */

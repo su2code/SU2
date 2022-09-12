@@ -31,7 +31,7 @@
 
 /*!
  * \class CTransLMSolver
- * \brief Main class for defining the turbulence model solver.
+ * \brief Main class for defining the transition model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake, S. Kang.
  */
@@ -82,6 +82,7 @@ public:
                       CSolver **solver_container,
                       CConfig *config,
                       unsigned short iMesh) override;
+
   /*!
    * \brief Compute the viscous flux for the LM equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -213,7 +214,6 @@ public:
    * \return Value of the turbulent kinetic energy.
    */
   inline su2double GetReThetaT_Inf(void) const override { return Solution_Inf[1]; }
-
 
   /*!
    * \brief Load a solution from a restart file.
