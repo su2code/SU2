@@ -107,9 +107,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
-  su2double Intensity;
-
-  Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
+  su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
 
   su2double Intermittency_Inf  = 1.0;
   su2double ReThetaT_Inf = 100.0;
