@@ -1211,7 +1211,6 @@ void CFlowOutput::LoadVolumeData_Scalar(const CConfig* config, const CSolver* co
       SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
       SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
-      
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
