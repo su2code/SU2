@@ -99,7 +99,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   
 
   
-  su2double dU_dx, dU_dy, dU_dz = 0.0;  
   
 
   su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
