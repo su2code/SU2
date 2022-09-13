@@ -1,5 +1,5 @@
 /*!
- * \file TrapezoidalMap.cpp
+ * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon
  * \version 7.4.0 "Blackbird"
