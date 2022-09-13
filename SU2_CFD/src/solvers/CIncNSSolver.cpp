@@ -816,7 +816,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
                << notConvergedCounter << " points." << endl;
 
         if (smallYPlusCounter)
-          cout << "Warning: y+ < 5.0 in " << smallYPlusCounter
+          cout << "Warning: y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
                << " points, for which the wall model is not active." << endl;
       }
     }
