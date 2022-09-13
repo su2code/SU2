@@ -388,7 +388,6 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
       }
       break;
     case SPECIES_MODEL::NONE:
-      SU2_MPI::Error("Trying to create SpeciesSolver container but SPECIES_MODEL=NONE.", CURRENT_FUNCTION);
       break;  
   }
 

@@ -108,7 +108,9 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  // nijso FIXME TODO added rms_temp to output 
+  //if (heat || weakly_coupled_heat) 
+  AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarRMS_RES(config);
 
@@ -229,15 +231,16 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
     if (multiZone) SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
   }
-  if (heat) {
-    SetHeatCoefficients(config, flow_solver);
-    SetHistoryOutputValue("AVG_TEMPERATURE", flow_solver->GetTotal_AvgTemperature());
+  // nijso FIXME TODO added rms_temp to output
+  //if (heat) {
+  //  SetHeatCoefficients(config, flow_solver);
+  //  SetHistoryOutputValue("AVG_TEMPERATURE", flow_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_TEMPERATURE", log10(flow_solver->GetRes_RMS(nDim + 1)));
-    SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(nDim + 1)));
-    if (multiZone) {
-      SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(nDim + 1)));
-    }
-  }
+  //  SetHistoryOutputValue("MAX_TEMPERATURE", log10(flow_solver->GetRes_Max(nDim + 1)));
+  //  if (multiZone) {
+  //    SetHistoryOutputValue("BGS_TEMPERATURE", log10(flow_solver->GetRes_BGS(nDim + 1)));
+  //  }
+  //}
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
@@ -367,7 +370,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 }
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
-
   
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const CVariable* Node_Heat = nullptr;

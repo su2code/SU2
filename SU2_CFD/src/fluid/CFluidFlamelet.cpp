@@ -76,8 +76,6 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   table_sources[0] = 0.0;
 
-
-
   su2double enth   = val_scalars[I_ENTH];
   su2double prog   = val_scalars[I_PROGVAR];
 
@@ -107,7 +105,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   return exit_code;
 }
 
-unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars){
+void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars){
 
   su2double val_enth = val_scalars[I_ENTH];
   su2double val_prog = val_scalars[I_PROGVAR];
@@ -123,7 +121,6 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2d
   /* add all quantities and their address to the look up vectors */
   // nijso TODO: check if these exist in the lookup table
 
-  
   look_up_tags.push_back("Temperature");
   look_up_data.push_back(&Temperature);
   look_up_tags.push_back("Density");
@@ -137,17 +134,20 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2d
   look_up_tags.push_back("Diffusivity");
   look_up_data.push_back(&mass_diffusivity);
 
-  //look_up_tags.push_back("HeatRelease");
-  //look_up_data.push_back(&source_energy);
-  //Temperature = 500.0;
-  //Density = 1.2;
-  //Cp = 1000.0;
-  //Mu = 1.5e-5;
-  //Kt = 0.025;
-  //mass_diffusivity = 1e-6;
+
+  // nijso: if we put the temperature to a constant value here, then we do not see
+  // the noise in the progress variable 
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);
+
+  mass_diffusivity = 1.0e-5;
+  Kt = 0.025;
+  Cp = 1000.0;
+  Mu = 1.8e-5;
+
+  Temperature = 300.0;
+  Density = 1.18;
 
   // nijso: is Cv used somewhere?
   // according to cristopher, yes!
@@ -155,7 +155,7 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2d
   // default value is 1.4
   Cv = Cp/1.4;
   //Cv = Cp - UNIVERSAL_GAS_CONSTANT / (molar_weight_mix / 1000.);
-  return exit_code;
+  //return exit_code;
 }
 
 unsigned long CFluidFlamelet::GetEnthFromTemp(su2double *val_enth, su2double val_prog, su2double val_temp){

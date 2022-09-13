@@ -89,7 +89,7 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   axisymmetric = config->GetAxisymmetric();
   viscous = config->GetViscous();
   implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
-  flame  = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
+  flamelet  = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
   inc_rans = (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS);
 
   //Sc_t = config->GetSchmidt_Turb();

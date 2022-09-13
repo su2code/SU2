@@ -377,7 +377,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual unsigned long SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { return 0; }
+  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
 
   /*!
    * \brief Virtual member. nijso: todo: is this really necessary?

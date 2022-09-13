@@ -67,7 +67,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  unsigned long SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
+  void SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
     /* The EoS only depends upon temperature. */
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
@@ -80,7 +80,6 @@ class CIncIdealGasPolynomial final : public CFluidModel {
       Cp += coeffs_[i] * t_i;
     }
     Cv = Cp / Gamma;
-    return 0;
   }
 
  private:

@@ -61,7 +61,7 @@ protected:
 
   ~CFluidFlamelet();
 
-  unsigned long SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
+  void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
   unsigned long SetScalarSources(su2double *val_scalars);
 

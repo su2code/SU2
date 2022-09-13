@@ -49,13 +49,12 @@ class CConstantDensity final : public CFluidModel {
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
-  unsigned long SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
+  void SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
     /* Density is constant and thermodynamic pressure is
        not required for incompressible, constant density flows,
        but the energy equation can still be computed as a
        decoupled equation. Hence, we update the value.
        Note Cp = Cv, (gamma = 1).*/
     Temperature = t;
-    return 0;
   }
 };

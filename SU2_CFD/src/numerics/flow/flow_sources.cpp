@@ -130,6 +130,8 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
   }
 
+  // nijso: if (energy && !flame)
+
   return ResidualType<>(residual, jacobian, nullptr);
 }
 

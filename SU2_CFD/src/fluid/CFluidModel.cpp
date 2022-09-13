@@ -40,6 +40,7 @@
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
+#include "../../include/fluid/CConstantDiffusivity.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
   switch (config->GetKind_ViscosityModel()) {
@@ -113,9 +114,9 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
 void CFluidModel::SetMassDiffusivityModel (const CConfig* config) {
   switch (config->GetKind_DiffusivityModel()) {
     // nijso TODO 
-    //case DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY:
-    //  MassDiffusivity = unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
-    //  break;
+    case DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY:
+      MassDiffusivity = unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
+      break;
     //case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
     //  if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
     //    MassDiffusivity = unique_ptr<CConstantSchmidtRANS>(new CConstantSchmidtRANS(config->GetSchmidt_Lam(),config->GetSchmidt_Turb()));

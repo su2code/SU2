@@ -160,14 +160,14 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
   SetBaseClassPointerToNodes();
 
   /*--- Initialize the mass diffusivity. Nondimensionalization done in the flow solver. ---*/
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
-      nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
-    }
-  }
-  END_SU2_OMP_FOR
+  //SU2_OMP_FOR_STAT(omp_chunk_size)
+  //for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  //  for (auto iVar = 0u; iVar < nVar; iVar++) {
+  //    const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
+  //    nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
+  //  }
+  //}
+  //END_SU2_OMP_FOR
 
   /*--- MPI solution ---*/
 
@@ -225,7 +225,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver
 
     fluid_model_local->SetTDState_T(0.0,scalars);
 
-    n_not_in_domain += fluid_model_local->SetTDState_T(0.0,scalars); /*--- first argument (temperature) is not used ---*/
+    // nijso TODO n_not_in_domain has to come from somewhere else
+    //n_not_in_domain += fluid_model_local->SetTDState_T(0.0,scalars); /*--- first argument (temperature) is not used ---*/
+    fluid_model_local->SetTDState_T(0.0,scalars); /*--- first argument (temperature) is not used ---*/
 
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/  
     for(auto i_scalar = 0u; i_scalar < config->GetNScalars(); ++i_scalar){
@@ -287,7 +289,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
   
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE){
-      cout << "Initializing progress variable and temperature (initial condition)." << endl;
+      cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
 
     su2double *scalar_init  = new su2double[nVar];
@@ -305,12 +307,14 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
    
     su2double temp_inlet = config->GetInc_Temperature_Init(); // should do reverse lookup of enthalpy
     su2double prog_inlet = config->GetSpecies_Init()[I_PROGVAR]; 
+    su2double enth_inlet = config->GetSpecies_Init()[I_ENTH]; 
     if (rank == MASTER_NODE){
       cout << "initial condition: T = " << temp_inlet << endl; 
-      cout << "initial condition: pv = " << prog_inlet << endl; 
+      cout << "initial condition: c = " << prog_inlet << endl; 
+      cout << "initial condition: h = " << enth_inlet << endl; 
     }
 
-    su2double enth_inlet;
+    //su2double enth_inlet;
     su2double point_loc;
     unsigned long n_not_iterated  = 0;
     unsigned long n_not_in_domain = 0;
@@ -325,8 +329,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
 
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-
-      n_not_iterated         += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet,temp_inlet);
+      // nijso: TODO FIXME temporary commenting of the initialization of enthalpy from temperature
+      //n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet,temp_inlet);
       scalar_init[I_ENTH] = enth_inlet;
 
       /*--- the burnt value of the progress variable is set to a value slightly below the maximum value ---*/
@@ -366,8 +370,10 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
           scalar_init[I_PROGVAR] = prog_unburnt;
         }
 
-        n_not_in_domain        += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH],name_prog,name_enth);
+        // nijso temporarily commented this to check temperature residuals TODO FIXME  
+        //n_not_in_domain        += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH],name_prog,name_enth);
 
+        // initialize other transported scalars  (not pv and enth)
         // skip progress variable and enthalpy
         // we can make an init based on the lookup table. 
         for(int i_scalar = 0; i_scalar < config->GetnSpecies(); ++i_scalar){
@@ -550,14 +556,18 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   // nijso: remember that we now have progress variable and enthalpy as inlet values, but we want temperature as inlet
   // (could be an additional keyword)
-  //su2double enth_inlet;
-  //su2double   temp_inlet    = config->GetInlet_Ttotal(Marker_Tag);
-  //const su2double  *inlet_scalar_original  = config->GetInlet_SpeciesVal(Marker_Tag);
-  //su2double  *inlet_scalar  = const_cast<su2double*>(inlet_scalar_original);
-  //cout << "inlet_scalar = " << inlet_scalar[0] << " " << inlet_scalar[1] << endl;
-  //CFluidModel  *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-  //fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet);
-  //inlet_scalar[I_ENTH] = enth_inlet;
+ /* 
+  su2double enth_inlet;
+  su2double temp_inlet    = config->GetInlet_Ttotal(Marker_Tag);
+  const su2double  *inlet_scalar_original  = config->GetInlet_SpeciesVal(Marker_Tag);
+  su2double  *inlet_scalar  = const_cast<su2double*>(inlet_scalar_original);
+
+  CFluidModel  *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+  
+  fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet);
+  inlet_scalar[I_ENTH] = enth_inlet;
+  */    
+  // --- //
 
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -628,6 +638,53 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   END_SU2_OMP_FOR
 }
 
+
+void CSpeciesFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /* strong zero flux Neumann boundary condition at the outlet */
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+      
+        /*--- Allocate the value at the outlet ---*/
+        auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); 
+          
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
+        nodes->SetSolution_Old(iPoint, Solution);
+    
+        LinSysRes.SetBlock_Zero(iPoint);
+
+        for (auto iVar = 0u; iVar < nVar; iVar++){
+          nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
+        }
+
+        /*--- Includes 1 in the diagonal ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          auto total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+    }
+  }
+  END_SU2_OMP_FOR
+
+}
+
+void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry *geometry, 
+                                       CSolver **solver_container, 
+                                       CNumerics *conv_numerics,
+                                       CNumerics *visc_numerics, 
+                                       CConfig *config, 
+                                       unsigned short val_marker) {
+}
 
 void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                          CSolver **solver_container,

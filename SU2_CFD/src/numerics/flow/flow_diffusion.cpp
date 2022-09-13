@@ -538,7 +538,7 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
 
   energy   = config->GetEnergy_Equation();
-  flamelet    = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
+  flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
 }
 

@@ -1028,6 +1028,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
+    //nijso: what to do when we have flamelets, we modify the timestep?
     const bool energy;
 
     LambdaVisc(bool e) : energy(e) {}
@@ -1997,6 +1998,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
     if (energy && !flamelet) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
+    //if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
     else        Preconditioner[nDim+1][0] = 0.0;
 
     for (jDim = 0; jDim < nDim; jDim++) {
@@ -2013,6 +2015,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
 
     if (energy && !flamelet) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+    //if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
 
     for (iVar = 0; iVar < nVar; iVar ++ )
@@ -2031,6 +2034,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
 
     if (energy && !flamelet) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
+    //if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
     else        Preconditioner[nDim+1][0] = 0.0;
 
 
@@ -2048,6 +2052,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[iDim+1][nDim+1] = 0.0;
 
     if (energy && !flamelet) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
+    //if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
     else        Preconditioner[nDim+1][nDim+1] = 0.0;
 
   }
@@ -2438,6 +2443,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   END_SU2_OMP_FOR
 }
 
+
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
@@ -2656,7 +2662,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
   const bool flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
-  const short flagEnergy  = (!energy || flamelet);
+  //const short flagEnergy  = (!energy || flamelet);
+  const short flagEnergy  = (!energy);
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2725,6 +2732,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
         if (energy && !flamelet) delta *= Cp;
+        //if (energy) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
@@ -2872,6 +2880,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
         if (energy && !flamelet) delta *= Cp;
+        //if (energy) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
