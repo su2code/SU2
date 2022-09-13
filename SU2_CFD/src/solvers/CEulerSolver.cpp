@@ -1,6 +1,6 @@
 /*!
  * \file CEulerSolver.cpp
- * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
+ * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
  * \version 7.4.0 "Blackbird"
  *

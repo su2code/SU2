@@ -1,6 +1,6 @@
 /*!
  * \file CSpeciesSolver.cpp
- * \brief Main subrotuines of CSpeciesSolver class
+ * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
  * \version 7.4.0 "Blackbird"
  *
