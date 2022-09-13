@@ -134,11 +134,6 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetMassDiffusivity(int ivar) override;
 
   /*!
-   * \brief Set fluid mass diffusivity.
-   */
-  //void SetMassDiffusivity(const int n_species_mixture);
-
-  /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */

@@ -46,8 +46,8 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, const s
                            const CConfig* config)
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
-      Gas_Constant(config->GetGamma()),
-      Gamma(1.0),
+      Gas_Constant(val_gas_constant),
+      Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
