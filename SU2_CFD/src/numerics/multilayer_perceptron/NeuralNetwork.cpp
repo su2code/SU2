@@ -33,7 +33,7 @@
 using namespace std;
 
 
-void NeuralNetwork::predict(vector<su2double> &inputs, vector<su2double*>&outputs, su2double**doutputs_dinputs){
+void NeuralNetwork::predict(vector<su2double> &inputs){
     su2double x, x_norm, y, y_norm, tanx;
     size_t iNeuron, jNeuron, iLayer, nNeurons_current, nNeurons_previous;
     bool same_point{true};
@@ -95,121 +95,9 @@ void NeuralNetwork::predict(vector<su2double> &inputs, vector<su2double*>&output
         y = y_norm*(output_norm[iNeuron].second - output_norm[iNeuron].first) + output_norm[iNeuron].first;
         
         // Setting output value
-        *outputs[iNeuron] = y;
+        ANN_outputs[iNeuron] = y;
     }
 }
-// void NeuralNetwork::predict(vector<su2double> &inputs, vector<su2double*>&outputs, su2double**doutputs_dinputs){
-//     // Evaluate the MLP based on the inputs. In case a pointer to the output gradient is provided, the partial
-//     // derivatives of the outputs with respect to the inputs are evaluated as well.
-
-//     su2double *y_values_old, // Perceptron values of the previous layer
-//               *y_values_new, // Perceptron values of the current layer
-//               **dy_dx_old,   // Derivatives of the previous layer
-//               **dy_dx_new;   // Derivatives of the current layer
-
-//     su2double x,    // Perceptron input
-//             x_norm, // Normalized MLP input
-//             y,      // Perceptron output
-//             y_norm; // Normalized MLP output
-
-//     size_t n_inputs{inputLayer->getNNeurons()}; // Number of inputs
-
-//     bool compute_gradient = (doutputs_dinputs != nullptr); // Gradient computation option
-
-//     // Stepping though the MLP layers, communicating the output from the previous layer to the next.
-//     // TODO: make this recursive to increase performance and code simplification
-//     for(size_t iLayer=0; iLayer < total_layers.size(); iLayer++){
-
-//         // In case the input layer is called, input normalization is applied.
-//         if(total_layers.at(iLayer)->isInput()){
-//             // Generating an array for the input layer preceptron values.
-//             y_values_old = new su2double[total_layers.at(iLayer)->getNNeurons()];
-
-//             if(compute_gradient)
-//                 dy_dx_old = new su2double*[total_layers.at(iLayer)->getNNeurons()];
-
-//             for(size_t iNeuron=0; iNeuron<total_layers.at(iLayer)->getNNeurons(); iNeuron++){
-//                 // Normalizing the inputs
-//                 x_norm = (inputs[iNeuron] - input_norm.at(iNeuron).first)/(input_norm.at(iNeuron).second - input_norm.at(iNeuron).first);
-
-//                 // Set perceptron values of input layer.
-//                 total_layers.at(iLayer)->setValue(iNeuron, x_norm);
-//                 y_values_old[iNeuron] = x_norm;
-
-//                 if(compute_gradient){
-//                     dy_dx_old[iNeuron] = new su2double[n_inputs];
-//                     for(size_t jInput=0; jInput<n_inputs; jInput++){
-//                         if(iNeuron == jInput) dy_dx_old[iNeuron][jInput] = 1.0/(input_norm.at(iNeuron).second - input_norm.at(iNeuron).first);
-//                         else dy_dx_old[iNeuron][jInput] = 0.0;
-//                     }
-//                 }
-//             }
-//         }else{
-//             // For the layers after the input layer, activation functions of each layer are called.
-//             y_values_new = new su2double[total_layers.at(iLayer)->getNNeurons()];
-
-//             if(compute_gradient)
-//                 dy_dx_new = new su2double*[total_layers.at(iLayer)->getNNeurons()];
-
-//             for(size_t iNeuron=0; iNeuron<total_layers.at(iLayer)->getNNeurons(); iNeuron++){
-//                 // Multiplying the weights and output values of the previous layer to generate the current perceptron input
-//                 x = GeometryToolbox::DotProduct(total_layers.at(iLayer-1)->getNNeurons(), y_values_old, weights_mat[iLayer-1][iNeuron]);
-
-//                 // Generating the perceptron output
-//                 y = total_layers.at(iLayer)->activation_function(iNeuron, x);
-
-//                 // Storing perceptron output
-//                 total_layers.at(iLayer)->setValue(iNeuron, y);
-//                 y_values_new[iNeuron] = y;
-
-//                 if(compute_gradient){
-//                     dy_dx_new[iNeuron] = new su2double[n_inputs];
-//                     for(size_t jInput=0; jInput < n_inputs; jInput++) dy_dx_new[iNeuron][jInput] = 0.0;
-
-//                     for(size_t jNeuron=0; jNeuron<total_layers.at(iLayer-1)->getNNeurons(); jNeuron++){
-//                         for(size_t jInput=0; jInput<inputLayer->getNNeurons(); jInput++){
-//                             dy_dx_new[iNeuron][jInput] += total_layers.at(iLayer)->getdYdX(iNeuron) * weights_mat[iLayer-1][iNeuron][jNeuron] * dy_dx_old[jNeuron][jInput]; 
-//                         }
-//                     }
-//                 }
-                
-//             }
-//             // Resetting pointer to previous layer outputs
-//             delete y_values_old;
-//             y_values_old = y_values_new;
-
-//             if(compute_gradient){
-//                 for(size_t jNeuron=0; jNeuron<total_layers.at(iLayer-1)->getNNeurons(); jNeuron++){
-//                     delete [] dy_dx_old[jNeuron];
-//                 }
-//                 delete [] dy_dx_old;
-//                 dy_dx_old = dy_dx_new;
-//             }
-//         }
-//     }
-//     delete y_values_old;
-
-//     // Dimensionalize the MLP outputs and gradients
-//     for(size_t iOutput=0; iOutput<outputLayer->getNNeurons(); iOutput++){
-
-//         // Dimensionalize the outputs
-//         y_norm = outputLayer->getValue(iOutput);
-//         y = y_norm*(output_norm.at(iOutput).second - output_norm.at(iOutput).first) + output_norm.at(iOutput).first;
-        
-//         // Setting output value
-//         *outputs.at(iOutput) = y;
-
-//         if(compute_gradient){
-//             for(size_t iInput=0; iInput<n_inputs; iInput++){
-//                 doutputs_dinputs[iOutput][iInput] = (output_norm.at(iOutput).second - output_norm.at(iOutput).first) * dy_dx_old[iOutput][iInput];
-//             }
-//             delete [] dy_dx_old[iOutput];
-//         }
-//     }
-
-//     if(compute_gradient)
-//         delete [] dy_dx_old;
-// }
 
 NeuralNetwork::NeuralNetwork(){
     inputLayer = nullptr;
@@ -272,7 +160,8 @@ void NeuralNetwork::sizeWeights(){
     }
     weights_mat[n_hidden_layers].resize(outputLayer->getNNeurons(), hiddenLayers[n_hidden_layers-1]->getNNeurons());
 
-}
+    ANN_outputs = new su2double[outputLayer->getNNeurons()];
+}   
 
 void NeuralNetwork::setWeight(unsigned long i_layer, unsigned long i_neuron, unsigned long j_neuron, su2double value){
     //weights.at(i_layer).at(i_neuron).at(j_neuron) = value;

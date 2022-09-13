@@ -98,6 +98,7 @@ private:
     vector<pair<su2double, su2double>> input_norm;
     vector<pair<su2double, su2double>> output_norm;
     vector<su2double> last_inputs;
+    su2double* ANN_outputs;
 
     enum ENUM_ACTIVATION_FUNCTION {
         NONE=0,
@@ -135,7 +136,7 @@ public:
 
     // su2double predict(su2double * X, size_t i_output);
     // void predict(vector<su2double> &inputs, vector<su2double*> &outputs);
-    void predict(vector<su2double> &inputs, vector<su2double*> &outputs, su2double**doutputs_dinputs=nullptr);
+    void predict(vector<su2double> &inputs);
 
     //void predict_new(vector<su2double> &inputs, vector<su2double*> &outputs, su2double**doutputs_dinputs=nullptr);
 
@@ -151,6 +152,7 @@ public:
     size_t GetnInputs(){return input_names.size();}
     size_t GetnOutputs(){return output_names.size();}
 
+    su2double GetANN_Output(size_t iOutput){return ANN_outputs[iOutput];}
     void SizeActivationFunctions(unsigned long n_layers){activation_function_types = new ENUM_ACTIVATION_FUNCTION[n_layers]; activation_functions.resize(4); 
     activation_functions[ENUM_ACTIVATION_FUNCTION::LINEAR] = new Linear(); 
     activation_functions[ENUM_ACTIVATION_FUNCTION::RELU] = new Relu();

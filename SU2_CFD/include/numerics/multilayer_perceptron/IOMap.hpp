@@ -56,6 +56,9 @@ class IOMap
     size_t GetANNIndex(size_t i_Map){return ANN_indices[i_Map];}
     size_t GetInputIndex(size_t i_Map, size_t iInput){return Input_Map[i_Map][iInput].first;}
     size_t GetOutputIndex(size_t i_Map, size_t iOutput){return Output_Map[i_Map][iOutput].first;}
+    size_t GetANNOutputIndex(size_t i_Map, size_t iOutput){return Output_Map[i_Map][iOutput].second;}
+    size_t GetNMappedOutputs(size_t i_Map){return Output_Map[i_Map].size();}
+
     vector<pair<size_t, size_t>> GetOutputMapping(size_t i_map){return Output_Map[i_map];}
     vector<pair<size_t, size_t>> GetInputMapping(size_t i_map){return Input_Map[i_map];}
     

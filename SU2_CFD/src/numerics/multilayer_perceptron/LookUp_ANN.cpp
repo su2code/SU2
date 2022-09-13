@@ -76,8 +76,10 @@ void LookUp_ANN::Predict_ANN(IOMap *input_output_map, vector<su2double>& inputs,
     for(size_t i_map=0; i_map<input_output_map->GetNANNs(); i_map++){
         size_t i_ANN = input_output_map->GetANNIndex(i_map);
         vector<su2double> ANN_inputs = input_output_map->GetANN_Inputs(i_map, inputs);
-        vector<su2double*> ANN_outputs = input_output_map->GetANN_Outputs(i_map, outputs);
-        NeuralNetworks[i_ANN]->predict(ANN_inputs, ANN_outputs);
+        NeuralNetworks[i_ANN]->predict(ANN_inputs);
+        for(size_t i=0; i < input_output_map->GetNMappedOutputs(i_map); i++){
+            *outputs[input_output_map->GetOutputIndex(i_map, i)] = NeuralNetworks[i_ANN]->GetANN_Output(input_output_map->GetANNOutputIndex(i_map, i));
+        }
     }
 }
 void LookUp_ANN::GenerateANN(NeuralNetwork * ANN, string fileName)
