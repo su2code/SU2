@@ -132,10 +132,12 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
       break;
     }
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
-    const Double neg_p_or_rho = fmax(fmin(V.i.pressure(), V.j.pressure()) < 0.0,
-                                     fmin(V.i.density(), V.j.density()) < 0.0);
+    /*--- Some weird issues with forward AD if this is all done in one line. ---*/
+    const Double neg_p = fmin(V.i.pressure(), V.j.pressure()) < 0.0;
+    const Double neg_rho = fmin(V.i.density(), V.j.density()) < 0.0;
+    const Double neg_p_or_rho = fmax(neg_p, neg_rho);
     /*--- Test the sign of the Roe-averaged speed of sound. ---*/
-    const Double R = sqrt(V.j.density() / V.i.density());
+    const Double R = sqrt(abs(V.j.density() / V.i.density()));
     /*--- Delay dividing by R+1 until comparing enthalpy and velocity magnitude. ---*/
     const Double enthalpy = R*V.j.enthalpy() + V.i.enthalpy();
     Double v_squared = 0.0;
