@@ -299,7 +299,7 @@ message('''---------------------------------------------------------------------
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'),
-           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root())
+           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
