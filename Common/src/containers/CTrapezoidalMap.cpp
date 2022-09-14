@@ -142,7 +142,7 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   /* within that band, find edges which enclose the (val_x, val_y) point */
   pair<unsigned long, unsigned long> edges = GetEdges(band, val_x, val_y);
 
-
+  /* identify the triangle using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
   
   for (int i=0;i<2;i++)
