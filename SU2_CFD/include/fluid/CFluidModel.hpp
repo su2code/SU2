@@ -34,6 +34,7 @@
 #include "../../../Common/include/basic_types/datatype_structure.hpp"
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
+#include "CDiffusivityModel.hpp"
 
 using namespace std;
 
@@ -67,9 +68,11 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
+  su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
+  unique_ptr<CDiffusivityModel> MassDiffusivity;       /*!< \brief Mass Diffusivity Model */
 
   /*!
    * \brief Instantiate the right type of viscosity model based on config.
@@ -80,6 +83,11 @@ class CFluidModel {
    * \brief Instantiate the right type of conductivity model based on config.
    */
   static unique_ptr<CConductivityModel> MakeThermalConductivityModel(const CConfig* config, unsigned short iSpecies);
+  
+  /*!
+   * \brief Instantiate the right type of mass diffusivity model based on config.
+   */
+  static unique_ptr<CDiffusivityModel> MakeMassDiffusivityModel(const CConfig* config, unsigned short iSpecies);
 
  public:
   virtual ~CFluidModel() {}
@@ -122,12 +130,12 @@ class CFluidModel {
   /*!
    * \brief Get fluid specific heat at constant pressure.
    */
-  su2double GetCp() const { return Cp; }
+  inline virtual su2double GetCp() const { return Cp; }
 
   /*!
    * \brief Get fluid specific heat at constant volume.
    */
-  su2double GetCv() const { return Cv; }
+  inline virtual su2double GetCv() const { return Cv; }
 
   /*!
    * \brief Compute and return fluid mean molecular weight in kg/mol.
@@ -144,6 +152,36 @@ class CFluidModel {
     }
     OneOverMeanMolecularWeight += (1 - val_scalars_sum) / (molar_masses[n_species - 1] / 1000);
     return 1 / OneOverMeanMolecularWeight;
+  }
+
+  /*!
+   * \brief Get fluid mean specific heat capacity at constant pressure.
+   */
+  template <class Vector_t>
+  static su2double ComputeMeanSpecificHeatCp(int n_species, const Vector_t& specific_heat_cp, const su2double* val_scalars) {
+    su2double val_scalars_sum = 0.0;
+    su2double mean_cp =0.0;
+
+    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++){
+      mean_cp += specific_heat_cp[i_scalar] * val_scalars[i_scalar];
+      val_scalars_sum += val_scalars[i_scalar];
+    }
+    return mean_cp += specific_heat_cp[n_species - 1]*(1 - val_scalars_sum);
+  }
+
+  /*!
+   * \brief Get fluid mean specific heat capacity at constant volume.
+   */
+  template <class Vector_t>
+  static su2double ComputeMeanSpecificHeatCv(int n_species, const Vector_t& specific_heat_cp, const su2double* val_scalars, const Vector_t& molar_masses) {
+    su2double val_scalars_sum = 0.0;
+    su2double mean_cv =0.0;
+
+    for (int i_scalar = 0; i_scalar < n_species - 1; i_scalar++){
+      mean_cv += (specific_heat_cp[i_scalar] - UNIVERSAL_GAS_CONSTANT / (molar_masses[i_scalar] / 1000))* val_scalars[i_scalar];
+      val_scalars_sum += val_scalars[i_scalar];
+    }
+    return mean_cv += (specific_heat_cp[n_species - 1]- UNIVERSAL_GAS_CONSTANT / (molar_masses[n_species - 1] / 1000))*(1 - val_scalars_sum);
   }
 
   /*!
@@ -168,6 +206,15 @@ class CFluidModel {
     return Kt;
   }
 
+  /*!
+   * \brief Get fluid mass diffusivity.
+   */
+  inline virtual su2double GetMassDiffusivity(int iVar) {
+    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    mass_diffusivity = MassDiffusivity->GetDiffusivity();
+    return mass_diffusivity;
+  }
+  
   /*!
    * \brief Get fluid pressure partial derivative.
    */
@@ -242,6 +289,11 @@ class CFluidModel {
    * \brief Set thermal conductivity model.
    */
   virtual void SetThermalConductivityModel(const CConfig* config);
+  
+  /*!
+   * \brief Set mass diffusivity model.
+   */
+  virtual void SetMassDiffusivityModel(const CConfig* config);
 
   /*!
    * \brief virtual member that would be different for each gas model implemented

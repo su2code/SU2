@@ -273,6 +273,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   config->SetTemperature_Ref(1.0);
   config->SetViscosity_Ref(1.0);
+  config->SetConductivity_Ref(1.0);
 
   ModVel_FreeStream   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -422,11 +423,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
   Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;               config->SetGas_ConstantND(Gas_ConstantND);
-  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref;           config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
+  Specific_Heat_CpND  = auxFluidModel->GetCp()/Gas_Constant_Ref;                  config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
 
   /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
-  Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
-
+  if (config->GetKind_FluidModel() == FLUID_MIXTURE) {
+    Specific_Heat_CvND = auxFluidModel->GetCv() / Gas_Constant_Ref;
+  } else {
+    Specific_Heat_CvND = config->GetSpecific_Heat_Cp() / Gas_Constant_Ref;
+  }
+  config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
   Thermal_Expansion_CoeffND = config->GetThermal_Expansion_Coeff()*config->GetTemperature_Ref(); config->SetThermal_Expansion_CoeffND(Thermal_Expansion_CoeffND);
 
   ModVel_FreeStreamND = 0.0;
@@ -1007,14 +1012,17 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
     const bool energy;
-
-    LambdaVisc(bool e) : energy(e) {}
+    const bool species_model;
+    LambdaVisc(bool e, bool species) : energy(e), species_model(species) {}
 
     FORCEINLINE su2double lambda(su2double lamVisc, su2double eddyVisc, su2double rho, su2double k, su2double cv) const {
       su2double Lambda_1 = (4.0/3.0)*(lamVisc + eddyVisc);
       su2double Lambda_2 = 0.0;
       if (energy) Lambda_2 = k / cv;
-      return (Lambda_1 + Lambda_2) / rho;
+      if (species_model)
+        return max(Lambda_1, Lambda_2) / rho;
+      else
+        return (Lambda_1 + Lambda_2) / rho;
     }
 
     FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
@@ -1035,7 +1043,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
     }
 
-  } lambdaVisc(config->GetEnergy_Equation());
+  } lambdaVisc(config->GetEnergy_Equation(),config->GetKind_Species_Model()==SPECIES_MODEL::PASSIVE_SCALAR);
 
   /*--- Now instantiate the generic implementation with the two functors above. ---*/
 

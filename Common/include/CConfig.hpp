@@ -805,8 +805,9 @@ private:
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
   *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
-  unsigned short nMolecular_Weight; /*!< \brief Number of species molecular weights. */
-  su2double Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
+  unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
+  nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
+  su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,         /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cv,           /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,         /*!< \brief Non-dimensional specific heat at constant volume. */
@@ -1619,7 +1620,7 @@ public:
    * \brief Get the value of specific heat at constant pressure.
    * \return Value of the constant: Cp
    */
-  su2double GetSpecific_Heat_Cp(void) const { return Specific_Heat_Cp; }
+  su2double GetSpecific_Heat_Cp(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index]; }
 
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
@@ -3830,6 +3831,12 @@ public:
    * \return Turbulent conductivity model.
    */
   CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
+
+  /*!
+   * \brief Get the value of the mass diffusivity model.
+   * \return Mass diffusivity model.
+   */
+  DIFFUSIVITYMODEL GetKind_Diffusivity_Model(void) const { return Kind_Diffusivity_Model; }
 
   /*!
    * \brief Get the value of the constant viscosity.
