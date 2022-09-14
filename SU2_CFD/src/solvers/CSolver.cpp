@@ -1961,9 +1961,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           su2double normNonLinRes = 0.0, normNonLinRes_Upd = 0.0, normNonLinRes_Old = 0.0;
           SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
           for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-            normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint);
-            normNonLinRes_Upd += solverTurb->GetNodes()->GetNonLinResNorm_Update(iPoint);
-            normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint);
+            normNonLinRes += solverTurb->GetNodes()->GetNonLinResNorm(iPoint, iVar);
+            normNonLinRes_Upd += solverTurb->GetNodes()->GetNonLinResNorm_Update(iPoint, iVar);
+            normNonLinRes_Old += solverTurb->GetNodes()->GetNonLinResNorm_Old(iPoint, iVar);
           }
           END_SU2_OMP_FOR
 

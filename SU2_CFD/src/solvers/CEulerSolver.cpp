@@ -1810,7 +1810,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
         if (van_albada) {
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, Delta, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, Delta, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, Delta, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
@@ -1838,7 +1838,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
         if (van_albada) {
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, Delta, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, Delta, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, Delta, EPS);
         }
         else if (limiter) {
           lim_i = turbNodes->GetLimiter_Primitive(iPoint, 0);
@@ -1930,7 +1930,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       //   bad_j = bad_j || turbNodes->GetNon_Physical(jPoint);
       // }
 
-      counter_local += bad_i+bad_j;
+      counter_local += (bad_i && geometry->nodes->GetDomain(iPoint))+(bad_j && geometry->nodes->GetDomain(jPoint));
 
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
       numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
