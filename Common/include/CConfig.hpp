@@ -2432,7 +2432,8 @@ public:
    * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
    * \param[in] val_specific_heat_cp - specific heat at constant pressure.
    */
-  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp = val_specific_heat_cp; }
+  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp[0] = val_specific_heat_cp; }
+  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp, unsigned short val_index) { Specific_Heat_Cp[val_index] = val_specific_heat_cp; }
 
   /*!
    * \brief Set the non-dimensional value of the specific heat at constant pressure (incompressible fluids with energy equation).
