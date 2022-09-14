@@ -2,7 +2,7 @@
  * \file task_definition.inl
  * \brief In-Line subroutines of the <i>task_definition.hpp</i> file.
  * \author E. van der Weide, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

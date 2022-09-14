@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -190,6 +190,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Mach                   = config->GetMach();
     Pressure               = config->GetPressure_FreeStreamND();
     Temperature            = config->GetTemperature_FreeStreamND();
+    su2double Temperature_ve = config->GetTemperature_ve_FreeStream();
+    const su2double *MassFrac = config->GetGas_Composition();
 
     su2double SoundSpeed = 0.0;
 
@@ -200,26 +202,38 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       AD::RegisterInput(Mach);
       AD::RegisterInput(Alpha);
       AD::RegisterInput(Temperature);
+      AD::RegisterInput(Temperature_ve);
       AD::RegisterInput(Pressure);
     }
 
     /*--- Recompute the free stream velocity ---*/
 
+    su2double Mvec_Inf[MAXNDIM];
     if (nDim == 2) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
+      Mvec_Inf[0] = cos(Alpha)*Mach;
+      Mvec_Inf[1] = sin(Alpha)*Mach;
     }
     if (nDim == 3) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
+      Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach;
+      Mvec_Inf[1] = sin(Beta)*Mach;
+      Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach;
     }
+    //  TODO:   The following is not necessary if modifying Mach and Alpha of solver, rather than config
+    //    OR:   Alternatively, the config values could be registered instead of the solver values
+    config->SetAoA(Alpha*180.0/PI_NUMBER);
+    config->SetMach(Mach);
 
     config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
     config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
-
+    direct_solver->ResetNodeInfty(Pressure, MassFrac, Mvec_Inf, Temperature, Temperature_ve,
+                                  config);
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){

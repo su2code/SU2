@@ -129,7 +129,7 @@ jobs:
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
-      - name: Cleanup
+      - name: Cleanup 
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
           entrypoint: /bin/rm
@@ -192,30 +192,11 @@ jobs:
           done
           find $BIN_FOLDER -type f -exec chmod a+x '{}' \;
           ls -lahR $BIN_FOLDER
-          echo "cloning branch"
-          branch="${{github.ref}}"
-          name="SU2"
-          SRC_FOLDER="$PWD/src"
-          mkdir -p $SRC_FOLDER 
-          cd $SRC_FOLDER 
-          git clone --recursive --depth=1 --shallow-submodules https://github.com/su2code/SU2 $name
-          cd $name
-          git config --add remote.origin.fetch '+refs/pull/*/merge:refs/remotes/origin/refs/pull/*/merge'
-          git config --add remote.origin.fetch '+refs/heads/*:refs/remotes/origin/refs/heads/*'
-          git fetch origin --depth=1 $branch:$branch
-          git checkout $branch
-          git submodule update
-          echo $PWD
-          ls -lahR
-          cd ..
-          echo "done cloning"
-          echo $PWD
-          ls -lahR
       - name: Run Unit Tests
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
-      - name: Post Cleanup
+      - name: Post Cleanup 
         uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
         with:
           entrypoint: /bin/rm

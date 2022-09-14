@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.4.0 "Blackbird"
+#  \version 7.3.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -94,7 +94,7 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone           = TestCase('visc_cone')
-    visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
+    visc_cone.cfg_dir   = "nonequilibrium/viscous"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
     visc_cone.test_vals         = [-5.222278, -5.746529, -20.569425, -20.633787, -20.547644, 1.255759, -3.208374, -0.016010, 0.093459, 32633.000000]
@@ -117,6 +117,29 @@ def main():
     #viscwedge_mpp.tol       = 0.00001
     #test_list.append(viscwedge_mpp)
 
+    # Viscous single wedge - super catalytic walls
+    super_cat           = TestCase('super_cat')
+    super_cat.cfg_dir   = "nonequilibrium/viscous"
+    super_cat.cfg_file  = "super_cat.cfg"
+    super_cat.test_iter = 10
+    super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
+    super_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
+    super_cat.timeout   = 1600
+    super_cat.new_output = True
+    super_cat.tol       = 0.00001
+    test_list.append(super_cat)
+
+    # Viscous single wedge - partially catalytic walls
+    partial_cat           = TestCase('partial_cat')
+    partial_cat.cfg_dir   = "nonequilibrium/viscous"
+    partial_cat.cfg_file  = "partial_cat.cfg"
+    partial_cat.test_iter = 10
+    partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
+    partial_cat.su2_exec  = "mpirun -n 2 SU2_CFD"
+    partial_cat.timeout   = 1600
+    partial_cat.new_output = True
+    partial_cat.tol       = 0.00001
+    test_list.append(partial_cat)
 
     ##########################
     ### Compressible Euler ###
@@ -232,7 +255,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.653803, -1.181430, -0.794886, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 2.1492e+01, 5.6399e-01, 2.2787]
+    flatplate_udobj.test_vals = [-6.653802, -1.18143, -0.794887, 0.000611, -3.6850e-04, 7.3568e-04, -1.1042e-03, 5.9669e+02, 2.9980e+02, 2.9689e+02, 1.7147]
     flatplate_udobj.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate_udobj.timeout   = 1600
     flatplate_udobj.tol       = 0.00001
@@ -714,8 +737,8 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals         = [-1.374695, 1.976506, 1.898195, 4.831133, 1.187310, 0.426019, -86764]
-    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572, -87762]
+    turbmod_sa_neg_rae2822.test_vals         = [-1.355605, 1.464131, 1.314243, -1.997959, 1.135210, 0.398906, -87762.000000]
+    turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.298704, 1.476866, 1.303138, 0.694951, 1.397494, 0.534572, -87762.000000]
     turbmod_sa_neg_rae2822.su2_exec  = "mpirun -n 2 SU2_CFD"
     turbmod_sa_neg_rae2822.timeout   = 1600
     turbmod_sa_neg_rae2822.new_output = True
@@ -1652,25 +1675,13 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [-5.484286, -4.583959, -4.581872, -5.696027, -0.069058, -5.629894, 5.000000, -1.654603, 5.000000, -4.863218, 5.000000, -1.175041, 0.000429, 0.000409, 0.000020, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [-5.484300, -4.583931, -4.581775, -5.695135, -0.089602, -5.629851, 5.000000, -1.654640, 5.000000, -4.842236, 5.000000, -1.175120, 0.000429, 0.000409, 0.000020, 0.000000]
     species2_primitiveVenturi_mixingmodel.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel.timeout   = 1600
     species2_primitiveVenturi_mixingmodel.new_output = True
     species2_primitiveVenturi_mixingmodel.tol       = 0.00001
     test_list.append(species2_primitiveVenturi_mixingmodel)
-    
-    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity and thermal conductivity
-    species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
-    species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
-    species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
-    species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.157644, -4.362599, -4.283857, -5.463199, 0.081487, -5.318959, 5.000000, -2.004281, 5.000000, -5.185921, 5.000000, -1.245597, 2.408977, 0.958168, 0.605425, 0.845384]
-    species2_primitiveVenturi_mixingmodel_viscosity.su2_exec  = "mpirun -n 2 SU2_CFD"
-    species2_primitiveVenturi_mixingmodel_viscosity.timeout   = 1600
-    species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
-    species2_primitiveVenturi_mixingmodel_viscosity.tol       = 0.00001
-    test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
-    
+ 
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
@@ -1701,8 +1712,8 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals =         [-16.559189, -16.315116, -16.908670, -4.257599, 10, -4.523292, 8, -5.19335, 0.18661, 0]
-    species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10, -4.585464, 8, -5.19335, 0.18661, 0]
+    species_passive_val.test_vals =         [-16.559189, -16.315116, -16.908670, -4.257599, 10.000000, -4.523292, 8.000000, -5.193350]
+    species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10.000000, -4.585464, 8.000000, -5.193350]
     species_passive_val.su2_exec  = "mpirun -n 2 SU2_CFD"
     species_passive_val.timeout   = 1600
     species_passive_val.new_output = True

@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3332,6 +3332,12 @@ public:
                                           CSolver ***solver_container,
                                           CConfig *config,
                                           unsigned long TimeIter) { }
+
+  /*!
+   * \brief Reset Node Infty for discrete adjoint
+   */
+  virtual void ResetNodeInfty(su2double pressure_inf, const su2double *massfrac_inf, su2double *mvec_inf, su2double temperature_inf,
+                              su2double temperature_ve_inf, CConfig *config) { }
 
   /*!
    * \brief A virtual member.

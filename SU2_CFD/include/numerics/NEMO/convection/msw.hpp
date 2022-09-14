@@ -2,7 +2,7 @@
  * \file msw.hpp
  * \brief Declaration of numerics classes for modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  */
 class CUpwMSW_NEMO : public CNEMONumerics {
 private:

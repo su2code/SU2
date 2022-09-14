@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2437,9 +2437,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, GradTemperature = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
+            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
+            Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
@@ -2520,6 +2521,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
         }
         Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+        if (nemo) Grad_Temp_ve[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature_ve(), iDim);
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
@@ -2591,35 +2593,67 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
-      /// TODO: Move these ifs to specialized functions.
+      su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+
       if (!nemo){
 
         if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          GradTemperature = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
 
           Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
           thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
         }
         if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
-          if (energy)
-            GradTemperature = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
-
+          if (!energy) dTdn = 0.0;
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
 
       } else {
 
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        const auto& Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+        
+	const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
+  
+        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/ 
+        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 
-        su2double dTn   = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[prim_idx.Temperature()], UnitNormal);
-        su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[prim_idx.Temperature_ve()], UnitNormal);
+        //TODO: CHECK ME
+        bool catalytic = false;
+        unsigned short iMarker_Catalytic = 0;
+        while( iMarker_Catalytic < config->GetnWall_Catalytic()){
 
-        /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux,
-        enthalpy transport due to mass diffusion ---*/
-        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+          string Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
+
+          if (Marker_Tag == Catalytic_Tag){
+            catalytic = true;
+            break;
+          } else {
+            iMarker_Catalytic++;
+          }
+        }
+
+        if (catalytic){
+
+          const auto nSpecies = config->GetnSpecies();
+      	  const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+	  const auto& PrimVar = nodes->GetPrimitive(iPoint);
+          const auto& Ds = nodes->GetDiffusionCoeff(iPoint);
+          const auto& hs = nodes->GetEnthalpys(iPoint);
+          const su2double rho = PrimVar[prim_idx.Density()];
+
+          /*--- Compute enthalpy transport to surface due to mass diffusion ---*/ 
+          su2double sumJhs = 0.0;
+          for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              su2double dYdn = 1.0/rho*(Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies]*Grad_PrimVar[prim_idx.Density()][iDim]/rho);
+              sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
+            }
+          }
+          /*--- Surface energy balance: mass diffusion ---*/ 
+          HeatFlux[iMarker][iVertex] += sumJhs;
+
+        }
       }
 
       /*--- Note that heat is computed at the

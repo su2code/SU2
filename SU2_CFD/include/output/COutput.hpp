@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -172,7 +172,7 @@ protected:
   //! Structure to store the value initial residuals for relative residual computation
   std::map<string, su2double> initialResiduals;
 
-  /*! \brief Struct to hold a parsed user-defined expression. */
+  /** \brief Struct to hold a parsed user-defined expression. */
   struct CustomHistoryOutput {
     mel::ExpressionTree<passivedouble> expression;
     /*--- Pointers to values in the history output maps, to avoid key lookup every time. ---*/
@@ -186,62 +186,17 @@ protected:
 
   CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
-  /*! \brief Type of operation for custom outputs. */
-  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
+   /*----------------------------- Volume output ----------------------------*/
 
-  /*! \brief Struct to hold a parsed custom output function. */
-  struct CustomOutput {
-    /*--- First level of parsing the syntax "name : type{func}[markers];". ---*/
-    std::string name;
-    OperationType type;
-    std::string func;
-    std::vector<std::string> markers;
+   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
 
-    /*--- Second level, func into expression, and acceleration structures. ---*/
-    mel::ExpressionTree<passivedouble> expression;
-    std::vector<std::string> varSymbols;
-    std::vector<unsigned short> markerIndices;
+   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
+   unsigned short nVolumeFields;        /*!< \brief Number of fields in the volume output */
 
-    /*--- The symbols (strings) are associated with an integer index for efficiency. For evaluation this index
-     is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"
-     and needs to be generated on-the-fly for each point. The functor approach is more generic than a pointer, for
-     example it allows wrapping the access to multiple solvers. The interpretation of these indices is dictated by
-     the functor used in eval, for example indices may be established as 32 * solver_idx + variable_idx.
-     The parts of the code that assign and interpret indices need to be in sync. ---*/
-    std::vector<unsigned long> varIndices;
-
-    /*--- Offset between varIndices of different solvers (see above). Power of 2 to make decoding faster. ---*/
-    static constexpr unsigned long MAX_VARS_PER_SOLVER = 32;
-
-    /*--- Arbitrary number to indicate that a string did not match a variable. ---*/
-    static constexpr unsigned long NOT_A_VARIABLE = MAX_SOLS * MAX_VARS_PER_SOLVER;
-
-    /*--- Other outputs can be referenced in expressions, e.g. to compute variance.
-     We store pointers to the required outputs to speed-up access. ---*/
-    std::vector<const su2double*> otherOutputs;
-
-    /*--- For evaluation, "vars" is a functor (i.e. has operator()) that returns the value of a variable at a given
-     point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
-     with primitive indices. ---*/
-    template <class Variables>
-    su2double eval(const Variables& vars) const {
-      return mel::Eval<su2double>(expression, [&](int iSymbol) {return vars(varIndices[iSymbol]);});
-    }
-  };
-
-  std::vector<CustomOutput> customOutputs;  /*!< \brief User-defined outputs. */
-
-  /*----------------------------- Volume output ----------------------------*/
-
-  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
-
-  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-  unsigned short nVolumeFields;        //!< Number of fields in the volume output
-
-  string volumeFilename,               //!< Volume output filename
-  surfaceFilename,                     //!< Surface output filename
-  restartFilename;                     //!< Restart output filename
+   string volumeFilename,               //!< Volume output filename
+   surfaceFilename,                     //!< Surface output filename
+   restartFilename;                     //!< Restart output filename
 
   /** \brief Structure to store information for a volume output field.
    *
@@ -674,29 +629,6 @@ protected:
   }
 
   /*!
-   * \brief Returns a pointer to the value of an history output.
-   * \note For per-surface outputs the marker index is specified as "name[index]".
-   */
-  inline const su2double* GetPtrToHistoryOutput(const string& name) const {
-    /*--- Decide if it should be per surface. ---*/
-    const auto pos = name.find('[');
-    const su2double* ptr = nullptr;
-    if (pos == std::string::npos) {
-      const auto it = historyOutput_Map.find(name);
-      if (it != historyOutput_Map.end()) {
-        ptr = &(it->second.value);
-      }
-    } else {
-      const auto idx = std::stoi(std::string(name.begin()+pos+1, name.end()-1));
-      const auto it = historyOutputPerSurface_Map.find(std::string(name, 0, pos));
-      if (it != historyOutputPerSurface_Map.end()) {
-        ptr = &(it->second[idx].value);
-      }
-    }
-    return ptr;
-  }
-
-  /*!
    * \brief Setup a custom history output object for a given expression.
    * \param[in] expression - Some user-defined math with the history field names as variables.
    * \param[out] output - Custom output ready to evaluate.
@@ -793,11 +725,6 @@ protected:
    * \brief Set the history fields common for all solvers.
    */
   void SetCommonHistoryFields();
-
-  /*!
-   * \brief Parses user-defined outputs.
-   */
-  void SetCustomOutputs(const CConfig *config);
 
   /*!
    * \brief Load values of the history fields common for all solvers.

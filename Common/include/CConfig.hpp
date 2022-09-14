@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -311,7 +311,6 @@ private:
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
-  su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
@@ -445,7 +444,6 @@ private:
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
-  string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -481,7 +479,6 @@ private:
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
-  MIXINGVISCOSITYMODEL Kind_MixingViscosityModel; /*!< \brief Kind of the mixing Viscosity Model*/
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
@@ -823,18 +820,16 @@ private:
   Pressure_Critical,     /*!< \brief Critical Pressure for real fluid model.  */
   Density_Critical,      /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
-  *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
-  *Thermal_Conductivity_Constant,  /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
-  *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
-  *Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
-  *Mu_S;                  /*!< \brief Reference S for Sutherland model.  */
-  unsigned short nMu_Constant,   /*!< \brief Number of species constant viscosities. */
-  nMu_Ref,                       /*!< \brief Number of species reference constants for Sutherland model. */
-  nMu_Temperature_Ref,           /*!< \brief Number of species reference temperature for Sutherland model. */
-  nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
-  nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
-  nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
-  nPrandtl_Turb;                 /*!< \brief Number of species turbulent Prandtl number. */
+  Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
+  Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
+  Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
+  Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
+  Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
+  Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
+  Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
+  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
@@ -843,6 +838,7 @@ private:
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
+  Energy_ve_FreeStream,            /*!< \brief Free-stream vibe-el energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
@@ -864,8 +860,8 @@ private:
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
   wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
   wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
-  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  *Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
+  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -875,7 +871,8 @@ private:
   Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
-  Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
+  Energy_Ref,                 /*!< \brief Reference energy for non-dimensionalization. */
+  Energy_ve_Ref,              /*!< \brief Reference vibe-el energy for non-dimensionalization. */
   Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
   Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
@@ -886,6 +883,7 @@ private:
   Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
+  Energy_ve_FreeStreamND,     /*!< \brief Farfield vibe-el energy value (external flow). */
   Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
@@ -1169,20 +1167,24 @@ private:
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies,                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies;                  /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
-  iWall_Catalytic,
-  nWall_Catalytic;                          /*!< \brief No of catalytic walls */
-  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
+  unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
+  iWall_Catalytic,                          /*!< \brief Iterator over catalytic walls. */
+  nWall_Catalytic;                          /*!< \brief No. of catalytic walls. */
+  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless]. */
+  *Supercatalytic_Wall_Composition,         /*!< \brief Supercatalytic wall mass fractions [dimensionless]. */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
   ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
   vt_transfer_res_limit,                    /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
-  monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
+  monoatomic,                               /*!< \brief Flag for monoatomic mixture. */
+  Supercatalytic_Wall;                      /*!< \brief Flag for supercatalytic wall. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   TRANSCOEFFMODEL   Kind_TransCoeffModel;   /*!< \brief Transport coefficient Model for NEMO solver. */
+  su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency. */
 
   /*--- Additional species solver options ---*/
   bool Species_Clipping;           /*!< \brief Boolean that activates solution clipping for scalar transport. */
@@ -1681,6 +1683,12 @@ public:
   su2double GetEnergy_FreeStream(void) const { return Energy_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream vibe-el energy.
+   * \return Freestream vibe-el energy.
+   */
+  su2double GetEnergy_ve_FreeStream(void) const { return Energy_ve_FreeStream; }
+
+  /*!
    * \brief Get the value of the freestream viscosity.
    * \return Freestream viscosity.
    */
@@ -1708,13 +1716,13 @@ public:
    * \brief Get the value of the laminar Prandtl number.
    * \return Laminar Prandtl number.
    */
-  su2double GetPrandtl_Lam(unsigned short val_index = 0) const { return Prandtl_Lam[val_index]; }
+  su2double GetPrandtl_Lam(void) const { return Prandtl_Lam; }
 
   /*!
    * \brief Get the value of the turbulent Prandtl number.
    * \return Turbulent Prandtl number.
    */
-  su2double GetPrandtl_Turb(unsigned short val_index = 0) const { return Prandtl_Turb[val_index]; }
+  su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
@@ -1770,6 +1778,12 @@ public:
    * \return Reference energy for non-dimensionalization.
    */
   su2double GetEnergy_Ref(void) const { return Energy_Ref; }
+
+  /*!
+   * \brief Get the value of the reference vibe-el enegry for non-dimensionalization.
+   * \return Reference vibe-el energy for non-dimensionalization.
+   */
+  su2double GetEnergy_ve_Ref(void) const { return Energy_ve_Ref; }
 
   /*!
    * \brief Get the value of the reference temperature for non-dimensionalization.
@@ -1898,6 +1912,12 @@ public:
    * \return Non-dimensionalized freestream energy.
    */
   su2double GetEnergy_FreeStreamND(void) const { return Energy_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream vibe-el energy.
+   * \return Non-dimensionalized freestream vibe-el energy.
+   */
+  su2double GetEnergy_ve_FreeStreamND(void) const { return Energy_ve_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -2404,6 +2424,12 @@ public:
   void SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
   /*!
+   * \brief Set the reference vibe-el energy for nondimensionalization.
+   * \param[in] val_energy_ve_ref - Value of the reference vibe-el energy.
+   */
+  void SetEnergy_ve_Ref(su2double val_energy_ve_ref) { Energy_ve_Ref = val_energy_ve_ref; }
+
+  /*!
    * \brief Set the reference Omega for nondimensionalization.
    * \param[in] val_omega_ref - Value of the reference omega.
    */
@@ -2604,10 +2630,22 @@ public:
   void SetEnergy_FreeStreamND(su2double val_energy_freestreamnd) { Energy_FreeStreamND = val_energy_freestreamnd; }
 
   /*!
+   * \brief Set the non-dimensional freestream vibe-el energy.
+   * \param[in] val_energy_ve_freestreamnd - Value of the non-dimensional freestream vibe-el energy.
+   */
+  void SetEnergy_ve_FreeStreamND(su2double val_energy_ve_freestreamnd) { Energy_ve_FreeStreamND = val_energy_ve_freestreamnd; }
+
+  /*!
    * \brief Set the freestream energy.
    * \param[in] val_energy_freestream - Value of the freestream energy.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
+
+  /*!
+   * \brief Set the freestream vibe-el energy.
+   * \param[in] val_energy_ve_freestream - Value of the freestream vibe-el energy.
+   */
+  void SetEnergy_ve_FreeStream(su2double val_energy_ve_freestream) { Energy_ve_FreeStream = val_energy_ve_freestream; }
 
   /*!
    * \brief Set the thermal diffusivity for solids.
@@ -3065,13 +3103,13 @@ public:
 
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
-   * \return: Number of periodic time instances for Harmonic Balance.
+   * \return Number of periodic time instances for Harmonic Balance.
    */
   unsigned short GetnTimeInstances(void) const { return nTimeInstances; }
 
   /*!
    * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
-   * \return: Period for Harmonic Balance.
+   * \return Period for Harmonic Balance.
    */
   su2double GetHarmonicBalance_Period(void) const { return HarmonicBalance_Period; }
 
@@ -3654,9 +3692,10 @@ public:
     switch (Kind_Solver) {
       case MAIN_SOLVER::EULER : case MAIN_SOLVER::NAVIER_STOKES: case MAIN_SOLVER::RANS:
       case MAIN_SOLVER::INC_EULER : case MAIN_SOLVER::INC_NAVIER_STOKES: case MAIN_SOLVER::INC_RANS:
-      case MAIN_SOLVER::NEMO_EULER : case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      case MAIN_SOLVER::NEMO_EULER : case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::NEMO_RANS:
       case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
+      case MAIN_SOLVER::DISC_ADJ_NEMO_EULER : case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
         return true;
       default:
         return false;
@@ -3695,7 +3734,8 @@ public:
    */
   bool GetNEMOProblem(void) const {
     switch (Kind_Solver) {
-      case MAIN_SOLVER::NEMO_EULER : case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      case MAIN_SOLVER::NEMO_EULER : case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::NEMO_RANS:
+      case MAIN_SOLVER::DISC_ADJ_NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
         return true;
       default:
         return false;
@@ -3761,6 +3801,12 @@ public:
   string GetWall_Catalytic_TagBound(unsigned short val_marker) const { return Wall_Catalytic[val_marker]; }
 
   /*!
+   * \brief Get wall catalytic efficiency.
+   * \return wall catalytic efficiency value.
+   */
+  su2double GetCatalytic_Efficiency(void) const { return CatalyticEfficiency; }
+
+  /*!
    * \brief Fluid model that we are using.
    * \return Fluid model that we are using.
    */
@@ -3814,12 +3860,6 @@ public:
   VISCOSITYMODEL GetKind_ViscosityModel() const { return Kind_ViscosityModel; }
 
   /*!
-   * \brief Get the value of the mixing model for viscosity.
-   * \return Mixing Viscosity model.
-   */
-  MIXINGVISCOSITYMODEL GetKind_MixingViscosityModel() const { return Kind_MixingViscosityModel; }
-
-  /*!
    * \brief Get the value of the thermal conductivity model.
    * \return Conductivity model.
    */
@@ -3835,29 +3875,25 @@ public:
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
-  su2double GetMu_Constant(unsigned short val_index = 0) const { return Mu_Constant[val_index]; }
+  su2double GetMu_Constant(void) const { return Mu_Constant; }
 
   /*!
    * \brief Get the value of the non-dimensional constant viscosity.
    * \return Non-dimensional constant viscosity.
    */
-  su2double GetMu_ConstantND(unsigned short val_index = 0) const { return Mu_Constant[val_index] / Viscosity_Ref; }
+  su2double GetMu_ConstantND(void) const { return Mu_ConstantND; }
 
   /*!
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const {
-    return Thermal_Conductivity_Constant[val_index];
-  }
+  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant; }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-  su2double GetThermal_Conductivity_ConstantND(unsigned short val_index = 0) const {
-    return Thermal_Conductivity_Constant[val_index] / Thermal_Conductivity_Ref;
-  }
+    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
 
   /*!
    * \brief Get the value of the constant mass diffusivity for scalar transport.
@@ -3887,39 +3923,37 @@ public:
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
-  su2double GetMu_Ref(unsigned short val_index = 0) const { return Mu_Ref[val_index]; }
+  su2double GetMu_Ref(void) const { return Mu_Ref; }
 
   /*!
    * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
    * \return The non-dimensional reference viscosity.
    */
-  su2double GetMu_RefND(unsigned short val_index = 0) const { return Mu_Ref[val_index] / Viscosity_Ref; }
+  su2double GetMu_RefND(void) const { return Mu_RefND; }
 
   /*!
    * \brief Get the value of the reference temperature for Sutherland model.
    * \return The reference temperature.
    */
-  su2double GetMu_Temperature_Ref(unsigned short val_index = 0) const { return Mu_Temperature_Ref[val_index]; }
+  su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref; }
 
   /*!
    * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
    * \return The non-dimensional reference temperature.
    */
-  su2double GetMu_Temperature_RefND(unsigned short val_index = 0) const {
-    return Mu_Temperature_Ref[val_index] / Temperature_Ref;
-  }
+  su2double GetMu_Temperature_RefND(void) const { return Mu_Temperature_RefND; }
 
   /*!
    * \brief Get the value of the reference S for Sutherland model.
    * \return The reference S.
    */
-  su2double GetMu_S(unsigned short val_index = 0) const { return Mu_S[val_index]; }
+  su2double GetMu_S(void) const { return Mu_S; }
 
   /*!
    * \brief Get the value of the non-dimensional reference S for Sutherland model.
    * \return The non-dimensional reference S.
    */
-  su2double GetMu_SND(unsigned short val_index = 0) const { return Mu_S[val_index] / Temperature_Ref; }
+  su2double GetMu_SND(void) const { return Mu_SND; }
 
   /*!
    * \brief Get the number of coefficients in the temperature polynomial models.
@@ -3980,6 +4014,31 @@ public:
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
   const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
+
+  /*!
+   * \brief Set the value of the non-dimensional constant viscosity.
+   */
+  void SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
+
+  /*!
+   * \brief Set the value of the non-dimensional thermal conductivity.
+   */
+  void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
+
+  /*!
+   * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
+   */
+  void SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
+
+  /*!
+   * \brief Set the value of the non-dimensional reference temperature for Sutherland model.
+   */
+  void SetMu_Temperature_RefND(su2double mu_Tref) { Mu_Temperature_RefND = mu_Tref; }
+
+  /*!
+   * \brief Set the value of the non-dimensional S for Sutherland model.
+   */
+  void SetMu_SND(su2double mu_s) { Mu_SND = mu_s; }
 
   /*!
    * \brief Set the temperature polynomial coefficient for specific heat Cp.
@@ -5216,11 +5275,6 @@ public:
   const string& GetCustomObjFunc() const { return CustomObjFunc; }
 
   /*!
-   * \brief Get the user expressions for custom outputs.
-   */
-  const string& GetCustomOutputs() const { return CustomOutputs; }
-
-  /*!
    * \brief Get the kind of sensitivity smoothing technique.
    * \return Kind of sensitivity smoothing technique.
    */
@@ -5235,22 +5289,22 @@ public:
   TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
-   * \brief Provides the number of species present in the plasma
-   * \return: The number of species present in the plasma, read from input file
+   * \brief Provides the number of species present in the gas mixture.
+   * \return The number of species present in the gas mixture.
    */
   unsigned short GetnSpecies() const { return nSpecies; }
 
-   /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \return The heat flux.
-   */
-  const su2double *GetWall_Catalycity(void) const { return Wall_Catalycity; }
-
   /*!
-   * \brief Provides the gas mass fractions of the flow
-   * \return: Gas Mass fractions
+   * \brief Provides the gas mass fractions of the flow.
+   * \return Gas Mass fractions.
    */
   const su2double *GetGas_Composition(void) const { return Gas_Composition; }
+
+  /*!
+   * \brief Provides the gas mass fractions at the wall for supercat wall.
+   * \return Supercat wall gas mass fractions.
+   */
+  const su2double *GetSupercatalytic_Wall_Composition(void) const { return Supercatalytic_Wall_Composition; }
 
   /*!
    * \brief Provides the restart information.
@@ -5327,6 +5381,11 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
+
+  /*!
+   * \brief Indicates whether supercatalytic wall is used.
+   */
+  bool GetSupercatalytic_Wall(void) const { return Supercatalytic_Wall; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
@@ -6241,16 +6300,22 @@ public:
   bool GetViscous_Wall(unsigned short iMarker) const;
 
   /*!
-   * \brief Determines if problem is adjoint
-   * \return true if Adjoint
+   * \brief Determines if problem is adjoint.
+   * \return true if Adjoint.
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
   /*!
-   * \brief Determines if problem is viscous
-   * \return true if Viscous
+   * \brief Determines if problem is viscous.
+   * \return true if Viscous.
    */
   bool GetViscous(void) const { return Viscous; }
+
+  /*!
+   * \brief Determines if problem has catalytic walls.
+   * \return true if catalytic walls are present.
+   */
+  bool GetCatalytic(void) const { return nWall_Catalytic > 0; }
 
   /*!
    * \brief Provides the index of the solution in the container.

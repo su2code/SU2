@@ -2,7 +2,7 @@
  * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,6 +47,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   Omega00.resize(nSpecies,nSpecies,4,0.0);
   Omega11.resize(nSpecies,nSpecies,4,0.0);
   RxnConstantTable.resize(6,5) = su2double(0.0);
+  CatRecombTable.resize(nSpecies,2) = 0;
   Blottner.resize(nSpecies,3)  = su2double(0.0);
   taus.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
@@ -110,6 +111,12 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     ElDegeneracy(0,5) = 5;
     ElDegeneracy(0,6) = 15;
 
+    /*--- Catayltic wall table---*/
+    // Creation/Destruction (+1/-1), Index of monoatomic reactants.
+    // Argon not used.
+    CatRecombTable(0,0) = 0; CatRecombTable(0,1) = 0;
+
+    /*--- Values used in the Sutherland's formula. ---*/
     if (viscous) {
       //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       mu_ref[0] = 2.125E-5;
@@ -260,6 +267,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
 
+    /*--- Catayltic wall table---*/
+    // Creation/Destruction (+1/-1), Index of monoatomic reactants.
+    // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
+    CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1;
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1;
+
+    /*--- Values used in the Sutherland's formula. ---*/
     if (viscous) {
       //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       k_ref[0] = 0.0242;
@@ -614,6 +628,15 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,3,0) = -5.0478143E-03;  Omega11(4,3,1) = 1.0236186E-01;   Omega11(4,3,2) = -9.0058935E-01;  Omega11(4,3,3) = 4.4472565E+02;
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
 
+    // Creation/Destruction (+1/-1), Index of monoatomic reactants
+    // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
+    CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 3;
+    CatRecombTable(1,0) =  1; CatRecombTable(1,1) = 4;
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 0;
+    CatRecombTable(3,0) = -1; CatRecombTable(3,1) = 3;
+    CatRecombTable(4,0) = -1; CatRecombTable(4,1) = 4;
+
+    /*--- Values used in the Sutherland's formula. ---*/
     if (viscous) {
       //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       k_ref[0] = 0.0241;
@@ -1052,6 +1075,17 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(4,3,0) = -5.0478143E-03;  Omega11(4,3,1) = 1.0236186E-01;   Omega11(4,3,2) = -9.0058935E-01;  Omega11(4,3,3) = 4.4472565E+02;
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
 
+    // Creation/Destruction (+1/-1), Index of monoatomic reactants
+    // Monoatomic species (N,O) recombine into diaatomic (N2, O2)
+    CatRecombTable(0,0) =  0; CatRecombTable(0,1) = 1;
+    CatRecombTable(1,0) =  1; CatRecombTable(1,1) = 4;
+    CatRecombTable(2,0) =  1; CatRecombTable(2,1) = 5;
+    CatRecombTable(3,0) =  0; CatRecombTable(3,1) = 1;
+    CatRecombTable(4,0) = -1; CatRecombTable(4,1) = 4;
+    CatRecombTable(5,0) = -1; CatRecombTable(5,1) = 5;
+    CatRecombTable(6,0) =  0; CatRecombTable(6,1) = 1;
+
+    /*--- Values for Sutherland's formula. ---*/
     if (viscous) {
       //F.M. White, Viscous Fluid Flow, 3rd ed., McGraw-Hill, 2006.
       k_ref[0] = 0.0241;
@@ -2071,9 +2105,9 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  const su2double Tmin   = 50.0; const su2double Tmax   = 8E4;
-  const su2double Tvemin = 50.0; const su2double Tvemax = 8E4;
-  su2double Tve_o  = 50.0; su2double Tve2  = 8E4;
+  const su2double Tmin   = 5.0; const su2double Tmax   = 8E4;
+  const su2double Tvemin = 5.0; const su2double Tvemax = 8E4;
+  su2double Tve_o  = 5.0; su2double Tve2  = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
   if (Tve_old < 1) Tve_old = T;                           //For first fluid iteration
@@ -2084,7 +2118,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   const su2double NRtol         = 1.0E-6;    // Tolerance for the Newton-Raphson method
   const su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
   const unsigned short maxBIter = 50;        // Maximum Bisection method iterations
-  const unsigned short maxNIter = 50;        // Maximum Newton-Raphson iterations
+  const unsigned short maxNIter = 150;       // Maximum Newton-Raphson iterations
   const su2double scale         = 0.9;       // Scaling factor for Newton-Raphson step
 
   /*--- Execute a Newton-Raphson root-finding method for Tve ---*/

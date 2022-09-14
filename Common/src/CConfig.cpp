@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1057,7 +1057,6 @@ void CConfig::SetPointersNull(void) {
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
-  Gas_Composition = nullptr;
 }
 
 void CConfig::SetConfig_Options() {
@@ -1185,7 +1184,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-
+  /* DESCRIPTION: Specfify super-catalytic wall */
+  addBoolOption("SUPERCATALYTIC_WALL", Supercatalytic_Wall, false);
+  /* DESCRIPTION: Wall mass fractions for supercatalytic case */
+  addDoubleListOption("SUPERCATALYTIC_WALL_COMPOSITION", nSpecies_Cat_Wall, Supercatalytic_Wall_Composition);
+  /* DESCRIPTION: Specfify catalytic efficiency of wall if using gamma model */
+  addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
+  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
@@ -1207,20 +1212,16 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to Constant Viscosity Model ---*/
 
   /* DESCRIPTION: default value for AIR */
-  addDoubleListOption("MU_CONSTANT", nMu_Constant, Mu_Constant);
+  addDoubleOption("MU_CONSTANT", Mu_Constant , 1.716E-5);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
 
   /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
-  addDoubleListOption("MU_REF", nMu_Ref, Mu_Ref);
+  addDoubleOption("MU_REF", Mu_Ref, 1.716E-5);
   /* DESCRIPTION: Sutherland Temperature Ref, default value for AIR SI */
-  addDoubleListOption("MU_T_REF", nMu_Temperature_Ref, Mu_Temperature_Ref);
+  addDoubleOption("MU_T_REF", Mu_Temperature_Ref, 273.15);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
-  addDoubleListOption("SUTHERLAND_CONSTANT", nMu_S, Mu_S);
-  
-  /*--- Options related to Viscosity Model ---*/
-  /*!\brief MIXINGVISCOSITY_MODEL \n DESCRIPTION: Mixing model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: DAVIDSON \ingroup Config*/
-  addEnumOption("MIXING_VISCOSITY_MODEL", Kind_MixingViscosityModel, MixingViscosityModel_Map, MIXINGVISCOSITYMODEL::DAVIDSON);
+  addDoubleOption("SUTHERLAND_CONSTANT", Mu_S, 110.4);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -1232,7 +1233,7 @@ void CConfig::SetConfig_Options() {
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-  addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", nThermal_Conductivity_Constant , Thermal_Conductivity_Constant);
+  addDoubleOption("THERMAL_CONDUCTIVITY_CONSTANT", Thermal_Conductivity_Constant , 0.0257);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
@@ -1248,9 +1249,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
   addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /*!\brief PRANDTL_LAM \n DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) \n DEFAULT: 0.72 \ingroup Config*/
-  addDoubleListOption("PRANDTL_LAM", nPrandtl_Lam , Prandtl_Lam);
+  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
-  addDoubleListOption("PRANDTL_TURB", nPrandtl_Turb , Prandtl_Turb);
+  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
 
   /*--- Options related to wall models. ---*/
 
@@ -1936,8 +1937,6 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief CUSTOM_OBJFUNC \n DESCRIPTION: User-provided definition of a custom objective function. \ingroup Config*/
   addStringOption("CUSTOM_OBJFUNC", CustomObjFunc, "");
-  /*!\brief CUSTOM_OUTPUTS \n DESCRIPTION: User-provided definitions for custom output. \ingroup Config*/
-  addStringOption("CUSTOM_OUTPUTS", CustomOutputs, "");
 
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCL_VALUE", dCD_dCL, 0.0);
@@ -3209,7 +3208,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.4.0 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.3.1 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3410,11 +3409,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Turb_Model != TURB_MODEL::NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
   }
+  if (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES && Kind_Turb_Model != TURB_MODEL::NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NEMO_NAVIER_STOKES", CURRENT_FUNCTION);
+  }
   if (Kind_Solver == MAIN_SOLVER::RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
   }
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
+  }
+  if (Kind_Solver == MAIN_SOLVER::NEMO_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
+    SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= NEMO_RANS", CURRENT_FUNCTION);
   }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
@@ -3422,11 +3427,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
   } else if (Kind_Turb_Model == TURB_MODEL::SA) {
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
-  }
-
-  /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
-  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
-    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -3444,8 +3444,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error(string("For RANS problems, use NONE, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
       if (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::STANDARD_FUNCTION) {
-        if (!((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::INC_RANS)))
-          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS or INC_RANS.\n"), CURRENT_FUNCTION);
+        if (!((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::NEMO_RANS)))
+          SU2_MPI::Error(string("Wall model STANDARD_FUNCTION only available for RANS/INC_RANS/NEMO_RANS.\n"), CURRENT_FUNCTION);
         if (nRough_Wall != 0)
           SU2_MPI::Error(string("Wall model STANDARD_FUNCTION and WALL_ROUGHNESS migh not be compatible. Checking required!\n"), CURRENT_FUNCTION);
       }
@@ -3699,6 +3699,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Kind_Solver == MAIN_SOLVER::RANS ||
       Kind_Solver == MAIN_SOLVER::NEMO_EULER ||
       Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES ||
+      Kind_Solver == MAIN_SOLVER::NEMO_RANS ||
       Kind_Solver == MAIN_SOLVER::FEM_EULER ||
       Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES ||
       Kind_Solver == MAIN_SOLVER::FEM_RANS ||
@@ -3750,194 +3751,109 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 /*--- Set default values for various fluid properties. ---*/
 
   const su2double Molecular_Weight_Default = 28.96;
-  const su2double Mu_Constant_Default = (SystemMeasurements == SI) ? 1.716E-5 : (1.716E-5 / 47.88025898);
-  const su2double Mu_Ref_Default = Mu_Constant_Default;
-  const su2double Mu_Temperature_Ref_Default = (SystemMeasurements == SI) ? 273.15 : (273.15 * 1.8);
-  const su2double Mu_S_Default = (SystemMeasurements == SI) ? 110.4 : (110.4 * 1.8);
-  const su2double Thermal_Conductivity_Constant_Default = (SystemMeasurements == SI) ? 2.57E-2 : (2.57E-2 * 0.577789317);
-  const su2double Prandtl_Lam_Default = 0.72;
-  const su2double Prandtl_Turb_Default = 0.9;
 
-  auto SetDefaultIfEmpty = [](su2double*& array, unsigned short& size, const su2double& default_val) {
-    if (array == nullptr) {
-      array = new su2double[1];
-      array[0] = default_val;
-      size = 1;
-    }
-  };
-
-  SetDefaultIfEmpty(Molecular_Weight, nMolecular_Weight, Molecular_Weight_Default);
-  SetDefaultIfEmpty(Mu_Constant, nMu_Constant, Mu_Constant_Default);
-  if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr) {
-    SetDefaultIfEmpty(Mu_Ref, nMu_Ref, Mu_Ref_Default);
-    SetDefaultIfEmpty(Mu_Temperature_Ref, nMu_Temperature_Ref, Mu_Temperature_Ref_Default);
-    SetDefaultIfEmpty(Mu_S, nMu_S, Mu_S_Default);
+  if (Molecular_Weight == nullptr) {
+    Molecular_Weight = new su2double[1];
+    Molecular_Weight[0] = Molecular_Weight_Default;
+    nMolecular_Weight = 1;
   }
-  SetDefaultIfEmpty(Thermal_Conductivity_Constant, nThermal_Conductivity_Constant,
-                    Thermal_Conductivity_Constant_Default);
-  SetDefaultIfEmpty(Prandtl_Lam, nPrandtl_Lam, Prandtl_Lam_Default);
-  SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
 
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
-    if (Kind_FluidModel == FLUID_MIXTURE) {
-      /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
-       equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
-      if (nMolecular_Weight != nSpecies_Init + 1) {
-        SU2_MPI::Error(
-            "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
-            "to be equal to the number of entries of SPECIES_INIT + 1",
-            CURRENT_FUNCTION);
-      }
-      /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
-       VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
-       and it will remain constant through the complete domain. --- */
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
-        SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE",
-                       CURRENT_FUNCTION);
-      }
+  if (Kind_FluidModel == FLUID_MIXTURE) {
+    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
+     equations solved + 1. nMolecular_Weight is used because it is required for the fluid mixing models. --- */
+    if (nMolecular_Weight != nSpecies_Init + 1) {
+      SU2_MPI::Error(
+          "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT\n"
+          "to be equal to the number of entries of SCALAR_INIT + 1",
+          CURRENT_FUNCTION);
+    }
+    /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
+     VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density and
+     it will remain constant through the complete domain. --- */
+    if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+      SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE", CURRENT_FUNCTION);
+    }
+  }
 
-      switch (Kind_ViscosityModel) {
-        case VISCOSITYMODEL::CONSTANT:
-          if (nMu_Constant != nSpecies_Init + 1) {
-            SU2_MPI::Error(
-                "The use of FLUID_MIXTURE requires the number of entries for MU_CONSTANT,\n"
-                "to be equal to the number of entries of SPECIES_INIT + 1",
-                CURRENT_FUNCTION);
-          }
-          break;
-        case VISCOSITYMODEL::SUTHERLAND:
-          if ((nMu_Ref != nSpecies_Init + 1) || (nMu_Temperature_Ref != nSpecies_Init + 1) ||
-              (nMu_S != nSpecies_Init + 1)) {
-            SU2_MPI::Error(
-                "The use of FLUID_MIXTURE requires the number of entries for MU_REF, MU_T_REF and "
-                "SUTHERLAND_CONSTANT,\n"
-                "to be equal to the number of entries of SPECIES_INIT + 1",
-                CURRENT_FUNCTION);
-          }
-          break;
-        default:
-          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
-          break;
-      }
+  /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
-      switch (Kind_ConductivityModel) {
-        case CONDUCTIVITYMODEL::CONSTANT:
-          if ((Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) &&
-              (Kind_Turb_Model != TURB_MODEL::NONE)) {
-            if ((nThermal_Conductivity_Constant != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
-              SU2_MPI::Error(
-                  "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and "
-                  "PRANDTL_TURB,\n"
-                  "to be equal to the number of entries of SPECIES_INIT + 1",
-                  CURRENT_FUNCTION);
-            }
-          } else {
-            if (nThermal_Conductivity_Constant != nSpecies_Init + 1) {
-              SU2_MPI::Error(
-                  "The use of FLUID_MIXTURE requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
-                  "to be equal to the number of entries of SPECIES_INIT + 1",
-                  CURRENT_FUNCTION);
-            }
-          }
-          break;
-        case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
-          if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
-            if ((nPrandtl_Lam != nSpecies_Init + 1) || (nPrandtl_Turb != nSpecies_Init + 1)) {
-              SU2_MPI::Error(
-                  "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
-                  "to be equal to the number of entries of SPECIES_INIT + 1",
-                  CURRENT_FUNCTION);
-            }
-          } else {
-            if (nPrandtl_Lam != nSpecies_Init + 1) {
-              SU2_MPI::Error(
-                  "The use of FLUID_MIXTURE requires the number of entries for PRANDTL_LAM,\n"
-                  "to be equal to the number of entries of SPECIES_INIT + 1",
-                  CURRENT_FUNCTION);
-            }
-          }
-          break;
-        default:
-          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
-          break;
-      }
+  if (SystemMeasurements == US) {
+
+    /* Correct the viscosities, if they contain the default SI values. */
+    if(fabs(Mu_Constant-1.716E-5) < 1.0E-15) Mu_Constant /= 47.88025898;
+    if(fabs(Mu_Ref-1.716E-5)      < 1.0E-15) Mu_Ref      /= 47.88025898;
+
+    /* Correct the values with temperature dimension, if they contain the default SI values. */
+    if(fabs(Mu_Temperature_Ref-273.15) < 1.0E-8) Mu_Temperature_Ref *= 1.8;
+    if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
+
+    /* Correct the thermal conductivity, if it contains the default SI value. */
+    if(fabs(Thermal_Conductivity_Constant-0.0257) < 1.0E-10) Thermal_Conductivity_Constant *= 0.577789317;
+  }
+
+  /*--- Check for Measurement System ---*/
+
+  if (SystemMeasurements == US && !standard_air) {
+    SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
+  }
+
+  if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
+    SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.", CURRENT_FUNCTION);
+  }
+
+  if (!ideal_gas && !nemo) {
+    if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
+      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
+    }
+  }
+
+  if (nemo){
+    if (Kind_Upwind_Flow == AUSMPWPLUS)
+      SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+  }
+
+  if(GetBoolTurbomachinery()){
+    nBlades = new su2double[nZone];
+    FreeStreamTurboNormal= new su2double[3];
+  }
+
+  /*--- Check if Giles are used with turbo markers ---*/
+
+  if (nMarker_Giles > 0 && !GetBoolTurbomachinery()){
+    SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
+  }
+
+  /*--- Check for Boundary condition available for NICFD ---*/
+
+  if ((!ideal_gas) && (!noneq_gas)) {
+    if (nMarker_Inlet != 0) {
+      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
+    }
+    if (nMarker_Outlet != 0) {
+      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
 
-    /*--- Check for Measurement System ---*/
-
-    if (SystemMeasurements == US && !standard_air) {
-      SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
+    if (nMarker_FarField != 0) {
+      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
 
-    if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND) ) {
-      SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
-    }
+  }
 
-    if (Kind_FluidModel == MUTATIONPP &&
-        (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
-      SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.",
-                     CURRENT_FUNCTION);
-    }
+  /*--- Check for Boundary condition available for NICF ---*/
 
-    if (!ideal_gas && !nemo) {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-        SU2_MPI::Error(
-            "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids",
-            CURRENT_FUNCTION);
+  if (ideal_gas && (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS)) {
+    if (SystemMeasurements == US && standard_air) {
+      if (Kind_ViscosityModel != VISCOSITYMODEL::SUTHERLAND) {
+        SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
       }
     }
-
-    if (nemo) {
-      if (Kind_Upwind_Flow == AUSMPWPLUS)
-        SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+    if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL ) {
+      SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS", CURRENT_FUNCTION);
     }
 
-    if (GetBoolTurbomachinery()) {
-      nBlades = new su2double[nZone];
-      FreeStreamTurboNormal = new su2double[3];
-    }
-
-    /*--- Check if Giles are used with turbo markers ---*/
-
-    if (nMarker_Giles > 0 && !GetBoolTurbomachinery()) {
-      SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
-    }
-
-    /*--- Check for Boundary condition available for NICFD ---*/
-
-    if ((!ideal_gas) && (!noneq_gas)) {
-      if (nMarker_Inlet != 0) {
-        SU2_MPI::Error(
-            "Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible "
-            "Fluids ",
-            CURRENT_FUNCTION);
-      }
-      if (nMarker_Outlet != 0) {
-        SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ",
-                       CURRENT_FUNCTION);
-      }
-
-      if (nMarker_FarField != 0) {
-        SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ",
-                       CURRENT_FUNCTION);
-      }
-    }
-
-    /*--- Check for Boundary condition available for NICF ---*/
-
-    if (ideal_gas && (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
-                      Kind_Solver != MAIN_SOLVER::INC_RANS)) {
-      if (SystemMeasurements == US && standard_air) {
-        if (Kind_ViscosityModel != VISCOSITYMODEL::SUTHERLAND) {
-          SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
-        }
-      }
-      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL) {
-        SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS",
-                       CURRENT_FUNCTION);
-      }
-    }
+  }
     /*--- Check for Boundary condition option agreement ---*/
   if (Kind_InitOption == REYNOLDS){
     if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::RANS) && Reynolds <=0){
@@ -4329,6 +4245,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       (Kind_Turb_Model != TURB_MODEL::NONE))
     Kind_Solver = MAIN_SOLVER::INC_RANS;
 
+  if ((Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) &&
+      (Kind_Turb_Model != TURB_MODEL::NONE))
+    Kind_Solver = MAIN_SOLVER::NEMO_RANS;
+
   if (Kind_Solver == MAIN_SOLVER::EULER ||
       Kind_Solver == MAIN_SOLVER::INC_EULER ||
       Kind_Solver == MAIN_SOLVER::NEMO_EULER ||
@@ -4651,6 +4571,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
              ( Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == MAIN_SOLVER::RANS                   ) ||
              ( Kind_Solver == MAIN_SOLVER::ADJ_RANS               ) ||
+             ( Kind_Solver == MAIN_SOLVER::NEMO_RANS              ) ||
              ( Kind_Solver == MAIN_SOLVER::FEM_NAVIER_STOKES      ) ||
              ( Kind_Solver == MAIN_SOLVER::FEM_RANS               ) ||
              ( Kind_Solver == MAIN_SOLVER::FEM_LES                ) ||
@@ -5128,7 +5049,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       (Kind_Solver != MAIN_SOLVER::ADJ_RANS) &&
       (Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS) &&
       (Kind_Solver != MAIN_SOLVER::INC_RANS) &&
-      (Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_RANS)){
+      (Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_RANS) &&
+      (Kind_Solver != MAIN_SOLVER::NEMO_RANS) &&
+      (Kind_Solver != MAIN_SOLVER::DISC_ADJ_NEMO_RANS)){
     Kind_ConductivityModel_Turb = CONDUCTIVITYMODEL_TURB::NONE;
   }
 
@@ -5197,6 +5120,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         break;
       case MAIN_SOLVER::NAVIER_STOKES:
         Kind_Solver = MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES;
+        break;
+      case MAIN_SOLVER::NEMO_EULER:
+        Kind_Solver = MAIN_SOLVER::DISC_ADJ_NEMO_EULER;
+        break;
+      case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+        Kind_Solver = MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES;
+        break;
+      case MAIN_SOLVER::NEMO_RANS:
+        Kind_Solver = MAIN_SOLVER::DISC_ADJ_NEMO_RANS;
         break;
       case MAIN_SOLVER::INC_EULER:
         Kind_Solver = MAIN_SOLVER::DISC_ADJ_INC_EULER;
@@ -5409,6 +5341,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
   } // species transport checks
+
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -6041,18 +5974,81 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
-      case MAIN_SOLVER::NEMO_EULER:
+      case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, AIR-7, ARGON.", CURRENT_FUNCTION);
         }
         break;
-      case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      case MAIN_SOLVER::NEMO_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+        }
+        break;
+      case MAIN_SOLVER::NEMO_RANS: case MAIN_SOLVER::DISC_ADJ_NEMO_RANS:
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        if(Kind_FluidModel == SU2_NONEQ){
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+            SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+        }
+        cout << "Turbulence model: ";
+        switch (Kind_Turb_Model) {
+          case TURB_MODEL::NONE: break;
+          case TURB_MODEL::SA:
+            switch (saParsedOptions.version) {
+              case SA_OPTIONS::NEG:
+                cout << "Negative-";
+                break;
+              case SA_OPTIONS::EDW:
+                cout << "Edwards-";
+                break;
+              default:
+                break;
+            }
+            cout << "Spalart-Allmaras";
+
+            if (!saParsedOptions.ft2) cout << "-noft2";
+            if (saParsedOptions.rot) cout << "-R";
+            if (saParsedOptions.comp) cout << "-comp";
+            if (saParsedOptions.qcr2000) cout << "-QCR2000";
+            if (saParsedOptions.bc) cout << "-BCM";
+            cout << endl;
+            break;
+          case TURB_MODEL::SST:
+            cout << "Menter's k-omega SST";
+            if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
+            else cout << "-2003";
+            if (sstParsedOptions.modified) cout << "m";
+            if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+
+            switch (sstParsedOptions.production) {
+              case SST_OPTIONS::KL:
+                cout << " with Kato-Launder production";
+                break;
+              case SST_OPTIONS::V:
+                cout << " with Vorticity production";
+                break;
+              case SST_OPTIONS::UQ:
+                cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
+                if (uq_permute) cout << " (permuting eigenvectors)";
+                break;
+              default:
+                cout << " with no production modification";
+                break;
+            }
+            cout << "." << endl;
+            break;
+        }
+        cout << "Hybrid RANS/LES: ";
+        switch (Kind_HybridRANSLES) {
+          case NO_HYBRIDRANSLES: cout << "No Hybrid RANS/LES" << endl; break;
+          case SA_DES:   cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
       case MAIN_SOLVER::FEM_LES:
@@ -6107,7 +6103,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::ADJ_NAVIER_STOKES) ||
           (Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::ADJ_RANS) ||
-          (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES))
+          (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::NEMO_RANS))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -6562,8 +6558,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::EULER)          || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES)          || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER)      || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES)      || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::NEMO_EULER)     || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES)     ||
-        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ) {
+        (Kind_Solver == MAIN_SOLVER::NEMO_EULER)     || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES)     || (Kind_Solver == MAIN_SOLVER::NEMO_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS)) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == LAX) {
@@ -6617,7 +6614,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
+    if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS)) {
+
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
         if (MUSCL_Turb) {
@@ -6670,9 +6669,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::NEMO_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS)) {
+        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -6680,7 +6680,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
-    if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) || (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ) {
+    if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS)) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
@@ -6776,9 +6778,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == MAIN_SOLVER::EULER) || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER) || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
-        (Kind_Solver == MAIN_SOLVER::NEMO_EULER) || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_EULER) || (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::NEMO_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS) ||
         (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_EULER) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_NS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
@@ -6978,6 +6981,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == MAIN_SOLVER::RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_RANS) ||
+        (Kind_Solver == MAIN_SOLVER::NEMO_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_NEMO_RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_RANS) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_INC_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
@@ -8319,7 +8323,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::RANS: case MAIN_SOLVER::INC_RANS: case MAIN_SOLVER::NEMO_RANS:
       SetFlowParam();
       SetTurbParam();
       SetSpeciesParam();
