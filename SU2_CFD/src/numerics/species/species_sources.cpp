@@ -92,8 +92,7 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   flamelet  = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
   inc_rans = (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) || (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_INC_RANS);
 
-  //Sc_t = config->GetSchmidt_Turb();
-  Sc_t = 0.9;
+  Sc_t = config->GetSchmidt_Number_Turbulent();
 
   Residual       = new su2double [nVar];
   scalar_sources = new su2double [nVar];
@@ -143,7 +142,6 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
    if (axisymmetric) ResidualAxisymmetric();
 
    /*--- Implicit part ---*/
-
    
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();

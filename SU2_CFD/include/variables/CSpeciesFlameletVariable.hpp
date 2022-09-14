@@ -1,15 +1,15 @@
 /*!
  * \file CSpeciesFlameletVariable.hpp
- * \brief Definition of the variable fields for the flamelet class.
+ * \brief Base class for defining the variables of the flamelet transport model.
  * \author D. Mayer, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,38 +31,28 @@
 
 /*!
  * \class CSpeciesFlameletVariable
- * \brief Main class for defining the variables of the flamelet model.
- * \author D. Mayer, T. Economon
+ * \brief Base class for defining the variables of the flamelet model.
  */
-class CSpeciesFlameletVariable final : public CSpeciesVariable {
-protected:
+class CSpeciesFlameletVariable final: public CSpeciesVariable {
+ protected:
   //MatrixType source_prog;            /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType source_scalar;          /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType lookup_scalar;          /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   //MatrixType source_scalar_rescaled; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   //MatrixType scalar_table_paraview;  /*!< \brief Vector of the values of the scalar from the lookup table for visualization */
   
-public:
+ public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_scalar_inf - Scalar variable value (initialization value).
-   * \param[in] npoint         - Number of points/nodes/vertices in the domain.
-   * \param[in] ndim           - Number of dimensions of the problem.
-   * \param[in] nvar           - Number of variables of the problem.
-   * \param[in] config         - Definition of the particular problem.
+   * \param[in] species_inf - species variable values (initialization value).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  CSpeciesFlameletVariable(su2double     *val_scalar_inf,
-                    unsigned long npoint,
-                    unsigned long ndim,
-                    unsigned long nvar,
-                    CConfig       *config);
+  CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
+                   const CConfig* config);
   
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSpeciesFlameletVariable() = default;
-  
-    
   /*!
    * \brief Set the value of the transported scalar source term
    * \param[in] val_- the .
@@ -121,6 +111,5 @@ public:
   inline su2double *GetScalarLookups(unsigned long iPoint) override {
     return lookup_scalar[iPoint];
   }
-  
-  
+
 };

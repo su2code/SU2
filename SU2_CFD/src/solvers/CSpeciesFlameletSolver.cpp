@@ -329,10 +329,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
 
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-      // nijso: TODO FIXME temporary commenting of the initialization of enthalpy from temperature
-      //n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet,temp_inlet);
-      scalar_init[I_ENTH] = enth_inlet;
-
+    
       /*--- the burnt value of the progress variable is set to a value slightly below the maximum value ---*/
 
       prog_burnt = 0.95*fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
@@ -370,9 +367,10 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry **geometry,
           scalar_init[I_PROGVAR] = prog_unburnt;
         }
 
-        // nijso temporarily commented this to check temperature residuals TODO FIXME  
-        //n_not_in_domain        += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH],name_prog,name_enth);
-
+        n_not_in_domain += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(look_up_tags, look_up_data, scalar_init[I_PROGVAR], scalar_init[I_ENTH],name_prog,name_enth);
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet, temp_inlet);
+        scalar_init[I_ENTH] = enth_inlet;
+        
         // initialize other transported scalars  (not pv and enth)
         // skip progress variable and enthalpy
         // we can make an init based on the lookup table. 
@@ -556,7 +554,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   // nijso: remember that we now have progress variable and enthalpy as inlet values, but we want temperature as inlet
   // (could be an additional keyword)
- /* 
+  
   su2double enth_inlet;
   su2double temp_inlet    = config->GetInlet_Ttotal(Marker_Tag);
   const su2double  *inlet_scalar_original  = config->GetInlet_SpeciesVal(Marker_Tag);
@@ -566,7 +564,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   
   fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROGVAR], temp_inlet);
   inlet_scalar[I_ENTH] = enth_inlet;
-  */    
+      
   // --- //
 
 
@@ -723,7 +721,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
       nodes->SetSolution(iPoint, I_ENTH, enth_wall);
       nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
 
-      LinSysRes.SetBlock_Zero(iPoint, I_ENTH);
+      LinSysRes(iPoint, I_ENTH) = 0.0;
 
       nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
 
@@ -776,7 +774,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSo
       nodes->SetSolution(iPoint, I_ENTH, enth_wall);
       nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
 
-      LinSysRes.SetBlock_Zero(iPoint, I_ENTH);
+      LinSysRes(iPoint, I_ENTH) = 0.0;
 
       nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
 

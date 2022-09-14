@@ -302,7 +302,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(const string& val_name_var, su2doubl
   }
 
   /* check if progress variable and enthalpy value is in table range */
-  if ((val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1]) && 
+  if ((val_prog >= limits_table_prog[0] && val_prog <= limits_table_prog[1]) &&
       (val_enth >= limits_table_enth[0] && val_enth <= limits_table_enth[1])){
 
     /* find the triangle that holds the (prog, enth) point */

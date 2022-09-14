@@ -53,6 +53,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
+
   const bool turbulence;
   const bool flamelet; 
 

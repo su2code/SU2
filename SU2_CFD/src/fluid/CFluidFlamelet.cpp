@@ -135,20 +135,11 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   look_up_data.push_back(&mass_diffusivity);
 
 
-  // nijso: if we put the temperature to a constant value here, then we do not see
-  // the noise in the progress variable 
-
+ 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);
 
-  mass_diffusivity = 1.0e-5;
-  Kt = 0.025;
-  Cp = 1000.0;
-  Mu = 1.8e-5;
-
-  Temperature = 300.0;
-  Density = 1.18;
-
+ 
   // nijso: is Cv used somewhere?
   // according to cristopher, yes!
   // we could check for the existence of molar_weight_mix in the lookup table, and else we just use gamma

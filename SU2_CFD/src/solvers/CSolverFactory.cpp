@@ -390,7 +390,6 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
     case SPECIES_MODEL::NONE:
       break;  
   }
-
   return speciesSolver;
 }
 

@@ -3352,10 +3352,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     cout << "***** setting all fluid models to FLAMELET *****" << endl;
     cout << "************************************************" << endl;
 
-    Kind_Species_Model     = SPECIES_MODEL::FLAMELET;
-    Kind_ViscosityModel    = VISCOSITYMODEL::FLAMELET;
-    Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
-    Kind_Diffusivity_Model  = DIFFUSIVITYMODEL::FLAMELET;
+    // nijso TODO these should be set by the user and we should check explicitly the config settings
+    //Kind_Species_Model     = SPECIES_MODEL::FLAMELET;
+    //Kind_ViscosityModel    = VISCOSITYMODEL::FLAMELET;
+    //Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
+    //Kind_Diffusivity_Model  = DIFFUSIVITYMODEL::FLAMELET;
   }
 
 
@@ -4873,8 +4874,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
-
-  if (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) Energy_Equation = true;
+  // nijso commented out 
+  //if (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) Energy_Equation = true;
 
   if (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) {
     Energy_Equation = true;

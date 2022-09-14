@@ -35,11 +35,11 @@
 #include "../../include/fluid/CConstantPrandtlRANS.hpp"
 #include "../../include/fluid/CConstantViscosity.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
-#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
+#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../include/fluid/CConstantDiffusivity.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
@@ -56,7 +56,7 @@ unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig
     case VISCOSITYMODEL::FLAMELET:
       /*--- Viscosity is obtained from the LUT ---*/
       break;
-    default:  
+    default:
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       return nullptr;
   }

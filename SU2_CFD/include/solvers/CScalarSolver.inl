@@ -329,9 +329,7 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
   SU2_OMP_FOR_(schedule(static, omp_chunk_size) SU2_NOWAIT)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     /// TODO: This could be the SetTime_Step of this solver.
-    //su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-    // nijso TODO FIXME temporary test to check convergence!!!!!!
-    su2double dt = config->GetCFLRedCoeff_Species() * flowNodes->GetDelta_Time(iPoint);
+    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
     nodes->SetDelta_Time(iPoint, dt);
 
     /*--- Modify matrix diagonal to improve diagonal dominance. ---*/

@@ -332,11 +332,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      unsigned short n_scalars = auxFluidModel->GetNScalars();
-      su2double *dummy_scalar = new su2double[n_scalars]();
-      auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
+      //auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
-      delete[] dummy_scalar;
       break;
     }
 
@@ -495,10 +493,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case FLUID_FLAMELET:{
         fluidModel = new CFluidFlamelet(config, Pressure_ThermodynamicND);
-        unsigned short n_scalars    = fluidModel->GetNScalars();
-        su2double *dummy_scalar = new su2double[n_scalars]();
-        fluidModel->SetTDState_T(Temperature_FreeStreamND, dummy_scalar);
-        delete[] dummy_scalar;
+        //fluidModel = new CFluidScalar(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
       }
       case INC_IDEAL_GAS_POLY:
@@ -2442,7 +2438,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   }
   END_SU2_OMP_FOR
 }
-
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
