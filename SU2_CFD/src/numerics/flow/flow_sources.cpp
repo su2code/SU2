@@ -346,7 +346,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
   }
 
-  if (!energy || flamelet) {
+  if (!energy) {
     residual[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

@@ -332,7 +332,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      //auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
@@ -493,7 +492,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case FLUID_FLAMELET:{
         fluidModel = new CFluidFlamelet(config, Pressure_ThermodynamicND);
-        //fluidModel = new CFluidScalar(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
       }
@@ -1024,7 +1022,6 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
-    //nijso: what to do when we have flamelets, we modify the timestep?
     const bool energy;
 
     LambdaVisc(bool e) : energy(e) {}
@@ -1258,7 +1255,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        incompressible flow, only the temperature and density need to be
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
-      if (config->GetEnergy_Equation() && !(config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)) {
+      if (config->GetEnergy_Equation()) {
         const bool neg_temperature_i = (Primitive_i[prim_idx.Temperature()] < 0.0);
         const bool neg_temperature_j = (Primitive_j[prim_idx.Temperature()] < 0.0);
 
@@ -1958,7 +1955,6 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
-  const bool flamelet   = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
   /*--- Access the primitive variables at this node. ---*/
 
@@ -1993,8 +1989,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
-    if (energy && !flamelet) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
-    //if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
+    if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
     else        Preconditioner[nDim+1][0] = 0.0;
 
     for (jDim = 0; jDim < nDim; jDim++) {
@@ -2010,8 +2005,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
 
-    if (energy && !flamelet) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
-    //if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+    if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
 
     for (iVar = 0; iVar < nVar; iVar ++ )
@@ -2029,8 +2023,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
 
-    if (energy && !flamelet) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
-    //if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
+    if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
     else        Preconditioner[nDim+1][0] = 0.0;
 
 
@@ -2047,8 +2040,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][nDim+1] = 0.0;
 
-    if (energy && !flamelet) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
-    //if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
+    if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
     else        Preconditioner[nDim+1][nDim+1] = 0.0;
 
   }
@@ -2656,8 +2648,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
-  const bool flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
-  //const short flagEnergy  = (!energy || flamelet);
   const short flagEnergy  = (!energy);
 
   const int ndim = nDim;
@@ -2726,8 +2716,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy && !flamelet) delta *= Cp;
-        //if (energy) delta *= Cp;
+        if (energy) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
@@ -2874,8 +2863,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy && !flamelet) delta *= Cp;
-        //if (energy) delta *= Cp;
+        if (energy) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }

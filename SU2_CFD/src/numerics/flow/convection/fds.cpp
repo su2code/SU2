@@ -265,9 +265,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   }
 
 
-  // nijso: for some reason switching fds off for flamelets converges only for single-core computations
-  if (!energy || flamelet) {
-  //if (!energy) {
+  if (!energy) {
     Flux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

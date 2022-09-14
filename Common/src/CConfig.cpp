@@ -4876,6 +4876,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
   // nijso commented out 
   //if (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) Energy_Equation = true;
+  
+  /*--- For the flamelet combustion model, energy equation is a passive field, we lookup T and write it to the field ---*/
+  if (Kind_Species_Model == SPECIES_MODEL::FLAMELET ) Energy_Equation = false;
+
 
   if (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) {
     Energy_Equation = true;
