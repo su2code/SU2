@@ -98,7 +98,8 @@ def main():
     channel_d           = TestCase('dry run Euler')
     channel_d.cfg_dir   = "euler/channel"
     channel_d.cfg_file  = "inv_channel_RK.cfg"
-    channel_d.su2_exec  = "SU2_CFD -d"
+    channel_d.su2_exec  = "SU2_CFD"
+    channel_d.su2_exec_suffix = "-d"
     channel_d.timeout   = 1600
     test_list.append(channel_d)
 
@@ -171,7 +172,8 @@ def main():
     polar_naca0012.test_iter = 10
     polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
     polar_naca0012.test_vals_aarch64 = [-1.942718, 3.473466, 0.013110, 0.008987]
-    polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
+    polar_naca0012.su2_exec  = "compute_polar.py"
+    polar_naca0012.su2_exec_suffix = "-n 1 -i 11"
     polar_naca0012.timeout   = 1600
     polar_naca0012.tol       = 0.00001
     test_list.append(polar_naca0012)
@@ -196,7 +198,8 @@ def main():
     flatplate_d           = TestCase('dry run NS')
     flatplate_d.cfg_dir   = "navierstokes/flatplate"
     flatplate_d.cfg_file  = "lam_flatplate.cfg"
-    flatplate_d.su2_exec  = "SU2_CFD -d"
+    flatplate_d.su2_exec  = "SU2_CFD"
+    flatplate_d.su2_exec_suffix = "-d"
     flatplate_d.timeout   = 1600
     test_list.append(flatplate_d)
 
@@ -269,7 +272,8 @@ def main():
     rae2822_sa_d           = TestCase('dry run RANS')
     rae2822_sa_d .cfg_dir   = "rans/rae2822"
     rae2822_sa_d .cfg_file  = "turb_SA_RAE2822.cfg"
-    rae2822_sa_d .su2_exec  = "SU2_CFD -d"
+    rae2822_sa_d .su2_exec  = "SU2_CFD"
+    rae2822_sa_d .su2_exec_suffix = "-d"
     rae2822_sa_d .timeout   = 1600
     test_list.append(rae2822_sa_d)
 
@@ -465,7 +469,8 @@ def main():
     inc_euler_naca0012_d           = TestCase('dry run Inc Euler')
     inc_euler_naca0012_d.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012_d.cfg_file  = "incomp_NACA0012.cfg"
-    inc_euler_naca0012_d.su2_exec  = "SU2_CFD -d"
+    inc_euler_naca0012_d.su2_exec  = "SU2_CFD"
+    inc_euler_naca0012_d.su2_exec_suffix = "-d"
     inc_euler_naca0012_d.timeout   = 1600
     test_list.append(inc_euler_naca0012_d)
 
@@ -501,7 +506,8 @@ def main():
     inc_lam_cylinder_d          = TestCase('dry run Inc. NS')
     inc_lam_cylinder_d.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder_d.cfg_file  = "incomp_cylinder.cfg"
-    inc_lam_cylinder_d.su2_exec  = "SU2_CFD -d"
+    inc_lam_cylinder_d.su2_exec  = "SU2_CFD"
+    inc_lam_cylinder_d.su2_exec_suffix = "-d"
     inc_lam_cylinder_d.timeout   = 1600
     test_list.append(inc_lam_cylinder_d)
 
@@ -560,7 +566,8 @@ def main():
     inc_turb_naca0012_d           = TestCase('dry run Inc. RANS')
     inc_turb_naca0012_d.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_d.cfg_file  = "naca0012.cfg"
-    inc_turb_naca0012_d.su2_exec  = "SU2_CFD -d"
+    inc_turb_naca0012_d.su2_exec  = "SU2_CFD"
+    inc_turb_naca0012_d.su2_exec_suffix = "-d"
     inc_turb_naca0012_d.timeout   = 1600
     test_list.append(inc_turb_naca0012_d)
 
@@ -617,7 +624,8 @@ def main():
     fem_euler_naca0012_d           = TestCase('dry run DG Euler')
     fem_euler_naca0012_d.cfg_dir   = "hom_euler/NACA0012_5thOrder"
     fem_euler_naca0012_d.cfg_file  = "fem_NACA0012_reg.cfg"
-    fem_euler_naca0012_d.su2_exec  = "SU2_CFD -d"
+    fem_euler_naca0012_d.su2_exec  = "SU2_CFD"
+    fem_euler_naca0012_d.su2_exec_suffix = "-d"
     fem_euler_naca0012_d.timeout   = 1600
     test_list.append(fem_euler_naca0012_d)
 
@@ -641,7 +649,8 @@ def main():
     fem_ns_flatplate_d           = TestCase('dry run DG NS')
     fem_ns_flatplate_d.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
     fem_ns_flatplate_d.cfg_file  = "lam_flatplate_reg.cfg"
-    fem_ns_flatplate_d.su2_exec  = "SU2_CFD -d"
+    fem_ns_flatplate_d.su2_exec  = "SU2_CFD"
+    fem_ns_flatplate_d.su2_exec_suffix = "-d"
     fem_ns_flatplate_d.timeout   = 1600
     test_list.append(fem_ns_flatplate_d)
 
@@ -744,7 +753,8 @@ def main():
     contadj_naca0012_d           = TestCase('dry run Cont. Adj. Euler')
     contadj_naca0012_d.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012_d.cfg_file  = "inv_NACA0012.cfg"
-    contadj_naca0012_d.su2_exec  = "SU2_CFD -d"
+    contadj_naca0012_d.su2_exec  = "SU2_CFD"
+    contadj_naca0012_d.su2_exec_suffix = "-d"
     contadj_naca0012_d.timeout   = 1600
     test_list.append(contadj_naca0012_d)
 
@@ -804,7 +814,8 @@ def main():
     contadj_ns_cylinder_d           = TestCase('dry run Cont. Adj. NS')
     contadj_ns_cylinder_d.cfg_dir   = "cont_adj_navierstokes/cylinder"
     contadj_ns_cylinder_d.cfg_file  = "lam_cylinder.cfg"
-    contadj_ns_cylinder_d.su2_exec  = "SU2_CFD -d"
+    contadj_ns_cylinder_d.su2_exec  = "SU2_CFD"
+    contadj_ns_cylinder_d.su2_exec_suffix = "-d"
     contadj_ns_cylinder_d.timeout   = 1600
     test_list.append(contadj_ns_cylinder_d)
 
@@ -1213,7 +1224,8 @@ def main():
     uniform_flow_d         = TestCase('dry run Multizone')
     uniform_flow_d.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow_d.cfg_file  = "uniform_NN.cfg"
-    uniform_flow_d.su2_exec  = "SU2_CFD -d"
+    uniform_flow_d.su2_exec  = "SU2_CFD"
+    uniform_flow_d.su2_exec_suffix = "-d"
     uniform_flow_d.timeout   = 1600
     test_list.append(uniform_flow_d)
 
@@ -1342,7 +1354,8 @@ def main():
     statbeam3d_d           = TestCase('dry run FEA')
     statbeam3d_d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d_d.cfg_file  = "configBeam_3d.cfg"
-    statbeam3d_d.su2_exec  = "SU2_CFD -d"
+    statbeam3d_d.su2_exec  = "SU2_CFD"
+    statbeam3d_d.su2_exec_suffix = "-d"
     statbeam3d_d.timeout   = 1600
     test_list.append(statbeam3d_d)
 
@@ -1471,7 +1484,8 @@ def main():
     cht_incompressible_d           = TestCase('dry run CHT')
     cht_incompressible_d.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible_d.cfg_file  = "cht_2d_3cylinders.cfg"
-    cht_incompressible_d.su2_exec  = "SU2_CFD -d"
+    cht_incompressible_d.su2_exec  = "SU2_CFD"
+    cht_incompressible_d.su2_exec_suffix = "-d"
     cht_incompressible_d.timeout   = 1600
     test_list.append(cht_incompressible_d)
 
@@ -1786,7 +1800,8 @@ def main():
     contadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
     contadj_euler_py.test_iter = 10
-    contadj_euler_py.su2_exec  = "continuous_adjoint.py -f"
+    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
+    contadj_euler_py.su2_exec_suffix = "-f"
     contadj_euler_py.timeout   = 1600
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
@@ -1800,7 +1815,8 @@ def main():
     shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
     shape_opt_euler_py.test_iter = 1
     shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 0.003847] #last 4 columns
-    shape_opt_euler_py.su2_exec  = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+    shape_opt_euler_py.su2_exec  = "shape_optimization.py"
+    shape_opt_euler_py.su2_exec_suffix = "-g CONTINUOUS_ADJOINT -f"
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.new_output = True
     shape_opt_euler_py.tol       = 0.00001
@@ -1812,7 +1828,8 @@ def main():
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     contadj_multi_py.test_iter  = 10
-    contadj_multi_py.su2_exec   = "continuous_adjoint.py -f"
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.su2_exec_suffix = "-f"
     contadj_multi_py.timeout    = 1600
     contadj_multi_py.new_output = True
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
@@ -1852,7 +1869,8 @@ def main():
     opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
     opt_multiobj1surf_py.test_iter  = 1
     opt_multiobj1surf_py.test_vals = [1.000000, 1.000000, 30.428280, 2.039416] #last 4 columns
-    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f "
+    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py"
+    opt_multiobj1surf_py.su2_exec_suffix = "-g CONTINUOUS_ADJOINT -f"
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
     pass_list.append(opt_multiobj1surf_py.run_opt())
@@ -1864,7 +1882,8 @@ def main():
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1
     opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005694, 0.000185] #last 4 columns
-    opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
+    opt_2surf1obj_py.su2_exec   = "shape_optimization.py"
+    opt_2surf1obj_py.su2_exec_suffix = "-g CONTINUOUS_ADJOINT -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001
     pass_list.append(opt_2surf1obj_py.run_opt())
@@ -1880,7 +1899,8 @@ def main():
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 20
     pywrapper_naca0012.test_vals = [-4.023999, -3.515034, 0.339426, 0.022217] #last 4 columns
-    pywrapper_naca0012.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_naca0012.su2_exec  = "SU2_CFD.py"
+    pywrapper_naca0012.su2_exec_suffix = "-f"
     pywrapper_naca0012.new_output  = True
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
@@ -1894,7 +1914,8 @@ def main():
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals         = [-11.451010, -12.798258, -5.863895, 1.049989, 0.019163, -1.925018, -38.694000]
     pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-11.451014, -12.798258, -5.863895, 1.049989, 0.019163, -1.925032, -38.694000]
-    pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py"
+    pywrapper_turb_naca0012_sst.su2_exec_suffix = "-f"
     pywrapper_turb_naca0012_sst.new_output = True
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
@@ -1907,7 +1928,8 @@ def main():
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
     pywrapper_square_cylinder.test_vals = [-2.557893, -1.162560, 0.066414, 1.399788, 2.220411, 1.399743, 2.218612, -0.453170]
-    pywrapper_square_cylinder.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_square_cylinder.su2_exec  = "SU2_CFD.py"
+    pywrapper_square_cylinder.su2_exec_suffix = "-f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
     pywrapper_square_cylinder.unsteady  = True
@@ -1920,7 +1942,8 @@ def main():
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
     pywrapper_aeroelastic.test_vals = [0.074836, 0.033102, -0.001650, -0.000127]
-    pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py -f"
+    pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py"
+    pywrapper_aeroelastic.su2_exec_suffix = "-f"
     pywrapper_aeroelastic.new_output  = True
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001
@@ -1934,7 +1957,8 @@ def main():
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [4, 0, -3.743214, -4.133482] #last 4 columns
-    pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
+    pywrapper_fsi2d.su2_exec  = "SU2_CFD.py"
+    pywrapper_fsi2d.su2_exec_suffix = "--nZone 2 --fsi True -f"
     pywrapper_fsi2d.new_output  = True
     pywrapper_fsi2d.unsteady  = True
     pywrapper_fsi2d.multizone   = True
@@ -1949,7 +1973,8 @@ def main():
     pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
     pywrapper_unsteadyCHT.test_iter     = 5
     pywrapper_unsteadyCHT.test_vals     = [-1.614167, 2.245716, 0.000766, 0.175719]
-    pywrapper_unsteadyCHT.su2_exec      = "python launch_unsteady_CHT_FlatPlate.py -f"
+    pywrapper_unsteadyCHT.su2_exec      = "python"
+    pywrapper_unsteadyCHT.su2_exec_suffix = "launch_unsteady_CHT_FlatPlate.py -f"
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.new_output    = True
     pywrapper_unsteadyCHT.tol           = 0.00001
@@ -1963,7 +1988,8 @@ def main():
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
     pywrapper_rigidMotion.test_vals     = [-1.614170, 2.242953, 0.350050, 0.093137]
-    pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
+    pywrapper_rigidMotion.su2_exec      = "python"
+    pywrapper_rigidMotion.su2_exec_suffix = "launch_flatPlate_rigidMotion.py -f"
     pywrapper_rigidMotion.new_output      = True
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001

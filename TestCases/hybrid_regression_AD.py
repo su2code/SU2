@@ -215,7 +215,8 @@ def main():
     ######################################
 
     for test in test_list:
-        test.su2_exec = "SU2_CFD_AD -t 2"
+        test.su2_exec = "SU2_CFD_AD"
+        test.su2_exec_suffix = "-t 2"
         test.timeout = 600
         test.tol = 1e-4
     #end

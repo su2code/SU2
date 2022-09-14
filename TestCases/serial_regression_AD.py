@@ -293,7 +293,8 @@ def main():
     discadj_rht.cfg_dir        = "radiation/p1adjoint"
     discadj_rht.cfg_file       = "configp1adjoint.cfg"
     discadj_rht.test_iter      = 10
-    discadj_rht.su2_exec       = "discrete_adjoint.py -f"
+    discadj_rht.su2_exec       = "discrete_adjoint.py"
+    discadj_rht.su2_exec_suffix = "-f"
     discadj_rht.timeout        = 1600
     discadj_rht.reference_file = "of_grad_cd.csv.ref"
     discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
@@ -310,7 +311,8 @@ def main():
     discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     discadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
     discadj_euler_py.test_iter = 10
-    discadj_euler_py.su2_exec  = "discrete_adjoint.py -f"
+    discadj_euler_py.su2_exec  = "discrete_adjoint.py"
+    discadj_euler_py.su2_exec_suffix = "-f"
     discadj_euler_py.timeout   = 1600
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
     discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
@@ -323,7 +325,8 @@ def main():
     discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     discadj_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
     discadj_multiple_ffd_py.test_iter = 9
-    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py -f"
+    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py"
+    discadj_multiple_ffd_py.su2_exec_suffix = "-f"
     discadj_multiple_ffd_py.timeout   = 1600
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
     discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
@@ -336,7 +339,8 @@ def main():
     directdiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
     directdiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
     directdiff_euler_py.test_iter = 10
-    directdiff_euler_py.su2_exec  = "direct_differentiation.py -f"
+    directdiff_euler_py.su2_exec  = "direct_differentiation.py"
+    directdiff_euler_py.su2_exec_suffix = "-f"
     directdiff_euler_py.timeout   = 1600
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
@@ -349,7 +353,8 @@ def main():
     directdiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     directdiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
     directdiff_multiple_ffd_py.test_iter = 9
-    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py -f"
+    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py"
+    directdiff_multiple_ffd_py.su2_exec_suffix = "-f"
     directdiff_multiple_ffd_py.timeout   = 1600
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
@@ -375,7 +380,8 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 100
     pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401579657, -0.585985886606256, -0.00036377840086080753, -0.0031005670174756375] #last 4 columns
-    pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
+    pywrapper_FEA_AD_FlowLoad.su2_exec      = "python"
+    pywrapper_FEA_AD_FlowLoad.su2_exec_suffix = "run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
     pywrapper_FEA_AD_FlowLoad.new_output    = False
@@ -388,7 +394,8 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_flow.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 1000
     pywrapper_FEA_AD_FlowLoad.test_vals     = [30.000000, -2.518695, 1.390150, 0.000000] #last 4 columns
-    pywrapper_FEA_AD_FlowLoad.su2_exec      = "python run_adjoint.py -f"
+    pywrapper_FEA_AD_FlowLoad.su2_exec      = "python"
+    pywrapper_FEA_AD_FlowLoad.su2_exec_suffix = "run_adjoint.py -f"
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
     pywrapper_FEA_AD_FlowLoad.new_output    = False

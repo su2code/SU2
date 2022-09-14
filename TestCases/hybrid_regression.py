@@ -765,7 +765,8 @@ def main():
     pywrapper_translating_naca0012 = TestCase('pywrapper_translating_naca0012')
     pywrapper_translating_naca0012.cfg_dir = "py_wrapper/translating_NACA0012"
     pywrapper_translating_naca0012.cfg_file = "config.cfg"
-    pywrapper_translating_naca0012.su2_exec = "python run_su2.py"
+    pywrapper_translating_naca0012.su2_exec = "python"
+    pywrapper_translating_naca0012.su2_exec_suffix = "run_su2.py"
     pywrapper_translating_naca0012.timeout = 60
     pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
@@ -778,7 +779,8 @@ def main():
     ######################################
 
     for test in test_list:
-        test.su2_exec = "SU2_CFD -t 2"
+        test.su2_exec = "SU2_CFD"
+        test.su2_exec_suffix = "-t 2"
         test.timeout = 600
         test.tol = 1e-4
     #end

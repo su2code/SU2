@@ -68,8 +68,10 @@ class TestCase:
         self.cpu_arch = platform.processor()
         self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
 
-        # These can be optionally varied 
-        self.su2_exec    = "SU2_CFD" 
+        # These can be optionally varied
+        self.su2_exec_prefix = ""
+        self.su2_exec        = "SU2_CFD"
+        self.su2_exec_suffix = ""
         self.timeout     = 300
         self.tol         = 0.001
 
@@ -92,8 +94,8 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.su2_exec_prefix.startswith('mpirun'):
+                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
@@ -111,11 +113,11 @@ class TestCase:
 
         # Check for polar calls
         if self.polar:
-             command = "%s > %s" % (self.su2_exec, logfilename)
+            command = "%s %s %s > %s" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, logfilename)
         else:
-            command = "%s %s > %s 2>&1" % (self.su2_exec, 
-                                           self.cfg_file, 
-                                           logfilename)
+            command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix,
+                                                 self.cfg_file,
+                                                 logfilename)
 
         self.adjust_test_data()
 
@@ -252,12 +254,12 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.su2_exec_prefix.startswith('mpirun'):
+                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -350,7 +352,7 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -477,12 +479,12 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.su2_exec_prefix.startswith('mpirun'):
+                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
                 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
 
         # Run SU2
         workdir = os.getcwd()
@@ -606,12 +608,12 @@ class TestCase:
 
         # if root, add flag to mpirun
         if os.geteuid()==0:
-            if self.su2_exec.startswith('mpirun'):
-                self.su2_exec = self.su2_exec.replace('mpirun', 'mpirun --allow-run-as-root')
+            if self.su2_exec_prefix.startswith('mpirun'):
+                self.su2_exec_prefix = self.su2_exec_prefix.replace('mpirun', 'mpirun --allow-run-as-root')
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+        command = "%s %s %s %s > %s 2>&1" % (self.su2_exec_prefix, self.su2_exec, self.su2_exec_suffix, self.cfg_file, logfilename)
     
         # Run SU2
         workdir = os.getcwd()
