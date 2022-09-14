@@ -1,6 +1,6 @@
 /*!
  * \file CTurbSolver.cpp
- * \brief Main subrotuines of CTurbSolver class
+ * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
  * \version 7.4.0 "Blackbird"
  *
