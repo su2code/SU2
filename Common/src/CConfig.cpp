@@ -3786,7 +3786,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar
        equations solved + 1. nMolecular_Weight and nSpecific_Heat_Cp are used because it is required for the fluid mixing models. 
        * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active.--- */
-      if (nMolecular_Weight != nSpecies_Init + 1||nSpecific_Heat_Cp != nSpecies_Init + 1) {
+      if (nMolecular_Weight != nSpecies_Init + 1 || nSpecific_Heat_Cp != nSpecies_Init + 1) {
         SU2_MPI::Error(
             "The use of FLUID_MIXTURE requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
             "to be equal to the number of entries of SPECIES_INIT + 1",
