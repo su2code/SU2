@@ -29,7 +29,7 @@
 #include <cstring>
 using namespace std;
 
-MLPToolbox::CLayer::CLayer() : CLayer(1) {};
+MLPToolbox::CLayer::CLayer() : CLayer(1) {}
 
 MLPToolbox::CLayer::CLayer(unsigned long n_neurons) : number_of_neurons{n_neurons}, is_input{false}
 {

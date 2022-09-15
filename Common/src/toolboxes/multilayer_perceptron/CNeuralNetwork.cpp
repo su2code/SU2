@@ -33,8 +33,8 @@ using namespace std;
 
 
 void MLPToolbox::CNeuralNetwork::predict(vector<su2double> &inputs){
-    su2double x, x_norm, y, y_norm, tanx;
-    size_t iNeuron, jNeuron, iLayer, nNeurons_current, nNeurons_previous;
+    su2double x, x_norm, y, y_norm;
+    size_t iNeuron, iLayer, nNeurons_current;
     bool same_point{true};
     for(iNeuron=0; iNeuron<inputLayer->getNNeurons(); iNeuron++){
         x_norm = (inputs[iNeuron] - input_norm[iNeuron].first)/(input_norm[iNeuron].second - input_norm[iNeuron].first);
@@ -44,7 +44,6 @@ void MLPToolbox::CNeuralNetwork::predict(vector<su2double> &inputs){
     if(!same_point){
         for(iLayer=1; iLayer<n_hidden_layers + 2; iLayer++){
             nNeurons_current = total_layers[iLayer]->getNNeurons();
-            nNeurons_previous = total_layers[iLayer - 1]->getNNeurons();
 
             for(iNeuron=0; iNeuron<nNeurons_current; iNeuron++){
                 x = ComputeX(iLayer, iNeuron);
