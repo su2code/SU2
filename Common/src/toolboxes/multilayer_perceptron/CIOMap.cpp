@@ -1,5 +1,5 @@
 /*!
- * \file IOMap.cpp
+ * \file CIOMap.cpp
  * \brief Implementation of the input-output mapping class for the 
  *      use of multi-layer perceptrons in SU2
  * \author E. Bunschoten
@@ -25,14 +25,14 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../../include/numerics/multilayer_perceptron/LookUp_ANN.hpp"
-#include "../../../include/numerics/multilayer_perceptron/IOMap.hpp"
+#include "../../../include/toolboxes/multilayer_perceptron/CLookUp_ANN.hpp"
+#include "../../../include/toolboxes/multilayer_perceptron/CIOMap.hpp"
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <fstream>
 
-IOMap::IOMap(LookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &outputs){
+MLPToolbox::CIOMap::CIOMap(CLookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &outputs){
     PairVariableswithANNs(ANN_collection, inputs, outputs);
     if(outputs.size() > 0){
         ANN_collection->Check_Use_of_Inputs(inputs, this);
@@ -40,14 +40,13 @@ IOMap::IOMap(LookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &
         ANN_collection->Check_Duplicate_Outputs(outputs, this);
     }
 }
-void IOMap::PairVariableswithANNs(LookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &outputs){
+void MLPToolbox::CIOMap::PairVariableswithANNs(CLookUp_ANN*ANN_collection, vector<string> &inputs, vector<string> &outputs){
 
-    bool isInput, isOutput,input_match;
+    bool isInput, isOutput;
     for(size_t i_ANN=0; i_ANN<ANN_collection->GetNANNs(); i_ANN++){
         vector<pair<size_t, size_t>> Input_Indices = ANN_collection->FindVariable_Indices(i_ANN, inputs, true);
         isInput = Input_Indices.size() > 0;
         if(isInput){
-            input_match = true;
             vector<pair<size_t, size_t>> Output_Indices = ANN_collection->FindVariable_Indices(i_ANN, outputs, false);
             isOutput = Output_Indices.size() > 0;
             if(isOutput){

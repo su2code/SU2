@@ -25,18 +25,18 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../../include/numerics/multilayer_perceptron/ReadNeuralNetwork.hpp"
+#include "../../../include/toolboxes/multilayer_perceptron/CReadNeuralNetwork.hpp"
 using namespace std;
 
-ReadNeuralNetwork::ReadNeuralNetwork(string filename_in){
+MLPToolbox::CReadNeuralNetwork::CReadNeuralNetwork(string filename_in){
     filename = filename_in;
 };
 
-void ReadNeuralNetwork::ReadMLPFile(){
+void MLPToolbox::CReadNeuralNetwork::ReadMLPFile(){
     ifstream file_stream;
     file_stream.open(filename.c_str(), ifstream::in);
     if (!file_stream.is_open()) {
-      SU2_MPI::Error(string("There is no MLP file file called ") + filename,
+      SU2_MPI::Error(string("There is no MLP file called ") + filename,
                     CURRENT_FUNCTION);
     }
 
@@ -44,9 +44,13 @@ void ReadNeuralNetwork::ReadMLPFile(){
     double input_min, input_max, output_min, output_max;
     bool eoHeader{false}, found_layercount{false}, found_input_names{false}, found_output_names{false};
 
+    /* Read general architecture information from file header */
+
     line = SkipToFlag(&file_stream, "<header>");
 
     while(getline(file_stream, line) && !eoHeader){
+
+      /* Read layer count */
       if(line.compare("[number of layers]") == 0){
         getline(file_stream, line);
         n_layers = stoul(line);
@@ -58,7 +62,10 @@ void ReadNeuralNetwork::ReadMLPFile(){
         found_layercount = true;
       }
 
+      /* Set number of neurons for each layer */
       if(line.compare("[neurons per layer]") == 0){
+
+        /* In case layer count was not yet provided, return an error */
         if(!found_layercount){
           SU2_MPI::Error("No layer count provided before defining neuron count per layer", CURRENT_FUNCTION);
         }
@@ -86,6 +93,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
         for(size_t iNeuron=0; iNeuron<n_neurons.at(n_neurons.size()-1); iNeuron++) output_norm.at(iNeuron) = make_pair(0, 1);
       }
 
+      /* Read layer activation function types */
       if(line.compare("[activation function]") == 0){
         if(!found_layercount){
           SU2_MPI::Error("No layer count provided before providing layer activation functions", CURRENT_FUNCTION);
@@ -98,6 +106,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
         }    
       }
 
+      /* Read MLP input variable names */
       if(line.compare("[input names]") == 0){
         found_input_names = true;
         unsigned short j{1};
@@ -112,6 +121,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
         }
       }
 
+      /* In case input normalization is applied, read upper and lower input bounds */
       if(line.compare("[input normalization]") == 0){
         for(size_t iInput=0; iInput<input_norm.size(); iInput++){
           getline(file_stream, line);
@@ -126,6 +136,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
         }
       }
 
+      /* Read MLP output variable names */
       if(line.compare("[output names]") == 0){
         found_output_names = true;
         getline(file_stream, line);
@@ -139,6 +150,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
         }
       }
 
+      /* In case output normalization is applied, read upper and lower output bounds */
       if(line.compare("[output normalization]") == 0){
         for(size_t iOutput=0; iOutput<output_norm.size(); iOutput++){
           getline(file_stream, line);
@@ -164,72 +176,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
       SU2_MPI::Error("No MLP output variable names provided", CURRENT_FUNCTION);
     }
 
-
-    // line = SkipToFlag(&file_stream, "[number of layers]");
-    // getline(file_stream, line);
-    // n_layers = stoul(line);
-    // n_neurons.resize(n_layers);
-    // biases.resize(n_layers);
-    // weights.resize(n_layers-1);
-    // activation_functions.resize(n_layers);
-    // line = SkipToFlag(&file_stream, "[neurons per layer]");
-    // for(size_t iLayer=0; iLayer<n_layers; iLayer++){
-    //   getline(file_stream, line);
-    //   n_neurons.at(iLayer) = stoul(line);
-    //   biases.at(iLayer).resize(n_neurons.at(iLayer));
-    // }
-    // for(size_t iLayer=0; iLayer<n_layers-1; iLayer++){
-    //   weights.at(iLayer).resize(n_neurons.at(iLayer));
-    //   for(size_t iNeuron=0; iNeuron<n_neurons.at(iLayer); iNeuron++){
-    //     weights.at(iLayer).at(iNeuron).resize(n_neurons.at(iLayer+1));
-    //   }
-    // }
-
-    // input_norm.resize(n_neurons.at(0));
-    // output_norm.resize(n_neurons.at(n_neurons.size()-1));
-
-    // line = SkipToFlag(&file_stream, "[activation function]");
-    // for(size_t iLayer=0; iLayer<n_layers; iLayer++){
-    //   getline(file_stream, line);
-    //   istringstream activation_stream(line);
-    //   activation_stream >> word;
-    //   activation_functions.at(iLayer) = word;
-    // }    
-
-    // line = SkipToFlag(&file_stream, "[input names]");
-    // for(size_t iInput=0; iInput < n_neurons.at(0); iInput++){
-    //   getline(file_stream, line);
-    //   input_names.push_back(line);
-    // }
-
-    // line = SkipToFlag(&file_stream, "[input normalization]");
-    // for(size_t iInput=0; iInput<input_norm.size(); iInput++){
-    //   getline(file_stream, line);
-    //   istringstream input_norm_stream(line);
-    //   input_norm_stream >> word;
-    //   input_min = stold(word);
-    //   input_norm_stream >> word;
-    //   input_max = stold(word);
-    //   input_norm.at(iInput) = make_pair(input_min, input_max);
-    // }
-
-    // line = SkipToFlag(&file_stream, "[output names]");
-    // for(size_t iOutput=0; iOutput < n_neurons.at(n_neurons.size()-1); iOutput++){
-    //   getline(file_stream, line);
-    //   output_names.push_back(line);
-    // }
-
-    // line = SkipToFlag(&file_stream, "[output normalization]");
-    // for(size_t iOutput=0; iOutput<output_norm.size(); iOutput++){
-    //   getline(file_stream, line);
-    //   istringstream output_norm_stream(line);
-    //   output_norm_stream >> word;
-    //   output_min = stold(word);
-    //   output_norm_stream >> word;
-    //   output_max = stold(word);
-    //   output_norm.at(iOutput) = make_pair(output_min, output_max);
-    // }
-
+    /* Read weights for each layer */
     line = SkipToFlag(&file_stream, "[weights per layer]");
     for(size_t iLayer=0; iLayer<n_layers-1; iLayer++){
       getline(file_stream, line);
@@ -244,6 +191,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
       getline(file_stream, line);
     }
     
+    /* Read biases for each neuron */
     line = SkipToFlag(&file_stream, "[biases per layer]");
     for(size_t iLayer=0; iLayer<n_layers; iLayer++){
       getline(file_stream, line);
@@ -258,7 +206,7 @@ void ReadNeuralNetwork::ReadMLPFile(){
 
 }
 
-string ReadNeuralNetwork::SkipToFlag(ifstream *file_stream, string flag) {
+string MLPToolbox::CReadNeuralNetwork::SkipToFlag(ifstream *file_stream, string flag) {
   string line;
   getline(*file_stream, line);
 

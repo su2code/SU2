@@ -1,5 +1,5 @@
 /*!
- * \file LookUp_ANN.hpp
+ * \file CLookUp_ANN.hpp
  * \brief Declaration of artificial neural network interpolation class
  * \author E. Bunschoten
  * \version 7.4.0 "Blackbird"
@@ -33,19 +33,21 @@
 #include <limits>
 #include <cstdlib>
 #include <vector>
-#include "../../../../Common/include/CConfig.hpp"
-#include "../../../../Common/include/linear_algebra/blas_structure.hpp"
-#include "NeuralNetwork.hpp"
-#include "IOMap.hpp"
+#include "../../CConfig.hpp"
+#include "../../linear_algebra/blas_structure.hpp"
+#include "CNeuralNetwork.hpp"
+#include "CIOMap.hpp"
 
 using namespace std;
-class IOMap;
 
-class LookUp_ANN
+namespace MLPToolbox{
+class CIOMap;
+
+class CLookUp_ANN
 {
     private:
     int rank{0};
-    vector<NeuralNetwork*> NeuralNetworks;  /*!< Vector containing all loaded neural networks. */
+    vector<CNeuralNetwork*> NeuralNetworks;  /*!< Vector containing all loaded neural networks. */
 
     vector<string> ANN_filenames;       /*!< Filenames containing ANN architecture information. */
 
@@ -64,7 +66,7 @@ class LookUp_ANN
     * \param[in] ANN - pointer to target NeuralNetwork class
     * \param[in] filename - filename containing ANN architecture information
     */
-    void GenerateANN(NeuralNetwork*ANN, string filename);
+    void GenerateANN(CNeuralNetwork*ANN, string filename);
 
     /*!
     * \brief Read ANN architecture input file
@@ -78,7 +80,7 @@ class LookUp_ANN
     * \brief ANN collection class constructor
     * \param[in] filename - filename containing list of ANN input files
     */
-    LookUp_ANN(string fileName);
+    CLookUp_ANN(string fileName);
     
     /*!
     * \brief Evaluate loaded ANNs for given inputs and outputs
@@ -86,9 +88,9 @@ class LookUp_ANN
     * \param[in] inputs - input values
     * \param[in] outputs - pointers to output variables
     */
-    void Predict_ANN(IOMap *input_output_map, vector<su2double> &inputs, vector<su2double*> &outputs);
+    void Predict_ANN(CIOMap *input_output_map, vector<su2double> &inputs, vector<su2double*> &outputs);
 
-    ~LookUp_ANN(){for(size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++)
+    ~CLookUp_ANN(){for(size_t i_ANN=0; i_ANN<number_of_variables; i_ANN++)
         delete NeuralNetworks.at(i_ANN);
     };
 
@@ -96,28 +98,28 @@ class LookUp_ANN
     * \brief Get number of loaded ANNs
     * \return number of loaded ANNs
     */
-    const size_t GetNANNs() const {return NeuralNetworks.size();}
+    size_t GetNANNs() const {return NeuralNetworks.size();}
 
     /*!
     * \brief Check if variables occur more than once in ANN outputs
     * \param[in] output_names - output variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked
     */
-    bool Check_Duplicate_Outputs(vector<string> &output_names, IOMap *input_output_map) const;
+    bool Check_Duplicate_Outputs(vector<string> &output_names, CIOMap *input_output_map) const;
 
     /*!
     * \brief Check if all output variables are present in the loaded ANNs
     * \param[in] output_names - output variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked
     */
-    bool Check_Use_of_Outputs(vector<string> &output_names, IOMap *input_output_map) const;
+    bool Check_Use_of_Outputs(vector<string> &output_names, CIOMap *input_output_map) const;
 
     /*!
     * \brief Check if all input variables are present in the loaded ANNs
     * \param[in] input_names - input variable names to check
     * \param[in] input_output_map - pointer to input-output map to be checked
     */
-    bool Check_Use_of_Inputs(vector<string> &input_names, IOMap *input_output_map) const;
+    bool Check_Use_of_Inputs(vector<string> &input_names, CIOMap *input_output_map) const;
 
     /*!
     * \brief Map variable names to ANN inputs or outputs
@@ -128,4 +130,6 @@ class LookUp_ANN
     vector<pair<size_t, size_t>> FindVariable_Indices(size_t i_ANN, vector<string> variable_names, bool input) const;
     
 };  
+
+}
 

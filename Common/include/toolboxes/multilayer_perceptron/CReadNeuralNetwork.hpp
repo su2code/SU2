@@ -1,5 +1,5 @@
 /*!
- * \file ReadNeuralNetwork.hpp
+ * \file CReadNeuralNetwork.hpp
  * \brief Declaration of MLP input file reader class
  * \author E. Bunschoten
  * \version 7.4.0 "Blackbird"
@@ -31,11 +31,12 @@
 #include <limits>
 #include <cstdlib>
 
-#include "../../../../Common/include/CConfig.hpp"
-#include "../../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../CConfig.hpp"
+#include "../../linear_algebra/blas_structure.hpp"
 
 using namespace std;
-class ReadNeuralNetwork {
+namespace MLPToolbox{
+class CReadNeuralNetwork {
     private:
     vector<string> input_names;
     vector<string> output_names;
@@ -51,7 +52,7 @@ class ReadNeuralNetwork {
     vector<pair<double long, double long>> output_norm;
     public:
 
-    ReadNeuralNetwork(string filename_in);
+    CReadNeuralNetwork(string filename_in);
     void ReadMLPFile();
 
     string SkipToFlag(ifstream *file_stream, string flag);
@@ -70,5 +71,6 @@ class ReadNeuralNetwork {
     string GetInputName(size_t iInput){return input_names.at(iInput);}
     string GetOutputName(size_t iOutput){return output_names.at(iOutput);}
     
-    ~ReadNeuralNetwork(){};
+    ~CReadNeuralNetwork(){};
 };
+}

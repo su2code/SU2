@@ -128,6 +128,12 @@ lib_sources = \
   ../src/toolboxes/MMS/CRinglebSolution.cpp \
   ../src/toolboxes/MMS/CTGVSolution.cpp \
   ../src/toolboxes/MMS/CUserDefinedSolution.cpp \
+  ../src/toolboxes/multilayer_perceptron/CLookUp_ANN.cpp\
+  ../src/toolboxes/multilayer_perceptron/CIOMap.cpp\
+  ../src/toolboxes/multilayer_perceptron/CNeuralNetwork.cpp\
+  ../src/toolboxes/multilayer_perceptron/CLayer.cpp\
+  ../src/toolboxes/multilayer_perceptron/CNeuron.cpp\
+  ../src/toolboxes/multilayer_perceptron/CReadNeuralNetwork.cpp\
   ../src/linear_algebra/CSysVector.cpp \
   ../src/linear_algebra/CSysMatrix.cpp \
   ../src/linear_algebra/CSysSolve.cpp \

@@ -1,5 +1,5 @@
 /*!
- * \file Layer.cpp
+ * \file CLayer.cpp
  * \brief Implementation of the Layer class to be used in the NeuralNetwork
  *      class
  * \author E. Bunschoten
@@ -25,38 +25,26 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../../include/numerics/multilayer_perceptron/Layer.hpp"
+#include "../../../include/toolboxes/multilayer_perceptron/CLayer.hpp"
 #include <cstring>
 using namespace std;
 
-Layer::Layer() : Layer(1) {};
+MLPToolbox::CLayer::CLayer() : CLayer(1) {};
 
-Layer::Layer(unsigned long n_neurons) : number_of_neurons{n_neurons}, input{false}
+MLPToolbox::CLayer::CLayer(unsigned long n_neurons) : number_of_neurons{n_neurons}, is_input{false}
 {
-    neurons = new Neuron[n_neurons];
+    neurons = new CNeuron[n_neurons];
     for(size_t i=0; i<number_of_neurons; i++){
         neurons[i].setNumber(i+1);
     }
 }
 
-void Layer::setNNeurons(unsigned long n_neurons){
+void MLPToolbox::CLayer::setNNeurons(unsigned long n_neurons){
     if(number_of_neurons != n_neurons){
         delete [] neurons;
-        neurons = new Neuron[n_neurons];
+        neurons = new CNeuron[n_neurons];
         for(size_t i=0; i<number_of_neurons; i++){
             neurons[i].setNumber(i+1);
         }
     }
 }
-
-// void Layer::setActivationFunction(string input){
-//     activation_type = input;
-//     for(size_t i=0; i<number_of_neurons; i++){
-//         neurons[i].setFunctionType(input);
-//     }
-// }
-// void Layer::sayhi(){
-//     for(size_t i=0; i<number_of_neurons; i++){
-//         neurons[i].sayhi();
-//     }
-// }
