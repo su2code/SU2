@@ -188,7 +188,6 @@ bool MLPToolbox::CLookUp_ANN::Check_Duplicate_Outputs(vector<string> &output_nam
     for(size_t i_Output =0; i_Output < output_names.size(); i_Output++){
         n_occurances = 0;
         for(size_t i_map=0; i_map<input_output_map->GetNANNs(); i_map++){
-            size_t i_ANN =  input_output_map->GetANNIndex(i_map);
             vector<pair<size_t, size_t>> output_map = input_output_map->GetOutputMapping(i_map);
             for(size_t j_Output=0; j_Output<output_map.size(); j_Output++){
                 if(output_map[j_Output].first == i_Output) n_occurances++;
