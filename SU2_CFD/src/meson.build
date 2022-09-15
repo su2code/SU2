@@ -11,7 +11,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
                       'fluid/CSU2TCLib.cpp',
-                      'fluid/CMLPGas.cpp'])
+                      'fluid/CMLPGas_Template.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
