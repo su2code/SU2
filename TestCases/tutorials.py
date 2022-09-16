@@ -50,7 +50,8 @@ def main():
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
     cht_incompressible_unsteady.test_vals = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450, 0.000000, 0, 0, 0, 0, 2.3824e+02] #last columns
-    cht_incompressible_unsteady.su2_exec  = "mpirun -n 2 SU2_CFD"
+    cht_incompressible_unsteady.su2_exec_prefix = "mpirun -n 2"
+    cht_incompressible_unsteady.su2_exec  = "SU2_CFD"
     cht_incompressible_unsteady.timeout   = 1600
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
@@ -77,7 +78,8 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
     sp_pinArray_2d_mf_hf.test_vals = [-4.626384, 1.444465, -0.750978, 241.757337] #last 4 lines
-    sp_pinArray_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_2d_mf_hf.su2_exec_prefix = "mpirun -n 2"
+    sp_pinArray_2d_mf_hf.su2_exec  = "SU2_CFD"
     sp_pinArray_2d_mf_hf.timeout   = 1600
     sp_pinArray_2d_mf_hf.tol       = 0.00001
     test_list.append(sp_pinArray_2d_mf_hf)
@@ -88,7 +90,8 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
     sp_pinArray_2d_dp_hf_tp.test_vals = [-4.667133, 1.395801, -0.709306, 208.023676] #last 4 lines
-    sp_pinArray_2d_dp_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_2d_dp_hf_tp.su2_exec_prefix = "mpirun -n 2"
+    sp_pinArray_2d_dp_hf_tp.su2_exec  = "SU2_CFD"
     sp_pinArray_2d_dp_hf_tp.timeout   = 1600
     sp_pinArray_2d_dp_hf_tp.tol       = 0.00001
     test_list.append(sp_pinArray_2d_dp_hf_tp)
@@ -101,7 +104,8 @@ def main():
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
     species3_primitiveVenturi.test_vals = [-6.026100, -5.265495, -5.110799, -5.931985, -1.585414, -6.311820, -6.434690, 5, -0.841163, 5, -2.343847, 5, -0.295673, 1.645199, 0.498941, 0.600911, 0.545347]
-    species3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD"
+    species3_primitiveVenturi.su2_exec_prefix = "mpirun -n 2"
+    species3_primitiveVenturi.su2_exec  = "SU2_CFD"
     species3_primitiveVenturi.timeout   = 1600
     species3_primitiveVenturi.new_output = True
     species3_primitiveVenturi.tol       = 0.00001
@@ -115,7 +119,8 @@ def main():
     DAspecies3_primitiveVenturi.test_iter = 50
     DAspecies3_primitiveVenturi.test_vals         = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
     DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
-    DAspecies3_primitiveVenturi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    DAspecies3_primitiveVenturi.su2_exec_prefix = "mpirun -n 2"
+    DAspecies3_primitiveVenturi.su2_exec  = "SU2_CFD_AD"
     DAspecies3_primitiveVenturi.timeout   = 1600
     DAspecies3_primitiveVenturi.new_output = True
     DAspecies3_primitiveVenturi.tol       = 0.00001
@@ -129,7 +134,8 @@ def main():
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
     tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.005439, 0.012998]
-    tutorial_inv_bump.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_inv_bump.su2_exec_prefix = "mpirun -np 2"
+    tutorial_inv_bump.su2_exec   = "SU2_CFD"
     tutorial_inv_bump.timeout    = 1600
     tutorial_inv_bump.tol        = 0.00001
     tutorial_inv_bump.no_restart = True
@@ -141,7 +147,8 @@ def main():
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
     tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.291747, 0.052515]
-    tutorial_inv_wedge.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_inv_wedge.su2_exec_prefix = "mpirun -np 2"
+    tutorial_inv_wedge.su2_exec   = "SU2_CFD"
     tutorial_inv_wedge.timeout    = 1600
     tutorial_inv_wedge.tol        = 0.00001
     tutorial_inv_wedge.no_restart = True
@@ -153,7 +160,8 @@ def main():
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
     tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.247451, 0.085770]
-    tutorial_inv_onera.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_inv_onera.su2_exec_prefix = "mpirun -np 2"
+    tutorial_inv_onera.su2_exec   = "SU2_CFD"
     tutorial_inv_onera.timeout    = 1600
     tutorial_inv_onera.tol        = 0.00001
     tutorial_inv_onera.no_restart = True
@@ -165,7 +173,8 @@ def main():
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
     tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.125776, 69.613563]
-    tutorial_lam_cylinder.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_lam_cylinder.su2_exec_prefix = "mpirun -np 2"
+    tutorial_lam_cylinder.su2_exec   = "SU2_CFD"
     tutorial_lam_cylinder.timeout    = 1600
     tutorial_lam_cylinder.tol        = 0.00001
     tutorial_lam_cylinder.no_restart = True
@@ -177,7 +186,8 @@ def main():
     tutorial_lam_flatplate.cfg_file   = "lam_flatplate.cfg"
     tutorial_lam_flatplate.test_iter  = 0
     tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.400044, 0.029413] #last 4 columns
-    tutorial_lam_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_lam_flatplate.su2_exec_prefix = "mpirun -np 2"
+    tutorial_lam_flatplate.su2_exec   = "SU2_CFD"
     tutorial_lam_flatplate.timeout    = 1600
     tutorial_lam_flatplate.tol        = 0.00001
     tutorial_lam_flatplate.no_restart = True
@@ -189,7 +199,8 @@ def main():
     tutorial_turb_flatplate.cfg_file   = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter  = 0
     tutorial_turb_flatplate.test_vals  = [-2.258584, -4.899502, -0.429375, 0.201236]
-    tutorial_turb_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_turb_flatplate.su2_exec_prefix = "mpirun -np 2"
+    tutorial_turb_flatplate.su2_exec   = "SU2_CFD"
     tutorial_turb_flatplate.timeout    = 1600
     tutorial_turb_flatplate.tol        = 0.00001
     tutorial_turb_flatplate.no_restart = True
@@ -201,7 +212,8 @@ def main():
     tutorial_trans_flatplate.cfg_file   = "transitional_BC_model_ConfigFile.cfg"
     tutorial_trans_flatplate.test_iter  = 0
     tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
-    tutorial_trans_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_trans_flatplate.su2_exec_prefix = "mpirun -np 2"
+    tutorial_trans_flatplate.su2_exec   = "SU2_CFD"
     tutorial_trans_flatplate.timeout    = 1600
     tutorial_trans_flatplate.tol        = 0.00001
     tutorial_trans_flatplate.no_restart = True
@@ -213,7 +225,8 @@ def main():
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
     tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524277, 0.327954, 0.097349]
-    tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_turb_oneram6.su2_exec_prefix = "mpirun -np 2"
+    tutorial_turb_oneram6.su2_exec   = "SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
     test_list.append(tutorial_turb_oneram6)
@@ -224,7 +237,8 @@ def main():
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
     tutorial_nicfd_nozzle.test_vals = [-2.187400, -9.409241, 3.477513, 0.000000, 0.000000]
-    tutorial_nicfd_nozzle.su2_exec  = "mpirun -np 2 SU2_CFD"
+    tutorial_nicfd_nozzle.su2_exec_prefix = "mpirun -np 2"
+    tutorial_nicfd_nozzle.su2_exec  = "SU2_CFD"
     tutorial_nicfd_nozzle.timeout   = 1600
     tutorial_nicfd_nozzle.tol       = 0.00001
     tutorial_nicfd_nozzle.no_restart = True
@@ -237,7 +251,8 @@ def main():
     tutorial_unst_naca0012.test_iter     = 520
     tutorial_unst_naca0012.test_vals         = [520, 0, -5.297585, 0, 0.297416, 0.770060, 0.003308, 0.014647]
     tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.297724, 0, 0.300206, 0.794023, 0.002877, 0.014433]
-    tutorial_unst_naca0012.su2_exec      = "mpirun -np 2 SU2_CFD"
+    tutorial_unst_naca0012.su2_exec_prefix = "mpirun -np 2"
+    tutorial_unst_naca0012.su2_exec      = "SU2_CFD"
     tutorial_unst_naca0012.timeout       = 1600
     tutorial_unst_naca0012.tol           = 0.00001
     tutorial_unst_naca0012.unsteady      = True
@@ -249,7 +264,8 @@ def main():
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
     propeller_var_load.test_vals = [-1.830252, -4.535038, -0.000323, 0.171648]
-    propeller_var_load.su2_exec  = "mpirun -np 2 SU2_CFD"
+    propeller_var_load.su2_exec_prefix = "mpirun -np 2"
+    propeller_var_load.su2_exec  = "SU2_CFD"
     propeller_var_load.timeout   = 3200
     propeller_var_load.tol       = 0.00001
     test_list.append(propeller_var_load)
@@ -262,7 +278,8 @@ def main():
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
     tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.135070, 0.208565]
-    tutorial_design_inv_naca0012.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_design_inv_naca0012.su2_exec_prefix = "mpirun -np 2"
+    tutorial_design_inv_naca0012.su2_exec   = "SU2_CFD"
     tutorial_design_inv_naca0012.timeout    = 1600
     tutorial_design_inv_naca0012.tol        = 0.00001
     tutorial_design_inv_naca0012.no_restart = True
@@ -274,7 +291,8 @@ def main():
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
     tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.941305, 0.218348, 0.190357]
-    tutorial_design_turb_rae2822.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_design_turb_rae2822.su2_exec_prefix = "mpirun -np 2"
+    tutorial_design_turb_rae2822.su2_exec   = "SU2_CFD"
     tutorial_design_turb_rae2822.timeout    = 1600
     tutorial_design_turb_rae2822.tol        = 0.00001
     tutorial_design_turb_rae2822.no_restart = True
@@ -286,7 +304,8 @@ def main():
     tutorial_design_multiobj.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
     tutorial_design_multiobj.test_iter  = 0
     tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 324840.000000, 0.000000] #last 4 columns
-    tutorial_design_multiobj.su2_exec   = "mpirun -np 2 SU2_CFD"
+    tutorial_design_multiobj.su2_exec_prefix ="mpirun -np 2"
+    tutorial_design_multiobj.su2_exec   = "SU2_CFD"
     tutorial_design_multiobj.timeout    = 1600
     tutorial_design_multiobj.tol        = 0.00001
     tutorial_design_multiobj.no_restart = True
