@@ -1,6 +1,6 @@
 /*!
  * \file CScalarSolver.inl
- * \brief Main subrotuines of CScalarSolver class
+ * \brief Main subroutines of CScalarSolver class
  * \version 7.4.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
