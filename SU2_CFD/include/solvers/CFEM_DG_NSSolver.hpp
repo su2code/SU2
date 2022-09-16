@@ -382,4 +382,34 @@ private:
                                               const unsigned short NPad,
                                               su2double            *res,
                                               su2double            *work) override;
+
+  /*!
+   * \brief Function, which computes the viscous (including penalty) fluxes
+            and the symmetrizing fluxes in face points.
+   * \param[in]     config             - Definition of the particular problem.
+   * \param[in]     heatFluxPrescribed - Whether or not the heat flux is prescribed.
+   * \param[in]     heatFlux           - Value of the heat flux, if prescribed.
+   * \param[in]     lenScale           - Length scale for the penalty terms.
+   * \param[in]     lenScaleLES        - Length scale for LES.
+   * \param[in]     solLeft            - Left solution in the points.
+   * \param[in]     solRight           - Right solution in the points.
+   * \param[in]     gradSol            - The gradients of the entropy variables in the points.
+   * \param[in]     JacobiansFace      - The jacobians of the face.
+   * \param[in]     normalsFace        - The normals of the face.
+   * \param[in,out] fluxes             - The viscous and penalty fluxes are added to
+                                         the already stored inviscid fluxes.
+   * \param[out]    symFluxes          - The symmetrizing fluxes.
+   */
+  void ComputeViscousFluxesFace(CConfig                            *config,
+                                bool                               heatFluxPrescribed,
+                                su2double                          heatFlux,
+                                su2double                          lenScale,
+                                su2double                          lenScaleLES,
+                                ColMajorMatrix<su2double>          &solLeft,
+                                ColMajorMatrix<su2double>          &solRight,
+                                vector<ColMajorMatrix<su2double> > &gradSol,
+                                su2activevector                    &JacobiansFace,
+                                ColMajorMatrix<su2double>          &normalsFace,
+                                ColMajorMatrix<su2double>          &fluxes,
+                                vector<ColMajorMatrix<su2double> > &symFluxes);
 };
